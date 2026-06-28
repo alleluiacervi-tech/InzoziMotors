@@ -363,94 +363,48 @@ Defects (any): Honest close-ups of any damage noted in inspection
 | Inspection Report | InspectionReportScreen.js | ✅ Basic version |
 | Listing Wizard | ListingWizardScreen.js | ✅ Done (admin path) |
 
-### Phase 2 — Trust Engine (NEXT)
+### Phase 2 — Trust Engine ✅ Complete (Jun 28, 2026)
 
 | Screen | File | Status |
 |---|---|---|
-| 150-pt Inspection Form | InspectionFormScreen.js | 🔲 Not built |
-| Photo Upload (36 angles) | PhotoUploadScreen.js | 🔲 Not built |
-| Inspection Report (full) | InspectionReportScreen.js | 🔲 Needs rewrite |
-| Vehicle History Card | VehicleHistoryScreen.js | 🔲 Not built |
-| Seller Profile | SellerProfileScreen.js | 🔲 Not built |
-| Notification Center | NotificationCenterScreen.js | 🔲 Not built |
+| 150-pt Inspection Form | InspectionFormScreen.js | ✅ Done |
+| Photo Upload (36 angles) | PhotoUploadScreen.js | ✅ Done |
+| Inspection Report (full) | InspectionReportScreen.js | ✅ Done |
+| Vehicle History Card | VehicleHistoryScreen.js | ✅ Done |
+| Seller Profile | SellerProfileScreen.js | ✅ Done |
+| Notification Center | NotificationCenterScreen.js | ✅ Done |
 
-**Phase 2 detailed tasks:**
-- [ ] Build `InspectionFormScreen` — 7-category accordion checklist, Pass/Flag/Fail per item, category score, notes field, "Generate Report" CTA
-- [ ] Build `PhotoUploadScreen` — 36-slot grid with silhouette angle guide per slot, upload progress bar, "Submit Photos" CTA
-- [ ] Rewrite `InspectionReportScreen` — full structured pass/fail, per-category score bars, flagged items list, overall % score, certified badge if ≥ 88%
-- [ ] Build `VehicleHistoryScreen` — ownership count, accident history card, mileage verified card, import origin card, RRA duty stamp, insurance status
-- [ ] Build `SellerProfileScreen` — trust score circle (100 pts), score breakdown (ID/sales/response/reviews), active listings carousel, review list, "Contact" button
-- [ ] Build `NotificationCenterScreen` — grouped by date, types: price drop / new message / listing update / saved search match, read/unread states
-- [ ] Connect `VehicleDetailScreen` → tap seller name → `SellerProfileScreen`
-- [ ] Connect `VehicleDetailScreen` → add "Vehicle History" row → `VehicleHistoryScreen`
-- [ ] Connect `AdminPanelScreen` → inspection appointment → `InspectionFormScreen`
-- [ ] Connect `AdminPanelScreen` → after inspection form → `PhotoUploadScreen`
-- [ ] Add inspection form data to `AppContext` (7 categories, 150 items, submit action)
-- [ ] Add vehicle history mock data to `AppContext` or data file
-- [ ] Add seller profile data (trust score, reviews) to `AppContext`
-- [ ] Add notifications mock data to `AppContext`
-
-### Phase 3 — Communication & Transactions (PLANNED)
+### Phase 3 — Communication & Transactions ✅ Complete (Jun 28, 2026)
 
 | Screen | File | Status |
 |---|---|---|
-| Purchase Request | (update Checkout) | 🔲 Not built |
-| Order Tracking | OrderTrackingScreen.js | 🔲 Not built |
-| Notification Center | NotificationCenterScreen.js | 🔲 Not built |
+| Purchase Request | CheckoutScreen.js (updated) | ✅ Done |
+| Order Tracking | OrderTrackingScreen.js | ✅ Done |
+| Notification Center | NotificationCenterScreen.js | ✅ Done |
 
-**Phase 3 detailed tasks:**
-- [ ] Enhance `CheckoutScreen` → proper purchase request confirmation flow with next-steps timeline
-- [ ] Build `OrderTrackingScreen` — visual status diagram: Request Sent → Seller Confirmed → Handover Arranged → Complete
-- [ ] Build `NotificationCenterScreen` (if not done in Phase 2)
-- [ ] Wire notification badge count into tab bar on Messages tab
-- [ ] Auto-send notification when seller confirms purchase request
-- [ ] Chat enhancements: pin car card at top of chat thread, "Arrange Viewing" quick reply button
-
-### Phase 4 — Buyer Power Tools (PLANNED)
+### Phase 4 — Buyer Power Tools ✅ Complete (Jun 28–29, 2026)
 
 | Screen | File | Status |
 |---|---|---|
-| Saved / Wishlist | SavedScreen.js | 🔲 Needs full build |
-| Saved Search Alerts | SavedSearchScreen.js | 🔲 Not built |
-| Comparison Tool | ComparisonScreen.js | 🔲 Not built |
-| Price Intelligence | (VehicleDetail enhancement) | 🔲 Not built |
-| Map View | MapScreen.js | 🔲 Not built |
-| Import Duty Calculator | DutyCalculatorScreen.js | 🔲 Not built |
+| Saved / Wishlist | SavedScreen.js | ✅ Done (dual-tab: Cars + Searches) |
+| Saved Search Alerts | SavedScreen.js (Searches tab) | ✅ Done |
+| Comparison Tool | ComparisonScreen.js | ✅ Done (3-car, winner highlight) |
+| Price Intelligence | VehicleDetailScreen.js (enhanced) | ✅ Done (sparkline, market diff, RWF) |
+| Map View | MapScreen.js | ✅ Done (custom Kigali grid, no maps lib) |
+| Import Duty Calculator | DutyCalculatorScreen.js | ✅ Done (full RRA breakdown) |
 
-**Phase 4 detailed tasks:**
-- [ ] Build `SavedScreen` fully — saved car cards with price change indicator ("Price dropped $500"), "Remove" swipe action
-- [ ] Build `SavedSearchScreen` — list saved filters, edit/delete, toggle push notification per saved search
-- [ ] Build `ComparisonScreen` — select 2–3 cars from browse, side-by-side specs table, highlight winner per row
-- [ ] Add price intelligence to `VehicleDetailScreen` — "X% below/above market" badge, mini sparkline of price history
-- [ ] Add "X people saved this" social proof counter to `VehicleDetailScreen`
-- [ ] Add "Listed N days ago" label to `VehicleDetailScreen`
-- [ ] Add Similar Cars horizontal scroll to bottom of `VehicleDetailScreen`
-- [ ] Build `MapScreen` — Kigali neighborhood pins, cluster by area, filter by distance, tap pin → car card
-- [ ] Build `DutyCalculatorScreen` — enter car value (USD) → calculate Rwanda RRA import duty estimate
-- [ ] Add RWF / USD price toggle to `HomeScreen` and `VehicleDetailScreen`
-- [ ] Add LHD / RHD flag to car data and filter options
-
-### Phase 5 — Growth Features (PLANNED)
+### Phase 5 — Growth Features ✅ Complete (Jun 29, 2026)
 
 | Screen | File | Status |
 |---|---|---|
-| AI Price Suggestion | (CarSubmission enhancement) | 🔲 Not built |
-| Seller Analytics | SellerAnalyticsScreen.js | 🔲 Not built |
-| Admin Analytics | AdminAnalyticsScreen.js | 🔲 Not built |
-| Dealer Profile | DealerProfileScreen.js | 🔲 Not built |
-| Financing Calculator | FinancingScreen.js | 🔲 Not built |
-| Trust Score Page | TrustScoreScreen.js | 🔲 Not built |
-
-**Phase 5 detailed tasks:**
-- [ ] Add AI Price Suggestion to `CarSubmissionScreen` Step 4 — after entering make/model/year/mileage, show "Based on X similar cars, we suggest $Y–$Z"
-- [ ] Build `SellerAnalyticsScreen` — views/day chart, saves count, inquiries, time on market vs category average, best performing listing
-- [ ] Build `AdminAnalyticsScreen` — pipeline metrics (submissions → live conversion %), revenue this month, top makes/categories, inspection center utilization
-- [ ] Build `DealerProfileScreen` — branded header, all dealer's listings, bulk submission badge, verified dealer badge, contact info
-- [ ] Build `FinancingScreen` — enter car price + down payment → estimate monthly payments at Rwandan bank rates
-- [ ] Build `TrustScoreScreen` — full breakdown of a seller's 100-point score with visual gauge per component
-- [ ] Add Re-listing flow to `SellerDashboardScreen` — "Relist with new price" for unsold listings with "New Price" badge auto-applied
-- [ ] Add Appointment Reminders interface (WhatsApp + SMS concept screens)
-- [ ] Add Referral Program screen — referral link, rewards tracker
+| AI Price Suggestion | CarSubmissionScreen.js (Step 3) | ✅ Done (mock AI, in-range check) |
+| Seller Analytics | SellerAnalyticsScreen.js | ✅ Done (SVG bar chart, metric cards) |
+| Admin Analytics | AdminAnalyticsScreen.js | ✅ Done (funnel, top-makes, center util) |
+| Dealer Profile | DealerProfileScreen.js | ✅ Done (branded hero, listings grid) |
+| Financing Calculator | FinancingScreen.js | ✅ Done (4 banks, PMT formula, estimate-only) |
+| Trust Score Page | TrustScoreScreen.js | ✅ Done (SVG gauge, A–D grade, breakdown) |
+| Referral Program | ReferralScreen.js | ✅ Done (code, WhatsApp concept, rewards) |
+| Relist Flow | SellerDashboardScreen.js (updated) | ✅ Done (inline TextInput + confirm) |
 
 ### Phase 6 — Backend Integration (PLANNED)
 
