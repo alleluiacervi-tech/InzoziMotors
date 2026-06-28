@@ -41,7 +41,7 @@ export default function CheckoutScreen({ navigation, route }) {
           <View style={styles.rowIcon}><Ionicons name="home-outline" size={20} color={colors.primary} /></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle}>Home delivery</Text>
-            <Text style={styles.rowSub}>1245 Market St, San Francisco · 3-5 days</Text>
+            <Text style={styles.rowSub}>KN 3 Rd, Kiyovu, Kigali · 1-2 days</Text>
           </View>
           <Ionicons name="checkmark-circle" size={22} color={colors.green} />
         </View>

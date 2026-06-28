@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import Button from '../components/Button';
+import { useApp } from '../context/AppContext';
 import { colors, radius } from '../theme';
 
 const MAKES = ['Tesla', 'Toyota', 'BMW', 'Ford', 'Honda', 'Mercedes', 'Hyundai'];
@@ -17,10 +18,28 @@ function Chip({ label, active, onPress }) {
   );
 }
 
-export default function FiltersScreen({ navigation }) {
-  const [selected, setSelected] = useState({ make: 'Tesla', body: 'SUV', fuel: 'Electric' });
+export default function FiltersScreen({ navigation, route }) {
+  const { cars } = useApp();
+  const [selected, setSelected] = useState(
+    route.params?.filters || { make: null, body: null, fuel: null, maxPrice: 45000 }
+  );
+
   const toggle = (group, val) =>
     setSelected((s) => ({ ...s, [group]: s[group] === val ? null : val }));
+
+  const getMatchingCount = () => {
+    let list = cars;
+    if (selected.make) list = list.filter(c => c.make.toLowerCase() === selected.make.toLowerCase());
+    if (selected.body) list = list.filter(c => c.category.toLowerCase() === selected.body.toLowerCase());
+    if (selected.fuel) list = list.filter(c => c.fuel.toLowerCase() === selected.fuel.toLowerCase());
+    if (selected.maxPrice) {
+      list = list.filter(c => {
+        const price = c.type === 'auction' ? c.currentBid : c.price;
+        return price <= selected.maxPrice;
+      });
+    }
+    return list.length;
+  };
 
   return (
     <Screen background={colors.surface}>
@@ -69,10 +88,16 @@ export default function FiltersScreen({ navigation }) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.reset} onPress={() => setSelected({})}>
+        <Pressable style={styles.reset} onPress={() => setSelected({ make: null, body: null, fuel: null, maxPrice: 45000 })}>
           <Text style={styles.resetText}>Reset</Text>
         </Pressable>
-        <Button title="Show 6 results" style={{ flex: 1 }} onPress={() => { navigation.goBack(); }} />
+        <Button
+          title={`Show ${getMatchingCount()} results`}
+          style={{ flex: 1 }}
+          onPress={() => {
+            navigation.navigate('SearchResults', { filters: selected });
+          }}
+        />
       </View>
     </Screen>
   );

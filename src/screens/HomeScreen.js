@@ -23,7 +23,7 @@ export default function HomeScreen({ navigation }) {
             <View>
               <Text style={styles.locationLabel}>LOCATION</Text>
               <View style={styles.locationValue}>
-                <Text style={styles.locationCity}>San Francisco, CA</Text>
+                <Text style={styles.locationCity}>Kigali, Rwanda</Text>
                 <Ionicons name="chevron-down" size={11} color={colors.textSecondary} />
               </View>
             </View>

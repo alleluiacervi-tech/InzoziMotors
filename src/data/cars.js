@@ -3,7 +3,7 @@
 
 export const categories = ['All', 'SUV', 'Sedan', 'EV', 'Truck', 'Coupe', 'Hatchback', 'Supercar'];
 
-export const cars = [
+const rawCars = [
   {
     id: '1',
     title: '2022 Tesla Model 3 Long Range',
@@ -566,6 +566,193 @@ export const cars = [
     location: 'Berkeley, CA',
   },
 ];
+
+const VEHICLE_IMAGES = {
+  '1': [
+    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',
+    'https://images.unsplash.com/photo-1617704548623-340376564e68?w=800&q=80',
+    'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
+    'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80'
+  ],
+  '2': [
+    'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80',
+    'https://images.unsplash.com/photo-1556800572-1b8aeef2c54f?w=800&q=80',
+    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
+  ],
+  '3': [
+    'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=800&q=80',
+    'https://images.unsplash.com/photo-1621007947382-cc34aa8668c2?w=800&q=80',
+    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80'
+  ],
+  '4': [
+    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80',
+    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80',
+    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
+  ],
+  '5': [
+    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',
+    'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
+    'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80'
+  ],
+  '6': [
+    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80',
+    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80'
+  ],
+  '7': [
+    'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&q=80',
+    'https://images.unsplash.com/photo-1611245801313-0570b795276e?w=800&q=80',
+    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
+  ],
+  '8': [
+    'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
+    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80',
+    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80'
+  ],
+  '9': [
+    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80',
+    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80'
+  ],
+  '10': [
+    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80',
+    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
+  ],
+  '11': [
+    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80',
+    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80'
+  ],
+  '12': [
+    'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80',
+    'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80'
+  ],
+  '13': [
+    'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80',
+    'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80',
+    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
+  ],
+  '14': [
+    'https://images.unsplash.com/photo-1611245801313-0570b795276e?w=800&q=80',
+    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
+  ],
+  '15': [
+    'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&q=80',
+    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80'
+  ],
+  '16': [
+    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80',
+    'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&q=80'
+  ],
+  '17': [
+    'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80',
+    'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80'
+  ],
+  '18': [
+    'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80',
+    'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80'
+  ],
+  '19': [
+    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80',
+    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
+  ],
+  '20': [
+    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80',
+    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80'
+  ],
+  '21': [
+    'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
+    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80'
+  ],
+  '22': [
+    'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
+    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80'
+  ],
+  '23': [
+    'https://images.unsplash.com/photo-1669023414166-a4cf72feae7c?w=800&q=80',
+    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80'
+  ],
+  '24': [
+    'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&q=80',
+    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80'
+  ],
+  '25': [
+    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
+    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80'
+  ]
+};
+
+const KIGALI_LOCATIONS = [
+  'Nyarutarama, Kigali',
+  'Kiyovu, Kigali',
+  'Kimihurura, Kigali',
+  'Kacyiru, Kigali',
+  'Remera, Kigali',
+  'Kicukiro, Kigali',
+  'Nyarugenge, Kigali',
+  'Kibagabaga, Kigali',
+  'Gikondo, Kigali',
+  'Gisozi, Kigali',
+  'Kanombe, Kigali',
+  'Kagarama, Kigali'
+];
+
+const getKigaliSeller = (seller) => {
+  if (!seller) return 'Premium Motors Kigali';
+  return seller
+    .replace('Palo Alto', 'Kigali')
+    .replace('San Francisco', 'Kigali')
+    .replace('San Jose', 'Kigali')
+    .replace('Berkeley', 'Kigali')
+    .replace('Oakland', 'Kigali')
+    .replace('Stevens Creek', 'Nyarutarama')
+    .replace('Cavallino Motors', 'Cavallino Kigali')
+    .replace('Ford Store Morgan Hill', 'Ford Rwanda')
+    .replace('Toyota of Berkeley', 'Toyota Rwanda')
+    .replace('Lexus of Stevens Creek', 'Lexus Rwanda');
+};
+
+const enrichedCars = rawCars.map((car, idx) => {
+  const list = VEHICLE_IMAGES[car.id] || [...(car.images || [])];
+  if (list.length <= 1) {
+    if (car.category === 'EV') {
+      list.push(
+        'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80',
+        'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80',
+        'https://images.unsplash.com/photo-1617704548623-340376564e68?w=800&q=80'
+      );
+    } else if (car.category === 'SUV') {
+      list.push(
+        'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
+        'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80',
+        'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80'
+      );
+    } else if (car.category === 'Truck') {
+      list.push(
+        'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80',
+        'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80',
+        'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
+      );
+    } else if (car.category === 'Supercar' || car.category === 'Coupe') {
+      list.push(
+        'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&q=80',
+        'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80',
+        'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80'
+      );
+    } else { // Sedan / Hatchback
+      list.push(
+        'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
+        'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80',
+        'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80'
+      );
+    }
+  }
+
+  const location = KIGALI_LOCATIONS[idx % KIGALI_LOCATIONS.length];
+  const seller = getKigaliSeller(car.seller);
+  const image = list[0];
+
+  return { ...car, image, images: list, location, seller };
+});
+
+export const cars = enrichedCars;
 
 // Seller's own listings (Seller Dashboard)
 export const sellerListings = [

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const { isCarSaved, toggleSaveCar } = useApp();
   const saved = isCarSaved(car.id);
   const isAuction = car.type === 'auction';
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
   return (
     <View style={styles.root}>
@@ -31,7 +34,21 @@ export default function VehicleDetailScreen({ navigation, route }) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Gallery */}
         <View style={styles.gallery}>
-          <Image source={{ uri: car.image }} style={styles.heroImage} resizeMode="cover" />
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={(e) => {
+              const slide = Math.round(e.nativeEvent.contentOffset.x / width);
+              if (slide !== activeIdx) setActiveIdx(slide);
+            }}
+            scrollEventThrottle={16}
+          >
+            {imageList.map((img, index) => (
+              <Image key={index} source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
+            ))}
+          </ScrollView>
+
           <View style={[styles.galleryBar, { top: insets.top + 8 }]}>
             <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()}>
               <Ionicons name="chevron-back" size={20} color={colors.slate700} />
@@ -45,6 +62,13 @@ export default function VehicleDetailScreen({ navigation, route }) {
               </Pressable>
             </View>
           </View>
+
+          {imageList.length > 1 ? (
+            <View style={styles.indicatorContainer}>
+              <Text style={styles.indicatorText}>{activeIdx + 1} / {imageList.length}</Text>
+            </View>
+          ) : null}
+
           {car.inspected ? (
             <Badge variant="inspected" icon="checkmark" label="150-pt Inspected" style={styles.inspectBadge} />
           ) : null}
@@ -124,6 +148,31 @@ export default function VehicleDetailScreen({ navigation, route }) {
             full service history. Single owner, non-smoker, garage kept. Every Inzozi listing is
             inspected across 150 points and protected by our 7-day money-back guarantee.
           </Text>
+
+          {/* Photo Inspection Highlights */}
+          <Text style={styles.sectionTitle}>Visual & Photo Inspection</Text>
+          <Text style={styles.desc}>
+            Verified close-ups captured during the 150-point physical inspection:
+          </Text>
+
+          <View style={styles.highlightGrid}>
+            {[
+              { icon: 'cog-outline', title: 'Engine & Mechanicals', desc: 'No oil leaks, clean fluids, zero OBD diagnostics fault codes active.' },
+              { icon: 'disc-outline', title: 'Brakes & Tires', desc: 'Tread depth is at 6/32" (approx. 70% life remaining). Brake pads at 8mm.' },
+              { icon: 'color-palette-outline', title: 'Exterior Paint Depth', desc: 'Factory original paint confirmed across all panels. No filler or major scratches.' },
+              { icon: 'car-sport-outline', title: 'Cabin & Controls', desc: 'Seat heating, HVAC climate zone controls, and infotainment systems work perfectly.' },
+            ].map((item, idx) => (
+              <View key={idx} style={styles.highlightCard}>
+                <View style={styles.highlightIcon}>
+                  <Ionicons name={item.icon} size={20} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.highlightTitle}>{item.title}</Text>
+                  <Text style={styles.highlightDesc}>{item.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
@@ -264,4 +313,34 @@ const styles = StyleSheet.create({
   ctaPrice: { minWidth: 90 },
   ctaPriceLabel: { fontSize: 12, color: colors.textSecondary },
   ctaPriceValue: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
+  indicatorContainer: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.md,
+  },
+  indicatorText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  highlightGrid: { marginTop: 14, gap: 10 },
+  highlightCard: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: radius.xl,
+    padding: 14,
+  },
+  highlightIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.blueTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  highlightTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  highlightDesc: { fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 16 },
 });
