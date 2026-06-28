@@ -17,6 +17,8 @@ const MENU_SELLER = [
   { icon: 'add-circle-outline', label: 'Submit a Car for Sale', screen: 'CarSubmission' },
   { icon: 'shield-checkmark-outline', label: 'ID Verification', screen: 'IDVerification' },
   { icon: 'calendar-outline', label: 'Inspection Scheduling', screen: 'InspectionScheduling' },
+  { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics' },
+  { icon: 'people-outline', label: 'Referral Program', screen: 'Referral' },
 ];
 
 const MENU_BUYER = [
@@ -28,6 +30,8 @@ const MENU_BUYER = [
   { icon: 'git-compare-outline', label: 'Compare Cars', screen: 'Comparison' },
   { icon: 'map-outline', label: 'Kigali Area Map', screen: 'MapView' },
   { icon: 'calculator-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
+  { icon: 'cash-outline', label: 'Financing Calculator', screen: 'Financing' },
+  { icon: 'ribbon-outline', label: 'Trust Score', screen: 'TrustScore' },
 ];
 
 const MENU_ACCOUNT = [

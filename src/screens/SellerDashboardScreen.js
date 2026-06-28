@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
@@ -77,7 +77,9 @@ function PipelineDiagram({ currentStatus }) {
 }
 
 export default function SellerDashboardScreen({ navigation }) {
-  const { submissions } = useApp();
+  const { submissions, relistSubmission } = useApp();
+  const [relistId, setRelistId] = useState(null);
+  const [relistPrice, setRelistPrice] = useState('');
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
@@ -88,8 +90,23 @@ export default function SellerDashboardScreen({ navigation }) {
       navigation.navigate('VehicleDetail', { carId: sub.listingId });
     } else if (sub.status === 'scheduled') {
       navigation.navigate('InspectionScheduling', { carName: sub.carTitle });
-    } else if (sub.status === 'under_review') {
-      // no action
+    }
+  };
+
+  const handleRelist = (sub) => {
+    if (relistId === sub.id) {
+      const price = parseFloat(relistPrice);
+      if (!price || price <= 0) {
+        Alert.alert('Enter a valid price', 'Please enter a new asking price to relist.');
+        return;
+      }
+      relistSubmission(sub.id, price);
+      setRelistId(null);
+      setRelistPrice('');
+      Alert.alert('Relisted!', 'Your car is back in the queue. Our team will review within 24 hours.');
+    } else {
+      setRelistId(sub.id);
+      setRelistPrice(sub.askingPrice ? String(sub.askingPrice) : '');
     }
   };
 
@@ -180,12 +197,51 @@ export default function SellerDashboardScreen({ navigation }) {
                 </View>
               ) : null}
 
-              {/* Action button */}
-              {actionLabel && (
-                <Pressable style={styles.subAction} onPress={() => handleSubmissionAction(sub)}>
-                  <Text style={styles.subActionText}>{actionLabel}</Text>
-                  <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-                </Pressable>
+              {/* Action row */}
+              <View style={styles.subActions}>
+                {actionLabel && (
+                  <Pressable style={styles.subAction} onPress={() => handleSubmissionAction(sub)}>
+                    <Text style={styles.subActionText}>{actionLabel}</Text>
+                    <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+                  </Pressable>
+                )}
+                {sub.status === 'live' && (
+                  <Pressable style={styles.analyticsBtn} onPress={() => navigation.navigate('SellerAnalytics', { subId: sub.id })}>
+                    <Ionicons name="bar-chart-outline" size={13} color={colors.statusScheduled} />
+                    <Text style={styles.analyticsBtnText}>Analytics</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {/* Relist flow (live or sold) */}
+              {(sub.status === 'live' || sub.status === 'sold') && (
+                <View style={styles.relistSection}>
+                  {relistId === sub.id ? (
+                    <View style={styles.relistExpanded}>
+                      <TextInput
+                        style={styles.relistInput}
+                        value={relistPrice}
+                        onChangeText={setRelistPrice}
+                        placeholder="New asking price (USD)"
+                        keyboardType="numeric"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                      <View style={styles.relistBtns}>
+                        <Pressable style={styles.relistCancel} onPress={() => setRelistId(null)}>
+                          <Text style={styles.relistCancelText}>Cancel</Text>
+                        </Pressable>
+                        <Pressable style={styles.relistConfirm} onPress={() => handleRelist(sub)}>
+                          <Text style={styles.relistConfirmText}>Relist</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <Pressable style={styles.relistBtn} onPress={() => handleRelist(sub)}>
+                      <Ionicons name="refresh-outline" size={13} color={colors.amber} />
+                      <Text style={styles.relistBtnText}>{sub.isRelisted ? 'Relist again at new price' : 'Relist at new price'}</Text>
+                    </Pressable>
+                  )}
+                </View>
               )}
             </View>
           );
@@ -289,13 +345,49 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
   },
   statusDetailText: { fontSize: 12, color: colors.textSecondary, flex: 1 },
+  subActions: {
+    flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.borderSoft,
+  },
   subAction: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 12,
-    borderTopWidth: 1, borderTopColor: colors.borderSoft,
     backgroundColor: colors.blueTint,
   },
   subActionText: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  analyticsBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderLeftWidth: 1, borderLeftColor: colors.borderSoft,
+    backgroundColor: '#EFF6FF',
+  },
+  analyticsBtnText: { fontSize: 12, fontWeight: '700', color: colors.statusScheduled },
+  relistSection: {
+    borderTopWidth: 1, borderTopColor: colors.borderSoft,
+  },
+  relistBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 10,
+  },
+  relistBtnText: { fontSize: 12, fontWeight: '700', color: colors.amber },
+  relistExpanded: { padding: 12, gap: 8 },
+  relistInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 15, color: colors.textPrimary,
+  },
+  relistBtns: { flexDirection: 'row', gap: 8 },
+  relistCancel: {
+    flex: 1, alignItems: 'center', paddingVertical: 10,
+    backgroundColor: colors.surfaceAlt, borderRadius: radius.lg,
+  },
+  relistCancelText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  relistConfirm: {
+    flex: 1, alignItems: 'center', paddingVertical: 10,
+    backgroundColor: colors.amber, borderRadius: radius.lg,
+  },
+  relistConfirmText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   submitCta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     borderWidth: 1.5, borderColor: colors.primary + '66', borderStyle: 'dashed',

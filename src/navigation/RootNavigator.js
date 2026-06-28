@@ -32,6 +32,13 @@ import OrderTrackingScreen from '../screens/OrderTrackingScreen';
 import ComparisonScreen from '../screens/ComparisonScreen';
 import MapScreen from '../screens/MapScreen';
 import DutyCalculatorScreen from '../screens/DutyCalculatorScreen';
+// Phase 5 — Growth Features
+import SellerAnalyticsScreen from '../screens/SellerAnalyticsScreen';
+import AdminAnalyticsScreen from '../screens/AdminAnalyticsScreen';
+import DealerProfileScreen from '../screens/DealerProfileScreen';
+import FinancingScreen from '../screens/FinancingScreen';
+import TrustScoreScreen from '../screens/TrustScoreScreen';
+import ReferralScreen from '../screens/ReferralScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -76,6 +83,13 @@ export default function RootNavigator() {
       <Stack.Screen name="Comparison" component={ComparisonScreen} />
       <Stack.Screen name="MapView" component={MapScreen} />
       <Stack.Screen name="DutyCalculator" component={DutyCalculatorScreen} />
+      {/* Phase 5 */}
+      <Stack.Screen name="SellerAnalytics" component={SellerAnalyticsScreen} />
+      <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
+      <Stack.Screen name="DealerProfile" component={DealerProfileScreen} />
+      <Stack.Screen name="Financing" component={FinancingScreen} />
+      <Stack.Screen name="TrustScore" component={TrustScoreScreen} />
+      <Stack.Screen name="Referral" component={ReferralScreen} />
     </Stack.Navigator>
   );
 }

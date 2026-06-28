@@ -209,6 +209,24 @@ export function AppProvider({ children }) {
     );
   }, []);
 
+  // Phase 5 — Relist a car at a new price
+  const relistSubmission = useCallback((id, newPrice) => {
+    setSubmissions((prev) =>
+      prev.map((s) => s.id === id
+        ? { ...s, status: 'under_review', askingPrice: newPrice, isRelisted: true, statusDetail: 'Relisted — our team is reviewing your updated submission' }
+        : s)
+    );
+    setNotifications((prev) => [{
+      id: 'relist_' + Date.now(),
+      type: 'listing_update',
+      title: 'Car relisted for review',
+      body: `Your car has been relisted at the new price. Our team will review within 24 hours.`,
+      time: 'Just now',
+      date: 'Today',
+      read: false,
+    }, ...prev]);
+  }, []);
+
   // --- Admin: Verify ID ---
   const adminApproveVerification = useCallback((verificationId) => {
     setPendingVerifications((prev) =>
@@ -338,6 +356,8 @@ export function AppProvider({ children }) {
     inspectionForms, submitInspectionForm,
     // Phase 3
     purchaseRequests, addPurchaseRequest,
+    // Phase 5
+    relistSubmission,
     // Phase 4
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     currency, toggleCurrency,
