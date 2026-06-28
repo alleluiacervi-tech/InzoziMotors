@@ -129,6 +129,39 @@ export function AppProvider({ children }) {
   // Phase 3 — Purchase requests
   const [purchaseRequests, setPurchaseRequests] = useState([]);
 
+  // Phase 4 — Comparison (max 3 cars)
+  const [comparisonCars, setComparisonCars] = useState([]);
+  const addToComparison = useCallback((car) => {
+    setComparisonCars((prev) => {
+      if (prev.find((c) => c.id === car.id)) return prev;
+      if (prev.length >= 3) return [...prev.slice(1), car];
+      return [...prev, car];
+    });
+  }, []);
+  const removeFromComparison = useCallback((carId) => {
+    setComparisonCars((prev) => prev.filter((c) => c.id !== carId));
+  }, []);
+  const clearComparison = useCallback(() => setComparisonCars([]), []);
+
+  // Phase 4 — Currency toggle
+  const [currency, setCurrency] = useState('USD');
+  const toggleCurrency = useCallback(() => {
+    setCurrency((prev) => (prev === 'USD' ? 'RWF' : 'USD'));
+  }, []);
+
+  // Phase 4 — Saved searches
+  const [savedSearches, setSavedSearches] = useState([
+    { id: 'ss1', label: 'Toyota RAV4 · SUV · < $30k', make: 'Toyota', model: 'RAV4', category: 'SUV', maxPrice: 30000, notifyEnabled: true, matchCount: 3, lastMatch: '2 days ago' },
+    { id: 'ss2', label: 'BMW Sedan · Any year · < $45k', make: 'BMW', category: 'Sedan', maxPrice: 45000, notifyEnabled: false, matchCount: 1, lastMatch: '1 week ago' },
+    { id: 'ss3', label: 'Electric car · < 30k miles', category: 'EV', maxMileage: 30000, notifyEnabled: true, matchCount: 5, lastMatch: 'Today' },
+  ]);
+  const toggleSavedSearchNotify = useCallback((id) => {
+    setSavedSearches((prev) => prev.map((s) => s.id === id ? { ...s, notifyEnabled: !s.notifyEnabled } : s));
+  }, []);
+  const deleteSavedSearch = useCallback((id) => {
+    setSavedSearches((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
   // --- Car saves ---
   const toggleSaveCar = useCallback((id) => {
     setSavedCarIds((prev) =>
@@ -305,6 +338,10 @@ export function AppProvider({ children }) {
     inspectionForms, submitInspectionForm,
     // Phase 3
     purchaseRequests, addPurchaseRequest,
+    // Phase 4
+    comparisonCars, addToComparison, removeFromComparison, clearComparison,
+    currency, toggleCurrency,
+    savedSearches, toggleSavedSearchNotify, deleteSavedSearch,
     // Chat
     conversations, sendMessage, getMessages,
     // Auth

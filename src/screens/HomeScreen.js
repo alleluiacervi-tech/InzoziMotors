@@ -100,10 +100,15 @@ export default function HomeScreen({ navigation }) {
             <Ionicons name="chevron-down" size={12} color={colors.textSecondary} />
           </View>
         </View>
-        <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('Messages')}>
-          <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
-          <View style={styles.bellBadge} />
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')}>
+            <Ionicons name="map-outline" size={20} color={colors.primary} />
+          </Pressable>
+          <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')}>
+            <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
+            <View style={styles.bellBadge} />
+          </Pressable>
+        </View>
       </View>
 
       {/* Scrollable Main Content */}
@@ -363,6 +368,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#1A1A1A',
+  },
+  mapBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.greenTint,
   },
   bellBtn: {
     width: 36,

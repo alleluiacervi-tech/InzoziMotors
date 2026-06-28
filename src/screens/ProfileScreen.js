@@ -23,7 +23,11 @@ const MENU_BUYER = [
   { icon: 'navigate-outline', label: 'Order Tracking', screen: 'Messages' },
   { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
   { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
-  { icon: 'bookmark-outline', label: 'Saved Searches' },
+  { icon: 'heart-outline', label: 'Saved Cars', screen: 'Saved' },
+  { icon: 'bookmark-outline', label: 'Saved Searches', screen: 'Saved' },
+  { icon: 'git-compare-outline', label: 'Compare Cars', screen: 'Comparison' },
+  { icon: 'map-outline', label: 'Kigali Area Map', screen: 'MapView' },
+  { icon: 'calculator-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
 ];
 
 const MENU_ACCOUNT = [

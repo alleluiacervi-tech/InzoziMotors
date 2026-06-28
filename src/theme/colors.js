@@ -39,6 +39,8 @@ export const colors = {
   statusRejected: '#DC2626',
   statusRejectedBg: '#FEF2F2',
 
+  alertRed: '#DC2626',
+
   // Neutrals
   bg: '#FAFAFA',
   surface: '#FFFFFF',
