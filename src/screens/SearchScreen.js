@@ -1,121 +1,380 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import { colors, radius } from '../theme';
-
-const POPULAR = ['Tesla Model 3', 'Toyota RAV4', 'Honda Accord', 'Ford F-150', 'BMW 4 Series'];
-const BODY_TYPES = [
-  { label: 'SUV', icon: 'car-sport-outline' },
-  { label: 'Sedan', icon: 'car-outline' },
-  { label: 'Truck', icon: 'bus-outline' },
-  { label: 'EV', icon: 'flash-outline' },
-  { label: 'Coupe', icon: 'speedometer-outline' },
-  { label: 'Van', icon: 'cube-outline' },
-];
+import { useApp } from '../context/AppContext';
+import FilterModal from '../components/FilterModal';
 
 export default function SearchScreen({ navigation }) {
+  const { cars } = useApp();
+  
+  // Selection states
+  const [make, setMake] = useState('Ford');
+  const [model, setModel] = useState('Five Hundred');
+  const [detailModel, setDetailModel] = useState('Five Hundred (05~07)');
+  const [trim, setTrim] = useState('');
+  const [year, setYear] = useState('');
+  const [mileage, setMileage] = useState('');
+  const [price, setPrice] = useState('');
+  
+  const [rememberOptions, setRememberOptions] = useState(false);
+  const [activeTab, setActiveTab] = useState(''); // quick filter pill state
+
+  // Modals state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState('make'); // 'make', 'year', 'body'
+
+  const handleReset = () => {
+    setMake('');
+    setModel('');
+    setDetailModel('');
+    setTrim('');
+    setYear('');
+    setMileage('');
+    setPrice('');
+    setActiveTab('');
+  };
+
+  const getMatchingCount = () => {
+    let list = cars;
+    if (make) list = list.filter(c => c.make.toLowerCase() === make.toLowerCase());
+    if (year && year !== 'All') {
+      const years = year.split('~');
+      const min = parseInt(years[0]) || 0;
+      const max = parseInt(years[1]) || 9999;
+      list = list.filter(c => c.year >= min && c.year <= max);
+    }
+    return list.length;
+  };
+
+  const handleOpenModal = (type) => {
+    setModalType(type);
+    setModalVisible(true);
+  };
+
+  const handleSelectValue = (value) => {
+    if (modalType === 'make') {
+      setMake(value);
+      setModel('All');
+      setDetailModel('All');
+    } else if (modalType === 'year') {
+      setYear(value);
+    } else if (modalType === 'body') {
+      setTrim(value); // map vehicle type selection to trim/body
+    }
+  };
+
   return (
     <Screen background={colors.bg}>
-      <View style={styles.head}>
-        <Text style={styles.h1}>Search</Text>
-        <Pressable style={styles.searchBar} onPress={() => navigation.navigate('SearchResults')}>
-          <Ionicons name="search" size={18} color={colors.textMuted} />
-          <Text style={styles.searchPlaceholder}>Search make, model, or keyword</Text>
+      {/* 1. Search Header */}
+      <View style={styles.header}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </Pressable>
+        <View style={styles.searchBar}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for vehicles (e.g. QM6)"
+            placeholderTextColor={colors.textMuted}
+          />
+          <Pressable onPress={() => navigation.navigate('SearchResults')}>
+            <Ionicons name="search" size={20} color={colors.textPrimary} />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Main Content */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        {/* 2. Quick Filter Tabs (3 pills) */}
+        <View style={styles.pillsRow}>
+          {[
+            { id: 'domestic_import', label: 'Domestic · Import' },
+            { id: 'ev_eco', label: 'EV · Eco-Friendly' },
+            { id: 'truck_special', label: 'Truck · Special · Bus' }
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <Pressable
+                key={tab.id}
+                style={[styles.pill, isActive && styles.pillActive]}
+                onPress={() => setActiveTab(isActive ? '' : tab.id)}
+              >
+                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* 3. "Remember Options" (조건 기억) Row */}
+        <View style={styles.rememberRow}>
+          <Text style={styles.rememberLabel}>Remember Options</Text>
+          <Switch
+            value={rememberOptions}
+            onValueChange={setRememberOptions}
+            trackColor={{ false: '#CCCCCC', true: colors.primary }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+
+        {/* 4. Filter List (scrollable) */}
+        <View style={styles.filterList}>
+          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('make')}>
+            <Text style={styles.filterLabel}>Manufacturer</Text>
+            <View style={styles.valueRow}>
+              <Text style={[styles.filterValue, !make && styles.placeholderText]}>
+                {make || 'Select'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </Pressable>
+
+          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('make')}>
+            <Text style={styles.filterLabel}>Model</Text>
+            <View style={styles.valueRow}>
+              <Text style={[styles.filterValue, !model && styles.placeholderText]}>
+                {model || 'Select'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </Pressable>
+
+          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('make')}>
+            <Text style={styles.filterLabel}>Detailed Model</Text>
+            <View style={styles.valueRow}>
+              <Text style={[styles.filterValue, !detailModel && styles.placeholderText]}>
+                {detailModel || 'Select'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </Pressable>
+
+          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('body')}>
+            <Text style={styles.filterLabel}>Vehicle Type / Trim</Text>
+            <View style={styles.valueRow}>
+              <Text style={[styles.filterValue, !trim && styles.placeholderText]}>
+                {trim || 'Select'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </Pressable>
+
+          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('year')}>
+            <Text style={styles.filterLabel}>Model Year</Text>
+            <View style={styles.valueRow}>
+              <Text style={[styles.filterValue, !year && styles.placeholderText]}>
+                {year || 'Select'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </Pressable>
+
+          <Pressable style={styles.filterRow} onPress={() => {}}>
+            <Text style={styles.filterLabel}>Mileage</Text>
+            <View style={styles.valueRow}>
+              <Text style={[styles.filterValue, !mileage && styles.placeholderText]}>
+                {mileage || 'Select'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </Pressable>
+
+          <Pressable style={styles.filterRow} onPress={() => {}}>
+            <Text style={styles.filterLabel}>Price</Text>
+            <View style={styles.valueRow}>
+              <Text style={[styles.filterValue, !price && styles.placeholderText]}>
+                {price || 'Select'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </Pressable>
+        </View>
+
+        {/* Promotional Link */}
+        <Pressable style={styles.promoLink} onPress={() => {}}>
+          <Text style={styles.promoLinkText}>
+            Check my car's value before buying first &gt;
+          </Text>
+        </Pressable>
+      </ScrollView>
+
+      {/* 5. Bottom Buttons */}
+      <View style={styles.buttonFooter}>
+        <Pressable style={styles.resetBtn} onPress={handleReset}>
+          <Text style={styles.resetBtnText}>Reset</Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.searchBtn, { backgroundColor: colors.primary }]} 
+          onPress={() => navigation.navigate('SearchResults', { filters: { make, year } })}
+        >
+          <Text style={styles.searchBtnText}>
+            View Listings ({getMatchingCount()} cars)
+          </Text>
         </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 4 }}>
-        <Text style={styles.section}>Popular searches</Text>
-        <View style={styles.chips}>
-          {POPULAR.map((p) => (
-            <Pressable key={p} style={styles.chip} onPress={() => navigation.navigate('SearchResults')}>
-              <Ionicons name="trending-up" size={14} color={colors.primary} />
-              <Text style={styles.chipText}>{p}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={[styles.section, { marginTop: 24 }]}>Browse by body type</Text>
-        <View style={styles.grid}>
-          {BODY_TYPES.map((b) => (
-            <Pressable key={b.label} style={styles.tile} onPress={() => navigation.navigate('SearchResults')}>
-              <View style={styles.tileIcon}>
-                <Ionicons name={b.icon} size={24} color={colors.primary} />
-              </View>
-              <Text style={styles.tileText}>{b.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Pressable style={styles.filterCta} onPress={() => navigation.navigate('Filters')}>
-          <Ionicons name="options-outline" size={20} color="#fff" />
-          <Text style={styles.filterCtaText}>Advanced filters</Text>
-        </Pressable>
-      </ScrollView>
+      {/* Custom Filter Modals overlay */}
+      <FilterModal
+        visible={modalVisible}
+        type={modalType}
+        onClose={() => setModalVisible(false)}
+        onSelect={handleSelectValue}
+        selectedValue={modalType === 'make' ? make : modalType === 'year' ? year : trim}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { paddingHorizontal: 20, paddingTop: 8 },
-  h1: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5, color: colors.textPrimary },
-  searchBar: {
+  header: {
+    height: 56,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingHorizontal: 14,
-    height: 50,
-    marginTop: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8ECEF',
   },
-  searchPlaceholder: { fontSize: 15, color: colors.textMuted },
-  section: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  chip: {
+  searchBar: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textPrimary,
+    paddingVertical: 0,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  pillsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  pill: {
+    flex: 1,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  pillActive: {
+    backgroundColor: colors.primary,
+  },
+  pillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#666666',
+    textAlign: 'center',
+  },
+  pillTextActive: {
+    color: '#FFFFFF',
+  },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8ECEF',
+  },
+  rememberLabel: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    fontWeight: '700',
+  },
+  filterList: {
+    backgroundColor: '#FFFFFF',
+    marginTop: 8,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  valueRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: radius.pill,
   },
-  chipText: { fontSize: 13, fontWeight: '600', color: colors.slate700 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12 },
-  tile: {
-    width: '30.7%',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    borderRadius: radius.xl,
-    paddingVertical: 18,
+  filterValue: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  placeholderText: {
+    color: '#999999',
+    fontWeight: '600',
+  },
+  promoLink: {
     alignItems: 'center',
-    gap: 10,
+    paddingVertical: 20,
   },
-  tileIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.blueTint,
-    alignItems: 'center',
-    justifyContent: 'center',
+  promoLinkText: {
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: '600',
   },
-  tileText: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  filterCta: {
+  buttonFooter: {
+    height: 72,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E8ECEF',
     flexDirection: 'row',
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 12,
+  },
+  resetBtn: {
+    width: 90,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F4',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 9,
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: 16,
-    marginTop: 24,
   },
-  filterCtaText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  resetBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#666666',
+  },
+  searchBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });

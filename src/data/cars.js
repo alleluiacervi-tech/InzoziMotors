@@ -96,8 +96,8 @@ const rawCars = [
     inspected: true,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1605893477799-b99a3b8d0f3a?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1605893477799-b99a3b8d0f3a?w=800&q=80'],
+    image: 'https://images.unsplash.com/photo-1603598154505-0192e5365a35?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1603598154505-0192e5365a35?w=800&q=80'],
     location: 'San Jose, CA',
   },
   {
@@ -321,8 +321,8 @@ const rawCars = [
     bids: 14,
     reserveMet: true,
     timeLeft: '8h 15m',
-    image: 'https://images.unsplash.com/photo-1611245801313-0570b795276e?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1611245801313-0570b795276e?w=800&q=80'],
+    image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80'],
     location: 'San Jose, CA',
   },
   {
@@ -518,8 +518,8 @@ const rawCars = [
     inspected: true,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1669023414166-a4cf72feae7c?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1669023414166-a4cf72feae7c?w=800&q=80'],
+    image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80'],
     location: 'Palo Alto, CA',
   },
   {
@@ -585,7 +585,7 @@ const VEHICLE_IMAGES = {
     'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80'
   ],
   '4': [
-    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80',
+    'https://images.unsplash.com/photo-1603598154505-0192e5365a35?w=800&q=80',
     'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80',
     'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
   ],
@@ -595,8 +595,8 @@ const VEHICLE_IMAGES = {
     'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80'
   ],
   '6': [
-    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80',
-    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80'
+    'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80',
+    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
   ],
   '7': [
     'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&q=80',
@@ -617,8 +617,8 @@ const VEHICLE_IMAGES = {
     'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
   ],
   '11': [
-    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80',
-    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80'
+    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',
+    'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80'
   ],
   '12': [
     'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80',
@@ -630,7 +630,7 @@ const VEHICLE_IMAGES = {
     'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
   ],
   '14': [
-    'https://images.unsplash.com/photo-1611245801313-0570b795276e?w=800&q=80',
+    'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80',
     'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
   ],
   '15': [
@@ -666,8 +666,8 @@ const VEHICLE_IMAGES = {
     'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80'
   ],
   '23': [
-    'https://images.unsplash.com/photo-1669023414166-a4cf72feae7c?w=800&q=80',
-    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80'
+    'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80',
+    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80'
   ],
   '24': [
     'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&q=80',
@@ -675,7 +675,7 @@ const VEHICLE_IMAGES = {
   ],
   '25': [
     'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
-    'https://images.unsplash.com/photo-1605899435973-ca2d1a8861cf?w=800&q=80'
+    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80'
   ]
 };
 

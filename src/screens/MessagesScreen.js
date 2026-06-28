@@ -7,10 +7,11 @@ import { colors } from '../theme';
 
 export default function MessagesScreen({ navigation }) {
   const { conversations } = useApp();
+  const canGoBack = navigation.canGoBack && navigation.canGoBack();
 
   return (
     <Screen background={colors.surface}>
-      <BackHeader title="Messages" onBack={() => navigation.goBack()} />
+      <BackHeader title="Messages" onBack={canGoBack ? () => navigation.goBack() : null} />
       <FlatList
         data={conversations}
         keyExtractor={(c) => c.id}

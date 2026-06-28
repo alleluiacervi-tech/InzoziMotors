@@ -2,61 +2,102 @@ import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows } from '../theme';
-import { formatPrice, formatMiles } from '../data/cars';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
 
-export default function CarCard({ car, onPress }) {
+// Helper to format year: e.g. 2021 (21/03)
+const getInzoziYear = (car) => {
+  const yy = String(car.year).slice(-2);
+  const monthVal = (parseInt(car.id) % 12) + 1;
+  const mm = String(monthVal).padStart(2, '0');
+  return `${car.year} (${yy}/${mm})`;
+};
+
+// Helper to format mileage in miles: 122,200 mi
+const getInzoziMileage = (car) => {
+  return `${car.mileage.toLocaleString('en-US')} mi`;
+};
+
+// Helper to map Kigali/US locations deterministically to Kigali regions
+const getInzoziLocation = (car) => {
+  const loc = car.location || '';
+  if (loc.includes('Nyarutarama') || loc.includes('Francisco')) return 'Nyarutarama';
+  if (loc.includes('Kiyovu') || loc.includes('Oakland')) return 'Kiyovu';
+  if (loc.includes('Kanombe') || loc.includes('Jose')) return 'Kanombe';
+  if (loc.includes('Kimihurura') || loc.includes('Berkeley')) return 'Kimihurura';
+  if (loc.includes('Remera') || loc.includes('Palo Alto')) return 'Remera';
+  return 'Kigali';
+};
+
+// Helper to map price to USD
+const getInzoziPrice = (car) => {
+  return `$${car.price.toLocaleString('en-US')}`;
+};
+
+export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
   const { isCarSaved, toggleSaveCar } = useApp();
   const saved = isCarSaved(car.id);
-  const isAuction = car.type === 'auction';
+  const isContract = car.type === 'auction';
+
+  // Inzozi badge logic in English: Standard, Good, Excellent
+  const carIdNum = parseInt(car.id) || 0;
+  const badgeVariant = carIdNum % 3 === 0 ? 'jeondanPlusPlus' : carIdNum % 3 === 1 ? 'jeondanPlus' : 'jeondan';
+  const badgeLabel = carIdNum % 3 === 0 ? 'Excellent' : carIdNum % 3 === 1 ? 'Good' : 'Standard';
 
   return (
     <Pressable style={[styles.card, shadows.card]} onPress={onPress}>
       <View style={styles.imageWrap}>
         <Image source={{ uri: car.image }} style={styles.image} resizeMode="cover" />
 
-        {isAuction ? (
-          <Badge
-            variant="auction"
-            dot
-            label={car.timeLeft}
-            style={styles.topLeft}
-          />
-        ) : car.inspected ? (
-          <Badge variant="inspected" icon="checkmark" label="Inspected" style={styles.topLeft} />
-        ) : null}
+        {!hideOverlay && (
+          <>
+            {/* Top-left Inzozi Badge */}
+            <Badge
+              variant={badgeVariant}
+              label={badgeLabel}
+              style={styles.topLeft}
+            />
 
-        <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={8}>
-          <Ionicons
-            name={saved ? 'heart' : 'heart-outline'}
-            size={16}
-            color={saved ? '#EF4444' : colors.slate700}
-          />
-        </Pressable>
+            {/* Top-right In Contract Badge */}
+            {isContract && (
+              <Badge variant="contract" label="In Contract" style={styles.topRight} />
+            )}
+
+            {/* Heart save toggle */}
+            <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={8}>
+              <Ionicons
+                name={saved ? 'heart' : 'heart-outline'}
+                size={14}
+                color={saved ? '#EF4444' : '#555'}
+              />
+            </Pressable>
+          </>
+        )}
+
+        {/* Rank Badge for popular section */}
+        {rank !== null && (
+          <View style={styles.rankBadge}>
+            <Text style={styles.rankText}>{rank}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.price}>
-          {formatPrice(isAuction ? car.currentBid : car.price)}
-        </Text>
-        
         <Text style={styles.title} numberOfLines={1}>
           {car.title}
         </Text>
-
+        
         <Text style={styles.meta} numberOfLines={1}>
-          {formatMiles(car.mileage)} · {car.transmission}
+          {getInzoziYear(car)}
         </Text>
 
-        <View style={styles.footer}>
-          <Text style={styles.seller} numberOfLines={1}>
-            {isAuction ? `${car.bids} bids` : car.seller}
-          </Text>
-          {car.returnDays ? (
-            <Text style={styles.badgeText}>{car.returnDays}d return</Text>
-          ) : null}
-        </View>
+        <Text style={styles.meta} numberOfLines={1}>
+          {getInzoziMileage(car)} · {getInzoziLocation(car)}
+        </Text>
+
+        <Text style={styles.price}>
+          {getInzoziPrice(car)}
+        </Text>
       </View>
     </Pressable>
   );
@@ -67,38 +108,54 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 6,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    borderRadius: radius.sm, // Inzozi matches sharp/smaller radius
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.border,
   },
-  imageWrap: { height: 110, backgroundColor: colors.border },
+  imageWrap: { 
+    height: 120, // 60% of typical card height
+    backgroundColor: colors.surfaceAlt,
+    position: 'relative'
+  },
   image: { width: '100%', height: '100%' },
-  topLeft: { position: 'absolute', top: 8, left: 8, paddingHorizontal: 6, paddingVertical: 3 },
+  topLeft: { position: 'absolute', top: 6, left: 6, paddingHorizontal: 5, paddingVertical: 2 },
+  topRight: { position: 'absolute', top: 6, right: 30, paddingHorizontal: 5, paddingVertical: 2 },
   heart: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  rankBadge: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(26,86,219,0.9)',
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  body: { padding: 10 },
-  price: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  title: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginTop: 4 },
-  meta: { fontSize: 11, color: colors.textSecondary, marginTop: 3 },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.surfaceAlt,
+  rankText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
-  seller: { fontSize: 11, fontWeight: '600', color: colors.textSecondary, flex: 1 },
-  badgeText: { fontSize: 10, fontWeight: '700', color: colors.primary, backgroundColor: colors.blueTint, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 },
+  body: { 
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  title: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  meta: { fontSize: 11, color: colors.textSecondary, marginBottom: 1 },
+  price: { fontSize: 15, fontWeight: '800', color: colors.primary, marginTop: 4 },
 });
+

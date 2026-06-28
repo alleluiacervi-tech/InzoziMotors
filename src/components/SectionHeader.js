@@ -21,9 +21,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 8,
   },
-  title: { fontSize: 17, fontWeight: '800', letterSpacing: -0.2, color: colors.textPrimary },
-  action: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  title: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2, color: colors.textPrimary },
+  action: { fontSize: 13, fontWeight: '600', color: colors.primary },
 });

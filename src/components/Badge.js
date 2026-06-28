@@ -16,12 +16,19 @@ export default function Badge({ label, variant = 'neutral', icon, dot, style }) 
 }
 
 const VARIANTS = {
-  inspected: { bg: colors.green, fg: '#fff' },
-  auction: { bg: colors.amber, fg: '#fff', dotColor: '#fff' },
+  inspected: { bg: colors.jeondanPlus, fg: '#FFFFFF' },
+  auction: { bg: colors.jeondanPlusPlus, fg: '#FFFFFF' },
   tag: { bg: colors.blueTint, fg: colors.primary },
   live: { bg: colors.amberTint, fg: colors.amberText, dotColor: colors.amber },
   neutral: { bg: colors.surfaceAlt, fg: colors.slate600 },
   success: { bg: colors.greenTint, fg: colors.green },
+
+  // Inzozi Specifics
+  jeondan: { bg: colors.jeondan, fg: '#FFFFFF' },
+  jeondanPlus: { bg: colors.jeondanPlus, fg: '#FFFFFF' },
+  jeondanPlusPlus: { bg: colors.jeondanPlusPlus, fg: '#FFFFFF' },
+  contract: { bg: colors.contract, fg: '#FFFFFF' },
+  alert: { bg: colors.alert, fg: '#FFFFFF' },
 };
 
 const styles = StyleSheet.create({

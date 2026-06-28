@@ -8,6 +8,7 @@ import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { colors, radius, shadows } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
+import LoginModal from '../components/LoginModal';
 
 const { width } = Dimensions.get('window');
 
@@ -21,10 +22,23 @@ const SPECS = [
 export default function VehicleDetailScreen({ navigation, route }) {
   const car = route.params?.car;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, loginUser } = useApp();
   const saved = isCarSaved(car.id);
   const isAuction = car.type === 'auction';
   const [activeIdx, setActiveIdx] = useState(0);
+
+  // Auth Overlay state
+  const [loginVisible, setLoginVisible] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+
+  const executeWithAuth = (action) => {
+    if (isLoggedIn) {
+      action();
+    } else {
+      setPendingAction(() => action);
+      setLoginVisible(true);
+    }
+  };
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
@@ -57,7 +71,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Pressable style={styles.circleBtn}>
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
               </Pressable>
-              <Pressable style={styles.circleBtn} onPress={() => toggleSaveCar(car.id)}>
+              <Pressable style={styles.circleBtn} onPress={() => executeWithAuth(() => toggleSaveCar(car.id))}>
                 <Ionicons name={saved ? 'heart' : 'heart-outline'} size={19} color={saved ? '#EF4444' : colors.slate700} />
               </Pressable>
             </View>
@@ -118,7 +132,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 <Text style={styles.ratingText}>{car.rating} · Verified dealer</Text>
               </View>
             </View>
-            <Pressable style={styles.msgBtn} onPress={() => navigation.navigate('Chat', { name: car.seller })}>
+            <Pressable style={styles.msgBtn} onPress={() => executeWithAuth(() => navigation.navigate('Chat', { name: car.seller }))}>
               <Ionicons name="chatbubble-outline" size={18} color={colors.primary} />
             </Pressable>
           </View>
@@ -185,9 +199,22 @@ export default function VehicleDetailScreen({ navigation, route }) {
         <Button
           title={isAuction ? 'Place a Bid' : 'Buy Now'}
           style={{ flex: 1 }}
-          onPress={() => navigation.navigate('Checkout', { car })}
+          onPress={() => executeWithAuth(() => navigation.navigate('Checkout', { car }))}
         />
       </View>
+
+      <LoginModal
+        visible={loginVisible}
+        onClose={() => setLoginVisible(false)}
+        onLoginSuccess={() => {
+          loginUser('Guest User', 'guest@inzozimotors.com');
+          if (pendingAction) {
+            setTimeout(() => {
+              pendingAction();
+            }, 300);
+          }
+        }}
+      />
     </View>
   );
 }

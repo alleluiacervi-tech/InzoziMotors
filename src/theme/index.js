@@ -29,21 +29,21 @@ const systemFont = Platform.select({
   default: 'System',
 });
 
-// Typography presets mirroring the mockup (weight 800 headings, tight tracking)
+// Typography presets mirroring the mockup (weight 700 headings for editorial luxury feel)
 export const typography = {
   fontFamily: systemFont,
-  display: { fontSize: 42, fontWeight: '800', letterSpacing: -1.2, lineHeight: 44 },
-  h1: { fontSize: 30, fontWeight: '800', letterSpacing: -0.9 },
-  h2: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
-  h3: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
-  h4: { fontSize: 18, fontWeight: '800', letterSpacing: -0.2 },
-  title: { fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
-  price: { fontSize: 21, fontWeight: '800', letterSpacing: -0.4 },
-  body: { fontSize: 15, fontWeight: '400' },
-  bodyStrong: { fontSize: 15, fontWeight: '700' },
+  display: { fontSize: 42, fontWeight: '700', letterSpacing: -1.2, lineHeight: 46 },
+  h1: { fontSize: 30, fontWeight: '700', letterSpacing: -0.9, lineHeight: 34 },
+  h2: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5, lineHeight: 28 },
+  h3: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, lineHeight: 26 },
+  h4: { fontSize: 18, fontWeight: '700', letterSpacing: -0.2, lineHeight: 22 },
+  title: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2, lineHeight: 21 },
+  price: { fontSize: 21, fontWeight: '700', letterSpacing: -0.4 },
+  body: { fontSize: 15, fontWeight: '400', lineHeight: 22 },
+  bodyStrong: { fontSize: 15, fontWeight: '600', lineHeight: 22 },
   label: { fontSize: 13, fontWeight: '600' },
-  caption: { fontSize: 12, fontWeight: '600' },
-  micro: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+  caption: { fontSize: 12, fontWeight: '500' },
+  micro: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
 };
 
 // Reusable shadow presets
