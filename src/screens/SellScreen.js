@@ -7,16 +7,16 @@ import Button from '../components/Button';
 import { colors, radius } from '../theme';
 
 const STEPS = [
-  { icon: 'document-text-outline', title: 'Enter details', sub: 'Make, model, mileage & condition' },
-  { icon: 'camera-outline', title: 'Add photos', sub: 'AI guides you to the best angles' },
-  { icon: 'pricetag-outline', title: 'Set your price', sub: 'Direct sale or 48-hour auction' },
-  { icon: 'rocket-outline', title: 'Go live', sub: 'Reach 2M+ verified buyers instantly' },
+  { icon: 'shield-checkmark-outline', title: 'Verify Ownership', sub: 'Upload ID & Title documents securely' },
+  { icon: 'scan-outline', title: '150-Point Curation', sub: 'Get certified by Inzozi inspection specialists' },
+  { icon: 'ribbon-outline', title: 'Showcase Premium Status', sub: 'Position your car as high-intent certified property' },
+  { icon: 'people-outline', title: 'Nationwide Client Match', sub: 'Secure escrow connection with pre-approved buyers' },
 ];
 
 const OPTIONS = [
-  { icon: 'flash-outline', title: 'Instant Cash Offer', sub: 'Get paid today', accent: colors.green },
-  { icon: 'hammer-outline', title: 'Sell at Auction', sub: 'Maximize your price', accent: colors.amber },
-  { icon: 'storefront-outline', title: 'List for Direct Sale', sub: 'Set your own price', accent: colors.primary },
+  { icon: 'flash-outline', title: 'Instant Dealer Buyout', sub: 'Vetted instant exchange offer', accent: colors.green },
+  { icon: 'hammer-outline', title: 'Certified Bid Event', sub: 'Maximize nationwide buyer demand', accent: colors.amber },
+  { icon: 'storefront-outline', title: 'Concierge Showroom', sub: 'Vetted private sale listing', accent: colors.primary },
 ];
 
 export default function SellScreen({ navigation }) {
@@ -24,7 +24,7 @@ export default function SellScreen({ navigation }) {
     <Screen background={colors.bg}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.head}>
-          <Text style={styles.h1}>Sell your car</Text>
+          <Text style={styles.h1}>Certify & Showcase</Text>
           <Pressable style={styles.dashBtn} onPress={() => navigation.navigate('SellerDashboard')}>
             <Ionicons name="grid-outline" size={20} color={colors.slate700} />
           </Pressable>
@@ -32,15 +32,15 @@ export default function SellScreen({ navigation }) {
 
         {/* Valuation hero */}
         <LinearGradient
-          colors={['#0B2A6B', '#0A1A3F']}
+          colors={[colors.navyLight, colors.navyMid]}
           style={styles.valCard}
         >
           <Text style={styles.valEyebrow}>FREE INSTANT VALUATION</Text>
-          <Text style={styles.valTitle}>What's your car worth?</Text>
-          <Text style={styles.valSub}>Get a real market estimate in 30 seconds.</Text>
+          <Text style={styles.valTitle}>Verify Vehicle Status</Text>
+          <Text style={styles.valSub}>Analyze credentials and market placement instantly.</Text>
           <View style={styles.plate}>
             <Ionicons name="car-outline" size={20} color={colors.blueLight} />
-            <Text style={styles.plateText}>Enter VIN or license plate</Text>
+            <Text style={styles.plateText}>Verify VIN or plate</Text>
             <Ionicons name="arrow-forward" size={18} color="#fff" />
           </View>
         </LinearGradient>
@@ -80,7 +80,7 @@ export default function SellScreen({ navigation }) {
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <Button title="Start a Listing" icon="add" onPress={() => navigation.navigate('ListingWizard')} />
+          <Button title="Begin Verification" icon="shield-checkmark-outline" onPress={() => navigation.navigate('ListingWizard')} />
         </View>
       </ScrollView>
     </Screen>

@@ -5,11 +5,11 @@ import Screen from '../components/Screen';
 import CarCard from '../components/CarCard';
 import SectionHeader from '../components/SectionHeader';
 import { colors, radius, shadows } from '../theme';
-import { cars, categories } from '../data/cars';
+import { categories } from '../data/cars';
 import { useApp } from '../context/AppContext';
 
 export default function HomeScreen({ navigation }) {
-  const { currentUser } = useApp();
+  const { currentUser, cars } = useApp();
   const [active, setActive] = useState('All');
   const filtered = active === 'All' ? cars : cars.filter((c) => c.category === active);
 
@@ -47,9 +47,12 @@ export default function HomeScreen({ navigation }) {
 
       <FlatList
         data={filtered}
+        key={active}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 24 }}
         ListHeaderComponent={
           <View>
             <View style={styles.greeting}>
@@ -82,9 +85,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={{ paddingHorizontal: 20, marginBottom: 14 }}>
-            <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
-          </View>
+          <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
         )}
       />
     </Screen>
@@ -153,4 +154,5 @@ const styles = StyleSheet.create({
   pillOn: { backgroundColor: colors.primary },
   pillOff: { backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border },
   pillText: { fontSize: 13, fontWeight: '700' },
+  columnWrapper: { paddingHorizontal: 4 },
 });

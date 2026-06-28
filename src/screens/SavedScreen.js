@@ -32,9 +32,11 @@ export default function SavedScreen({ navigation }) {
 
       <FlatList
         data={tab === 'Saved' ? saved : []}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 20, gap: 14 }}
+        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}
         renderItem={({ item }) => (
           <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
         )}
@@ -92,4 +94,5 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   browseBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  columnWrapper: { paddingHorizontal: 4 },
 });

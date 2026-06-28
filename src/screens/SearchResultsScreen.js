@@ -4,11 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarCard from '../components/CarCard';
 import { colors, radius } from '../theme';
-import { cars } from '../data/cars';
+import { useApp } from '../context/AppContext';
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
 
 export default function SearchResultsScreen({ navigation }) {
+  const { cars } = useApp();
   const [sort, setSort] = useState('Best match');
   return (
     <Screen background={colors.bg}>
@@ -29,9 +30,11 @@ export default function SearchResultsScreen({ navigation }) {
 
       <FlatList
         data={cars}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 20, gap: 14 }}
+        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}
         ListHeaderComponent={
           <View>
             <View style={styles.resultRow}>
@@ -83,4 +86,5 @@ const styles = StyleSheet.create({
   sortChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   sortText: { fontSize: 13, fontWeight: '600' },
+  columnWrapper: { paddingHorizontal: 4 },
 });

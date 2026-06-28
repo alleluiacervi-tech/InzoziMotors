@@ -1,15 +1,15 @@
 // Inzozi Motors color tokens — extracted from the design mockup.
 export const colors = {
-  // Brand navy (used on Welcome / dark surfaces)
-  navyDeep: '#070D1F',
-  navyMid: '#0A1A3F',
-  navyLight: '#0B2A6B',
+  // Brand dark charcoal (used on Welcome / dark surfaces)
+  navyDeep: '#090D16',
+  navyMid: '#0F172A',
+  navyLight: '#1E293B',
 
-  // Primary blue
-  primary: '#1A56DB',
-  primaryBright: '#2563EB',
-  blueLight: '#93C5FD',
-  blueTint: '#EFF6FF',
+  // Primary Charcoal & Silver Slate
+  primary: '#1E293B',
+  primaryBright: '#334155',
+  blueLight: '#CBD5E1',
+  blueTint: '#F1F5F9',
 
   // Success green
   green: '#059669',

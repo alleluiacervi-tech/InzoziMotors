@@ -57,10 +57,10 @@ export const shadows = {
   },
   blueGlow: {
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 4,
   },
   floating: {
     shadowColor: '#020828',
