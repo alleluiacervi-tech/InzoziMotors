@@ -20,6 +20,14 @@ import IDVerificationScreen from '../screens/IDVerificationScreen';
 import CarSubmissionScreen from '../screens/CarSubmissionScreen';
 import InspectionSchedulingScreen from '../screens/InspectionSchedulingScreen';
 import AdminPanelScreen from '../screens/AdminPanelScreen';
+// Phase 2 — Trust Engine
+import InspectionFormScreen from '../screens/InspectionFormScreen';
+import PhotoUploadScreen from '../screens/PhotoUploadScreen';
+import VehicleHistoryScreen from '../screens/VehicleHistoryScreen';
+import SellerProfileScreen from '../screens/SellerProfileScreen';
+import NotificationCenterScreen from '../screens/NotificationCenterScreen';
+// Phase 3 — Communication & Transactions
+import OrderTrackingScreen from '../screens/OrderTrackingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -52,6 +60,14 @@ export default function RootNavigator() {
         options={{ animation: 'slide_from_bottom' }}
       />
       <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
+      {/* Phase 2 */}
+      <Stack.Screen name="InspectionForm" component={InspectionFormScreen} />
+      <Stack.Screen name="PhotoUpload" component={PhotoUploadScreen} />
+      <Stack.Screen name="VehicleHistory" component={VehicleHistoryScreen} />
+      <Stack.Screen name="SellerProfile" component={SellerProfileScreen} />
+      <Stack.Screen name="NotificationCenter" component={NotificationCenterScreen} />
+      {/* Phase 3 */}
+      <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
     </Stack.Navigator>
   );
 }

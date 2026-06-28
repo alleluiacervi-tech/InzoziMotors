@@ -121,7 +121,10 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </View>
 
           {/* Seller */}
-          <View style={styles.sellerCard}>
+          <Pressable
+            style={styles.sellerCard}
+            onPress={() => navigation.navigate('SellerProfile', { sellerName: car.seller })}
+          >
             <View style={styles.sellerAvatar}>
               <Text style={styles.sellerInitial}>{car.seller[0]}</Text>
             </View>
@@ -129,15 +132,15 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Text style={styles.sellerName}>{car.seller}</Text>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={13} color={colors.amber} />
-                <Text style={styles.ratingText}>{car.rating} · Verified dealer</Text>
+                <Text style={styles.ratingText}>{car.rating} · Verified seller · View profile</Text>
               </View>
             </View>
-            <Pressable style={styles.msgBtn} onPress={() => executeWithAuth(() => navigation.navigate('Chat', { name: car.seller }))}>
+            <Pressable style={styles.msgBtn} onPress={() => executeWithAuth(() => navigation.navigate('Chat', { name: car.seller, car }))}>
               <Ionicons name="chatbubble-outline" size={18} color={colors.primary} />
             </Pressable>
-          </View>
+          </Pressable>
 
-          {/* Trust row */}
+          {/* Trust rows */}
           <Pressable style={styles.inspectionRow} onPress={() => navigation.navigate('InspectionReport', { car })}>
             <View style={styles.inspectionIcon}>
               <Ionicons name="shield-checkmark" size={20} color={colors.green} />
@@ -145,6 +148,17 @@ export default function VehicleDetailScreen({ navigation, route }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.inspectionTitle}>150-Point Inspection Report</Text>
               <Text style={styles.inspectionSub}>Passed · View full report</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+
+          <Pressable style={[styles.inspectionRow, { marginTop: 8 }]} onPress={() => navigation.navigate('VehicleHistory', { car })}>
+            <View style={[styles.inspectionIcon, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="document-text-outline" size={20} color={colors.statusScheduled} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inspectionTitle}>Vehicle History Report</Text>
+              <Text style={[styles.inspectionSub, { color: colors.statusScheduled }]}>RRA duty · ownership · accident history</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>

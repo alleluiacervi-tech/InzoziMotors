@@ -83,16 +83,21 @@ function QueueTab({ verifications, onApprove, onReject }) {
   );
 }
 
-function InspectionsTab({ inspections }) {
+function InspectionsTab({ inspections, navigation }) {
   const today = inspections.filter((i) => i.status === 'today');
   const upcoming = inspections.filter((i) => i.status !== 'today');
+
+  const goToForm = (inspection) => {
+    navigation.navigate('InspectionForm', { inspection });
+  };
+
   return (
     <View style={styles.tabContent}>
       {today.length > 0 && (
         <>
           <Text style={styles.subHeader}>Today ({today.length})</Text>
           {today.map((i) => (
-            <View key={i.id} style={[styles.inspCard, styles.inspCardToday]}>
+            <Pressable key={i.id} style={[styles.inspCard, styles.inspCardToday]} onPress={() => goToForm(i)}>
               <View style={[styles.inspDot, { backgroundColor: colors.primary }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.inspSeller}>{i.seller}</Text>
@@ -105,10 +110,16 @@ function InspectionsTab({ inspections }) {
                   <Text style={styles.inspMetaText}>{i.center}</Text>
                 </View>
               </View>
-              <View style={styles.inspBadge}>
-                <Text style={styles.inspBadgeText}>TODAY</Text>
+              <View style={{ alignItems: 'flex-end', gap: 8 }}>
+                <View style={styles.inspBadge}>
+                  <Text style={styles.inspBadgeText}>TODAY</Text>
+                </View>
+                <View style={styles.startInspBtn}>
+                  <Text style={styles.startInspBtnText}>Start</Text>
+                  <Ionicons name="chevron-forward" size={11} color={colors.primary} />
+                </View>
               </View>
-            </View>
+            </Pressable>
           ))}
         </>
       )}
@@ -129,8 +140,8 @@ function InspectionsTab({ inspections }) {
                   <Text style={styles.inspMetaText}>{i.center}</Text>
                 </View>
               </View>
-              <Pressable style={styles.confirmBtn}>
-                <Text style={styles.confirmBtnText}>Confirm</Text>
+              <Pressable style={styles.confirmBtn} onPress={() => goToForm(i)}>
+                <Text style={styles.confirmBtnText}>Open Form</Text>
               </Pressable>
             </View>
           ))}
@@ -254,7 +265,7 @@ export default function AdminPanelScreen({ navigation }) {
             onReject={handleReject}
           />
         )}
-        {activeTab === 1 && <InspectionsTab inspections={adminInspections} />}
+        {activeTab === 1 && <InspectionsTab inspections={adminInspections} navigation={navigation} />}
         {activeTab === 2 && <ListingsTab navigation={navigation} />}
       </ScrollView>
     </Screen>
@@ -370,6 +381,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6,
   },
   confirmBtnText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  startInspBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 2,
+    backgroundColor: colors.greenTint,
+    borderWidth: 1, borderColor: colors.primary + '44',
+    borderRadius: radius.lg, paddingHorizontal: 8, paddingVertical: 4,
+  },
+  startInspBtnText: { fontSize: 11, fontWeight: '700', color: colors.primary },
   // Listing cards
   listingCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,

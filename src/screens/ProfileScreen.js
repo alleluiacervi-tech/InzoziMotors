@@ -20,9 +20,10 @@ const MENU_SELLER = [
 ];
 
 const MENU_BUYER = [
-  { icon: 'receipt-outline', label: 'Purchase History' },
+  { icon: 'navigate-outline', label: 'Order Tracking', screen: 'Messages' },
   { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
-  { icon: 'notifications-outline', label: 'Saved Searches' },
+  { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
+  { icon: 'bookmark-outline', label: 'Saved Searches' },
 ];
 
 const MENU_ACCOUNT = [

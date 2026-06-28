@@ -3,7 +3,8 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius } from '../theme';
+import { useApp } from '../context/AppContext';
 
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
@@ -19,9 +20,13 @@ const ICONS = {
   Profile: 'person',
 };
 
-// Simplified bottom tab bar for Inzozi Motors
 function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
+  const { conversations, notifications } = useApp();
+
+  const messagesBadge = conversations.reduce((sum, c) => sum + (c.unread || 0), 0);
+  const notifBadge = notifications.filter((n) => !n.read).length;
+
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10), height: 56 + Math.max(insets.bottom, 10) }]}>
       {state.routes.map((route, index) => {
@@ -32,13 +37,26 @@ function TabBar({ state, descriptors, navigation }) {
         };
 
         const color = focused ? colors.primary : colors.textMuted;
+
+        // Badge count for this tab
+        const badge = route.name === 'Messages' ? messagesBadge
+          : route.name === 'Profile' ? notifBadge
+          : 0;
+
         return (
           <Pressable key={route.key} style={styles.item} onPress={onPress}>
-            <Ionicons
-              name={focused ? ICONS[route.name] : `${ICONS[route.name]}-outline`}
-              size={22}
-              color={color}
-            />
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name={focused ? ICONS[route.name] : `${ICONS[route.name]}-outline`}
+                size={22}
+                color={color}
+              />
+              {badge > 0 && (
+                <View style={[styles.badge, badge > 9 && styles.badgeWide]}>
+                  <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.label, { color, fontWeight: focused ? '700' : '600' }]}>
               {route.name}
             </Text>
@@ -74,5 +92,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  iconWrap: { position: 'relative' },
   label: { fontSize: 11, fontWeight: '600' },
+  badge: {
+    position: 'absolute', top: -5, right: -8,
+    minWidth: 17, height: 17, borderRadius: 9,
+    backgroundColor: colors.statusRejected,
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5, borderColor: colors.surface,
+  },
+  badgeWide: { right: -12 },
+  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
 });

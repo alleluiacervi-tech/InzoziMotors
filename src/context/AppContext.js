@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { cars as initialCars, sellerListings as initialSellerListings, conversations as initialConversations } from '../data/cars';
+import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
 
 const AppContext = createContext();
 
@@ -119,6 +120,15 @@ export function AppProvider({ children }) {
   const [pendingVerifications, setPendingVerifications] = useState(INITIAL_VERIFICATIONS);
   const [adminInspections] = useState(INITIAL_INSPECTIONS_ADMIN);
 
+  // Phase 2 — Notifications
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+
+  // Phase 2 — Submitted inspection forms (keyed by inspectionId)
+  const [inspectionForms, setInspectionForms] = useState({});
+
+  // Phase 3 — Purchase requests
+  const [purchaseRequests, setPurchaseRequests] = useState([]);
+
   // --- Car saves ---
   const toggleSaveCar = useCallback((id) => {
     setSavedCarIds((prev) =>
@@ -204,6 +214,72 @@ export function AppProvider({ children }) {
 
   const getMessages = useCallback((convId) => chatMessages[convId] || [], [chatMessages]);
 
+  // --- Phase 2: Notifications ---
+  const markNotificationRead = useCallback((id) => {
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const markAllNotificationsRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }, []);
+
+  // --- Phase 2: Inspection Forms ---
+  const submitInspectionForm = useCallback(({ inspection, results, notes, score }) => {
+    const key = inspection?.id || 'latest';
+    setInspectionForms((prev) => ({ ...prev, [key]: { inspection, results, notes, score, submittedAt: new Date().toISOString() } }));
+  }, []);
+
+  // --- Phase 3: Purchase Requests ---
+  const addPurchaseRequest = useCallback((car) => {
+    const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const newRequest = {
+      id: orderId,
+      car,
+      status: 'sent',
+      sentAt: now.toISOString(),
+      sentTime: timeStr,
+      confirmedAt: null,
+      confirmedTime: null,
+    };
+    setPurchaseRequests((prev) => [newRequest, ...prev]);
+
+    // Notification: request sent
+    setNotifications((prev) => [{
+      id: 'req_' + Date.now(),
+      type: 'listing_update',
+      title: 'Purchase request sent',
+      body: `Your request for ${car.title} was sent to ${car.seller}. Waiting for confirmation.`,
+      time: 'Just now',
+      date: 'Today',
+      read: false,
+      orderId,
+    }, ...prev]);
+
+    // Simulate seller confirming after 4 seconds
+    setTimeout(() => {
+      const confTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      setPurchaseRequests((prev) =>
+        prev.map((r) => r.id === orderId
+          ? { ...r, status: 'confirmed', confirmedAt: new Date().toISOString(), confirmedTime: confTime }
+          : r),
+      );
+      setNotifications((prev) => [{
+        id: 'conf_' + Date.now(),
+        type: 'new_message',
+        title: `${car.seller} confirmed your request!`,
+        body: `Great news — your purchase request for the ${car.title} has been confirmed. Open chat to arrange the handover.`,
+        time: 'Just now',
+        date: 'Today',
+        read: false,
+        orderId,
+      }, ...prev]);
+    }, 4000);
+
+    return orderId;
+  }, []);
+
   // --- Auth ---
   const loginUser = useCallback((name, email) => {
     setCurrentUser({ name, email, initials: name.split(' ').map((w) => w[0]).join('').toUpperCase() });
@@ -224,6 +300,11 @@ export function AppProvider({ children }) {
     idVerificationStatus, submitIDVerification, approveIDVerification, rejectIDVerification,
     // Admin
     pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification,
+    // Phase 2
+    notifications, markNotificationRead, markAllNotificationsRead,
+    inspectionForms, submitInspectionForm,
+    // Phase 3
+    purchaseRequests, addPurchaseRequest,
     // Chat
     conversations, sendMessage, getMessages,
     // Auth
