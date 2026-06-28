@@ -151,7 +151,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
           <View style={styles.trustChips}>
             <Badge variant="tag" label="7-day returns" />
-            <Badge variant="success" label="Escrow protected" />
+            <Badge variant="tag" label="Free delivery" />
             <Badge variant="tag" label="Free delivery" />
           </View>
 
@@ -197,7 +197,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.ctaPriceValue}>{formatPrice(isAuction ? car.currentBid : car.price)}</Text>
         </View>
         <Button
-          title={isAuction ? 'Place a Bid' : 'Buy Now'}
+          title={isAuction ? 'Place a Bid' : 'Request to Buy'}
           style={{ flex: 1 }}
           onPress={() => executeWithAuth(() => navigation.navigate('Checkout', { car }))}
         />

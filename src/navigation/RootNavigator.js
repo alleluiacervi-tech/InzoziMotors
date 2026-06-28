@@ -15,6 +15,11 @@ import MessagesScreen from '../screens/MessagesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import InspectionReportScreen from '../screens/InspectionReportScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+// Phase 1 — New screens
+import IDVerificationScreen from '../screens/IDVerificationScreen';
+import CarSubmissionScreen from '../screens/CarSubmissionScreen';
+import InspectionSchedulingScreen from '../screens/InspectionSchedulingScreen';
+import AdminPanelScreen from '../screens/AdminPanelScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +43,15 @@ export default function RootNavigator() {
       <Stack.Screen name="Chat" component={ChatScreen} />
       <Stack.Screen name="InspectionReport" component={InspectionReportScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      {/* Phase 1 */}
+      <Stack.Screen name="IDVerification" component={IDVerificationScreen} />
+      <Stack.Screen name="CarSubmission" component={CarSubmissionScreen} />
+      <Stack.Screen
+        name="InspectionScheduling"
+        component={InspectionSchedulingScreen}
+        options={{ animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
     </Stack.Navigator>
   );
 }

@@ -79,7 +79,7 @@ export default function FiltersScreen({ navigation, route }) {
         </View>
 
         <Text style={[styles.label, { marginTop: 22 }]}>Inzozi guarantees</Text>
-        {['150-point inspected only', 'Escrow protected', '7-day returns'].map((g) => (
+        {['150-point inspected only', '7-day returns'].map((g) => (
           <View key={g} style={styles.toggleRow}>
             <Text style={styles.toggleLabel}>{g}</Text>
             <View style={styles.switchOn}><View style={styles.switchKnob} /></View>

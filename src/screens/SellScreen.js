@@ -10,7 +10,7 @@ const STEPS = [
   { icon: 'shield-checkmark-outline', title: 'Verify Ownership', sub: 'Upload ID & Title documents securely' },
   { icon: 'scan-outline', title: '150-Point Curation', sub: 'Get certified by Inzozi inspection specialists' },
   { icon: 'ribbon-outline', title: 'Showcase Premium Status', sub: 'Position your car as high-intent certified property' },
-  { icon: 'people-outline', title: 'Nationwide Client Match', sub: 'Secure escrow connection with pre-approved buyers' },
+  { icon: 'people-outline', title: 'Nationwide Client Match', sub: 'Direct connection with verified buyers across Kigali' },
 ];
 
 const OPTIONS = [
@@ -28,6 +28,7 @@ export default function SellScreen({ navigation }) {
           <Pressable style={styles.dashBtn} onPress={() => navigation.navigate('SellerDashboard')}>
             <Ionicons name="grid-outline" size={20} color={colors.slate700} />
           </Pressable>
+
         </View>
 
         {/* Valuation hero */}
@@ -48,7 +49,7 @@ export default function SellScreen({ navigation }) {
         {/* Options */}
         <View style={styles.options}>
           {OPTIONS.map((o) => (
-            <Pressable key={o.title} style={styles.option} onPress={() => navigation.navigate('ListingWizard')}>
+            <Pressable key={o.title} style={styles.option} onPress={() => navigation.navigate('CarSubmission')}>
               <View style={[styles.optionIcon, { backgroundColor: o.accent + '1A' }]}>
                 <Ionicons name={o.icon} size={22} color={o.accent} />
               </View>
@@ -80,7 +81,7 @@ export default function SellScreen({ navigation }) {
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <Button title="Begin Verification" icon="shield-checkmark-outline" onPress={() => navigation.navigate('ListingWizard')} />
+          <Button title="Submit Your Car" icon="shield-checkmark-outline" onPress={() => navigation.navigate('CarSubmission')} />
         </View>
       </ScrollView>
     </Screen>

@@ -791,7 +791,7 @@ export const conversations = [
   {
     id: 'c2',
     name: 'Carvana Support',
-    last: 'Your escrow payment has been confirmed ✓',
+    last: 'Your purchase request has been confirmed ✓',
     time: 'Yesterday',
     unread: 0,
     avatar: 'C',

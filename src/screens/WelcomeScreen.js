@@ -31,7 +31,7 @@ export default function WelcomeScreen({ navigation }) {
             The modern standard{'\n'}for premium vehicles.
           </Text>
           <Text style={styles.subtitle}>
-            Escrow protected. 150-point certified.
+            150-point certified. Kigali's most trusted marketplace.
           </Text>
         </View>
 

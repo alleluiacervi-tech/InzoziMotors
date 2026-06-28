@@ -17,7 +17,7 @@ const BANNER_SLIDES = [
 ];
 
 const QUICK_GRID = [
-  { label: 'Trust Inspect', icon: 'shield-checkmark-outline', color: '#C87A53' },
+  { label: 'Trust Inspect', icon: 'shield-checkmark-outline', color: '#15803D' },
   { label: 'Sell My Car', icon: 'cash-outline', color: '#2D7D46' },
   { label: 'Home Delivery', icon: 'home-outline', color: '#FF6B00' },
   { label: 'No-Waste Guar.', icon: 'alert-circle-outline', color: '#D97706' },

@@ -11,7 +11,7 @@ const GROUPS = [
     items: [
       { icon: 'person-outline', label: 'Edit profile' },
       { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: 'Verified' },
-      { icon: 'card-outline', label: 'Payment methods' },
+      { icon: 'notifications-outline', label: 'Saved searches' },
       { icon: 'location-outline', label: 'Addresses' },
     ],
   },
