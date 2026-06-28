@@ -1,0 +1,236 @@
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, Pressable,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Screen from '../components/Screen';
+import BackHeader from '../components/BackHeader';
+import { colors, radius, shadows } from '../theme';
+import { useApp } from '../context/AppContext';
+
+const TYPE_CONFIG = {
+  price_drop: {
+    icon: 'trending-down-outline',
+    color: colors.primary,
+    bg: colors.greenTint,
+    label: 'Price Drop',
+  },
+  new_message: {
+    icon: 'chatbubble-outline',
+    color: colors.statusScheduled,
+    bg: '#EFF6FF',
+    label: 'Message',
+  },
+  listing_update: {
+    icon: 'megaphone-outline',
+    color: colors.amber,
+    bg: colors.amberTint,
+    label: 'Update',
+  },
+  saved_search: {
+    icon: 'search-outline',
+    color: colors.primary,
+    bg: colors.greenTint,
+    label: 'Saved Search',
+  },
+};
+
+function NotificationRow({ notification, onPress, onMarkRead }) {
+  const cfg = TYPE_CONFIG[notification.type] || TYPE_CONFIG.listing_update;
+
+  return (
+    <Pressable
+      style={[styles.notifCard, notification.read && styles.notifCardRead]}
+      onPress={() => {
+        if (!notification.read) onMarkRead(notification.id);
+        onPress(notification);
+      }}
+    >
+      {!notification.read && <View style={styles.unreadDot} />}
+      <View style={[styles.notifIcon, { backgroundColor: cfg.bg }]}>
+        <Ionicons name={cfg.icon} size={18} color={cfg.color} />
+      </View>
+      <View style={{ flex: 1, gap: 3 }}>
+        <View style={styles.notifTopRow}>
+          <View style={[styles.typePill, { backgroundColor: cfg.bg }]}>
+            <Text style={[styles.typePillText, { color: cfg.color }]}>{cfg.label}</Text>
+          </View>
+          <Text style={styles.notifTime}>{notification.time}</Text>
+        </View>
+        <Text style={[styles.notifTitle, !notification.read && styles.notifTitleUnread]}>
+          {notification.title}
+        </Text>
+        <Text style={styles.notifBody} numberOfLines={2}>{notification.body}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={14} color={colors.border} />
+    </Pressable>
+  );
+}
+
+function DateSection({ date, notifications, onPress, onMarkRead }) {
+  return (
+    <View style={styles.dateSection}>
+      <Text style={styles.dateLabel}>{date}</Text>
+      <View style={styles.notifList}>
+        {notifications.map((n) => (
+          <NotificationRow
+            key={n.id}
+            notification={n}
+            onPress={onPress}
+            onMarkRead={onMarkRead}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+export default function NotificationCenterScreen({ navigation }) {
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useApp();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const grouped = notifications.reduce((acc, n) => {
+    const key = n.date;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(n);
+    return acc;
+  }, {});
+
+  const handlePress = (notification) => {
+    if (notification.type === 'new_message') {
+      navigation.navigate('Messages');
+    } else if (notification.carId) {
+      // navigate to car — for now just go to Messages as placeholder
+      navigation.navigate('Main');
+    }
+  };
+
+  return (
+    <Screen background={colors.bg}>
+      <BackHeader
+        title="Notifications"
+        onBack={() => navigation.goBack()}
+        right={
+          unreadCount > 0 ? (
+            <Pressable onPress={markAllNotificationsRead}>
+              <Text style={styles.markAllBtn}>Mark all read</Text>
+            </Pressable>
+          ) : null
+        }
+      />
+
+      {/* Unread badge */}
+      {unreadCount > 0 && (
+        <View style={styles.unreadBanner}>
+          <View style={styles.unreadCountBadge}>
+            <Text style={styles.unreadCountText}>{unreadCount}</Text>
+          </View>
+          <Text style={styles.unreadBannerText}>
+            {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+          </Text>
+        </View>
+      )}
+
+      {notifications.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="notifications-off-outline" size={56} color={colors.border} />
+          <Text style={styles.emptyTitle}>No notifications yet</Text>
+          <Text style={styles.emptySub}>Price drops, messages, and listing updates will appear here.</Text>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+          {/* Filter row */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filtersScroll}
+            contentContainerStyle={styles.filtersContent}
+          >
+            {['All', 'Price Drop', 'Messages', 'Updates', 'Saved Search'].map((filter) => (
+              <Pressable key={filter} style={[styles.filterChip, filter === 'All' && styles.filterChipActive]}>
+                <Text style={[styles.filterChipText, filter === 'All' && styles.filterChipTextActive]}>
+                  {filter}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          {Object.entries(grouped).map(([date, items]) => (
+            <DateSection
+              key={date}
+              date={date}
+              notifications={items}
+              onPress={handlePress}
+              onMarkRead={markNotificationRead}
+            />
+          ))}
+        </ScrollView>
+      )}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  markAllBtn: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  unreadBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: 16, marginBottom: 4,
+    backgroundColor: colors.greenTint,
+    borderWidth: 1, borderColor: colors.primary + '33',
+    borderRadius: radius.xl, paddingHorizontal: 14, paddingVertical: 10,
+  },
+  unreadCountBadge: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  unreadCountText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  unreadBannerText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  filtersScroll: { marginBottom: 4 },
+  filtersContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  filterChip: {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  filterChipTextActive: { color: '#fff' },
+  dateSection: { paddingHorizontal: 16, marginBottom: 8 },
+  dateLabel: {
+    fontSize: 11, fontWeight: '800', color: colors.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  notifList: { gap: 8 },
+  notifCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 14,
+    ...shadows.card,
+  },
+  notifCardRead: { opacity: 0.7 },
+  unreadDot: {
+    position: 'absolute', top: 14, left: 6,
+    width: 7, height: 7, borderRadius: 3.5,
+    backgroundColor: colors.primary,
+  },
+  notifIcon: {
+    width: 42, height: 42, borderRadius: radius.md,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  notifTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  typePill: {
+    paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill,
+  },
+  typePillText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  notifTime: { fontSize: 10, color: colors.textMuted },
+  notifTitle: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
+  notifTitleUnread: { fontWeight: '800' },
+  notifBody: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 },
+});

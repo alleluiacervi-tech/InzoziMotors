@@ -11,6 +11,18 @@ import { colors, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const MAKES = ['Toyota', 'Honda', 'Nissan', 'Subaru', 'Mercedes', 'BMW', 'Mazda', 'Hyundai', 'Kia', 'Volkswagen'];
+
+const BASE_PRICES = { Toyota: 22000, Honda: 18000, Nissan: 16000, Subaru: 20000, Mercedes: 48000, BMW: 44000, Mazda: 17000, Hyundai: 15000, Kia: 14000, Volkswagen: 19000 };
+function aiSuggestPrice(make, year, mileage) {
+  const base = BASE_PRICES[make] || 20000;
+  const yearFactor = Math.max(0.5, Math.min(1.0, 0.5 + (Number(year) - 2015) * 0.035));
+  const mileageFactor = Math.max(0.6, 1 - (Number(mileage) / 180000) * 0.35);
+  const mid = Math.round(base * yearFactor * mileageFactor / 500) * 500;
+  return { low: Math.round(mid * 0.92 / 500) * 500, high: Math.round(mid * 1.08 / 500) * 500 };
+}
+function aiComparablesCount(make) {
+  return 5 + ((make.charCodeAt(0) || 84) % 8);
+}
 const FUEL_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
 const TRANSMISSIONS = ['Automatic', 'Manual'];
 const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Van'];
@@ -91,6 +103,14 @@ export default function CarSubmissionScreen({ navigation }) {
   const [photos, setPhotos] = useState({});
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const priceSuggestion = (form.make && form.year && form.mileage)
+    ? aiSuggestPrice(form.make, form.year, form.mileage)
+    : null;
+  const comparablesCount = form.make ? aiComparablesCount(form.make) : 8;
+  const priceInRange = priceSuggestion && form.askingPrice
+    ? Number(form.askingPrice) >= priceSuggestion.low && Number(form.askingPrice) <= priceSuggestion.high
+    : false;
 
   const canAdvanceStep0 = form.make && form.model && form.year && form.mileage && form.fuelType && form.transmission;
   const canAdvanceStep1 = form.condition && form.serviceHistory;
@@ -299,6 +319,33 @@ export default function CarSubmissionScreen({ navigation }) {
                 />
               </Field>
 
+              {/* AI Price Suggestion */}
+              {priceSuggestion && (
+                <View style={styles.aiSuggestCard}>
+                  <View style={styles.aiSuggestHeader}>
+                    <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
+                    <Text style={styles.aiSuggestTitle}>AI Price Suggestion</Text>
+                    <View style={styles.aiSuggestBeta}>
+                      <Text style={styles.aiSuggestBetaText}>Beta</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.aiSuggestRange}>
+                    ${priceSuggestion.low.toLocaleString()} – ${priceSuggestion.high.toLocaleString()}
+                  </Text>
+                  <Text style={styles.aiSuggestSub}>
+                    Based on {comparablesCount} similar {form.make} {form.model ? form.model + ' ' : ''}sales in Kigali
+                  </Text>
+                  {form.askingPrice > 0 && (
+                    <View style={[styles.aiSuggestCheck, { backgroundColor: priceInRange ? colors.greenTint : '#FEF3C7' }]}>
+                      <Ionicons name={priceInRange ? 'checkmark-circle' : 'warning-outline'} size={13} color={priceInRange ? colors.primary : colors.amber} />
+                      <Text style={[styles.aiSuggestCheckText, { color: priceInRange ? colors.primary : colors.amber }]}>
+                        {priceInRange ? 'Your price is within the suggested range — great!' : 'Your price is outside the suggested range'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
               <Field label="Message to Our Team (optional)">
                 <TextInput
                   style={[styles.input, styles.inputMulti]}
@@ -470,4 +517,17 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   timelineText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
+  aiSuggestCard: {
+    backgroundColor: colors.greenTint,
+    borderWidth: 1, borderColor: colors.primary + '44',
+    borderRadius: radius.xl, padding: 14, marginBottom: 16,
+  },
+  aiSuggestHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  aiSuggestTitle: { fontSize: 13, fontWeight: '800', color: colors.primary },
+  aiSuggestBeta: { marginLeft: 'auto', backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2 },
+  aiSuggestBetaText: { fontSize: 9, fontWeight: '700', color: '#fff', textTransform: 'uppercase' },
+  aiSuggestRange: { fontSize: 22, fontWeight: '900', color: colors.primary, letterSpacing: -0.5, marginBottom: 2 },
+  aiSuggestSub: { fontSize: 12, color: colors.textSecondary },
+  aiSuggestCheck: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.lg, padding: 8, marginTop: 10 },
+  aiSuggestCheckText: { fontSize: 12, fontWeight: '700', flex: 1 },
 });

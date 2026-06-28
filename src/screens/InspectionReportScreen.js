@@ -1,67 +1,207 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius } from '../theme';
+import { colors, radius, shadows } from '../theme';
+import { MOCK_INSPECTION_RESULT } from '../data/inspectionData';
 
-const SECTIONS = [
-  { name: 'Exterior & Body', passed: 28, total: 28, status: 'pass' },
-  { name: 'Engine & Transmission', passed: 24, total: 24, status: 'pass' },
-  { name: 'Brakes & Suspension', passed: 18, total: 20, status: 'minor' },
-  { name: 'Electrical & Electronics', passed: 22, total: 22, status: 'pass' },
-  { name: 'Interior & Comfort', passed: 19, total: 19, status: 'pass' },
-  { name: 'Tires & Wheels', passed: 16, total: 17, status: 'minor' },
-];
+const CATEGORY_ICONS = {
+  engine:      'cog-outline',
+  brakes:      'disc-outline',
+  body:        'car-outline',
+  interior:    'car-sport-outline',
+  electronics: 'flash-outline',
+  tyres:       'radio-button-on-outline',
+  docs:        'document-text-outline',
+};
 
-export default function InspectionReportScreen({ navigation }) {
+function ScoreCircle({ score, maxScore }) {
+  const pct = score / maxScore;
+  const certified = pct >= 0.88;
+  return (
+    <View style={styles.scoreCircleWrap}>
+      <View style={[styles.scoreCircle, { borderColor: certified ? colors.green : colors.amber }]}>
+        <Text style={[styles.scoreValue, { color: certified ? colors.green : colors.amber }]}>{score}</Text>
+        <Text style={styles.scoreMax}>/ {maxScore}</Text>
+      </View>
+      <Text style={styles.scorePct}>{Math.round(pct * 100)}%</Text>
+    </View>
+  );
+}
+
+function CategoryRow({ cat, defaultExpanded }) {
+  const [open, setOpen] = useState(defaultExpanded);
+  const pct = cat.maxPts > 0 ? cat.earned / cat.maxPts : 0;
+  const status = pct >= 1 ? 'pass' : pct >= 0.85 ? 'minor' : 'warn';
+  const statusColor = status === 'pass' ? colors.green : status === 'minor' ? colors.amber : colors.statusRejected;
+
+  return (
+    <Pressable style={styles.catRow} onPress={() => setOpen(!open)}>
+      <View style={styles.catTop}>
+        <View style={[styles.catIcon, { backgroundColor: statusColor + '18' }]}>
+          <Ionicons name={CATEGORY_ICONS[cat.id] || 'checkmark-circle-outline'} size={18} color={statusColor} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.catName}>{cat.name}</Text>
+          <View style={styles.barTrack}>
+            <View style={[styles.barFill, { width: `${pct * 100}%`, backgroundColor: statusColor }]} />
+          </View>
+          {cat.flags.length > 0 && !open && (
+            <Text style={styles.flagHint} numberOfLines={1}>
+              ⚠ {cat.flags[0]}{cat.flags.length > 1 ? ` +${cat.flags.length - 1} more` : ''}
+            </Text>
+          )}
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 3 }}>
+          <Text style={[styles.catScore, { color: statusColor }]}>{cat.earned}<Text style={styles.catMax}>/{cat.maxPts}</Text></Text>
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} />
+        </View>
+      </View>
+
+      {open && cat.flags.length > 0 && (
+        <View style={styles.flagsSection}>
+          {cat.flags.map((flag, i) => (
+            <View key={i} style={styles.flagRow}>
+              <Ionicons name="alert-circle" size={14} color={colors.amber} />
+              <Text style={styles.flagText}>{flag}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {open && cat.flags.length === 0 && (
+        <View style={styles.allPassRow}>
+          <Ionicons name="checkmark-circle" size={14} color={colors.green} />
+          <Text style={styles.allPassText}>All items passed — no issues noted</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+export default function InspectionReportScreen({ navigation, route }) {
+  const car = route.params?.car;
+  const data = MOCK_INSPECTION_RESULT;
+
+  const pct = data.score / data.maxScore;
+  const certified = pct >= 0.88;
+  const allFlags = data.categories.flatMap((c) => c.flags.map((f) => ({ cat: c.name, flag: f })));
+
   return (
     <Screen background={colors.bg}>
       <BackHeader title="Inspection Report" onBack={() => navigation.goBack()} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 4 }}>
-        {/* Score hero */}
-        <View style={styles.hero}>
-          <View style={styles.scoreCircle}>
-            <Text style={styles.scoreValue}>147</Text>
-            <Text style={styles.scoreTotal}>/ 150</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>Inspection Passed</Text>
-            <Text style={styles.heroSub}>Certified by Inzozi on Jun 18, 2026</Text>
-            <View style={styles.passBadge}>
-              <Ionicons name="shield-checkmark" size={14} color="#fff" />
-              <Text style={styles.passBadgeText}>98% condition score</Text>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Hero */}
+        <LinearGradient
+          colors={certified ? [colors.navyMid, colors.navyDeep] : ['#7C2D12', '#3B0A07']}
+          style={styles.hero}
+        >
+          <View style={styles.heroTop}>
+            <ScoreCircle score={data.score} maxScore={data.maxScore} />
+            <View style={{ flex: 1, paddingLeft: 8 }}>
+              <Text style={styles.heroTitle}>
+                {certified ? 'Inspection Passed' : 'Passed with Flags'}
+              </Text>
+              {car && <Text style={styles.heroCar}>{car.title || car.make + ' ' + car.model}</Text>}
+              <Text style={styles.heroDate}>{data.inspector}</Text>
+              <Text style={styles.heroDate}>Inspected {data.date}</Text>
             </View>
+          </View>
+
+          {certified ? (
+            <View style={styles.certifiedBadge}>
+              <Ionicons name="shield-checkmark" size={16} color="#fff" />
+              <Text style={styles.certifiedText}>Inzozi Certified — Scored ≥ 88%</Text>
+            </View>
+          ) : (
+            <View style={[styles.certifiedBadge, styles.warnBadge]}>
+              <Ionicons name="alert-circle" size={16} color="#fff" />
+              <Text style={styles.certifiedText}>Flags present — review before purchase</Text>
+            </View>
+          )}
+        </LinearGradient>
+
+        {/* Quick summary chips */}
+        <View style={styles.chips}>
+          <View style={styles.chip}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.green} />
+            <Text style={styles.chipText}>{data.categories.filter((c) => c.flags.length === 0).length} categories perfect</Text>
+          </View>
+          <View style={[styles.chip, allFlags.length > 0 && styles.chipAmber]}>
+            <Ionicons name="alert" size={14} color={allFlags.length > 0 ? colors.amber : colors.green} />
+            <Text style={[styles.chipText, allFlags.length > 0 && { color: colors.amberText }]}>
+              {allFlags.length} flag{allFlags.length !== 1 ? 's' : ''} noted
+            </Text>
+          </View>
+          <View style={styles.chip}>
+            <Ionicons name="shield-checkmark" size={14} color={colors.green} />
+            <Text style={styles.chipText}>150 pts checked</Text>
           </View>
         </View>
 
-        {/* Sections */}
-        <Text style={styles.section}>Inspection breakdown</Text>
-        {SECTIONS.map((s) => (
-          <View key={s.name} style={styles.row}>
-            <View style={[styles.rowIcon, { backgroundColor: s.status === 'pass' ? colors.greenTint : colors.amberTint }]}>
-              <Ionicons
-                name={s.status === 'pass' ? 'checkmark' : 'alert'}
-                size={18}
-                color={s.status === 'pass' ? colors.green : colors.amber}
-              />
+        {/* Flagged items summary (if any) */}
+        {allFlags.length > 0 && (
+          <View style={styles.flagSummary}>
+            <View style={styles.flagSummaryHeader}>
+              <Ionicons name="alert-circle" size={16} color={colors.amber} />
+              <Text style={styles.flagSummaryTitle}>Flagged Items ({allFlags.length})</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{s.name}</Text>
-              <View style={styles.barTrack}>
-                <View style={[styles.barFill, { width: `${(s.passed / s.total) * 100}%`, backgroundColor: s.status === 'pass' ? colors.green : colors.amber }]} />
+            {allFlags.map((item, i) => (
+              <View key={i} style={styles.flagSummaryRow}>
+                <View style={styles.flagSummaryCat}>
+                  <Text style={styles.flagSummaryCatText}>{item.cat}</Text>
+                </View>
+                <Text style={styles.flagSummaryFlag} numberOfLines={2}>{item.flag}</Text>
               </View>
-            </View>
-            <Text style={styles.rowCount}>{s.passed}/{s.total}</Text>
+            ))}
           </View>
-        ))}
+        )}
 
-        <View style={styles.note}>
-          <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
-          <Text style={styles.noteText}>
-            3 minor items noted (brake pads ~40%, front tire wear). Full mechanic notes included in
-            your purchase documents.
-          </Text>
+        {/* Category breakdown */}
+        <Text style={styles.sectionTitle}>Category Breakdown</Text>
+        <View style={styles.categories}>
+          {data.categories.map((cat, i) => (
+            <CategoryRow key={cat.id} cat={cat} defaultExpanded={cat.flags.length > 0} />
+          ))}
+        </View>
+
+        {/* What this means */}
+        <View style={styles.explainer}>
+          <Text style={styles.explainerTitle}>What this means for you</Text>
+          <View style={styles.explainerRow}>
+            <View style={[styles.explainerDot, { backgroundColor: colors.green }]} />
+            <Text style={styles.explainerText}>Items scored at full marks had zero defects found during physical inspection.</Text>
+          </View>
+          <View style={styles.explainerRow}>
+            <View style={[styles.explainerDot, { backgroundColor: colors.amber }]} />
+            <Text style={styles.explainerText}>Flagged items are real but minor — not disqualifying, but worth knowing before buying.</Text>
+          </View>
+          <View style={styles.explainerRow}>
+            <View style={[styles.explainerDot, { backgroundColor: colors.primary }]} />
+            <Text style={styles.explainerText}>This report was completed by a certified Inzozi mechanic on-site. Results are not provided by the seller.</Text>
+          </View>
+        </View>
+
+        {/* Certification footer */}
+        <View style={[styles.footer, certified && styles.footerCertified]}>
+          <Ionicons
+            name={certified ? 'shield-checkmark' : 'shield-outline'}
+            size={20}
+            color={certified ? colors.green : colors.textMuted}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.footerTitle, certified && styles.footerTitleCertified]}>
+              {certified ? 'Inzozi Certified Vehicle' : 'Inspected but Not Certified'}
+            </Text>
+            <Text style={styles.footerSub}>
+              {certified
+                ? 'Scored ≥ 88% · Passed all critical safety checks · 7-day return eligible'
+                : 'Scored below 88% threshold · Flags require buyer attention'}
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </Screen>
@@ -69,21 +209,94 @@ export default function InspectionReportScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xxl, padding: 18 },
-  scoreCircle: { width: 84, height: 84, borderRadius: 42, borderWidth: 5, borderColor: colors.green, alignItems: 'center', justifyContent: 'center' },
-  scoreValue: { fontSize: 24, fontWeight: '800', color: colors.textPrimary },
-  scoreTotal: { fontSize: 12, color: colors.textMuted, marginTop: -2 },
-  heroTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
-  heroSub: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
-  passBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.green, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, marginTop: 8 },
-  passBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  section: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginTop: 24, marginBottom: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.lg, padding: 14, marginBottom: 10 },
-  rowIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  barTrack: { height: 5, borderRadius: 3, backgroundColor: colors.border, marginTop: 8 },
-  barFill: { height: 5, borderRadius: 3 },
-  rowCount: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
-  note: { flexDirection: 'row', gap: 10, backgroundColor: colors.blueTint, borderRadius: radius.lg, padding: 14, marginTop: 12 },
-  noteText: { flex: 1, fontSize: 13, color: colors.slate700, lineHeight: 19 },
+  hero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
+  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
+  scoreCircleWrap: { alignItems: 'center', gap: 4 },
+  scoreCircle: {
+    width: 88, height: 88, borderRadius: 44,
+    borderWidth: 5,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  scoreValue: { fontSize: 26, fontWeight: '800' },
+  scoreMax: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: -3 },
+  scorePct: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
+  heroTitle: { fontSize: 19, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
+  heroCar: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
+  heroDate: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 3 },
+  certifiedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    backgroundColor: colors.green, alignSelf: 'flex-start',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: radius.pill,
+  },
+  warnBadge: { backgroundColor: colors.amber },
+  certifiedText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
+  chip: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, paddingVertical: 10,
+  },
+  chipAmber: { backgroundColor: colors.amberTint, borderColor: colors.amber + '55' },
+  chipText: { fontSize: 10, fontWeight: '700', color: colors.textSecondary },
+  flagSummary: {
+    marginHorizontal: 16, marginBottom: 12,
+    backgroundColor: colors.amberTint,
+    borderWidth: 1, borderColor: colors.amber + '55',
+    borderRadius: radius.xl, padding: 14, gap: 10,
+  },
+  flagSummaryHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  flagSummaryTitle: { fontSize: 14, fontWeight: '800', color: colors.amberText },
+  flagSummaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  flagSummaryCat: {
+    backgroundColor: colors.amber + '30', borderRadius: radius.pill,
+    paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0,
+  },
+  flagSummaryCatText: { fontSize: 10, fontWeight: '700', color: colors.amberText },
+  flagSummaryFlag: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, paddingHorizontal: 16, marginBottom: 10 },
+  categories: { paddingHorizontal: 16, gap: 8, marginBottom: 16 },
+  catRow: {
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl,
+    padding: 14,
+    ...shadows.card,
+  },
+  catTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  catIcon: { width: 38, height: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  catName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
+  barTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border },
+  barFill: { height: 4, borderRadius: 2 },
+  flagHint: { fontSize: 10, color: colors.amber, marginTop: 4 },
+  catScore: { fontSize: 15, fontWeight: '800' },
+  catMax: { fontSize: 10, color: colors.textMuted, fontWeight: '600' },
+  flagsSection: { marginTop: 12, gap: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  flagRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  flagText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },
+  allPassRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  allPassText: { fontSize: 12, color: colors.green, fontWeight: '600' },
+  explainer: {
+    marginHorizontal: 16, marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 16, gap: 10,
+  },
+  explainerTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
+  explainerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  explainerDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5, flexShrink: 0 },
+  explainerText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
+  footer: {
+    marginHorizontal: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 16,
+  },
+  footerCertified: { borderColor: colors.green + '55', backgroundColor: colors.greenTint },
+  footerTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  footerTitleCertified: { color: colors.green },
+  footerSub: { fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 16 },
 });

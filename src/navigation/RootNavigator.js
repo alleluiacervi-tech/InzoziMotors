@@ -20,6 +20,25 @@ import IDVerificationScreen from '../screens/IDVerificationScreen';
 import CarSubmissionScreen from '../screens/CarSubmissionScreen';
 import InspectionSchedulingScreen from '../screens/InspectionSchedulingScreen';
 import AdminPanelScreen from '../screens/AdminPanelScreen';
+// Phase 2 — Trust Engine
+import InspectionFormScreen from '../screens/InspectionFormScreen';
+import PhotoUploadScreen from '../screens/PhotoUploadScreen';
+import VehicleHistoryScreen from '../screens/VehicleHistoryScreen';
+import SellerProfileScreen from '../screens/SellerProfileScreen';
+import NotificationCenterScreen from '../screens/NotificationCenterScreen';
+// Phase 3 — Communication & Transactions
+import OrderTrackingScreen from '../screens/OrderTrackingScreen';
+// Phase 4 — Buyer Power Tools
+import ComparisonScreen from '../screens/ComparisonScreen';
+import MapScreen from '../screens/MapScreen';
+import DutyCalculatorScreen from '../screens/DutyCalculatorScreen';
+// Phase 5 — Growth Features
+import SellerAnalyticsScreen from '../screens/SellerAnalyticsScreen';
+import AdminAnalyticsScreen from '../screens/AdminAnalyticsScreen';
+import DealerProfileScreen from '../screens/DealerProfileScreen';
+import FinancingScreen from '../screens/FinancingScreen';
+import TrustScoreScreen from '../screens/TrustScoreScreen';
+import ReferralScreen from '../screens/ReferralScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -52,6 +71,25 @@ export default function RootNavigator() {
         options={{ animation: 'slide_from_bottom' }}
       />
       <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
+      {/* Phase 2 */}
+      <Stack.Screen name="InspectionForm" component={InspectionFormScreen} />
+      <Stack.Screen name="PhotoUpload" component={PhotoUploadScreen} />
+      <Stack.Screen name="VehicleHistory" component={VehicleHistoryScreen} />
+      <Stack.Screen name="SellerProfile" component={SellerProfileScreen} />
+      <Stack.Screen name="NotificationCenter" component={NotificationCenterScreen} />
+      {/* Phase 3 */}
+      <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
+      {/* Phase 4 */}
+      <Stack.Screen name="Comparison" component={ComparisonScreen} />
+      <Stack.Screen name="MapView" component={MapScreen} />
+      <Stack.Screen name="DutyCalculator" component={DutyCalculatorScreen} />
+      {/* Phase 5 */}
+      <Stack.Screen name="SellerAnalytics" component={SellerAnalyticsScreen} />
+      <Stack.Screen name="AdminAnalytics" component={AdminAnalyticsScreen} />
+      <Stack.Screen name="DealerProfile" component={DealerProfileScreen} />
+      <Stack.Screen name="Financing" component={FinancingScreen} />
+      <Stack.Screen name="TrustScore" component={TrustScoreScreen} />
+      <Stack.Screen name="Referral" component={ReferralScreen} />
     </Stack.Navigator>
   );
 }
