@@ -108,18 +108,16 @@ All screens built and wired as of Jun 28 2026:
 
 ---
 
-## Screens To Build — Phase 2: Trust Engine
+## Phase 2: Trust Engine — ✅ COMPLETE (Jun 28, 2026)
 
-### Status: PENDING
-
-| Screen | Role | Priority | Notes |
-|---|---|---|---|
-| 150-pt Inspection Form | Admin | HIGH | Mechanic fills checklist on tablet → auto-generates buyer report |
-| Photo Upload (36 angles) | Admin | HIGH | Angle guide silhouettes + upload interface, progress tracker |
-| Inspection Report (buyer) | Everyone | HIGH | Full structured pass/fail breakdown with scores per category |
-| Vehicle History Card | Everyone | HIGH | Ownership count, accidents, mileage verify, Rwanda RRA stamp |
-| Seller Profile | Everyone | MEDIUM | Trust score (ID 30 + sales 30 + response 20 + reviews 20), listings, reviews |
-| Notification Center | Registered | MEDIUM | Price drops, messages, listing updates, saved search alerts |
+| Screen | File | Notes |
+|---|---|---|
+| 150-pt Inspection Form | InspectionFormScreen.js | ✅ 7-category checklist, Pass/Flag/Fail per item, generates report |
+| Photo Upload (36 angles) | PhotoUploadScreen.js | ✅ Angle guide silhouettes, upload progress tracker |
+| Inspection Report (buyer) | InspectionReportScreen.js | ✅ Full structured pass/fail with per-category score bars |
+| Vehicle History Card | VehicleHistoryScreen.js | ✅ Ownership, accidents, mileage verify, RRA stamp |
+| Seller Profile | SellerProfileScreen.js | ✅ Trust score circle, breakdown, reviews, listings |
+| Notification Center | NotificationCenterScreen.js | ✅ Grouped by date, price drops, messages, search matches |
 
 ### 150-Point Inspection Form (Admin)
 Categories (mechanic fills on tablet at center):
@@ -150,39 +148,41 @@ Submit → generates buyer-facing Inspection Report with overall score and flagg
 
 ---
 
-## Screens To Build — Phase 3: Communication & Transactions
+## Phase 3: Communication & Transactions — ✅ COMPLETE (Jun 28, 2026)
 
-| Screen | Role | Notes |
+| Screen | File | Notes |
 |---|---|---|
-| Notification Center | Registered | Price drops, messages, listing updates, saved search alerts |
-| Purchase Request | Buyer | Confirm intent → seller notified → chat opened |
-| Order Tracking | Buyer | Status after purchase request confirmed |
+| Notification Center | NotificationCenterScreen.js | ✅ Price drops, messages, listing updates, saved search alerts |
+| Purchase Request | CheckoutScreen.js (updated) | ✅ Confirm intent → next-steps timeline, no payment |
+| Order Tracking | OrderTrackingScreen.js | ✅ Status diagram: Request → Confirmed → Handover → Complete |
 
 ---
 
-## Screens To Build — Phase 4: Buyer Power Tools
+## Phase 4: Buyer Power Tools — ✅ COMPLETE (Jun 28–29, 2026)
 
-| Screen | Role | Notes |
+| Screen | File | Notes |
 |---|---|---|
-| Saved / Wishlist | Buyer | Price change indicators on saved cars |
-| Saved Search Alerts | Buyer | "Notify me when Toyota RAV4 < $30k listed" |
-| Comparison Tool | Everyone | Select 2–3 cars, specs side by side |
-| Price Intelligence | Everyone | Market avg, above/below market %, price history sparkline |
-| Map View | Everyone | Kigali neighborhood pins, cluster by area |
-| Import Duty Calculator | Everyone | Enter car value → Rwanda RRA duty estimate |
+| Saved / Wishlist | SavedScreen.js | ✅ Dual-tab: Cars + Searches, price change indicators |
+| Saved Search Alerts | SavedScreen.js (Searches tab) | ✅ Toggle notifications per saved search |
+| Comparison Tool | ComparisonScreen.js | ✅ 3-car side-by-side, winner highlight per row |
+| Price Intelligence | VehicleDetailScreen.js (enhanced) | ✅ Market diff %, sparkline chart, RWF/USD toggle |
+| Map View | MapScreen.js | ✅ Custom Kigali neighborhood grid, no external map lib |
+| Import Duty Calculator | DutyCalculatorScreen.js | ✅ Full Rwanda RRA duty breakdown |
 
 ---
 
-## Screens To Build — Phase 5: Growth
+## Phase 5: Growth Features — ✅ COMPLETE (Jun 29, 2026)
 
-| Screen | Role | Notes |
+| Screen | File | Notes |
 |---|---|---|
-| AI Price Suggestion | Seller | "Based on 12 similar sales, suggest RWF 18M–22M" |
-| Seller Analytics | Seller | Views/day, saves, inquiries, time-on-market |
-| Admin Analytics | Admin | Pipeline metrics, conversion, revenue, top categories |
-| Dealer Profile | Dealer | Branded page, bulk listing, priority scheduling |
-| Financing Calculator | Buyer | Monthly estimate with Kigali bank rates |
-| Trust Score Page | Everyone | Breakdown of a seller's 100-point score |
+| AI Price Suggestion | CarSubmissionScreen.js (Step 3) | ✅ Mock AI suggestion with in-range check |
+| Seller Analytics | SellerAnalyticsScreen.js | ✅ SVG bar chart, metric cards, time-on-market |
+| Admin Analytics | AdminAnalyticsScreen.js | ✅ Pipeline funnel, top-makes chart, center utilization |
+| Dealer Profile | DealerProfileScreen.js | ✅ Branded hero, listings grid, priority badge |
+| Financing Calculator | FinancingScreen.js | ✅ 4 banks, PMT formula, estimate-only disclaimer |
+| Trust Score Page | TrustScoreScreen.js | ✅ SVG gauge, A–D grade, full breakdown |
+| Referral Program | ReferralScreen.js | ✅ Referral code, WhatsApp share, rewards tracker |
+| Relist Flow | SellerDashboardScreen.js (updated) | ✅ Inline price input + confirm for unsold listings |
 
 ---
 
