@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, FlatList, Dim
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarCard from '../components/CarCard';
+import SkeletonCard from '../components/SkeletonCard';
 import SectionHeader from '../components/SectionHeader';
-import { colors, radius, shadows, typography } from '../theme';
+import { colors, radius, shadows, typography, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -31,12 +32,19 @@ export default function HomeScreen({ navigation }) {
   const { cars } = useApp();
   const [carouselIndex, setCarouselIndex] = useState(1);
   const [activeAgeTab, setActiveAgeTab] = useState('30s');
-  
+  const [loading, setLoading] = useState(true);
+
   const carouselRef = React.useRef(null);
   const scrollTimerRef = React.useRef(null);
   const [footerExpanded, setFooterExpanded] = useState(false);
 
-  // Auto-scroll effect
+  // Simulate data load — disappears after 700ms
+  React.useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 700);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Auto-scroll carousel
   React.useEffect(() => {
     scrollTimerRef.current = setInterval(() => {
       setCarouselIndex((prev) => {
@@ -54,7 +62,6 @@ export default function HomeScreen({ navigation }) {
     };
   }, []);
 
-  // Carousel scroll handler
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / SCREEN_WIDTH) + 1;
@@ -63,35 +70,22 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // Section 1: "We Also Recommend" - Show first 4 standard cars
   const section1Cars = cars.slice(0, 4);
 
-  // Section 2: "Popular by Age Group" - Age filter car selector logic
   const getAgeFilteredCars = () => {
-    if (activeAgeTab === '20s') {
-      return cars.filter(c => c.category === 'EV' || c.category === 'Coupe' || c.category === 'Supercar');
-    }
-    if (activeAgeTab === '30s') {
-      return cars.filter(c => c.category === 'Sedan' || c.category === 'EV');
-    }
-    if (activeAgeTab === '40s') {
-      return cars.filter(c => c.category === 'SUV' || c.category === 'Sedan');
-    }
-    // 50s
+    if (activeAgeTab === '20s') return cars.filter(c => c.category === 'EV' || c.category === 'Coupe' || c.category === 'Supercar');
+    if (activeAgeTab === '30s') return cars.filter(c => c.category === 'Sedan' || c.category === 'EV');
+    if (activeAgeTab === '40s') return cars.filter(c => c.category === 'SUV' || c.category === 'Sedan');
     return cars.filter(c => c.category === 'SUV' || c.category === 'Truck');
   };
 
   const ageFilteredCars = getAgeFilteredCars();
-
-  // Section 3: "Editor's Choice" - Featured full width premium car (Taycan or Defender)
   const featuredCar = cars.find(c => c.id === '7') || cars[0];
-
-  // Section 4: "Top Trending Last Week" - Top 5 ranked cars
   const rankedCars = cars.slice(0, 5);
 
   return (
     <Screen background={colors.bg}>
-      {/* 1. Location Bar & Notification Bell */}
+      {/* Location Bar */}
       <View style={styles.topBar}>
         <View style={styles.locationContainer}>
           <Text style={styles.locationLabel}>LOCATION</Text>
@@ -111,10 +105,9 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Scrollable Main Content */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* 2. Search Bar */}
+
+        {/* Search Bar */}
         <View style={styles.searchWrapper}>
           <Pressable style={styles.searchBar} onPress={() => navigation.navigate('SearchResults')}>
             <Ionicons name="search" size={18} color={colors.textMuted} />
@@ -122,7 +115,7 @@ export default function HomeScreen({ navigation }) {
           </Pressable>
         </View>
 
-        {/* 3. Hero Banner Carousel */}
+        {/* Hero Banner Carousel */}
         <View style={styles.carouselContainer}>
           <ScrollView
             ref={carouselRef}
@@ -150,13 +143,12 @@ export default function HomeScreen({ navigation }) {
               </ImageBackground>
             ))}
           </ScrollView>
-          {/* Index indicator */}
           <View style={styles.carouselIndicator}>
             <Text style={styles.indicatorText}>{carouselIndex}/{BANNER_SLIDES.length}</Text>
           </View>
         </View>
 
-        {/* 4. Quick Access Grid */}
+        {/* Quick Access Grid */}
         <View style={styles.quickGridContainer}>
           {QUICK_GRID.map((item, idx) => (
             <Pressable key={idx} style={styles.quickGridItem} onPress={() => navigation.navigate('SearchResults')}>
@@ -168,7 +160,7 @@ export default function HomeScreen({ navigation }) {
           ))}
         </View>
 
-        {/* Section 1: "We Also Recommend" */}
+        {/* Section 1: We Also Recommend — shows skeletons on first load */}
         <View style={styles.sectionContainer}>
           <SectionHeader
             title="We Also Recommend"
@@ -176,22 +168,27 @@ export default function HomeScreen({ navigation }) {
             onAction={() => navigation.navigate('SearchResults')}
           />
           <View style={styles.twoColumnGrid}>
-            {section1Cars.map((item) => (
-              <View key={item.id} style={styles.gridCardWrapper}>
-                <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
-              </View>
-            ))}
+            {loading
+              ? [0, 1, 2, 3].map((i) => (
+                  <View key={i} style={styles.gridCardWrapper}>
+                    <SkeletonCard />
+                  </View>
+                ))
+              : section1Cars.map((item) => (
+                  <View key={item.id} style={styles.gridCardWrapper}>
+                    <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
+                  </View>
+                ))}
           </View>
         </View>
 
-        {/* Section 2: "Popular by Age Group" (Horizontal scroll with age filter tabs) */}
+        {/* Section 2: Popular by Age Group */}
         <View style={styles.sectionContainer}>
           <SectionHeader
             title="Popular by Age Group"
             actionLabel="More"
             onAction={() => navigation.navigate('SearchResults')}
           />
-          {/* Age Tabs */}
           <View style={styles.ageTabsRow}>
             {AGE_TABS.map((tab) => {
               const isActive = tab === activeAgeTab;
@@ -208,7 +205,6 @@ export default function HomeScreen({ navigation }) {
               );
             })}
           </View>
-          {/* Horizontal List */}
           <FlatList
             horizontal
             data={ageFilteredCars}
@@ -223,7 +219,7 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        {/* Section 3: "Editor's Choice" (Full width featured car card) */}
+        {/* Section 3: Editor's Choice */}
         <View style={styles.sectionContainer}>
           <SectionHeader
             title="Editor's Choice This Month"
@@ -242,7 +238,7 @@ export default function HomeScreen({ navigation }) {
             </View>
             <View style={styles.featuredBody}>
               <Text style={styles.featuredTitle}>{featuredCar.title}</Text>
-              <Text style={styles.featuredMeta}>Fully inspected year, mileage, and options in pristine condition.</Text>
+              <Text style={styles.featuredMeta}>Fully inspected — year, mileage, and options verified in pristine condition.</Text>
               <View style={styles.featuredPriceRow}>
                 <Text style={styles.featuredPriceText}>
                   ${featuredCar.price.toLocaleString('en-US')}
@@ -255,7 +251,7 @@ export default function HomeScreen({ navigation }) {
           </Pressable>
         </View>
 
-        {/* Section 4: "Top Trending Last Week" */}
+        {/* Section 4: Top Trending */}
         <View style={styles.sectionContainer}>
           <SectionHeader
             title="Top Trending Last Week"
@@ -280,9 +276,8 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        {/* Inzozi Motors Corporate Footer */}
+        {/* Corporate Footer */}
         <View style={styles.footerContainer}>
-          {/* Main Footer Links */}
           <View style={styles.footerLinksRow}>
             <Pressable onPress={() => {}}><Text style={styles.footerLinkText}>Log In</Text></Pressable>
             <Text style={styles.footerDivider}>|</Text>
@@ -293,41 +288,35 @@ export default function HomeScreen({ navigation }) {
             <Pressable onPress={() => {}}><Text style={styles.footerLinkText}>PC Version</Text></Pressable>
           </View>
 
-          {/* Toggle Accordion Drawer */}
-          <Pressable 
-            style={styles.accordionHeader} 
+          <Pressable
+            style={styles.accordionHeader}
             onPress={() => setFooterExpanded(!footerExpanded)}
           >
             <Text style={styles.accordionTitle}>Inzozi Motors Co., Ltd. Business Details</Text>
-            <Ionicons 
-              name={footerExpanded ? 'chevron-up' : 'chevron-down'} 
-              size={14} 
-              color="#666666" 
+            <Ionicons
+              name={footerExpanded ? 'chevron-up' : 'chevron-down'}
+              size={14}
+              color="#666666"
             />
           </Pressable>
 
-          {/* Collapsible Info Block */}
           {footerExpanded && (
             <View style={styles.collapsibleContent}>
               <View style={styles.companyLinksRow}>
                 <Pressable onPress={() => {}}><Text style={styles.companyLinkText}>Business Info</Text></Pressable>
                 <Text style={styles.companyDivider}>·</Text>
-                <Pressable onPress={() => {}}><Text style={[styles.companyLinkText, { fontWeight: '700' }]}>Privacy Policy</Text></Pressable>
+                <Pressable onPress={() => {}}><Text style={[styles.companyLinkText, { fontFamily: fonts.bold }]}>Privacy Policy</Text></Pressable>
                 <Text style={styles.companyDivider}>·</Text>
                 <Pressable onPress={() => {}}><Text style={styles.companyLinkText}>Terms of Use</Text></Pressable>
-                <Text style={styles.companyDivider}>·</Text>
-                <Pressable onPress={() => {}}><Text style={styles.companyLinkText}>Financial Consumer Protection</Text></Pressable>
               </View>
-
               <View style={styles.companyDetails}>
-                <Text style={styles.detailText}>Address: 16-19th Floor, 16 Tongil-ro 2-gil, Jung-gu, Seoul</Text>
-                <Text style={styles.detailText}>CEO: Sangbum Kim | Business Registration No: 104-86-54476</Text>
-                <Text style={styles.detailText}>Mail Order License: Jung-gu-0393 | Support: 1599-5455</Text>
+                <Text style={styles.detailText}>Address: 16-19th Floor, Kigali City Tower, Kigali, Rwanda</Text>
+                <Text style={styles.detailText}>CEO: Inzozi Motors Ltd | RRA Reg No: 104-86-54476</Text>
+                <Text style={styles.detailText}>Support: info@inzozimotors.rw | +250 788 000 000</Text>
               </View>
             </View>
           )}
 
-          {/* Fixed Copyright Tag */}
           <Text style={styles.copyrightText}>
             © 2026 Inzozi Motors. All rights reserved.
           </Text>
@@ -349,50 +338,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
-  locationContainer: {
-    justifyContent: 'center',
-  },
+  locationContainer: { justifyContent: 'center' },
   locationLabel: {
     fontSize: 9,
-    fontWeight: '700',
-    color: '#FF3B30', // Red label
+    fontFamily: fonts.bold,
+    color: '#FF3B30',
     letterSpacing: 0.5,
     marginBottom: 2,
   },
-  locationValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  locationText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
+  locationValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  locationText: { fontSize: 14, fontFamily: fonts.extraBold, color: '#1A1A1A' },
   mapBtn: {
     width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.greenTint,
   },
   bellBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36,
+    alignItems: 'center', justifyContent: 'center',
     position: 'relative',
   },
   bellBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    position: 'absolute', top: 6, right: 6,
+    width: 6, height: 6, borderRadius: 3,
     backgroundColor: '#E74C3C',
   },
-  scrollContent: {
-    paddingBottom: 40,
-  },
+  scrollContent: { paddingBottom: 40 },
   searchWrapper: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
@@ -407,275 +378,112 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
   },
-  searchPlaceholder: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  carouselContainer: {
-    height: 160,
-    position: 'relative',
-  },
-  carouselSlide: {
-    width: SCREEN_WIDTH,
-    height: 160,
-    position: 'relative',
-  },
-  slideOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  slideContent: {
-    flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-    zIndex: 2,
-  },
+  searchPlaceholder: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted },
+  carouselContainer: { height: 160, position: 'relative' },
+  carouselSlide: { width: SCREEN_WIDTH, height: 160, position: 'relative' },
+  slideOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  slideContent: { flex: 1, paddingHorizontal: 24, justifyContent: 'center', zIndex: 2 },
   slideTagContainer: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 3,
-    marginBottom: 8,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 3, marginBottom: 8,
   },
-  slideTagText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  slideTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  slideSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-  },
+  slideTagText: { color: '#FFFFFF', fontSize: 10, fontFamily: fonts.bold },
+  slideTitle: { color: '#FFFFFF', fontSize: 18, fontFamily: fonts.extraBold, marginBottom: 4 },
+  slideSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontFamily: fonts.regular },
   carouselIndicator: {
-    position: 'absolute',
-    bottom: 12,
-    right: 16,
+    position: 'absolute', bottom: 12, right: 16,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
   },
-  indicatorText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700',
-  },
+  indicatorText: { color: '#FFFFFF', fontSize: 10, fontFamily: fonts.bold },
   quickGridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'row', flexWrap: 'wrap',
     backgroundColor: '#FFFFFF',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8ECEF',
+    borderBottomWidth: 1, borderBottomColor: '#E8ECEF',
   },
-  quickGridItem: {
-    width: '33.3%',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
+  quickGridItem: { width: '33.3%', alignItems: 'center', paddingVertical: 10 },
   iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: '#F5F5F5',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     marginBottom: 6,
   },
-  quickGridLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  sectionContainer: {
-    marginTop: 12,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-  },
-  twoColumnGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 8,
-  },
-  gridCardWrapper: {
-    width: '50%',
-  },
+  quickGridLabel: { fontSize: 12, fontFamily: fonts.bold, color: '#1A1A1A' },
+  sectionContainer: { marginTop: 12, backgroundColor: '#FFFFFF', paddingVertical: 12 },
+  twoColumnGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8 },
+  gridCardWrapper: { width: '50%' },
   ageTabsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 12,
-    marginTop: 4,
+    flexDirection: 'row', paddingHorizontal: 16,
+    gap: 8, marginBottom: 12, marginTop: 4,
   },
   ageTab: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: '#F5F5F5',
+    paddingVertical: 6, paddingHorizontal: 12,
+    borderRadius: 14, backgroundColor: '#F5F5F5',
   },
-  ageTabActive: {
-    backgroundColor: colors.primary,
-  },
-  ageTabText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#666666',
-  },
-  ageTabTextActive: {
-    color: '#FFFFFF',
-  },
-  horizontalListPadding: {
-    paddingHorizontal: 8,
-  },
-  horizontalCardWrapper: {
-    width: 140,
-  },
+  ageTabActive: { backgroundColor: colors.primary },
+  ageTabText: { fontSize: 12, fontFamily: fonts.bold, color: '#666666' },
+  ageTabTextActive: { color: '#FFFFFF' },
+  horizontalListPadding: { paddingHorizontal: 8 },
+  horizontalCardWrapper: { width: 140 },
   featuredCardContainer: {
     marginHorizontal: 16,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E8ECEF',
     ...shadows.card,
   },
-  featuredImageWrap: {
-    height: 180,
-    position: 'relative',
-  },
-  featuredImage: {
-    width: '100%',
-    height: '100%',
-  },
+  featuredImageWrap: { height: 180, position: 'relative' },
+  featuredImage: { width: '100%', height: '100%' },
   featuredBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
+    position: 'absolute', top: 12, left: 12,
     backgroundColor: '#FF6B00',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4,
   },
-  featuredBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  featuredBody: {
-    padding: 14,
-  },
-  featuredTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  featuredMeta: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 8,
-  },
+  featuredBadgeText: { color: '#FFFFFF', fontSize: 11, fontFamily: fonts.extraBold },
+  featuredBody: { padding: 14 },
+  featuredTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: '#1A1A1A', marginBottom: 4 },
+  featuredMeta: { fontSize: 12, fontFamily: fonts.regular, color: '#666666', marginBottom: 8 },
   featuredPriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#F5F5F5',
-    paddingTop: 10,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderTopWidth: 1, borderTopColor: '#F5F5F5', paddingTop: 10,
   },
-  featuredPriceText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.primary,
-  },
-  featuredMileageText: {
-    fontSize: 12,
-    color: '#999999',
-  },
-  lastSectionMargin: {
-    marginBottom: 20,
-  },
+  featuredPriceText: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.primary },
+  featuredMileageText: { fontSize: 12, fontFamily: fonts.regular, color: '#999999' },
   footerContainer: {
     backgroundColor: '#F5F5F4',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    paddingVertical: 20, paddingHorizontal: 20,
+    borderTopWidth: 1, borderTopColor: '#E5E5E5',
     marginTop: 20,
   },
   footerLinksRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginBottom: 16,
-    flexWrap: 'wrap',
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'flex-start', marginBottom: 16,
+    flexWrap: 'wrap', gap: 8,
   },
-  footerLinkText: {
-    fontSize: 12,
-    color: '#404040',
-    fontWeight: '700',
-  },
-  footerDivider: {
-    fontSize: 12,
-    color: '#CCCCCC',
-  },
+  footerLinkText: { fontSize: 12, fontFamily: fonts.bold, color: '#404040' },
+  footerDivider: { fontSize: 12, color: '#CCCCCC' },
   accordionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderTopWidth: 1, borderTopColor: '#E5E5E5',
+    borderBottomWidth: 1, borderBottomColor: '#E5E5E5',
     marginBottom: 12,
   },
-  accordionTitle: {
-    fontSize: 11,
-    color: '#666666',
-    fontWeight: '700',
-  },
-  collapsibleContent: {
-    paddingVertical: 4,
-    gap: 12,
-  },
+  accordionTitle: { fontSize: 11, fontFamily: fonts.bold, color: '#666666' },
+  collapsibleContent: { paddingVertical: 4, gap: 12 },
   companyLinksRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 6,
+    flexDirection: 'row', flexWrap: 'wrap',
+    alignItems: 'center', gap: 6,
   },
-  companyLinkText: {
-    fontSize: 11,
-    color: '#737373',
-  },
-  companyDivider: {
-    fontSize: 11,
-    color: '#DDDDDD',
-  },
-  companyDetails: {
-    gap: 4,
-    alignItems: 'flex-start',
-  },
-  detailText: {
-    fontSize: 10,
-    color: '#999999',
-    textAlign: 'left',
-    lineHeight: 14,
-  },
-  copyrightText: {
-    fontSize: 10,
-    color: '#999999',
-    marginTop: 12,
-    fontWeight: '500',
-  },
+  companyLinkText: { fontSize: 11, fontFamily: fonts.regular, color: '#737373' },
+  companyDivider: { fontSize: 11, color: '#DDDDDD' },
+  companyDetails: { gap: 4 },
+  detailText: { fontSize: 10, fontFamily: fonts.regular, color: '#999999', lineHeight: 14 },
+  copyrightText: { fontSize: 10, fontFamily: fonts.medium, color: '#999999', marginTop: 12 },
 });

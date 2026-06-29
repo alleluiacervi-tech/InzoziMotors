@@ -5,7 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import { useApp } from '../context/AppContext';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { getPriceDrop, getSavedCount, getListedDaysAgo } from '../data/marketData';
 
@@ -78,6 +78,34 @@ function SavedSearchRow({ search, onToggleNotify, onDelete }) {
   );
 }
 
+const SAVED_FEATURES = ['Price drop alerts', 'Compare saved cars', 'Track demand'];
+const SEARCH_FEATURES = ['New listing alerts', 'Filter by make & price', 'Re-run anytime'];
+
+function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
+  return (
+    <View style={styles.empty}>
+      <View style={styles.emptyIconOuter}>
+        <View style={styles.emptyIconInner}>
+          <Ionicons name={icon} size={36} color={colors.primary} />
+        </View>
+      </View>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptySub}>{sub}</Text>
+      <View style={styles.emptyFeatures}>
+        {features.map((f) => (
+          <View key={f} style={styles.emptyFeature}>
+            <Ionicons name="checkmark-circle" size={15} color={colors.primary} />
+            <Text style={styles.emptyFeatureText}>{f}</Text>
+          </View>
+        ))}
+      </View>
+      <Pressable style={styles.browseBtn} onPress={onPress}>
+        <Text style={styles.browseBtnText}>{btnLabel}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function SavedScreen({ navigation }) {
   const {
     getSavedCars, toggleSaveCar,
@@ -108,10 +136,14 @@ export default function SavedScreen({ navigation }) {
 
       <View style={styles.tabs}>
         <Pressable style={[styles.tab, tab === 'saved' && styles.tabActive]} onPress={() => setTab('saved')}>
-          <Text style={[styles.tabText, tab === 'saved' && styles.tabTextActive]}>Cars ({saved.length})</Text>
+          <Text style={[styles.tabText, tab === 'saved' && styles.tabTextActive]}>
+            Cars ({saved.length})
+          </Text>
         </Pressable>
         <Pressable style={[styles.tab, tab === 'searches' && styles.tabActive]} onPress={() => setTab('searches')}>
-          <Text style={[styles.tabText, tab === 'searches' && styles.tabTextActive]}>Searches ({savedSearches.length})</Text>
+          <Text style={[styles.tabText, tab === 'searches' && styles.tabTextActive]}>
+            Searches ({savedSearches.length})
+          </Text>
         </Pressable>
       </View>
 
@@ -130,16 +162,14 @@ export default function SavedScreen({ navigation }) {
             />
           )}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="heart-outline" size={44} color={colors.textMuted} />
-              </View>
-              <Text style={styles.emptyTitle}>No saved cars yet</Text>
-              <Text style={styles.emptySub}>Tap the heart icon on any listing to save it here. We'll alert you if the price drops.</Text>
-              <Pressable style={styles.browseBtn} onPress={() => navigation.navigate('Home')}>
-                <Text style={styles.browseBtnText}>Browse cars</Text>
-              </Pressable>
-            </View>
+            <EmptyState
+              icon="heart-outline"
+              title="No saved cars yet"
+              sub="Tap the heart on any listing to save it. We'll notify you the moment the price drops."
+              features={SAVED_FEATURES}
+              btnLabel="Browse cars"
+              onPress={() => navigation.navigate('Home')}
+            />
           }
         />
       ) : (
@@ -163,16 +193,14 @@ export default function SavedScreen({ navigation }) {
             />
           )}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="bookmark-outline" size={44} color={colors.textMuted} />
-              </View>
-              <Text style={styles.emptyTitle}>No saved searches</Text>
-              <Text style={styles.emptySub}>Use Search to filter by make, model, price and more — then save the filter to get alerts.</Text>
-              <Pressable style={styles.browseBtn} onPress={() => navigation.navigate('SearchResults')}>
-                <Text style={styles.browseBtnText}>Search now</Text>
-              </Pressable>
-            </View>
+            <EmptyState
+              icon="bookmark-outline"
+              title="No saved searches"
+              sub="Filter by make, model, price or year — then save the filter to get instant alerts."
+              features={SEARCH_FEATURES}
+              btnLabel="Search now"
+              onPress={() => navigation.navigate('SearchResults')}
+            />
           }
         />
       )}
@@ -182,7 +210,7 @@ export default function SavedScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 6 },
-  h1: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5, color: colors.textPrimary },
+  h1: { fontSize: 24, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
   tabs: {
     flexDirection: 'row', marginHorizontal: 16, marginBottom: 4,
     backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 4,
@@ -193,8 +221,10 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 }, elevation: 1,
   },
-  tabText: { fontSize: 14, fontWeight: '700', color: colors.textMuted },
+  tabText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted },
   tabTextActive: { color: colors.textPrimary },
+
+  // Car row
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
@@ -202,24 +232,26 @@ const styles = StyleSheet.create({
   },
   thumb: { width: 90, height: 68, borderRadius: radius.lg, backgroundColor: colors.border },
   rowBody: { flex: 1, gap: 4 },
-  rowTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, lineHeight: 18 },
+  rowTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 18 },
   rowMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   certBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: colors.greenTint, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  certText: { fontSize: 10, fontWeight: '700', color: colors.green },
-  metaText: { fontSize: 11, color: colors.textMuted },
+  certText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  metaText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
   highDemandChip: { backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  highDemandText: { fontSize: 10, fontWeight: '700', color: colors.amber },
+  highDemandText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amber },
   rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  rowPrice: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  rowPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   dropBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: colors.greenTint, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  dropText: { fontSize: 10, fontWeight: '700', color: colors.green },
+  dropText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
   removeBtn: { padding: 4 },
+
+  // Search row
   searchRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
@@ -230,28 +262,40 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   searchBody: { flex: 1 },
-  searchLabel: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  searchLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   searchMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  searchMatchText: { fontSize: 11, fontWeight: '600', color: colors.primary },
+  searchMatchText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.primary },
   searchDot: { fontSize: 11, color: colors.textMuted },
-  searchLastText: { fontSize: 11, color: colors.textMuted },
+  searchLastText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
   deleteBtn: { padding: 4, marginLeft: 4 },
   searchHint: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: '#EFF6FF', borderRadius: radius.lg,
     padding: 10, marginBottom: 12,
   },
-  searchHintText: { fontSize: 12, color: colors.statusScheduled, flex: 1 },
-  empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
-  emptyIcon: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 18,
+  searchHintText: { fontSize: 12, fontFamily: fonts.regular, color: colors.statusScheduled, flex: 1 },
+
+  // Empty state
+  empty: { alignItems: 'center', paddingTop: 52, paddingHorizontal: 36, paddingBottom: 20 },
+  emptyIconOuter: {
+    width: 108, height: 108, borderRadius: 54,
+    backgroundColor: 'rgba(10,92,46,0.07)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 22,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
-  emptySub: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  emptyIconInner: {
+    width: 74, height: 74, borderRadius: 37,
+    backgroundColor: 'rgba(10,92,46,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },
+  emptySub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  emptyFeatures: { gap: 10, marginTop: 20, alignSelf: 'stretch' },
+  emptyFeature: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  emptyFeatureText: { fontFamily: fonts.medium, fontSize: 13, color: colors.textSecondary },
   browseBtn: {
-    marginTop: 22, backgroundColor: colors.primary,
-    paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14,
+    marginTop: 24, backgroundColor: colors.primary,
+    paddingHorizontal: 32, paddingVertical: 14, borderRadius: 14,
   },
-  browseBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  browseBtnText: { fontFamily: fonts.bold, color: '#fff', fontSize: 15 },
 });
