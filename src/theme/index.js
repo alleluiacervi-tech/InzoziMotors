@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import colors from './colors';
 
 // Spacing scale (4pt base)
@@ -23,53 +22,67 @@ export const radius = {
   phone: 44,
 };
 
-const systemFont = Platform.select({
-  ios: 'System',
-  android: 'sans-serif',
-  default: 'System',
-});
-
-// Typography presets mirroring the mockup (weight 700 headings for editorial luxury feel)
-export const typography = {
-  fontFamily: systemFont,
-  display: { fontSize: 42, fontWeight: '700', letterSpacing: -1.2, lineHeight: 46 },
-  h1: { fontSize: 30, fontWeight: '700', letterSpacing: -0.9, lineHeight: 34 },
-  h2: { fontSize: 24, fontWeight: '700', letterSpacing: -0.5, lineHeight: 28 },
-  h3: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, lineHeight: 26 },
-  h4: { fontSize: 18, fontWeight: '700', letterSpacing: -0.2, lineHeight: 22 },
-  title: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2, lineHeight: 21 },
-  price: { fontSize: 21, fontWeight: '700', letterSpacing: -0.4 },
-  body: { fontSize: 15, fontWeight: '400', lineHeight: 22 },
-  bodyStrong: { fontSize: 15, fontWeight: '600', lineHeight: 22 },
-  label: { fontSize: 13, fontWeight: '600' },
-  caption: { fontSize: 12, fontWeight: '500' },
-  micro: { fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
+// Inter font family map — loaded in App.js via @expo-google-fonts/inter
+export const fonts = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semiBold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  extraBold: 'Inter_800ExtraBold',
+  black: 'Inter_900Black',
 };
 
-// Reusable shadow presets
+// Typography presets using Inter
+export const typography = {
+  display: { fontFamily: fonts.extraBold, fontSize: 42, letterSpacing: -1.2, lineHeight: 46 },
+  h1: { fontFamily: fonts.extraBold, fontSize: 30, letterSpacing: -0.9, lineHeight: 34 },
+  h2: { fontFamily: fonts.bold, fontSize: 24, letterSpacing: -0.5, lineHeight: 28 },
+  h3: { fontFamily: fonts.bold, fontSize: 22, letterSpacing: -0.4, lineHeight: 26 },
+  h4: { fontFamily: fonts.bold, fontSize: 18, letterSpacing: -0.2, lineHeight: 22 },
+  title: { fontFamily: fonts.bold, fontSize: 17, letterSpacing: -0.2, lineHeight: 21 },
+  price: { fontFamily: fonts.extraBold, fontSize: 21, letterSpacing: -0.4 },
+  body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 22 },
+  bodyStrong: { fontFamily: fonts.semiBold, fontSize: 15, lineHeight: 22 },
+  label: { fontFamily: fonts.semiBold, fontSize: 13 },
+  caption: { fontFamily: fonts.medium, fontSize: 12 },
+  micro: { fontFamily: fonts.semiBold, fontSize: 11, letterSpacing: 0.3 },
+};
+
+// Shadow presets — subtle, brand-warm, realistic depth
 export const shadows = {
+  // Standard card: very low lift, warm green tint
   card: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 4,
+    shadowColor: '#0A3D1E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
+  // Primary button glow
   blueGlow: {
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
     elevation: 4,
   },
+  // Bottom nav / sticky footer
   floating: {
-    shadowColor: '#020828',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.35,
-    shadowRadius: 30,
-    elevation: 12,
+    shadowColor: '#031A0C',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  // Screen headers
+  header: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
 };
 
 export { colors };
-export default { colors, spacing, radius, typography, shadows };
+export default { colors, spacing, radius, typography, shadows, fonts };

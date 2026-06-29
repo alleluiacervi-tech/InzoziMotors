@@ -1,28 +1,29 @@
 // Inzozi Motors — Premium Forest Green Brand System
 // Primary brand color ties to Rwanda's identity: "Land of a Thousand Hills"
+// Updated Jun 29 2026: deeper, richer forest green for premium feel
 export const colors = {
-  // Dark surfaces (Welcome screen gradient — dark forest green)
-  navyDeep: '#052E16',
-  navyMid: '#14532D',
-  navyLight: '#166534',
+  // Dark surfaces (Welcome screen gradient — deep forest)
+  navyDeep: '#031A0C',
+  navyMid: '#0B3D1C',
+  navyLight: '#0F5227',
 
-  // Brand Green
-  primary: '#15803D',
-  primaryBright: '#16A34A',
-  blueLight: '#4ADE80',
-  blueTint: '#F0FDF4',
+  // Brand Green — #0A5C2E is richer/darker than Tailwind green-700
+  primary: '#0A5C2E',
+  primaryBright: '#0D7A3C',
+  blueLight: '#34D37B',
+  blueTint: '#F0FAF5',
 
   // Badge Colors
-  jeondan: '#15803D',
+  jeondan: '#0A5C2E',
   jeondanPlus: '#1D4ED8',
   jeondanPlusPlus: '#D97706',
   contract: '#C23B2B',
   alert: '#D97706',
 
   // Semantic
-  green: '#15803D',
-  greenLight: '#4ADE80',
-  greenTint: '#F0FDF4',
+  green: '#0A5C2E',
+  greenLight: '#34D37B',
+  greenTint: '#F0FAF5',
   amber: '#D97706',
   amberTint: '#FEF3C7',
   amberText: '#B45309',
@@ -32,8 +33,8 @@ export const colors = {
   statusPendingBg: '#FEF3C7',
   statusScheduled: '#1D4ED8',
   statusScheduledBg: '#EFF6FF',
-  statusLive: '#15803D',
-  statusLiveBg: '#F0FDF4',
+  statusLive: '#0A5C2E',
+  statusLiveBg: '#F0FAF5',
   statusSold: '#6B7280',
   statusSoldBg: '#F5F5F5',
   statusRejected: '#DC2626',
@@ -41,20 +42,20 @@ export const colors = {
 
   alertRed: '#DC2626',
 
-  // Neutrals
-  bg: '#FAFAFA',
+  // Neutrals — very slightly green-warm
+  bg: '#F7F9F7',
   surface: '#FFFFFF',
-  surfaceAlt: '#F5F5F5',
-  border: '#E5E5E5',
-  borderSoft: '#F0F0F0',
+  surfaceAlt: '#F4F6F4',
+  border: '#E3E8E4',
+  borderSoft: '#EDF0ED',
 
   // Text
-  textPrimary: '#1A1A1A',
-  textSecondary: '#404040',
-  textMuted: '#737373',
+  textPrimary: '#111B14',
+  textSecondary: '#374237',
+  textMuted: '#6B7A6E',
   textOnDark: '#FFFFFF',
-  slate700: '#1A1A1A',
-  slate600: '#404040',
+  slate700: '#111B14',
+  slate600: '#374237',
 
   white: '#FFFFFF',
   black: '#000000',
