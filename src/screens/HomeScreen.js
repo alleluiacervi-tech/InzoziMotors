@@ -12,17 +12,17 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_SLIDES = [
   { id: 1, title: 'Inzozi Certified', subtitle: 'Honest used cars with zero false listings', image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=800&q=80', tag: 'Trust' },
   { id: 2, title: '7-Day Home Trial!', subtitle: 'Test drive at home with custom delivery services', image: 'https://images.unsplash.com/photo-1542282088-fe8426682b8f?auto=format&fit=crop&w=800&q=80', tag: 'Home Delivery' },
-  { id: 3, title: 'Sell My Car directly', subtitle: 'Real-time bidding competitions for best offers', image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80', tag: 'Bidding' },
+  { id: 3, title: 'Certify Your Car', subtitle: 'Submit your car for our 150-point inspection process', image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80', tag: 'Certification' },
   { id: 4, title: '150-Point Inspection', subtitle: 'Guaranteed warranty check by certified inspectors', image: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=800&q=80', tag: 'Warranty' },
 ];
 
 const QUICK_GRID = [
   { label: 'Trust Inspect', icon: 'shield-checkmark-outline', color: '#15803D' },
-  { label: 'Sell My Car', icon: 'cash-outline', color: '#2D7D46' },
   { label: 'Home Delivery', icon: 'home-outline', color: '#FF6B00' },
   { label: 'No-Waste Guar.', icon: 'alert-circle-outline', color: '#D97706' },
   { label: 'Import Cars', icon: 'globe-outline', color: '#C23B2B' },
   { label: 'Price Check', icon: 'trending-up-outline', color: '#737373' },
+  { label: 'Duty Calculator', icon: 'calculator-outline', color: '#1D4ED8' },
 ];
 
 const AGE_TABS = ['20s', '30s', '40s', '50s'];
