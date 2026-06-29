@@ -22,12 +22,29 @@ const ICONS = {
 
 function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  const { conversations, notifications } = useApp();
+  const { conversations, notifications, comparisonCars } = useApp();
 
   const messagesBadge = conversations.reduce((sum, c) => sum + (c.unread || 0), 0);
   const notifBadge = notifications.filter((n) => !n.read).length;
 
   return (
+    <View>
+      {/* Compare floater — appears above tab bar when cars are queued */}
+      {comparisonCars.length > 0 && (
+        <Pressable
+          style={styles.compareFloat}
+          onPress={() => navigation.getParent()?.navigate('Comparison')}
+        >
+          <Ionicons name="git-compare-outline" size={14} color="#fff" />
+          <Text style={styles.compareFloatText}>
+            Compare {comparisonCars.length} car{comparisonCars.length > 1 ? 's' : ''}
+          </Text>
+          <View style={styles.compareFloatDot}>
+            <Text style={styles.compareFloatCount}>{comparisonCars.length}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.8)" />
+        </Pressable>
+      )}
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10), height: 56 + Math.max(insets.bottom, 10) }]}>
       {state.routes.map((route, index) => {
         const focused = state.index === index;
@@ -63,6 +80,7 @@ function TabBar({ state, descriptors, navigation }) {
           </Pressable>
         );
       })}
+    </View>
     </View>
   );
 }
@@ -104,4 +122,27 @@ const styles = StyleSheet.create({
   },
   badgeWide: { right: -12 },
   badgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+  compareFloat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 30,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  compareFloatText: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '700' },
+  compareFloatDot: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  compareFloatCount: { color: '#fff', fontSize: 12, fontWeight: '800' },
 });

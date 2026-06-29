@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
+
+const CARD_IMG_H = Math.round(Dimensions.get('window').width * 0.42);
 
 // Helper to format year: e.g. 2021 (21/03)
 const getInzoziYear = (car) => {
@@ -39,11 +41,6 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
   const saved = isCarSaved(car.id);
   const isContract = car.type === 'auction';
 
-  // Inzozi badge logic in English: Standard, Good, Excellent
-  const carIdNum = parseInt(car.id) || 0;
-  const badgeVariant = carIdNum % 3 === 0 ? 'jeondanPlusPlus' : carIdNum % 3 === 1 ? 'jeondanPlus' : 'jeondan';
-  const badgeLabel = carIdNum % 3 === 0 ? 'Excellent' : carIdNum % 3 === 1 ? 'Good' : 'Standard';
-
   return (
     <Pressable style={[styles.card, shadows.card]} onPress={onPress}>
       <View style={styles.imageWrap}>
@@ -51,23 +48,21 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 
         {!hideOverlay && (
           <>
-            {/* Top-left Inzozi Badge */}
-            <Badge
-              variant={badgeVariant}
-              label={badgeLabel}
-              style={styles.topLeft}
-            />
-
-            {/* Top-right In Contract Badge */}
-            {isContract && (
-              <Badge variant="contract" label="In Contract" style={styles.topRight} />
-            )}
+            {/* Inspection badge — certified if inspected, otherwise auction label */}
+            {car.inspected ? (
+              <View style={styles.certBadge}>
+                <Ionicons name="shield-checkmark" size={10} color="#fff" />
+                <Text style={styles.certBadgeText}>Certified</Text>
+              </View>
+            ) : isContract ? (
+              <Badge variant="contract" label="In Contract" style={styles.topLeft} />
+            ) : null}
 
             {/* Heart save toggle */}
-            <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={8}>
+            <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={10}>
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
-                size={14}
+                size={15}
                 color={saved ? '#EF4444' : '#555'}
               />
             </Pressable>
@@ -113,22 +108,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  imageWrap: { 
-    height: 120, // 60% of typical card height
+  imageWrap: {
+    height: CARD_IMG_H,
     backgroundColor: colors.surfaceAlt,
-    position: 'relative'
+    position: 'relative',
   },
   image: { width: '100%', height: '100%' },
   topLeft: { position: 'absolute', top: 6, left: 6, paddingHorizontal: 5, paddingVertical: 2 },
-  topRight: { position: 'absolute', top: 6, right: 30, paddingHorizontal: 5, paddingVertical: 2 },
+  certBadge: {
+    position: 'absolute', top: 7, left: 7,
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 7, paddingVertical: 3,
+    borderRadius: 5,
+  },
+  certBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
   heart: {
     position: 'absolute',
     top: 6,
     right: 6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,

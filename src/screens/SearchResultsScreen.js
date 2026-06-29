@@ -179,6 +179,23 @@ export default function SearchResultsScreen({ navigation, route }) {
         renderItem={({ item }) => (
           <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="car-outline" size={52} color={colors.border} />
+            <Text style={styles.emptyTitle}>No cars found</Text>
+            <Text style={styles.emptySub}>
+              Try adjusting your search or removing filters
+            </Text>
+            {(activeFilters || searchQuery) && (
+              <Pressable
+                style={styles.clearBtn}
+                onPress={() => { setSearchQuery(''); setActiveFilters(null); }}
+              >
+                <Text style={styles.clearBtnText}>Clear all filters</Text>
+              </Pressable>
+            )}
+          </View>
+        }
       />
     </Screen>
   );
@@ -220,4 +237,20 @@ const styles = StyleSheet.create({
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   sortText: { fontSize: 13, fontWeight: '600' },
   columnWrapper: { paddingHorizontal: 4 },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+    gap: 10,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginTop: 8 },
+  emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  clearBtn: {
+    marginTop: 12,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 30,
+  },
+  clearBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

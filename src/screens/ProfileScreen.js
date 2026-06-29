@@ -6,11 +6,6 @@ import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows } from '../theme';
 
-const STATS = [
-  { label: 'Submitted', value: '3' },
-  { label: 'Live', value: '1' },
-  { label: 'Trust', value: '92' },
-];
 
 const MENU_SELLER = [
   { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
@@ -66,6 +61,17 @@ export default function ProfileScreen({ navigation }) {
   const { currentUser, submissions, logoutUser, idVerificationStatus } = useApp();
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
+  const soldCount = submissions.filter((s) => s.status === 'sold').length;
+
+  const idPts = idVerificationStatus === 'approved' ? 30 : 0;
+  const salesPts = Math.min(30, soldCount * 3);
+  const trustScore = idPts + salesPts + 17 + 18; // 17 = 85% response rate, 18 = 4.5/5 reviews
+
+  const STATS = [
+    { label: 'Submitted', value: String(submissions.length) },
+    { label: 'Live', value: String(liveCount) },
+    { label: 'Trust', value: String(trustScore) },
+  ];
 
   return (
     <Screen background={colors.bg}>
