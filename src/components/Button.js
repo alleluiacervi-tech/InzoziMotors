@@ -1,9 +1,8 @@
 import React from 'react';
 import { Text, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 
-// Primary / secondary / ghost button matching the mockup's full-width CTAs.
 export default function Button({
   title,
   onPress,
@@ -53,8 +52,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  text: { fontSize: 16, fontWeight: '700' },
-  primary: { backgroundColor: colors.primaryBright },
+  text: { fontFamily: fonts.bold, fontSize: 16, letterSpacing: -0.1 },
+  primary: { backgroundColor: colors.primary },
   secondaryLight: { backgroundColor: colors.surfaceAlt },
   secondaryDark: {
     backgroundColor: 'rgba(255,255,255,0.1)',

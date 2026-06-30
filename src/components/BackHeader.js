@@ -1,12 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 
-// Back chevron + optional title + optional right action.
 export default function BackHeader({ title, onBack, right, tint = colors.slate700, transparent }) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !transparent && styles.elevated]}>
       {onBack ? (
         <Pressable
           onPress={onBack}
@@ -32,8 +31,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
   },
+  elevated: {
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
+    ...shadows.header,
+  },
   iconBtn: { width: 42, height: 42, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
   iconBtnFilled: { backgroundColor: colors.surfaceAlt },
-  title: { fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  title: { fontFamily: fonts.bold, fontSize: 17, letterSpacing: -0.2, color: colors.textPrimary },
   right: { minWidth: 42, alignItems: 'flex-end' },
 });

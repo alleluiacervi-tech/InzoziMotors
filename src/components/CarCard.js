@@ -1,13 +1,10 @@
 import React from 'react';
-import { View, Text, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
 
-const CARD_IMG_H = Math.round(Dimensions.get('window').width * 0.42);
-
-// Helper to format year: e.g. 2021 (21/03)
 const getInzoziYear = (car) => {
   const yy = String(car.year).slice(-2);
   const monthVal = (parseInt(car.id) % 12) + 1;
@@ -15,12 +12,8 @@ const getInzoziYear = (car) => {
   return `${car.year} (${yy}/${mm})`;
 };
 
-// Helper to format mileage in miles: 122,200 mi
-const getInzoziMileage = (car) => {
-  return `${car.mileage.toLocaleString('en-US')} mi`;
-};
+const getInzoziMileage = (car) => `${car.mileage.toLocaleString('en-US')} mi`;
 
-// Helper to map Kigali/US locations deterministically to Kigali regions
 const getInzoziLocation = (car) => {
   const loc = car.location || '';
   if (loc.includes('Nyarutarama') || loc.includes('Francisco')) return 'Nyarutarama';
@@ -31,10 +24,7 @@ const getInzoziLocation = (car) => {
   return 'Kigali';
 };
 
-// Helper to map price to USD
-const getInzoziPrice = (car) => {
-  return `$${car.price.toLocaleString('en-US')}`;
-};
+const getInzoziPrice = (car) => `$${car.price.toLocaleString('en-US')}`;
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
   const { isCarSaved, toggleSaveCar } = useApp();
@@ -48,7 +38,6 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 
         {!hideOverlay && (
           <>
-            {/* Inspection badge — certified if inspected, otherwise auction label */}
             {car.inspected ? (
               <View style={styles.certBadge}>
                 <Ionicons name="shield-checkmark" size={10} color="#fff" />
@@ -58,7 +47,6 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
               <Badge variant="contract" label="In Contract" style={styles.topLeft} />
             ) : null}
 
-            {/* Heart save toggle */}
             <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={10}>
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
@@ -69,7 +57,6 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
           </>
         )}
 
-        {/* Rank Badge for popular section */}
         {rank !== null && (
           <View style={styles.rankBadge}>
             <Text style={styles.rankText}>{rank}</Text>
@@ -78,21 +65,10 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
       </View>
 
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>
-          {car.title}
-        </Text>
-        
-        <Text style={styles.meta} numberOfLines={1}>
-          {getInzoziYear(car)}
-        </Text>
-
-        <Text style={styles.meta} numberOfLines={1}>
-          {getInzoziMileage(car)} · {getInzoziLocation(car)}
-        </Text>
-
-        <Text style={styles.price}>
-          {getInzoziPrice(car)}
-        </Text>
+        <Text style={styles.title} numberOfLines={1}>{car.title}</Text>
+        <Text style={styles.meta} numberOfLines={1}>{getInzoziYear(car)}</Text>
+        <Text style={styles.meta} numberOfLines={1}>{getInzoziMileage(car)} · {getInzoziLocation(car)}</Text>
+        <Text style={styles.price}>{getInzoziPrice(car)}</Text>
       </View>
     </Pressable>
   );
@@ -103,13 +79,13 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 6,
     backgroundColor: colors.surface,
-    borderRadius: radius.sm, // Inzozi matches sharp/smaller radius
+    borderRadius: radius.md,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
   },
   imageWrap: {
-    height: CARD_IMG_H,
+    aspectRatio: 4 / 3,
     backgroundColor: colors.surfaceAlt,
     position: 'relative',
   },
@@ -122,42 +98,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7, paddingVertical: 3,
     borderRadius: 5,
   },
-  certBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  certBadgeText: { color: '#fff', fontSize: 9, fontFamily: fonts.extraBold },
   heart: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    position: 'absolute', top: 6, right: 6,
+    width: 26, height: 26, borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     zIndex: 10,
   },
   rankBadge: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(21,128,61,0.92)',
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', bottom: 0, left: 0,
+    backgroundColor: 'rgba(10,92,46,0.92)',
+    width: 26, height: 26,
+    alignItems: 'center', justifyContent: 'center',
   },
-  rankText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  body: { 
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  title: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
-  meta: { fontSize: 11, color: colors.textSecondary, marginBottom: 1 },
-  price: { fontSize: 15, fontWeight: '800', color: colors.primary, marginTop: 4 },
+  rankText: { fontFamily: fonts.extraBold, color: '#FFFFFF', fontSize: 12 },
+  body: { paddingHorizontal: 10, paddingVertical: 10, flex: 1, gap: 2 },
+  title: { fontFamily: fonts.bold, fontSize: 13, color: colors.textPrimary },
+  meta: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
+  price: { fontFamily: fonts.extraBold, fontSize: 15, color: colors.primary, marginTop: 4, letterSpacing: -0.3 },
 });
-
