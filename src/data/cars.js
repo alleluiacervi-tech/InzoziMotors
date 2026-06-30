@@ -811,6 +811,6 @@ export const conversations = [
 export const formatPrice = (n) =>
   '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 
-export const formatMiles = (n) => n.toLocaleString('en-US') + ' mi';
+export const formatMiles = (n) => n.toLocaleString('en-US') + ' km';
 
 export default cars;

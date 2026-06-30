@@ -365,7 +365,7 @@ export default function HomeScreen({ navigation }) {
                   ${featuredCar.price.toLocaleString('en-US')}
                 </Text>
                 <Text style={styles.featuredMileageText}>
-                  {featuredCar.mileage.toLocaleString('en-US')} mi · Certified
+                  {featuredCar.mileage.toLocaleString('en-US')} km · Certified
                 </Text>
               </View>
             </View>
