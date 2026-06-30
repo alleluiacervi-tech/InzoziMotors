@@ -4,34 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
-import { colors, radius, shadows } from '../theme';
-
+import { colors, radius, shadows, fonts } from '../theme';
 
 const MENU_SELLER = [
   { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
-  { icon: 'add-circle-outline', label: 'Submit a Car for Sale', screen: 'CarSubmission' },
   { icon: 'shield-checkmark-outline', label: 'ID Verification', screen: 'IDVerification' },
   { icon: 'calendar-outline', label: 'Inspection Scheduling', screen: 'InspectionScheduling' },
-  { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics' },
-  { icon: 'people-outline', label: 'Referral Program', screen: 'Referral' },
-];
-
-const MENU_BUYER = [
-  { icon: 'navigate-outline', label: 'Order Tracking', screen: 'Messages' },
-  { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
-  { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
-  { icon: 'heart-outline', label: 'Saved Cars', screen: 'Saved' },
-  { icon: 'bookmark-outline', label: 'Saved Searches', screen: 'Saved' },
-  { icon: 'git-compare-outline', label: 'Compare Cars', screen: 'Comparison' },
-  { icon: 'map-outline', label: 'Kigali Area Map', screen: 'MapView' },
-  { icon: 'calculator-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
-  { icon: 'cash-outline', label: 'Financing Calculator', screen: 'Financing' },
-  { icon: 'ribbon-outline', label: 'Trust Score', screen: 'TrustScore' },
 ];
 
 const MENU_ACCOUNT = [
+  { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
   { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
-  { icon: 'help-circle-outline', label: 'Help & Support' },
+  { icon: 'help-circle-outline', label: 'Help & Support', screen: null },
 ];
 
 function MenuSection({ title, items, navigation }) {
@@ -46,7 +30,7 @@ function MenuSection({ title, items, navigation }) {
             onPress={() => m.screen && navigation.navigate(m.screen)}
           >
             <View style={styles.menuIcon}>
-              <Ionicons name={m.icon} size={20} color={colors.slate700} />
+              <Ionicons name={m.icon} size={20} color={colors.textSecondary} />
             </View>
             <Text style={styles.menuLabel}>{m.label}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -65,12 +49,12 @@ export default function ProfileScreen({ navigation }) {
 
   const idPts = idVerificationStatus === 'approved' ? 30 : 0;
   const salesPts = Math.min(30, soldCount * 3);
-  const trustScore = idPts + salesPts + 17 + 18; // 17 = 85% response rate, 18 = 4.5/5 reviews
+  const trustScore = idPts + salesPts + 17 + 18;
 
   const STATS = [
     { label: 'Submitted', value: String(submissions.length) },
     { label: 'Live', value: String(liveCount) },
-    { label: 'Trust', value: String(trustScore) },
+    { label: 'Trust Score', value: `${trustScore}/100` },
   ];
 
   return (
@@ -90,27 +74,29 @@ export default function ProfileScreen({ navigation }) {
               )}
             </View>
             <Text style={styles.email}>{currentUser.email}</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+            <View style={styles.badgeRow}>
               <Badge variant="success" label="Verified Seller" />
-              <Badge variant="live" dot label="ID Verified" />
+              {idVerificationStatus === 'approved' && (
+                <Badge variant="live" dot label="ID Verified" />
+              )}
             </View>
           </View>
           <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')}>
-            <Ionicons name="create-outline" size={20} color={colors.slate700} />
+            <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
 
         {/* Stats */}
         <View style={styles.stats}>
           {STATS.map((s, i) => (
-            <View key={s.label} style={[styles.stat, i < 2 && styles.statBorder]}>
+            <View key={s.label} style={[styles.stat, i < STATS.length - 1 && styles.statBorder]}>
               <Text style={styles.statValue}>{s.value}</Text>
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
         </View>
 
-        {/* Seller Dashboard quick link */}
+        {/* Seller dashboard quick-link */}
         <Pressable style={styles.dashBanner} onPress={() => navigation.navigate('SellerDashboard')}>
           <View style={styles.dashBannerIcon}>
             <Ionicons name="trending-up" size={22} color="#fff" />
@@ -124,12 +110,10 @@ export default function ProfileScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
         </Pressable>
 
-        {/* Menu sections */}
-        <MenuSection title="Selling" items={MENU_SELLER} navigation={navigation} />
-        <MenuSection title="Buying" items={MENU_BUYER} navigation={navigation} />
+        <MenuSection title="My Listings" items={MENU_SELLER} navigation={navigation} />
         <MenuSection title="Account" items={MENU_ACCOUNT} navigation={navigation} />
 
-        {/* Team Portal (Admin access) */}
+        {/* Team Portal */}
         <Pressable style={styles.adminAccess} onPress={() => navigation.navigate('AdminPanel')}>
           <Ionicons name="grid-outline" size={16} color={colors.textMuted} />
           <Text style={styles.adminAccessText}>Team Portal</Text>
@@ -147,27 +131,33 @@ export default function ProfileScreen({ navigation }) {
           <Ionicons name="log-out-outline" size={20} color="#EF4444" />
           <Text style={styles.logoutText}>Log out</Text>
         </Pressable>
+
       </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
+  header: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 14,
+    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4,
+  },
   avatar: {
     width: 64, height: 64, borderRadius: 32,
     backgroundColor: colors.navyMid,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { color: '#fff', fontSize: 22, fontWeight: '800' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
-  email: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  avatarText: { color: '#fff', fontSize: 22, fontFamily: fonts.extraBold },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  name: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  email: { fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, marginBottom: 8 },
+  badgeRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   editBtn: {
     width: 42, height: 42, borderRadius: radius.md,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
+
   stats: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
@@ -179,8 +169,9 @@ const styles = StyleSheet.create({
   },
   stat: { flex: 1, alignItems: 'center' },
   statBorder: { borderRightWidth: 1, borderRightColor: colors.borderSoft },
-  statValue: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
-  statLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  statValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  statLabel: { fontSize: 11, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 2 },
+
   dashBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: colors.primary,
@@ -193,27 +184,34 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center', justifyContent: 'center',
   },
-  dashBannerTitle: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  dashBannerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 },
-  menuSection: { paddingHorizontal: 20, marginTop: 20 },
+  dashBannerTitle: { color: '#fff', fontSize: 16, fontFamily: fonts.extraBold },
+  dashBannerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: fonts.regular, marginTop: 2 },
+
+  menuSection: { paddingHorizontal: 20, marginTop: 24 },
   menuSectionTitle: {
-    fontSize: 12, fontWeight: '700', color: colors.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
+    fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
   },
   menu: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, overflow: 'hidden',
+    ...shadows.card,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 15 },
   menuBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   menuIcon: { width: 36, alignItems: 'center' },
-  menuLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  menuLabel: { flex: 1, fontSize: 15, fontFamily: fonts.semiBold, color: colors.textPrimary },
+
   adminAccess: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    marginTop: 24, paddingVertical: 8,
+    marginTop: 28, paddingVertical: 8,
   },
-  adminAccessText: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
-  logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, paddingVertical: 10 },
-  logoutText: { color: '#EF4444', fontSize: 15, fontWeight: '700' },
+  adminAccessText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textMuted },
+
+  logout: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, marginTop: 12, paddingVertical: 10,
+  },
+  logoutText: { color: '#EF4444', fontSize: 15, fontFamily: fonts.bold },
 });
