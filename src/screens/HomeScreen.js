@@ -31,9 +31,9 @@ const BANNER_SLIDES = [
   },
   {
     id: 3,
-    brand: 'Sell With Inzozi',
-    tagline: 'We inspect, photograph, and list your car for you.',
-    tag: 'Sell',
+    brand: 'Certify Your Car',
+    tagline: 'Submit for our 150-point inspection. We list it for you.',
+    tag: 'Certification',
     image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -54,7 +54,7 @@ const BANNER_SLIDES = [
 
 const QUICK_GRID = [
   { label: 'Trust Inspect', icon: 'shield-checkmark-outline', color: colors.primary, screen: 'SearchResults' },
-  { label: 'Sell My Car', icon: 'car-outline', color: '#2D7D46', screen: 'CarSubmission' },
+  { label: 'Certify My Car', icon: 'car-outline', color: '#2D7D46', screen: 'CarSubmission' },
   { label: 'Map View', icon: 'map-outline', color: '#1D4ED8', screen: 'MapView' },
   { label: 'Price Check', icon: 'trending-up-outline', color: '#D97706', screen: 'SearchResults' },
   { label: 'Import Duty', icon: 'globe-outline', color: '#C23B2B', screen: 'DutyCalculator' },

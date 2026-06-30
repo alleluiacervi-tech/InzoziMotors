@@ -29,6 +29,7 @@ import NotificationCenterScreen from '../screens/NotificationCenterScreen';
 // Phase 3 — Communication & Transactions
 import OrderTrackingScreen from '../screens/OrderTrackingScreen';
 // Phase 4 — Buyer Power Tools
+import SavedScreen from '../screens/SavedScreen';
 import ComparisonScreen from '../screens/ComparisonScreen';
 import MapScreen from '../screens/MapScreen';
 import DutyCalculatorScreen from '../screens/DutyCalculatorScreen';
@@ -80,6 +81,7 @@ export default function RootNavigator() {
       {/* Phase 3 */}
       <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
       {/* Phase 4 */}
+      <Stack.Screen name="Saved" component={SavedScreen} />
       <Stack.Screen name="Comparison" component={ComparisonScreen} />
       <Stack.Screen name="MapView" component={MapScreen} />
       <Stack.Screen name="DutyCalculator" component={DutyCalculatorScreen} />

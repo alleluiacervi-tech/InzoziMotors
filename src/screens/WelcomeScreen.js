@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +15,8 @@ const TRUST_CHIPS = [
 ];
 
 const STATS = ['240+ certified cars', '3 Kigali centres', '36-angle photos'];
+
+const HERO_CAR = 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=900&q=80';
 
 export default function WelcomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -38,6 +40,14 @@ export default function WelcomeScreen({ navigation }) {
 
         {/* Hero */}
         <View style={styles.hero}>
+          {/* Ghost car image fades into the dark gradient */}
+          <Image source={{ uri: HERO_CAR }} style={styles.heroCar} resizeMode="cover" />
+          <LinearGradient
+            colors={['transparent', colors.navyDeep]}
+            style={styles.heroFade}
+            pointerEvents="none"
+          />
+
           <Text style={styles.eyebrow}>KIGALI'S CERTIFIED MARKETPLACE</Text>
 
           <Text style={styles.title}>
@@ -121,7 +131,23 @@ const styles = StyleSheet.create({
   },
   langText: { fontFamily: fonts.semiBold, color: '#fff', fontSize: 13 },
 
-  hero: { flex: 1, justifyContent: 'center' },
+  hero: { flex: 1, justifyContent: 'center', overflow: 'hidden' },
+  heroCar: {
+    position: 'absolute',
+    bottom: -30,
+    left: -28,
+    right: -28,
+    height: 260,
+    opacity: 0.22,
+  },
+  heroFade: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    height: 120,
+  },
+
   eyebrow: {
     fontFamily: fonts.bold,
     fontSize: 10,

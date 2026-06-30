@@ -31,10 +31,6 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
   const saved = isCarSaved(car.id);
   const isContract = car.type === 'auction';
 
-  const carIdNum = parseInt(car.id) || 0;
-  const badgeVariant = carIdNum % 3 === 0 ? 'jeondanPlusPlus' : carIdNum % 3 === 1 ? 'jeondanPlus' : 'jeondan';
-  const badgeLabel = carIdNum % 3 === 0 ? 'Excellent' : carIdNum % 3 === 1 ? 'Good' : 'Standard';
-
   return (
     <Pressable style={[styles.card, shadows.card]} onPress={onPress}>
       <View style={styles.imageWrap}>
@@ -42,15 +38,20 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 
         {!hideOverlay && (
           <>
-            <Badge variant={badgeVariant} label={badgeLabel} style={styles.topLeft} />
-            {isContract && (
-              <Badge variant="contract" label="In Contract" style={styles.topRight} />
-            )}
-            <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={8}>
+            {car.inspected ? (
+              <View style={styles.certBadge}>
+                <Ionicons name="shield-checkmark" size={10} color="#fff" />
+                <Text style={styles.certBadgeText}>Certified</Text>
+              </View>
+            ) : isContract ? (
+              <Badge variant="contract" label="In Contract" style={styles.topLeft} />
+            ) : null}
+
+            <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={10}>
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
-                size={14}
-                color={saved ? '#EF4444' : '#666'}
+                size={15}
+                color={saved ? '#EF4444' : '#555'}
               />
             </Pressable>
           </>
@@ -90,10 +91,17 @@ const styles = StyleSheet.create({
   },
   image: { width: '100%', height: '100%' },
   topLeft: { position: 'absolute', top: 6, left: 6, paddingHorizontal: 5, paddingVertical: 2 },
-  topRight: { position: 'absolute', top: 6, right: 30, paddingHorizontal: 5, paddingVertical: 2 },
+  certBadge: {
+    position: 'absolute', top: 7, left: 7,
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 7, paddingVertical: 3,
+    borderRadius: 5,
+  },
+  certBadgeText: { color: '#fff', fontSize: 9, fontFamily: fonts.extraBold },
   heart: {
     position: 'absolute', top: 6, right: 6,
-    width: 24, height: 24, borderRadius: 12,
+    width: 26, height: 26, borderRadius: 13,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center', justifyContent: 'center',
     zIndex: 10,
