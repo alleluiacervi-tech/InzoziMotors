@@ -25,7 +25,7 @@ const BANNER_SLIDES = [
   {
     id: 2,
     brand: '7-Day Home Trial',
-    tagline: 'Drive it home first. Return if it's not right.',
+    tagline: "Drive it home first. Return if it's not right.",
     tag: 'Guarantee',
     image: 'https://images.unsplash.com/photo-1542282088-fe8426682b8f?auto=format&fit=crop&w=800&q=80',
   },
