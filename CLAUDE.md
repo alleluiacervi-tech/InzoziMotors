@@ -310,12 +310,11 @@ Defects (any): Honest close-ups of any damage noted in inspection
 - React Navigation v7 ✓
 
 ### Backend (to build — Phase 6+)
-- **Database**: Supabase (PostgreSQL) — structured car marketplace data + real-time subscriptions for chat
-- **Auth**: Supabase Auth — email + Google OAuth out of the box
-- **Storage**: Supabase Storage or Cloudflare R2 — for 36-angle photos per car
-- **Real-time Chat**: Supabase Realtime (WebSocket) — built into Supabase
+- **Database**: PostgreSQL on VPS
+- **Auth**: JWT-based (email + Google OAuth via Passport.js or similar)
+- **Storage**: Local disk or Cloudflare R2 — for 36-angle photos per car
+- **Real-time Chat**: Socket.io (WebSocket) on the same Node.js server
 - **Push Notifications**: Expo Notifications + OneSignal
-- **Payments**: DPO Pay (Africa-focused, supports MTN MoMo + Airtel Money)
 - **SMS/WhatsApp**: Africa's Talking (Rwanda-focused, supports SMS and WhatsApp Business API)
 - **Image optimization**: Cloudinary — auto-compress and serve inspection photos
 
@@ -422,3 +421,253 @@ Defects (any): Honest close-ups of any damage noted in inspection
 - [ ] Connect Rwanda RRA API for duty verification stamps (if public API available)
 - [ ] Deploy admin panel as Next.js web app (separate from mobile)
 - [ ] Set up CI/CD pipeline (GitHub Actions → Expo EAS Build)
+
+---
+
+# Phase 6 — Production Deployment Guide
+
+> This file is read automatically by Claude Code at the start of every session and
+> acts as your standing instructions for this project. Replace every `PLACEHOLDER`
+> below before first use. See the note at the bottom about trimming this file once
+> the one-time setup is done (it reloads every session, so keep it lean long-term).
+
+---
+
+## 1. Values to fill in (do this first)
+
+| Placeholder | Replace with |
+|---|---|
+| `YOUR_SERVER_IP` | VPS public IP |
+| `api.yourdomain.com` | API subdomain |
+| `com.yourcompany.yourapp` | bundle ID / package name |
+| `REPO_URL` | git URL of the **single repo** holding both halves |
+| `mobile/` | folder containing the Expo app (adjust to your real path) |
+| `backend/` | folder containing the Node.js API (adjust to your real path) |
+| `APP_PORT` | port the backend listens on (default 3000) |
+| `DEPLOY_USER` | the non-root sudo user on the VPS (default `deploy`) |
+
+---
+
+## 2. Project overview
+
+This is a **single (mono)repo** containing two halves that deploy to completely
+different places:
+
+```
+REPO_URL  (one repo)
+├── mobile/     <- Expo / React Native app  -> App Store + Play Store (NOT a server)
+├── backend/    <- Node.js API              -> Ubuntu VPS at https://api.yourdomain.com
+└── (optional)  package.json workspaces / turbo.json / shared packages
+```
+
+- **Frontend (`mobile/`)** — built with **Expo**, distributed through the
+  **Apple App Store** and **Google Play Store**. It is NOT hosted on a server.
+- **Backend (`backend/`)** — a **Node.js** API running on an **Ubuntu VPS**,
+  reachable at `https://api.yourdomain.com`. The app calls this URL.
+
+Data flow: `Expo app (phone)  ->  https://api.yourdomain.com  ->  Node.js + database on VPS`
+
+**Key monorepo rule:** the two halves never deploy together. The VPS only ever
+runs `backend/`; the stores only ever receive `mobile/`. Run backend commands
+from `backend/` and EAS commands from `mobile/`.
+
+---
+
+## 3. Tech stack & infrastructure
+
+- **Backend:** Node.js (Express or similar), PostgreSQL (adapt if different).
+- **App:** Expo + EAS Build (cloud builds; iOS builds without a Mac).
+- **Server:** Ubuntu 24.04 VPS, Nginx reverse proxy, PM2 process manager,
+  Let's Encrypt (Certbot) for SSL.
+- **Build/release:** `eas build` produces `.aab` (Android) / `.ipa` (iOS);
+  `eas submit` uploads them to the stores.
+
+---
+
+## 4. Key commands
+
+**Backend (on the VPS, run from `backend/`):**
+```bash
+cd backend
+npm install            # install deps (see monorepo note below)
+npm run build          # if TypeScript
+pm2 restart api        # apply new code
+pm2 logs api           # check logs
+```
+
+**Expo app (locally, run from `mobile/`):**
+```bash
+cd mobile
+npx expo install --fix                                   # keep SDK consistent
+eas build --platform android --profile production        # build AAB
+eas build --platform ios --profile production            # build IPA
+eas submit --platform android --profile production       # upload to Play
+eas submit --platform ios --profile production           # upload to App Store
+```
+
+**Monorepo install note:** if you use npm/yarn/pnpm **workspaces**, dependencies
+may hoist to the repo root. On the VPS you then run `npm install` at the repo
+root once (not just in `backend/`), or use `npm ci --workspace backend`. If the
+two folders are independent (each with its own `package.json` and no workspace
+config), just install inside `backend/` as shown. Tell Claude Code which setup
+you use.
+
+---
+
+## 5. What you (Claude Code) are allowed to do — IN SCOPE
+
+You may help with all of the following. Always follow the guardrails in section 7.
+
+1. **Edit Expo config:** create/update `eas.json` and `app.json` for production
+   builds, including `expo-build-properties` so Android targets API level 36.
+2. **Run EAS builds and submissions** when I ask.
+3. **Provision and operate the VPS over SSH** (see the playbook in section 6),
+   running the Nginx / PM2 / Certbot setup.
+4. **Run the redeploy routine** after backend code changes:
+   `git pull` at the repo root, then `cd backend && npm install && npm run build && pm2 restart api`.
+5. **Fix backend issues** (CORS, host binding, env wiring) so the Expo app can
+   reach the API through Nginx.
+
+---
+
+## 6. Deployment playbook (how to do each task)
+
+> Detailed copy-paste commands live in `deployment-runbook.md`. Read that file
+> before executing infra steps. Below is the order you should follow and the
+> checkpoints where you MUST stop and ask me.
+
+### A. VPS backend (one-time)
+1. SSH in, update packages, create `DEPLOY_USER` with sudo, copy SSH keys.
+2. **CHECKPOINT — ask me to confirm I can log in as `DEPLOY_USER` in a separate
+   terminal BEFORE you disable root SSH or password auth.** Do not skip this.
+3. Configure the firewall (OpenSSH, 80, 443).
+4. Install Node via nvm; install the database; create the DB and user.
+5. Clone `REPO_URL` (the whole monorepo). Then build **only the backend**:
+   `cd backend`, install deps (root install if workspaces — see section 4 note),
+   `npm run build`. The `mobile/` folder is never built or run on the server.
+   **Ask me to paste the `.env` values myself — do not generate or guess secrets.**
+6. Start under PM2, enable startup on boot, save.
+7. **CHECKPOINT — tell me to add the DNS A record** (`api.yourdomain.com` ->
+   `YOUR_SERVER_IP`) and confirm it resolves before continuing.
+8. Configure Nginx as a reverse proxy to `localhost:APP_PORT`, test, reload.
+9. Run Certbot for SSL on `api.yourdomain.com`; verify auto-renewal.
+10. Report the live `https://` URL back to me.
+
+### B. Expo config & build (run from `mobile/`)
+1. Set `version`, `ios.bundleIdentifier`, `android.package` in `app.json` to
+   `com.yourcompany.yourapp`; put the API URL in `extra.apiUrl`.
+2. Add the `expo-build-properties` plugin with `targetSdkVersion: 36` and
+   `compileSdkVersion: 36`; run `npx expo install expo-build-properties`.
+3. **Monorepo wiring:** ensure `mobile/metro.config.js` watches the repo root and
+   resolves modules from both `mobile/node_modules` and the root `node_modules`
+   (standard Expo monorepo setup). Add a `mobile/.easignore` so EAS doesn't
+   upload `backend/` and other unrelated folders into the build.
+4. Create `eas.json` (inside `mobile/`) with `preview` (internal APK) and
+   `production` profiles. Run all `eas` commands from `mobile/`.
+5. Run the production build for the platform I ask for.
+6. **CHECKPOINT — submission needs my credentials.** For `eas submit`, prompt me
+   for the Google service-account JSON path (Android) or my Apple credentials
+   (iOS). I will provide these; do not fabricate them.
+
+### C. Redeploy (recurring)
+On request, from the repo root: `git pull`, then
+`cd backend -> npm install -> npm run build -> pm2 restart api`,
+then confirm with `pm2 logs api`. Only the backend is redeployed this way;
+shipping app changes goes through `eas build`/`eas submit` from `mobile/`.
+
+---
+
+## 7. Guardrails — rules you MUST follow
+
+- **Always ask before** anything destructive or privileged: `sudo`, `rm`,
+  deleting files, `git push`, DNS changes, Certbot runs, dropping DB tables,
+  restarting/rebooting the server.
+- **Never print, copy, or paste secrets.** Do not read `.env`, key files, or
+  credentials into the conversation. I will provide secret values directly when
+  needed. (Note: deny rules are best-effort — you still must not try to surface
+  secrets via any tool.)
+- **Production server = high care.** State exactly what a command will do before
+  running it on `YOUR_SERVER_IP`. Prefer dry-runs where available
+  (e.g. `certbot renew --dry-run`, `nginx -t` before reload).
+- **Don't disable root SSH** until I confirm the `DEPLOY_USER` login works.
+- **Use placeholders** and ask me for real values rather than inventing them.
+- If a step is one of my manual tasks (section 8), stop and hand it back to me.
+
+---
+
+## 8. What I (the human) do myself — OUT OF SCOPE for Claude Code
+
+These are account-, payment-, or browser-gated and cannot be automated:
+
+- [ ] Pay **$25 one-time** Google Play Console fee + identity verification.
+- [ ] Pay **$99/year** Apple Developer Program fee + enrollment (D-U-N-S if a company).
+- [ ] Create the **Play Console** and **App Store Connect** app records.
+- [ ] Generate signing credentials I must hand over: a **Google Play
+      service-account JSON** key, and an **App Store Connect API key** (or Apple ID).
+- [ ] Host a **privacy policy** URL on my domain.
+- [ ] Write store listings: title, descriptions, **screenshots**, feature graphic.
+- [ ] Complete the **content rating** questionnaire and **Data Safety / App Privacy**
+      forms.
+- [ ] Provide all **secret values** (`.env`, DB password, API keys) when asked.
+- [ ] Click **Submit for review** and respond to any reviewer feedback.
+- [ ] Buy the VPS and the domain; point the **DNS A record**.
+
+**Division of labour:** While Claude Code does sections 6A–6B, I do section 8 in
+parallel, then hand it the service-account key / Apple credentials so it can run
+`eas submit`.
+
+---
+
+## 9. Recommended permissions config
+
+Create `.claude/settings.json` in this project with the block below. It blocks
+destructive/privileged commands by default and protects secret files, while
+letting the routine work flow. Tune as you go.
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(eas:*)",
+      "Bash(git status)",
+      "Bash(git pull)",
+      "Bash(pm2 logs:*)",
+      "Bash(nginx -t)",
+      "Read(**)",
+      "Edit(**)"
+    ],
+    "ask": [
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(pm2 restart:*)",
+      "Bash(systemctl:*)",
+      "Bash(certbot:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Read(.env*)",
+      "Read(**/.env)",
+      "Read(**/*.pem)",
+      "Read(**/*service-account*.json)"
+    ]
+  }
+}
+```
+
+> `sudo` is denied here, which means server steps that need root will stop and
+> ask. If you'd rather it run unattended on a fresh server, move specific `sudo`
+> commands to `ask` instead of a blanket `deny`. Never blanket-`allow` `sudo`.
+
+---
+
+## 10. Housekeeping
+
+This file reloads into context every session, so once the **one-time** VPS
+provisioning (section 6A) is finished, delete it or move it to a separate
+`docs/initial-setup.md`. Keep sections 2–5, 6C, 7, and 8 as the permanent
+project context.
