@@ -35,6 +35,8 @@ export const colors = {
   statusScheduledBg: '#EFF6FF',
   statusLive: '#0A5C2E',
   statusLiveBg: '#F0FAF5',
+  statusReserved: '#7C3AED',
+  statusReservedBg: '#F5F3FF',
   statusSold: '#6B7280',
   statusSoldBg: '#F5F5F5',
   statusRejected: '#DC2626',

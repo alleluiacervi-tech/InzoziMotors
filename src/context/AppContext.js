@@ -64,6 +64,34 @@ const INITIAL_VERIFICATIONS = [
   { id: 'v4', name: 'Diane Mukeshimana', initials: 'DM', submitted: '2 days ago', status: 'pending' },
 ];
 
+// Pending handover bookings (buyer has committed, admin needs to confirm)
+const INITIAL_HANDOVERS = [
+  {
+    id: 'h1',
+    bookingId: 'BK-20260701-001',
+    buyer: 'James Uwimana',
+    buyerInitials: 'JU',
+    seller: 'Jean Pierre H.',
+    car: '2019 Toyota RAV4',
+    center: 'Nyarutarama Center',
+    date: 'Jul 3, 2026',
+    time: '10:00 AM',
+    status: 'pending',
+  },
+  {
+    id: 'h2',
+    bookingId: 'BK-20260701-002',
+    buyer: 'Grace Murekatete',
+    buyerInitials: 'GM',
+    seller: 'Alice Keza',
+    car: '2021 Honda CR-V',
+    center: 'Kicukiro Center',
+    date: 'Jul 5, 2026',
+    time: '2:00 PM',
+    status: 'pending',
+  },
+];
+
 // Admin: scheduled inspections
 const INITIAL_INSPECTIONS_ADMIN = [
   { id: 'i1', seller: 'Jean Pierre H.', car: '2019 Toyota RAV4', time: 'Today · 10:00 AM', center: 'Nyarutarama', status: 'today' },
@@ -126,8 +154,9 @@ export function AppProvider({ children }) {
   // Phase 2 — Submitted inspection forms (keyed by inspectionId)
   const [inspectionForms, setInspectionForms] = useState({});
 
-  // Phase 3 — Purchase requests
+  // Phase 3 — Purchase requests / handover bookings
   const [purchaseRequests, setPurchaseRequests] = useState([]);
+  const [handovers, setHandovers] = useState(INITIAL_HANDOVERS);
 
   // Phase 4 — Comparison (max 3 cars)
   const [comparisonCars, setComparisonCars] = useState([]);
@@ -280,55 +309,81 @@ export function AppProvider({ children }) {
     setInspectionForms((prev) => ({ ...prev, [key]: { inspection, results, notes, score, submittedAt: new Date().toISOString() } }));
   }, []);
 
-  // --- Phase 3: Purchase Requests ---
-  const addPurchaseRequest = useCallback((car) => {
-    const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+  // --- Phase 3: Handover Bookings ---
+  const bookHandover = useCallback((car, { center, date, time }) => {
+    const bookingId = 'BK-' + Date.now().toString(36).toUpperCase();
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
     const newRequest = {
-      id: orderId,
+      id: bookingId,
       car,
-      status: 'sent',
-      sentAt: now.toISOString(),
-      sentTime: timeStr,
-      confirmedAt: null,
-      confirmedTime: null,
+      status: 'reserved',
+      center,
+      date,
+      time,
+      bookedAt: now.toISOString(),
+      bookedTime: timeStr,
+      completedAt: null,
     };
     setPurchaseRequests((prev) => [newRequest, ...prev]);
 
-    // Notification: request sent
+    // Add to admin handovers queue
+    setHandovers((prev) => [{
+      id: 'h_' + Date.now(),
+      bookingId,
+      buyer: currentUser.name,
+      buyerInitials: currentUser.initials,
+      seller: car.seller,
+      car: car.title,
+      center,
+      date,
+      time,
+      status: 'pending',
+    }, ...prev]);
+
+    // Notification: booking confirmed
     setNotifications((prev) => [{
-      id: 'req_' + Date.now(),
+      id: 'book_' + Date.now(),
       type: 'listing_update',
-      title: 'Purchase request sent',
-      body: `Your request for ${car.title} was sent to ${car.seller}. Waiting for confirmation.`,
+      title: 'Handover slot booked',
+      body: `Your slot for the ${car.title} is confirmed at ${center} on ${date} at ${time}. The car is now reserved for you.`,
       time: 'Just now',
       date: 'Today',
       read: false,
-      orderId,
+      bookingId,
     }, ...prev]);
 
-    // Simulate seller confirming after 4 seconds
-    setTimeout(() => {
-      const confTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      setPurchaseRequests((prev) =>
-        prev.map((r) => r.id === orderId
-          ? { ...r, status: 'confirmed', confirmedAt: new Date().toISOString(), confirmedTime: confTime }
-          : r),
-      );
-      setNotifications((prev) => [{
-        id: 'conf_' + Date.now(),
-        type: 'new_message',
-        title: `${car.seller} confirmed your request!`,
-        body: `Great news — your purchase request for the ${car.title} has been confirmed. Open chat to arrange the handover.`,
-        time: 'Just now',
-        date: 'Today',
-        read: false,
-        orderId,
-      }, ...prev]);
-    }, 4000);
+    return bookingId;
+  }, [currentUser]);
 
-    return orderId;
+  // Legacy alias — keeps any existing code that calls addPurchaseRequest working
+  const addPurchaseRequest = bookHandover;
+
+  // Admin: confirm a handover happened → mark complete, archive listing
+  const confirmHandover = useCallback((handoverId) => {
+    setHandovers((prev) =>
+      prev.map((h) => h.id === handoverId ? { ...h, status: 'complete' } : h)
+    );
+    // Find the matching purchase request and mark complete
+    setHandovers((prev) => {
+      const h = prev.find((x) => x.id === handoverId);
+      if (h) {
+        setPurchaseRequests((reqs) =>
+          reqs.map((r) => r.id === h.bookingId ? { ...r, status: 'complete', completedAt: new Date().toISOString() } : r)
+        );
+        setNotifications((notifs) => [{
+          id: 'sold_' + Date.now(),
+          type: 'listing_update',
+          title: 'Handover confirmed',
+          body: `The ${h.car} handover has been completed and confirmed by the Inzozi team. Your 7-day return guarantee is now active.`,
+          time: 'Just now',
+          date: 'Today',
+          read: false,
+        }, ...notifs]);
+      }
+      return prev;
+    });
   }, []);
 
   // --- Auth ---
@@ -355,7 +410,8 @@ export function AppProvider({ children }) {
     notifications, markNotificationRead, markAllNotificationsRead,
     inspectionForms, submitInspectionForm,
     // Phase 3
-    purchaseRequests, addPurchaseRequest,
+    purchaseRequests, bookHandover, addPurchaseRequest,
+    handovers, confirmHandover,
     // Phase 5
     relistSubmission,
     // Phase 4

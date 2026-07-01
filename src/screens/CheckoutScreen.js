@@ -7,38 +7,51 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { useApp } from '../context/AppContext';
 
-const STEPS = [
-  {
-    icon: 'paper-plane-outline',
-    title: 'Request sent to seller',
-    sub: 'The seller is notified instantly via chat.',
-  },
-  {
-    icon: 'chatbubble-ellipses-outline',
-    title: 'Seller confirms within 24h',
-    sub: "They'll accept via chat to open the conversation.",
-  },
-  {
-    icon: 'location-outline',
-    title: 'Arrange a viewing in Kigali',
-    sub: 'Coordinate a test drive time and meeting point with the seller.',
-  },
-  {
-    icon: 'swap-horizontal-outline',
-    title: 'Agree terms & handover',
-    sub: "Finalise terms with the seller directly. Inzozi witnesses the handover.",
-  },
+const CENTERS = [
+  { id: 'nyarutarama', name: 'Nyarutarama Center', address: 'KG 9 Ave, Nyarutarama' },
+  { id: 'kicukiro', name: 'Kicukiro Center', address: 'KN 5 Rd, Kicukiro' },
+  { id: 'kimironko', name: 'Kimironko Center', address: 'KG 28 St, Kimironko' },
 ];
 
-function ReviewState({ car, price, onSend, sending }) {
+const getDates = () => {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const today = new Date(2026, 5, 28);
+  return Array.from({ length: 10 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i + 1);
+    return {
+      label: days[d.getDay()],
+      date: d.getDate(),
+      display: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`,
+      full: `${months[d.getMonth()]} ${d.getDate()}, 2026`,
+      available: d.getDay() !== 0,
+      key: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`,
+    };
+  });
+};
+
+const TIME_SLOTS = [
+  '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
+  '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM',
+];
+
+const HOW_IT_WORKS = [
+  { icon: 'calendar-outline', title: 'Pick a slot at our center', sub: 'Choose a date, time, and Inzozi center near you.' },
+  { icon: 'lock-closed-outline', title: 'Car reserved instantly', sub: 'Removed from the marketplace the moment you book.' },
+  { icon: 'people-outline', title: 'Meet at the Inzozi center', sub: 'Bring the seller. We verify everything together.' },
+  { icon: 'shield-checkmark-outline', title: 'Handover confirmed', sub: 'Ownership transferred. 7-day return guarantee starts.' },
+];
+
+// ─── Review phase ────────────────────────────────────────────────────────────
+function ReviewState({ car, price, onNext }) {
   return (
     <>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 120 }}>
-        {/* Car summary */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.carCard}>
           <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="cover" />
           <View style={{ flex: 1 }}>
@@ -48,33 +61,28 @@ function ReviewState({ car, price, onSend, sending }) {
           </View>
         </View>
 
-        {/* Inspection badge */}
         {car.inspected && (
-          <View style={styles.inspBadge}>
+          <View style={styles.certBadge}>
             <Ionicons name="shield-checkmark" size={15} color={colors.green} />
-            <Text style={styles.inspBadgeText}>150-point Inzozi Certified · 7-day return guarantee</Text>
+            <Text style={styles.certBadgeText}>Inzozi Certified · 150-point inspection passed</Text>
           </View>
         )}
 
-        {/* No payment notice */}
-        <View style={styles.noPayCard}>
+        <View style={styles.infoBox}>
           <Ionicons name="information-circle-outline" size={18} color={colors.statusScheduled} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.noPayTitle}>No payment through Inzozi</Text>
-            <Text style={styles.noPaySub}>
-              We connect you with the seller. All payment and financial terms are agreed directly between you and the seller, offline.
+            <Text style={styles.infoTitle}>How the handover works</Text>
+            <Text style={styles.infoSub}>
+              No money changes hands in the app. Payment, documents, and ownership transfer all happen at the Inzozi center — where we protect both you and the seller.
             </Text>
           </View>
         </View>
 
-        {/* What happens next */}
-        <Text style={styles.sectionTitle}>What happens next</Text>
+        <Text style={styles.sectionTitle}>What happens step by step</Text>
         <View style={styles.stepsCard}>
-          {STEPS.map((s, i) => (
-            <View key={s.title} style={[styles.step, i < STEPS.length - 1 && styles.stepBorder]}>
-              <View style={styles.stepNum}>
-                <Text style={styles.stepNumText}>{i + 1}</Text>
-              </View>
+          {HOW_IT_WORKS.map((s, i) => (
+            <View key={s.title} style={[styles.step, i < HOW_IT_WORKS.length - 1 && styles.stepBorder]}>
+              <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
               <View style={styles.stepIcon}>
                 <Ionicons name={s.icon} size={18} color={colors.primary} />
               </View>
@@ -86,10 +94,9 @@ function ReviewState({ car, price, onSend, sending }) {
           ))}
         </View>
 
-        {/* Seller info */}
         <View style={styles.sellerCard}>
           <View style={styles.sellerAvatar}>
-            <Text style={styles.sellerInitial}>{car.seller[0]}</Text>
+            <Text style={styles.sellerInitial}>{car.seller?.[0]}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.sellerName}>{car.seller}</Text>
@@ -98,265 +105,388 @@ function ReviewState({ car, price, onSend, sending }) {
               <Text style={styles.sellerMetaText}>{car.rating} · Verified seller</Text>
             </View>
           </View>
-          <View style={styles.sellerBadge}>
+          <View style={styles.sellerVerified}>
             <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-            <Text style={styles.sellerBadgeText}>ID Verified</Text>
+            <Text style={styles.sellerVerifiedText}>ID Verified</Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Footer */}
       <View style={styles.footer}>
         <View>
           <Text style={styles.footerLabel}>Asking price</Text>
           <Text style={styles.footerValue}>{formatPrice(price)}</Text>
         </View>
+        <Button title="Book a Handover Slot" icon="calendar-outline" onPress={onNext} style={{ flex: 1 }} />
+      </View>
+    </>
+  );
+}
+
+// ─── Booking phase ───────────────────────────────────────────────────────────
+function BookingState({ onConfirm, onBack }) {
+  const DATES = getDates();
+  const [selectedCenter, setSelectedCenter] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+
+  const canConfirm = selectedCenter && selectedDate && selectedTime;
+
+  return (
+    <>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+
+        <Text style={styles.bookingSection}>Choose a center</Text>
+        {CENTERS.map((c) => (
+          <Pressable
+            key={c.id}
+            style={[styles.centerCard, selectedCenter?.id === c.id && styles.centerCardSelected]}
+            onPress={() => setSelectedCenter(c)}
+          >
+            <View style={[styles.centerDot, selectedCenter?.id === c.id && styles.centerDotSelected]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.centerName, selectedCenter?.id === c.id && styles.centerNameSelected]}>{c.name}</Text>
+              <Text style={styles.centerAddress}>{c.address}</Text>
+            </View>
+            {selectedCenter?.id === c.id && (
+              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+            )}
+          </Pressable>
+        ))}
+
+        <Text style={[styles.bookingSection, { marginTop: 20 }]}>Choose a date</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRow}>
+          {DATES.map((d) => (
+            <Pressable
+              key={d.key}
+              style={[
+                styles.dateChip,
+                !d.available && styles.dateChipDisabled,
+                selectedDate?.key === d.key && styles.dateChipSelected,
+              ]}
+              onPress={() => d.available && setSelectedDate(d)}
+              disabled={!d.available}
+            >
+              <Text style={[styles.dateDow, selectedDate?.key === d.key && styles.dateDowSelected]}>{d.label}</Text>
+              <Text style={[styles.dateNum, selectedDate?.key === d.key && styles.dateNumSelected]}>{d.date}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        {selectedDate && (
+          <>
+            <Text style={[styles.bookingSection, { marginTop: 20 }]}>Choose a time</Text>
+            <View style={styles.timeGrid}>
+              {TIME_SLOTS.map((t) => (
+                <Pressable
+                  key={t}
+                  style={[styles.timeChip, selectedTime === t && styles.timeChipSelected]}
+                  onPress={() => setSelectedTime(t)}
+                >
+                  <Text style={[styles.timeText, selectedTime === t && styles.timeTextSelected]}>{t}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+
+        {canConfirm && (
+          <View style={styles.summaryBox}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+            <Text style={styles.summaryText}>
+              {selectedCenter.name} · {selectedDate.display} · {selectedTime}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.footer}>
         <Button
-          title={sending ? 'Sending…' : 'Send Purchase Request'}
-          style={{ flex: 1 }}
-          onPress={onSend}
+          title="Confirm Booking"
+          icon="shield-checkmark-outline"
+          onPress={() => canConfirm && onConfirm(selectedCenter.name, selectedDate.full, selectedTime)}
+          style={{ opacity: canConfirm ? 1 : 0.45 }}
         />
       </View>
     </>
   );
 }
 
-function SentState({ car, orderId, onTrack, onMessage }) {
+// ─── Confirmed phase ─────────────────────────────────────────────────────────
+function ConfirmedState({ car, bookingId, center, date, time, onTrack, onMessage }) {
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-      {/* Success hero */}
-      <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.successHero}>
-        <View style={styles.successIconWrap}>
-          <Ionicons name="checkmark-circle" size={44} color={colors.greenLight} />
-        </View>
-        <Text style={styles.successTitle}>Request Sent!</Text>
-        <Text style={styles.successSub}>
-          {car.seller} has been notified and will respond within 24 hours.
-        </Text>
-        <View style={styles.orderIdChip}>
-          <Text style={styles.orderIdLabel}>Order ID</Text>
-          <Text style={styles.orderIdValue}>{orderId}</Text>
-        </View>
-      </LinearGradient>
-
-      {/* Car summary */}
-      <View style={styles.carCard}>
-        <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="cover" />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.carTitle}>{car.title}</Text>
-          <Text style={styles.carSeller}>{car.seller}</Text>
-        </View>
-        <View style={styles.pendingChip}>
-          <View style={styles.pendingDot} />
-          <Text style={styles.pendingChipText}>Awaiting seller</Text>
-        </View>
-      </View>
-
-      {/* Status hint */}
-      <View style={styles.hintCard}>
-        <Ionicons name="notifications-outline" size={16} color={colors.primary} />
-        <Text style={styles.hintText}>
-          You'll receive a notification when {car.seller} confirms. Check back in Order Tracking for live status updates.
-        </Text>
-      </View>
-
-      {/* Next steps */}
-      <View style={[styles.stepsCard, { margin: 16 }]}>
-        <Text style={styles.sectionTitle}>While you wait</Text>
-        {[
-          { icon: 'document-text-outline', text: 'Review the full 150-point inspection report for this car.' },
-          { icon: 'earth-outline', text: 'Check the Vehicle History — import origin, RRA duty, and accident records.' },
-          { icon: 'chatbubble-outline', text: 'Open the chat now if you have questions for the seller.' },
-        ].map((item, i) => (
-          <View key={i} style={[styles.hintRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: 12, marginTop: 12 }]}>
-            <View style={styles.hintIcon}>
-              <Ionicons name={item.icon} size={16} color={colors.primary} />
-            </View>
-            <Text style={styles.hintRowText}>{item.text}</Text>
+    <>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+        <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.successHero}>
+          <View style={styles.successIconWrap}>
+            <Ionicons name="checkmark-circle" size={44} color={colors.greenLight} />
           </View>
-        ))}
+          <Text style={styles.successTitle}>Handover Booked!</Text>
+          <Text style={styles.successSub}>
+            The {car.title} is now reserved for you. No one else can book it.
+          </Text>
+        </LinearGradient>
+
+        <View style={styles.bookingCard}>
+          <Text style={styles.bookingCardTitle}>Your booking</Text>
+          {[
+            { icon: 'bookmark-outline', label: 'Booking ID', value: bookingId },
+            { icon: 'business-outline', label: 'Center', value: center },
+            { icon: 'calendar-outline', label: 'Date', value: date },
+            { icon: 'time-outline', label: 'Time', value: time },
+          ].map((row) => (
+            <View key={row.label} style={styles.bookingRow}>
+              <Ionicons name={row.icon} size={15} color={colors.textMuted} />
+              <Text style={styles.bookingRowLabel}>{row.label}</Text>
+              <Text style={styles.bookingRowValue}>{row.value}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.guaranteeCard}>
+          <Ionicons name="shield-checkmark" size={16} color={colors.green} />
+          <Text style={styles.guaranteeText}>
+            7-day return guarantee applies when handover is completed at the Inzozi center.
+          </Text>
+        </View>
+
+        <View style={styles.nextCard}>
+          <Text style={styles.nextTitle}>While you wait</Text>
+          {[
+            { icon: 'chatbubble-outline', text: 'Message the seller — confirm they know the date and center.' },
+            { icon: 'document-text-outline', text: 'Re-read the 150-point inspection report for this car.' },
+            { icon: 'earth-outline', text: 'Check the Vehicle History for import origin and RRA duty records.' },
+          ].map((item, i) => (
+            <View key={i} style={styles.nextRow}>
+              <View style={styles.nextIcon}><Ionicons name={item.icon} size={14} color={colors.primary} /></View>
+              <Text style={styles.nextText}>{item.text}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <Button title="Track Booking" icon="navigate-outline" onPress={onTrack} />
+        <Button
+          title="Message Seller"
+          variant="secondary"
+          icon="chatbubble-outline"
+          onPress={onMessage}
+          style={{ marginTop: 10 }}
+        />
       </View>
-    </ScrollView>
+    </>
   );
 }
 
+// ─── Root ─────────────────────────────────────────────────────────────────────
 export default function CheckoutScreen({ navigation, route }) {
   const car = route.params?.car;
   const price = car.type === 'auction' ? car.currentBid : car.price;
-  const { addPurchaseRequest } = useApp();
+  const { bookHandover } = useApp();
 
-  const [phase, setPhase] = useState('review'); // 'review' | 'sent'
-  const [orderId, setOrderId] = useState(null);
-  const [sending, setSending] = useState(false);
+  const [phase, setPhase] = useState('review');
+  const [bookingId, setBookingId] = useState(null);
+  const [booking, setBooking] = useState({ center: '', date: '', time: '' });
 
-  const handleSend = () => {
-    setSending(true);
-    // Small delay for UX feel
-    setTimeout(() => {
-      const id = addPurchaseRequest(car);
-      setOrderId(id);
-      setPhase('sent');
-      setSending(false);
-    }, 600);
+  const handleConfirm = (center, date, time) => {
+    const id = bookHandover(car, { center, date, time });
+    setBookingId(id);
+    setBooking({ center, date, time });
+    setPhase('confirmed');
   };
+
+  const titles = { review: 'Book a Handover', booking: 'Choose a Slot', confirmed: 'Booking Confirmed' };
 
   return (
     <Screen background={colors.bg}>
       <BackHeader
-        title={phase === 'review' ? 'Request to Buy' : 'Request Sent'}
+        title={titles[phase]}
         onBack={() => {
-          if (phase === 'sent') {
-            navigation.navigate('Main');
-          } else {
-            navigation.goBack();
-          }
+          if (phase === 'booking') setPhase('review');
+          else if (phase === 'confirmed') navigation.navigate('Main');
+          else navigation.goBack();
         }}
       />
-
-      {phase === 'review' ? (
-        <ReviewState car={car} price={price} onSend={handleSend} sending={sending} />
-      ) : (
-        <>
-          <SentState
-            car={car}
-            orderId={orderId}
-            onTrack={() => navigation.navigate('OrderTracking', { orderId, car })}
-            onMessage={() => navigation.navigate('Chat', { name: car.seller, car })}
-          />
-          {/* Sticky CTAs */}
-          <View style={styles.footer}>
-            <Button
-              title="Track Order"
-              icon="navigate-outline"
-              onPress={() => navigation.navigate('OrderTracking', { orderId, car })}
-            />
-            <Button
-              title="Message Seller"
-              variant="secondary"
-              icon="chatbubble-outline"
-              onPress={() => navigation.navigate('Chat', { name: car.seller, car })}
-              style={{ marginTop: 10 }}
-            />
-          </View>
-        </>
+      {phase === 'review' && (
+        <ReviewState car={car} price={price} onNext={() => setPhase('booking')} />
+      )}
+      {phase === 'booking' && (
+        <BookingState
+          onConfirm={handleConfirm}
+          onBack={() => setPhase('review')}
+        />
+      )}
+      {phase === 'confirmed' && (
+        <ConfirmedState
+          car={car}
+          bookingId={bookingId}
+          center={booking.center}
+          date={booking.date}
+          time={booking.time}
+          onTrack={() => navigation.navigate('OrderTracking', { orderId: bookingId, car })}
+          onMessage={() => navigation.navigate('Chat', { name: car.seller, car })}
+        />
       )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: { padding: 16, paddingTop: 8, paddingBottom: 120 },
+
+  // Car summary
   carCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    marginHorizontal: 16, marginBottom: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 12,
-    ...shadows.card,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 12, marginBottom: 10, ...shadows.card,
   },
   carThumb: { width: 80, height: 60, borderRadius: radius.lg, backgroundColor: colors.border },
-  carTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, lineHeight: 19 },
-  carSeller: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  carPrice: { fontSize: 16, fontWeight: '800', color: colors.primary, marginTop: 4 },
-  inspBadge: {
+  carTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 19 },
+  carSeller: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
+  carPrice: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 4 },
+
+  certBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.primary + '33',
+    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '33',
     borderRadius: radius.lg, padding: 12, marginBottom: 10,
   },
-  inspBadgeText: { fontSize: 12, fontWeight: '600', color: colors.primary, flex: 1 },
-  noPayCard: {
+  certBadgeText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.primary, flex: 1 },
+
+  infoBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    backgroundColor: '#EFF6FF',
-    borderRadius: radius.lg, padding: 14, marginBottom: 16,
+    backgroundColor: '#EFF6FF', borderRadius: radius.lg, padding: 14, marginBottom: 16,
   },
-  noPayTitle: { fontSize: 13, fontWeight: '700', color: colors.statusScheduled },
-  noPaySub: { fontSize: 12, color: colors.statusScheduled, lineHeight: 17, marginTop: 3 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
+  infoTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.statusScheduled },
+  infoSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.statusScheduled, lineHeight: 17, marginTop: 3 },
+
+  sectionTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10 },
+
   stepsCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, overflow: 'hidden', marginBottom: 14,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, overflow: 'hidden', marginBottom: 12,
   },
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14 },
   stepBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   stepNum: {
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: colors.primary,
+    width: 20, height: 20, borderRadius: 10, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
   },
-  stepNumText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  stepNumText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff' },
   stepIcon: {
-    width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: colors.greenTint,
+    width: 34, height: 34, borderRadius: radius.md, backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  stepTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  stepSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
+  stepTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
+  stepSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
+
   sellerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 14, marginBottom: 8,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 14,
   },
   sellerAvatar: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.navyMid,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.navyMid,
     alignItems: 'center', justifyContent: 'center',
   },
-  sellerInitial: { color: '#fff', fontWeight: '800', fontSize: 16 },
-  sellerName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  sellerInitial: { color: '#fff', fontFamily: fonts.extraBold, fontSize: 16 },
+  sellerName: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   sellerMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  sellerMetaText: { fontSize: 12, color: colors.textSecondary },
-  sellerBadge: {
+  sellerMetaText: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary },
+  sellerVerified: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.greenTint,
-    paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.pill,
+    backgroundColor: colors.greenTint, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.pill,
   },
-  sellerBadgeText: { fontSize: 11, fontWeight: '700', color: colors.green },
+  sellerVerifiedText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
+
+  // Booking phase
+  bookingSection: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
+  centerCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: radius.xl, padding: 14, marginBottom: 8,
+  },
+  centerCardSelected: { borderColor: colors.primary, backgroundColor: colors.greenTint },
+  centerDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: colors.border },
+  centerDotSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+  centerName: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  centerNameSelected: { color: colors.primary },
+  centerAddress: { fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
+
+  dateRow: { gap: 8, paddingBottom: 4 },
+  dateChip: {
+    width: 52, paddingVertical: 10, alignItems: 'center',
+    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.lg,
+  },
+  dateChipDisabled: { opacity: 0.35 },
+  dateChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dateDow: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.textMuted, marginBottom: 4 },
+  dateDowSelected: { color: 'rgba(255,255,255,0.75)' },
+  dateNum: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  dateNumSelected: { color: '#fff' },
+
+  timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  timeChip: {
+    paddingHorizontal: 14, paddingVertical: 9,
+    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.lg,
+  },
+  timeChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  timeText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  timeTextSelected: { color: '#fff' },
+
+  summaryBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16,
+    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '44',
+    borderRadius: radius.xl, padding: 14,
+  },
+  summaryText: { flex: 1, fontSize: 13, fontFamily: fonts.semiBold, color: colors.primary },
+
+  // Confirmed phase
+  successHero: { margin: 16, marginBottom: 10, borderRadius: radius.xxl, padding: 28, alignItems: 'center', gap: 10 },
+  successIconWrap: {
+    width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  successTitle: { fontSize: 24, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.5 },
+  successSub: { fontSize: 14, fontFamily: fonts.regular, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 20 },
+
+  bookingCard: {
+    marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 16, gap: 12, ...shadows.card,
+  },
+  bookingCardTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 4 },
+  bookingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  bookingRowLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.textMuted, width: 70 },
+  bookingRowValue: { flex: 1, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
+
+  guaranteeCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '33',
+    borderRadius: radius.xl, padding: 14,
+  },
+  guaranteeText: { flex: 1, fontSize: 12, fontFamily: fonts.medium, color: colors.navyMid, lineHeight: 18 },
+
+  nextCard: {
+    marginHorizontal: 16, marginBottom: 10,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 16, gap: 12, ...shadows.card,
+  },
+  nextTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  nextRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  nextIcon: {
+    width: 28, height: 28, borderRadius: radius.sm, backgroundColor: colors.greenTint,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  nextText: { flex: 1, fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, lineHeight: 18 },
+
+  // Shared footer
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
-    backgroundColor: colors.surface,
-    ...shadows.floating,
+    backgroundColor: colors.surface, ...shadows.floating,
   },
-  footerLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
-  footerValue: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
-  // Sent state
-  successHero: { margin: 16, marginBottom: 8, borderRadius: radius.xxl, padding: 24, alignItems: 'center', gap: 10 },
-  successIconWrap: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  successTitle: { fontSize: 24, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
-  successSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 20 },
-  orderIdChip: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: radius.pill, paddingHorizontal: 16, paddingVertical: 8,
-    alignItems: 'center', gap: 2,
-  },
-  orderIdLabel: { fontSize: 9, color: 'rgba(255,255,255,0.5)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  orderIdValue: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 1 },
-  pendingChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: colors.amberTint, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill,
-  },
-  pendingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.amber },
-  pendingChipText: { fontSize: 10, fontWeight: '700', color: colors.amber },
-  hintCard: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.primary + '33',
-    borderRadius: radius.xl, padding: 14,
-  },
-  hintText: { flex: 1, fontSize: 12, color: colors.primary, lineHeight: 18 },
-  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  hintIcon: {
-    width: 30, height: 30, borderRadius: radius.sm,
-    backgroundColor: colors.greenTint,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  hintRowText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
+  footerLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, marginBottom: 2 },
+  footerValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
 });

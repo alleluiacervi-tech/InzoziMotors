@@ -7,7 +7,7 @@ import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
 
-const TABS = ['Queue', 'Inspections', 'Listings'];
+const TABS = ['Queue', 'Inspections', 'Handovers', 'Listings'];
 
 const STAT_CARDS = (pendingCount) => [
   { label: 'Pending IDs', value: String(pendingCount), icon: 'person-outline', color: colors.amber, bg: colors.amberTint },
@@ -15,6 +15,79 @@ const STAT_CARDS = (pendingCount) => [
   { label: 'Active Listings', value: '25', icon: 'car-outline', color: colors.primary, bg: colors.greenTint },
   { label: 'This Month', value: '$14.2k', icon: 'trending-up-outline', color: colors.primary, bg: colors.greenTint },
 ];
+
+function HandoversTab({ handovers, onConfirm }) {
+  const pending = handovers.filter((h) => h.status === 'pending');
+  const done = handovers.filter((h) => h.status === 'complete');
+
+  if (handovers.length === 0) {
+    return (
+      <View style={styles.tabContent}>
+        <View style={styles.emptyState}>
+          <Ionicons name="calendar-outline" size={48} color={colors.primary} />
+          <Text style={styles.emptyTitle}>No handovers yet</Text>
+          <Text style={styles.emptySub}>Booked handover slots will appear here.</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.tabContent}>
+      {pending.length > 0 && (
+        <>
+          <Text style={styles.subHeader}>Upcoming ({pending.length})</Text>
+          {pending.map((h) => (
+            <View key={h.id} style={[styles.inspCard, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={[styles.inspDot, { backgroundColor: colors.statusReserved }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inspSeller}>{h.car}</Text>
+                  <Text style={styles.inspCar}>Buyer: {h.buyer} · Seller: {h.seller}</Text>
+                  <View style={styles.inspMeta}>
+                    <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
+                    <Text style={styles.inspMetaText}>{h.date} · {h.time}</Text>
+                    <View style={styles.inspMetaDot} />
+                    <Ionicons name="location-outline" size={12} color={colors.textMuted} />
+                    <Text style={styles.inspMetaText}>{h.center}</Text>
+                  </View>
+                </View>
+                <View style={[styles.inspBadge, { backgroundColor: colors.statusReservedBg }]}>
+                  <Text style={[styles.inspBadgeText, { color: colors.statusReserved }]}>BOOKED</Text>
+                </View>
+              </View>
+              <Pressable
+                style={styles.confirmHandoverBtn}
+                onPress={() => onConfirm(h.id, h.car)}
+              >
+                <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
+                <Text style={styles.confirmHandoverBtnText}>Confirm Handover → Mark Sold</Text>
+              </Pressable>
+            </View>
+          ))}
+        </>
+      )}
+      {done.length > 0 && (
+        <>
+          <Text style={[styles.subHeader, { marginTop: 20 }]}>Completed ({done.length})</Text>
+          {done.map((h) => (
+            <View key={h.id} style={[styles.inspCard, { opacity: 0.6 }]}>
+              <View style={[styles.inspDot, { backgroundColor: colors.statusSold }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inspSeller}>{h.car}</Text>
+                <Text style={styles.inspCar}>{h.buyer} → {h.seller}</Text>
+                <Text style={[styles.inspMetaText, { marginTop: 4 }]}>{h.date} · {h.center}</Text>
+              </View>
+              <View style={[styles.inspBadge, { backgroundColor: colors.statusSoldBg }]}>
+                <Text style={[styles.inspBadgeText, { color: colors.statusSold }]}>SOLD</Text>
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+    </View>
+  );
+}
 
 const STATUS_MAP = {
   under_review: { label: 'Under Review', color: colors.statusPending, bg: colors.statusPendingBg },
@@ -185,10 +258,11 @@ function ListingsTab({ navigation }) {
 }
 
 export default function AdminPanelScreen({ navigation }) {
-  const { pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification } = useApp();
+  const { pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification, handovers, confirmHandover } = useApp();
   const [activeTab, setActiveTab] = useState(0);
 
   const pendingCount = pendingVerifications.filter((v) => v.status === 'pending').length;
+  const pendingHandovers = handovers.filter((h) => h.status === 'pending').length;
 
   const handleApprove = (id) => {
     Alert.alert('Approve Seller?', 'This seller will be notified and can submit cars for listing.', [
@@ -205,6 +279,17 @@ export default function AdminPanelScreen({ navigation }) {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Reject', style: 'destructive', onPress: () => adminRejectVerification(id) },
     ]);
+  };
+
+  const handleConfirmHandover = (handoverId, carName) => {
+    Alert.alert(
+      'Confirm Handover?',
+      `This will mark the ${carName} as sold and remove it from the marketplace. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Confirm & Mark Sold', style: 'default', onPress: () => confirmHandover(handoverId) },
+      ],
+    );
   };
 
   return (
@@ -240,7 +325,8 @@ export default function AdminPanelScreen({ navigation }) {
         {/* Tabs */}
         <View style={styles.tabBar}>
           {TABS.map((tab, idx) => {
-            const badge = idx === 0 && pendingCount > 0 ? pendingCount : null;
+            const badge = idx === 0 && pendingCount > 0 ? pendingCount
+              : idx === 2 && pendingHandovers > 0 ? pendingHandovers : null;
             return (
               <Pressable
                 key={tab}
@@ -266,7 +352,8 @@ export default function AdminPanelScreen({ navigation }) {
           />
         )}
         {activeTab === 1 && <InspectionsTab inspections={adminInspections} navigation={navigation} />}
-        {activeTab === 2 && <ListingsTab navigation={navigation} />}
+        {activeTab === 2 && <HandoversTab handovers={handovers} onConfirm={handleConfirmHandover} />}
+        {activeTab === 3 && <ListingsTab navigation={navigation} />}
       </ScrollView>
     </Screen>
   );
@@ -402,6 +489,11 @@ const styles = StyleSheet.create({
   listingMetaText: { fontSize: 11, color: colors.textMuted },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
   badgeText: { fontSize: 11, fontWeight: '700' },
+  confirmHandoverBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: 11,
+  },
+  confirmHandoverBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   // Empty state
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
