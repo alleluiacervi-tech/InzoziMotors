@@ -665,6 +665,162 @@ letting the routine work flow. Tune as you go.
 
 ---
 
+---
+
+# Master Implementation Todo List
+
+> All phases. Admin dashboard = browser (Next.js web app, separate from mobile).
+> Mobile app = Expo React Native. Backend = Node.js + PostgreSQL on VPS.
+> Items marked ✅ are complete in the codebase. Items marked 🔲 are planned.
+
+---
+
+## Phase 1–5 — Mobile App ✅ Complete
+
+All screens built and wired. See screen table above for full list.
+
+---
+
+## Phase 6 — Backend API 🔲 In Progress
+
+### 6A. Infrastructure (do when VPS is purchased)
+- [ ] Buy VPS (Ubuntu 24.04 recommended) — get IP address
+- [ ] Buy domain (e.g. api.inzozimotors.rw) — optional for dev, required for HTTPS
+- [ ] SSH in, create deploy user, configure firewall (ports 22, 80, 443, 3000)
+- [ ] Install Node.js via nvm, install PostgreSQL
+- [ ] Create database: `inzozi_motors`, create user, grant permissions
+- [ ] Clone repo to VPS, `cd backend`, `npm install`
+- [ ] Copy `.env.example` → `.env`, fill in all values (DB password, JWT secret)
+- [ ] Run `node src/db-init.js` to create all tables
+- [ ] Start with PM2: `pm2 start server.js --name api`, `pm2 save`, `pm2 startup`
+- [ ] Configure Nginx reverse proxy (localhost:3000 → public)
+- [ ] (Optional) Add Certbot SSL once domain is pointed at server
+
+### 6B. Backend Routes — Scaffolded ✅
+- [x] `POST /auth/register` — register buyer or seller
+- [x] `POST /auth/login` — returns JWT
+- [x] `GET /auth/me` — current user profile
+- [x] `GET /cars` — browse with filters (make, price, year, fuel, transmission, location)
+- [x] `GET /cars/:id` — car detail + view count increment
+- [x] `POST /cars` (admin) — create live listing after inspection
+- [x] `PATCH /cars/:id/status` (admin) — update listing status
+- [x] `POST /cars/save/:id` — toggle save/unsave
+- [x] `GET /cars/saved/list` — buyer's saved cars
+- [x] `POST /submissions` — seller submits car for inspection
+- [x] `GET /submissions` — seller sees their own pipeline
+- [x] `GET /submissions/admin/all` (admin) — all submissions
+- [x] `PATCH /submissions/:id` (admin) — approve, schedule, reject
+- [x] `POST /handovers` — buyer books a handover slot → car reserved
+- [x] `GET /handovers/my` — buyer's bookings
+- [x] `GET /handovers` (admin) — all pending handovers
+- [x] `PATCH /handovers/:id/confirm` (admin) — confirm → sold → listing archived
+- [x] `PATCH /handovers/:id/cancel` — buyer cancels
+- [x] `GET /messages/conversations` — user's conversation list
+- [x] `GET /messages/conversations/:id` — message history
+- [x] `POST /messages/conversations` — start new conversation
+- [x] `POST /messages/conversations/:id` — send message
+- [x] `GET /notifications` — user's notifications
+- [x] `PATCH /notifications/:id/read` — mark read
+- [x] `PATCH /notifications/read-all` — mark all read
+- [x] Socket.io — real-time chat (join_conversation, send_message, typing indicator)
+
+### 6C. Backend Routes — Still To Build 🔲
+- [ ] `POST /auth/id-verification` — seller uploads ID photos (multer)
+- [ ] `PATCH /auth/id-verification/:userId` (admin) — approve / reject
+- [ ] `POST /inspections/:id/complete` (admin) — record 150-pt checklist results + score
+- [ ] `GET /inspections` (admin) — all scheduled inspections
+- [ ] `POST /cars/:id/photos` (admin) — upload 36-angle inspection photos (multer)
+- [ ] `GET /cars/:id/inspection-report` — full structured inspection report
+- [ ] `GET /cars/:id/history` — vehicle history card
+- [ ] `POST /saved-searches` — create a saved search alert
+- [ ] `GET /saved-searches` — list user's saved searches
+- [ ] `DELETE /saved-searches/:id`
+- [ ] `POST /reviews` — buyer leaves review after handover
+- [ ] `GET /users/:id/reviews` — seller's reviews
+- [ ] `GET /users/:id/trust-score` — computed trust score breakdown
+- [ ] `POST /cars/:id/compare` — add to comparison session (or handle client-side)
+- [ ] `GET /admin/stats` (admin) — platform overview numbers
+- [ ] `GET /admin/analytics` (admin) — funnel, top makes, center utilisation
+
+### 6D. Connect Mobile App to API 🔲
+- [ ] Create `src/api/client.js` in mobile — Axios or fetch wrapper with base URL + JWT header
+- [ ] Create `src/api/auth.js` — login, register, me
+- [ ] Create `src/api/cars.js` — browse, detail, save
+- [ ] Create `src/api/submissions.js`
+- [ ] Create `src/api/handovers.js`
+- [ ] Create `src/api/messages.js`
+- [ ] Create `src/api/notifications.js`
+- [ ] Replace `AppContext` mock state with real API calls + loading/error states
+- [ ] Replace mock `cars` data with API browse response
+- [ ] Wire `SignInScreen` / `SignUpScreen` to `POST /auth/login` and `/register`
+- [ ] Store JWT in `SecureStore` (expo-secure-store), attach to all requests
+- [ ] Wire Socket.io client in `ChatScreen` for real-time messages
+- [ ] Wire push notifications (Expo Notifications + OneSignal)
+
+---
+
+## Phase 7 — Admin Web Dashboard 🔲
+
+> Browser app (Next.js). Separate from the mobile app. Deployed to same VPS or Vercel.
+> Uses the same backend API — admin JWT gives full access.
+
+### Core pages
+- [ ] `/login` — admin login (same `/auth/login` endpoint, role check)
+- [ ] `/dashboard` — platform stats: listings, submissions, handovers today, revenue
+- [ ] `/submissions` — table of all submissions, filter by status, approve/reject/schedule
+- [ ] `/inspections` — calendar view of scheduled inspections per center
+- [ ] `/inspections/:id` — fill in 150-pt checklist, upload photos, submit report
+- [ ] `/listings` — all live cars, pause/unpublish, edit price
+- [ ] `/handovers` — pending handovers table, "Confirm → Mark Sold" button
+- [ ] `/users` — all registered users, view/edit role, approve ID verifications
+- [ ] `/users/:id/verification` — view ID photos, approve or reject
+- [ ] `/analytics` — submission funnel, sales by make, center utilisation, revenue chart
+- [ ] `/cars/new` — admin creates a listing after inspection (fills all fields, uploads 36 photos)
+
+### Tech for admin web
+- [ ] Scaffold `admin/` folder with Next.js 15 App Router
+- [ ] Set up Tailwind CSS + shadcn/ui components
+- [ ] API client (`admin/lib/api.ts`) — same backend, admin JWT
+- [ ] Auth middleware — redirect to `/login` if no valid admin JWT
+- [ ] File upload UI for 36-angle photos (drag-and-drop grid matching the 36 required angles)
+- [ ] Inspection checklist form (7 categories × Pass/Flag/Fail — mirrors `InspectionFormScreen.js`)
+- [ ] Deploy to same VPS under Nginx (e.g. `admin.inzozimotors.rw`)
+
+---
+
+## Phase 8 — Integrations 🔲
+
+- [ ] **Africa's Talking** — SMS + WhatsApp notifications (Rwanda)
+  - Handover booking confirmation → WhatsApp the buyer + seller
+  - 24h reminder before handover
+  - Price drop alert → WhatsApp saved-car watchers
+- [ ] **Cloudinary** — image optimisation + CDN for inspection photos
+  - Auto-compress on upload, serve WebP via CDN URL
+  - Replace local `UPLOAD_DIR` with Cloudinary URLs in `cars.images[]`
+- [ ] **OneSignal** — push notifications to the mobile app
+  - New message, handover confirmed, saved search match, price drop
+- [ ] **Rwanda RRA** — vehicle duty verification stamp (if public API available)
+  - Cross-check VIN / chassis number → duty paid status on listing page
+- [ ] **MTN MoMo / Airtel Money** — future payment-request feature (backend-phase only)
+  - Not in app. Backend escrow when Inzozi physically holds the handover payment.
+
+---
+
+## Business Model (agreed)
+
+| Stream | Who pays | When |
+|---|---|---|
+| Certification fee | Seller | Upfront — covers inspection + photos + listing |
+| Success commission | Seller | Small % when admin confirms handover |
+| Featured listing | Seller | Optional boost to top of feed |
+
+- Buyers pay nothing, ever.
+- The 7-day return guarantee applies only to handovers completed at the Inzozi center.
+- Payment is physical at the center — not in the app, not now, not later.
+- Commission is collectable because the handover (admin confirms) is the sale event — Inzozi processes it, so we always know.
+
+---
+
 ## 10. Housekeeping
 
 This file reloads into context every session, so once the **one-time** VPS
