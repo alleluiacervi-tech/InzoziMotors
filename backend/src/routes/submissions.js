@@ -6,21 +6,25 @@ const router = express.Router();
 
 // POST /submissions — seller submits a car for inspection
 router.post('/', requireAuth, async (req, res) => {
-  const { make, model, year, mileage, fuel_type, transmission,
-          body_type, color, asking_price, notes } = req.body;
+  const {
+    make, model, year, mileage, condition, fuel_type, transmission,
+    body_type, color, asking_price, notes,
+  } = req.body;
   if (!make || !model || !year || !asking_price) {
     return res.status(400).json({ error: 'make, model, year, and asking_price are required' });
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO submissions (seller_id, asking_price, notes, status)
-       VALUES ($1, $2, $3, 'under_review')
+      `INSERT INTO submissions
+         (seller_id, make, model, year, mileage, condition, fuel_type,
+          transmission, body_type, color, asking_price, notes, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'under_review')
        RETURNING *`,
-      [req.user.id, asking_price, notes]
+      [req.user.id, make, model, year, mileage, condition, fuel_type,
+       transmission, body_type, color, asking_price, notes]
     );
     const sub = rows[0];
 
-    // Notify the seller
     await pool.query(
       `INSERT INTO notifications (user_id, type, title, body, meta)
        VALUES ($1, 'listing_update', 'Submission received', $2, $3)`,
@@ -55,9 +59,7 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// ─── Admin routes ─────────────────────────────────────────────────────────────
-
-// GET /submissions/admin/all  — admin sees all submissions
+// GET /submissions/admin/all — admin sees all submissions
 router.get('/admin/all', requireAdmin, async (req, res) => {
   const { status } = req.query;
   try {
@@ -80,38 +82,48 @@ router.get('/admin/all', requireAdmin, async (req, res) => {
   }
 });
 
-// PATCH /submissions/:id — admin updates status and schedules inspection
+// PATCH /submissions/:id — admin updates status (and optionally schedules inspection)
 router.patch('/:id', requireAdmin, async (req, res) => {
-  const { status, center, scheduled_at } = req.body;
+  const { status, admin_notes, center, scheduled_date, scheduled_time } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE submissions SET status = $1, reviewed_at = NOW(), reviewer_id = $2
-       WHERE id = $3 RETURNING *`,
-      [status, req.user.id, req.params.id]
+      `UPDATE submissions
+       SET status = $1, admin_notes = COALESCE($2, admin_notes),
+           reviewed_at = NOW(), reviewer_id = $3
+       WHERE id = $4
+       RETURNING *`,
+      [status, admin_notes, req.user.id, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Submission not found' });
     const sub = rows[0];
 
-    // If scheduling an inspection, create the inspection record
-    if (status === 'scheduled' && center && scheduled_at) {
+    // Create inspection record when scheduling
+    if (status === 'scheduled' && center) {
+      const scheduledAt = scheduled_date && scheduled_time
+        ? new Date(`${scheduled_date} ${scheduled_time}`)
+        : null;
+
       await pool.query(
-        `INSERT INTO inspections (submission_id, car_id, center, scheduled_at, status)
-         VALUES ($1, $2, $3, $4, 'scheduled')`,
-        [sub.id, sub.car_id, center, scheduled_at]
+        `INSERT INTO inspections
+           (submission_id, car_id, center, scheduled_date, scheduled_time, scheduled_at, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'scheduled')
+         ON CONFLICT DO NOTHING`,
+        [sub.id, sub.car_id, center, scheduled_date, scheduled_time, scheduledAt]
       );
     }
 
     // Notify seller
     const messages = {
-      scheduled: `Your inspection has been scheduled at ${center || 'our center'} on ${scheduled_at || 'a date to be confirmed'}.`,
-      rejected: 'Your submission was not accepted. Please contact us for details.',
+      scheduled: `Your inspection is booked at ${center || 'our center'} on ${scheduled_date || 'a date TBC'} at ${scheduled_time || ''}.`,
+      rejected: `Your submission was not accepted. Reason: ${admin_notes || 'Contact us for details.'}`,
       live: 'Your car is now live on the marketplace!',
     };
     if (messages[status]) {
       await pool.query(
         `INSERT INTO notifications (user_id, type, title, body, meta)
          VALUES ($1, 'listing_update', $2, $3, $4)`,
-        [sub.seller_id, `Submission ${status}`, messages[status], JSON.stringify({ submissionId: sub.id })]
+        [sub.seller_id, `Submission ${status}`, messages[status],
+         JSON.stringify({ submissionId: sub.id })]
       );
     }
 

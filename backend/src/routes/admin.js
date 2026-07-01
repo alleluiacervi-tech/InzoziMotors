@@ -9,24 +9,23 @@ router.get('/stats', requireAdmin, async (req, res) => {
   try {
     const [
       listingsRes, submissionsRes, handoversRes,
-      usersRes, soldRes, revenueRes,
+      idQueueRes, soldRes, revenueRes,
     ] = await Promise.all([
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'live'"),
-      pool.query("SELECT COUNT(*) FROM submissions WHERE status = 'under_review'"),
+      pool.query("SELECT COUNT(*) FROM submissions WHERE status IN ('under_review','pending')"),
       pool.query("SELECT COUNT(*) FROM handovers WHERE status = 'pending'"),
       pool.query("SELECT COUNT(*) FROM users WHERE id_verified = 'pending'"),
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'sold'"),
-      pool.query("SELECT COUNT(*) AS total_sales, SUM(price) AS total_value FROM cars WHERE status = 'sold'"),
+      pool.query("SELECT COALESCE(SUM(price), 0) AS total FROM cars WHERE status = 'sold'"),
     ]);
 
     res.json({
-      live_listings:       parseInt(listingsRes.rows[0].count),
-      pending_submissions: parseInt(submissionsRes.rows[0].count),
-      pending_handovers:   parseInt(handoversRes.rows[0].count),
-      pending_id_verifs:   parseInt(usersRes.rows[0].count),
-      total_sold:          parseInt(soldRes.rows[0].count),
-      total_sales:         parseInt(revenueRes.rows[0].total_sales || 0),
-      total_value_usd:     parseInt(revenueRes.rows[0].total_value || 0),
+      liveListings:          parseInt(listingsRes.rows[0].count),
+      pendingSubmissions:    parseInt(submissionsRes.rows[0].count),
+      pendingHandovers:      parseInt(handoversRes.rows[0].count),
+      pendingIdVerifications: parseInt(idQueueRes.rows[0].count),
+      totalSold:             parseInt(soldRes.rows[0].count),
+      totalRevenue:          parseInt(revenueRes.rows[0].total),
     });
   } catch (err) {
     console.error(err.message);
@@ -38,41 +37,69 @@ router.get('/stats', requireAdmin, async (req, res) => {
 router.get('/analytics', requireAdmin, async (req, res) => {
   try {
     const [makesRes, pipelineRes, centersRes, monthlyRes] = await Promise.all([
-      // Top makes by listing count
       pool.query(`
         SELECT make, COUNT(*) AS count
-        FROM cars WHERE status != 'archived'
+        FROM cars WHERE status NOT IN ('archived','under_review')
         GROUP BY make ORDER BY count DESC LIMIT 8
       `),
-      // Submission pipeline funnel
       pool.query(`
         SELECT status, COUNT(*) AS count
-        FROM submissions GROUP BY status
+        FROM submissions GROUP BY status ORDER BY count DESC
       `),
-      // Inspections by center
       pool.query(`
-        SELECT center, COUNT(*) AS count,
+        SELECT center,
+               COUNT(*) AS scheduled,
                COUNT(*) FILTER (WHERE status = 'complete') AS completed
         FROM inspections GROUP BY center
       `),
-      // Monthly sales (last 6 months)
       pool.query(`
-        SELECT TO_CHAR(sold_at, 'Mon YYYY') AS month,
-               COUNT(*) AS count,
-               SUM(price) AS value
+        SELECT TO_CHAR(DATE_TRUNC('month', sold_at), 'YYYY-MM') AS month,
+               COUNT(*) AS total_sold,
+               COALESCE(SUM(price), 0) AS total_value
         FROM cars WHERE status = 'sold'
           AND sold_at > NOW() - INTERVAL '6 months'
-        GROUP BY month, DATE_TRUNC('month', sold_at)
+        GROUP BY DATE_TRUNC('month', sold_at)
         ORDER BY DATE_TRUNC('month', sold_at) ASC
       `),
     ]);
 
     res.json({
-      top_makes:       makesRes.rows,
-      pipeline_funnel: pipelineRes.rows,
-      centers:         centersRes.rows,
-      monthly_sales:   monthlyRes.rows,
+      topMakes:       makesRes.rows,
+      pipelineFunnel: pipelineRes.rows,
+      centers:        centersRes.rows,
+      monthlySales:   monthlyRes.rows,
     });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /admin/listings — all cars with any status (admin-only browse)
+const ALLOWED_STATUSES = new Set([
+  'under_review', 'scheduled', 'inspecting', 'live', 'reserved', 'sold', 'archived',
+]);
+router.get('/listings', requireAdmin, async (req, res) => {
+  const { status = 'live', make, limit = 50, offset = 0 } = req.query;
+  if (!ALLOWED_STATUSES.has(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  const conditions = [`c.status = $1`];
+  const params = [status];
+
+  if (make) { params.push(make); conditions.push(`c.make ILIKE $${params.length}`); }
+
+  params.push(parseInt(limit), parseInt(offset));
+  try {
+    const { rows } = await pool.query(
+      `SELECT c.*, u.name AS seller_name
+       FROM cars c
+       JOIN users u ON u.id = c.seller_id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY c.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }

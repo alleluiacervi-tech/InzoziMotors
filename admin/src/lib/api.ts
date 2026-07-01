@@ -31,7 +31,7 @@ export const api = {
 
   me: () => request<any>('/auth/me'),
 
-  // Stats
+  // Dashboard
   stats:     () => request<any>('/admin/stats'),
   analytics: () => request<any>('/admin/analytics'),
 
@@ -46,7 +46,7 @@ export const api = {
     const q = params ? '?' + new URLSearchParams(params).toString() : ''
     return request<any[]>(`/inspections${q}`)
   },
-  getInspection:     (id: string) => request<any>(`/inspections/${id}`),
+  getInspection:      (id: string) => request<any>(`/inspections/${id}`),
   completeInspection: (id: string, data: any) =>
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
 
@@ -56,21 +56,21 @@ export const api = {
   confirmHandover: (id: string) =>
     request<any>(`/handovers/${id}/confirm`, { method: 'PATCH' }),
 
-  // Listings / Cars
+  // Listings — admin-only route that accepts any status
   cars: (params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params).toString() : ''
-    return request<any[]>(`/cars${q}`)
+    return request<any[]>(`/admin/listings${q}`)
   },
   updateCarStatus: (id: string, status: string) =>
     request<any>(`/cars/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
-  // Users
+  // Users / ID verification
   idVerificationQueue: () => request<any[]>('/id-verification/queue'),
   decideVerification:  (userId: string, decision: string) =>
     request<any>(`/id-verification/${userId}`, {
       method: 'PATCH', body: JSON.stringify({ decision }),
     }),
 
-  // Reviews / trust score
+  // Trust score
   trustScore: (userId: string) => request<any>(`/reviews/trust-score/${userId}`),
 }

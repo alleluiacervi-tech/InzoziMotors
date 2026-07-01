@@ -1,14 +1,20 @@
 -- Inzozi Motors — PostgreSQL schema
--- Run: psql -U inzozi -d inzozi_motors -f src/schema.sql
+-- Fresh install: psql -U inzozi -d inzozi_motors -f src/schema.sql
+-- All statements are idempotent (IF NOT EXISTS / ON CONFLICT DO NOTHING).
 
 -- ─── Users ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name            TEXT NOT NULL,
   email           TEXT UNIQUE NOT NULL,
+  phone           TEXT,
   password_hash   TEXT,                          -- NULL for Google OAuth users
   role            TEXT NOT NULL DEFAULT 'buyer', -- buyer | seller | admin
   id_verified     TEXT NOT NULL DEFAULT 'none',  -- none | pending | approved | rejected
+  id_front_url    TEXT,
+  id_back_url     TEXT,
+  selfie_url      TEXT,
+  id_submitted_at TIMESTAMPTZ,
   trust_score     INT NOT NULL DEFAULT 0,
   response_rate   INT NOT NULL DEFAULT 100,      -- % messages replied within 24h
   completed_sales INT NOT NULL DEFAULT 0,
@@ -36,7 +42,7 @@ CREATE TABLE IF NOT EXISTS cars (
   description     TEXT,
   images          TEXT[],               -- array of image URLs / file paths
   inspected       BOOLEAN DEFAULT FALSE,
-  inspection_score INT,                 -- 0–150 from the 150-pt check
+  inspection_score INT,                 -- 0–100 overall percentage score
   status          TEXT NOT NULL DEFAULT 'under_review',
   -- under_review | scheduled | inspecting | live | reserved | sold | archived
   views           INT NOT NULL DEFAULT 0,
@@ -52,8 +58,19 @@ CREATE TABLE IF NOT EXISTS submissions (
   car_id          UUID REFERENCES cars(id) ON DELETE CASCADE,
   seller_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status          TEXT NOT NULL DEFAULT 'under_review',
+  -- under_review | scheduled | inspecting | live | rejected
+  make            TEXT,
+  model           TEXT,
+  year            INT,
+  mileage         INT,
+  condition       TEXT,                  -- Excellent | Good | Fair
+  transmission    TEXT,
+  body_type       TEXT,
+  color           TEXT,
+  fuel_type       TEXT,
   asking_price    INT NOT NULL,
-  notes           TEXT,
+  notes           TEXT,                  -- seller notes
+  admin_notes     TEXT,                  -- admin rejection/internal notes
   reference_images TEXT[],
   submitted_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   reviewed_at     TIMESTAMPTZ,
@@ -62,18 +79,20 @@ CREATE TABLE IF NOT EXISTS submissions (
 
 -- ─── Inspections ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS inspections (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  submission_id   UUID REFERENCES submissions(id) ON DELETE CASCADE,
-  car_id          UUID REFERENCES cars(id) ON DELETE CASCADE,
-  inspector_id    UUID REFERENCES users(id),
-  center          TEXT NOT NULL,        -- Nyarutarama | Kicukiro | Kimironko
-  scheduled_at    TIMESTAMPTZ,
-  started_at      TIMESTAMPTZ,
-  completed_at    TIMESTAMPTZ,
-  results         JSONB,               -- { categoryName: { itemName: 'pass'|'flag'|'fail' } }
-  score           INT,                 -- 0–150
-  notes           TEXT,
-  status          TEXT NOT NULL DEFAULT 'scheduled'
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  submission_id     UUID REFERENCES submissions(id) ON DELETE CASCADE,
+  car_id            UUID REFERENCES cars(id) ON DELETE CASCADE,
+  inspector_id      UUID REFERENCES users(id),
+  center            TEXT NOT NULL,        -- Nyarutarama | Kicukiro | Kimironko
+  scheduled_date    TEXT,                 -- e.g. "2026-07-10" (displayed in UI)
+  scheduled_time    TEXT,                 -- e.g. "10:00 AM"
+  scheduled_at      TIMESTAMPTZ,          -- parsed datetime for ordering
+  started_at        TIMESTAMPTZ,
+  completed_at      TIMESTAMPTZ,
+  checklist_results JSONB,               -- { itemName: 'pass'|'flag'|'fail', ... }
+  score             INT,                 -- 0–100 percentage
+  notes             TEXT,
+  status            TEXT NOT NULL DEFAULT 'scheduled'
   -- scheduled | in_progress | complete
 );
 
@@ -85,8 +104,9 @@ CREATE TABLE IF NOT EXISTS handovers (
   buyer_id        UUID NOT NULL REFERENCES users(id),
   seller_id       UUID NOT NULL REFERENCES users(id),
   center          TEXT NOT NULL,
-  scheduled_date  TEXT NOT NULL,        -- e.g. "Jul 3, 2026"
-  scheduled_time  TEXT NOT NULL,        -- e.g. "10:00 AM"
+  handover_date   TEXT NOT NULL,         -- "Jul 3, 2026" (display string from app)
+  handover_time   TEXT NOT NULL,         -- "10:00 AM"
+  agreed_price    INT,                   -- car price at time of booking (USD)
   status          TEXT NOT NULL DEFAULT 'pending',  -- pending | complete | cancelled
   confirmed_by    UUID REFERENCES users(id),        -- admin who confirmed
   booked_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -122,7 +142,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   title           TEXT NOT NULL,
   body            TEXT NOT NULL,
   read            BOOLEAN DEFAULT FALSE,
-  meta            JSONB,           -- { carId, orderId, bookingId, ... }
+  meta            JSONB,           -- { carId, bookingId, ... }
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -156,10 +176,43 @@ CREATE TABLE IF NOT EXISTS reviews (
 );
 
 -- ─── Indexes ─────────────────────────────────────────────────────────────────
-CREATE INDEX IF NOT EXISTS idx_cars_status      ON cars(status);
-CREATE INDEX IF NOT EXISTS idx_cars_seller      ON cars(seller_id);
-CREATE INDEX IF NOT EXISTS idx_cars_make_model  ON cars(make, model);
-CREATE INDEX IF NOT EXISTS idx_cars_price       ON cars(price);
-CREATE INDEX IF NOT EXISTS idx_messages_conv    ON messages(conversation_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_notifs_user      ON notifications(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_handovers_status ON handovers(status);
+CREATE INDEX IF NOT EXISTS idx_cars_status       ON cars(status);
+CREATE INDEX IF NOT EXISTS idx_cars_seller       ON cars(seller_id);
+CREATE INDEX IF NOT EXISTS idx_cars_make_model   ON cars(make, model);
+CREATE INDEX IF NOT EXISTS idx_cars_price        ON cars(price);
+CREATE INDEX IF NOT EXISTS idx_messages_conv     ON messages(conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifs_user       ON notifications(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_handovers_status  ON handovers(status);
+CREATE INDEX IF NOT EXISTS idx_submissions_seller ON submissions(seller_id);
+
+-- ─── Migration: add columns to existing installs ──────────────────────────────
+-- Safe to run repeatedly; ADD COLUMN IF NOT EXISTS is idempotent.
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS phone           TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS id_front_url    TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS id_back_url     TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS selfie_url      TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS id_submitted_at TIMESTAMPTZ;
+
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS make            TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS model           TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS year            INT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS mileage         INT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS condition       TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS transmission    TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS body_type       TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS color           TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS fuel_type       TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS admin_notes     TEXT;
+
+ALTER TABLE inspections ADD COLUMN IF NOT EXISTS scheduled_date  TEXT;
+ALTER TABLE inspections ADD COLUMN IF NOT EXISTS scheduled_time  TEXT;
+ALTER TABLE inspections ADD COLUMN IF NOT EXISTS checklist_results JSONB;
+-- Rename old 'results' column if it exists (run manually if upgrading from earlier schema)
+-- ALTER TABLE inspections RENAME COLUMN results TO checklist_results;
+
+ALTER TABLE handovers   ADD COLUMN IF NOT EXISTS handover_date   TEXT;
+ALTER TABLE handovers   ADD COLUMN IF NOT EXISTS handover_time   TEXT;
+ALTER TABLE handovers   ADD COLUMN IF NOT EXISTS agreed_price    INT;
+-- Migrate old column names if upgrading from earlier schema:
+-- UPDATE handovers SET handover_date = scheduled_date, handover_time = scheduled_time
+--   WHERE handover_date IS NULL AND scheduled_date IS NOT NULL;
