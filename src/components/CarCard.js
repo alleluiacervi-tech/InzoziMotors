@@ -12,7 +12,7 @@ const getInzoziYear = (car) => {
   return `${car.year} (${yy}/${mm})`;
 };
 
-const getInzoziMileage = (car) => `${car.mileage.toLocaleString('en-US')} mi`;
+const getInzoziMileage = (car) => `${car.mileage.toLocaleString('en-US')} km`;
 
 const getInzoziLocation = (car) => {
   const loc = car.location || '';

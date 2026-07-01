@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius } from '../theme';
+import { useApp } from '../context/AppContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.78, 320);
@@ -24,10 +25,10 @@ const MENU_SECTIONS = [
   {
     title: 'Finance & Services',
     items: [
-      { icon: 'calculator-outline', label: 'Financing Calculator', screen: 'Financing', isNew: true },
-      { icon: 'globe-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator', isNew: true },
+      { icon: 'calculator-outline', label: 'Financing Calculator', screen: 'Financing' },
+      { icon: 'globe-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
       { icon: 'trending-up-outline', label: 'Price Intelligence', screen: 'SearchResults' },
-      { icon: 'ribbon-outline', label: 'Trust Score', screen: 'TrustScore', isNew: true },
+      { icon: 'ribbon-outline', label: 'Trust Score', screen: 'TrustScore' },
     ],
   },
   {
@@ -35,8 +36,8 @@ const MENU_SECTIONS = [
     items: [
       { icon: 'car-outline', label: 'Submit My Car', screen: 'CarSubmission' },
       { icon: 'time-outline', label: 'My Submissions', screen: 'SellerDashboard' },
-      { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics', isNew: true },
-      { icon: 'people-outline', label: 'Referral Program', screen: 'Referral', isNew: true },
+      { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics' },
+      { icon: 'people-outline', label: 'Referral Program', screen: 'Referral' },
     ],
   },
   {
@@ -51,6 +52,7 @@ const MENU_SECTIONS = [
 
 export default function DrawerMenu({ visible, onClose, navigation }) {
   const insets = useSafeAreaInsets();
+  const { currentUser, isLoggedIn, logoutUser } = useApp();
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -123,21 +125,44 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
           </View>
 
           {/* Account row */}
-          <View style={styles.accountRow}>
-            <Pressable
-              style={styles.accountBtn}
-              onPress={() => navigate('SignIn')}
-            >
-              <Ionicons name="person-outline" size={15} color={colors.greenLight} />
-              <Text style={styles.accountBtnText}>Sign In</Text>
+          {isLoggedIn ? (
+            <Pressable style={styles.profileRow} onPress={() => navigate('Profile')}>
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileAvatarText}>{currentUser.initials}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileName} numberOfLines={1}>{currentUser.name}</Text>
+                <Text style={styles.profileEmail} numberOfLines={1}>{currentUser.email}</Text>
+              </View>
+              <Pressable
+                style={styles.accountBtn}
+                onPress={() => {
+                  logoutUser();
+                  onClose();
+                  setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] }), 250);
+                }}
+                hitSlop={8}
+              >
+                <Text style={styles.accountBtnText}>Log out</Text>
+              </Pressable>
             </Pressable>
-            <Pressable
-              style={[styles.accountBtn, styles.accountBtnPrimary]}
-              onPress={() => navigate('SignUp')}
-            >
-              <Text style={styles.accountBtnPrimaryText}>Register</Text>
-            </Pressable>
-          </View>
+          ) : (
+            <View style={styles.accountRow}>
+              <Pressable
+                style={styles.accountBtn}
+                onPress={() => navigate('SignIn')}
+              >
+                <Ionicons name="person-outline" size={15} color={colors.greenLight} />
+                <Text style={styles.accountBtnText}>Sign In</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.accountBtn, styles.accountBtnPrimary]}
+                onPress={() => navigate('SignUp')}
+              >
+                <Text style={styles.accountBtnPrimaryText}>Register</Text>
+              </Pressable>
+            </View>
+          )}
         </LinearGradient>
 
         {/* Menu items */}
@@ -246,6 +271,37 @@ const styles = StyleSheet.create({
   accountRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  profileAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileAvatarText: {
+    fontFamily: fonts.extraBold,
+    color: '#fff',
+    fontSize: 14,
+  },
+  profileName: {
+    fontFamily: fonts.bold,
+    color: '#fff',
+    fontSize: 14,
+  },
+  profileEmail: {
+    fontFamily: fonts.regular,
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    marginTop: 1,
   },
   accountBtn: {
     flexDirection: 'row',

@@ -13,36 +13,36 @@ import { formatPrice } from '../data/cars';
 
 const STEPS = [
   {
-    key: 'sent',
-    icon: 'paper-plane-outline',
-    doneIcon: 'paper-plane',
-    title: 'Purchase Request Sent',
-    sub: 'Seller notified instantly via chat and SMS',
+    key: 'reserved',
+    icon: 'lock-closed-outline',
+    doneIcon: 'lock-closed',
+    title: 'Car Reserved for You',
+    sub: 'Removed from the marketplace. No one else can book it.',
   },
   {
-    key: 'confirmed',
-    icon: 'checkmark-circle-outline',
-    doneIcon: 'checkmark-circle',
-    title: 'Seller Confirmed',
-    sub: 'Seller accepted your request and opened the chat',
-  },
-  {
-    key: 'arranged',
+    key: 'booked',
     icon: 'calendar-outline',
     doneIcon: 'calendar',
-    title: 'Handover Arranged',
-    sub: 'Viewing, test drive, and transfer date agreed',
+    title: 'Handover Slot Booked',
+    sub: 'You, the seller, and our team meet at the Inzozi center.',
+  },
+  {
+    key: 'handover',
+    icon: 'people-outline',
+    doneIcon: 'people',
+    title: 'At the Inzozi Center',
+    sub: 'Payment verified. Ownership documents processed by our team.',
   },
   {
     key: 'complete',
     icon: 'ribbon-outline',
     doneIcon: 'ribbon',
-    title: 'Transaction Complete',
-    sub: 'Car handed over. Inzozi closes the deal.',
+    title: 'Done — Car is Yours',
+    sub: 'Your 7-day Inzozi return guarantee is now active.',
   },
 ];
 
-const STATUS_ORDER = ['sent', 'confirmed', 'arranged', 'complete'];
+const STATUS_ORDER = ['reserved', 'booked', 'handover', 'complete'];
 
 function StepRow({ step, state, isLast, sentTime, confirmedTime }) {
   const isDone = state === 'done';
@@ -159,23 +159,23 @@ export default function OrderTrackingScreen({ navigation, route }) {
             </View>
             <View style={[
               styles.statusChip,
-              currentStatus === 'confirmed' && styles.statusChipConfirmed,
+              currentStatus === 'booked' && styles.statusChipConfirmed,
               currentStatus === 'complete' && styles.statusChipComplete,
             ]}>
-              <View style={[styles.statusDot, { backgroundColor: currentStatus === 'confirmed' ? colors.green : colors.amber }]} />
+              <View style={[styles.statusDot, { backgroundColor: currentStatus === 'complete' ? colors.green : colors.amber }]} />
               <Text style={styles.statusChipText}>
-                {currentStatus === 'sent' ? 'Awaiting confirmation'
-                  : currentStatus === 'confirmed' ? 'Confirmed'
-                  : currentStatus === 'arranged' ? 'Handover arranged'
+                {currentStatus === 'reserved' ? 'Car reserved'
+                  : currentStatus === 'booked' ? 'Slot booked'
+                  : currentStatus === 'handover' ? 'At the center'
                   : 'Complete'}
               </Text>
             </View>
           </View>
-          {currentStatus === 'confirmed' && (
+          {currentStatus === 'reserved' && (
             <View style={styles.confirmAlert}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.greenLight} />
+              <Ionicons name="lock-closed" size={16} color={colors.greenLight} />
               <Text style={styles.confirmAlertText}>
-                Seller confirmed! Open chat to arrange the handover.
+                Car is reserved — message the seller to confirm they know the date and center.
               </Text>
             </View>
           )}
@@ -217,14 +217,14 @@ export default function OrderTrackingScreen({ navigation, route }) {
         </View>
 
         {/* What's next */}
-        {currentStatus === 'confirmed' && (
+        {currentStatus === 'reserved' && (
           <View style={styles.nextStepsCard}>
             <Text style={styles.nextTitle}>What happens next</Text>
             {[
-              { icon: 'chatbubble-outline', text: 'Message the seller to agree on a viewing date and location in Kigali.' },
-              { icon: 'car-outline', text: 'Test drive the car at the agreed location. Rely on the 150-point inspection report for confidence.' },
-              { icon: 'swap-horizontal-outline', text: 'Agree on final terms with the seller offline. Inzozi does not handle payment.' },
-              { icon: 'document-text-outline', text: "Inzozi team witnesses the handover and signs off on the ownership transfer documents." },
+              { icon: 'chatbubble-outline', text: 'Message the seller — make sure they know your booked date, time, and center.' },
+              { icon: 'document-text-outline', text: 'Re-read the 150-point inspection report. Bring any questions to the center.' },
+              { icon: 'people-outline', text: 'Come to the Inzozi center on the day. Our team verifies payment and transfers ownership.' },
+              { icon: 'shield-checkmark-outline', text: 'Once Inzozi confirms, your 7-day return guarantee starts immediately.' },
             ].map((item, i) => (
               <View key={i} style={styles.nextRow}>
                 <View style={styles.nextIcon}>
