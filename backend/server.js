@@ -33,12 +33,17 @@ const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadDir));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/auth',          require('./src/routes/auth'));
-app.use('/cars',          require('./src/routes/cars'));
-app.use('/submissions',   require('./src/routes/submissions'));
-app.use('/handovers',     require('./src/routes/handovers'));
-app.use('/messages',      require('./src/routes/messages'));
-app.use('/notifications', require('./src/routes/notifications'));
+app.use('/auth',            require('./src/routes/auth'));
+app.use('/cars',            require('./src/routes/cars'));
+app.use('/submissions',     require('./src/routes/submissions'));
+app.use('/handovers',       require('./src/routes/handovers'));
+app.use('/messages',        require('./src/routes/messages'));
+app.use('/notifications',   require('./src/routes/notifications'));
+app.use('/inspections',     require('./src/routes/inspections'));
+app.use('/id-verification', require('./src/routes/id-verification'));
+app.use('/saved-searches',  require('./src/routes/saved-searches'));
+app.use('/reviews',         require('./src/routes/reviews'));
+app.use('/admin',           require('./src/routes/admin'));
 
 // Health check — PM2 / load balancer uses this
 app.get('/health', (req, res) => {

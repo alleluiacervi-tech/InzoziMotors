@@ -1,0 +1,134 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { api } from '@/lib/api'
+
+const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting']
+const STATUS_COLORS: Record<string, string> = {
+  live:         'bg-green-100 text-green-700',
+  reserved:     'bg-purple-100 text-purple-700',
+  sold:         'bg-gray-100 text-gray-600',
+  under_review: 'bg-amber-100 text-amber-700',
+  scheduled:    'bg-indigo-100 text-indigo-700',
+  inspecting:   'bg-blue-100 text-blue-700',
+}
+
+export default function ListingsPage() {
+  const [statusFilter, setStatusFilter] = useState('live')
+  const [items, setItems]               = useState<any[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [actionId, setActionId]         = useState<string | null>(null)
+
+  async function load(s: string) {
+    setLoading(true)
+    try {
+      const data = await api.cars({ status: s })
+      setItems(data)
+    } catch (e: any) {
+      console.error(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load(statusFilter) }, [statusFilter])
+
+  async function updateStatus(id: string, status: string) {
+    setActionId(id)
+    try {
+      await api.updateCarStatus(id, status)
+      load(statusFilter)
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  return (
+    <div>
+      <h1 className="text-xl font-bold text-gray-900 mb-6">Listings</h1>
+
+      {/* Status filter pills */}
+      <div className="flex flex-wrap gap-1 mb-6">
+        {STATUSES.map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors capitalize ${
+              statusFilter === s ? 'bg-brand text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-brand'
+            }`}
+          >
+            {s.replace('_', ' ')}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="text-gray-400 text-sm">Loading…</div>
+      ) : items.length === 0 ? (
+        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
+          No listings with status "{statusFilter}".
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((car) => (
+            <div key={car.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              {/* Thumbnail */}
+              {car.images?.[0] ? (
+                <img src={car.images[0]} alt={car.model} className="w-full h-36 object-cover" />
+              ) : (
+                <div className="w-full h-36 bg-gray-100 flex items-center justify-center text-4xl">🚗</div>
+              )}
+
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-1 gap-2">
+                  <span className="font-semibold text-gray-900 text-sm truncate">{car.year} {car.make} {car.model}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${STATUS_COLORS[car.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {car.status}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">{car.mileage?.toLocaleString()} km · {car.location}</p>
+                <p className="text-sm font-bold text-brand mt-1">RWF {Number(car.price).toLocaleString()}</p>
+                <p className="text-xs text-gray-400">{car.views || 0} views</p>
+
+                {/* Actions */}
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {car.status === 'live' && (
+                    <button
+                      onClick={() => updateStatus(car.id, 'sold')}
+                      disabled={actionId === car.id}
+                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                    >
+                      Mark Sold
+                    </button>
+                  )}
+                  {car.status === 'reserved' && (
+                    <button
+                      onClick={() => updateStatus(car.id, 'live')}
+                      disabled={actionId === car.id}
+                      className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50"
+                    >
+                      Un-reserve
+                    </button>
+                  )}
+                  {(car.status === 'live' || car.status === 'reserved') && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Remove this listing?')) updateStatus(car.id, 'removed')
+                      }}
+                      disabled={actionId === car.id}
+                      className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
