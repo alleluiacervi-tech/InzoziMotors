@@ -92,7 +92,7 @@ export default function FiltersScreen({ navigation, route }) {
           <Text style={styles.resetText}>Reset</Text>
         </Pressable>
         <Button
-          title={`Show ${getMatchingCount()} results`}
+          title={`View ${getMatchingCount()} cars`}
           style={{ flex: 1 }}
           onPress={() => {
             navigation.navigate('SearchResults', { filters: selected });

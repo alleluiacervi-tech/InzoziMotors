@@ -345,7 +345,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.ctaPriceRwf}>{formatRWF(price)}</Text>
         </View>
         <Button
-          title={isAuction ? 'Place a Bid' : 'Request to Buy'}
+          title={isAuction ? 'Place a Bid' : 'Book Handover'}
           style={{ flex: 1 }}
           onPress={() => executeWithAuth(() => navigation.navigate('Checkout', { car }))}
         />

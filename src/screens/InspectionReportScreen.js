@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
+import CarZoneMap from '../components/CarZoneMap';
 import { colors, radius, shadows } from '../theme';
 import { MOCK_INSPECTION_RESULT } from '../data/inspectionData';
 
@@ -89,6 +90,15 @@ export default function InspectionReportScreen({ navigation, route }) {
   const certified = pct >= 0.88;
   const allFlags = data.categories.flatMap((c) => c.flags.map((f) => ({ cat: c.name, flag: f })));
 
+  // Zone map: pre-select the first flagged category so the detail card
+  // demonstrates itself the moment the screen opens
+  const firstFlagged = data.categories.find((c) => c.flags.length > 0);
+  const [selectedZone, setSelectedZone] = useState(firstFlagged ? firstFlagged.id : 'engine');
+  const zoneCat = data.categories.find((c) => c.id === selectedZone);
+  const zonePct = zoneCat.maxPts > 0 ? zoneCat.earned / zoneCat.maxPts : 0;
+  const zoneStatus = zonePct >= 1 ? 'pass' : zonePct >= 0.85 ? 'minor' : 'warn';
+  const zoneColor = zoneStatus === 'pass' ? colors.green : zoneStatus === 'minor' ? colors.amber : colors.statusRejected;
+
   return (
     <Screen background={colors.bg}>
       <BackHeader title="Inspection Report" onBack={() => navigation.goBack()} />
@@ -123,6 +133,59 @@ export default function InspectionReportScreen({ navigation, route }) {
             </View>
           )}
         </LinearGradient>
+
+        {/* ── Interactive zone map ── */}
+        <View style={styles.zoneCard}>
+          <Text style={styles.zoneTitle}>Vehicle Zone Map</Text>
+          <Text style={styles.zoneSub}>Tap any part of the car to see what our mechanic found</Text>
+
+          <CarZoneMap
+            categories={data.categories}
+            selected={selectedZone}
+            onSelect={setSelectedZone}
+          />
+
+          {/* Documentation has no physical zone — dedicated row */}
+          <Pressable
+            style={[styles.docsRow, selectedZone === 'docs' && styles.docsRowSelected]}
+            onPress={() => setSelectedZone('docs')}
+          >
+            <Ionicons name="document-text-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.docsRowText}>Documentation & Records</Text>
+            <View style={[styles.docsDot, {
+              backgroundColor: (() => {
+                const d = data.categories.find((c) => c.id === 'docs');
+                const p = d.earned / d.maxPts;
+                return p >= 1 ? colors.green : p >= 0.85 ? colors.amber : colors.statusRejected;
+              })(),
+            }]} />
+          </Pressable>
+
+          {/* Selected zone detail */}
+          <View style={[styles.zoneDetail, { borderColor: zoneColor + '55' }]}>
+            <View style={styles.zoneDetailHeader}>
+              <Text style={styles.zoneDetailName}>{zoneCat.name}</Text>
+              <Text style={[styles.zoneDetailScore, { color: zoneColor }]}>
+                {zoneCat.earned}/{zoneCat.maxPts} pts
+              </Text>
+            </View>
+            {zoneCat.flags.length > 0 ? (
+              zoneCat.flags.map((flag, i) => (
+                <View key={i} style={styles.zoneFlagRow}>
+                  <Ionicons name="alert-circle" size={13} color={colors.amber} />
+                  <Text style={styles.zoneFlagText}>{flag}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.zoneFlagRow}>
+                <Ionicons name="checkmark-circle" size={13} color={colors.green} />
+                <Text style={[styles.zoneFlagText, { color: colors.green }]}>
+                  All items passed — no issues found in this zone
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
 
         {/* Quick summary chips */}
         <View style={styles.chips}>
@@ -232,6 +295,38 @@ const styles = StyleSheet.create({
   },
   warnBadge: { backgroundColor: colors.amber },
   certifiedText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  zoneCard: {
+    marginHorizontal: 16, marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 16,
+    ...shadows.card,
+  },
+  zoneTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  zoneSub: { fontSize: 12, color: colors.textMuted, marginTop: 3, marginBottom: 10 },
+  docsRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.lg,
+    paddingHorizontal: 12, paddingVertical: 10,
+    marginTop: 12,
+  },
+  docsRowSelected: { borderColor: colors.primary, backgroundColor: colors.greenTint },
+  docsRowText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  docsDot: { width: 10, height: 10, borderRadius: 5 },
+  zoneDetail: {
+    marginTop: 12,
+    backgroundColor: colors.bg,
+    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    padding: 12, gap: 8,
+  },
+  zoneDetailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  zoneDetailName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  zoneDetailScore: { fontSize: 14, fontWeight: '800' },
+  zoneFlagRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+  zoneFlagText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 17 },
   chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
   chip: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,

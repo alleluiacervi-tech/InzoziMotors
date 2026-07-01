@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
-import CarCard from '../components/CarCard';
+import CarListCard from '../components/CarListCard';
 import { colors, radius } from '../theme';
 import { useApp } from '../context/AppContext';
 
@@ -114,11 +114,9 @@ export default function SearchResultsScreen({ navigation, route }) {
 
       <FlatList
         data={filteredCars}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
         ListHeaderComponent={
           <View>
             <View style={styles.resultRow}>
@@ -177,7 +175,7 @@ export default function SearchResultsScreen({ navigation, route }) {
           </View>
         }
         renderItem={({ item }) => (
-          <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
+          <CarListCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -236,7 +234,6 @@ const styles = StyleSheet.create({
   sortChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   sortText: { fontSize: 13, fontWeight: '600' },
-  columnWrapper: { paddingHorizontal: 4 },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
