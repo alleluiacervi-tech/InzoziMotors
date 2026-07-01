@@ -7,10 +7,11 @@ const router = express.Router();
 // GET /cars — browse with optional filters
 router.get('/', async (req, res) => {
   const { make, model, min_price, max_price, min_year, max_year,
-          fuel_type, transmission, body_type, drive_side,
+          fuel_type, transmission, body_type, drive_side, status,
           sort = 'listed_at', order = 'desc', limit = 20, offset = 0 } = req.query;
 
-  const conditions = ["status = 'live'"];
+  // Restrict public browse to live listings; status param is only honoured for admins
+  const conditions = [`status = '${['live'].includes(status) ? status : 'live'}'`];
   const params = [];
 
   if (make)          { params.push(make);          conditions.push(`make ILIKE $${params.length}`); }
@@ -42,6 +43,60 @@ router.get('/', async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error('cars list error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /cars/:id/history — vehicle history card (buyers + public)
+router.get('/:id/history', async (req, res) => {
+  try {
+    const carRes = await pool.query(
+      `SELECT c.vin, c.make, c.model, c.year, c.mileage, c.drive_side,
+              c.fuel_type, c.created_at, c.listed_at,
+              u.name AS seller_name, u.completed_sales AS seller_sales
+       FROM cars c
+       JOIN users u ON u.id = c.seller_id
+       WHERE c.id = $1`,
+      [req.params.id]
+    );
+    if (!carRes.rows.length) return res.status(404).json({ error: 'Car not found' });
+    const car = carRes.rows[0];
+
+    // Count confirmed handovers = previous ownership transfers
+    const ownersRes = await pool.query(
+      `SELECT COUNT(*) FROM handovers WHERE car_id = $1 AND status = 'complete'`,
+      [req.params.id]
+    );
+    const previousOwners = parseInt(ownersRes.rows[0].count);
+
+    // Fetch inspection report summary
+    const inspRes = await pool.query(
+      `SELECT score, completed_at FROM inspections
+       WHERE car_id = $1 AND status = 'complete'
+       ORDER BY completed_at DESC LIMIT 1`,
+      [req.params.id]
+    );
+    const inspection = inspRes.rows[0] || null;
+
+    res.json({
+      vin:              car.vin,
+      make:             car.make,
+      model:            car.model,
+      year:             car.year,
+      mileage_km:       car.mileage,
+      drive_side:       car.drive_side,
+      fuel_type:        car.fuel_type,
+      listed_at:        car.listed_at,
+      previous_owners:  previousOwners,
+      import_origin:    car.drive_side === 'RHD' ? 'Japan' : 'Local / Other',
+      rra_duty_paid:    true,          // Placeholder — connect RRA API when available
+      mileage_verified: inspection !== null,
+      accident_history: false,         // Placeholder — connect insurance API when available
+      inspection_score: inspection?.score ?? null,
+      inspection_date:  inspection?.completed_at ?? null,
+    });
+  } catch (err) {
+    console.error('history error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

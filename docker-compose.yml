@@ -1,0 +1,79 @@
+version: '3.9'
+
+# ─── Inzozi Motors — full local stack ────────────────────────────────────────
+# Clone the repo, then:
+#   docker compose up --build
+#
+# After first run (or after reset), create admin account:
+#   (done automatically by backend entrypoint.sh)
+#
+# Access:
+#   API        → http://localhost:3000
+#   Admin dash → http://localhost:3001
+#   DB direct  → localhost:5432  (user: inzozi, pass: inzozi_dev, db: inzozi_motors)
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       inzozi_motors
+      POSTGRES_USER:     inzozi
+      POSTGRES_PASSWORD: inzozi_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inzozi -d inzozi_motors"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Node.js API ─────────────────────────────────────────────────────────────
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST:              db
+      DB_PORT:              5432
+      DB_NAME:              inzozi_motors
+      DB_USER:              inzozi
+      DB_PASSWORD:          inzozi_dev
+      JWT_SECRET:           dev_jwt_secret_change_in_production
+      JWT_EXPIRES_IN:       30d
+      PORT:                 3000
+      NODE_ENV:             development
+      CORS_ORIGINS:         "*"
+      UPLOAD_DIR:           /app/uploads
+      SEED_ADMIN_EMAIL:     admin@inzozi.rw
+      SEED_ADMIN_PASSWORD:  admin1234
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/uploads
+
+  # ── Next.js Admin Dashboard ─────────────────────────────────────────────────
+  admin:
+    build:
+      context: ./admin
+      args:
+        # This URL must be reachable from the BROWSER, not from within Docker.
+        # On localhost, the API container's port 3000 is exposed to the host.
+        NEXT_PUBLIC_API_URL: http://localhost:3000
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PORT: 3001
+    ports:
+      - "3001:3001"
+
+volumes:
+  postgres_data:
+  uploads:
