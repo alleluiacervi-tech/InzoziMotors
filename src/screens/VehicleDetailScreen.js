@@ -7,7 +7,7 @@ import Svg, { Polyline, Circle } from 'react-native-svg';
 import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
 import LoginModal from '../components/LoginModal';
 import {
@@ -139,7 +139,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 <Text style={styles.metaDot}>·</Text>
                 <Text style={styles.meta}>{listedDaysAgo}d ago</Text>
                 <Text style={styles.metaDot}>·</Text>
-                <Text style={[styles.meta, { fontWeight: '700' }]}>{driveType}</Text>
+                <Text style={[styles.meta, { fontFamily: fonts.bold }]}>{driveType}</Text>
               </View>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
@@ -246,12 +246,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </Pressable>
 
           <Pressable style={[styles.inspectionRow, { marginTop: 8 }]} onPress={() => navigation.navigate('VehicleHistory', { car })}>
-            <View style={[styles.inspectionIcon, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="document-text-outline" size={20} color={colors.statusScheduled} />
+            <View style={[styles.inspectionIcon, { backgroundColor: colors.greenTint }]}>
+              <Ionicons name="document-text-outline" size={20} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.inspectionTitle}>Vehicle History Report</Text>
-              <Text style={[styles.inspectionSub, { color: colors.statusScheduled }]}>RRA duty · ownership · accident history</Text>
+              <Text style={[styles.inspectionSub, { color: colors.primary }]}>RRA duty · ownership · accident history</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
@@ -326,7 +326,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           {/* Duty calculator link */}
           <Pressable style={styles.dutyLink} onPress={() => navigation.navigate('DutyCalculator')}>
             <View style={styles.dutyLinkIcon}>
-              <Ionicons name="calculator-outline" size={18} color={colors.statusScheduled} />
+              <Ionicons name="calculator-outline" size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.dutyLinkTitle}>Estimate import duty</Text>
@@ -345,7 +345,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.ctaPriceRwf}>{formatRWF(price)}</Text>
         </View>
         <Button
-          title={isAuction ? 'Place a Bid' : 'Request to Buy'}
+          title={isAuction ? 'Place a Bid' : 'Book Handover'}
           style={{ flex: 1 }}
           onPress={() => executeWithAuth(() => navigation.navigate('Checkout', { car }))}
         />
@@ -383,18 +383,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)',
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md,
   },
-  indicatorText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  indicatorText: { color: '#fff', fontSize: 11, fontFamily: fonts.extraBold },
   body: {
     backgroundColor: colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     marginTop: -24, paddingHorizontal: 20, paddingTop: 22,
   },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  title: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, color: colors.textPrimary },
+  title: { fontSize: 22, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, flexWrap: 'wrap' },
   meta: { fontSize: 12, color: colors.textSecondary },
   metaDot: { fontSize: 12, color: colors.textMuted },
-  bidLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
-  price: { fontSize: 24, fontWeight: '800', letterSpacing: -0.6, color: colors.textPrimary },
+  bidLabel: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
+  price: { fontSize: 24, fontFamily: fonts.extraBold, letterSpacing: -0.6, color: colors.textPrimary },
   priceRwf: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   marketBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -402,23 +402,23 @@ const styles = StyleSheet.create({
   },
   marketBadgeLow: { backgroundColor: colors.greenTint },
   marketBadgeHigh: { backgroundColor: '#FEF2F2' },
-  marketBadgeText: { fontSize: 10, fontWeight: '700' },
+  marketBadgeText: { fontSize: 10, fontFamily: fonts.bold },
   socialBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
   socialItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  socialText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
+  socialText: { fontSize: 12, color: colors.textSecondary, fontFamily: fonts.semiBold },
   highDemandBadge: {
     backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5,
   },
-  highDemandText: { fontSize: 10, fontWeight: '800', color: colors.amber },
+  highDemandText: { fontSize: 10, fontFamily: fonts.extraBold, color: colors.amber },
   sparklineCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, padding: 14, marginTop: 14, ...shadows.card,
   },
   sparklineLeft: { flex: 1, gap: 3 },
-  sparklineTitle: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
+  sparklineTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary },
   priceDropRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  priceDropText: { fontSize: 11, fontWeight: '700', color: colors.green },
+  priceDropText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
   sparklineStable: { fontSize: 11, color: colors.textMuted },
   marketAvgText: { fontSize: 11, color: colors.textMuted },
   sparklineRight: { alignItems: 'flex-end', gap: 2 },
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, paddingVertical: 14,
     alignItems: 'center', gap: 6,
   },
-  specValue: { fontSize: 13, fontWeight: '800', color: colors.textPrimary },
+  specValue: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
   specLabel: { fontSize: 11, color: colors.textMuted },
   sellerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -441,8 +441,8 @@ const styles = StyleSheet.create({
     width: 46, height: 46, borderRadius: 23,
     backgroundColor: colors.navyMid, alignItems: 'center', justifyContent: 'center',
   },
-  sellerInitial: { color: '#fff', fontWeight: '800', fontSize: 18 },
-  sellerName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  sellerInitial: { color: '#fff', fontFamily: fonts.extraBold, fontSize: 18 },
+  sellerName: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   ratingText: { fontSize: 12, color: colors.textSecondary },
   msgBtn: {
@@ -458,10 +458,10 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: radius.md,
     backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center',
   },
-  inspectionTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  inspectionSub: { fontSize: 12, color: colors.green, fontWeight: '600', marginTop: 2 },
+  inspectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  inspectionSub: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold, marginTop: 2 },
   trustChips: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary, marginTop: 22, marginBottom: 10 },
+  sectionTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 22, marginBottom: 10 },
   desc: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
   highlightGrid: { gap: 10 },
   highlightCard: {
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     width: 38, height: 38, borderRadius: radius.md,
     backgroundColor: colors.blueTint, alignItems: 'center', justifyContent: 'center',
   },
-  highlightTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  highlightTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   highlightDesc: { fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 16 },
   similarCard: {
     width: 140,
@@ -482,21 +482,21 @@ const styles = StyleSheet.create({
   },
   similarThumb: { width: '100%', height: 90, backgroundColor: colors.border },
   similarBody: { padding: 10, gap: 3 },
-  similarTitle: { fontSize: 11, fontWeight: '700', color: colors.textPrimary, lineHeight: 15 },
-  similarPrice: { fontSize: 13, fontWeight: '800', color: colors.primary },
+  similarTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 15 },
+  similarPrice: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
   similarCert: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  similarCertText: { fontSize: 9, fontWeight: '700', color: colors.green },
+  similarCertText: { fontSize: 9, fontFamily: fonts.bold, color: colors.green },
   dutyLink: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#DBEAFE',
+    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, padding: 14, marginTop: 14,
   },
   dutyLinkIcon: {
     width: 38, height: 38, borderRadius: radius.md,
-    backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  dutyLinkTitle: { fontSize: 14, fontWeight: '700', color: colors.statusScheduled },
-  dutyLinkSub: { fontSize: 12, color: colors.statusScheduled, marginTop: 2 },
+  dutyLinkTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.primary },
+  dutyLinkSub: { fontSize: 12, color: colors.primary, marginTop: 2 },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', gap: 14,
@@ -505,6 +505,6 @@ const styles = StyleSheet.create({
   },
   ctaPrice: { minWidth: 90 },
   ctaPriceLabel: { fontSize: 12, color: colors.textSecondary },
-  ctaPriceValue: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
+  ctaPriceValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
   ctaPriceRwf: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
 });

@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Rect, Text as SvgText, G } from 'react-native-svg';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -195,10 +195,10 @@ export default function AdminAnalyticsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   hero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
-  heroTitle: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  heroTitle: { fontSize: 12, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
   heroStats: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   heroStatItem: { flex: 1, alignItems: 'center' },
-  heroStatValue: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  heroStatValue: { fontSize: 22, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5 },
   heroStatLabel: { fontSize: 9, color: 'rgba(255,255,255,0.55)', marginTop: 2, textAlign: 'center' },
   heroDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.15)' },
   conversionBadge: {
@@ -206,13 +206,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: radius.pill,
     paddingHorizontal: 12, paddingVertical: 6, alignSelf: 'flex-start',
   },
-  conversionText: { fontSize: 12, fontWeight: '700', color: colors.greenLight },
+  conversionText: { fontSize: 12, fontFamily: fonts.bold, color: colors.greenLight },
   card: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 12,
     ...shadows.card,
   },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  cardTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   cardSub: { fontSize: 12, color: colors.textMuted, marginTop: 2, marginBottom: 4 },
   funnel: { marginTop: 12, gap: 0 },
   funnelStep: { flexDirection: 'row', gap: 10, minHeight: 54 },
@@ -226,21 +226,21 @@ const styles = StyleSheet.create({
   funnelBar: { height: 8, backgroundColor: colors.surfaceAlt, borderRadius: 4, overflow: 'hidden', marginTop: 12 },
   funnelFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
   funnelMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  funnelLabel: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
-  funnelValue: { fontSize: 14, fontWeight: '800', color: colors.primary },
-  funnelDrop: { fontSize: 11, color: colors.amber, fontWeight: '600' },
+  funnelLabel: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary },
+  funnelValue: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
+  funnelDrop: { fontSize: 11, color: colors.amber, fontFamily: fonts.semiBold },
   centersGrid: { gap: 10, marginTop: 10 },
   centerCard: {
     backgroundColor: colors.surfaceAlt, borderRadius: radius.lg, padding: 12,
   },
-  centerName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
+  centerName: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 8 },
   centerBar: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
   centerFill: { height: '100%', borderRadius: 3 },
   centerMeta: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
   capacityWarn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  capacityWarnText: { fontSize: 10, fontWeight: '700', color: colors.amber },
+  capacityWarnText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amber },
   activityRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   activityIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  activityText: { flex: 1, fontSize: 13, color: colors.textPrimary, fontWeight: '600' },
+  activityText: { flex: 1, fontSize: 13, color: colors.textPrimary, fontFamily: fonts.semiBold },
   activityTime: { fontSize: 11, color: colors.textMuted },
 });

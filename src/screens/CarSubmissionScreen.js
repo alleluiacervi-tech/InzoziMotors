@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const MAKES = ['Toyota', 'Honda', 'Nissan', 'Subaru', 'Mercedes', 'BMW', 'Mazda', 'Hyundai', 'Kia', 'Volkswagen'];
@@ -429,16 +429,16 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   stepDotActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  stepDotText: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
-  stepLabel: { fontSize: 10, fontWeight: '600', color: colors.textMuted },
+  stepDotText: { fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted },
+  stepLabel: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.textMuted },
   stepLabelActive: { color: colors.primary },
   stepLine: { flex: 1, height: 1.5, backgroundColor: colors.borderSoft, marginBottom: 14 },
   stepLineActive: { backgroundColor: colors.primary },
   stepContent: { padding: 20, gap: 0 },
-  stepTitle: { fontSize: 22, fontWeight: '800', color: colors.textPrimary, letterSpacing: -0.4, marginBottom: 6 },
+  stepTitle: { fontSize: 22, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.4, marginBottom: 6 },
   stepSub: { fontSize: 14, color: colors.textSecondary, lineHeight: 21, marginBottom: 24 },
   field: { marginBottom: 20 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
+  fieldLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 8 },
   fieldHint: { fontSize: 12, color: colors.textMuted, marginTop: 6, lineHeight: 17 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border,
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  chipText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
   chipTextActive: { color: '#fff' },
   input: {
     backgroundColor: colors.surface,
@@ -480,8 +480,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   photoSlotDone: { borderColor: colors.primary, backgroundColor: colors.blueTint, borderStyle: 'solid' },
-  photoSlotLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
-  photoSlotDoneText: { fontSize: 10, color: colors.primary, fontWeight: '700' },
+  photoSlotLabel: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
+  photoSlotDoneText: { fontSize: 10, color: colors.primary, fontFamily: fonts.bold },
   photoNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     backgroundColor: colors.blueTint, borderRadius: radius.lg, padding: 12, marginBottom: 8,
@@ -495,11 +495,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     ...shadows.card,
   },
-  summaryTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
+  summaryTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 12 },
   summaryRows: { gap: 10 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryRowLabel: { fontSize: 13, color: colors.textMuted },
-  summaryRowValue: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  summaryRowValue: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   timelineCard: {
     backgroundColor: colors.blueTint,
     borderWidth: 1, borderColor: colors.primary + '30',
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     gap: 12,
   },
-  timelineTitle: { fontSize: 13, fontWeight: '700', color: colors.primary, marginBottom: 2 },
+  timelineTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary, marginBottom: 2 },
   timelineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   timelineDot: {
     width: 28, height: 28, borderRadius: 14,
@@ -523,11 +523,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 14, marginBottom: 16,
   },
   aiSuggestHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  aiSuggestTitle: { fontSize: 13, fontWeight: '800', color: colors.primary },
+  aiSuggestTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
   aiSuggestBeta: { marginLeft: 'auto', backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2 },
-  aiSuggestBetaText: { fontSize: 9, fontWeight: '700', color: '#fff', textTransform: 'uppercase' },
-  aiSuggestRange: { fontSize: 22, fontWeight: '900', color: colors.primary, letterSpacing: -0.5, marginBottom: 2 },
+  aiSuggestBetaText: { fontSize: 9, fontFamily: fonts.bold, color: '#fff', textTransform: 'uppercase' },
+  aiSuggestRange: { fontSize: 22, fontFamily: fonts.black, color: colors.primary, letterSpacing: -0.5, marginBottom: 2 },
   aiSuggestSub: { fontSize: 12, color: colors.textSecondary },
   aiSuggestCheck: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.lg, padding: 8, marginTop: 10 },
-  aiSuggestCheckText: { fontSize: 12, fontWeight: '700', flex: 1 },
+  aiSuggestCheckText: { fontSize: 12, fontFamily: fonts.bold, flex: 1 },
 });

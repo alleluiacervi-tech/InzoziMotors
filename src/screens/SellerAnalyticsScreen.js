@@ -6,7 +6,7 @@ import Svg, { Rect, Text as SvgText, G } from 'react-native-svg';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -148,7 +148,7 @@ export default function SellerAnalyticsScreen({ navigation }) {
                 <View>
                   <Text style={styles.chartTitle}>Views this week</Text>
                   <Text style={styles.chartSub}>
-                    <Text style={{ color: colors.primary, fontWeight: '800' }}>{analytics.viewsThisWeek}</Text>
+                    <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{analytics.viewsThisWeek}</Text>
                     {' '}views · {analytics.trend === 'up' ? '↑ trending up' : 'stable'}
                   </Text>
                 </View>
@@ -226,13 +226,13 @@ export default function SellerAnalyticsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   hero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
-  heroLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  heroLabel: { fontSize: 11, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
   heroStats: { flexDirection: 'row', alignItems: 'center' },
   heroStatItem: { flex: 1, alignItems: 'center' },
-  heroStatValue: { fontSize: 26, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  heroStatValue: { fontSize: 26, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5 },
   heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   heroStatDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.15)' },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: colors.textMuted, paddingHorizontal: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
+  sectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted, paddingHorizontal: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
   selectorRow: { paddingHorizontal: 16, gap: 8, marginBottom: 12 },
   selectorChip: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill,
@@ -240,15 +240,15 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   selectorChipActive: { borderColor: colors.primary, backgroundColor: colors.greenTint },
-  selectorText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  selectorTextActive: { color: colors.primary, fontWeight: '700' },
+  selectorText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  selectorTextActive: { color: colors.primary, fontFamily: fonts.bold },
   chartCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 12,
     ...shadows.card,
   },
   chartHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
-  chartTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  chartTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   chartSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   trendChip: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8, marginBottom: 12 },
@@ -259,29 +259,29 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  statValue: { fontSize: 26, fontWeight: '900', color: colors.textPrimary, letterSpacing: -0.5 },
-  statLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  statValue: { fontSize: 26, fontFamily: fonts.black, color: colors.textPrimary, letterSpacing: -0.5 },
+  statLabel: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted },
   statSub: { fontSize: 10, color: colors.textMuted },
   tomCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 16,
     ...shadows.card,
   },
-  tomTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
+  tomTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 12 },
   tomBar: { height: 8, backgroundColor: colors.surfaceAlt, borderRadius: 4, overflow: 'hidden' },
   tomFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
   tomLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   tomLabel: { fontSize: 11, color: colors.textMuted },
   tomHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
-  tomHintText: { fontSize: 12, color: colors.green, fontWeight: '600' },
+  tomHintText: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold },
   empty: { alignItems: 'center', paddingVertical: 50, gap: 10 },
-  emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  emptyTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   emptySub: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 40 },
   tipsCard: {
     backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '33',
     borderRadius: radius.xl, padding: 16, marginHorizontal: 16,
   },
-  tipsTitle: { fontSize: 14, fontWeight: '800', color: colors.primary, marginBottom: 12 },
+  tipsTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, marginBottom: 12 },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   tipIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   tipText: { flex: 1, fontSize: 12, color: colors.primary, lineHeight: 18 },

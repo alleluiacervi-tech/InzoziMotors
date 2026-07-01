@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 
 const HOW_IT_WORKS = [
   { icon: 'share-outline', step: '1', title: 'Share your code', desc: 'Send your unique referral code to friends who want to sell their car on Inzozi.' },
@@ -165,20 +165,20 @@ const styles = StyleSheet.create({
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center',
   },
-  heroTitle: { fontSize: 26, fontWeight: '900', color: '#fff', textAlign: 'center', letterSpacing: -0.5 },
+  heroTitle: { fontSize: 26, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: -0.5 },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 20 },
   codeBox: {
     backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: radius.xl,
     padding: 14, alignItems: 'center', alignSelf: 'stretch',
   },
-  codeLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
-  code: { fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: 2, marginTop: 4 },
+  codeLabel: { fontSize: 10, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  code: { fontSize: 24, fontFamily: fonts.black, color: '#fff', letterSpacing: 2, marginTop: 4 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#fff', borderRadius: radius.xl,
     paddingHorizontal: 20, paddingVertical: 12, alignSelf: 'stretch', justifyContent: 'center',
   },
-  shareBtnText: { fontSize: 14, fontWeight: '800', color: colors.primary },
+  shareBtnText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
   tracker: {
     flexDirection: 'row', backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -186,12 +186,12 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   trackerItem: { flex: 1, alignItems: 'center' },
-  trackerValue: { fontSize: 28, fontWeight: '900', color: colors.textPrimary },
+  trackerValue: { fontSize: 28, fontFamily: fonts.black, color: colors.textPrimary },
   trackerLabel: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
   trackerDivider: { width: 1, backgroundColor: colors.borderSoft },
   emptyTracker: { alignItems: 'center', paddingVertical: 10, marginBottom: 8 },
   emptyTrackerText: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic' },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, paddingHorizontal: 16, marginTop: 16, marginBottom: 10 },
+  sectionTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, paddingHorizontal: 16, marginTop: 16, marginBottom: 10 },
   stepsCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, marginHorizontal: 16, overflow: 'hidden', ...shadows.card,
@@ -201,20 +201,20 @@ const styles = StyleSheet.create({
     width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1,
   },
-  stepNumText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  stepNumText: { fontSize: 12, fontFamily: fonts.extraBold, color: '#fff' },
   stepIcon: {
     width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  stepTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  stepTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   stepDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 17, marginTop: 2 },
   rewardCard: {
     backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: colors.amber + '55',
     borderRadius: radius.xl, margin: 16, padding: 16,
   },
   rewardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  rewardTitle: { fontSize: 14, fontWeight: '800', color: '#92400E' },
-  rewardValue: { fontSize: 20, fontWeight: '900', color: '#92400E', marginBottom: 6 },
+  rewardTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: '#92400E' },
+  rewardValue: { fontSize: 20, fontFamily: fonts.black, color: '#92400E', marginBottom: 6 },
   rewardSub: { fontSize: 13, color: '#92400E', lineHeight: 19 },
   rewardNote: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', marginTop: 10 },
   rewardNoteText: { flex: 1, fontSize: 11, color: colors.textMuted, lineHeight: 15 },
@@ -227,13 +227,13 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: '#DCF8C6', alignItems: 'center', justifyContent: 'center',
   },
-  whatsappTitle: { fontSize: 14, fontWeight: '800', color: '#065F46' },
+  whatsappTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: '#065F46' },
   whatsappSub: { fontSize: 11, color: '#059669', marginTop: 1 },
   comingSoonBadge: {
     marginLeft: 'auto', backgroundColor: '#059669',
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  comingSoonText: { fontSize: 10, fontWeight: '700', color: '#fff' },
+  comingSoonText: { fontSize: 10, fontFamily: fonts.bold, color: '#fff' },
   whatsappFeatures: { gap: 8, marginBottom: 14 },
   whatsappFeature: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   whatsappFeatureText: { fontSize: 13, color: '#065F46' },
@@ -242,5 +242,5 @@ const styles = StyleSheet.create({
     gap: 8, backgroundColor: '#fff',
     borderWidth: 1, borderColor: '#BBF7D0', borderRadius: radius.xl, padding: 12,
   },
-  whatsappOptInText: { fontSize: 13, fontWeight: '700', color: '#059669' },
+  whatsappOptInText: { fontSize: 13, fontFamily: fonts.bold, color: '#059669' },
 });

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { INSPECTION_CATEGORIES } from '../data/inspectionData';
 import { useApp } from '../context/AppContext';
 
@@ -177,7 +177,7 @@ export default function InspectionFormScreen({ navigation, route }) {
         onBack={() => navigation.goBack()}
         right={
           <View style={styles.scorePill}>
-            <Text style={styles.scorePillText}>{totalScore}<Text style={{ fontSize: 11, fontWeight: '600' }}>/150</Text></Text>
+            <Text style={styles.scorePillText}>{totalScore}<Text style={{ fontSize: 11, fontFamily: fonts.semiBold }}>/150</Text></Text>
           </View>
         }
       />
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary, flex: 1 },
+  infoTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, flex: 1 },
   infoMeta: { fontSize: 13, color: colors.textSecondary },
   infoDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.border },
   progressCard: {
@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progressLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  progressPct: { fontSize: 20, fontWeight: '800', color: colors.primary },
+  progressLabel: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  progressPct: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.primary },
   progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.border },
   progressFill: { height: 6, borderRadius: 3, backgroundColor: colors.primary },
   legendRow: { flexDirection: 'row', gap: 16 },
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontSize: 12, color: colors.textSecondary },
   sectionHeader: { paddingHorizontal: 16, marginBottom: 10, marginTop: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   sectionSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   accordions: { paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   accordion: {
@@ -326,17 +326,17 @@ const styles = StyleSheet.create({
   accordionOpen: { borderColor: colors.primary + '55' },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   catIcon: { width: 38, height: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  catName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  catName: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   catMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
   catProgress: { fontSize: 11, color: colors.textMuted },
   miniChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill,
   },
-  miniChipText: { fontSize: 10, fontWeight: '700' },
+  miniChipText: { fontSize: 10, fontFamily: fonts.bold },
   catBar: { height: 3, borderRadius: 2, backgroundColor: colors.border, marginTop: 6 },
   catBarFill: { height: 3, borderRadius: 2, backgroundColor: colors.primary },
-  catScore: { fontSize: 16, fontWeight: '800', color: colors.primary },
-  catMax: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
+  catScore: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary },
+  catMax: { fontSize: 11, color: colors.textMuted, fontFamily: fonts.semiBold },
   accordionBody: { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingHorizontal: 14, paddingBottom: 6 },
   divider: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 0 },
   itemRow: { paddingVertical: 12, gap: 8 },
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border,
     backgroundColor: colors.surfaceAlt,
   },
-  optLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+  optLabel: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted },
   notesCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.surface,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: 16,
   },
-  notesLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 10 },
+  notesLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 10 },
   notesInput: {
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.lg, padding: 12,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  scorePillText: { fontSize: 14, fontWeight: '800', color: colors.primary },
+  scorePillText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     padding: 16, paddingBottom: 28,

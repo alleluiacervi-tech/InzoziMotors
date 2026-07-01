@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { PHOTO_GROUPS } from '../data/inspectionData';
 
 const TOTAL_REQUIRED = PHOTO_GROUPS.reduce((s, g) => {
@@ -121,7 +121,7 @@ export default function PhotoUploadScreen({ navigation, route }) {
             <View>
               <Text style={styles.headerTitle}>{inspection?.car || '2019 Toyota RAV4'}</Text>
               <Text style={styles.headerSub}>
-                Inspection score: <Text style={{ color: colors.primary, fontWeight: '800' }}>{score || 143}/150</Text>
+                Inspection score: <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{score || 143}/150</Text>
               </Text>
             </View>
             <View style={styles.scoreCircle}>
@@ -140,7 +140,7 @@ export default function PhotoUploadScreen({ navigation, route }) {
 
         {/* Standard info banner */}
         <View style={styles.infoBanner}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.statusScheduled} />
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={styles.infoBannerText}>
             36 standardized angles — identical format for every listing. Defect photos are optional but recommended.
           </Text>
@@ -217,30 +217,30 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
-  headerTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  headerTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   headerSub: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
   scoreCircle: {
     width: 62, height: 62, borderRadius: 31,
     borderWidth: 3, borderColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  scoreCirclePct: { fontSize: 15, fontWeight: '800', color: colors.primary },
+  scoreCirclePct: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary },
   scoreCircleLabel: { fontSize: 9, color: colors.textMuted, marginTop: -2 },
   progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.border },
   progressFill: { height: 6, borderRadius: 3, backgroundColor: colors.primary },
   progressMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   progressMetaText: { fontSize: 12, color: colors.textSecondary },
-  progressMetaReq: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  progressMetaReq: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   infoBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     marginHorizontal: 16, marginBottom: 8,
-    backgroundColor: '#EFF6FF', borderRadius: radius.lg, padding: 12,
+    backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 12,
   },
-  infoBannerText: { flex: 1, fontSize: 12, color: colors.statusScheduled, lineHeight: 18 },
+  infoBannerText: { flex: 1, fontSize: 12, color: colors.primary, lineHeight: 18 },
   group: { marginHorizontal: 16, marginBottom: 16 },
   groupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  groupTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
-  groupCount: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  groupTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  groupCount: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textMuted },
   groupOptional: { color: colors.textMuted, fontStyle: 'italic' },
   slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   slot: {
@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   slotAddIconOptional: { backgroundColor: colors.surfaceAlt },
-  slotLabel: { fontSize: 9, fontWeight: '600', color: colors.textSecondary, textAlign: 'center', lineHeight: 13 },
-  slotLabelUploaded: { fontSize: 9, fontWeight: '700', color: colors.primary, textAlign: 'center', lineHeight: 13 },
+  slotLabel: { fontSize: 9, fontFamily: fonts.semiBold, color: colors.textSecondary, textAlign: 'center', lineHeight: 13 },
+  slotLabelUploaded: { fontSize: 9, fontFamily: fonts.bold, color: colors.primary, textAlign: 'center', lineHeight: 13 },
   slotLabelOptional: { color: colors.textMuted },
   slotCheckCircle: {
     width: 30, height: 30, borderRadius: 15,
@@ -278,13 +278,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   optionalTag: { fontSize: 8, color: colors.textMuted, fontStyle: 'italic' },
-  markAllBtn: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  markAllBtn: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   tipsCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.amberTint,
     borderRadius: radius.xl, padding: 16, gap: 10,
   },
-  tipsTitle: { fontSize: 13, fontWeight: '800', color: colors.amberText },
+  tipsTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.amberText },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   tipDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.amberText, marginTop: 6 },
   tipText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },

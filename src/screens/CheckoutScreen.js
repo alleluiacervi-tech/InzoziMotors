@@ -69,7 +69,7 @@ function ReviewState({ car, price, onNext }) {
         )}
 
         <View style={styles.infoBox}>
-          <Ionicons name="information-circle-outline" size={18} color={colors.statusScheduled} />
+          <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
           <View style={{ flex: 1 }}>
             <Text style={styles.infoTitle}>How the handover works</Text>
             <Text style={styles.infoSub}>
@@ -355,10 +355,10 @@ const styles = StyleSheet.create({
 
   infoBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    backgroundColor: '#EFF6FF', borderRadius: radius.lg, padding: 14, marginBottom: 16,
+    backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 14, marginBottom: 16,
   },
-  infoTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.statusScheduled },
-  infoSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.statusScheduled, lineHeight: 17, marginTop: 3 },
+  infoTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
+  infoSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.primary, lineHeight: 17, marginTop: 3 },
 
   sectionTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10 },
 

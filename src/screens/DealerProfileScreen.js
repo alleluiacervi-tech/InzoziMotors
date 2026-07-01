@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../context/AppContext';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
 
 const DEALERS = {
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 10, paddingVertical: 4,
     borderRadius: radius.pill,
   },
-  verifiedText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  verifiedText: { fontSize: 11, fontFamily: fonts.bold, color: '#fff' },
   heroAvatar: {
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -219,12 +219,12 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
     marginTop: 8,
   },
-  heroInitials: { fontSize: 26, fontWeight: '900', color: '#fff' },
-  heroName: { fontSize: 22, fontWeight: '900', color: '#fff', letterSpacing: -0.5, textAlign: 'center' },
+  heroInitials: { fontSize: 26, fontFamily: fonts.black, color: '#fff' },
+  heroName: { fontSize: 22, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5, textAlign: 'center' },
   heroTagline: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
   heroStats: { flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: radius.xl, padding: 14, alignSelf: 'stretch' },
   heroStatItem: { flex: 1, alignItems: 'center' },
-  heroStatValue: { fontSize: 16, fontWeight: '800', color: '#fff' },
+  heroStatValue: { fontSize: 16, fontFamily: fonts.extraBold, color: '#fff' },
   heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
   heroDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' },
   infoCard: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   infoDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 20, marginBottom: 12 },
   infoRows: { gap: 8 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { fontSize: 13, color: colors.textPrimary, fontWeight: '600' },
+  infoText: { fontSize: 13, color: colors.textPrimary, fontFamily: fonts.semiBold },
   filterRow: { paddingHorizontal: 16, paddingVertical: 4, gap: 8, marginBottom: 8 },
   filterChip: {
     paddingHorizontal: 14, paddingVertical: 7,
@@ -242,10 +242,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  filterText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   filterTextActive: { color: '#fff' },
   listingsSection: { paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 12 },
+  sectionTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 12 },
   listingCard: {
     flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, overflow: 'hidden', ...shadows.card, position: 'relative',
@@ -257,9 +257,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center',
   },
   listingBody: { padding: 10, gap: 3 },
-  listingTitle: { fontSize: 11, fontWeight: '700', color: colors.textPrimary, lineHeight: 15 },
+  listingTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 15 },
   listingMeta: { fontSize: 10, color: colors.textMuted },
-  listingPrice: { fontSize: 13, fontWeight: '800', color: colors.primary },
+  listingPrice: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
   empty: { alignItems: 'center', paddingVertical: 30 },
   emptyText: { fontSize: 13, color: colors.textMuted },
   stickyContact: {
@@ -272,5 +272,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: colors.primary, borderRadius: radius.xl, paddingVertical: 16,
   },
-  contactBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  contactBtnText: { color: '#fff', fontSize: 15, fontFamily: fonts.extraBold },
 });

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import Button from '../components/Button';
 import { useApp } from '../context/AppContext';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 
 const MAKES = ['Tesla', 'Toyota', 'BMW', 'Ford', 'Honda', 'Mercedes', 'Hyundai'];
 const BODY = ['SUV', 'Sedan', 'Truck', 'EV', 'Coupe', 'Van'];
@@ -92,7 +92,7 @@ export default function FiltersScreen({ navigation, route }) {
           <Text style={styles.resetText}>Reset</Text>
         </Pressable>
         <Button
-          title={`Show ${getMatchingCount()} results`}
+          title={`View ${getMatchingCount()} cars`}
           style={{ flex: 1 }}
           onPress={() => {
             navigation.navigate('SearchResults', { filters: selected });
@@ -105,11 +105,11 @@ export default function FiltersScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
-  h1: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5, color: colors.textPrimary },
-  label: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  h1: { fontSize: 24, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
+  label: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
   priceBox: { flex: 1, height: 50, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  priceText: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  priceText: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   dash: { color: colors.textMuted },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.border, marginTop: 18, marginHorizontal: 12 },
   trackFill: { position: 'absolute', left: '12%', right: '26%', top: 0, height: 6, borderRadius: 3, backgroundColor: colors.primary },
@@ -117,12 +117,12 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   chip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 13, fontWeight: '600' },
+  chipText: { fontSize: 13, fontFamily: fonts.semiBold },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
-  toggleLabel: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  toggleLabel: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
   switchOn: { width: 46, height: 28, borderRadius: 14, backgroundColor: colors.primary, padding: 3, alignItems: 'flex-end', justifyContent: 'center' },
   switchKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   reset: { paddingHorizontal: 22, paddingVertical: 16, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border },
-  resetText: { fontSize: 15, fontWeight: '700', color: colors.slate700 },
+  resetText: { fontSize: 15, fontFamily: fonts.bold, color: colors.slate700 },
 });

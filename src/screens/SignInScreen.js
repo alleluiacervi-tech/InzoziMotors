@@ -5,7 +5,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { useApp } from '../context/AppContext';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 
 export default function SignInScreen({ navigation }) {
   const { loginUser } = useApp();
@@ -78,11 +78,11 @@ export default function SignInScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   body: { paddingHorizontal: 28, paddingBottom: 40 },
-  title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.9, color: colors.textPrimary, marginTop: 14 },
+  title: { fontSize: 30, fontFamily: fonts.extraBold, letterSpacing: -0.9, color: colors.textPrimary, marginTop: 14 },
   sub: { fontSize: 15, color: colors.textSecondary, marginTop: 6 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.slate600, marginBottom: 6 },
+  label: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.slate600, marginBottom: 6 },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14, marginBottom: 6 },
-  forgot: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  forgot: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   input: {
     height: 52,
     borderWidth: 1,
@@ -107,5 +107,5 @@ const styles = StyleSheet.create({
   passwordInput: { flex: 1, fontSize: 15, color: colors.textPrimary },
   errorText: { fontSize: 12, color: '#EF4444', marginTop: 4, marginLeft: 4 },
   footer: { textAlign: 'center', fontSize: 14, color: colors.textSecondary },
-  link: { color: colors.primary, fontWeight: '700' },
+  link: { color: colors.primary, fontFamily: fonts.bold },
 });

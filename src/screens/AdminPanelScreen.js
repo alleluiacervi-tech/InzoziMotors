@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const TABS = ['Queue', 'Inspections', 'Handovers', 'Listings'];
@@ -368,9 +368,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary + '44',
   },
-  adminBadgeText: { fontSize: 10, fontWeight: '800', color: colors.primary, letterSpacing: 0.5 },
+  adminBadgeText: { fontSize: 10, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: 0.5 },
   statsHero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
-  statsHeroTitle: { fontSize: 18, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
+  statsHeroTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   statsHeroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2, marginBottom: 16 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   statCard: {
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statIcon: { width: 36, height: 36, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 22, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  statValue: { fontSize: 22, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.5 },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)' },
   tabBar: {
     flexDirection: 'row',
@@ -397,14 +397,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'center', gap: 6,
   },
   tabActive: { borderBottomColor: colors.primary },
-  tabText: { fontSize: 14, fontWeight: '600', color: colors.textMuted },
-  tabTextActive: { color: colors.primary, fontWeight: '700' },
+  tabText: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textMuted },
+  tabTextActive: { color: colors.primary, fontFamily: fonts.bold },
   tabBadge: {
     minWidth: 18, height: 18, borderRadius: 9,
     backgroundColor: colors.amber,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
   },
-  tabBadgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  tabBadgeText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff' },
   tabContent: { padding: 16, gap: 10 },
   // Verification cards
   verifyCard: {
@@ -421,8 +421,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     alignSelf: 'flex-start',
   },
-  verifyInitials: { fontSize: 15, fontWeight: '800', color: '#fff' },
-  verifyName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  verifyInitials: { fontSize: 15, fontFamily: fonts.extraBold, color: '#fff' },
+  verifyName: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   verifyTime: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
   verifyDocs: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   verifyDocChip: {
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueTint,
     borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3,
   },
-  verifyDocText: { fontSize: 10, fontWeight: '600', color: colors.primary },
+  verifyDocText: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.primary },
   verifyActions: { flexDirection: 'row', gap: 8 },
   verifyBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -438,10 +438,10 @@ const styles = StyleSheet.create({
   },
   verifyBtnApprove: { backgroundColor: colors.primary },
   verifyBtnReject: { backgroundColor: colors.statusRejectedBg, borderWidth: 1, borderColor: colors.statusRejected + '44' },
-  verifyBtnApproveText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  verifyBtnRejectText: { fontSize: 13, fontWeight: '700', color: colors.statusRejected },
+  verifyBtnApproveText: { fontSize: 13, fontFamily: fonts.bold, color: '#fff' },
+  verifyBtnRejectText: { fontSize: 13, fontFamily: fonts.bold, color: colors.statusRejected },
   // Inspection cards
-  subHeader: { fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  subHeader: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
   inspCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   },
   inspCardToday: { borderColor: colors.primary + '44', backgroundColor: colors.blueTint },
   inspDot: { width: 10, height: 10, borderRadius: 5 },
-  inspSeller: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  inspSeller: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   inspCar: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
   inspMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   inspMetaText: { fontSize: 11, color: colors.textMuted },
@@ -460,21 +460,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: radius.pill,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  inspBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  inspBadgeText: { fontSize: 9, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5 },
   confirmBtn: {
     backgroundColor: colors.surface,
     borderWidth: 1.5, borderColor: colors.primary,
     borderRadius: radius.lg,
     paddingHorizontal: 12, paddingVertical: 6,
   },
-  confirmBtnText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  confirmBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   startInspBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: colors.greenTint,
     borderWidth: 1, borderColor: colors.primary + '44',
     borderRadius: radius.lg, paddingHorizontal: 8, paddingVertical: 4,
   },
-  startInspBtnText: { fontSize: 11, fontWeight: '700', color: colors.primary },
+  startInspBtnText: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary },
   // Listing cards
   listingCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -483,19 +483,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 14,
     ...shadows.card,
   },
-  listingTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  listingPrice: { fontSize: 15, fontWeight: '800', color: colors.primary, marginTop: 2 },
+  listingTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  listingPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 2 },
   listingMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   listingMetaText: { fontSize: 11, color: colors.textMuted },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
-  badgeText: { fontSize: 11, fontWeight: '700' },
+  badgeText: { fontSize: 11, fontFamily: fonts.bold },
   confirmHandoverBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: 11,
   },
-  confirmHandoverBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  confirmHandoverBtnText: { fontSize: 13, fontFamily: fonts.bold, color: '#fff' },
   // Empty state
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 10 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  emptyTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },
   emptySub: { fontSize: 14, color: colors.textMuted },
 });

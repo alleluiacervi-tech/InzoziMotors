@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 
 const SCORE_COMPONENTS = [
@@ -26,8 +26,8 @@ const SCORE_COMPONENTS = [
     label: 'Completed Sales',
     icon: 'bag-check-outline',
     max: 30,
-    color: colors.statusScheduled,
-    bg: '#EFF6FF',
+    color: colors.primary,
+    bg: colors.greenTint,
     calcPts: (p) => Math.min(p.completedSales, 30),
     desc: (p) => `${p.completedSales} successful sale${p.completedSales !== 1 ? 's' : ''} (1 pt each, max 30)`,
   },
@@ -157,7 +157,7 @@ export default function SellerProfileScreen({ navigation, route }) {
         <View style={styles.statsRow}>
           {[
             { label: 'Sales', value: String(profile.completedSales), icon: 'bag-check-outline', color: colors.primary },
-            { label: 'Response', value: `${profile.responseRate}%`, icon: 'chatbubble-outline', color: colors.statusScheduled },
+            { label: 'Response', value: `${profile.responseRate}%`, icon: 'chatbubble-outline', color: colors.primary },
             { label: 'Rating', value: `${profile.avgRating}★`, icon: 'star', color: '#F59E0B' },
             { label: 'Reviews', value: String(profile.totalReviews), icon: 'people-outline', color: colors.amber },
           ].map((s) => (
@@ -255,8 +255,8 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
     flexShrink: 0,
   },
-  avatarText: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  heroName: { fontSize: 17, fontWeight: '800', color: '#fff', letterSpacing: -0.2 },
+  avatarText: { fontSize: 20, fontFamily: fonts.extraBold, color: '#fff' },
+  heroName: { fontSize: 17, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.2 },
   heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   heroMetaText: { fontSize: 11, color: 'rgba(255,255,255,0.6)' },
   heroBadges: { flexDirection: 'row', gap: 6, marginTop: 8 },
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  heroBadgeText: { fontSize: 10, fontWeight: '700', color: colors.greenLight },
+  heroBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenLight },
   heroBio: { fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
   trustCircleWrap: { alignItems: 'center', gap: 6 },
   trustCircle: {
@@ -274,13 +274,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center', justifyContent: 'center',
   },
-  trustScore: { fontSize: 22, fontWeight: '800' },
+  trustScore: { fontSize: 22, fontFamily: fonts.extraBold },
   trustMax: { fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: -3 },
   gradeChip: {
     paddingHorizontal: 10, paddingVertical: 3,
     borderRadius: radius.pill, borderWidth: 1,
   },
-  gradeText: { fontSize: 11, fontWeight: '800' },
+  gradeText: { fontSize: 11, fontFamily: fonts.extraBold },
   statsRow: {
     flexDirection: 'row', gap: 10,
     marginHorizontal: 16, marginBottom: 8,
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, paddingVertical: 14,
     ...shadows.card,
   },
-  statValue: { fontSize: 15, fontWeight: '800' },
+  statValue: { fontSize: 15, fontFamily: fonts.extraBold },
   statLabel: { fontSize: 10, color: colors.textMuted },
   trustCard: {
     marginHorizontal: 16, marginBottom: 8,
@@ -301,23 +301,23 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 16,
     ...shadows.card,
   },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  cardTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   cardSub: { fontSize: 12, color: colors.textMuted, marginTop: 3, marginBottom: 14 },
   scoreComponents: { gap: 14 },
   scoreBarRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   scoreBarIcon: { width: 34, height: 34, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   scoreBarTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  scoreBarLabel: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  scoreBarPts: { fontSize: 14, fontWeight: '800' },
-  scoreBarMax: { fontSize: 10, color: colors.textMuted, fontWeight: '600' },
+  scoreBarLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
+  scoreBarPts: { fontSize: 14, fontFamily: fonts.extraBold },
+  scoreBarMax: { fontSize: 10, color: colors.textMuted, fontFamily: fonts.semiBold },
   barTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border },
   barFill: { height: 4, borderRadius: 2 },
   scoreBarDesc: { fontSize: 11, color: colors.textMuted, marginTop: 5 },
   section: { paddingHorizontal: 16, marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary, marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10 },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   avgRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  avgRatingText: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  avgRatingText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
   listingCard: {
     width: 160,
     backgroundColor: colors.surface,
@@ -326,15 +326,15 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   listingImage: { width: '100%', height: 100 },
-  listingTitle: { fontSize: 12, fontWeight: '700', color: colors.textPrimary, paddingHorizontal: 10, paddingTop: 8 },
-  listingPrice: { fontSize: 14, fontWeight: '800', color: colors.primary, paddingHorizontal: 10, marginTop: 3 },
+  listingTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary, paddingHorizontal: 10, paddingTop: 8 },
+  listingPrice: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, paddingHorizontal: 10, marginTop: 3 },
   listingBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     margin: 10, marginTop: 6,
     backgroundColor: colors.greenTint, alignSelf: 'flex-start',
     paddingHorizontal: 7, paddingVertical: 3, borderRadius: radius.pill,
   },
-  listingBadgeText: { fontSize: 9, fontWeight: '700', color: colors.green },
+  listingBadgeText: { fontSize: 9, fontFamily: fonts.bold, color: colors.green },
   reviews: { gap: 10 },
   reviewCard: {
     backgroundColor: colors.surface,
@@ -348,8 +348,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navyMid,
     alignItems: 'center', justifyContent: 'center',
   },
-  reviewAvatarText: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  reviewBuyer: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  reviewAvatarText: { fontSize: 12, fontFamily: fonts.extraBold, color: '#fff' },
+  reviewBuyer: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   reviewDate: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
   reviewText: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   cta: {

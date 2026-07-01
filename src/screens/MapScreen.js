@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { KIGALI_NEIGHBORHOODS, getCarsInNeighborhood, getListedDaysAgo } from '../data/marketData';
 
@@ -197,13 +197,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   mapBannerInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  mapBannerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  mapBannerTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff' },
   mapBannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   totalChip: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill,
   },
-  totalChipText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  totalChipText: { fontSize: 12, fontFamily: fonts.bold, color: '#fff' },
   filterRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
   filterChip: {
     paddingHorizontal: 14, paddingVertical: 7,
@@ -212,10 +212,10 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterChipText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  filterChipText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   filterChipTextActive: { color: '#fff' },
   sectionHead: { paddingHorizontal: 16, marginBottom: 10 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
+  sectionTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
   pinsGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 10,
     paddingHorizontal: 16,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center',
   },
   pinIconSelected: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  pinName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  pinName: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
   pinNameSelected: { color: '#fff' },
   pinArea: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
   pinAreaSelected: { color: 'rgba(255,255,255,0.7)' },
@@ -242,16 +242,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, borderRadius: radius.pill, marginTop: 2,
   },
   pinCountSelected: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  pinCountText: { fontSize: 11, fontWeight: '700', color: colors.primary },
+  pinCountText: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary },
   pinCountTextSelected: { color: '#fff' },
   divider: { height: 1, backgroundColor: colors.borderSoft, marginHorizontal: 16, marginVertical: 20 },
   hoodResultHeader: {
     paddingHorizontal: 16, marginBottom: 12,
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
   },
-  hoodResultTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  hoodResultTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary },
   hoodResultSub: { fontSize: 12, color: colors.textSecondary, marginTop: 3 },
-  clearFilter: { fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 4 },
+  clearFilter: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary, marginTop: 4 },
   emptyHood: { alignItems: 'center', paddingVertical: 36, gap: 10 },
   emptyHoodText: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
   listingCard: {
@@ -263,15 +263,15 @@ const styles = StyleSheet.create({
   },
   listingThumb: { width: 90, height: 68, borderRadius: radius.lg, backgroundColor: colors.border },
   listingBody: { flex: 1, justifyContent: 'center', gap: 4 },
-  listingTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, lineHeight: 18 },
+  listingTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 18 },
   listingMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   inspChip: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: colors.greenTint, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
   },
-  inspChipText: { fontSize: 9, fontWeight: '700', color: colors.green },
+  inspChipText: { fontSize: 9, fontFamily: fonts.bold, color: colors.green },
   listingDays: { fontSize: 11, color: colors.textMuted },
-  listingPrice: { fontSize: 15, fontWeight: '800', color: colors.primary },
+  listingPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary },
   viewAllBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, marginTop: 20, paddingVertical: 14,
@@ -280,5 +280,5 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl,
   },
-  viewAllText: { fontSize: 14, fontWeight: '700', color: colors.primary },
+  viewAllText: { fontSize: 14, fontFamily: fonts.bold, color: colors.primary },
 });

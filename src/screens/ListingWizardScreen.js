@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const STEPS = ['Details', 'Photos', 'Pricing'];
@@ -171,39 +171,39 @@ const styles = StyleSheet.create({
   progressItem: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   dotOn: { backgroundColor: colors.primary },
-  dotNum: { fontSize: 13, fontWeight: '800' },
+  dotNum: { fontSize: 13, fontFamily: fonts.extraBold },
   line: { flex: 1, height: 3, backgroundColor: colors.border, marginHorizontal: 4, borderRadius: 2 },
   lineOn: { backgroundColor: colors.primary },
-  stepTitle: { fontSize: 20, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
+  stepTitle: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 4 },
   stepSub: { fontSize: 14, color: colors.textSecondary, marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.slate600, marginBottom: 6 },
+  label: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.slate600, marginBottom: 6 },
   input: { height: 50, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.surface, paddingHorizontal: 14, fontSize: 15, color: colors.textPrimary },
   conditionRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
   condition: { flex: 1, paddingVertical: 13, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center' },
   conditionOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  conditionText: { fontSize: 14, fontWeight: '700' },
+  conditionText: { fontSize: 14, fontFamily: fonts.bold },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   photo: { width: '31%', aspectRatio: 1, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed', backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', gap: 6 },
   photoMain: { width: '100%', aspectRatio: 16 / 9, borderColor: colors.primary, backgroundColor: colors.blueTint },
-  photoLabel: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  photoLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   tip: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.blueTint, borderRadius: radius.lg, padding: 14, marginTop: 16 },
   tipText: { flex: 1, fontSize: 13, color: colors.slate700, lineHeight: 18 },
   sellType: { flexDirection: 'row', gap: 10, marginVertical: 8 },
   sellOption: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   sellOptionOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  sellOptionText: { fontSize: 14, fontWeight: '700', color: colors.slate600 },
+  sellOptionText: { fontSize: 14, fontFamily: fonts.bold, color: colors.slate600 },
   reserveCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xl, padding: 16, marginTop: 16 },
   reserveTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  reserveLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  reserveLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   reserveHint: { fontSize: 12, color: colors.textSecondary },
-  reserveValue: { fontSize: 28, fontWeight: '800', color: colors.textPrimary, marginTop: 8 },
+  reserveValue: { fontSize: 28, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 8 },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.border, marginTop: 14 },
   trackFill: { position: 'absolute', left: 0, top: 0, height: 6, width: '48%', borderRadius: 3, backgroundColor: colors.primary },
   knob: { position: 'absolute', left: '48%', top: -8, width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', borderWidth: 3, borderColor: colors.primary, marginLeft: -11 },
   rangeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   rangeText: { fontSize: 11, color: colors.textMuted },
   estimate: { backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 16, marginTop: 16, alignItems: 'center' },
-  estimateLabel: { fontSize: 13, fontWeight: '600', color: colors.green },
-  estimateValue: { fontSize: 20, fontWeight: '800', color: colors.green, marginTop: 4 },
+  estimateLabel: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.green },
+  estimateValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.green, marginTop: 4 },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28, borderTopWidth: 1, borderTopColor: colors.borderSoft, backgroundColor: colors.surface },
 });

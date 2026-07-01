@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
-import CarCard from '../components/CarCard';
-import { colors, radius } from '../theme';
+import CarListCard from '../components/CarListCard';
+import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
@@ -114,11 +114,9 @@ export default function SearchResultsScreen({ navigation, route }) {
 
       <FlatList
         data={filteredCars}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
         ListHeaderComponent={
           <View>
             <View style={styles.resultRow}>
@@ -177,7 +175,7 @@ export default function SearchResultsScreen({ navigation, route }) {
           </View>
         }
         renderItem={({ item }) => (
-          <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
+          <CarListCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -219,9 +217,9 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary, padding: 0 },
   filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  resultCount: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  resultCount: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   mapBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.blueTint, paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill },
-  mapText: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  mapText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   activeFiltersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   filterChip: {
     flexDirection: 'row',
@@ -232,18 +230,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: radius.pill,
   },
-  filterChipText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  filterChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   sortChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  sortText: { fontSize: 13, fontWeight: '600' },
-  columnWrapper: { paddingHorizontal: 4 },
+  sortText: { fontSize: 13, fontFamily: fonts.semiBold },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
     paddingHorizontal: 32,
     gap: 10,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginTop: 8 },
+  emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 8 },
   emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
   clearBtn: {
     marginTop: 12,
@@ -252,5 +249,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 30,
   },
-  clearBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  clearBtnText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
 });
