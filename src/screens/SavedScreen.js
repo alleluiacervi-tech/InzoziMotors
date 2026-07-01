@@ -181,7 +181,7 @@ export default function SavedScreen({ navigation }) {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           ListHeaderComponent={
             <View style={styles.searchHint}>
-              <Ionicons name="notifications-outline" size={14} color={colors.statusScheduled} />
+              <Ionicons name="notifications-outline" size={14} color={colors.primary} />
               <Text style={styles.searchHintText}>Toggle the bell to get notified when new matches are listed.</Text>
             </View>
           }
@@ -270,10 +270,10 @@ const styles = StyleSheet.create({
   deleteBtn: { padding: 4, marginLeft: 4 },
   searchHint: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#EFF6FF', borderRadius: radius.lg,
+    backgroundColor: colors.greenTint, borderRadius: radius.lg,
     padding: 10, marginBottom: 12,
   },
-  searchHintText: { fontSize: 12, fontFamily: fonts.regular, color: colors.statusScheduled, flex: 1 },
+  searchHintText: { fontSize: 12, fontFamily: fonts.regular, color: colors.primary, flex: 1 },
 
   // Empty state
   empty: { alignItems: 'center', paddingTop: 52, paddingHorizontal: 36, paddingBottom: 20 },

@@ -5,7 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const TYPE_CONFIG = {
@@ -171,7 +171,7 @@ export default function NotificationCenterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  markAllBtn: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  markAllBtn: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   unreadBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginHorizontal: 16, marginBottom: 4,
@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  unreadCountText: { fontSize: 11, fontWeight: '800', color: '#fff' },
-  unreadBannerText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  unreadCountText: { fontSize: 11, fontFamily: fonts.extraBold, color: '#fff' },
+  unreadBannerText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.primary },
   filtersScroll: { marginBottom: 4 },
   filtersContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
   filterChip: {
@@ -195,11 +195,11 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  filterChipText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
   filterChipTextActive: { color: '#fff' },
   dateSection: { paddingHorizontal: 16, marginBottom: 8 },
   dateLabel: {
-    fontSize: 11, fontWeight: '800', color: colors.textMuted,
+    fontSize: 11, fontFamily: fonts.extraBold, color: colors.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginBottom: 8,
   },
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
   typePill: {
     paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill,
   },
-  typePillText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  typePillText: { fontSize: 9, fontFamily: fonts.extraBold, textTransform: 'uppercase', letterSpacing: 0.3 },
   notifTime: { fontSize: 10, color: colors.textMuted },
-  notifTitle: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },
-  notifTitleUnread: { fontWeight: '800' },
+  notifTitle: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  notifTitleUnread: { fontFamily: fonts.extraBold },
   notifBody: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  emptyTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },
   emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 },
 });

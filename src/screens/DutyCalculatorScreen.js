@@ -5,7 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { calcRwandaDuty, RWF_RATE, formatRWF } from '../data/marketData';
 
 const CC_OPTIONS = [
@@ -141,7 +141,7 @@ export default function DutyCalculatorScreen({ navigation }) {
 
             {/* RWF summary */}
             <View style={styles.rwfCard}>
-              <Ionicons name="swap-horizontal-outline" size={18} color={colors.statusScheduled} />
+              <Ionicons name="swap-horizontal-outline" size={18} color={colors.primary} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.rwfTitle}>Grand total in Rwandan Francs</Text>
                 <Text style={styles.rwfValue}>{formatRWF(duty.grandTotal)}</Text>
@@ -170,17 +170,17 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.primary + '33',
     borderRadius: radius.xl, padding: 16, marginBottom: 22,
   },
-  introTitle: { fontSize: 15, fontWeight: '800', color: colors.primary, marginBottom: 4 },
+  introTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginBottom: 4 },
   introSub: { fontSize: 13, color: colors.primary, lineHeight: 19, flex: 1 },
-  fieldLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
+  fieldLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 8 },
   fieldHint: { fontSize: 12, color: colors.textMuted, marginTop: 6 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.xl, paddingHorizontal: 16, height: 54,
   },
-  inputCurrency: { fontSize: 18, fontWeight: '700', color: colors.textSecondary, marginRight: 8 },
-  input: { flex: 1, fontSize: 20, fontWeight: '700', color: colors.textPrimary },
+  inputCurrency: { fontSize: 18, fontFamily: fonts.bold, color: colors.textSecondary, marginRight: 8 },
+  input: { flex: 1, fontSize: 20, fontFamily: fonts.bold, color: colors.textPrimary },
   ccOptions: { gap: 8 },
   ccOption: {
     backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
@@ -188,14 +188,14 @@ const styles = StyleSheet.create({
   },
   ccOptionActive: { borderColor: colors.primary, backgroundColor: colors.greenTint },
   ccTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ccLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  ccLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   ccLabelActive: { color: colors.primary },
   ccRateBadge: {
     backgroundColor: colors.surfaceAlt, paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border,
   },
   ccRateBadgeActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  ccRateText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  ccRateText: { fontSize: 11, fontFamily: fonts.bold, color: colors.textSecondary },
   ccRateTextActive: { color: '#fff' },
   ccDesc: { fontSize: 12, color: colors.textMuted },
   ccDescActive: { color: colors.primary },
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, paddingVertical: 16, marginTop: 22,
   },
   calcBtnDisabled: { opacity: 0.4 },
-  calcBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  calcBtnText: { color: '#fff', fontSize: 16, fontFamily: fonts.extraBold },
   resultsCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xxl, marginTop: 20, overflow: 'hidden', ...shadows.card,
@@ -215,10 +215,10 @@ const styles = StyleSheet.create({
     padding: 16, paddingBottom: 14,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  resultTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
-  resultVehicle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
+  resultTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: '#fff' },
+  resultVehicle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: fonts.semiBold },
   resultSectionLabel: {
-    fontSize: 10, fontWeight: '700', color: colors.textMuted,
+    fontSize: 10, fontFamily: fonts.bold, color: colors.textMuted,
     letterSpacing: 0.6, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4,
   },
   dutyRow: {
@@ -228,25 +228,25 @@ const styles = StyleSheet.create({
   },
   dutyRowBold: { backgroundColor: colors.surfaceAlt },
   dutyLabel: { flex: 1, fontSize: 13, color: colors.textSecondary, paddingRight: 10, lineHeight: 18 },
-  dutyLabelBold: { fontWeight: '700', color: colors.textPrimary },
-  dutyUSD: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  dutyUSDBold: { fontSize: 16, fontWeight: '800' },
+  dutyLabelBold: { fontFamily: fonts.bold, color: colors.textPrimary },
+  dutyUSD: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  dutyUSDBold: { fontSize: 16, fontFamily: fonts.extraBold },
   dutyRWF: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
   resultDivider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
   effectiveRateCard: {
     margin: 16, backgroundColor: '#FEF3C7',
     borderRadius: radius.xl, padding: 16, alignItems: 'center', gap: 4,
   },
-  effectiveRateTitle: { fontSize: 12, fontWeight: '700', color: colors.amber, textTransform: 'uppercase', letterSpacing: 0.4 },
-  effectiveRateValue: { fontSize: 36, fontWeight: '900', color: colors.amber },
+  effectiveRateTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.amber, textTransform: 'uppercase', letterSpacing: 0.4 },
+  effectiveRateValue: { fontSize: 36, fontFamily: fonts.black, color: colors.amber },
   effectiveRateDesc: { fontSize: 12, color: '#92400E', textAlign: 'center', lineHeight: 18 },
   rwfCard: {
     flexDirection: 'row', gap: 12, alignItems: 'flex-start',
     marginHorizontal: 16, marginBottom: 16,
-    backgroundColor: '#EFF6FF', borderRadius: radius.xl, padding: 14,
+    backgroundColor: colors.greenTint, borderRadius: radius.xl, padding: 14,
   },
-  rwfTitle: { fontSize: 12, fontWeight: '700', color: colors.statusScheduled },
-  rwfValue: { fontSize: 22, fontWeight: '900', color: colors.statusScheduled, marginTop: 2 },
+  rwfTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
+  rwfValue: { fontSize: 22, fontFamily: fonts.black, color: colors.primary, marginTop: 2 },
   rwfNote: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
   disclaimer: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',

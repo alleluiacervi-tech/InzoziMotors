@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import FilterModal from '../components/FilterModal';
 
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: '#666666',
     textAlign: 'center',
   },
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   rememberLabel: {
     fontSize: 14,
     color: colors.textPrimary,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   filterList: {
     backgroundColor: '#FFFFFF',
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.textPrimary,
   },
   valueRow: {
@@ -327,11 +327,11 @@ const styles = StyleSheet.create({
   filterValue: {
     fontSize: 14,
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   placeholderText: {
     color: '#999999',
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   promoLink: {
     alignItems: 'center',
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   promoLinkText: {
     fontSize: 12,
     color: '#666666',
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   buttonFooter: {
     height: 72,
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: '#666666',
   },
   searchBtn: {
@@ -375,6 +375,6 @@ const styles = StyleSheet.create({
   searchBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
 });

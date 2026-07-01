@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import Button from '../components/Button';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 
 const STEPS = [
   { icon: 'shield-checkmark-outline', title: 'Verify Ownership', sub: 'Upload ID & Title documents securely' },
@@ -90,14 +90,14 @@ export default function SellScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8 },
-  h1: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5, color: colors.textPrimary },
+  h1: { fontSize: 24, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
   dashBtn: {
     width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
   valCard: { margin: 20, marginTop: 16, borderRadius: radius.xxl, padding: 22 },
-  valEyebrow: { fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: colors.blueLight },
-  valTitle: { fontSize: 24, fontWeight: '800', color: '#fff', marginTop: 10, letterSpacing: -0.5 },
+  valEyebrow: { fontSize: 11, fontFamily: fonts.bold, letterSpacing: 1.4, color: colors.blueLight },
+  valTitle: { fontSize: 24, fontFamily: fonts.extraBold, color: '#fff', marginTop: 10, letterSpacing: -0.5 },
   valSub: { fontSize: 14, color: 'rgba(226,232,240,0.8)', marginTop: 6 },
   plate: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 14,
   },
   optionIcon: { width: 46, height: 46, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  optionTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  optionTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   optionSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary, paddingHorizontal: 20, marginTop: 24 },
+  sectionTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, paddingHorizontal: 20, marginTop: 24 },
   steps: { paddingHorizontal: 20, gap: 12, marginTop: 12 },
   step: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -125,11 +125,11 @@ const styles = StyleSheet.create({
     width: 24, height: 24, borderRadius: 12, backgroundColor: colors.navyMid,
     alignItems: 'center', justifyContent: 'center',
   },
-  stepNumText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  stepNumText: { color: '#fff', fontSize: 12, fontFamily: fonts.extraBold },
   stepIcon: {
     width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.blueTint,
     alignItems: 'center', justifyContent: 'center',
   },
-  stepTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  stepTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   stepSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
 });

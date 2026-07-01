@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 
 const CENTERS = [
   {
@@ -249,11 +249,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 14,
   },
-  heroLabel: { fontSize: 11, fontWeight: '700', color: colors.blueLight, letterSpacing: 0.5 },
-  heroTitle: { fontSize: 16, fontWeight: '800', color: '#fff', marginTop: 2 },
+  heroLabel: { fontSize: 11, fontFamily: fonts.bold, color: colors.blueLight, letterSpacing: 0.5 },
+  heroTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: '#fff', marginTop: 2 },
   heroSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
   section: { paddingHorizontal: 16, marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 12 },
   centerList: { gap: 10 },
   centerCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     width: 46, height: 46, borderRadius: radius.md,
     alignItems: 'center', justifyContent: 'center',
   },
-  centerName: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  centerName: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   centerAddress: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   centerMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   centerMetaText: { fontSize: 11, color: colors.textMuted },
@@ -281,10 +281,10 @@ const styles = StyleSheet.create({
   },
   dateCardUnavailable: { backgroundColor: colors.surfaceAlt, borderColor: colors.borderSoft },
   dateCardActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  dateDay: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
-  dateNum: { fontSize: 20, fontWeight: '800', color: colors.textPrimary },
+  dateDay: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
+  dateNum: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
   dateMonth: { fontSize: 11, color: colors.textMuted },
-  dateUnavailableText: { fontSize: 9, color: colors.border, fontWeight: '600', marginTop: 2 },
+  dateUnavailableText: { fontSize: 9, color: colors.border, fontFamily: fonts.semiBold, marginTop: 2 },
   timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   timeSlot: {
     paddingHorizontal: 14, paddingVertical: 10,
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   },
   timeSlotUnavailable: { backgroundColor: colors.surfaceAlt, borderColor: colors.borderSoft },
   timeSlotActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  timeLabel: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  timeLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   timeUnavail: { fontSize: 9, color: colors.textMuted, marginTop: 1 },
   confirmCard: {
     backgroundColor: colors.surface,
@@ -305,11 +305,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     ...shadows.card,
   },
-  confirmTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 12 },
+  confirmTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 12 },
   confirmRows: { gap: 10, marginBottom: 12 },
   confirmRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   confirmRowLabel: { fontSize: 13, color: colors.textMuted, width: 50 },
-  confirmRowValue: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, flex: 1 },
+  confirmRowValue: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, flex: 1 },
   confirmNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 6,
     backgroundColor: colors.blueTint, borderRadius: radius.md, padding: 10,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 
 export default function MessagesScreen({ navigation }) {
   const { conversations } = useApp();
@@ -51,14 +51,14 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },
   avatarWrap: { position: 'relative' },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: colors.navyMid, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  avatarText: { color: '#fff', fontSize: 18, fontFamily: fonts.extraBold },
   online: { position: 'absolute', bottom: 2, right: 2, width: 13, height: 13, borderRadius: 7, backgroundColor: colors.green, borderWidth: 2, borderColor: '#fff' },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  name: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   time: { fontSize: 12, color: colors.textMuted },
   last: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
-  lastUnread: { color: colors.textPrimary, fontWeight: '600' },
+  lastUnread: { color: colors.textPrimary, fontFamily: fonts.semiBold },
   badge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  badgeText: { color: '#fff', fontSize: 12, fontFamily: fonts.extraBold },
   sep: { height: 1, backgroundColor: colors.borderSoft, marginLeft: 66 },
 });

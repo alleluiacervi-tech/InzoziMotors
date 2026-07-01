@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 
 const PIPELINE_STAGES = [
   { key: 'under_review', label: 'Review', icon: 'time-outline' },
@@ -18,7 +18,7 @@ const PIPELINE_STAGES = [
 const STATUS_CONFIG = {
   under_review: { label: 'Under Review', color: colors.statusPending, bg: colors.statusPendingBg, icon: 'time-outline' },
   scheduled: { label: 'Inspection Booked', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
-  inspected: { label: 'Inspection Done', color: colors.primary, bg: colors.greenTint, icon: 'scan-outline' },
+  inspected: { label: 'Inspection Done', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'scan-outline' },
   live: { label: 'Live', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'radio-outline' },
   sold: { label: 'Sold', color: colors.statusSold, bg: colors.statusSoldBg, icon: 'checkmark-done-circle-outline' },
   rejected: { label: 'Changes Needed', color: colors.statusRejected, bg: colors.statusRejectedBg, icon: 'alert-circle-outline' },
@@ -61,7 +61,7 @@ function PipelineDiagram({ currentStatus }) {
               </View>
               <Text style={[
                 styles.pipelineLabel,
-                active && { color: colors.primary, fontWeight: '700' },
+                active && { color: colors.primary, fontFamily: fonts.bold },
                 done && { color: colors.primary },
                 upcoming && { color: colors.border },
               ]}>{stage.label}</Text>
@@ -207,7 +207,7 @@ export default function SellerDashboardScreen({ navigation }) {
                 )}
                 {sub.status === 'live' && (
                   <Pressable style={styles.analyticsBtn} onPress={() => navigation.navigate('SellerAnalytics', { subId: sub.id })}>
-                    <Ionicons name="bar-chart-outline" size={13} color={colors.statusScheduled} />
+                    <Ionicons name="bar-chart-outline" size={13} color={colors.primary} />
                     <Text style={styles.analyticsBtnText}>Analytics</Text>
                   </Pressable>
                 )}
@@ -286,20 +286,20 @@ const styles = StyleSheet.create({
   statsBanner: { margin: 16, borderRadius: radius.xxl, padding: 18 },
   statsRow: { flexDirection: 'row', alignItems: 'center' },
   statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  statValue: { fontSize: 28, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.5 },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   statDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.15)' },
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, marginBottom: 10,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
+  sectionTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary },
   submitNewBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: colors.blueTint,
     borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6,
   },
-  submitNewText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  submitNewText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   subCard: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -310,16 +310,16 @@ const styles = StyleSheet.create({
   },
   subCardTop: { flexDirection: 'row', gap: 12, padding: 14, alignItems: 'flex-start' },
   subThumb: { width: 80, height: 64, borderRadius: radius.lg, backgroundColor: colors.border },
-  subTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  subTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   subDate: { fontSize: 11, color: colors.textMuted, marginTop: 2, marginBottom: 6 },
-  subPrice: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  subPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     alignSelf: 'flex-start',
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: radius.pill,
   },
-  statusBadgeText: { fontSize: 11, fontWeight: '700' },
+  statusBadgeText: { fontSize: 11, fontFamily: fonts.bold },
   pipelineWrap: {
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     paddingHorizontal: 14, paddingVertical: 12,
@@ -353,14 +353,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: colors.blueTint,
   },
-  subActionText: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  subActionText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   analyticsBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 14, paddingVertical: 12,
     borderLeftWidth: 1, borderLeftColor: colors.borderSoft,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.greenTint,
   },
-  analyticsBtnText: { fontSize: 12, fontWeight: '700', color: colors.statusScheduled },
+  analyticsBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   relistSection: {
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
   },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 10,
   },
-  relistBtnText: { fontSize: 12, fontWeight: '700', color: colors.amber },
+  relistBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.amber },
   relistExpanded: { padding: 12, gap: 8 },
   relistInput: {
     backgroundColor: colors.surface,
@@ -382,19 +382,19 @@ const styles = StyleSheet.create({
     flex: 1, alignItems: 'center', paddingVertical: 10,
     backgroundColor: colors.surfaceAlt, borderRadius: radius.lg,
   },
-  relistCancelText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  relistCancelText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   relistConfirm: {
     flex: 1, alignItems: 'center', paddingVertical: 10,
     backgroundColor: colors.amber, borderRadius: radius.lg,
   },
-  relistConfirmText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  relistConfirmText: { fontSize: 13, fontFamily: fonts.bold, color: '#fff' },
   submitCta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     borderWidth: 1.5, borderColor: colors.primary + '66', borderStyle: 'dashed',
     borderRadius: radius.xxl, paddingVertical: 18,
     marginHorizontal: 16, marginTop: 4,
   },
-  submitCtaText: { fontSize: 15, fontWeight: '700', color: colors.primary },
+  submitCtaText: { fontSize: 15, fontFamily: fonts.bold, color: colors.primary },
   howItWorks: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     padding: 16, marginHorizontal: 16, marginTop: 16,
     gap: 10,
   },
-  howTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
+  howTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 4 },
   howRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   howDot: {
     width: 28, height: 28, borderRadius: 14,

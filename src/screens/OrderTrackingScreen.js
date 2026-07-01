@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { formatPrice } from '../data/cars';
 
@@ -276,8 +276,8 @@ export default function OrderTrackingScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   hero: { margin: 16, marginBottom: 8, borderRadius: radius.xxl, padding: 18, gap: 14 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  heroLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  heroOrderId: { fontSize: 18, fontWeight: '800', color: '#fff', letterSpacing: 0.5, marginTop: 3 },
+  heroLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontFamily: fonts.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroOrderId: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5, marginTop: 3 },
   statusChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: colors.amberTint + 'DD',
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   statusChipConfirmed: { backgroundColor: colors.greenTint + 'DD' },
   statusChipComplete: { backgroundColor: colors.greenTint + 'DD' },
   statusDot: { width: 7, height: 7, borderRadius: 3.5 },
-  statusChipText: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
+  statusChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary },
   confirmAlert: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: radius.lg, padding: 12,
@@ -301,16 +301,16 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   carThumb: { width: 80, height: 60, borderRadius: radius.lg, backgroundColor: colors.border },
-  carTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, lineHeight: 18 },
+  carTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 18 },
   carSeller: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  carPrice: { fontSize: 15, fontWeight: '800', color: colors.primary, marginTop: 4 },
+  carPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 4 },
   viewBtn: {
     paddingHorizontal: 12, paddingVertical: 7,
     backgroundColor: colors.greenTint,
     borderWidth: 1, borderColor: colors.primary + '44',
     borderRadius: radius.lg,
   },
-  viewBtnText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  viewBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   timelineCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.surface,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 18,
     ...shadows.card,
   },
-  timelineTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary, marginBottom: 20 },
+  timelineTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 20 },
   timeline: { gap: 0 },
   stepRow: { flexDirection: 'row', gap: 14 },
   stepLeft: { alignItems: 'center', width: 36 },
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   pendingDot: { width: 8, height: 8, borderRadius: 4 },
   stepContent: { flex: 1, paddingTop: 6 },
   stepTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  stepTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, flex: 1 },
+  stepTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, flex: 1 },
   stepTitleDone: { color: colors.green },
   stepTitleActive: { color: colors.amber },
   stepTitlePending: { color: colors.textMuted },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   waitingChip: {
     backgroundColor: colors.amberTint, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  waitingChipText: { fontSize: 10, fontWeight: '700', color: colors.amber },
+  waitingChipText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amber },
   stepSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17 },
   stepSubPending: { color: colors.textMuted },
   stepBadge: {
@@ -348,14 +348,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  stepBadgeText: { fontSize: 10, fontWeight: '700', color: colors.green },
+  stepBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
   nextStepsCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.greenTint,
     borderWidth: 1, borderColor: colors.primary + '33',
     borderRadius: radius.xl, padding: 16, gap: 12,
   },
-  nextTitle: { fontSize: 14, fontWeight: '800', color: colors.primary },
+  nextTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
   nextRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   nextIcon: {
     width: 28, height: 28, borderRadius: radius.sm,
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   guaranteeText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   cancelLink: { alignItems: 'center', paddingVertical: 16 },
-  cancelText: { fontSize: 13, color: colors.statusRejected, fontWeight: '600' },
+  cancelText: { fontSize: 13, color: colors.statusRejected, fontFamily: fonts.semiBold },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     padding: 16, paddingBottom: 28,

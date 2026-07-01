@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     gap: 10,
   },
   hamburger: {

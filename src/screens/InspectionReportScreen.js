@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import CarZoneMap from '../components/CarZoneMap';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { MOCK_INSPECTION_RESULT } from '../data/inspectionData';
 
 const CATEGORY_ICONS = {
@@ -281,10 +281,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  scoreValue: { fontSize: 26, fontWeight: '800' },
+  scoreValue: { fontSize: 26, fontFamily: fonts.extraBold },
   scoreMax: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: -3 },
-  scorePct: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
-  heroTitle: { fontSize: 19, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
+  scorePct: { fontSize: 12, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.7)' },
+  heroTitle: { fontSize: 19, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   heroCar: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
   heroDate: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 3 },
   certifiedBadge: {
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   warnBadge: { backgroundColor: colors.amber },
-  certifiedText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  certifiedText: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
   zoneCard: {
     marginHorizontal: 16, marginBottom: 12,
     backgroundColor: colors.surface,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 16,
     ...shadows.card,
   },
-  zoneTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  zoneTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   zoneSub: { fontSize: 12, color: colors.textMuted, marginTop: 3, marginBottom: 10 },
   docsRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   docsRowSelected: { borderColor: colors.primary, backgroundColor: colors.greenTint },
-  docsRowText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  docsRowText: { flex: 1, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
   docsDot: { width: 10, height: 10, borderRadius: 5 },
   zoneDetail: {
     marginTop: 12,
@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
     padding: 12, gap: 8,
   },
   zoneDetailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  zoneDetailName: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
-  zoneDetailScore: { fontSize: 14, fontWeight: '800' },
+  zoneDetailName: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  zoneDetailScore: { fontSize: 14, fontFamily: fonts.extraBold },
   zoneFlagRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
   zoneFlagText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 17 },
   chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 12 },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, paddingVertical: 10,
   },
   chipAmber: { backgroundColor: colors.amberTint, borderColor: colors.amber + '55' },
-  chipText: { fontSize: 10, fontWeight: '700', color: colors.textSecondary },
+  chipText: { fontSize: 10, fontFamily: fonts.bold, color: colors.textSecondary },
   flagSummary: {
     marginHorizontal: 16, marginBottom: 12,
     backgroundColor: colors.amberTint,
@@ -343,15 +343,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 14, gap: 10,
   },
   flagSummaryHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  flagSummaryTitle: { fontSize: 14, fontWeight: '800', color: colors.amberText },
+  flagSummaryTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.amberText },
   flagSummaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   flagSummaryCat: {
     backgroundColor: colors.amber + '30', borderRadius: radius.pill,
     paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0,
   },
-  flagSummaryCatText: { fontSize: 10, fontWeight: '700', color: colors.amberText },
+  flagSummaryCatText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amberText },
   flagSummaryFlag: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary, paddingHorizontal: 16, marginBottom: 10 },
+  sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, paddingHorizontal: 16, marginBottom: 10 },
   categories: { paddingHorizontal: 16, gap: 8, marginBottom: 16 },
   catRow: {
     backgroundColor: colors.surface,
@@ -362,24 +362,24 @@ const styles = StyleSheet.create({
   },
   catTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   catIcon: { width: 38, height: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  catName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
+  catName: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 6 },
   barTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border },
   barFill: { height: 4, borderRadius: 2 },
   flagHint: { fontSize: 10, color: colors.amber, marginTop: 4 },
-  catScore: { fontSize: 15, fontWeight: '800' },
-  catMax: { fontSize: 10, color: colors.textMuted, fontWeight: '600' },
+  catScore: { fontSize: 15, fontFamily: fonts.extraBold },
+  catMax: { fontSize: 10, color: colors.textMuted, fontFamily: fonts.semiBold },
   flagsSection: { marginTop: 12, gap: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   flagRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   flagText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },
   allPassRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
-  allPassText: { fontSize: 12, color: colors.green, fontWeight: '600' },
+  allPassText: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold },
   explainer: {
     marginHorizontal: 16, marginBottom: 12,
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, padding: 16, gap: 10,
   },
-  explainerTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 },
+  explainerTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 4 },
   explainerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   explainerDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5, flexShrink: 0 },
   explainerText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 16,
   },
   footerCertified: { borderColor: colors.green + '55', backgroundColor: colors.greenTint },
-  footerTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary },
+  footerTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
   footerTitleCertified: { color: colors.green },
   footerSub: { fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 16 },
 });

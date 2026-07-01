@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 
 const SCORE_COMPONENTS = [
@@ -23,7 +23,7 @@ const SCORE_COMPONENTS = [
     label: 'Completed Sales',
     maxPts: 30,
     icon: 'car-outline',
-    color: colors.statusScheduled,
+    color: colors.primary,
     getPts: (p) => Math.min(30, p.completedSales || 0),
     description: '1 point per completed sale, max 30',
     improve: 'Each verified sale adds 1 point. Respond quickly and arrange smooth handovers.',
@@ -180,7 +180,7 @@ export default function TrustScoreScreen({ navigation, route }) {
         {/* Quick stats */}
         <View style={styles.quickStats}>
           {[
-            { icon: 'car-outline', label: 'Sales', value: profile.completedSales || 0, color: colors.statusScheduled },
+            { icon: 'car-outline', label: 'Sales', value: profile.completedSales || 0, color: colors.primary },
             { icon: 'chatbubble-outline', label: 'Response', value: `${profile.responseRate || 0}%`, color: colors.amber },
             { icon: 'star', label: 'Rating', value: `${(profile.avgRating || 0).toFixed(1)} ⭐`, color: '#F59E0B' },
             { icon: 'chatbox-outline', label: 'Reviews', value: profile.totalReviews || profile.reviewCount || 0, color: colors.primary },
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
     gap: 8,
   },
-  sellerName: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginTop: 4 },
+  sellerName: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 4 },
   gaugeDesc: { fontSize: 13, color: colors.textSecondary, textAlign: 'center' },
   verifiedRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   verifiedPill: {
@@ -247,17 +247,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill,
   },
-  verifiedText: { fontSize: 12, fontWeight: '700', color: colors.green },
+  verifiedText: { fontSize: 12, fontFamily: fonts.bold, color: colors.green },
   quickStats: {
     flexDirection: 'row', backgroundColor: colors.surface,
     borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
     paddingVertical: 16,
   },
   quickStat: { flex: 1, alignItems: 'center' },
-  quickStatValue: { fontSize: 18, fontWeight: '800' },
+  quickStatValue: { fontSize: 18, fontFamily: fonts.extraBold },
   quickStatLabel: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
   sectionTitle: {
-    fontSize: 13, fontWeight: '700', color: colors.textMuted,
+    fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.4,
     paddingHorizontal: 16, paddingTop: 18, paddingBottom: 8,
   },
@@ -268,11 +268,11 @@ const styles = StyleSheet.create({
   compRow: { paddingHorizontal: 14 },
   compHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   compIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  compLabel: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
+  compLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 6 },
   compBarWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   compBar: { flex: 1, height: 6, backgroundColor: colors.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
   compBarFill: { height: '100%', borderRadius: 3 },
-  compPts: { fontSize: 12, fontWeight: '700', minWidth: 36, textAlign: 'right' },
+  compPts: { fontSize: 12, fontFamily: fonts.bold, minWidth: 36, textAlign: 'right' },
   compDetail: { paddingBottom: 14, gap: 8 },
   compDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   improveCard: {
@@ -284,11 +284,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, margin: 16, padding: 16, ...shadows.card,
   },
-  howTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary, marginBottom: 8 },
+  howTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 8 },
   howBody: { fontSize: 13, color: colors.textSecondary, lineHeight: 19, marginBottom: 14 },
   howGrid: { gap: 8 },
   gradeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  gradeText: { width: 18, fontSize: 15, fontWeight: '900', color: colors.primary },
-  gradeRange: { width: 70, fontSize: 11, color: colors.textMuted, fontWeight: '600' },
+  gradeText: { width: 18, fontSize: 15, fontFamily: fonts.black, color: colors.primary },
+  gradeRange: { width: 70, fontSize: 11, color: colors.textMuted, fontFamily: fonts.semiBold },
   gradeLabel: { flex: 1, fontSize: 12, color: colors.textSecondary },
 });

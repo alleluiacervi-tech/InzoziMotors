@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 const UPLOAD_STEPS = [
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: '#FFFFFF',
     letterSpacing: -0.4,
   },
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: 16, marginTop: 8 },
   sectionLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  uploadLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  uploadLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   uploadHint: { fontSize: 12, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
   uploadBtn: {
     flexDirection: 'row',
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary + '33',
   },
-  uploadBtnText: { fontSize: 11, fontWeight: '700', color: colors.primary },
+  uploadBtnText: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary },
   privacyNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   statusTitle: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
     letterSpacing: -0.5,
     marginBottom: 10,
@@ -301,6 +301,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   docRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  docText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  docText: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
   approvedFooter: { paddingHorizontal: 20, paddingBottom: 32 },
 });

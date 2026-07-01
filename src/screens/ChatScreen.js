@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 
 const QUICK_REPLIES = [
@@ -200,19 +200,19 @@ const styles = StyleSheet.create({
     padding: 12, marginBottom: 4,
   },
   pinnedLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-  pinnedLabelText: { fontSize: 10, fontWeight: '700', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.4 },
+  pinnedLabelText: { fontSize: 10, fontFamily: fonts.bold, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.4 },
   pinnedContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pinnedThumb: { width: 56, height: 42, borderRadius: radius.md, backgroundColor: colors.border },
-  pinnedTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
-  pinnedPrice: { fontSize: 14, fontWeight: '800', color: colors.primary, marginTop: 2 },
+  pinnedTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
+  pinnedPrice: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 2 },
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-  pinnedBadgeText: { fontSize: 9, fontWeight: '700', color: colors.green },
+  pinnedBadgeText: { fontSize: 9, fontFamily: fonts.bold, color: colors.green },
   viewListingBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: colors.greenTint,
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.lg,
   },
-  viewListingText: { fontSize: 12, fontWeight: '700', color: colors.primary },
+  viewListingText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   daySep: { textAlign: 'center', fontSize: 12, color: colors.textMuted, marginVertical: 4 },
   bubbleRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   bubbleRowMe: { justifyContent: 'flex-end' },
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navyMid,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  senderInitial: { color: '#fff', fontWeight: '800', fontSize: 11 },
+  senderInitial: { color: '#fff', fontFamily: fonts.extraBold, fontSize: 11 },
   bubble: { maxWidth: '76%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18 },
   bubbleMe: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   bubbleThem: {
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill, flexShrink: 0,
   },
   quickChipArrange: { backgroundColor: colors.primary, borderColor: colors.primary },
-  quickChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, whiteSpace: 'nowrap' },
+  quickChipText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textSecondary, whiteSpace: 'nowrap' },
   inputBar: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingHorizontal: 16, paddingTop: 10, paddingBottom: 28,

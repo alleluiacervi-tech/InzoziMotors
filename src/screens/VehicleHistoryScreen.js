@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { VEHICLE_HISTORY } from '../data/inspectionData';
 
 function HistoryCard({ icon, iconBg, iconColor, title, value, sub, verified, warn }) {
@@ -130,8 +130,8 @@ export default function VehicleHistoryScreen({ navigation, route }) {
           <View style={styles.cards}>
             <HistoryCard
               icon="earth-outline"
-              iconBg="#EFF6FF"
-              iconColor={colors.statusScheduled}
+              iconBg={colors.greenTint}
+              iconColor={colors.primary}
               title="Import Origin"
               value={`Imported from ${history.importOrigin}`}
               sub={history.importNote}
@@ -167,7 +167,7 @@ export default function VehicleHistoryScreen({ navigation, route }) {
 
         {/* Disclaimer */}
         <View style={styles.disclaimer}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.statusScheduled} />
+          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={styles.disclaimerText}>
             Accident history is sourced from Rwandan insurance partner data. Incidents not claimed via insurance may not appear. Import duty status is verified directly with Rwanda Revenue Authority (RRA).
           </Text>
@@ -185,11 +185,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: 16, gap: 8,
     ...shadows.card,
   },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  headerTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   headerMetaText: { fontSize: 12, color: colors.textSecondary },
   section: { paddingHorizontal: 16, marginBottom: 8 },
-  sectionTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary, marginBottom: 10, marginTop: 4 },
+  sectionTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10, marginTop: 4 },
   cards: { gap: 8 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
   cardWarn: { borderColor: colors.amber + '55', backgroundColor: colors.amberTint },
   cardVerified: { borderColor: colors.green + '44' },
   cardIcon: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.3 },
-  cardValue: { fontSize: 15, fontWeight: '800', color: colors.textPrimary, marginTop: 2 },
+  cardTitle: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.3 },
+  cardValue: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 2 },
   cardSub: { fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 16 },
   verifyBadge: { padding: 2 },
   verifyBadgeOk: {},
@@ -214,8 +214,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  rraLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  rraTitle: { fontSize: 15, fontWeight: '800', color: '#fff', marginTop: 2 },
+  rraLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontFamily: fonts.semiBold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  rraTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: '#fff', marginTop: 2 },
   rraSub: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
   rraStamp: {
     width: 62, height: 62, borderRadius: 31,
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   rraStampWarn: { borderColor: '#F87171' },
-  rraStampText: { fontSize: 9, fontWeight: '900', color: '#fff', textAlign: 'center', letterSpacing: 0.3 },
+  rraStampText: { fontSize: 9, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: 0.3 },
   disclaimer: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     marginHorizontal: 16, marginTop: 4,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.greenTint,
     borderRadius: radius.lg, padding: 14,
   },
-  disclaimerText: { flex: 1, fontSize: 11, color: colors.statusScheduled, lineHeight: 17 },
+  disclaimerText: { flex: 1, fontSize: 11, color: colors.primary, lineHeight: 17 },
 });

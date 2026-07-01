@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 
 const GROUPS = [
   {
@@ -90,12 +90,12 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  groupTitle: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.3, marginBottom: 10, marginLeft: 4, textTransform: 'uppercase' },
+  groupTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary, letterSpacing: 0.3, marginBottom: 10, marginLeft: 4, textTransform: 'uppercase' },
   group: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xl, overflow: 'hidden' },
   item: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14 },
   itemBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   itemIcon: { width: 36, alignItems: 'center' },
-  itemLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  itemLabel: { flex: 1, fontSize: 15, fontFamily: fonts.semiBold, color: colors.textPrimary },
   itemRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   itemValue: { fontSize: 14, color: colors.textSecondary },
   switch: { width: 46, height: 28, borderRadius: 14, padding: 3, justifyContent: 'center' },

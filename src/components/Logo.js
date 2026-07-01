@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 
 // Inzozi Motors shield + checkmark logo mark, with optional wordmark.
 export function LogoMark({ size = 26 }) {
@@ -30,5 +30,5 @@ export default function Logo({ size = 18, color = '#fff' }) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  word: { fontWeight: '800', letterSpacing: -0.2 },
+  word: { fontFamily: fonts.extraBold, letterSpacing: -0.2 },
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import Logo from './Logo';
 
 export default function LoginModal({ visible, onClose, onLoginSuccess }) {
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
     marginBottom: 16,
   },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   kakaoText: {
     color: '#1A1A1A',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   guestBtn: {
     paddingVertical: 8,
@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
   guestText: {
     fontSize: 13,
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
 });

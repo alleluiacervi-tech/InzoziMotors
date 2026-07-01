@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, ScrollView, FlatList, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 
 const DOMESTIC_MAKES = [
   { name: 'Hyundai', count: 54437 },
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
   },
   resetLink: {
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     color: '#999999',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   tabTextActive: {
     color: colors.primary,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.textPrimary,
   },
   itemCount: {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   yearRangeContainer: {
     flexDirection: 'row',
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
     marginBottom: 12,
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   yearGridText: {
     fontSize: 12,
     color: '#666666',
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   yearGridTextActive: {
     color: '#FFFFFF',
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   addMonthText: {
     fontSize: 13,
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   checkboxItem: {
     flexDirection: 'row',
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.textPrimary,
     marginLeft: 12,
     flex: 1,

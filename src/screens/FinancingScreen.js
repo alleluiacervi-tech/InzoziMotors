@@ -5,7 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import { colors, radius, shadows } from '../theme';
+import { colors, radius, shadows, fonts } from '../theme';
 import { formatRWF, RWF_RATE } from '../data/marketData';
 
 const RWANDA_BANKS = [
@@ -84,7 +84,7 @@ export default function FinancingScreen({ navigation, route }) {
 
         {/* Intro */}
         <View style={styles.introCard}>
-          <Ionicons name="cash-outline" size={22} color={colors.statusScheduled} />
+          <Ionicons name="cash-outline" size={22} color={colors.primary} />
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>Estimate monthly payments</Text>
             <Text style={styles.introSub}>Based on Rwanda commercial bank auto loan rates for 2026. Actual rates may vary — contact your bank for a formal quote.</Text>
@@ -149,7 +149,7 @@ export default function FinancingScreen({ navigation, route }) {
           <View style={styles.bestRateCard}>
             <Ionicons name="trophy-outline" size={16} color={colors.amber} />
             <Text style={styles.bestRateText}>
-              Best rate: <Text style={{ fontWeight: '800', color: colors.amber }}>{(bestBank.rate * 100).toFixed(1)}%</Text> from {bestBank.name}
+              Best rate: <Text style={{ fontFamily: fonts.extraBold, color: colors.amber }}>{(bestBank.rate * 100).toFixed(1)}%</Text> from {bestBank.name}
             </Text>
           </View>
         )}
@@ -187,7 +187,7 @@ export default function FinancingScreen({ navigation, route }) {
             ].map((row, i) => (
               <View key={i} style={[styles.summaryRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderSoft }]}>
                 <Text style={styles.summaryLabel}>{row.label}</Text>
-                <Text style={[styles.summaryValue, row.bold && { fontWeight: '800', fontSize: 16 }, row.color && { color: row.color }]}>
+                <Text style={[styles.summaryValue, row.bold && { fontFamily: fonts.extraBold, fontSize: 16 }, row.color && { color: row.color }]}>
                   {row.value}
                 </Text>
               </View>
@@ -210,25 +210,25 @@ export default function FinancingScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   introCard: {
     flexDirection: 'row', gap: 12, alignItems: 'flex-start',
-    backgroundColor: '#EFF6FF', borderRadius: radius.xl, padding: 14, marginBottom: 20,
+    backgroundColor: colors.greenTint, borderRadius: radius.xl, padding: 14, marginBottom: 20,
   },
-  introTitle: { fontSize: 14, fontWeight: '800', color: colors.statusScheduled, marginBottom: 3 },
-  introSub: { fontSize: 12, color: colors.statusScheduled, lineHeight: 18 },
-  fieldLabel: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
+  introTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, marginBottom: 3 },
+  introSub: { fontSize: 12, color: colors.primary, lineHeight: 18 },
+  fieldLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 8 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.xl, paddingHorizontal: 16, height: 52,
   },
-  inputPrefix: { fontSize: 16, fontWeight: '700', color: colors.textSecondary, marginRight: 6 },
-  input: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.textPrimary },
-  inputSuffix: { fontSize: 13, fontWeight: '700', color: colors.primary },
+  inputPrefix: { fontSize: 16, fontFamily: fonts.bold, color: colors.textSecondary, marginRight: 6 },
+  input: { flex: 1, fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },
+  inputSuffix: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   loanSummary: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 12, marginTop: 10,
   },
-  loanLabel: { flex: 1, fontSize: 12, fontWeight: '700', color: colors.primary },
-  loanValue: { fontSize: 16, fontWeight: '800', color: colors.primary },
+  loanLabel: { flex: 1, fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
+  loanValue: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary },
   loanRwf: { fontSize: 10, color: colors.primary, opacity: 0.7 },
   termRow: { flexDirection: 'row', gap: 8 },
   termChip: {
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center',
   },
   termChipActive: { borderColor: colors.primary, backgroundColor: colors.greenTint },
-  termText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  termText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   termTextActive: { color: colors.primary },
   bestRateCard: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -255,11 +255,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center',
   },
   bankAvatarActive: { backgroundColor: colors.primary },
-  bankAbbr: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
-  bankName: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  bankAbbr: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  bankName: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   bankNote: { fontSize: 11, color: colors.textMuted },
   bankRate: { alignItems: 'flex-end' },
-  bankRateText: { fontSize: 18, fontWeight: '900', color: colors.textPrimary },
+  bankRateText: { fontSize: 18, fontFamily: fonts.black, color: colors.textPrimary },
   bankRateLabel: { fontSize: 9, color: colors.textMuted },
   bankResult: {
     flexDirection: 'row', justifyContent: 'space-between',
@@ -267,17 +267,17 @@ const styles = StyleSheet.create({
     padding: 10, marginTop: 12,
   },
   bankMonthlyLabel: { fontSize: 10, color: colors.textMuted, marginBottom: 2 },
-  bankMonthlyValue: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  bankInterest: { fontSize: 13, fontWeight: '600', color: colors.amber },
-  bankTotal: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  bankMonthlyValue: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  bankInterest: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.amber },
+  bankTotal: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   summaryCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, marginTop: 16, overflow: 'hidden', ...shadows.card,
   },
-  summaryTitle: { fontSize: 13, fontWeight: '700', color: colors.textMuted, padding: 14, borderBottomWidth: 1, borderBottomColor: colors.borderSoft, textTransform: 'uppercase', letterSpacing: 0.4 },
+  summaryTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, padding: 14, borderBottomWidth: 1, borderBottomColor: colors.borderSoft, textTransform: 'uppercase', letterSpacing: 0.4 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12 },
   summaryLabel: { fontSize: 13, color: colors.textSecondary },
-  summaryValue: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  summaryValue: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   disclaimer: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',
     marginTop: 16,
