@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarListCard from '../components/CarListCard';
+import CarCard from '../components/CarCard';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
@@ -14,6 +15,8 @@ export default function SearchScreen({ navigation }) {
   const { cars } = useApp();
   const [sort, setSort] = useState('Best match');
   const [searchQuery, setSearchQuery] = useState('');
+  const [layout, setLayout] = useState('list'); // 'list' | 'grid'
+  const isGrid = layout === 'grid';
 
   let filteredCars = cars;
   if (searchQuery.trim()) {
@@ -74,18 +77,25 @@ export default function SearchScreen({ navigation }) {
       </View>
 
       <FlatList
+        key={layout}
+        numColumns={isGrid ? 2 : 1}
         data={filteredCars}
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingHorizontal: isGrid ? 10 : 16, paddingBottom: 20 }}
         ListHeaderComponent={
-          <View>
+          <View style={isGrid && { paddingHorizontal: 6 }}>
             <View style={styles.resultRow}>
               <Text style={styles.resultCount}>{filteredCars.length} certified cars</Text>
-              <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')}>
-                <Ionicons name="map-outline" size={16} color={colors.primary} />
-                <Text style={styles.mapText}>Map</Text>
-              </Pressable>
+              <View style={styles.resultActions}>
+                <Pressable style={styles.layoutBtn} onPress={() => setLayout(isGrid ? 'list' : 'grid')} hitSlop={6}>
+                  <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.primary} />
+                </Pressable>
+                <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')}>
+                  <Ionicons name="map-outline" size={16} color={colors.primary} />
+                  <Text style={styles.mapText}>Map</Text>
+                </Pressable>
+              </View>
             </View>
 
             <FlatList
@@ -105,9 +115,13 @@ export default function SearchScreen({ navigation }) {
             />
           </View>
         }
-        renderItem={({ item }) => (
-          <CarListCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
-        )}
+        renderItem={({ item }) =>
+          isGrid ? (
+            <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
+          ) : (
+            <CarListCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
+          )
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="car-outline" size={52} color={colors.border} />
@@ -141,6 +155,18 @@ const styles = StyleSheet.create({
   filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 4 },
   resultCount: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  resultActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  layoutBtn: {
+    width: 34, height: 34, borderRadius: radius.pill,
+    backgroundColor: colors.greenTint,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  resultActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  layoutBtn: {
+    width: 32, height: 32, borderRadius: radius.pill,
+    backgroundColor: colors.greenTint,
+    alignItems: 'center', justifyContent: 'center',
+  },
   mapBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.greenTint, paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill },
   mapText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   sortChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
