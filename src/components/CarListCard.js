@@ -85,8 +85,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   imageWrap: {
+    // Fixed size — iOS lets an unconstrained image's natural dimensions
+    // inflate the row height, so never rely on stretch here.
     width: 118,
-    alignSelf: 'stretch',
+    height: 108,
     backgroundColor: colors.surfaceAlt,
     position: 'relative',
   },
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   certBadgeText: { color: '#fff', fontSize: 8, fontFamily: fonts.extraBold },
-  body: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 2 },
+  body: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 2, justifyContent: 'center' },
   titleRow: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', gap: 8, marginBottom: 2,
