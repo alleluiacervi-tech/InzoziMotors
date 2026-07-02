@@ -724,23 +724,21 @@ All screens built and wired. See screen table above for full list.
 - [x] `PATCH /notifications/read-all` — mark all read
 - [x] Socket.io — real-time chat (join_conversation, send_message, typing indicator)
 
-### 6C. Backend Routes — Still To Build 🔲
-- [ ] `POST /auth/id-verification` — seller uploads ID photos (multer)
-- [ ] `PATCH /auth/id-verification/:userId` (admin) — approve / reject
-- [ ] `POST /inspections/:id/complete` (admin) — record 150-pt checklist results + score
-- [ ] `GET /inspections` (admin) — all scheduled inspections
-- [ ] `POST /cars/:id/photos` (admin) — upload 36-angle inspection photos (multer)
-- [ ] `GET /cars/:id/inspection-report` — full structured inspection report
-- [ ] `GET /cars/:id/history` — vehicle history card
-- [ ] `POST /saved-searches` — create a saved search alert
-- [ ] `GET /saved-searches` — list user's saved searches
-- [ ] `DELETE /saved-searches/:id`
-- [ ] `POST /reviews` — buyer leaves review after handover
-- [ ] `GET /users/:id/reviews` — seller's reviews
-- [ ] `GET /users/:id/trust-score` — computed trust score breakdown
-- [ ] `POST /cars/:id/compare` — add to comparison session (or handle client-side)
-- [ ] `GET /admin/stats` (admin) — platform overview numbers
-- [ ] `GET /admin/analytics` (admin) — funnel, top makes, center utilisation
+### 6C. Backend Routes — Built ✅ (smoke-tested Jul 2, 2026 — 38/38 checks pass)
+- [x] `POST /id-verification` — seller uploads ID photos (multer; file upload not yet exercised)
+- [x] `PATCH /id-verification/:userId` (admin) — approve / reject
+- [x] `POST /inspections/:id/complete` (admin) — checklist results, server computes score
+- [x] `GET /inspections` (admin) — filter by status/center/date
+- [x] `POST /inspections/cars/:carId/photos` (admin) — 36-angle upload (multer; not yet exercised)
+- [x] `GET /inspections/report/:carId` — buyer-facing inspection report
+- [x] `GET /cars/:id/history` — vehicle history card
+- [x] `POST /saved-searches` + `GET` + `PATCH` + `DELETE`
+- [x] `POST /reviews` — buyer reviews after complete handover
+- [x] `GET /reviews/seller/:userId` — seller's reviews
+- [x] `GET /reviews/trust-score/:userId` — full breakdown (id/sales/response/reviews)
+- [x] Comparison handled client-side (no backend route needed)
+- [x] `GET /admin/stats` + `GET /admin/analytics` + `GET /admin/listings`
+- Not smoke-tested yet: Socket.io realtime chat, multipart file uploads (routes exist)
 
 ### 6D. Connect Mobile App to API 🔲
 - [ ] Create `src/api/client.js` in mobile — Axios or fetch wrapper with base URL + JWT header
@@ -765,26 +763,27 @@ All screens built and wired. See screen table above for full list.
 > Uses the same backend API — admin JWT gives full access.
 
 ### Core pages
-- [ ] `/login` — admin login (same `/auth/login` endpoint, role check)
-- [ ] `/dashboard` — platform stats: listings, submissions, handovers today, revenue
-- [ ] `/submissions` — table of all submissions, filter by status, approve/reject/schedule
-- [ ] `/inspections` — calendar view of scheduled inspections per center
-- [ ] `/inspections/:id` — fill in 150-pt checklist, upload photos, submit report
-- [ ] `/listings` — all live cars, pause/unpublish, edit price
-- [ ] `/handovers` — pending handovers table, "Confirm → Mark Sold" button
-- [ ] `/users` — all registered users, view/edit role, approve ID verifications
-- [ ] `/users/:id/verification` — view ID photos, approve or reject
-- [ ] `/analytics` — submission funnel, sales by make, center utilisation, revenue chart
-- [ ] `/cars/new` — admin creates a listing after inspection (fills all fields, uploads 36 photos)
+- [x] `/login` — admin login with role check, JWT in localStorage + cookie
+- [x] `/dashboard` — stats grid + quick actions
+- [x] `/submissions` — status tabs, approve/reject with notes, schedule
+- [x] `/inspections` — list with center/date/status filters (calendar view: future polish)
+- [x] `/inspections/:id` — full 150-pt checklist form (7 categories, pass/flag/fail)
+- [x] `/listings` — status filter grid, mark sold / un-reserve / remove
+- [x] `/handovers` — pending/confirmed/cancelled tabs, "Confirm → Mark Sold"
+- [x] `/users` — ID verification queue with document links, approve/reject
+- [x] `/analytics` — pipeline funnel, top makes, center utilisation, monthly sales
+- [ ] `/cars/new` — admin creates a listing (form + 36-photo upload UI) ← NOT BUILT
 
 ### Tech for admin web
-- [ ] Scaffold `admin/` folder with Next.js 15 App Router
-- [ ] Set up Tailwind CSS + shadcn/ui components
-- [ ] API client (`admin/lib/api.ts`) — same backend, admin JWT
-- [ ] Auth middleware — redirect to `/login` if no valid admin JWT
-- [ ] File upload UI for 36-angle photos (drag-and-drop grid matching the 36 required angles)
-- [ ] Inspection checklist form (7 categories × Pass/Flag/Fail — mirrors `InspectionFormScreen.js`)
-- [ ] Deploy to same VPS under Nginx (e.g. `admin.inzozimotors.rw`)
+- [x] Scaffold `admin/` folder with Next.js 15 App Router
+- [x] Tailwind CSS (no shadcn — plain Tailwind components)
+- [x] API client (`admin/src/lib/api.ts`) — same backend, admin JWT
+- [x] Auth middleware — redirect to `/login` if no valid admin JWT
+- [ ] File upload UI for 36-angle photos (drag-and-drop grid) ← NOT BUILT
+- [x] Inspection checklist form (7 categories × Pass/Flag/Fail)
+- [ ] Deploy to VPS under Nginx (blocked on VPS purchase)
+- Note: dashboard runs via `docker compose up` (port 3001) but has not been
+  click-tested end to end against the API yet
 
 ---
 
