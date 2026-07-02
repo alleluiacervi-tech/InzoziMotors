@@ -124,7 +124,8 @@ router.post('/conversations', requireAuth, async (req, res) => {
 
 // POST /messages/conversations/:id — send a message in existing conversation
 router.post('/conversations/:id', requireAuth, async (req, res) => {
-  const { text } = req.body;
+  // accept both `text` and `message` — POST /conversations uses `message`
+  const text = req.body.text ?? req.body.message;
   if (!text) return res.status(400).json({ error: 'text is required' });
   try {
     const convRes = await pool.query(
