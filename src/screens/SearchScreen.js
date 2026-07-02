@@ -1,380 +1,165 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Switch } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
+import CarListCard from '../components/CarListCard';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
-import FilterModal from '../components/FilterModal';
+
+// Marketplace browse tab — full inventory with live search, sort, and filters.
+
+const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
 
 export default function SearchScreen({ navigation }) {
   const { cars } = useApp();
-  
-  // Selection states
-  const [make, setMake] = useState('Ford');
-  const [model, setModel] = useState('Five Hundred');
-  const [detailModel, setDetailModel] = useState('Five Hundred (05~07)');
-  const [trim, setTrim] = useState('');
-  const [year, setYear] = useState('');
-  const [mileage, setMileage] = useState('');
-  const [price, setPrice] = useState('');
-  
-  const [rememberOptions, setRememberOptions] = useState(false);
-  const [activeTab, setActiveTab] = useState(''); // quick filter pill state
+  const [sort, setSort] = useState('Best match');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Modals state
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState('make'); // 'make', 'year', 'body'
+  let filteredCars = cars;
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    filteredCars = filteredCars.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.make.toLowerCase().includes(q) ||
+        c.model.toLowerCase().includes(q) ||
+        c.category.toLowerCase().includes(q)
+    );
+  }
 
-  const handleReset = () => {
-    setMake('');
-    setModel('');
-    setDetailModel('');
-    setTrim('');
-    setYear('');
-    setMileage('');
-    setPrice('');
-    setActiveTab('');
-  };
-
-  const getMatchingCount = () => {
-    let list = cars;
-    if (make) list = list.filter(c => c.make.toLowerCase() === make.toLowerCase());
-    if (year && year !== 'All') {
-      const years = year.split('~');
-      const min = parseInt(years[0]) || 0;
-      const max = parseInt(years[1]) || 9999;
-      list = list.filter(c => c.year >= min && c.year <= max);
-    }
-    return list.length;
-  };
-
-  const handleOpenModal = (type) => {
-    setModalType(type);
-    setModalVisible(true);
-  };
-
-  const handleSelectValue = (value) => {
-    if (modalType === 'make') {
-      setMake(value);
-      setModel('All');
-      setDetailModel('All');
-    } else if (modalType === 'year') {
-      setYear(value);
-    } else if (modalType === 'body') {
-      setTrim(value); // map vehicle type selection to trim/body
-    }
-  };
+  if (sort === 'Price ↑') {
+    filteredCars = [...filteredCars].sort((a, b) => {
+      const pa = a.type === 'auction' ? a.currentBid : a.price;
+      const pb = b.type === 'auction' ? b.currentBid : b.price;
+      return pa - pb;
+    });
+  } else if (sort === 'Price ↓') {
+    filteredCars = [...filteredCars].sort((a, b) => {
+      const pa = a.type === 'auction' ? a.currentBid : a.price;
+      const pb = b.type === 'auction' ? b.currentBid : b.price;
+      return pb - pa;
+    });
+  } else if (sort === 'Mileage') {
+    filteredCars = [...filteredCars].sort((a, b) => a.mileage - b.mileage);
+  } else if (sort === 'Newest') {
+    filteredCars = [...filteredCars].sort((a, b) => b.year - a.year);
+  }
 
   return (
     <Screen background={colors.bg}>
-      {/* 1. Search Header */}
+      {/* Search header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-        </Pressable>
         <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search for vehicles (e.g. QM6)"
+            placeholder="Search make, model, type..."
             placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
           />
-          <Pressable onPress={() => navigation.navigate('SearchResults')}>
-            <Ionicons name="search" size={20} color={colors.textPrimary} />
-          </Pressable>
+          {searchQuery ? (
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
         </View>
-      </View>
-
-      {/* Main Content */}
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* 2. Quick Filter Tabs (3 pills) */}
-        <View style={styles.pillsRow}>
-          {[
-            { id: 'domestic_import', label: 'Domestic · Import' },
-            { id: 'ev_eco', label: 'EV · Eco-Friendly' },
-            { id: 'truck_special', label: 'Truck · Special · Bus' }
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <Pressable
-                key={tab.id}
-                style={[styles.pill, isActive && styles.pillActive]}
-                onPress={() => setActiveTab(isActive ? '' : tab.id)}
-              >
-                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* 3. "Remember Options" (조건 기억) Row */}
-        <View style={styles.rememberRow}>
-          <Text style={styles.rememberLabel}>Remember Options</Text>
-          <Switch
-            value={rememberOptions}
-            onValueChange={setRememberOptions}
-            trackColor={{ false: '#CCCCCC', true: colors.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-
-        {/* 4. Filter List (scrollable) */}
-        <View style={styles.filterList}>
-          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('make')}>
-            <Text style={styles.filterLabel}>Manufacturer</Text>
-            <View style={styles.valueRow}>
-              <Text style={[styles.filterValue, !make && styles.placeholderText]}>
-                {make || 'Select'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </Pressable>
-
-          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('make')}>
-            <Text style={styles.filterLabel}>Model</Text>
-            <View style={styles.valueRow}>
-              <Text style={[styles.filterValue, !model && styles.placeholderText]}>
-                {model || 'Select'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </Pressable>
-
-          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('make')}>
-            <Text style={styles.filterLabel}>Detailed Model</Text>
-            <View style={styles.valueRow}>
-              <Text style={[styles.filterValue, !detailModel && styles.placeholderText]}>
-                {detailModel || 'Select'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </Pressable>
-
-          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('body')}>
-            <Text style={styles.filterLabel}>Vehicle Type / Trim</Text>
-            <View style={styles.valueRow}>
-              <Text style={[styles.filterValue, !trim && styles.placeholderText]}>
-                {trim || 'Select'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </Pressable>
-
-          <Pressable style={styles.filterRow} onPress={() => handleOpenModal('year')}>
-            <Text style={styles.filterLabel}>Model Year</Text>
-            <View style={styles.valueRow}>
-              <Text style={[styles.filterValue, !year && styles.placeholderText]}>
-                {year || 'Select'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </Pressable>
-
-          <Pressable style={styles.filterRow} onPress={() => {}}>
-            <Text style={styles.filterLabel}>Mileage</Text>
-            <View style={styles.valueRow}>
-              <Text style={[styles.filterValue, !mileage && styles.placeholderText]}>
-                {mileage || 'Select'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </Pressable>
-
-          <Pressable style={styles.filterRow} onPress={() => {}}>
-            <Text style={styles.filterLabel}>Price</Text>
-            <View style={styles.valueRow}>
-              <Text style={[styles.filterValue, !price && styles.placeholderText]}>
-                {price || 'Select'}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </Pressable>
-        </View>
-
-        {/* Promotional Link */}
-        <Pressable style={styles.promoLink} onPress={() => {}}>
-          <Text style={styles.promoLinkText}>
-            Check my car's value before buying first &gt;
-          </Text>
-        </Pressable>
-      </ScrollView>
-
-      {/* 5. Bottom Buttons */}
-      <View style={styles.buttonFooter}>
-        <Pressable style={styles.resetBtn} onPress={handleReset}>
-          <Text style={styles.resetBtnText}>Reset</Text>
-        </Pressable>
-        <Pressable 
-          style={[styles.searchBtn, { backgroundColor: colors.primary }]} 
-          onPress={() => navigation.navigate('SearchResults', { filters: { make, year } })}
+        <Pressable
+          style={styles.filterBtn}
+          onPress={() => navigation.navigate('Filters')}
         >
-          <Text style={styles.searchBtnText}>
-            View Listings ({getMatchingCount()} cars)
-          </Text>
+          <Ionicons name="options-outline" size={20} color="#fff" />
         </Pressable>
       </View>
 
-      {/* Custom Filter Modals overlay */}
-      <FilterModal
-        visible={modalVisible}
-        type={modalType}
-        onClose={() => setModalVisible(false)}
-        onSelect={handleSelectValue}
-        selectedValue={modalType === 'make' ? make : modalType === 'year' ? year : trim}
+      <FlatList
+        data={filteredCars}
+        keyExtractor={(c) => c.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+        ListHeaderComponent={
+          <View>
+            <View style={styles.resultRow}>
+              <Text style={styles.resultCount}>{filteredCars.length} certified cars</Text>
+              <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')}>
+                <Ionicons name="map-outline" size={16} color={colors.primary} />
+                <Text style={styles.mapText}>Map</Text>
+              </Pressable>
+            </View>
+
+            <FlatList
+              horizontal
+              data={SORTS}
+              keyExtractor={(s) => s}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingBottom: 12 }}
+              renderItem={({ item }) => {
+                const on = item === sort;
+                return (
+                  <Pressable style={[styles.sortChip, on && styles.sortChipOn]} onPress={() => setSort(item)}>
+                    <Text style={[styles.sortText, { color: on ? '#fff' : colors.slate600 }]}>{item}</Text>
+                  </Pressable>
+                );
+              }}
+            />
+          </View>
+        }
+        renderItem={({ item }) => (
+          <CarListCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="car-outline" size={52} color={colors.border} />
+            <Text style={styles.emptyTitle}>No cars found</Text>
+            <Text style={styles.emptySub}>Try a different make, model, or keyword</Text>
+            <Pressable style={styles.clearBtn} onPress={() => setSearchQuery('')}>
+              <Text style={styles.clearBtnText}>Clear search</Text>
+            </Pressable>
+          </View>
+        }
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    height: 56,
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8ECEF',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
   searchBar: {
     flex: 1,
-    height: 38,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 9,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     paddingHorizontal: 12,
+    height: 46,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textPrimary,
-    paddingVertical: 0,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  pillsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  pill: {
-    flex: 1,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F5F5F5',
+  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary, padding: 0 },
+  filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 4 },
+  resultCount: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  mapBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.greenTint, paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill },
+  mapText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
+  sortChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
+  sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  sortText: { fontSize: 13, fontFamily: fonts.semiBold },
+  emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+    gap: 10,
   },
-  pillActive: {
+  emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 8 },
+  emptySub: { fontSize: 14, fontFamily: fonts.regular, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  clearBtn: {
+    marginTop: 12,
     backgroundColor: colors.primary,
-  },
-  pillText: {
-    fontSize: 11,
-    fontFamily: fonts.bold,
-    color: '#666666',
-    textAlign: 'center',
-  },
-  pillTextActive: {
-    color: '#FFFFFF',
-  },
-  rememberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     paddingVertical: 12,
-    marginTop: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8ECEF',
+    borderRadius: 30,
   },
-  rememberLabel: {
-    fontSize: 14,
-    color: colors.textPrimary,
-    fontFamily: fonts.bold,
-  },
-  filterList: {
-    backgroundColor: '#FFFFFF',
-    marginTop: 8,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontFamily: fonts.bold,
-    color: colors.textPrimary,
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  filterValue: {
-    fontSize: 14,
-    color: colors.primary,
-    fontFamily: fonts.bold,
-  },
-  placeholderText: {
-    color: '#999999',
-    fontFamily: fonts.semiBold,
-  },
-  promoLink: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  promoLinkText: {
-    fontSize: 12,
-    color: '#666666',
-    fontFamily: fonts.semiBold,
-  },
-  buttonFooter: {
-    height: 72,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E8ECEF',
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    gap: 12,
-  },
-  resetBtn: {
-    width: 90,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#F5F5F4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetBtnText: {
-    fontSize: 14,
-    fontFamily: fonts.bold,
-    color: '#666666',
-  },
-  searchBtn: {
-    flex: 1,
-    height: 48,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: fonts.bold,
-  },
+  clearBtnText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
 });
