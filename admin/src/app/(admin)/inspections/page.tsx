@@ -109,7 +109,16 @@ export default function InspectionsPage() {
                 </Link>
               )}
               {insp.status === 'complete' && (
-                <span className="text-xs text-green-600 font-medium flex-shrink-0">✅ Done</span>
+                insp.car_id ? (
+                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">✅ Live Listing</span>
+                ) : (
+                  <Link
+                    href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
+                  >
+                    Create Listing
+                  </Link>
+                )
               )}
             </div>
           ))}

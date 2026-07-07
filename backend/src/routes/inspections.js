@@ -85,6 +85,11 @@ router.get('/:id', requireAdmin, async (req, res) => {
     const { rows } = await pool.query(
       `SELECT i.*,
               u.name  AS seller_name, u.email AS seller_email,
+              s.make AS sub_make, s.model AS sub_model, s.year AS sub_year,
+              s.mileage AS sub_mileage, s.color AS sub_color,
+              s.transmission AS sub_transmission, s.fuel_type AS sub_fuel_type,
+              s.body_type AS sub_body_type, s.asking_price AS sub_asking_price,
+              s.seller_id AS seller_id,
               c.title AS car_title,  c.make, c.model, c.year, c.mileage, c.vin
        FROM inspections i
        JOIN submissions s ON s.id = i.submission_id

@@ -168,7 +168,7 @@ router.get('/saved/list', requireAuth, async (req, res) => {
 router.post('/', requireAdmin, async (req, res) => {
   const { seller_id, title, make, model, year, mileage, fuel_type, transmission,
           body_type, color, price, location, drive_side, vin, description, images,
-          inspected, inspection_score } = req.body;
+          inspected, inspection_score, submission_id } = req.body;
   try {
     const { rows } = await pool.query(
       `INSERT INTO cars
@@ -181,7 +181,21 @@ router.post('/', requireAdmin, async (req, res) => {
        body_type, color, price, location, drive_side, vin, description, images,
        inspected, inspection_score]
     );
-    res.status(201).json(rows[0]);
+    const car = rows[0];
+
+    // Link back to submission and inspection tables if this listing was promoted from pipeline
+    if (submission_id) {
+      await pool.query(
+        'UPDATE submissions SET car_id = $1, status = \'live\' WHERE id = $2',
+        [car.id, submission_id]
+      );
+      await pool.query(
+        'UPDATE inspections SET car_id = $1 WHERE submission_id = $2',
+        [car.id, submission_id]
+      );
+    }
+
+    res.status(201).json(car);
   } catch (err) {
     console.error('create car error:', err.message);
     res.status(500).json({ error: 'Server error' });

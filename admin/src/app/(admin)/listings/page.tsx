@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { api } from '@/lib/api'
 
 const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting']
@@ -47,7 +48,15 @@ export default function ListingsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Listings</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-xl font-bold text-gray-900">Listings</h1>
+        <Link
+          href="/listings/new"
+          className="px-4 py-2 text-sm font-semibold bg-brand text-white rounded-lg hover:bg-brand-light transition-colors"
+        >
+          Create Listing
+        </Link>
+      </div>
 
       {/* Status filter pills */}
       <div className="flex flex-wrap gap-1 mb-6">
@@ -94,6 +103,14 @@ export default function ListingsPage() {
 
                 {/* Actions */}
                 <div className="mt-3 flex flex-wrap gap-1.5">
+                  {car.status !== 'sold' && (
+                    <Link
+                      href={`/listings/${car.id}/photos`}
+                      className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                    >
+                      Photos ({car.images?.length || 0})
+                    </Link>
+                  )}
                   {car.status === 'live' && (
                     <button
                       onClick={() => updateStatus(car.id, 'sold')}
@@ -112,7 +129,7 @@ export default function ListingsPage() {
                       Un-reserve
                     </button>
                   )}
-                  {(car.status === 'live' || car.status === 'reserved') && (
+                  {(car.status === 'live' || car.status === 'reserved' || car.status === 'under_review') && (
                     <button
                       onClick={() => {
                         if (window.confirm('Remove this listing?')) updateStatus(car.id, 'removed')

@@ -6,13 +6,17 @@ function token() {
 }
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  const headers: HeadersInit = {
+    ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
+    ...opts.headers,
+  }
+  if (!(opts.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
-      ...opts.headers,
-    },
+    headers,
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
@@ -61,6 +65,7 @@ export const api = {
     const q = params ? '?' + new URLSearchParams(params).toString() : ''
     return request<any[]>(`/admin/listings${q}`)
   },
+  getCar: (id: string) => request<any>(`/cars/${id}`),
   updateCarStatus: (id: string, status: string) =>
     request<any>(`/cars/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
@@ -73,4 +78,10 @@ export const api = {
 
   // Trust score
   trustScore: (userId: string) => request<any>(`/reviews/trust-score/${userId}`),
+
+  // Cars creation & photo uploads
+  createCar: (data: any) =>
+    request<any>('/cars', { method: 'POST', body: JSON.stringify(data) }),
+  uploadCarPhotos: (carId: string, formData: FormData) =>
+    request<any>(`/inspections/cars/${carId}/photos`, { method: 'POST', body: formData }),
 }
