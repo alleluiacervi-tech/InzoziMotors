@@ -14,15 +14,18 @@ export default function SignInScreen({ navigation }) {
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     const errs = {};
     if (!email || !email.includes('@')) errs.email = 'Please enter a valid email address.';
     if (!password || password.length < 6) errs.password = 'Password must be at least 6 characters.';
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    const name = email.split('@')[0].replace(/[^a-zA-Z ]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-    loginUser(name, email);
-    navigation.replace('Main');
+    try {
+      await loginUser(email.trim(), password);
+      navigation.replace('Main');
+    } catch (err) {
+      Alert.alert('Sign In Failed', err.message || 'Invalid email or password.');
+    }
   };
 
   return (

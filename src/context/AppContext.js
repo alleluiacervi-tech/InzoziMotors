@@ -1,62 +1,53 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { cars as initialCars, sellerListings as initialSellerListings, conversations as initialConversations } from '../data/cars';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { categories, formatPrice, formatMiles, cars as mockCars, conversations as initialConversations, sellerListings as initialSellerListings } from '../data/cars';
 import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
+import authApi from '../api/auth';
+import carsApi from '../api/cars';
+import submissionsApi from '../api/submissions';
+import handoversApi from '../api/handovers';
+import messagesApi from '../api/messages';
+import notificationsApi from '../api/notifications';
+import api, { BASE_URL, getToken } from '../api/client';
+import io from 'socket.io-client';
 
 const AppContext = createContext();
 
+// Demo user shown when no backend auth token exists
 const DEFAULT_USER = {
   name: 'Alex Morgan',
   email: 'alex.morgan@email.com',
   initials: 'AM',
+  id_verified: 'approved',
 };
 
-// Seller's car submissions with pipeline stages
+// Demo data — used when backend is unreachable (Phase 6 not yet deployed)
 const INITIAL_SUBMISSIONS = [
   {
-    id: 'sub1',
-    carTitle: '2020 Toyota RAV4 XLE AWD',
-    make: 'Toyota', model: 'RAV4', year: 2020,
-    mileage: 34100,
-    askingPrice: 26000,
-    submittedDate: 'Jun 25, 2026',
-    status: 'live',
+    id: 'sub1', carTitle: '2020 Toyota RAV4 XLE AWD',
+    make: 'Toyota', model: 'RAV4', year: 2020, mileage: 34100, askingPrice: 26000,
+    submittedDate: 'Jun 25, 2026', status: 'live',
     image: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
-    inspectionDate: null,
-    center: 'Nyarutarama',
-    listingId: '3',
+    inspectionDate: null, center: 'Nyarutarama', listingId: '3',
     statusDetail: 'Listed 3 days ago · 47 views',
   },
   {
-    id: 'sub2',
-    carTitle: '2019 Honda Civic Sport',
-    make: 'Honda', model: 'Civic', year: 2019,
-    mileage: 41000,
-    askingPrice: 18500,
-    submittedDate: 'Jun 27, 2026',
-    status: 'scheduled',
+    id: 'sub2', carTitle: '2019 Honda Civic Sport',
+    make: 'Honda', model: 'Civic', year: 2019, mileage: 41000, askingPrice: 18500,
+    submittedDate: 'Jun 27, 2026', status: 'scheduled',
     image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400&q=80',
-    inspectionDate: 'Jun 29, 2026 · 10:00 AM',
-    center: 'Kicukiro',
-    listingId: null,
+    inspectionDate: 'Jun 29, 2026 · 10:00 AM', center: 'Kicukiro', listingId: null,
     statusDetail: 'Inspection: Jun 29 · 10:00 AM · Kicukiro Center',
   },
   {
-    id: 'sub3',
-    carTitle: '2018 Subaru Forester XT',
-    make: 'Subaru', model: 'Forester', year: 2018,
-    mileage: 58000,
-    askingPrice: 22000,
-    submittedDate: 'Jun 28, 2026',
-    status: 'under_review',
+    id: 'sub3', carTitle: '2018 Subaru Forester XT',
+    make: 'Subaru', model: 'Forester', year: 2018, mileage: 58000, askingPrice: 22000,
+    submittedDate: 'Jun 28, 2026', status: 'under_review',
     image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400&q=80',
-    inspectionDate: null,
-    center: null,
-    listingId: null,
+    inspectionDate: null, center: null, listingId: null,
     statusDetail: 'Our team is reviewing your submission',
   },
 ];
 
-// Admin: pending ID verifications
 const INITIAL_VERIFICATIONS = [
   { id: 'v1', name: 'Jean Pierre Habimana', initials: 'JP', submitted: '2 hours ago', status: 'pending' },
   { id: 'v2', name: 'Marie Claire Uwase', initials: 'MC', submitted: '5 hours ago', status: 'pending' },
@@ -64,35 +55,6 @@ const INITIAL_VERIFICATIONS = [
   { id: 'v4', name: 'Diane Mukeshimana', initials: 'DM', submitted: '2 days ago', status: 'pending' },
 ];
 
-// Pending handover bookings (buyer has committed, admin needs to confirm)
-const INITIAL_HANDOVERS = [
-  {
-    id: 'h1',
-    bookingId: 'BK-20260701-001',
-    buyer: 'James Uwimana',
-    buyerInitials: 'JU',
-    seller: 'Jean Pierre H.',
-    car: '2019 Toyota RAV4',
-    center: 'Nyarutarama Center',
-    date: 'Jul 3, 2026',
-    time: '10:00 AM',
-    status: 'pending',
-  },
-  {
-    id: 'h2',
-    bookingId: 'BK-20260701-002',
-    buyer: 'Grace Murekatete',
-    buyerInitials: 'GM',
-    seller: 'Alice Keza',
-    car: '2021 Honda CR-V',
-    center: 'Kicukiro Center',
-    date: 'Jul 5, 2026',
-    time: '2:00 PM',
-    status: 'pending',
-  },
-];
-
-// Admin: scheduled inspections
 const INITIAL_INSPECTIONS_ADMIN = [
   { id: 'i1', seller: 'Jean Pierre H.', car: '2019 Toyota RAV4', time: 'Today · 10:00 AM', center: 'Nyarutarama', status: 'today' },
   { id: 'i2', seller: 'Alice Murekatete', car: '2021 Honda CR-V', time: 'Today · 2:00 PM', center: 'Kicukiro', status: 'today' },
@@ -121,45 +83,60 @@ const INITIAL_MESSAGES = {
   ],
 };
 
+const INITIAL_SAVED_SEARCHES = [
+  { id: 'ss1', label: 'Toyota RAV4 · SUV · < $30k', make: 'Toyota', model: 'RAV4', category: 'SUV', maxPrice: 30000, notifyEnabled: true, matchCount: 3, lastMatch: '2 days ago' },
+  { id: 'ss2', label: 'BMW Sedan · Any year · < $45k', make: 'BMW', category: 'Sedan', maxPrice: 45000, notifyEnabled: false, matchCount: 1, lastMatch: '1 week ago' },
+  { id: 'ss3', label: 'Electric car · < 30k miles', category: 'EV', maxMileage: 30000, notifyEnabled: true, matchCount: 5, lastMatch: 'Today' },
+];
+
 const AUTO_REPLIES = [
   "Thanks for your message! Let me check on that for you.",
   "That's a great question. I'll get back to you shortly with more details.",
   "Absolutely! We can arrange that. When works best for you?",
   "I appreciate your interest. This vehicle has been very popular.",
   "Sure thing! I can send over the full inspection report right away.",
-  "Great to hear from you! Let me pull up the details on that.",
 ];
 
 export function AppProvider({ children }) {
-  const [cars] = useState(initialCars);
+  const [cars, setCars] = useState(mockCars);
   const [savedCarIds, setSavedCarIds] = useState([]);
-  const [sellerListings, setSellerListings] = useState(initialSellerListings);
-  const [conversations, setConversations] = useState(initialConversations);
+  const [sellerListings, setSellerListings] = useState(initialSellerListings || []);
+  const [conversations, setConversations] = useState(initialConversations || []);
   const [chatMessages, setChatMessages] = useState(INITIAL_MESSAGES);
   const [currentUser, setCurrentUser] = useState(DEFAULT_USER);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Seller submission pipeline
   const [submissions, setSubmissions] = useState(INITIAL_SUBMISSIONS);
-  // ID verification: 'none' | 'pending' | 'approved' | 'rejected'
-  const [idVerificationStatus, setIdVerificationStatus] = useState('none');
+
+  // ID verification status derived from current user profile
+  const idVerificationStatus = currentUser?.id_verified || 'none';
 
   // Admin data
   const [pendingVerifications, setPendingVerifications] = useState(INITIAL_VERIFICATIONS);
   const [adminInspections] = useState(INITIAL_INSPECTIONS_ADMIN);
 
-  // Phase 2 — Notifications
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  // Notifications
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS || []);
 
-  // Phase 2 — Submitted inspection forms (keyed by inspectionId)
+  // Submitted inspection forms (keyed by inspectionId)
   const [inspectionForms, setInspectionForms] = useState({});
 
-  // Phase 3 — Purchase requests / handover bookings
+  // Purchase requests / handover bookings
   const [purchaseRequests, setPurchaseRequests] = useState([]);
-  const [handovers, setHandovers] = useState(INITIAL_HANDOVERS);
+  const [handovers, setHandovers] = useState([]);
 
-  // Phase 4 — Comparison (max 3 cars)
+  // Comparison (max 3 cars)
   const [comparisonCars, setComparisonCars] = useState([]);
+
+  // Socket state
+  const [socket, setSocket] = useState(null);
+
+  // Saved searches
+  const [savedSearches, setSavedSearches] = useState(INITIAL_SAVED_SEARCHES);
+
   const addToComparison = useCallback((car) => {
     setComparisonCars((prev) => {
       if (prev.find((c) => c.id === car.id)) return prev;
@@ -172,74 +149,447 @@ export function AppProvider({ children }) {
   }, []);
   const clearComparison = useCallback(() => setComparisonCars([]), []);
 
-  // Phase 4 — Currency toggle
+  // Currency toggle
   const [currency, setCurrency] = useState('USD');
   const toggleCurrency = useCallback(() => {
     setCurrency((prev) => (prev === 'USD' ? 'RWF' : 'USD'));
   }, []);
 
-  // Phase 4 — Saved searches
-  const [savedSearches, setSavedSearches] = useState([
-    { id: 'ss1', label: 'Toyota RAV4 · SUV · < $30k', make: 'Toyota', model: 'RAV4', category: 'SUV', maxPrice: 30000, notifyEnabled: true, matchCount: 3, lastMatch: '2 days ago' },
-    { id: 'ss2', label: 'BMW Sedan · Any year · < $45k', make: 'BMW', category: 'Sedan', maxPrice: 45000, notifyEnabled: false, matchCount: 1, lastMatch: '1 week ago' },
-    { id: 'ss3', label: 'Electric car · < 30k miles', category: 'EV', maxMileage: 30000, notifyEnabled: true, matchCount: 5, lastMatch: 'Today' },
-  ]);
-  const toggleSavedSearchNotify = useCallback((id) => {
-    setSavedSearches((prev) => prev.map((s) => s.id === id ? { ...s, notifyEnabled: !s.notifyEnabled } : s));
-  }, []);
-  const deleteSavedSearch = useCallback((id) => {
-    setSavedSearches((prev) => prev.filter((s) => s.id !== id));
+  // --- Mappers to bridge Backend schema to Mobile UI keys ---
+
+  const mapCar = useCallback((c) => {
+    return {
+      id: c.id,
+      title: c.title,
+      make: c.make,
+      model: c.model,
+      year: c.year,
+      price: c.price,
+      belowMarket: c.below_market || 0,
+      mileage: c.mileage,
+      fuel: c.fuel_type || 'Petrol',
+      transmission: c.transmission || 'Automatic',
+      category: c.body_type || 'SUV',
+      seller: c.seller_name || 'Verified Seller',
+      rating: parseFloat(c.seller_trust ? (c.seller_trust / 20).toFixed(1) : '4.5'),
+      distance: 2.5,
+      inspected: !!c.inspected,
+      inspectionScore: c.inspection_score,
+      returnDays: 7,
+      type: 'sale',
+      image: c.images?.[0] || 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
+      images: c.images && c.images.length ? c.images : ['https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80'],
+      location: c.location || 'Kigali',
+      drive_side: c.drive_side || 'RHD',
+      saves: c.saves || 0,
+      views: c.views || 0,
+      status: c.status,
+      description: c.description || '',
+      vin: c.vin || '',
+    };
   }, []);
 
-  // --- Car saves ---
-  const toggleSaveCar = useCallback((id) => {
-    setSavedCarIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+  const mapSubmission = useCallback((sub) => {
+    const dateStr = sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    let detail = 'Our team is reviewing your submission';
+    if (sub.status === 'scheduled') {
+      detail = `Inspection scheduled at ${sub.center || 'Kigali Center'}`;
+    } else if (sub.status === 'live') {
+      detail = 'Active listing live on marketplace';
+    } else if (sub.status === 'rejected') {
+      detail = `Submission not accepted: ${sub.admin_notes || 'Contact support'}`;
+    }
+
+    return {
+      id: sub.id,
+      carTitle: `${sub.year} ${sub.make} ${sub.model}`,
+      make: sub.make,
+      model: sub.model,
+      year: sub.year,
+      mileage: sub.mileage,
+      askingPrice: sub.asking_price,
+      submittedDate: dateStr,
+      status: sub.status,
+      image: sub.car_images?.[0] || sub.reference_images?.[0] || 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
+      inspectionDate: sub.status === 'scheduled' ? 'Scheduled' : null,
+      center: sub.center,
+      listingId: sub.car_id,
+      statusDetail: detail,
+    };
   }, []);
+
+  const mapHandover = useCallback((h) => {
+    return {
+      id: h.booking_id,
+      car: {
+        id: h.car_id,
+        title: h.car_title,
+        price: h.price,
+        image: h.car_images?.[0] || 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
+        seller: h.seller_name,
+      },
+      status: h.status === 'pending' ? 'reserved' : h.status === 'complete' ? 'complete' : 'cancelled',
+      center: h.center,
+      date: h.handover_date,
+      time: h.handover_time,
+      bookedAt: h.booked_at,
+      bookedTime: new Date(h.booked_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+      completedAt: h.confirmed_at,
+    };
+  }, []);
+
+  const mapNotification = useCallback((n) => {
+    const dateObj = new Date(n.created_at);
+    const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    return {
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      body: n.body,
+      time: timeStr,
+      date: dateStr,
+      read: n.read,
+      meta: n.meta,
+    };
+  }, []);
+
+  const mapConversation = useCallback((conv) => {
+    const isBuyer = conv.buyer_id === currentUser?.id;
+    const otherName = isBuyer ? conv.seller_name : conv.buyer_name;
+    const lastTime = conv.last_message_at ? new Date(conv.last_message_at) : new Date(conv.created_at);
+    const timeStr = lastTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    return {
+      id: conv.id,
+      name: otherName || 'Inzozi Motors User',
+      last: conv.last_message || 'No messages yet',
+      time: timeStr,
+      unread: parseInt(conv.unread_count || 0),
+      avatar: (otherName || 'I')[0].toUpperCase(),
+      online: true,
+      carId: conv.car_id,
+      carTitle: conv.car_title,
+      carImage: conv.car_images?.[0] || null,
+    };
+  }, [currentUser?.id]);
+
+  // Fetch cars from the API; fall back to bundled demo data when the backend
+  // is unreachable or has no listings yet (backend deployment is Phase 6A).
+  const fetchCars = useCallback(async () => {
+    try {
+      const carList = await carsApi.getCars();
+      if (carList && carList.length) return carList.map(mapCar);
+      console.warn('Cars API returned no listings — using bundled demo data');
+    } catch (err) {
+      console.warn('Cars API unreachable — using bundled demo data:', err.message);
+    }
+    return mockCars;
+  }, [mapCar]);
+
+  // --- Initial Data Loader ---
+
+  const loadInitialData = useCallback(async (user) => {
+    setCars(await fetchCars());
+    try {
+
+      if (user) {
+        const wishList = await carsApi.getSavedCars();
+        setSavedCarIds(wishList.map((c) => c.id));
+
+        const subList = await submissionsApi.getSubmissions();
+        setSubmissions(subList.map(mapSubmission));
+
+        const myHandovers = await handoversApi.getMyHandovers();
+        setPurchaseRequests(myHandovers.map(mapHandover));
+
+        const convList = await messagesApi.getConversations();
+        setConversations(convList.map(mapConversation));
+
+        const notifList = await notificationsApi.getNotifications();
+        setNotifications(notifList.map(mapNotification));
+
+        const searchList = await carsApi.getSavedSearches();
+        setSavedSearches(searchList.map((s) => ({
+          id: s.id,
+          label: s.label,
+          notifyEnabled: s.notify_enabled,
+          make: s.filters?.make,
+          model: s.filters?.model,
+          category: s.filters?.category,
+          maxPrice: s.filters?.maxPrice || s.filters?.max_price,
+          maxMileage: s.filters?.maxMileage || s.filters?.max_mileage,
+        })));
+
+        if (user.role === 'admin') {
+          const queueList = await api.get('/id-verification/queue');
+          setPendingVerifications(queueList.map((v) => ({
+            id: v.id,
+            name: v.name,
+            initials: v.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+            submitted: new Date(v.submitted_at).toLocaleDateString('en-US'),
+            status: v.id_verified,
+          })));
+
+          const adminHandovers = await handoversApi.getAdminHandovers('pending');
+          setHandovers(adminHandovers.map((h) => ({
+            id: h.id,
+            bookingId: h.booking_id,
+            buyer: h.buyer_name,
+            buyerInitials: h.buyer_name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+            seller: h.seller_name,
+            car: h.car_title,
+            center: h.center,
+            date: h.handover_date,
+            time: h.handover_time,
+            status: h.status,
+          })));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading initial data from API:', err);
+    }
+  }, [fetchCars, mapSubmission, mapHandover, mapConversation, mapNotification]);
+
+  // Check auth token and trigger load on app startup
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const token = await getToken();
+        if (token) {
+          const me = await authApi.getMe();
+          setCurrentUser({
+            ...me,
+            initials: me.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+          });
+          setIsLoggedIn(true);
+          await loadInitialData(me);
+        } else {
+          setCars(await fetchCars());
+        }
+      } catch (err) {
+        console.error('Initial auth setup failed, falling back to public data:', err);
+        setCars(await fetchCars());
+      }
+    };
+    initAuth();
+  }, [loadInitialData, fetchCars]);
+
+  // Connect Socket.io client on login
+  useEffect(() => {
+    if (isLoggedIn && currentUser) {
+      getToken().then((token) => {
+        if (!token) return;
+        const newSocket = io(BASE_URL, {
+          auth: { token },
+        });
+
+        newSocket.on('connect', () => {
+          console.log('Socket.io connected to server');
+        });
+
+        newSocket.on('new_message', (message) => {
+          setChatMessages((prev) => {
+            const thread = prev[message.conversation_id] || [];
+            if (thread.some((m) => m.id === message.id)) return prev;
+
+            const isMe = message.sender_id === currentUser.id;
+            const timeStr = new Date(message.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+            return {
+              ...prev,
+              [message.conversation_id]: [
+                ...thread,
+                {
+                  id: message.id,
+                  me: isMe,
+                  text: message.text,
+                  time: timeStr,
+                  sender_name: message.sender_name,
+                }
+              ]
+            };
+          });
+
+          // Refresh conversations summaries
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === message.conversation_id
+                ? {
+                    ...c,
+                    last: message.text,
+                    time: new Date(message.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+                    unread: message.sender_id !== currentUser.id ? (c.unread || 0) + 1 : c.unread,
+                  }
+                : c
+            )
+          );
+        });
+
+        setSocket(newSocket);
+
+        return () => {
+          newSocket.disconnect();
+        };
+      });
+    } else {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
+    }
+  }, [isLoggedIn, currentUser?.id]);
+
+  // --- Auth operations ---
+
+  const loginUser = useCallback(async (email, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authApi.login(email, password);
+      const user = data.user;
+      setCurrentUser({
+        ...user,
+        initials: user.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+      });
+      setIsLoggedIn(true);
+      await loadInitialData(user);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadInitialData]);
+
+  const signUpUser = useCallback(async (name, email, password, role = 'buyer') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authApi.register(name, email, password, role);
+      const user = data.user;
+      setCurrentUser({
+        ...user,
+        initials: user.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+      });
+      setIsLoggedIn(true);
+      await loadInitialData(user);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadInitialData]);
+
+  const logoutUser = useCallback(async () => {
+    try { await authApi.logout(); } catch {}
+    setCurrentUser(DEFAULT_USER);
+    setIsLoggedIn(false);
+    setSavedCarIds([]);
+    setSubmissions(INITIAL_SUBMISSIONS);
+    setPurchaseRequests([]);
+    setNotifications(INITIAL_NOTIFICATIONS || []);
+    setConversations(initialConversations || []);
+    setSavedSearches(INITIAL_SAVED_SEARCHES);
+  }, []);
+
+  // --- Car wishlisting / bookmarking ---
+
+  const toggleSaveCar = useCallback(async (id) => {
+    if (!isLoggedIn) return;
+    try {
+      const res = await carsApi.saveCar(id);
+      setSavedCarIds((prev) =>
+        res.saved ? [...prev, id] : prev.filter((x) => x !== id)
+      );
+    } catch (err) {
+      console.error('Error toggling wishlist:', err);
+    }
+  }, [isLoggedIn]);
+
   const isCarSaved = useCallback((id) => savedCarIds.includes(id), [savedCarIds]);
   const getSavedCars = useCallback(() => cars.filter((c) => savedCarIds.includes(c.id)), [cars, savedCarIds]);
 
-  // --- Seller listings (legacy auctions) ---
+  // --- Seller listings (legacy fallback) ---
   const addListing = useCallback((listing) => {
     setSellerListings((prev) => [listing, ...prev]);
   }, []);
 
-  // --- ID Verification ---
-  const submitIDVerification = useCallback(() => {
-    setIdVerificationStatus('pending');
-  }, []);
+  // --- ID Verification uploads ---
+
+  const submitIDVerification = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Mock uploads to trigger backend review pipeline
+      await authApi.submitIdVerification(
+        'file://placeholder_id_front.jpg',
+        'file://placeholder_id_back.jpg',
+        'file://placeholder_selfie.jpg'
+      );
+      if (currentUser) {
+        const me = await authApi.getMe();
+        setCurrentUser(me);
+      }
+    } catch (err) {
+      console.error('ID Verification submission API error:', err);
+      // Fallback
+      setCurrentUser((prev) => prev ? { ...prev, id_verified: 'pending' } : null);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser]);
+
   const approveIDVerification = useCallback(() => {
-    setIdVerificationStatus('approved');
+    // legacy client mock trigger
   }, []);
   const rejectIDVerification = useCallback(() => {
-    setIdVerificationStatus('rejected');
+    // legacy client mock trigger
   }, []);
 
   // --- Car Submissions ---
-  const addSubmission = useCallback((data) => {
-    const newSub = {
-      id: 'sub' + Date.now(),
-      ...data,
-      submittedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: 'under_review',
-      statusDetail: 'Our team is reviewing your submission',
-      inspectionDate: null,
-      center: null,
-      listingId: null,
-    };
-    setSubmissions((prev) => [newSub, ...prev]);
-    return newSub.id;
-  }, []);
+
+  const addSubmission = useCallback(async (data) => {
+    setLoading(true);
+    try {
+      const mapped = {
+        make: data.make,
+        model: data.model,
+        year: parseInt(data.year),
+        mileage: parseInt(data.mileage),
+        condition: data.condition,
+        fuel_type: data.fuelType || data.fuel_type,
+        transmission: data.transmission,
+        body_type: data.bodyType || data.body_type,
+        color: data.color,
+        asking_price: parseInt(data.askingPrice || data.asking_price),
+        notes: data.notes,
+      };
+      const res = await submissionsApi.createSubmission(mapped);
+
+      // Refresh list
+      const list = await submissionsApi.getSubmissions();
+      setSubmissions(list.map(mapSubmission));
+
+      return res.id;
+    } catch (err) {
+      console.error('Error creating car submission:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [mapSubmission]);
 
   const updateSubmissionStatus = useCallback((id, status, detail = '') => {
+    // local update fallback
     setSubmissions((prev) =>
       prev.map((s) => s.id === id ? { ...s, status, statusDetail: detail } : s)
     );
   }, []);
 
-  // Phase 5 — Relist a car at a new price
-  const relistSubmission = useCallback((id, newPrice) => {
+  const relistSubmission = useCallback(async (id, newPrice) => {
+    // Local relist update since backend does not support seller edit routes
     setSubmissions((prev) =>
       prev.map((s) => s.id === id
         ? { ...s, status: 'under_review', askingPrice: newPrice, isRelisted: true, statusDetail: 'Relisted — our team is reviewing your updated submission' }
@@ -256,149 +606,258 @@ export function AppProvider({ children }) {
     }, ...prev]);
   }, []);
 
-  // --- Admin: Verify ID ---
-  const adminApproveVerification = useCallback((verificationId) => {
-    setPendingVerifications((prev) =>
-      prev.map((v) => v.id === verificationId ? { ...v, status: 'approved' } : v)
-    );
-  }, []);
-  const adminRejectVerification = useCallback((verificationId) => {
-    setPendingVerifications((prev) =>
-      prev.map((v) => v.id === verificationId ? { ...v, status: 'rejected' } : v)
-    );
+  // --- Admin ID verification overrides ---
+
+  const adminApproveVerification = useCallback(async (verificationId) => {
+    try {
+      await api.patch(`/id-verification/${verificationId}`, { decision: 'approved' });
+      setPendingVerifications((prev) =>
+        prev.map((v) => v.id === verificationId ? { ...v, status: 'approved' } : v)
+      );
+    } catch (err) {
+      console.error('Error approving verification via Admin API:', err);
+    }
   }, []);
 
-  // --- Chat ---
-  const sendMessage = useCallback((convId, text) => {
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    setChatMessages((prev) => {
-      const thread = prev[convId] || [];
-      return { ...prev, [convId]: [...thread, { id: String(thread.length + 1), me: true, text, time: timeStr }] };
-    });
-    setConversations((prev) =>
-      prev.map((c) => c.id === convId ? { ...c, last: text, time: timeStr, unread: 0 } : c)
-    );
-    setTimeout(() => {
-      const reply = AUTO_REPLIES[Math.floor(Math.random() * AUTO_REPLIES.length)];
-      const replyTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      setChatMessages((prev) => {
-        const thread = prev[convId] || [];
-        return { ...prev, [convId]: [...thread, { id: String(thread.length + 1), me: false, text: reply, time: replyTime }] };
-      });
-      setConversations((prev) =>
-        prev.map((c) => c.id === convId ? { ...c, last: reply, time: replyTime, unread: 1 } : c)
+  const adminRejectVerification = useCallback(async (verificationId) => {
+    try {
+      await api.patch(`/id-verification/${verificationId}`, { decision: 'rejected' });
+      setPendingVerifications((prev) =>
+        prev.map((v) => v.id === verificationId ? { ...v, status: 'rejected' } : v)
       );
-    }, 1500);
+    } catch (err) {
+      console.error('Error rejecting verification via Admin API:', err);
+    }
   }, []);
+
+  // --- Chat & Realtime Messaging ---
+
+  const getOrCreateConversation = useCallback(async (carId) => {
+    try {
+      const list = await messagesApi.getConversations();
+      const existing = list.find((c) => c.car_id === carId);
+      if (existing) {
+        return existing.id;
+      }
+      return 'new_' + carId;
+    } catch (err) {
+      console.error('Error resolving conversation:', err);
+      return 'new_' + carId;
+    }
+  }, []);
+
+  const loadConversationMessages = useCallback(async (convId) => {
+    if (convId.startsWith('new_')) return;
+    try {
+      const msgList = await messagesApi.getConversationMessages(convId);
+      const mapped = msgList.map((m) => {
+        const isMe = m.sender_id === currentUser?.id;
+        const timeStr = new Date(m.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        return {
+          id: m.id,
+          me: isMe,
+          text: m.text,
+          time: timeStr,
+          sender_name: m.sender_name,
+        };
+      });
+      setChatMessages((prev) => ({ ...prev, [convId]: mapped }));
+    } catch (err) {
+      console.error('Error fetching message history:', err);
+    }
+  }, [currentUser?.id]);
+
+  const sendMessage = useCallback(async (convId, text, carId = null) => {
+    try {
+      if (convId.startsWith('new_')) {
+        const actualCarId = convId.split('_')[1] || carId;
+        const res = await messagesApi.startConversation(actualCarId, text);
+        const newConvId = res.conversation.id;
+
+        // Force reload conversations & message list
+        const convList = await messagesApi.getConversations();
+        setConversations(convList.map(mapConversation));
+        await loadConversationMessages(newConvId);
+
+        // Join room
+        if (socket) {
+          socket.emit('join_conversation', newConvId);
+        }
+
+        return newConvId;
+      } else {
+        const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        // Optimistic local add first so UI feels instant
+        setChatMessages((prev) => {
+          const thread = prev[convId] || [];
+          return { ...prev, [convId]: [...thread, { id: 'opt_' + Date.now(), me: true, text, time: timeStr, sender_name: currentUser?.name || 'Me' }] };
+        });
+
+        try {
+          await messagesApi.sendMessage(convId, text);
+        } catch {
+          // Backend unreachable — keep the optimistic message and add an auto-reply for demo
+          setTimeout(() => {
+            const reply = AUTO_REPLIES[Math.floor(Date.now() % AUTO_REPLIES.length)];
+            const replyTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            setChatMessages((prev) => {
+              const thread = prev[convId] || [];
+              return { ...prev, [convId]: [...thread, { id: 'auto_' + Date.now(), me: false, text: reply, time: replyTime }] };
+            });
+          }, 1200);
+        }
+
+        // Emit via Socket.io if connected
+        if (socket) {
+          socket.emit('send_message', { conversationId: convId, text });
+        }
+        return convId;
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+    }
+  }, [socket, currentUser?.name, mapConversation, loadConversationMessages]);
 
   const getMessages = useCallback((convId) => chatMessages[convId] || [], [chatMessages]);
 
-  // --- Phase 2: Notifications ---
-  const markNotificationRead = useCallback((id) => {
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  // --- Notifications read/unread ---
+
+  const markNotificationRead = useCallback(async (id) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    } catch (err) {
+      console.error('Error marking notification read:', err);
+    }
   }, []);
 
-  const markAllNotificationsRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllNotificationsRead = useCallback(async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('Error marking all notifications read:', err);
+    }
   }, []);
 
-  // --- Phase 2: Inspection Forms ---
+  // --- Inspection Checklist Forms ---
+
   const submitInspectionForm = useCallback(({ inspection, results, notes, score }) => {
     const key = inspection?.id || 'latest';
     setInspectionForms((prev) => ({ ...prev, [key]: { inspection, results, notes, score, submittedAt: new Date().toISOString() } }));
-  }, []);
-
-  // --- Phase 3: Handover Bookings ---
-  const bookHandover = useCallback((car, { center, date, time }) => {
-    const bookingId = 'BK-' + Date.now().toString(36).toUpperCase();
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-    const newRequest = {
-      id: bookingId,
-      car,
-      status: 'reserved',
-      center,
-      date,
-      time,
-      bookedAt: now.toISOString(),
-      bookedTime: timeStr,
-      completedAt: null,
-    };
-    setPurchaseRequests((prev) => [newRequest, ...prev]);
-
-    // Add to admin handovers queue
-    setHandovers((prev) => [{
-      id: 'h_' + Date.now(),
-      bookingId,
-      buyer: currentUser.name,
-      buyerInitials: currentUser.initials,
-      seller: car.seller,
-      car: car.title,
-      center,
-      date,
-      time,
-      status: 'pending',
-    }, ...prev]);
-
-    // Notification: booking confirmed
-    setNotifications((prev) => [{
-      id: 'book_' + Date.now(),
-      type: 'listing_update',
-      title: 'Handover slot booked',
-      body: `Your slot for the ${car.title} is confirmed at ${center} on ${date} at ${time}. The car is now reserved for you.`,
-      time: 'Just now',
-      date: 'Today',
-      read: false,
-      bookingId,
-    }, ...prev]);
-
-    return bookingId;
+    
+    if (inspection?.id) {
+      api.post(`/inspections/${inspection.id}/complete`, { checklist_results: results, notes })
+        .then(() => {
+          if (currentUser?.role === 'admin') {
+            api.get('/id-verification/queue').then((queueList) => {
+              setPendingVerifications(queueList.map((v) => ({
+                id: v.id,
+                name: v.name,
+                initials: v.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+                submitted: new Date(v.submitted_at).toLocaleDateString('en-US'),
+                status: v.id_verified,
+              })));
+            });
+          }
+        })
+        .catch((err) => console.error('Error completing inspection form:', err));
+    }
   }, [currentUser]);
 
-  // Legacy alias — keeps any existing code that calls addPurchaseRequest working
+  // --- Handover Checkout Bookings ---
+
+  const bookHandover = useCallback(async (car, { center, date, time }) => {
+    setLoading(true);
+    try {
+      const res = await handoversApi.bookHandover({
+        car_id: car.id,
+        center,
+        handover_date: date,
+        handover_time: time,
+      });
+
+      const myHandovers = await handoversApi.getMyHandovers();
+      setPurchaseRequests(myHandovers.map(mapHandover));
+
+      const notifs = await notificationsApi.getNotifications();
+      setNotifications(notifs.map(mapNotification));
+
+      return res.booking_id;
+    } catch (err) {
+      console.error('Error booking handover:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [mapHandover, mapNotification]);
+
   const addPurchaseRequest = bookHandover;
 
-  // Admin: confirm a handover happened → mark complete, archive listing
-  const confirmHandover = useCallback((handoverId) => {
-    setHandovers((prev) =>
-      prev.map((h) => h.id === handoverId ? { ...h, status: 'complete' } : h)
-    );
-    // Find the matching purchase request and mark complete
-    setHandovers((prev) => {
-      const h = prev.find((x) => x.id === handoverId);
-      if (h) {
-        setPurchaseRequests((reqs) =>
-          reqs.map((r) => r.id === h.bookingId ? { ...r, status: 'complete', completedAt: new Date().toISOString() } : r)
-        );
-        setNotifications((notifs) => [{
-          id: 'sold_' + Date.now(),
-          type: 'listing_update',
-          title: 'Handover confirmed',
-          body: `The ${h.car} handover has been completed and confirmed by the Inzozi team. Your 7-day return guarantee is now active.`,
-          time: 'Just now',
-          date: 'Today',
-          read: false,
-        }, ...notifs]);
+  const confirmHandover = useCallback(async (handoverId) => {
+    try {
+      await handoversApi.confirmHandover(handoverId);
+      setHandovers((prev) =>
+        prev.map((h) => h.id === handoverId ? { ...h, status: 'complete' } : h)
+      );
+      if (currentUser) {
+        const myHandovers = await handoversApi.getMyHandovers();
+        setPurchaseRequests(myHandovers.map(mapHandover));
       }
-      return prev;
-    });
+    } catch (err) {
+      console.error('Error confirming handover via API:', err);
+    }
+  }, [currentUser, mapHandover]);
+
+  // --- Saved Searches ---
+
+  const toggleSavedSearchNotify = useCallback(async (id) => {
+    try {
+      const current = savedSearches.find((s) => s.id === id);
+      if (!current) return;
+      const nextNotify = !current.notifyEnabled;
+      await carsApi.toggleSavedSearchNotify(id, nextNotify);
+      setSavedSearches((prev) =>
+        prev.map((s) => s.id === id ? { ...s, notifyEnabled: nextNotify } : s)
+      );
+    } catch (err) {
+      console.error('Error toggling search notify:', err);
+    }
+  }, [savedSearches]);
+
+  const deleteSavedSearch = useCallback(async (id) => {
+    try {
+      await carsApi.deleteSavedSearch(id);
+      setSavedSearches((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      console.error('Error deleting saved search:', err);
+    }
   }, []);
 
-  // --- Auth ---
-  const loginUser = useCallback((name, email) => {
-    setCurrentUser({ name, email, initials: name.split(' ').map((w) => w[0]).join('').toUpperCase() });
-    setIsLoggedIn(true);
-  }, []);
-  const logoutUser = useCallback(() => {
-    setIsLoggedIn(false);
+  const createSavedSearch = useCallback(async (label, filters) => {
+    try {
+      const res = await carsApi.createSavedSearch(label, filters);
+      const searchList = await carsApi.getSavedSearches();
+      setSavedSearches(searchList.map((s) => ({
+        id: s.id,
+        label: s.label,
+        notifyEnabled: s.notify_enabled,
+        make: s.filters?.make,
+        model: s.filters?.model,
+        category: s.filters?.category,
+        maxPrice: s.filters?.maxPrice || s.filters?.max_price,
+        maxMileage: s.filters?.maxMileage || s.filters?.max_mileage,
+      })));
+      return res.id;
+    } catch (err) {
+      console.error('Error creating saved search:', err);
+    }
   }, []);
 
   const value = {
     // Cars
     cars, savedCarIds, toggleSaveCar, isCarSaved, getSavedCars,
-    // Seller (legacy)
+    // Seller Listings
     sellerListings, addListing,
     // Submissions pipeline
     submissions, addSubmission, updateSubmissionStatus,
@@ -406,22 +865,21 @@ export function AppProvider({ children }) {
     idVerificationStatus, submitIDVerification, approveIDVerification, rejectIDVerification,
     // Admin
     pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification,
-    // Phase 2
+    // Notifications
     notifications, markNotificationRead, markAllNotificationsRead,
     inspectionForms, submitInspectionForm,
-    // Phase 3
+    // Handovers & checkout
     purchaseRequests, bookHandover, addPurchaseRequest,
     handovers, confirmHandover,
-    // Phase 5
     relistSubmission,
-    // Phase 4
+    // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     currency, toggleCurrency,
-    savedSearches, toggleSavedSearchNotify, deleteSavedSearch,
-    // Chat
-    conversations, sendMessage, getMessages,
-    // Auth
-    currentUser, isLoggedIn, loginUser, logoutUser,
+    savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
+    // Chat messages
+    conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
+    // Authentication
+    currentUser, isLoggedIn, loginUser, signUpUser, logoutUser, loading, error,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import Screen from '../components/Screen';
@@ -20,22 +20,26 @@ function GoogleIcon() {
 }
 
 export default function SignUpScreen({ navigation }) {
-  const { loginUser } = useApp();
+  const { signUpUser } = useApp();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     const errs = {};
     if (!name.trim()) errs.name = 'Please enter your full name.';
     if (!email || !email.includes('@')) errs.email = 'Please enter a valid email address.';
     if (!password || password.length < 6) errs.password = 'Password must be at least 6 characters.';
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    loginUser(name.trim(), email.trim());
-    navigation.replace('Main');
+    try {
+      await signUpUser(name.trim(), email.trim(), password, 'buyer');
+      navigation.replace('Main');
+    } catch (err) {
+      Alert.alert('Sign Up Failed', err.message || 'Could not register user. Please try again.');
+    }
   };
 
   return (

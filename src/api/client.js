@@ -5,39 +5,40 @@ const TOKEN_KEY = 'inzozi_auth_token';
 
 // Automatically detect local machine host when testing in emulators
 const getBaseUrl = () => {
-  // To test on a physical phone, replace this with your machine's local IP (e.g., 'http://192.168.1.100:3000')
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000';
-  }
+  if (Platform.OS === 'android') return 'http://10.0.2.2:3000';
   return 'http://localhost:3000';
 };
 
 export const BASE_URL = getBaseUrl();
 
-// Retrieve token from SecureStore
+// SecureStore is not available on web — use localStorage as fallback
 export async function getToken() {
+  if (Platform.OS === 'web') {
+    try { return localStorage.getItem(TOKEN_KEY) || null; } catch { return null; }
+  }
   try {
     return await SecureStore.getItemAsync(TOKEN_KEY);
-  } catch (error) {
-    console.error('Error reading auth token:', error);
+  } catch {
     return null;
   }
 }
 
-// Store token in SecureStore
 export async function setToken(token) {
+  if (Platform.OS === 'web') {
+    try {
+      if (token) localStorage.setItem(TOKEN_KEY, token);
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch {}
+    return;
+  }
   try {
-    if (token) {
-      await SecureStore.setItemAsync(TOKEN_KEY, token);
-    } else {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-    }
+    if (token) await SecureStore.setItemAsync(TOKEN_KEY, token);
+    else await SecureStore.deleteItemAsync(TOKEN_KEY);
   } catch (error) {
     console.error('Error writing auth token:', error);
   }
 }
 
-// Delete token from SecureStore (Logout)
 export async function removeToken() {
   await setToken(null);
 }

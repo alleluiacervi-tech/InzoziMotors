@@ -53,11 +53,28 @@ export default function ChatScreen({ navigation, route }) {
   const name = route.params?.name || 'Bay Auto Group';
   const convId = route.params?.convId || 'c1';
   const car = route.params?.car || null;
-  const { getMessages, sendMessage } = useApp();
-  const messages = getMessages(convId);
+  const { getMessages, sendMessage, loadConversationMessages, getOrCreateConversation } = useApp();
+  const [activeConvId, setActiveConvId] = useState(route.params?.convId);
+  const messages = getMessages(activeConvId || convId);
   const [text, setText] = useState('');
   const scrollRef = useRef(null);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
+
+  useEffect(() => {
+    if (!activeConvId && car) {
+      getOrCreateConversation(car.id).then((id) => {
+        setActiveConvId(id);
+      });
+    }
+  }, [activeConvId, car, getOrCreateConversation]);
+
+  useEffect(() => {
+    if (activeConvId && loadConversationMessages) {
+      loadConversationMessages(activeConvId);
+      const timer = setInterval(() => loadConversationMessages(activeConvId), 5000);
+      return () => clearInterval(timer);
+    }
+  }, [activeConvId, loadConversationMessages]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -65,10 +82,14 @@ export default function ChatScreen({ navigation, route }) {
     }
   }, [messages.length]);
 
-  const send = (msg) => {
+  const send = async (msg) => {
     const toSend = msg || text.trim();
     if (!toSend) return;
-    sendMessage(convId, toSend);
+    const sendId = activeConvId || 'c1';
+    const newId = await sendMessage(sendId, toSend, car?.id);
+    if (sendId.startsWith('new_') && newId) {
+      setActiveConvId(newId);
+    }
     setText('');
     setShowQuickReplies(false);
   };
