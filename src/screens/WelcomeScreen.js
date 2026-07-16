@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Logo from '../components/Logo';
 import Button from '../components/Button';
 import { colors, fonts } from '../theme';
+import { useApp } from '../context/AppContext';
 
 const TRUST_CHIPS = [
   { icon: 'shield-checkmark-outline', label: '150-pt Inspection' },
@@ -20,6 +21,12 @@ const HERO_CAR = 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?a
 
 export default function WelcomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { setHomeMode } = useApp();
+
+  const enterAs = (mode) => {
+    setHomeMode(mode);
+    navigation.replace('Main');
+  };
 
   return (
     <LinearGradient
@@ -81,13 +88,35 @@ export default function WelcomeScreen({ navigation }) {
 
         {/* CTAs */}
         <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
+
+          {/* Intent selector — what brings you here today? */}
+          <Text style={styles.intentLabel}>WHAT BRINGS YOU HERE TODAY?</Text>
+          <View style={styles.intentRow}>
+            <Pressable style={styles.intentCard} onPress={() => enterAs('buy')}>
+              <View style={styles.intentIcon}>
+                <Ionicons name="pricetag" size={20} color={colors.greenLight} />
+              </View>
+              <Text style={styles.intentTitle}>Buy a Car</Text>
+              <Text style={styles.intentSub}>Certified used cars</Text>
+              <View style={styles.intentArrow}>
+                <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.9)" />
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.intentCard} onPress={() => enterAs('rent')}>
+              <View style={styles.intentIcon}>
+                <Ionicons name="key" size={20} color={colors.greenLight} />
+              </View>
+              <Text style={styles.intentTitle}>Rent a Car</Text>
+              <Text style={styles.intentSub}>From $40 per day</Text>
+              <View style={styles.intentArrow}>
+                <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.9)" />
+              </View>
+            </Pressable>
+          </View>
+
           <Button
-            title="Find My Car"
-            icon="search"
-            onPress={() => navigation.replace('Main')}
-          />
-          <Button
-            title="Certify My Vehicle"
+            title="Certify & Sell My Vehicle"
             icon="shield-checkmark-outline"
             variant="secondary"
             onDark
@@ -211,6 +240,49 @@ const styles = StyleSheet.create({
   },
 
   actions: { gap: 12 },
+  intentLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: 'rgba(148,163,184,0.9)',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  intentRow: { flexDirection: 'row', gap: 12 },
+  intentCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 18,
+    padding: 16,
+    position: 'relative',
+  },
+  intentIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(74,222,128,0.14)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 12,
+  },
+  intentTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 16,
+    color: '#fff',
+    letterSpacing: -0.3,
+  },
+  intentSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: 'rgba(226,232,240,0.7)',
+    marginTop: 3,
+  },
+  intentArrow: {
+    position: 'absolute',
+    top: 14, right: 14,
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
   signin: {
     fontFamily: fonts.regular,
     textAlign: 'center',
