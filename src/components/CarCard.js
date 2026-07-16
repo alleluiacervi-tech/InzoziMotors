@@ -87,7 +87,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             <Text style={styles.meta} numberOfLines={1}>{getInzoziMileage(car)} · {getInzoziLocation(car)}</Text>
             <Text style={styles.price}>{getInzoziPrice(car)}</Text>
             {car.price ? (
-              <Text style={styles.monthly}>or ~${monthlyEstimate(car.price)}/mo</Text>
+              <Text style={styles.monthly}>Finance from ${monthlyEstimate(car.price)}/mo</Text>
             ) : null}
           </>
         )}

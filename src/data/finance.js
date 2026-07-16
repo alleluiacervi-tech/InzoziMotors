@@ -34,10 +34,3 @@ export function estimateValuation({ make, year, mileage }, cars) {
     comparables: sameMake.length,
   };
 }
-
-// Rent-to-own: rental fees credited toward a purchase, capped
-export const RENT_TO_OWN_CAP = 500;
-export const RENT_TO_OWN_WINDOW_DAYS = 30;
-export function rentToOwnCredit(rentalSubtotal) {
-  return Math.min(rentalSubtotal, RENT_TO_OWN_CAP);
-}

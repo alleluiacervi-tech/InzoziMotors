@@ -6,7 +6,6 @@ import { StatusBar } from 'expo-status-bar';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
-import { RENT_TO_OWN_CAP, RENT_TO_OWN_WINDOW_DAYS } from '../data/finance';
 
 const { width } = Dimensions.get('window');
 
@@ -140,20 +139,6 @@ export default function RentalDetailScreen({ navigation, route }) {
                 <Text style={styles.minDaysText}>Minimum rental: {car.minDays} days</Text>
               </View>
             )}
-          </View>
-
-          {/* Rent-to-own credit */}
-          <View style={styles.rtoCard}>
-            <View style={styles.rtoIcon}>
-              <Ionicons name="swap-horizontal" size={20} color="#fff" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rtoTitle}>Rent-to-Own Credit</Text>
-              <Text style={styles.rtoSub}>
-                Buy any Inzozi certified car within {RENT_TO_OWN_WINDOW_DAYS} days of your rental and
-                100% of your rental fee (up to ${RENT_TO_OWN_CAP}) is credited toward the purchase.
-              </Text>
-            </View>
           </View>
 
           {/* What's included */}
@@ -309,18 +294,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   minDaysText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.amberText },
-  rtoCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: colors.navyMid,
-    borderRadius: radius.xl, padding: 16, marginTop: 20,
-  },
-  rtoIcon: {
-    width: 42, height: 42, borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  rtoTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.2 },
-  rtoSub: { fontSize: 11, fontFamily: fonts.regular, color: 'rgba(226,232,240,0.85)', marginTop: 4, lineHeight: 16 },
   includesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   includeCard: {
     width: '47.8%',

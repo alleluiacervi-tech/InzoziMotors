@@ -55,12 +55,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const [loginVisible, setLoginVisible] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
-  const { cars, rentalCars } = useApp();
+  const { cars } = useApp();
 
   const monthly = car.price ? monthlyEstimate(car.price) : null;
-  // Rent-to-own bridge: a rental of the same make (or same category) to try first
-  const tryRental = rentalCars.find((r) => r.make === car.make)
-    || rentalCars.find((r) => r.category === car.category);
 
   const marketDiff = getMarketDiff(car);
   const marketAvg = getMarketAvg(car);
@@ -191,9 +188,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.financeTitle}>
-                  Own it from <Text style={styles.financeAmount}>~${monthly}/mo</Text>
+                  Bank financing from <Text style={styles.financeAmount}>${monthly}/mo</Text>
                 </Text>
-                <Text style={styles.financeSub}>20% down · 60 months · 4 partner banks</Text>
+                <Text style={styles.financeSub}>Loan estimate · 20% down · 60 months · 4 partner banks</Text>
               </View>
               <View style={styles.financeCta}>
                 <Text style={styles.financeCtaText}>Get pre-qualified</Text>
@@ -280,23 +277,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
-
-          {/* Rent-to-own bridge — try this model first */}
-          {tryRental && !isAuction && (
-            <Pressable
-              style={styles.tryRentalRow}
-              onPress={() => navigation.navigate('RentalDetail', { car: tryRental })}
-            >
-              <Image source={{ uri: tryRental.image }} style={styles.tryRentalThumb} resizeMode="cover" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.tryRentalTitle}>Not sure yet? Try before you buy</Text>
-                <Text style={styles.tryRentalSub}>
-                  Rent a {tryRental.make} from ${tryRental.dailyRate}/day — rental fees credit toward your purchase
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-            </Pressable>
-          )}
 
           <View style={styles.trustChips}>
             <Badge variant="tag" label="7-day returns" />
@@ -519,15 +499,6 @@ const styles = StyleSheet.create({
   financeSub: { fontSize: 10, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
   financeCta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   financeCtaText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary },
-  tryRentalRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5, borderColor: colors.greenTint,
-    borderRadius: radius.xl, padding: 12, marginTop: 8,
-  },
-  tryRentalThumb: { width: 56, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
-  tryRentalTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
-  tryRentalSub: { fontSize: 11, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2, lineHeight: 15 },
   sectionTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 22, marginBottom: 10 },
   desc: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
   highlightGrid: { gap: 10 },
