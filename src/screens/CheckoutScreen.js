@@ -20,7 +20,7 @@ const CENTERS = [
 const getDates = () => {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const today = new Date(2026, 5, 28);
+  const today = new Date();
   return Array.from({ length: 10 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() + i + 1);
@@ -28,7 +28,7 @@ const getDates = () => {
       label: days[d.getDay()],
       date: d.getDate(),
       display: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`,
-      full: `${months[d.getMonth()]} ${d.getDate()}, 2026`,
+      full: `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
       available: d.getDay() !== 0,
       key: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`,
     };
@@ -126,8 +126,9 @@ function ReviewState({ car, price, onNext }) {
 // ─── Booking phase ───────────────────────────────────────────────────────────
 function BookingState({ onConfirm, onBack }) {
   const DATES = getDates();
-  const [selectedCenter, setSelectedCenter] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
+  // Smart defaults: first center + first available date preselected — user only picks a time
+  const [selectedCenter, setSelectedCenter] = useState(CENTERS[0]);
+  const [selectedDate, setSelectedDate] = useState(DATES.find((d) => d.available) || null);
   const [selectedTime, setSelectedTime] = useState(null);
 
   const canConfirm = selectedCenter && selectedDate && selectedTime;
@@ -202,10 +203,10 @@ function BookingState({ onConfirm, onBack }) {
 
       <View style={styles.footer}>
         <Button
-          title="Confirm Booking"
+          title={canConfirm ? 'Confirm Booking' : 'Choose a time slot'}
           icon="shield-checkmark-outline"
-          onPress={() => canConfirm && onConfirm(selectedCenter.name, selectedDate.full, selectedTime)}
-          style={{ opacity: canConfirm ? 1 : 0.45 }}
+          onPress={() => onConfirm(selectedCenter.name, selectedDate.full, selectedTime)}
+          disabled={!canConfirm}
         />
       </View>
     </>
@@ -289,11 +290,16 @@ export default function CheckoutScreen({ navigation, route }) {
   const [bookingId, setBookingId] = useState(null);
   const [booking, setBooking] = useState({ center: '', date: '', time: '' });
 
-  const handleConfirm = (center, date, time) => {
-    const id = bookHandover(car, { center, date, time });
-    setBookingId(id);
-    setBooking({ center, date, time });
-    setPhase('confirmed');
+  const handleConfirm = async (center, date, time) => {
+    try {
+      const id = await bookHandover(car, { center, date, time });
+      setBookingId(id);
+      setBooking({ center, date, time });
+      setPhase('confirmed');
+    } catch (err) {
+      // bookHandover has a local fallback, so this only fires on unexpected errors
+      console.error('Booking failed:', err);
+    }
   };
 
   const titles = { review: 'Book a Handover', booking: 'Choose a Slot', confirmed: 'Booking Confirmed' };

@@ -12,6 +12,7 @@ const FUEL_LEVELS = ['Full', '3/4', '1/2', '1/4'];
 
 export default function RentalCheckInScreen({ navigation, route }) {
   const booking = route.params?.booking;
+  const isReturn = route.params?.mode === 'return';
   const { updateRentalBookingStatus } = useApp();
 
   const [photos, setPhotos] = useState({});
@@ -24,19 +25,33 @@ export default function RentalCheckInScreen({ navigation, route }) {
     setPhotos((prev) => ({ ...prev, [key]: true }));
   };
 
+  const simulateWalkaround = () => {
+    const all = {};
+    CHECKIN_PHOTOS.forEach((slot) => { all[slot.key] = true; });
+    setPhotos(all);
+  };
+
   const handleComplete = () => {
     if (!allDone) return;
-    updateRentalBookingStatus(booking.id, 'active');
-    Alert.alert(
-      'Check-in complete ✓',
-      'Condition photos saved. Your deposit is protected — enjoy the trip!',
-      [{ text: 'Done', onPress: () => navigation.goBack() }]
-    );
+    updateRentalBookingStatus(booking.id, isReturn ? 'completed' : 'active');
+    if (isReturn) {
+      Alert.alert(
+        'Return complete ✓',
+        'Your deposit will be refunded after the center check.',
+        [{ text: 'Done', onPress: () => navigation.goBack() }]
+      );
+    } else {
+      Alert.alert(
+        'Check-in complete ✓',
+        'Condition photos saved. Your deposit is protected — enjoy the trip!',
+        [{ text: 'Done', onPress: () => navigation.goBack() }]
+      );
+    }
   };
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Digital Check-In" onBack={() => navigation.goBack()} />
+      <BackHeader title={isReturn ? 'Return Check-Out' : 'Digital Check-In'} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* Why */}
@@ -47,8 +62,9 @@ export default function RentalCheckInScreen({ navigation, route }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>{booking?.carTitle}</Text>
             <Text style={styles.introSub}>
-              Photograph the car before driving off. These photos document its condition
-              and protect your deposit at return.
+              {isReturn
+                ? 'Photograph the car at return. These photos document its condition so the center can process your deposit refund.'
+                : 'Photograph the car before driving off. These photos document its condition and protect your deposit at return.'}
             </Text>
           </View>
         </View>
@@ -85,8 +101,12 @@ export default function RentalCheckInScreen({ navigation, route }) {
           })}
         </View>
 
+        <Pressable onPress={simulateWalkaround} style={styles.simulateLink}>
+          <Text style={styles.simulateText}>Simulate walkaround</Text>
+        </Pressable>
+
         {/* Fuel level */}
-        <Text style={styles.sectionTitle}>Fuel level at pickup</Text>
+        <Text style={styles.sectionTitle}>Fuel level at {isReturn ? 'return' : 'pickup'}</Text>
         <View style={styles.fuelRow}>
           {FUEL_LEVELS.map((f) => {
             const on = fuel === f;
@@ -103,10 +123,11 @@ export default function RentalCheckInScreen({ navigation, route }) {
         </View>
 
         <Button
-          title={allDone ? 'Complete Check-In' : 'Capture all photos & fuel level'}
+          title={allDone ? (isReturn ? 'Complete Check-Out' : 'Complete Check-In') : 'Capture all photos & fuel level'}
           icon="checkmark-circle-outline"
           onPress={handleComplete}
           style={{ marginTop: 24, opacity: allDone ? 1 : 0.5 }}
+          disabled={!allDone}
         />
 
         <View style={styles.privacyRow}>
@@ -156,6 +177,8 @@ const styles = StyleSheet.create({
   slotLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   slotLabelDone: { color: colors.textPrimary },
   slotHint: { fontSize: 10, fontFamily: fonts.regular, color: colors.textMuted },
+  simulateLink: { alignSelf: 'center', marginTop: 12, paddingVertical: 4, paddingHorizontal: 8 },
+  simulateText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   sectionTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 24, marginBottom: 10 },
   fuelRow: { flexDirection: 'row', gap: 8 },
   fuelChip: {

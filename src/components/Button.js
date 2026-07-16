@@ -11,6 +11,7 @@ export default function Button({
   style,
   textStyle,
   onDark = false,
+  disabled = false,
 }) {
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
@@ -21,6 +22,7 @@ export default function Button({
     isSecondary && (onDark ? styles.secondaryDark : styles.secondaryLight),
     variant === 'dark' && styles.dark,
     variant === 'outline' && styles.outline,
+    disabled && styles.disabled,
     style,
   ];
 
@@ -32,8 +34,9 @@ export default function Button({
 
   return (
     <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [containerStyle, pressed && styles.pressed]}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      style={({ pressed }) => [containerStyle, pressed && !disabled && styles.pressed]}
     >
       <View style={styles.content}>
         {icon ? <Ionicons name={icon} size={18} color={color} /> : null}
@@ -63,4 +66,5 @@ const styles = StyleSheet.create({
   dark: { backgroundColor: colors.textPrimary },
   outline: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  disabled: { opacity: 0.5 },
 });

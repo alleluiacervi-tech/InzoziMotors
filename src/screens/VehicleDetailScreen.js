@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -48,7 +48,7 @@ function Sparkline({ data, width: w = 80, height: h = 30 }) {
 export default function VehicleDetailScreen({ navigation, route }) {
   const car = route.params?.car;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, loginUser, addToComparison, comparisonCars, currency } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, addToComparison, comparisonCars } = useApp();
   const saved = isCarSaved(car.id);
   const isAuction = car.type === 'auction';
   const [activeIdx, setActiveIdx] = useState(0);
@@ -112,10 +112,15 @@ export default function VehicleDetailScreen({ navigation, route }) {
               >
                 <Ionicons name="git-compare-outline" size={18} color={isInComparison ? colors.primary : colors.slate700} />
               </Pressable>
-              <Pressable style={styles.circleBtn}>
+              <Pressable
+                style={styles.circleBtn}
+                onPress={() => Share.share({
+                  message: `${car.title} — ${formatPrice(price)} on Inzozi Motors. Every car 150-point inspected.`,
+                }).catch(() => {})}
+              >
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
               </Pressable>
-              <Pressable style={styles.circleBtn} onPress={() => executeWithAuth(() => toggleSaveCar(car.id))}>
+              <Pressable style={styles.circleBtn} onPress={() => toggleSaveCar(car.id)}>
                 <Ionicons name={saved ? 'heart' : 'heart-outline'} size={19} color={saved ? '#EF4444' : colors.slate700} />
               </Pressable>
             </View>
@@ -256,16 +261,20 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </Pressable>
 
           {/* Trust rows */}
-          <Pressable style={styles.inspectionRow} onPress={() => navigation.navigate('InspectionReport', { car })}>
-            <View style={styles.inspectionIcon}>
-              <Ionicons name="shield-checkmark" size={20} color={colors.green} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inspectionTitle}>150-Point Inspection Report</Text>
-              <Text style={styles.inspectionSub}>Passed · View full report</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </Pressable>
+          {car.inspected && (
+            <Pressable style={styles.inspectionRow} onPress={() => navigation.navigate('InspectionReport', { car, score: car.inspectionScore })}>
+              <View style={styles.inspectionIcon}>
+                <Ionicons name="shield-checkmark" size={20} color={colors.green} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inspectionTitle}>150-Point Inspection Report</Text>
+                <Text style={styles.inspectionSub}>
+                  {car.inspectionScore ? `Scored ${car.inspectionScore}/150 · View full report` : 'Passed · View full report'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </Pressable>
+          )}
 
           <Pressable style={[styles.inspectionRow, { marginTop: 8 }]} onPress={() => navigation.navigate('VehicleHistory', { car })}>
             <View style={[styles.inspectionIcon, { backgroundColor: colors.greenTint }]}>
@@ -290,22 +299,24 @@ export default function VehicleDetailScreen({ navigation, route }) {
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
-          {/* Description */}
+          {/* Description — derived from this car's actual data */}
           <Text style={styles.sectionTitle}>Overview</Text>
           <Text style={styles.desc}>
-            This {car.year} {car.make} {car.model} is in excellent condition with a clean title and
-            full service history. Single owner, non-smoker, garage kept. Every Inzozi listing is
-            inspected across 150 points and protected by our 7-day money-back guarantee.
+            {car.year} {car.make} {car.model} · {formatMiles(car.mileage)} · {car.fuel}, {car.transmission?.toLowerCase()} transmission.
+            {car.inspected
+              ? ' Passed the full Inzozi 150-point inspection and is protected by our 7-day return guarantee.'
+              : ' Inspection scheduled — full report will be attached before handover.'}
+            {marketDiff < 0 ? ` Priced ${Math.abs(marketDiff)}% below the Kigali market average for this model.` : ''}
           </Text>
 
-          {/* Photo highlights */}
-          <Text style={styles.sectionTitle}>Visual & Photo Inspection</Text>
+          {/* Inspection highlights — keyed off this car's data */}
+          <Text style={styles.sectionTitle}>Inspection Highlights</Text>
           <View style={styles.highlightGrid}>
             {[
-              { icon: 'cog-outline', title: 'Engine & Mechanicals', desc: 'No oil leaks, clean fluids, zero OBD fault codes.' },
-              { icon: 'disc-outline', title: 'Brakes & Tires', desc: 'Tread at 6/32" (~70% life). Brake pads at 8mm.' },
-              { icon: 'color-palette-outline', title: 'Exterior Paint Depth', desc: 'Factory original paint across all panels. No filler.' },
-              { icon: 'car-sport-outline', title: 'Cabin & Controls', desc: 'HVAC, seat heating, infotainment — all working.' },
+              { icon: 'cog-outline', title: 'Engine & Mechanicals', desc: `${car.fuel} engine checked — fluids, mounts and diagnostics within spec.` },
+              { icon: 'disc-outline', title: 'Brakes & Tyres', desc: 'Brake wear and tread depth measured on all four wheels.' },
+              { icon: 'color-palette-outline', title: 'Body & Paint', desc: 'Panel gaps and paint depth verified across all panels.' },
+              { icon: 'document-text-outline', title: 'Documentation', desc: `Registration, ${listedDaysAgo < 30 ? 'recent ' : ''}service records and RRA duty status verified.` },
             ].map((item, idx) => (
               <View key={idx} style={styles.highlightCard}>
                 <View style={styles.highlightIcon}>
@@ -375,7 +386,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
         <Button
           title={isAuction ? 'Place a Bid' : 'Book Handover'}
           style={{ flex: 1 }}
-          onPress={() => executeWithAuth(() => navigation.navigate('Checkout', { car }))}
+          onPress={() => navigation.navigate('Checkout', { car })}
         />
       </View>
 
@@ -383,7 +394,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
         visible={loginVisible}
         onClose={() => setLoginVisible(false)}
         onLoginSuccess={() => {
-          loginUser('Guest User', 'guest@inzozimotors.com');
+          loginAsGuest();
           if (pendingAction) setTimeout(() => pendingAction(), 300);
         }}
       />

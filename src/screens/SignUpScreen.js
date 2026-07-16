@@ -20,12 +20,18 @@ function GoogleIcon() {
 }
 
 export default function SignUpScreen({ navigation }) {
-  const { signUpUser } = useApp();
+  const { signUpUser, loginAsGuest } = useApp();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const handleSocialSignUp = () => {
+    // Demo social sign-up — logs in locally, no real OAuth
+    loginAsGuest();
+    navigation.replace('Main');
+  };
 
   const handleSignUp = async () => {
     const errs = {};
@@ -50,11 +56,11 @@ export default function SignUpScreen({ navigation }) {
         <Text style={styles.sub}>Join 2M+ buyers and sellers on Inzozi Motors.</Text>
 
         <View style={styles.socials}>
-          <Pressable style={[styles.social, styles.socialLight]}>
+          <Pressable style={[styles.social, styles.socialLight]} onPress={handleSocialSignUp}>
             <GoogleIcon />
             <Text style={styles.socialText}>Continue with Google</Text>
           </Pressable>
-          <Pressable style={[styles.social, styles.socialDark]}>
+          <Pressable style={[styles.social, styles.socialDark]} onPress={handleSocialSignUp}>
             <Ionicons name="logo-apple" size={18} color="#fff" />
             <Text style={[styles.socialText, { color: '#fff' }]}>Continue with Apple</Text>
           </Pressable>

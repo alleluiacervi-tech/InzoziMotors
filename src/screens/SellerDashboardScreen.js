@@ -17,6 +17,7 @@ const PIPELINE_STAGES = [
 
 const STATUS_CONFIG = {
   under_review: { label: 'Under Review', color: colors.statusPending, bg: colors.statusPendingBg, icon: 'time-outline' },
+  approved: { label: 'Approved — Book Inspection', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'checkmark-circle-outline' },
   scheduled: { label: 'Inspection Booked', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
   inspected: { label: 'Inspection Done', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'scan-outline' },
   live: { label: 'Live', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'radio-outline' },
@@ -35,7 +36,9 @@ function StatusBadge({ status }) {
 }
 
 function PipelineDiagram({ currentStatus }) {
-  const currentIdx = PIPELINE_STAGES.findIndex((s) => s.key === currentStatus);
+  // 'approved' sits between review (done) and scheduled (next up)
+  const normalized = currentStatus === 'approved' ? 'scheduled' : currentStatus;
+  const currentIdx = PIPELINE_STAGES.findIndex((s) => s.key === normalized);
   return (
     <View style={styles.pipeline}>
       {PIPELINE_STAGES.map((stage, idx) => {
@@ -77,19 +80,30 @@ function PipelineDiagram({ currentStatus }) {
 }
 
 export default function SellerDashboardScreen({ navigation }) {
-  const { submissions, relistSubmission } = useApp();
+  const { submissions, relistSubmission, updateSubmissionPrice, cars } = useApp();
   const [relistId, setRelistId] = useState(null);
   const [relistPrice, setRelistPrice] = useState('');
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
-  const totalViews = 47;
+  // Views only make sense once something is (or was) live
+  const totalViews = (liveCount + soldCount) > 0 ? 47 * (liveCount + soldCount) : 0;
 
   const handleSubmissionAction = (sub) => {
     if (sub.status === 'live' && sub.listingId) {
-      navigation.navigate('VehicleDetail', { carId: sub.listingId });
+      const listedCar = cars.find((c) => c.id === sub.listingId);
+      if (listedCar) navigation.navigate('VehicleDetail', { car: listedCar });
+    } else if (sub.status === 'approved') {
+      navigation.navigate('InspectionScheduling', { carName: sub.carTitle, submissionId: sub.id });
     } else if (sub.status === 'scheduled') {
-      navigation.navigate('InspectionScheduling', { carName: sub.carTitle });
+      Alert.alert(
+        'Inspection Booked',
+        sub.statusDetail || `Your inspection for ${sub.carTitle} is confirmed. Bring your vehicle and service records.`,
+      );
+    } else if (sub.status === 'rejected') {
+      navigation.navigate('CarSubmission', {
+        prefill: { make: sub.make, model: sub.model, year: sub.year, mileage: sub.mileage },
+      });
     }
   };
 
@@ -97,13 +111,18 @@ export default function SellerDashboardScreen({ navigation }) {
     if (relistId === sub.id) {
       const price = parseFloat(relistPrice);
       if (!price || price <= 0) {
-        Alert.alert('Enter a valid price', 'Please enter a new asking price to relist.');
+        Alert.alert('Enter a valid price', 'Please enter a new asking price.');
         return;
       }
-      relistSubmission(sub.id, price);
+      if (sub.status === 'live') {
+        updateSubmissionPrice(sub.id, price);
+        Alert.alert('Price updated', 'Your listing stays live with the new price.');
+      } else {
+        relistSubmission(sub.id, price);
+        Alert.alert('Relisted!', 'Your car is back in the queue. Our team will review within 24 hours.');
+      }
       setRelistId(null);
       setRelistPrice('');
-      Alert.alert('Relisted!', 'Your car is back in the queue. Our team will review within 24 hours.');
     } else {
       setRelistId(sub.id);
       setRelistPrice(sub.askingPrice ? String(sub.askingPrice) : '');
@@ -113,7 +132,9 @@ export default function SellerDashboardScreen({ navigation }) {
   const getActionLabel = (status) => {
     switch (status) {
       case 'live': return 'View Listing';
-      case 'scheduled': return 'View Schedule';
+      case 'approved': return 'Book Inspection';
+      case 'scheduled': return 'View Booking';
+      case 'rejected': return 'Update & Resubmit';
       default: return null;
     }
   };
@@ -237,8 +258,10 @@ export default function SellerDashboardScreen({ navigation }) {
                     </View>
                   ) : (
                     <Pressable style={styles.relistBtn} onPress={() => handleRelist(sub)}>
-                      <Ionicons name="refresh-outline" size={13} color={colors.amber} />
-                      <Text style={styles.relistBtnText}>{sub.isRelisted ? 'Relist again at new price' : 'Relist at new price'}</Text>
+                      <Ionicons name={sub.status === 'live' ? 'pricetag-outline' : 'refresh-outline'} size={13} color={colors.amber} />
+                      <Text style={styles.relistBtnText}>
+                        {sub.status === 'live' ? 'Change price' : sub.isRelisted ? 'Relist again at new price' : 'Relist at new price'}
+                      </Text>
                     </Pressable>
                   )}
                 </View>

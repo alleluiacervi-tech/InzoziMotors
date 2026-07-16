@@ -9,7 +9,7 @@ import { colors, radius, fonts } from '../theme';
 
 export default function SignInScreen({ navigation }) {
   const { loginUser } = useApp();
-  const [email, setEmail] = useState('alex.morgan@email.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
@@ -38,6 +38,7 @@ export default function SignInScreen({ navigation }) {
         <Text style={[styles.label, { marginTop: 26 }]}>Email</Text>
         <TextInput
           style={[styles.input, errors.email && styles.inputError]}
+          placeholder="you@email.com"
           value={email}
           onChangeText={(t) => { setEmail(t); setErrors((e) => ({ ...e, email: undefined })); }}
           placeholderTextColor={colors.textMuted}

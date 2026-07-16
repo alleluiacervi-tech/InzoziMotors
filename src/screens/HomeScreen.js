@@ -12,6 +12,7 @@ import SectionHeader from '../components/SectionHeader';
 import DrawerMenu from '../components/DrawerMenu';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
+import { getListedDaysAgo, getSavedCount } from '../data/marketData';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -49,7 +50,9 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalBookings } = useApp();
+  const hasUnread = notifications.some((n) => !n.read);
+  const upcomingTrip = rentalBookings.find((b) => b.status === 'confirmed' || b.status === 'active');
   const [carouselIndex, setCarouselIndex] = useState(1);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -87,8 +90,9 @@ export default function HomeScreen({ navigation }) {
     if (index !== carouselIndex) setCarouselIndex(index);
   };
 
-  const freshCars = cars.slice(0, 4);
-  const popularCars = cars.slice(0, 5);
+  // Fresh = most recently listed; Popular = most saved — two genuinely different sections
+  const freshCars = [...cars].sort((a, b) => getListedDaysAgo(a.id) - getListedDaysAgo(b.id)).slice(0, 4);
+  const popularCars = [...cars].sort((a, b) => getSavedCount(b.id) - getSavedCount(a.id)).slice(0, 5);
 
   return (
     <Screen background={colors.bg}>
@@ -112,7 +116,6 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.locationLabel}>LOCATION</Text>
           <View style={styles.locationValueRow}>
             <Text style={styles.locationText}>Kigali, Rwanda</Text>
-            <Ionicons name="chevron-down" size={12} color={colors.textSecondary} />
           </View>
         </View>
 
@@ -122,7 +125,7 @@ export default function HomeScreen({ navigation }) {
           </Pressable>
           <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')}>
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
-            <View style={styles.bellBadge} />
+            {hasUnread && <View style={styles.bellBadge} />}
           </Pressable>
         </View>
       </View>
@@ -156,7 +159,13 @@ export default function HomeScreen({ navigation }) {
 
         {/* Search Bar */}
         <View style={styles.searchWrapper}>
-          <Pressable style={styles.searchBar} onPress={() => navigation.navigate('SearchResults')}>
+          <Pressable
+            style={styles.searchBar}
+            onPress={() => navigation.navigate('SearchResults', {
+              mode: homeMode === 'rent' ? 'rent' : undefined,
+              focusSearch: true,
+            })}
+          >
             <Ionicons name="search" size={18} color={colors.textMuted} />
             <Text style={styles.searchPlaceholder}>
               {homeMode === 'rent' ? 'Search rental cars...' : 'Search by brand, model, or keyword...'}
@@ -167,6 +176,23 @@ export default function HomeScreen({ navigation }) {
         {homeMode === 'rent' ? (
           <>
             {/* ── RENT MODE ── */}
+            {upcomingTrip && (
+              <Pressable style={styles.tripCard} onPress={() => navigation.navigate('MyRentals')}>
+                <View style={styles.tripIcon}>
+                  <Ionicons name={upcomingTrip.status === 'active' ? 'car' : 'calendar'} size={18} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.tripTitle}>
+                    {upcomingTrip.status === 'active' ? 'Trip in progress' : 'Upcoming trip'}
+                  </Text>
+                  <Text style={styles.tripSub} numberOfLines={1}>
+                    {upcomingTrip.carTitle} · {upcomingTrip.startDate}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />
+              </Pressable>
+            )}
+
             <View style={styles.rentHero}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rentHeroTitle}>Certified rentals</Text>
@@ -340,12 +366,12 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.footerLinkText}>Log In</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
-            <Pressable onPress={() => {}}>
-              <Text style={styles.footerLinkText}>About Us</Text>
+            <Pressable onPress={() => navigation.navigate('InzoziPromise')}>
+              <Text style={styles.footerLinkText}>Our Promise</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
-            <Pressable onPress={() => {}}>
-              <Text style={styles.footerLinkText}>Privacy</Text>
+            <Pressable onPress={() => navigation.navigate('InzoziPromise')}>
+              <Text style={styles.footerLinkText}>About Us</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
             <Pressable onPress={() => navigation.navigate('Settings')}>
@@ -459,6 +485,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center',
   },
+  tripCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.primary,
+    borderRadius: radius.xl,
+    marginHorizontal: 16, marginTop: 4, marginBottom: 10,
+    padding: 14,
+  },
+  tripIcon: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  tripTitle: { fontFamily: fonts.extraBold, fontSize: 14, color: '#fff' },
+  tripSub: { fontFamily: fonts.regular, fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   rentFilterRow: { gap: 8, paddingHorizontal: 16, paddingTop: 14 },
   rentFilterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,

@@ -108,19 +108,14 @@ export default function ChatScreen({ navigation, route }) {
         title={name}
         onBack={() => navigation.goBack()}
         right={
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {car && (
-              <Pressable
-                style={styles.headerBtn}
-                onPress={() => navigation.navigate('VehicleDetail', { car })}
-              >
-                <Ionicons name="car-outline" size={18} color={colors.primary} />
-              </Pressable>
-            )}
-            <Pressable style={styles.headerBtn}>
-              <Ionicons name="call-outline" size={18} color={colors.primary} />
+          car ? (
+            <Pressable
+              style={styles.headerBtn}
+              onPress={() => navigation.navigate('VehicleDetail', { car })}
+            >
+              <Ionicons name="car-outline" size={18} color={colors.primary} />
             </Pressable>
-          </View>
+          ) : null
         }
       />
 
@@ -182,9 +177,6 @@ export default function ChatScreen({ navigation, route }) {
 
         {/* Input bar */}
         <View style={styles.inputBar}>
-          <Pressable style={styles.attach}>
-            <Ionicons name="add" size={24} color={colors.slate600} />
-          </Pressable>
           <TextInput
             style={styles.input}
             placeholder="Message…"
@@ -276,7 +268,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     backgroundColor: colors.surface,
   },
-  attach: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   input: {
     flex: 1, height: 44, backgroundColor: colors.surfaceAlt,
     borderRadius: 22, paddingHorizontal: 16, fontSize: 15, color: colors.textPrimary,

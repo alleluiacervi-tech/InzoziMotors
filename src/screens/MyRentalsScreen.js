@@ -6,6 +6,7 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
+import { formatRWF } from '../data/marketData';
 
 const STATUS_CONFIG = {
   confirmed: { label: 'Confirmed', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
@@ -66,6 +67,7 @@ export default function MyRentalsScreen({ navigation }) {
                 <View>
                   <Text style={styles.totalLabel}>Due at pickup</Text>
                   <Text style={styles.totalValue}>${b.total}</Text>
+                  <Text style={styles.totalRwf}>≈ {formatRWF(b.total)}</Text>
                 </View>
 
                 {b.status === 'confirmed' && (
@@ -78,10 +80,16 @@ export default function MyRentalsScreen({ navigation }) {
                   </Pressable>
                 )}
                 {b.status === 'active' && (
-                  <View style={styles.onTripNote}>
-                    <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-                    <Text style={styles.onTripText}>Checked in · Enjoy your trip</Text>
-                  </View>
+                  <Pressable
+                    style={styles.checkoutBtn}
+                    onPress={() => navigation.navigate('RentalCheckIn', { booking: b, mode: 'return' })}
+                  >
+                    <Ionicons name="camera-outline" size={15} color={colors.primary} />
+                    <Text style={styles.checkoutBtnText}>Return Check-Out</Text>
+                  </Pressable>
+                )}
+                {b.status === 'completed' && (
+                  <Text style={styles.completedNote}>Deposit refunded after center check ✓</Text>
                 )}
               </View>
             </View>
@@ -136,8 +144,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   checkinBtnText: { fontSize: 12, fontFamily: fonts.extraBold, color: '#fff' },
-  onTripNote: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  onTripText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.green },
+  checkoutBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.primary,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: radius.pill,
+  },
+  checkoutBtnText: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.primary },
+  completedNote: { flex: 1, fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, textAlign: 'right', marginLeft: 12 },
+  totalRwf: { fontSize: 10, fontFamily: fonts.medium, color: colors.textMuted, marginTop: 1 },
   hint: {
     fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted,
     textAlign: 'center', marginTop: 16, lineHeight: 16,

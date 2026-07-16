@@ -81,12 +81,17 @@ function StatCard({ icon, label, value, sub, color }) {
   );
 }
 
-export default function SellerAnalyticsScreen({ navigation }) {
+// New/unknown listings show an honest zero-state instead of another car's numbers
+const ZERO_ANALYTICS = { views: 0, viewsThisWeek: 0, saves: 0, inquiries: 0, daysLive: 0, categoryAvgDays: 14, trend: 'flat' };
+
+export default function SellerAnalyticsScreen({ navigation, route }) {
   const { submissions } = useApp();
   const liveSubmissions = submissions.filter((s) => s.status === 'live' || s.status === 'sold');
-  const [selectedId, setSelectedId] = useState(liveSubmissions[0]?.id || 'sub1');
+  const [selectedId, setSelectedId] = useState(
+    route?.params?.subId || liveSubmissions[0]?.id || 'sub1'
+  );
 
-  const analytics = MOCK_LISTING_ANALYTICS[selectedId] || MOCK_LISTING_ANALYTICS.sub1;
+  const analytics = MOCK_LISTING_ANALYTICS[selectedId] || ZERO_ANALYTICS;
   const selectedSub = liveSubmissions.find((s) => s.id === selectedId) || liveSubmissions[0];
   const allLive = submissions.filter((s) => s.status === 'live');
   const totalViews = Object.values(MOCK_LISTING_ANALYTICS).reduce((a, b) => a + b.views, 0);

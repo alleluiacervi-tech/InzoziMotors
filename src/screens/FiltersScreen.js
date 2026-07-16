@@ -9,6 +9,13 @@ import { colors, radius, fonts } from '../theme';
 const MAKES = ['Tesla', 'Toyota', 'BMW', 'Ford', 'Honda', 'Mercedes', 'Hyundai'];
 const BODY = ['SUV', 'Sedan', 'Truck', 'EV', 'Coupe', 'Van'];
 const FUEL = ['Gasoline', 'Hybrid', 'Electric', 'Diesel'];
+const PRICE_PRESETS = [
+  { label: 'Any price', value: null },
+  { label: 'Under $15k', value: 15000 },
+  { label: 'Under $25k', value: 25000 },
+  { label: 'Under $35k', value: 35000 },
+  { label: 'Under $50k', value: 50000 },
+];
 
 function Chip({ label, active, onPress }) {
   return (
@@ -21,8 +28,9 @@ function Chip({ label, active, onPress }) {
 export default function FiltersScreen({ navigation, route }) {
   const { cars } = useApp();
   const [selected, setSelected] = useState(
-    route.params?.filters || { make: null, body: null, fuel: null, maxPrice: 45000 }
+    route.params?.filters || { make: null, body: null, fuel: null, maxPrice: null }
   );
+  const [inspectedOnly, setInspectedOnly] = useState(true);
 
   const toggle = (group, val) =>
     setSelected((s) => ({ ...s, [group]: s[group] === val ? null : val }));
@@ -51,16 +59,16 @@ export default function FiltersScreen({ navigation, route }) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 20 }}>
-        <Text style={styles.label}>Price range</Text>
-        <View style={styles.priceRow}>
-          <View style={styles.priceBox}><Text style={styles.priceText}>$10,000</Text></View>
-          <Text style={styles.dash}>—</Text>
-          <View style={styles.priceBox}><Text style={styles.priceText}>$45,000</Text></View>
-        </View>
-        <View style={styles.track}>
-          <View style={styles.trackFill} />
-          <View style={[styles.knob, { left: '12%' }]} />
-          <View style={[styles.knob, { left: '74%' }]} />
+        <Text style={styles.label}>Price</Text>
+        <View style={styles.chips}>
+          {PRICE_PRESETS.map((p) => (
+            <Chip
+              key={p.label}
+              label={p.label}
+              active={selected.maxPrice === p.value}
+              onPress={() => setSelected((s) => ({ ...s, maxPrice: p.value }))}
+            />
+          ))}
         </View>
 
         <Text style={[styles.label, { marginTop: 24 }]}>Make</Text>
@@ -79,16 +87,23 @@ export default function FiltersScreen({ navigation, route }) {
         </View>
 
         <Text style={[styles.label, { marginTop: 22 }]}>Inzozi guarantees</Text>
-        {['150-point inspected only', '7-day returns'].map((g) => (
-          <View key={g} style={styles.toggleRow}>
-            <Text style={styles.toggleLabel}>{g}</Text>
-            <View style={styles.switchOn}><View style={styles.switchKnob} /></View>
+        <Pressable style={styles.toggleRow} onPress={() => setInspectedOnly((v) => !v)}>
+          <Text style={styles.toggleLabel}>150-point inspected only</Text>
+          <View style={[styles.switchTrack, inspectedOnly && styles.switchTrackOn]}>
+            <View style={styles.switchKnob} />
           </View>
-        ))}
+        </Pressable>
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>7-day return guarantee</Text>
+          <View style={styles.includedChip}>
+            <Ionicons name="checkmark" size={12} color={colors.green} />
+            <Text style={styles.includedChipText}>All listings</Text>
+          </View>
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.reset} onPress={() => setSelected({ make: null, body: null, fuel: null, maxPrice: 45000 })}>
+        <Pressable style={styles.reset} onPress={() => setSelected({ make: null, body: null, fuel: null, maxPrice: null })}>
           <Text style={styles.resetText}>Reset</Text>
         </Pressable>
         <Button
@@ -107,21 +122,21 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
   h1: { fontSize: 24, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
   label: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  priceBox: { flex: 1, height: 50, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  priceText: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
-  dash: { color: colors.textMuted },
-  track: { height: 6, borderRadius: 3, backgroundColor: colors.border, marginTop: 18, marginHorizontal: 12 },
-  trackFill: { position: 'absolute', left: '12%', right: '26%', top: 0, height: 6, borderRadius: 3, backgroundColor: colors.primary },
-  knob: { position: 'absolute', top: -8, width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', borderWidth: 3, borderColor: colors.primary, marginLeft: -11 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   chip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, fontFamily: fonts.semiBold },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   toggleLabel: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
-  switchOn: { width: 46, height: 28, borderRadius: 14, backgroundColor: colors.primary, padding: 3, alignItems: 'flex-end', justifyContent: 'center' },
+  switchTrack: { width: 46, height: 28, borderRadius: 14, backgroundColor: colors.border, padding: 3, alignItems: 'flex-start', justifyContent: 'center' },
+  switchTrackOn: { backgroundColor: colors.primary, alignItems: 'flex-end' },
   switchKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+  includedChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.greenTint, paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  includedChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   reset: { paddingHorizontal: 22, paddingVertical: 16, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border },
   resetText: { fontSize: 15, fontFamily: fonts.bold, color: colors.slate700 },

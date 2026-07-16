@@ -8,8 +8,8 @@ import { colors, radius, shadows, fonts } from '../theme';
 
 const MENU_SELLER = [
   { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
+  { icon: 'trending-up-outline', label: "What's My Car Worth?", screen: 'CarValuation' },
   { icon: 'shield-checkmark-outline', label: 'ID Verification', screen: 'IDVerification' },
-  { icon: 'calendar-outline', label: 'Inspection Scheduling', screen: 'InspectionScheduling' },
 ];
 
 const MENU_ACCOUNT = [
@@ -44,14 +44,37 @@ function MenuSection({ title, items, navigation }) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const { currentUser, submissions, logoutUser, idVerificationStatus } = useApp();
+  const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest } = useApp();
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
 
   const idPts = idVerificationStatus === 'approved' ? 30 : 0;
   const salesPts = Math.min(30, soldCount * 3);
-  const trustScore = idPts + salesPts + 17 + 18;
+  const trustScore = idPts + salesPts + 17 + 18; // response + reviews are estimates until backend
+
+  // Guest state — prompt to sign in instead of showing a fake verified profile
+  if (!isLoggedIn) {
+    return (
+      <Screen background={colors.bg}>
+        <View style={styles.guestWrap}>
+          <View style={styles.guestAvatar}>
+            <Ionicons name="person-outline" size={36} color={colors.textMuted} />
+          </View>
+          <Text style={styles.guestTitle}>You're browsing as a guest</Text>
+          <Text style={styles.guestSub}>
+            Sign in to save cars, message sellers, track bookings, and sell your car.
+          </Text>
+          <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
+            <Text style={styles.guestBtnText}>Sign In</Text>
+          </Pressable>
+          <Pressable onPress={() => loginAsGuest()} style={{ marginTop: 14 }}>
+            <Text style={styles.guestSkip}>Continue with a demo account</Text>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
 
   const STATS = [
     { label: 'Submitted', value: String(submissions.length) },
@@ -77,9 +100,15 @@ export default function ProfileScreen({ navigation }) {
             </View>
             <Text style={styles.email}>{currentUser.email}</Text>
             <View style={styles.badgeRow}>
-              <Badge variant="success" label="Verified Seller" />
-              {idVerificationStatus === 'approved' && (
-                <Badge variant="live" dot label="ID Verified" />
+              {idVerificationStatus === 'approved' ? (
+                <>
+                  <Badge variant="success" label="Verified Seller" />
+                  <Badge variant="live" dot label="ID Verified" />
+                </>
+              ) : (
+                <Pressable onPress={() => navigation.navigate('IDVerification')}>
+                  <Badge variant="tag" label="Verify your ID →" />
+                </Pressable>
               )}
             </View>
           </View>
@@ -216,4 +245,19 @@ const styles = StyleSheet.create({
     gap: 8, marginTop: 12, paddingVertical: 10,
   },
   logoutText: { color: '#EF4444', fontSize: 15, fontFamily: fonts.bold },
+  guestWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 60 },
+  guestAvatar: {
+    width: 88, height: 88, borderRadius: 44,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 18,
+  },
+  guestTitle: { fontSize: 19, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.3 },
+  guestSub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted, textAlign: 'center', marginTop: 8, lineHeight: 19 },
+  guestBtn: {
+    alignSelf: 'stretch', backgroundColor: colors.primary,
+    paddingVertical: 15, borderRadius: radius.xl,
+    alignItems: 'center', marginTop: 22,
+  },
+  guestBtnText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
+  guestSkip: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.primary },
 });

@@ -49,9 +49,9 @@ function CarColumn({ car, onRemove, style }) {
   );
 }
 
-function EmptySlot({ onAdd }) {
+function EmptySlot({ onAdd, style }) {
   return (
-    <Pressable style={[styles.carCol, styles.emptySlot]} onPress={onAdd}>
+    <Pressable style={[styles.carCol, styles.emptySlot, style]} onPress={onAdd}>
       <View style={styles.addCircle}>
         <Ionicons name="add" size={24} color={colors.primary} />
       </View>

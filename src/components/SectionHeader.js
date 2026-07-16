@@ -7,7 +7,7 @@ export default function SectionHeader({ title, actionLabel = 'See all', onAction
   return (
     <View style={styles.row}>
       <Text style={styles.title}>{title}</Text>
-      {onAction || actionLabel ? (
+      {onAction ? (
         <Pressable onPress={onAction}>
           <Text style={styles.action}>{actionLabel}</Text>
         </Pressable>

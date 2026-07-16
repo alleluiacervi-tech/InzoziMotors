@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
@@ -42,6 +43,13 @@ export default function MessagesScreen({ navigation }) {
           </Pressable>
         )}
         ItemSeparatorComponent={() => <View style={styles.sep} />}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="chatbubbles-outline" size={56} color={colors.border} />
+            <Text style={styles.emptyTitle}>No messages yet</Text>
+            <Text style={styles.emptySub}>Message a seller from any car page</Text>
+          </View>
+        }
       />
     </Screen>
   );
@@ -61,4 +69,7 @@ const styles = StyleSheet.create({
   badge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   badgeText: { color: '#fff', fontSize: 12, fontFamily: fonts.extraBold },
   sep: { height: 1, backgroundColor: colors.borderSoft, marginLeft: 66 },
+  emptyState: { alignItems: 'center', gap: 12, paddingTop: 80, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },
+  emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
 });

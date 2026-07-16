@@ -44,19 +44,13 @@ const STEPS = [
 
 const STATUS_ORDER = ['reserved', 'booked', 'handover', 'complete'];
 
-function StepRow({ step, state, isLast, sentTime, confirmedTime }) {
+function StepRow({ step, state, isLast }) {
   const isDone = state === 'done';
   const isActive = state === 'active';
   const isPending = state === 'pending';
 
   const circleColor = isDone ? colors.green : isActive ? colors.amber : colors.border;
   const circleBg = isDone ? colors.greenTint : isActive ? colors.amberTint : colors.surfaceAlt;
-
-  const timestamp = step.key === 'sent' && sentTime
-    ? sentTime
-    : step.key === 'confirmed' && confirmedTime
-    ? confirmedTime
-    : null;
 
   return (
     <View style={styles.stepRow}>
@@ -85,24 +79,17 @@ function StepRow({ step, state, isLast, sentTime, confirmedTime }) {
           ]}>
             {step.title}
           </Text>
-          {timestamp && <Text style={styles.stepTimestamp}>{timestamp}</Text>}
-          {isActive && !timestamp && (
+          {isActive && (
             <View style={styles.waitingChip}>
-              <Text style={styles.waitingChipText}>Waiting…</Text>
+              <Text style={styles.waitingChipText}>In progress</Text>
             </View>
           )}
         </View>
         <Text style={[styles.stepSub, isPending && styles.stepSubPending]}>{step.sub}</Text>
-        {isDone && step.key === 'sent' && (
+        {isDone && (
           <View style={styles.stepBadge}>
             <Ionicons name="checkmark" size={10} color={colors.green} />
             <Text style={styles.stepBadgeText}>Completed</Text>
-          </View>
-        )}
-        {isDone && step.key === 'confirmed' && (
-          <View style={styles.stepBadge}>
-            <Ionicons name="checkmark" size={10} color={colors.green} />
-            <Text style={styles.stepBadgeText}>Seller accepted</Text>
           </View>
         )}
       </View>
@@ -112,18 +99,11 @@ function StepRow({ step, state, isLast, sentTime, confirmedTime }) {
 
 export default function OrderTrackingScreen({ navigation, route }) {
   const { orderId, car: routeCar } = route.params || {};
-  const { purchaseRequests } = useApp();
-  const [, forceUpdate] = useState(0);
-
-  // Poll for status changes (request gets updated in context)
-  useEffect(() => {
-    const timer = setInterval(() => forceUpdate((n) => n + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const { purchaseRequests, cancelHandover } = useApp();
 
   const request = purchaseRequests.find((r) => r.id === orderId);
   const car = request?.car || routeCar;
-  const currentStatus = request?.status || 'sent';
+  const currentStatus = request?.status || 'reserved';
   const currentIdx = STATUS_ORDER.indexOf(currentStatus);
 
   const getStepState = (step, idx) => {
@@ -140,7 +120,14 @@ export default function OrderTrackingScreen({ navigation, route }) {
       "The seller will be notified. You can always send a new request if you change your mind.",
       [
         { text: 'Keep Request', style: 'cancel' },
-        { text: 'Cancel Request', style: 'destructive', onPress: () => navigation.goBack() },
+        {
+          text: 'Cancel Request',
+          style: 'destructive',
+          onPress: () => {
+            if (orderId) cancelHandover(orderId);
+            navigation.goBack();
+          },
+        },
       ],
     );
   };

@@ -7,14 +7,84 @@ import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
-const TABS = ['Queue', 'Inspections', 'Handovers', 'Listings'];
+const TABS = ['Submissions', 'IDs', 'Inspections', 'Handovers', 'Listings'];
 
-const STAT_CARDS = (pendingCount) => [
+const STAT_CARDS = ({ pendingCount, reviewCount, todayInspections, activeListings }) => [
+  { label: 'To Review', value: String(reviewCount), icon: 'file-tray-full-outline', color: colors.amber, bg: colors.amberTint },
   { label: 'Pending IDs', value: String(pendingCount), icon: 'person-outline', color: colors.amber, bg: colors.amberTint },
-  { label: "Today's Inspections", value: '2', icon: 'scan-outline', color: colors.statusScheduled, bg: colors.statusScheduledBg },
-  { label: 'Active Listings', value: '25', icon: 'car-outline', color: colors.primary, bg: colors.greenTint },
-  { label: 'This Month', value: '$14.2k', icon: 'trending-up-outline', color: colors.primary, bg: colors.greenTint },
+  { label: "Today's Inspections", value: String(todayInspections), icon: 'scan-outline', color: colors.statusScheduled, bg: colors.statusScheduledBg },
+  { label: 'Active Listings', value: String(activeListings), icon: 'car-outline', color: colors.primary, bg: colors.greenTint },
 ];
+
+// Admin review of seller submissions — the first step of the pipeline
+function SubmissionsTab({ submissions, onApprove, onReject }) {
+  const toReview = submissions.filter((s) => s.status === 'under_review');
+  const rest = submissions.filter((s) => s.status !== 'under_review');
+
+  return (
+    <View style={styles.tabContent}>
+      {toReview.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="checkmark-done-circle" size={48} color={colors.primary} />
+          <Text style={styles.emptyTitle}>Queue is clear</Text>
+          <Text style={styles.emptySub}>New seller submissions will appear here for review.</Text>
+        </View>
+      ) : (
+        <>
+          <Text style={styles.subHeader}>Awaiting review ({toReview.length})</Text>
+          {toReview.map((s) => (
+            <View key={s.id} style={[styles.inspCard, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={[styles.inspDot, { backgroundColor: colors.amber }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inspSeller}>{s.carTitle}</Text>
+                  <Text style={styles.inspCar}>
+                    {Number(s.mileage || 0).toLocaleString()} km
+                    {s.condition ? ` · ${s.condition}` : ''}
+                    {s.askingPrice ? ` · Asking $${Number(s.askingPrice).toLocaleString()}` : ''}
+                  </Text>
+                  <Text style={[styles.inspMetaText, { marginTop: 4 }]}>Submitted {s.submittedDate}</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  style={[styles.verifyBtn, styles.verifyBtnApprove, { flex: 1 }]}
+                  onPress={() => onApprove(s)}
+                >
+                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Text style={styles.verifyBtnApproveText}>Approve</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.verifyBtn, styles.verifyBtnReject, { flex: 1 }]}
+                  onPress={() => onReject(s)}
+                >
+                  <Ionicons name="close" size={16} color={colors.statusRejected} />
+                  <Text style={styles.verifyBtnRejectText}>Request Changes</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+
+      {rest.length > 0 && (
+        <>
+          <Text style={[styles.subHeader, { marginTop: 20 }]}>In pipeline ({rest.length})</Text>
+          {rest.map((s) => (
+            <View key={s.id} style={styles.inspCard}>
+              <View style={[styles.inspDot, { backgroundColor: colors.border }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inspSeller}>{s.carTitle}</Text>
+                <Text style={styles.inspCar}>{s.statusDetail || ''}</Text>
+              </View>
+              <StatusBadge status={s.status} />
+            </View>
+          ))}
+        </>
+      )}
+    </View>
+  );
+}
 
 function HandoversTab({ handovers, onConfirm }) {
   const pending = handovers.filter((h) => h.status === 'pending');
@@ -91,9 +161,11 @@ function HandoversTab({ handovers, onConfirm }) {
 
 const STATUS_MAP = {
   under_review: { label: 'Under Review', color: colors.statusPending, bg: colors.statusPendingBg },
+  approved: { label: 'Approved', color: colors.statusLive, bg: colors.statusLiveBg },
   scheduled: { label: 'Scheduled', color: colors.statusScheduled, bg: colors.statusScheduledBg },
   live: { label: 'Live', color: colors.statusLive, bg: colors.statusLiveBg },
   sold: { label: 'Sold', color: colors.statusSold, bg: colors.statusSoldBg },
+  rejected: { label: 'Changes Requested', color: colors.statusRejected, bg: colors.statusRejectedBg },
 };
 
 function StatusBadge({ status }) {
@@ -126,10 +198,15 @@ function QueueTab({ verifications, onApprove, onReject }) {
               <Text style={styles.verifyTime}>Submitted {v.submitted}</Text>
               <View style={styles.verifyDocs}>
                 {['National ID (front)', 'National ID (back)', 'Selfie with ID'].map((doc) => (
-                  <View key={doc} style={styles.verifyDocChip}>
+                  <Pressable
+                    key={doc}
+                    style={styles.verifyDocChip}
+                    onPress={() => Alert.alert(doc, `Preview of ${v.name}'s ${doc.toLowerCase()}.\n\n(Full document viewer ships with the admin web dashboard.)`)}
+                  >
                     <Ionicons name="document-text-outline" size={11} color={colors.primary} />
                     <Text style={styles.verifyDocText}>{doc}</Text>
-                  </View>
+                    <Ionicons name="eye-outline" size={11} color={colors.primary} />
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -232,11 +309,15 @@ const MOCK_LISTINGS = [
   { id: '5', title: '2018 Subaru Forester', price: '$22,000', status: 'scheduled', views: 0, inquiries: 0 },
 ];
 
-function ListingsTab({ navigation }) {
+function ListingsTab({ navigation, cars }) {
+  const openListing = (id) => {
+    const car = cars?.find((c) => c.id === id);
+    if (car) navigation.navigate('VehicleDetail', { car });
+  };
   return (
     <View style={styles.tabContent}>
       {MOCK_LISTINGS.map((l) => (
-        <Pressable key={l.id} style={styles.listingCard} onPress={() => navigation.navigate('VehicleDetail', { carId: l.id })}>
+        <Pressable key={l.id} style={styles.listingCard} onPress={() => openListing(l.id)}>
           <View style={{ flex: 1 }}>
             <Text style={styles.listingTitle}>{l.title}</Text>
             <Text style={styles.listingPrice}>{l.price}</Text>
@@ -258,11 +339,36 @@ function ListingsTab({ navigation }) {
 }
 
 export default function AdminPanelScreen({ navigation }) {
-  const { pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification, handovers, confirmHandover } = useApp();
+  const {
+    pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification,
+    handovers, confirmHandover, submissions, updateSubmissionStatus, cars,
+  } = useApp();
   const [activeTab, setActiveTab] = useState(0);
 
   const pendingCount = pendingVerifications.filter((v) => v.status === 'pending').length;
   const pendingHandovers = handovers.filter((h) => h.status === 'pending').length;
+  const reviewCount = submissions.filter((s) => s.status === 'under_review').length;
+  const todayInspections = adminInspections.filter((i) => i.status === 'today').length;
+
+  const handleApproveSubmission = (sub) => {
+    Alert.alert('Approve Submission?', `${sub.carTitle} will be approved — the seller can then book an inspection slot.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Approve',
+        onPress: () => updateSubmissionStatus(sub.id, 'approved', 'Approved — book your inspection at any Inzozi center'),
+      },
+    ]);
+  };
+
+  const handleRejectSubmission = (sub) => {
+    Alert.alert('Request Changes?', `The seller will be asked to update the ${sub.carTitle} submission and resubmit.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Request Changes', style: 'destructive',
+        onPress: () => updateSubmissionStatus(sub.id, 'rejected', 'Please update your submission details and resubmit'),
+      },
+    ]);
+  };
 
   const handleApprove = (id) => {
     Alert.alert('Approve Seller?', 'This seller will be notified and can submit cars for listing.', [
@@ -308,9 +414,11 @@ export default function AdminPanelScreen({ navigation }) {
         {/* Stats */}
         <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.statsHero}>
           <Text style={styles.statsHeroTitle}>Platform Overview</Text>
-          <Text style={styles.statsHeroSub}>Today — Jun 28, 2026</Text>
+          <Text style={styles.statsHeroSub}>
+            Today — {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </Text>
           <View style={styles.statsGrid}>
-            {STAT_CARDS(pendingCount).map((s) => (
+            {STAT_CARDS({ pendingCount, reviewCount, todayInspections, activeListings: cars.length }).map((s) => (
               <View key={s.label} style={styles.statCard}>
                 <View style={[styles.statIcon, { backgroundColor: s.bg }]}>
                   <Ionicons name={s.icon} size={18} color={s.color} />
@@ -323,10 +431,11 @@ export default function AdminPanelScreen({ navigation }) {
         </LinearGradient>
 
         {/* Tabs */}
-        <View style={styles.tabBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
           {TABS.map((tab, idx) => {
-            const badge = idx === 0 && pendingCount > 0 ? pendingCount
-              : idx === 2 && pendingHandovers > 0 ? pendingHandovers : null;
+            const badge = idx === 0 && reviewCount > 0 ? reviewCount
+              : idx === 1 && pendingCount > 0 ? pendingCount
+              : idx === 3 && pendingHandovers > 0 ? pendingHandovers : null;
             return (
               <Pressable
                 key={tab}
@@ -342,18 +451,25 @@ export default function AdminPanelScreen({ navigation }) {
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
 
         {activeTab === 0 && (
+          <SubmissionsTab
+            submissions={submissions}
+            onApprove={handleApproveSubmission}
+            onReject={handleRejectSubmission}
+          />
+        )}
+        {activeTab === 1 && (
           <QueueTab
             verifications={pendingVerifications}
             onApprove={handleApprove}
             onReject={handleReject}
           />
         )}
-        {activeTab === 1 && <InspectionsTab inspections={adminInspections} navigation={navigation} />}
-        {activeTab === 2 && <HandoversTab handovers={handovers} onConfirm={handleConfirmHandover} />}
-        {activeTab === 3 && <ListingsTab navigation={navigation} />}
+        {activeTab === 2 && <InspectionsTab inspections={adminInspections} navigation={navigation} />}
+        {activeTab === 3 && <HandoversTab handovers={handovers} onConfirm={handleConfirmHandover} />}
+        {activeTab === 4 && <ListingsTab navigation={navigation} cars={cars} />}
       </ScrollView>
     </Screen>
   );
@@ -392,7 +508,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   tab: {
-    flex: 1, alignItems: 'center', paddingVertical: 14,
+    alignItems: 'center', paddingVertical: 14, paddingHorizontal: 14,
     borderBottomWidth: 2, borderBottomColor: 'transparent',
     flexDirection: 'row', justifyContent: 'center', gap: 6,
   },

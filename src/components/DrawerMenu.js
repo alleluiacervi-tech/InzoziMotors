@@ -23,11 +23,17 @@ const MENU_SECTIONS = [
     ],
   },
   {
+    title: 'Rent',
+    items: [
+      { icon: 'key-outline', label: 'Browse Rentals', action: 'browseRentals' },
+      { icon: 'calendar-outline', label: 'My Rentals', screen: 'MyRentals' },
+    ],
+  },
+  {
     title: 'Finance & Services',
     items: [
       { icon: 'calculator-outline', label: 'Financing Calculator', screen: 'Financing' },
       { icon: 'globe-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
-      { icon: 'trending-up-outline', label: 'Price Intelligence', screen: 'SearchResults' },
       { icon: 'ribbon-outline', label: 'Trust Score', screen: 'TrustScore' },
     ],
   },
@@ -43,7 +49,6 @@ const MENU_SECTIONS = [
   {
     title: 'Trust & Safety',
     items: [
-      { icon: 'shield-checkmark-outline', label: 'Inspection Reports', screen: 'SearchResults' },
       { icon: 'finger-print-outline', label: 'ID Verification', screen: 'IDVerification' },
       { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
     ],
@@ -52,7 +57,7 @@ const MENU_SECTIONS = [
 
 export default function DrawerMenu({ visible, onClose, navigation }) {
   const insets = useSafeAreaInsets();
-  const { currentUser, isLoggedIn, logoutUser } = useApp();
+  const { currentUser, isLoggedIn, logoutUser, setHomeMode } = useApp();
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -90,6 +95,15 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
   const navigate = (screen) => {
     onClose();
     setTimeout(() => navigation.navigate(screen), 250);
+  };
+
+  const handleItemPress = (item) => {
+    if (item.action === 'browseRentals') {
+      setHomeMode('rent');
+      navigate('Main');
+    } else {
+      navigate(item.screen);
+    }
   };
 
   return (
@@ -178,7 +192,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                 <Pressable
                   key={ii}
                   style={styles.menuItem}
-                  onPress={() => navigate(item.screen)}
+                  onPress={() => handleItemPress(item)}
                 >
                   <View style={styles.menuIconWrap}>
                     <Ionicons name={item.icon} size={18} color={colors.primary} />

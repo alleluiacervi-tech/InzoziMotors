@@ -7,6 +7,9 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { RENTAL_CENTERS, DURATION_PRESETS, getRentalDates, calcTripCost } from '../data/rentals';
+import { formatRWF } from '../data/marketData';
+
+const PICKUP_TIMES = ['9:00 AM', '11:00 AM', '2:00 PM', '4:00 PM'];
 
 export default function RentalBookingScreen({ navigation, route }) {
   const car = route.params?.car;
@@ -15,13 +18,27 @@ export default function RentalBookingScreen({ navigation, route }) {
   const dates = getRentalDates(14);
   const durations = DURATION_PRESETS.filter((d) => d >= (car.minDays || 1));
 
-  const [startIdx, setStartIdx] = useState(null);
+  // Every day in [start, start + numDays) must be free. Indexes beyond the
+  // 14-day window are assumed free (they can't appear in unavailableDays).
+  const rangeIsFree = (start, numDays) => {
+    for (let i = start; i < start + numDays; i++) {
+      if (car.unavailableDays.includes(i)) return false;
+    }
+    return true;
+  };
+
+  const [startIdx, setStartIdx] = useState(() => {
+    const first = dates.find((d) => !car.unavailableDays.includes(d.index));
+    return first ? first.index : null;
+  });
   const [days, setDays] = useState(durations[0]);
+  const [time, setTime] = useState(PICKUP_TIMES[0]);
   const [centerId, setCenterId] = useState(RENTAL_CENTERS[0].id);
   const [confirmed, setConfirmed] = useState(false);
 
   const cost = calcTripCost(car, days);
-  const canBook = startIdx !== null && days && centerId;
+  const rangeFree = startIdx !== null && days ? rangeIsFree(startIdx, days) : true;
+  const canBook = startIdx !== null && days && centerId && rangeFree;
   const startDate = startIdx !== null ? dates[startIdx] : null;
   const center = RENTAL_CENTERS.find((c) => c.id === centerId);
   const pickupFee = center?.fee || 0;
@@ -34,6 +51,7 @@ export default function RentalBookingScreen({ navigation, route }) {
       carTitle: car.title,
       carImage: car.image,
       startDate: `${startDate.full}`,
+      time,
       days,
       center: center.name,
       subtotal: cost.subtotal,
@@ -59,7 +77,7 @@ export default function RentalBookingScreen({ navigation, route }) {
 
           <View style={styles.confirmCard}>
             <ConfirmRow icon="car-outline" label="Vehicle" value={car.title} />
-            <ConfirmRow icon="calendar-outline" label="Pickup" value={`${startDate.full} · 9:00 AM`} />
+            <ConfirmRow icon="calendar-outline" label="Pickup" value={`${startDate.full} · ${time}`} />
             <ConfirmRow icon="time-outline" label="Duration" value={`${days} day${days > 1 ? 's' : ''}`} />
             <ConfirmRow icon="location-outline" label="Center" value={center.name} />
             <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${totalDue} (incl. $${cost.deposit} deposit)`} last />
@@ -72,9 +90,9 @@ export default function RentalBookingScreen({ navigation, route }) {
             </Text>
           </View>
 
-          <Button title="Done" onPress={() => navigation.navigate('Main')} style={{ alignSelf: 'stretch' }} />
-          <Pressable onPress={() => navigation.navigate('MyRentals')} style={{ marginTop: 14 }}>
-            <Text style={styles.viewRentals}>View My Rentals</Text>
+          <Button title="View My Rentals" onPress={() => navigation.navigate('MyRentals')} style={{ alignSelf: 'stretch' }} />
+          <Pressable onPress={() => navigation.navigate('Main')} style={{ marginTop: 14 }}>
+            <Text style={styles.viewRentals}>Back to Home</Text>
           </Pressable>
         </View>
       </Screen>
@@ -120,7 +138,24 @@ export default function RentalBookingScreen({ navigation, route }) {
           })}
         </ScrollView>
 
-        {/* 2. Duration */}
+        {/* 2. Pickup time */}
+        <Text style={styles.sectionTitle}>Pickup time</Text>
+        <View style={styles.durationRow}>
+          {PICKUP_TIMES.map((t) => {
+            const on = time === t;
+            return (
+              <Pressable
+                key={t}
+                style={[styles.durationChip, on && styles.durationChipOn]}
+                onPress={() => setTime(t)}
+              >
+                <Text style={[styles.durationText, on && styles.durationTextOn]}>{t}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* 3. Duration */}
         <Text style={styles.sectionTitle}>Duration</Text>
         <View style={styles.durationRow}>
           {durations.map((d) => {
@@ -139,7 +174,16 @@ export default function RentalBookingScreen({ navigation, route }) {
           })}
         </View>
 
-        {/* 3. Pickup center */}
+        {!rangeFree && (
+          <View style={styles.rangeWarning}>
+            <Ionicons name="alert-circle-outline" size={14} color={colors.alertRed} />
+            <Text style={styles.rangeWarningText}>
+              Selected dates include unavailable days — choose another start date or shorter duration
+            </Text>
+          </View>
+        )}
+
+        {/* 4. Pickup center */}
         <Text style={styles.sectionTitle}>Pickup center</Text>
         {RENTAL_CENTERS.map((c) => {
           const on = centerId === c.id;
@@ -198,6 +242,7 @@ export default function RentalBookingScreen({ navigation, route }) {
             <Text style={styles.costTotalLabel}>Due at pickup</Text>
             <Text style={styles.costTotalValue}>${totalDue}</Text>
           </View>
+          <Text style={styles.costRwf}>≈ {formatRWF(totalDue)}</Text>
           <View style={styles.noPayChip}>
             <Ionicons name="shield-checkmark-outline" size={13} color={colors.green} />
             <Text style={styles.noPayText}>No payment now — pay at the Inzozi center</Text>
@@ -205,7 +250,7 @@ export default function RentalBookingScreen({ navigation, route }) {
         </View>
 
         <Button
-          title={canBook ? 'Confirm Booking' : 'Select a pickup date'}
+          title={canBook ? 'Confirm Booking' : rangeFree ? 'Select a pickup date' : 'Selected dates unavailable'}
           onPress={handleConfirm}
           style={{ marginTop: 20, opacity: canBook ? 1 : 0.5 }}
           disabled={!canBook}
@@ -255,6 +300,13 @@ const styles = StyleSheet.create({
   dateTextOn: { color: colors.primary },
   dateTextBlocked: { color: colors.border },
   durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  rangeWarning: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+    backgroundColor: colors.statusRejectedBg,
+    borderRadius: radius.md, paddingHorizontal: 10, paddingVertical: 8,
+    marginTop: 12,
+  },
+  rangeWarningText: { flex: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.alertRed, lineHeight: 15 },
   durationChip: {
     paddingHorizontal: 16, paddingVertical: 10,
     backgroundColor: colors.surface,
@@ -293,6 +345,7 @@ const styles = StyleSheet.create({
   costDivider: { height: 1, backgroundColor: colors.borderSoft, marginBottom: 12 },
   costTotalLabel: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   costTotalValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: -0.4 },
+  costRwf: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, textAlign: 'right', marginTop: -8, marginBottom: 12 },
   noPayChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: colors.greenTint,

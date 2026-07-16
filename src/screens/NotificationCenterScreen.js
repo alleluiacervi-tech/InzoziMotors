@@ -15,7 +15,7 @@ const TYPE_CONFIG = {
     bg: colors.greenTint,
     label: 'Price Drop',
   },
-  new_message: {
+  message: {
     icon: 'chatbubble-outline',
     color: colors.statusScheduled,
     bg: '#EFF6FF',
@@ -27,13 +27,21 @@ const TYPE_CONFIG = {
     bg: colors.amberTint,
     label: 'Update',
   },
-  saved_search: {
+  search_match: {
     icon: 'search-outline',
     color: colors.primary,
     bg: colors.greenTint,
-    label: 'Saved Search',
+    label: 'Match',
   },
 };
+
+const FILTERS = [
+  { label: 'All', type: null },
+  { label: 'Price Drops', type: 'price_drop' },
+  { label: 'Messages', type: 'message' },
+  { label: 'Updates', type: 'listing_update' },
+  { label: 'Matches', type: 'search_match' },
+];
 
 function NotificationRow({ notification, onPress, onMarkRead }) {
   const cfg = TYPE_CONFIG[notification.type] || TYPE_CONFIG.listing_update;
@@ -87,9 +95,14 @@ function DateSection({ date, notifications, onPress, onMarkRead }) {
 
 export default function NotificationCenterScreen({ navigation }) {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useApp();
+  const [activeFilter, setActiveFilter] = useState(null);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const grouped = notifications.reduce((acc, n) => {
+  const filtered = activeFilter
+    ? notifications.filter((n) => n.type === activeFilter)
+    : notifications;
+
+  const grouped = filtered.reduce((acc, n) => {
     const key = n.date;
     if (!acc[key]) acc[key] = [];
     acc[key].push(n);
@@ -97,11 +110,18 @@ export default function NotificationCenterScreen({ navigation }) {
   }, {});
 
   const handlePress = (notification) => {
-    if (notification.type === 'new_message') {
+    if (notification.type === 'message') {
       navigation.navigate('Messages');
     } else if (notification.carId) {
       // navigate to car — for now just go to Messages as placeholder
       navigation.navigate('Main');
+    } else if (notification.type === 'listing_update') {
+      const text = `${notification.title} ${notification.body || ''}`;
+      if (/rental|booking/i.test(text)) {
+        navigation.navigate('MyRentals');
+      } else {
+        navigation.navigate('SellerDashboard');
+      }
     }
   };
 
@@ -131,31 +151,38 @@ export default function NotificationCenterScreen({ navigation }) {
         </View>
       )}
 
-      {notifications.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="notifications-off-outline" size={56} color={colors.border} />
-          <Text style={styles.emptyTitle}>No notifications yet</Text>
-          <Text style={styles.emptySub}>Price drops, messages, and listing updates will appear here.</Text>
-        </View>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-          {/* Filter row */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filtersScroll}
-            contentContainerStyle={styles.filtersContent}
-          >
-            {['All', 'Price Drop', 'Messages', 'Updates', 'Saved Search'].map((filter) => (
-              <Pressable key={filter} style={[styles.filterChip, filter === 'All' && styles.filterChipActive]}>
-                <Text style={[styles.filterChipText, filter === 'All' && styles.filterChipTextActive]}>
-                  {filter}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Filter row */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtersScroll}
+          contentContainerStyle={styles.filtersContent}
+        >
+          {FILTERS.map((filter) => {
+            const active = activeFilter === filter.type;
+            return (
+              <Pressable
+                key={filter.label}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => setActiveFilter(filter.type)}
+              >
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                  {filter.label}
                 </Text>
               </Pressable>
-            ))}
-          </ScrollView>
+            );
+          })}
+        </ScrollView>
 
-          {Object.entries(grouped).map(([date, items]) => (
+        {filtered.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="notifications-off-outline" size={56} color={colors.border} />
+            <Text style={styles.emptyTitle}>No notifications yet</Text>
+            <Text style={styles.emptySub}>Price drops, messages, and listing updates will appear here.</Text>
+          </View>
+        ) : (
+          Object.entries(grouped).map(([date, items]) => (
             <DateSection
               key={date}
               date={date}
@@ -163,9 +190,9 @@ export default function NotificationCenterScreen({ navigation }) {
               onPress={handlePress}
               onMarkRead={markNotificationRead}
             />
-          ))}
-        </ScrollView>
-      )}
+          ))
+        )}
+      </ScrollView>
     </Screen>
   );
 }

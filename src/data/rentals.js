@@ -267,7 +267,7 @@ export const DURATION_PRESETS = [1, 2, 3, 5, 7, 14];
 // Next N days as pickers — index-based so unavailableDays can reference them
 export function getRentalDates(count = 14) {
   const dates = [];
-  const base = new Date(2026, 6, 16); // Jul 16 2026 — demo anchor date
+  const base = new Date(); // always start from today
   for (let i = 0; i < count; i++) {
     const d = new Date(base);
     d.setDate(base.getDate() + i);

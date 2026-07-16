@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -9,10 +9,10 @@ const GROUPS = [
   {
     title: 'Account',
     items: [
-      { icon: 'person-outline', label: 'Edit profile' },
-      { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: 'Verified' },
-      { icon: 'notifications-outline', label: 'Saved searches' },
-      { icon: 'location-outline', label: 'Addresses' },
+      { icon: 'person-outline', label: 'Edit profile', comingSoon: 'Profile editing is coming in a future update.' },
+      { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: 'Verified', screen: 'IDVerification' },
+      { icon: 'notifications-outline', label: 'Saved searches', screen: 'Saved' },
+      { icon: 'location-outline', label: 'Addresses', comingSoon: 'Saved addresses are coming in a future update.' },
     ],
   },
   {
@@ -20,16 +20,16 @@ const GROUPS = [
     items: [
       { icon: 'notifications-outline', label: 'Push notifications', toggle: true },
       { icon: 'mail-outline', label: 'Email alerts', toggle: true },
-      { icon: 'moon-outline', label: 'Dark mode', toggle: false },
-      { icon: 'globe-outline', label: 'Language', value: 'English' },
+      { icon: 'moon-outline', label: 'Dark mode (preview)', toggle: false },
+      { icon: 'globe-outline', label: 'Language', value: 'English', comingSoon: 'Kinyarwanda support is coming soon.' },
     ],
   },
   {
     title: 'Support',
     items: [
-      { icon: 'help-circle-outline', label: 'Help center' },
-      { icon: 'document-text-outline', label: 'Terms & privacy' },
-      { icon: 'star-outline', label: 'Rate Inzozi Motors' },
+      { icon: 'help-circle-outline', label: 'Help center', comingSoon: 'The help center is coming soon.' },
+      { icon: 'document-text-outline', label: 'Terms & privacy', comingSoon: 'Terms & privacy policy pages are coming soon.' },
+      { icon: 'star-outline', label: 'Rate Inzozi Motors', comingSoon: 'App store rating will be available after launch.' },
     ],
   },
 ];
@@ -43,7 +43,15 @@ function Toggle({ on }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const [toggles, setToggles] = useState({ 'Push notifications': true, 'Email alerts': true, 'Dark mode': false });
+  const [toggles, setToggles] = useState({ 'Push notifications': true, 'Email alerts': true, 'Dark mode (preview)': false });
+
+  const handleItemPress = (item) => {
+    if (item.screen) {
+      navigation.navigate(item.screen);
+    } else if (item.comingSoon) {
+      Alert.alert('Coming soon', item.comingSoon);
+    }
+  };
 
   return (
     <Screen background={colors.bg}>
@@ -60,7 +68,7 @@ export default function SettingsScreen({ navigation }) {
                   <Pressable
                     key={item.label}
                     style={[styles.item, i < g.items.length - 1 && styles.itemBorder]}
-                    onPress={() => isToggle && setToggles((t) => ({ ...t, [item.label]: !t[item.label] }))}
+                    onPress={() => (isToggle ? setToggles((t) => ({ ...t, [item.label]: !t[item.label] })) : handleItemPress(item))}
                   >
                     <View style={styles.itemIcon}>
                       <Ionicons name={item.icon} size={20} color={colors.slate700} />

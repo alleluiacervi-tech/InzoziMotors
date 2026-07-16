@@ -6,6 +6,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { useApp } from '../context/AppContext';
 
 const CENTERS = [
   {
@@ -38,7 +39,7 @@ const getDates = () => {
   const dates = [];
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const today = new Date(2026, 5, 28); // Jun 28 2026
+  const today = new Date();
   for (let i = 1; i <= 10; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
@@ -71,6 +72,8 @@ const DATES = getDates();
 
 export default function InspectionSchedulingScreen({ navigation, route }) {
   const carName = route?.params?.carName || 'Your Car';
+  const submissionId = route?.params?.submissionId || null;
+  const { updateSubmissionStatus } = useApp();
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -80,6 +83,14 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
   const handleBook = () => {
     const center = CENTERS.find((c) => c.id === selectedCenter);
     const date = DATES.find((d) => d.key === selectedDate);
+    // Write the booking back to the submission so the dashboard reflects it
+    if (submissionId) {
+      updateSubmissionStatus(
+        submissionId,
+        'scheduled',
+        `Inspection: ${date.month} ${date.date} · ${selectedTime} · ${center.name}`
+      );
+    }
     Alert.alert(
       'Inspection Booked!',
       `Your inspection is confirmed for ${date.label}, ${date.month} ${date.date} at ${selectedTime} at ${center.name}.\n\nBring your vehicle and all available service records.`,
@@ -96,7 +107,9 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
         <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.hero}>
           <Ionicons name="checkmark-circle" size={28} color={colors.blueLight} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroLabel}>Your submission was approved!</Text>
+            <Text style={styles.heroLabel}>
+              {submissionId ? 'Your submission was approved!' : 'Book a 150-point inspection'}
+            </Text>
             <Text style={styles.heroTitle}>{carName}</Text>
             <Text style={styles.heroSub}>Book a 150-point inspection to go live on the platform.</Text>
           </View>

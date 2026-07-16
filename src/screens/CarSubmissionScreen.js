@@ -9,26 +9,15 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
+import { estimateValuation } from '../data/finance';
 
 const MAKES = ['Toyota', 'Honda', 'Nissan', 'Subaru', 'Mercedes', 'BMW', 'Mazda', 'Hyundai', 'Kia', 'Volkswagen'];
-
-const BASE_PRICES = { Toyota: 22000, Honda: 18000, Nissan: 16000, Subaru: 20000, Mercedes: 48000, BMW: 44000, Mazda: 17000, Hyundai: 15000, Kia: 14000, Volkswagen: 19000 };
-function aiSuggestPrice(make, year, mileage) {
-  const base = BASE_PRICES[make] || 20000;
-  const yearFactor = Math.max(0.5, Math.min(1.0, 0.5 + (Number(year) - 2015) * 0.035));
-  const mileageFactor = Math.max(0.6, 1 - (Number(mileage) / 180000) * 0.35);
-  const mid = Math.round(base * yearFactor * mileageFactor / 500) * 500;
-  return { low: Math.round(mid * 0.92 / 500) * 500, high: Math.round(mid * 1.08 / 500) * 500 };
-}
-function aiComparablesCount(make) {
-  return 5 + ((make.charCodeAt(0) || 84) % 8);
-}
 const FUEL_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
 const TRANSMISSIONS = ['Automatic', 'Manual'];
 const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Van'];
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Needs Work'];
 const SERVICE_HISTORY = ['Full history', 'Partial history', 'Unknown'];
-const YEARS = Array.from({ length: 16 }, (_, i) => String(2025 - i));
+const YEARS = Array.from({ length: 16 }, (_, i) => String(2026 - i));
 const PHOTO_SLOTS = [
   { key: 'front', label: 'Front' },
   { key: 'back', label: 'Rear' },
@@ -91,47 +80,73 @@ function StepBar({ current, total }) {
   );
 }
 
-export default function CarSubmissionScreen({ navigation }) {
-  const { addSubmission } = useApp();
-  const [step, setStep] = useState(0);
+export default function CarSubmissionScreen({ navigation, route }) {
+  const { addSubmission, cars } = useApp();
 
+  // Prefill from the valuation tool — no duplicate typing
+  const prefill = route.params?.prefill || {};
+
+  const [step, setStep] = useState(0);
   const [form, setForm] = useState({
-    make: '', model: '', year: '', mileage: '', fuelType: '', transmission: '', bodyType: '', color: '',
-    condition: '', accidents: false, serviceHistory: '', notes: '',
+    make: prefill.make || '',
+    model: prefill.model || '',
+    year: prefill.year ? String(prefill.year) : '',
+    mileage: prefill.mileage ? String(prefill.mileage) : '',
+    fuelType: '', transmission: '', bodyType: '', color: '',
+    condition: '', accidents: false, accidentNotes: '', serviceHistory: '', notes: '',
     askingPrice: '', sellerNotes: '',
   });
   const [photos, setPhotos] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
+  // Same estimator as the valuation tool — one price engine everywhere
   const priceSuggestion = (form.make && form.year && form.mileage)
-    ? aiSuggestPrice(form.make, form.year, form.mileage)
+    ? estimateValuation({ make: form.make, year: Number(form.year), mileage: Number(form.mileage) }, cars)
     : null;
-  const comparablesCount = form.make ? aiComparablesCount(form.make) : 8;
+  const comparablesCount = priceSuggestion?.comparables >= 2 ? priceSuggestion.comparables : null;
   const priceInRange = priceSuggestion && form.askingPrice
     ? Number(form.askingPrice) >= priceSuggestion.low && Number(form.askingPrice) <= priceSuggestion.high
     : false;
 
   const canAdvanceStep0 = form.make && form.model && form.year && form.mileage && form.fuelType && form.transmission;
   const canAdvanceStep1 = form.condition && form.serviceHistory;
-  const canAdvanceStep2 = Object.keys(photos).length >= 4;
+  const canAdvanceStep2 = true; // reference photos are optional — official photos are taken at inspection
 
-  const handleSubmit = () => {
-    const submission = {
-      carTitle: `${form.year} ${form.make} ${form.model}`,
-      make: form.make,
-      model: form.model,
-      year: Number(form.year),
-      mileage: Number(form.mileage),
-      askingPrice: Number(form.askingPrice) || 0,
-      image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&q=80',
-    };
-    addSubmission(submission);
-    Alert.alert(
-      'Submission Received!',
-      `Your ${form.year} ${form.make} ${form.model} has been submitted for review. Our team will reach out within 24 hours to discuss next steps.`,
-      [{ text: 'View My Submissions', onPress: () => navigation.navigate('SellerDashboard') }]
-    );
+  const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await addSubmission({
+        carTitle: `${form.year} ${form.make} ${form.model}`,
+        make: form.make,
+        model: form.model,
+        year: Number(form.year),
+        mileage: Number(form.mileage),
+        askingPrice: Number(form.askingPrice) || 0,
+        condition: form.condition,
+        fuelType: form.fuelType,
+        transmission: form.transmission,
+        bodyType: form.bodyType,
+        color: form.color,
+        notes: form.notes,
+        accidentNotes: form.accidents ? form.accidentNotes : '',
+        serviceHistory: form.serviceHistory,
+        sellerNotes: form.sellerNotes,
+        photos,
+        image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&q=80',
+      });
+      Alert.alert(
+        'Submission Received!',
+        `Your ${form.year} ${form.make} ${form.model} has been submitted for review. Our team will reach out within 24 hours to discuss next steps.`,
+        [{ text: 'View My Submissions', onPress: () => navigation.navigate('SellerDashboard') }]
+      );
+    } catch (err) {
+      Alert.alert('Something went wrong', 'Your submission could not be saved. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -161,7 +176,9 @@ export default function CarSubmissionScreen({ navigation }) {
                 />
               </Field>
               <Field label="Year">
-                <ChipGroup options={YEARS.slice(0, 8)} selected={form.year} onSelect={(v) => set('year', v)} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <ChipGroup options={YEARS} selected={form.year} onSelect={(v) => set('year', v)} />
+                </ScrollView>
               </Field>
               <Field label="Mileage (km)">
                 <TextInput
@@ -192,9 +209,10 @@ export default function CarSubmissionScreen({ navigation }) {
                 />
               </Field>
               <Button
-                title="Continue — Condition"
+                title={canAdvanceStep0 ? 'Continue — Condition' : 'Fill in the required fields'}
                 onPress={() => setStep(1)}
-                style={{ marginTop: 8, opacity: canAdvanceStep0 ? 1 : 0.4 }}
+                disabled={!canAdvanceStep0}
+                style={{ marginTop: 8 }}
               />
             </View>
           )}
@@ -227,8 +245,8 @@ export default function CarSubmissionScreen({ navigation }) {
                     multiline
                     numberOfLines={3}
                     textAlignVertical="top"
-                    value={form.notes}
-                    onChangeText={(v) => set('notes', v)}
+                    value={form.accidentNotes}
+                    onChangeText={(v) => set('accidentNotes', v)}
                   />
                 )}
               </Field>
@@ -251,9 +269,10 @@ export default function CarSubmissionScreen({ navigation }) {
               </Field>
 
               <Button
-                title="Continue — Photos"
+                title={canAdvanceStep1 ? 'Continue — Photos' : 'Select condition & service history'}
                 onPress={() => setStep(2)}
-                style={{ marginTop: 8, opacity: canAdvanceStep1 ? 1 : 0.4 }}
+                disabled={!canAdvanceStep1}
+                style={{ marginTop: 8 }}
               />
             </View>
           )}
@@ -290,14 +309,14 @@ export default function CarSubmissionScreen({ navigation }) {
               <View style={styles.photoNote}>
                 <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
                 <Text style={styles.photoNoteText}>
-                  Upload at least 4 photos to proceed. Min 4, max 6. Tap each slot to add.
+                  Photos are optional — they help our team prepare, but official listing photos are taken at inspection. You can skip this step.
                 </Text>
               </View>
 
               <Button
                 title="Continue — Price & Submit"
                 onPress={() => setStep(3)}
-                style={{ marginTop: 8, opacity: canAdvanceStep2 ? 1 : 0.4 }}
+                style={{ marginTop: 8 }}
               />
             </View>
           )}
@@ -333,7 +352,9 @@ export default function CarSubmissionScreen({ navigation }) {
                     ${priceSuggestion.low.toLocaleString()} – ${priceSuggestion.high.toLocaleString()}
                   </Text>
                   <Text style={styles.aiSuggestSub}>
-                    Based on {comparablesCount} similar {form.make} {form.model ? form.model + ' ' : ''}sales in Kigali
+                    {comparablesCount
+                      ? `Based on ${comparablesCount} similar ${form.make} cars on Inzozi`
+                      : 'Based on current Kigali market data'}
                   </Text>
                   {form.askingPrice > 0 && (
                     <View style={[styles.aiSuggestCheck, { backgroundColor: priceInRange ? colors.greenTint : '#FEF3C7' }]}>
@@ -391,7 +412,13 @@ export default function CarSubmissionScreen({ navigation }) {
                 ))}
               </View>
 
-              <Button title="Submit for Review" icon="send-outline" onPress={handleSubmit} style={{ marginTop: 8 }} />
+              <Button
+                title={submitting ? 'Submitting…' : 'Submit for Review'}
+                icon="send-outline"
+                onPress={handleSubmit}
+                disabled={submitting}
+                style={{ marginTop: 8 }}
+              />
             </View>
           )}
         </ScrollView>

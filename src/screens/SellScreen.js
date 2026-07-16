@@ -14,9 +14,9 @@ const STEPS = [
 ];
 
 const OPTIONS = [
-  { icon: 'flash-outline', title: 'Instant Dealer Buyout', sub: 'Vetted instant exchange offer', accent: colors.green },
-  { icon: 'hammer-outline', title: 'Certified Bid Event', sub: 'Maximize nationwide buyer demand', accent: colors.amber },
-  { icon: 'storefront-outline', title: 'Concierge Showroom', sub: 'Vetted private sale listing', accent: colors.primary },
+  { icon: 'trending-up-outline', title: "What's My Car Worth?", sub: 'Free instant estimate — 30 seconds', accent: colors.green, screen: 'CarValuation' },
+  { icon: 'shield-checkmark-outline', title: 'Submit for Certification', sub: '150-point inspection, we list it for you', accent: colors.primary, screen: 'CarSubmission' },
+  { icon: 'grid-outline', title: 'My Submissions', sub: 'Track your cars through the pipeline', accent: colors.amber, screen: 'SellerDashboard' },
 ];
 
 export default function SellScreen({ navigation }) {
@@ -24,11 +24,13 @@ export default function SellScreen({ navigation }) {
     <Screen background={colors.bg}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.head}>
-          <Text style={styles.h1}>Certify & Showcase</Text>
+          <Pressable style={styles.dashBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={20} color={colors.slate700} />
+          </Pressable>
+          <Text style={styles.h1}>Sell My Car</Text>
           <Pressable style={styles.dashBtn} onPress={() => navigation.navigate('SellerDashboard')}>
             <Ionicons name="grid-outline" size={20} color={colors.slate700} />
           </Pressable>
-
         </View>
 
         {/* Valuation hero */}
@@ -51,7 +53,7 @@ export default function SellScreen({ navigation }) {
         {/* Options */}
         <View style={styles.options}>
           {OPTIONS.map((o) => (
-            <Pressable key={o.title} style={styles.option} onPress={() => navigation.navigate('CarSubmission')}>
+            <Pressable key={o.title} style={styles.option} onPress={() => navigation.navigate(o.screen)}>
               <View style={[styles.optionIcon, { backgroundColor: o.accent + '1A' }]}>
                 <Ionicons name={o.icon} size={22} color={o.accent} />
               </View>
@@ -83,7 +85,7 @@ export default function SellScreen({ navigation }) {
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <Button title="Submit Your Car" icon="shield-checkmark-outline" onPress={() => navigation.navigate('CarSubmission')} />
+          <Button title="Submit for Inspection" icon="shield-checkmark-outline" onPress={() => navigation.navigate('CarSubmission')} />
         </View>
       </ScrollView>
     </Screen>

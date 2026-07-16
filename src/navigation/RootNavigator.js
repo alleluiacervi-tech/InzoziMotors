@@ -9,7 +9,6 @@ import VehicleDetailScreen from '../screens/VehicleDetailScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
 import FiltersScreen from '../screens/FiltersScreen';
 import SellerDashboardScreen from '../screens/SellerDashboardScreen';
-import ListingWizardScreen from '../screens/ListingWizardScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -46,6 +45,7 @@ import RentalBookingScreen from '../screens/RentalBookingScreen';
 import MyRentalsScreen from '../screens/MyRentalsScreen';
 import RentalCheckInScreen from '../screens/RentalCheckInScreen';
 // Seller tools
+import SellScreen from '../screens/SellScreen';
 import CarValuationScreen from '../screens/CarValuationScreen';
 // Trust
 import InzoziPromiseScreen from '../screens/InzoziPromiseScreen';
@@ -66,7 +66,6 @@ export default function RootNavigator() {
       <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
       <Stack.Screen name="Filters" component={FiltersScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="SellerDashboard" component={SellerDashboardScreen} />
-      <Stack.Screen name="ListingWizard" component={ListingWizardScreen} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="Chat" component={ChatScreen} />
@@ -110,6 +109,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="MyRentals" component={MyRentalsScreen} />
       <Stack.Screen name="RentalCheckIn" component={RentalCheckInScreen} />
+      <Stack.Screen name="Sell" component={SellScreen} />
       <Stack.Screen name="CarValuation" component={CarValuationScreen} />
       <Stack.Screen name="InzoziPromise" component={InzoziPromiseScreen} />
     </Stack.Navigator>

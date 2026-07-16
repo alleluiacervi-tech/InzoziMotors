@@ -18,7 +18,7 @@ const DEFAULT_USER = {
   name: 'Alex Morgan',
   email: 'alex.morgan@email.com',
   initials: 'AM',
-  id_verified: 'approved',
+  id_verified: 'none', // 'none' so the ID verification flow is demoable
 };
 
 // Demo data — used when backend is unreachable (Phase 6 not yet deployed)
@@ -472,6 +472,10 @@ export function AppProvider({ children }) {
 
   // --- Auth operations ---
 
+  // True when the failure is connectivity (backend not deployed), not a rejected credential
+  const isNetworkError = (err) =>
+    /fetch|network|timeout|abort/i.test(err?.message || '');
+
   const loginUser = useCallback(async (email, password) => {
     setLoading(true);
     setError(null);
@@ -485,12 +489,30 @@ export function AppProvider({ children }) {
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
+      if (isNetworkError(err)) {
+        // Backend unreachable (Phase 6 not deployed) — demo login
+        const name = email.split('@')[0].replace(/[._]/g, ' ') || 'Demo User';
+        setCurrentUser({
+          ...DEFAULT_USER,
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          email,
+          initials: name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2),
+        });
+        setIsLoggedIn(true);
+        return;
+      }
       setError(err.message);
       throw err;
     } finally {
       setLoading(false);
     }
   }, [loadInitialData]);
+
+  // Local guest session — no API round-trip
+  const loginAsGuest = useCallback(() => {
+    setCurrentUser(DEFAULT_USER);
+    setIsLoggedIn(true);
+  }, []);
 
   const signUpUser = useCallback(async (name, email, password, role = 'buyer') => {
     setLoading(true);
@@ -505,6 +527,17 @@ export function AppProvider({ children }) {
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
+      if (isNetworkError(err)) {
+        setCurrentUser({
+          ...DEFAULT_USER,
+          name,
+          email,
+          initials: name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2),
+          id_verified: 'none',
+        });
+        setIsLoggedIn(true);
+        return;
+      }
       setError(err.message);
       throw err;
     } finally {
@@ -526,25 +559,23 @@ export function AppProvider({ children }) {
 
   // --- Car wishlisting / bookmarking ---
 
-  const toggleSaveCar = useCallback(async (id) => {
-    if (!isLoggedIn) return;
-    try {
-      const res = await carsApi.saveCar(id);
-      setSavedCarIds((prev) =>
-        res.saved ? [...prev, id] : prev.filter((x) => x !== id)
-      );
-    } catch (err) {
-      console.error('Error toggling wishlist:', err);
+  const toggleSaveCar = useCallback((id) => {
+    // Local-first so the heart always responds; sync to API in the background when possible
+    setSavedCarIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    if (isLoggedIn) {
+      carsApi.saveCar(id).catch(() => {}); // backend optional in demo
     }
   }, [isLoggedIn]);
 
   const isCarSaved = useCallback((id) => savedCarIds.includes(id), [savedCarIds]);
-  const getSavedCars = useCallback(() => cars.filter((c) => savedCarIds.includes(c.id)), [cars, savedCarIds]);
+  const getSavedCars = useCallback(
+    () => [...cars, ...rentalCars].filter((c) => savedCarIds.includes(c.id)),
+    [cars, rentalCars, savedCarIds]
+  );
 
   // --- Seller listings (legacy fallback) ---
-  const addListing = useCallback((listing) => {
-    setSellerListings((prev) => [listing, ...prev]);
-  }, []);
 
   // --- ID Verification uploads ---
 
@@ -594,6 +625,9 @@ export function AppProvider({ children }) {
         color: data.color,
         asking_price: parseInt(data.askingPrice || data.asking_price),
         notes: data.notes,
+        accident_notes: data.accidentNotes,
+        service_history: data.serviceHistory,
+        seller_notes: data.sellerNotes,
       };
       const res = await submissionsApi.createSubmission(mapped);
 
@@ -603,8 +637,45 @@ export function AppProvider({ children }) {
 
       return res.id;
     } catch (err) {
-      console.error('Error creating car submission:', err);
-      throw err;
+      console.error('Submissions API unreachable — saving locally:', err.message);
+      // Local fallback so the dashboard reflects what the seller just did
+      const localSub = {
+        id: 'sub' + Date.now(),
+        carTitle: `${data.year} ${data.make} ${data.model}`.trim(),
+        make: data.make,
+        model: data.model,
+        year: parseInt(data.year),
+        mileage: parseInt(data.mileage) || 0,
+        askingPrice: parseInt(data.askingPrice) || 0,
+        condition: data.condition,
+        fuelType: data.fuelType,
+        transmission: data.transmission,
+        bodyType: data.bodyType,
+        color: data.color,
+        notes: data.notes,
+        accidentNotes: data.accidentNotes,
+        serviceHistory: data.serviceHistory,
+        sellerNotes: data.sellerNotes,
+        photos: data.photos,
+        submittedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'under_review',
+        statusDetail: 'Our team is reviewing your submission',
+        inspectionDate: null,
+        center: null,
+        listingId: null,
+        image: data.image || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&q=80',
+      };
+      setSubmissions((prev) => [localSub, ...prev]);
+      setNotifications((prev) => [{
+        id: 'submit_' + Date.now(),
+        type: 'listing_update',
+        title: 'Submission received',
+        body: `${localSub.carTitle} is under review. We'll get back to you within 24 hours.`,
+        time: 'Just now',
+        date: 'Today',
+        read: false,
+      }, ...prev]);
+      return localSub.id;
     } finally {
       setLoading(false);
     }
@@ -615,6 +686,24 @@ export function AppProvider({ children }) {
     setSubmissions((prev) =>
       prev.map((s) => s.id === id ? { ...s, status, statusDetail: detail } : s)
     );
+  }, []);
+
+  // Price change on a live listing — no status regression, listing stays live
+  const updateSubmissionPrice = useCallback((id, newPrice) => {
+    setSubmissions((prev) =>
+      prev.map((s) => s.id === id
+        ? { ...s, askingPrice: newPrice, statusDetail: 'Price updated — listing stays live' }
+        : s)
+    );
+    setNotifications((prev) => [{
+      id: 'price_' + Date.now(),
+      type: 'listing_update',
+      title: 'Listing price updated',
+      body: `Your listing price was changed to $${Number(newPrice).toLocaleString()}. The listing remains live.`,
+      time: 'Just now',
+      date: 'Today',
+      read: false,
+    }, ...prev]);
   }, []);
 
   const relistSubmission = useCallback(async (id, newPrice) => {
@@ -814,12 +903,41 @@ export function AppProvider({ children }) {
 
       return res.booking_id;
     } catch (err) {
-      console.error('Error booking handover:', err);
-      throw err;
+      console.error('Handover API unreachable — booking locally:', err.message);
+      // Local fallback so checkout + order tracking work in the demo
+      const localId = 'HB' + String(Date.now()).slice(-6);
+      const localBooking = {
+        id: localId,
+        carId: car.id,
+        carTitle: car.title,
+        carImage: car.image,
+        price: car.price || car.currentBid,
+        center,
+        date,
+        time,
+        status: 'reserved',
+        createdAt: new Date().toISOString(),
+      };
+      setPurchaseRequests((prev) => [localBooking, ...prev]);
+      setNotifications((prev) => [{
+        id: 'handover_' + Date.now(),
+        type: 'listing_update',
+        title: 'Handover booked',
+        body: `${car.title} is reserved for you — ${date} at ${time}, ${center}.`,
+        time: 'Just now',
+        date: 'Today',
+        read: false,
+      }, ...prev]);
+      return localId;
     } finally {
       setLoading(false);
     }
   }, [mapHandover, mapNotification]);
+
+  const cancelHandover = useCallback((bookingId) => {
+    handoversApi.cancelHandover?.(bookingId)?.catch?.(() => {});
+    setPurchaseRequests((prev) => prev.filter((r) => r.id !== bookingId));
+  }, []);
 
   const addPurchaseRequest = bookHandover;
 
@@ -840,27 +958,22 @@ export function AppProvider({ children }) {
 
   // --- Saved Searches ---
 
-  const toggleSavedSearchNotify = useCallback(async (id) => {
-    try {
-      const current = savedSearches.find((s) => s.id === id);
-      if (!current) return;
-      const nextNotify = !current.notifyEnabled;
-      await carsApi.toggleSavedSearchNotify(id, nextNotify);
-      setSavedSearches((prev) =>
-        prev.map((s) => s.id === id ? { ...s, notifyEnabled: nextNotify } : s)
-      );
-    } catch (err) {
-      console.error('Error toggling search notify:', err);
-    }
-  }, [savedSearches]);
+  const toggleSavedSearchNotify = useCallback((id) => {
+    // Local-first; backend sync is best-effort
+    let nextNotify;
+    setSavedSearches((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        nextNotify = !s.notifyEnabled;
+        return { ...s, notifyEnabled: nextNotify };
+      })
+    );
+    carsApi.toggleSavedSearchNotify(id, nextNotify).catch(() => {});
+  }, []);
 
-  const deleteSavedSearch = useCallback(async (id) => {
-    try {
-      await carsApi.deleteSavedSearch(id);
-      setSavedSearches((prev) => prev.filter((s) => s.id !== id));
-    } catch (err) {
-      console.error('Error deleting saved search:', err);
-    }
+  const deleteSavedSearch = useCallback((id) => {
+    setSavedSearches((prev) => prev.filter((s) => s.id !== id));
+    carsApi.deleteSavedSearch(id).catch(() => {});
   }, []);
 
   const createSavedSearch = useCallback(async (label, filters) => {
@@ -879,7 +992,17 @@ export function AppProvider({ children }) {
       })));
       return res.id;
     } catch (err) {
-      console.error('Error creating saved search:', err);
+      // Local fallback
+      const localSearch = {
+        id: 'ss' + Date.now(),
+        label,
+        notifyEnabled: true,
+        matchCount: 0,
+        lastMatch: null,
+        ...filters,
+      };
+      setSavedSearches((prev) => [localSearch, ...prev]);
+      return localSearch.id;
     }
   }, []);
 
@@ -887,7 +1010,7 @@ export function AppProvider({ children }) {
     // Cars
     cars, savedCarIds, toggleSaveCar, isCarSaved, getSavedCars,
     // Seller Listings
-    sellerListings, addListing,
+    sellerListings,
     // Submissions pipeline
     submissions, addSubmission, updateSubmissionStatus,
     // ID Verification
@@ -898,9 +1021,9 @@ export function AppProvider({ children }) {
     notifications, markNotificationRead, markAllNotificationsRead,
     inspectionForms, submitInspectionForm,
     // Handovers & checkout
-    purchaseRequests, bookHandover, addPurchaseRequest,
+    purchaseRequests, bookHandover, addPurchaseRequest, cancelHandover,
     handovers, confirmHandover,
-    relistSubmission,
+    relistSubmission, updateSubmissionPrice,
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
@@ -910,7 +1033,7 @@ export function AppProvider({ children }) {
     // Chat messages
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
     // Authentication
-    currentUser, isLoggedIn, loginUser, signUpUser, logoutUser, loading, error,
+    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, loading, error,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

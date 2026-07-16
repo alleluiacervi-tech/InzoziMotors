@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
+import { formatRWF } from '../data/marketData';
 
 const { width } = Dimensions.get('window');
 
@@ -48,7 +49,10 @@ export default function RentalDetailScreen({ navigation, route }) {
             <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()}>
               <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
             </Pressable>
-            <Pressable style={styles.circleBtn}>
+            <Pressable
+              style={styles.circleBtn}
+              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Inzozi Motors` }).catch(() => {})}
+            >
               <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
             </Pressable>
           </View>
@@ -121,7 +125,10 @@ export default function RentalDetailScreen({ navigation, route }) {
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Daily rate</Text>
-              <Text style={styles.priceValue}>${car.dailyRate}/day</Text>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.priceValue}>${car.dailyRate}/day</Text>
+                <Text style={styles.priceRwf}>≈ {formatRWF(car.dailyRate)}</Text>
+              </View>
             </View>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Weekly rate</Text>
@@ -167,7 +174,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           {/* Inspection trust row */}
           <Pressable
             style={styles.inspectionRow}
-            onPress={() => navigation.navigate('InspectionReport', { car })}
+            onPress={() => navigation.navigate('InspectionReport', { car, score: car.inspectionScore })}
           >
             <View style={styles.inspectionIcon}>
               <Ionicons name="shield-checkmark" size={20} color={colors.green} />
@@ -303,6 +310,7 @@ const styles = StyleSheet.create({
   priceLabel: { fontSize: 14, fontFamily: fonts.medium, color: colors.textSecondary },
   priceValue: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   priceSave: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.green, marginTop: 2 },
+  priceRwf: { fontSize: 10, fontFamily: fonts.medium, color: colors.textMuted, marginTop: 2 },
   priceSub: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
   minDaysNote: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

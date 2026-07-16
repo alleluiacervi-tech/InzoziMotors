@@ -8,7 +8,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
 
-const MAKES = ['Toyota', 'Honda', 'Subaru', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Mazda', 'Nissan', 'VW'];
+const MAKES = ['Toyota', 'Honda', 'Subaru', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Mazda', 'Nissan', 'Volkswagen'];
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 
 export default function CarValuationScreen({ navigation }) {
@@ -73,9 +73,16 @@ export default function CarValuationScreen({ navigation }) {
           </View>
 
           <Button
-            title="Book My Inspection"
+            title="Submit for Inspection"
             icon="calendar-outline"
-            onPress={() => navigation.navigate('CarSubmission')}
+            onPress={() => navigation.navigate('CarSubmission', {
+              prefill: {
+                make,
+                model,
+                year,
+                mileage: parseInt(mileage.replace(/\D/g, ''), 10) || 0,
+              },
+            })}
             style={{ marginTop: 20 }}
           />
           <Pressable onPress={() => setResult(null)} style={{ marginTop: 14 }}>

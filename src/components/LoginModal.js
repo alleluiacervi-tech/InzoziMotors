@@ -35,10 +35,10 @@ export default function LoginModal({ visible, onClose, onLoginSuccess }) {
             Log in easily to send real-time{'\n'}inquiries to our dealers.
           </Text>
 
-          {/* Kakao 3-second login button */}
-          <Pressable style={styles.kakaoBtn} onPress={handleSocialLogin}>
-            <Ionicons name="chatbubble" size={20} color="#1A1A1A" />
-            <Text style={styles.kakaoText}>Continue with Kakao in 3s</Text>
+          {/* Google login button */}
+          <Pressable style={styles.googleBtn} onPress={handleSocialLogin}>
+            <Ionicons name="logo-google" size={20} color="#1A1A1A" />
+            <Text style={styles.googleText}>Continue with Google</Text>
           </Pressable>
 
           {/* Guest login bypass */}
@@ -89,18 +89,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 28,
   },
-  kakaoBtn: {
+  googleBtn: {
     width: '100%',
     height: 48,
     borderRadius: 8,
-    backgroundColor: '#FEE500', // Kakao Yellow
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     marginBottom: 16,
   },
-  kakaoText: {
+  googleText: {
     color: '#1A1A1A',
     fontSize: 14,
     fontFamily: fonts.bold,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarListCard from '../components/CarListCard';
@@ -9,8 +9,13 @@ import { useApp } from '../context/AppContext';
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
 
+// Price works for both inventories: rentals sort by daily rate
+const priceOf = (c) =>
+  c.listingType === 'rental' ? c.dailyRate : c.type === 'auction' ? c.currentBid : c.price;
+
 export default function SearchResultsScreen({ navigation, route }) {
-  const { cars } = useApp();
+  const { cars, rentalCars, createSavedSearch } = useApp();
+  const isRentMode = route.params?.mode === 'rent';
   const [sort, setSort] = useState('Best match');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState(route.params?.filters || null);
@@ -34,7 +39,7 @@ export default function SearchResultsScreen({ navigation, route }) {
   };
 
   // 1. Filter by Search Query
-  let filteredCars = cars;
+  let filteredCars = isRentMode ? rentalCars : cars;
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase().trim();
     filteredCars = filteredCars.filter(
@@ -58,26 +63,15 @@ export default function SearchResultsScreen({ navigation, route }) {
       filteredCars = filteredCars.filter((c) => c.fuel.toLowerCase() === activeFilters.fuel.toLowerCase());
     }
     if (activeFilters.maxPrice) {
-      filteredCars = filteredCars.filter((c) => {
-        const price = c.type === 'auction' ? c.currentBid : c.price;
-        return price <= activeFilters.maxPrice;
-      });
+      filteredCars = filteredCars.filter((c) => priceOf(c) <= activeFilters.maxPrice);
     }
   }
 
   // 3. Sort Results
   if (sort === 'Price ↑') {
-    filteredCars = [...filteredCars].sort((a, b) => {
-      const pa = a.type === 'auction' ? a.currentBid : a.price;
-      const pb = b.type === 'auction' ? b.currentBid : b.price;
-      return pa - pb;
-    });
+    filteredCars = [...filteredCars].sort((a, b) => priceOf(a) - priceOf(b));
   } else if (sort === 'Price ↓') {
-    filteredCars = [...filteredCars].sort((a, b) => {
-      const pa = a.type === 'auction' ? a.currentBid : a.price;
-      const pb = b.type === 'auction' ? b.currentBid : b.price;
-      return pb - pa;
-    });
+    filteredCars = [...filteredCars].sort((a, b) => priceOf(b) - priceOf(a));
   } else if (sort === 'Mileage') {
     filteredCars = [...filteredCars].sort((a, b) => a.mileage - b.mileage);
   } else if (sort === 'Newest') {
@@ -95,7 +89,8 @@ export default function SearchResultsScreen({ navigation, route }) {
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search make, model, type..."
+            placeholder={isRentMode ? 'Search rental cars...' : 'Search make, model, type...'}
+            autoFocus={!!route.params?.focusSearch}
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -125,8 +120,28 @@ export default function SearchResultsScreen({ navigation, route }) {
         ListHeaderComponent={
           <View style={isGrid && { paddingHorizontal: 6 }}>
             <View style={styles.resultRow}>
-              <Text style={styles.resultCount}>{filteredCars.length} cars found</Text>
+              <Text style={styles.resultCount}>
+                {filteredCars.length} {isRentMode ? 'rentals' : 'cars'} found
+              </Text>
               <View style={styles.resultActions}>
+                {(searchQuery.trim() || activeFilters) && !isRentMode && (
+                  <Pressable
+                    style={styles.layoutBtn}
+                    hitSlop={6}
+                    onPress={async () => {
+                      const parts = [
+                        activeFilters?.make, activeFilters?.body, activeFilters?.fuel,
+                        activeFilters?.maxPrice ? `< $${(activeFilters.maxPrice / 1000)}k` : null,
+                        searchQuery.trim() || null,
+                      ].filter(Boolean);
+                      const label = parts.join(' · ') || 'All cars';
+                      await createSavedSearch(label, { ...activeFilters, query: searchQuery.trim() });
+                      Alert.alert('Search saved', "We'll notify you when new matching cars are listed.");
+                    }}
+                  >
+                    <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
+                  </Pressable>
+                )}
                 <Pressable style={styles.layoutBtn} onPress={() => setLayout(isGrid ? 'list' : 'grid')} hitSlop={6}>
                   <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.primary} />
                 </Pressable>
@@ -184,13 +199,14 @@ export default function SearchResultsScreen({ navigation, route }) {
             />
           </View>
         }
-        renderItem={({ item }) =>
-          isGrid ? (
-            <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
+        renderItem={({ item }) => {
+          const target = item.listingType === 'rental' ? 'RentalDetail' : 'VehicleDetail';
+          return isGrid ? (
+            <CarCard car={item} onPress={() => navigation.navigate(target, { car: item })} />
           ) : (
-            <CarListCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
-          )
-        }
+            <CarListCard car={item} onPress={() => navigation.navigate(target, { car: item })} />
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="car-outline" size={52} color={colors.border} />

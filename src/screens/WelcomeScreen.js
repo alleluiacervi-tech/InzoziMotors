@@ -116,11 +116,14 @@ export default function WelcomeScreen({ navigation }) {
           </View>
 
           <Button
-            title="Certify & Sell My Vehicle"
+            title="Sell My Car"
             icon="shield-checkmark-outline"
             variant="secondary"
             onDark
-            onPress={() => navigation.replace('Main', { screen: 'Sell' })}
+            onPress={() => {
+              navigation.replace('Main');
+              navigation.navigate('Sell');
+            }}
           />
           <Pressable onPress={() => navigation.navigate('SignIn')}>
             <Text style={styles.signin}>
