@@ -14,6 +14,7 @@ import {
   getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop,
   getSavedCount, getListedDaysAgo, getNeighborhood, getDriveType, formatRWF,
 } from '../data/marketData';
+import { monthlyEstimate } from '../data/finance';
 
 const { width } = Dimensions.get('window');
 
@@ -54,7 +55,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const [loginVisible, setLoginVisible] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
-  const { cars } = useApp();
+  const { cars, rentalCars } = useApp();
+
+  const monthly = car.price ? monthlyEstimate(car.price) : null;
+  // Rent-to-own bridge: a rental of the same make (or same category) to try first
+  const tryRental = rentalCars.find((r) => r.make === car.make)
+    || rentalCars.find((r) => r.category === car.category);
 
   const marketDiff = getMarketDiff(car);
   const marketAvg = getMarketAvg(car);
@@ -177,6 +183,25 @@ export default function VehicleDetailScreen({ navigation, route }) {
             )}
           </View>
 
+          {/* Financing strip — own it monthly */}
+          {monthly && !isAuction && (
+            <Pressable style={styles.financeStrip} onPress={() => navigation.navigate('Financing', { car })}>
+              <View style={styles.financeIcon}>
+                <Ionicons name="card-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.financeTitle}>
+                  Own it from <Text style={styles.financeAmount}>~${monthly}/mo</Text>
+                </Text>
+                <Text style={styles.financeSub}>20% down · 60 months · 4 partner banks</Text>
+              </View>
+              <View style={styles.financeCta}>
+                <Text style={styles.financeCtaText}>Get pre-qualified</Text>
+                <Ionicons name="arrow-forward" size={12} color={colors.primary} />
+              </View>
+            </Pressable>
+          )}
+
           {/* Price history sparkline */}
           <View style={styles.sparklineCard}>
             <View style={styles.sparklineLeft}>
@@ -255,6 +280,23 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
+
+          {/* Rent-to-own bridge — try this model first */}
+          {tryRental && !isAuction && (
+            <Pressable
+              style={styles.tryRentalRow}
+              onPress={() => navigation.navigate('RentalDetail', { car: tryRental })}
+            >
+              <Image source={{ uri: tryRental.image }} style={styles.tryRentalThumb} resizeMode="cover" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.tryRentalTitle}>Not sure yet? Try before you buy</Text>
+                <Text style={styles.tryRentalSub}>
+                  Rent a {tryRental.make} from ${tryRental.dailyRate}/day — rental fees credit toward your purchase
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+            </Pressable>
+          )}
 
           <View style={styles.trustChips}>
             <Badge variant="tag" label="7-day returns" />
@@ -461,6 +503,31 @@ const styles = StyleSheet.create({
   inspectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   inspectionSub: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold, marginTop: 2 },
   trustChips: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
+  financeStrip: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: colors.greenTint,
+    borderWidth: 1, borderColor: '#DCFCE7',
+    borderRadius: radius.xl, padding: 12, marginTop: 14,
+  },
+  financeIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  financeTitle: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  financeAmount: { fontFamily: fonts.extraBold, color: colors.primary },
+  financeSub: { fontSize: 10, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
+  financeCta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  financeCtaText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary },
+  tryRentalRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.greenTint,
+    borderRadius: radius.xl, padding: 12, marginTop: 8,
+  },
+  tryRentalThumb: { width: 56, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
+  tryRentalTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
+  tryRentalSub: { fontSize: 11, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2, lineHeight: 15 },
   sectionTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 22, marginBottom: 10 },
   desc: { fontSize: 14, lineHeight: 22, color: colors.textSecondary },
   highlightGrid: { gap: 10 },

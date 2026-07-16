@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
+import { monthlyEstimate } from '../data/finance';
 
 const getInzoziYear = (car) => {
   const yy = String(car.year).slice(-2);
@@ -85,6 +86,9 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             <Text style={styles.meta} numberOfLines={1}>{getInzoziYear(car)}</Text>
             <Text style={styles.meta} numberOfLines={1}>{getInzoziMileage(car)} · {getInzoziLocation(car)}</Text>
             <Text style={styles.price}>{getInzoziPrice(car)}</Text>
+            {car.price ? (
+              <Text style={styles.monthly}>or ~${monthlyEstimate(car.price)}/mo</Text>
+            ) : null}
           </>
         )}
       </View>
@@ -137,4 +141,5 @@ const styles = StyleSheet.create({
   price: { fontFamily: fonts.extraBold, fontSize: 15, color: colors.primary, marginTop: 4, letterSpacing: -0.3 },
   rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
   perDay: { fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted, marginLeft: 2 },
+  monthly: { fontFamily: fonts.semiBold, fontSize: 10, color: colors.textMuted, marginTop: 1 },
 });

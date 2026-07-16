@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { RENTAL_CENTERS, DURATION_PRESETS, getRentalDates, calcTripCost } from '../data/rentals';
+import { rentToOwnCredit, RENT_TO_OWN_WINDOW_DAYS } from '../data/finance';
 
 export default function RentalBookingScreen({ navigation, route }) {
   const car = route.params?.car;
@@ -60,6 +61,14 @@ export default function RentalBookingScreen({ navigation, route }) {
             <ConfirmRow icon="time-outline" label="Duration" value={`${days} day${days > 1 ? 's' : ''}`} />
             <ConfirmRow icon="location-outline" label="Center" value={center.name} />
             <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${cost.total} (incl. $${cost.deposit} deposit)`} last />
+          </View>
+
+          <View style={styles.rtoBanner}>
+            <Ionicons name="swap-horizontal" size={16} color={colors.green} />
+            <Text style={styles.rtoBannerText}>
+              <Text style={{ fontFamily: fonts.extraBold }}>${rentToOwnCredit(cost.subtotal)} rent-to-own credit</Text>
+              {' '}— applies if you buy any Inzozi certified car within {RENT_TO_OWN_WINDOW_DAYS} days.
+            </Text>
           </View>
 
           <View style={styles.confirmNote}>
@@ -302,11 +311,21 @@ const styles = StyleSheet.create({
   confirmRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   confirmRowLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.textMuted, width: 84 },
   confirmRowValue: { flex: 1, fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, textAlign: 'right' },
+  rtoBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    alignSelf: 'stretch',
+    backgroundColor: colors.greenTint,
+    borderWidth: 1, borderColor: '#DCFCE7',
+    borderRadius: radius.md, padding: 12,
+    marginTop: 16,
+  },
+  rtoBannerText: { flex: 1, fontSize: 12, fontFamily: fonts.medium, color: colors.green, lineHeight: 17 },
   confirmNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    alignSelf: 'stretch',
     backgroundColor: colors.amberTint,
     borderRadius: radius.md, padding: 12,
-    marginTop: 16, marginBottom: 24,
+    marginTop: 10, marginBottom: 24,
   },
   confirmNoteText: { flex: 1, fontSize: 12, fontFamily: fonts.medium, color: colors.amberText, lineHeight: 17 },
 });

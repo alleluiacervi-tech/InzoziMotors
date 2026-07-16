@@ -32,19 +32,21 @@ export default function SellScreen({ navigation }) {
         </View>
 
         {/* Valuation hero */}
-        <LinearGradient
-          colors={[colors.navyLight, colors.navyMid]}
-          style={styles.valCard}
-        >
-          <Text style={styles.valEyebrow}>FREE INSTANT VALUATION</Text>
-          <Text style={styles.valTitle}>Verify Vehicle Status</Text>
-          <Text style={styles.valSub}>Analyze credentials and market placement instantly.</Text>
-          <View style={styles.plate}>
-            <Ionicons name="car-outline" size={20} color={colors.blueLight} />
-            <Text style={styles.plateText}>Verify VIN or plate</Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
-          </View>
-        </LinearGradient>
+        <Pressable onPress={() => navigation.navigate('CarValuation')}>
+          <LinearGradient
+            colors={[colors.navyLight, colors.navyMid]}
+            style={styles.valCard}
+          >
+            <Text style={styles.valEyebrow}>FREE INSTANT VALUATION</Text>
+            <Text style={styles.valTitle}>What's my car worth?</Text>
+            <Text style={styles.valSub}>Instant market estimate in 30 seconds. No account needed.</Text>
+            <View style={styles.plate}>
+              <Ionicons name="trending-up-outline" size={20} color={colors.blueLight} />
+              <Text style={styles.plateText}>Get my free estimate</Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
+            </View>
+          </LinearGradient>
+        </Pressable>
 
         {/* Options */}
         <View style={styles.options}>

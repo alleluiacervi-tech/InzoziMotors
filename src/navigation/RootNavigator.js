@@ -43,6 +43,8 @@ import ReferralScreen from '../screens/ReferralScreen';
 // Rentals
 import RentalDetailScreen from '../screens/RentalDetailScreen';
 import RentalBookingScreen from '../screens/RentalBookingScreen';
+// Seller tools
+import CarValuationScreen from '../screens/CarValuationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -102,6 +104,7 @@ export default function RootNavigator() {
         component={RentalBookingScreen}
         options={{ animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen name="CarValuation" component={CarValuationScreen} />
     </Stack.Navigator>
   );
 }
