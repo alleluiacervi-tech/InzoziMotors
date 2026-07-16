@@ -284,6 +284,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
             {car.inspected && <Badge variant="success" label="Inzozi Certified" />}
           </View>
 
+          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('InzoziPromise')}>
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
+            <Text style={styles.promiseLinkText}>Backed by the Inzozi Promise</Text>
+            <Ionicons name="chevron-forward" size={13} color={colors.primary} />
+          </Pressable>
+
           {/* Description */}
           <Text style={styles.sectionTitle}>Overview</Text>
           <Text style={styles.desc}>
@@ -483,6 +489,8 @@ const styles = StyleSheet.create({
   inspectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   inspectionSub: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold, marginTop: 2 },
   trustChips: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
+  promiseLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 12 },
+  promiseLinkText: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.primary },
   financeStrip: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.greenTint,

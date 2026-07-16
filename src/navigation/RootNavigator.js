@@ -43,8 +43,12 @@ import ReferralScreen from '../screens/ReferralScreen';
 // Rentals
 import RentalDetailScreen from '../screens/RentalDetailScreen';
 import RentalBookingScreen from '../screens/RentalBookingScreen';
+import MyRentalsScreen from '../screens/MyRentalsScreen';
+import RentalCheckInScreen from '../screens/RentalCheckInScreen';
 // Seller tools
 import CarValuationScreen from '../screens/CarValuationScreen';
+// Trust
+import InzoziPromiseScreen from '../screens/InzoziPromiseScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -104,7 +108,10 @@ export default function RootNavigator() {
         component={RentalBookingScreen}
         options={{ animation: 'slide_from_bottom' }}
       />
+      <Stack.Screen name="MyRentals" component={MyRentalsScreen} />
+      <Stack.Screen name="RentalCheckIn" component={RentalCheckInScreen} />
       <Stack.Screen name="CarValuation" component={CarValuationScreen} />
+      <Stack.Screen name="InzoziPromise" component={InzoziPromiseScreen} />
     </Stack.Navigator>
   );
 }

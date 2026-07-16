@@ -53,6 +53,14 @@ export default function HomeScreen({ navigation }) {
   const [carouselIndex, setCarouselIndex] = useState(1);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [rentFilter, setRentFilter] = useState('All');
+
+  const RENT_FILTERS = ['All', 'Safari-Ready', 'SUV', 'Sedan', 'Truck'];
+  const filteredRentals = rentalCars.filter((c) => {
+    if (rentFilter === 'All') return true;
+    if (rentFilter === 'Safari-Ready') return c.safariReady;
+    return c.category === rentFilter;
+  });
 
   const carouselRef = useRef(null);
   const scrollTimerRef = useRef(null);
@@ -171,10 +179,33 @@ export default function HomeScreen({ navigation }) {
               </View>
             </View>
 
+            {/* Rental category filter */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.rentFilterRow}
+            >
+              {RENT_FILTERS.map((f) => {
+                const on = rentFilter === f;
+                return (
+                  <Pressable
+                    key={f}
+                    style={[styles.rentFilterChip, on && styles.rentFilterChipOn]}
+                    onPress={() => setRentFilter(f)}
+                  >
+                    {f === 'Safari-Ready' && (
+                      <Ionicons name="trail-sign-outline" size={13} color={on ? '#fff' : colors.textSecondary} />
+                    )}
+                    <Text style={[styles.rentFilterText, on && styles.rentFilterTextOn]}>{f}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
             <View style={styles.sectionContainer}>
-              <SectionHeader title="Available in Kigali" />
+              <SectionHeader title={rentFilter === 'Safari-Ready' ? 'Safari-Ready 4×4s' : 'Available in Kigali'} />
               <View style={styles.twoColumnGrid}>
-                {rentalCars.map((item) => (
+                {filteredRentals.map((item) => (
                   <View key={item.id} style={styles.gridCardWrapper}>
                     <CarCard
                       car={item}
@@ -428,6 +459,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center',
   },
+  rentFilterRow: { gap: 8, paddingHorizontal: 16, paddingTop: 14 },
+  rentFilterChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 14, paddingVertical: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.pill,
+  },
+  rentFilterChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  rentFilterText: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.textSecondary },
+  rentFilterTextOn: { color: '#fff' },
 
   // ── Search ──
   searchWrapper: {

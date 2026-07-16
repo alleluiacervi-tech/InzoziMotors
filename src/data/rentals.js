@@ -47,6 +47,7 @@ export const RENTAL_CARS = [
     weeklyRate: 720,
     deposit: 500,
     minDays: 2,
+    safariReady: true,
     inspected: true,
     inspectionScore: 146,
     rating: 4.8,
@@ -105,6 +106,7 @@ export const RENTAL_CARS = [
     weeklyRate: 540,
     deposit: 400,
     minDays: 2,
+    safariReady: true,
     inspected: true,
     inspectionScore: 142,
     rating: 4.6,
@@ -133,6 +135,7 @@ export const RENTAL_CARS = [
     weeklyRate: 510,
     deposit: 350,
     minDays: 1,
+    safariReady: true,
     inspected: true,
     inspectionScore: 144,
     rating: 4.8,
@@ -189,6 +192,7 @@ export const RENTAL_CARS = [
     weeklyRate: 270,
     deposit: 150,
     minDays: 1,
+    safariReady: true,
     inspected: true,
     inspectionScore: 143,
     rating: 4.7,
@@ -239,11 +243,22 @@ export const RENTAL_INCLUDES = [
   { icon: 'sparkles-outline', label: 'Cleaned & sanitised' },
 ];
 
-// Pickup locations — the same 3 Inzozi centers used for inspections
+// Pickup locations — the 3 Inzozi centers + airport meet-and-greet
 export const RENTAL_CENTERS = [
-  { id: 'c1', name: 'Nyarutarama Center', area: 'Nyarutarama' },
-  { id: 'c2', name: 'Kicukiro Center', area: 'Kicukiro' },
-  { id: 'c3', name: 'Kimironko Center', area: 'Kimironko' },
+  { id: 'c1', name: 'Nyarutarama Center', area: 'Nyarutarama', fee: 0 },
+  { id: 'c2', name: 'Kicukiro Center', area: 'Kicukiro', fee: 0 },
+  { id: 'c3', name: 'Kimironko Center', area: 'Kimironko', fee: 0 },
+  { id: 'c4', name: "Kigali Int'l Airport", area: 'Kanombe', fee: 20, airport: true },
+];
+
+// Digital check-in — photo walkaround slots (both at pickup and return)
+export const CHECKIN_PHOTOS = [
+  { key: 'front', label: 'Front', icon: 'car-outline' },
+  { key: 'back', label: 'Rear', icon: 'car-outline' },
+  { key: 'left', label: 'Left side', icon: 'car-sport-outline' },
+  { key: 'right', label: 'Right side', icon: 'car-sport-outline' },
+  { key: 'odometer', label: 'Odometer', icon: 'speedometer-outline' },
+  { key: 'fuel', label: 'Fuel gauge', icon: 'water-outline' },
 ];
 
 // Duration presets for the booking screen

@@ -62,6 +62,12 @@ export default function RentalDetailScreen({ navigation, route }) {
               <Ionicons name="shield-checkmark" size={11} color="#fff" />
               <Text style={styles.rentPillText}>Certified {car.inspectionScore}/150</Text>
             </View>
+            {car.safariReady && (
+              <View style={styles.safariPill}>
+                <Ionicons name="trail-sign" size={11} color="#fff" />
+                <Text style={styles.rentPillText}>Safari-Ready</Text>
+              </View>
+            )}
           </View>
 
           {imageList.length > 1 && (
@@ -152,6 +158,12 @@ export default function RentalDetailScreen({ navigation, route }) {
             ))}
           </View>
 
+          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('InzoziPromise')}>
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
+            <Text style={styles.promiseLinkText}>Backed by the Inzozi Promise</Text>
+            <Ionicons name="chevron-forward" size={13} color={colors.primary} />
+          </Pressable>
+
           {/* Inspection trust row */}
           <Pressable
             style={styles.inspectionRow}
@@ -228,6 +240,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
   },
+  safariPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#B45309',
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
+  },
   rentPillText: { color: '#fff', fontSize: 10, fontFamily: fonts.extraBold },
   indicator: {
     position: 'absolute', bottom: 40, right: 16,
@@ -302,10 +319,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, padding: 12,
   },
   includeLabel: { flex: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.textPrimary, lineHeight: 15 },
+  promiseLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 16 },
+  promiseLinkText: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.primary },
   inspectionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 14, marginTop: 20,
+    borderRadius: radius.xl, padding: 14, marginTop: 12,
   },
   inspectionIcon: {
     width: 40, height: 40, borderRadius: radius.md,

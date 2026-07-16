@@ -154,6 +154,11 @@ export function AppProvider({ children }) {
     }, ...prev]);
     return newBooking.id;
   }, []);
+  const updateRentalBookingStatus = useCallback((id, status) => {
+    setRentalBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, status } : b))
+    );
+  }, []);
 
   // Socket state
   const [socket, setSocket] = useState(null);
@@ -899,7 +904,7 @@ export function AppProvider({ children }) {
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
-    homeMode, setHomeMode, rentalCars, rentalBookings, bookRental,
+    homeMode, setHomeMode, rentalCars, rentalBookings, bookRental, updateRentalBookingStatus,
     currency, toggleCurrency,
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
     // Chat messages

@@ -24,6 +24,8 @@ export default function RentalBookingScreen({ navigation, route }) {
   const canBook = startIdx !== null && days && centerId;
   const startDate = startIdx !== null ? dates[startIdx] : null;
   const center = RENTAL_CENTERS.find((c) => c.id === centerId);
+  const pickupFee = center?.fee || 0;
+  const totalDue = cost.total + pickupFee;
 
   const handleConfirm = () => {
     if (!canBook) return;
@@ -36,7 +38,8 @@ export default function RentalBookingScreen({ navigation, route }) {
       center: center.name,
       subtotal: cost.subtotal,
       deposit: cost.deposit,
-      total: cost.total,
+      pickupFee,
+      total: totalDue,
     });
     setConfirmed(true);
   };
@@ -59,7 +62,7 @@ export default function RentalBookingScreen({ navigation, route }) {
             <ConfirmRow icon="calendar-outline" label="Pickup" value={`${startDate.full} · 9:00 AM`} />
             <ConfirmRow icon="time-outline" label="Duration" value={`${days} day${days > 1 ? 's' : ''}`} />
             <ConfirmRow icon="location-outline" label="Center" value={center.name} />
-            <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${cost.total} (incl. $${cost.deposit} deposit)`} last />
+            <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${totalDue} (incl. $${cost.deposit} deposit)`} last />
           </View>
 
           <View style={styles.confirmNote}>
@@ -70,6 +73,9 @@ export default function RentalBookingScreen({ navigation, route }) {
           </View>
 
           <Button title="Done" onPress={() => navigation.navigate('Main')} style={{ alignSelf: 'stretch' }} />
+          <Pressable onPress={() => navigation.navigate('MyRentals')} style={{ marginTop: 14 }}>
+            <Text style={styles.viewRentals}>View My Rentals</Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -148,9 +154,17 @@ export default function RentalBookingScreen({ navigation, route }) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.centerName}>{c.name}</Text>
-                <Text style={styles.centerArea}>{c.area}, Kigali · Open 8AM – 6PM</Text>
+                <Text style={styles.centerArea}>
+                  {c.airport
+                    ? `Meet & greet at arrivals · +$${c.fee} fee`
+                    : `${c.area}, Kigali · Open 8AM – 6PM`}
+                </Text>
               </View>
-              <Ionicons name="location-outline" size={18} color={on ? colors.primary : colors.textMuted} />
+              <Ionicons
+                name={c.airport ? 'airplane-outline' : 'location-outline'}
+                size={18}
+                color={on ? colors.primary : colors.textMuted}
+              />
             </Pressable>
           );
         })}
@@ -173,10 +187,16 @@ export default function RentalBookingScreen({ navigation, route }) {
             </View>
             <Text style={styles.costValue}>${cost.deposit}</Text>
           </View>
+          {pickupFee > 0 && (
+            <View style={styles.costRow}>
+              <Text style={styles.costLabel}>Airport meet & greet</Text>
+              <Text style={styles.costValue}>${pickupFee}</Text>
+            </View>
+          )}
           <View style={styles.costDivider} />
           <View style={styles.costRow}>
             <Text style={styles.costTotalLabel}>Due at pickup</Text>
-            <Text style={styles.costTotalValue}>${cost.total}</Text>
+            <Text style={styles.costTotalValue}>${totalDue}</Text>
           </View>
           <View style={styles.noPayChip}>
             <Ionicons name="shield-checkmark-outline" size={13} color={colors.green} />
@@ -310,4 +330,5 @@ const styles = StyleSheet.create({
     marginTop: 16, marginBottom: 24,
   },
   confirmNoteText: { flex: 1, fontSize: 12, fontFamily: fonts.medium, color: colors.amberText, lineHeight: 17 },
+  viewRentals: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary, textAlign: 'center' },
 });
