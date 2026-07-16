@@ -40,6 +40,9 @@ import DealerProfileScreen from '../screens/DealerProfileScreen';
 import FinancingScreen from '../screens/FinancingScreen';
 import TrustScoreScreen from '../screens/TrustScoreScreen';
 import ReferralScreen from '../screens/ReferralScreen';
+// Rentals
+import RentalDetailScreen from '../screens/RentalDetailScreen';
+import RentalBookingScreen from '../screens/RentalBookingScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -92,6 +95,13 @@ export default function RootNavigator() {
       <Stack.Screen name="Financing" component={FinancingScreen} />
       <Stack.Screen name="TrustScore" component={TrustScoreScreen} />
       <Stack.Screen name="Referral" component={ReferralScreen} />
+      {/* Rentals */}
+      <Stack.Screen name="RentalDetail" component={RentalDetailScreen} />
+      <Stack.Screen
+        name="RentalBooking"
+        component={RentalBookingScreen}
+        options={{ animation: 'slide_from_bottom' }}
+      />
     </Stack.Navigator>
   );
 }

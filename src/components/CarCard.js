@@ -30,6 +30,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
   const { isCarSaved, toggleSaveCar } = useApp();
   const saved = isCarSaved(car.id);
   const isContract = car.type === 'auction';
+  const isRental = car.listingType === 'rental';
 
   return (
     <Pressable style={[styles.card, shadows.card]} onPress={onPress}>
@@ -66,9 +67,26 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>{car.title}</Text>
-        <Text style={styles.meta} numberOfLines={1}>{getInzoziYear(car)}</Text>
-        <Text style={styles.meta} numberOfLines={1}>{getInzoziMileage(car)} · {getInzoziLocation(car)}</Text>
-        <Text style={styles.price}>{getInzoziPrice(car)}</Text>
+        {isRental ? (
+          <>
+            <Text style={styles.meta} numberOfLines={1}>
+              {car.seats} seats · {car.transmission}
+            </Text>
+            <Text style={styles.meta} numberOfLines={1}>
+              <Ionicons name="star" size={10} color={colors.amber} /> {car.rating} ({car.trips} trips) · {getInzoziLocation(car)}
+            </Text>
+            <View style={styles.rentalPriceRow}>
+              <Text style={styles.price}>${car.dailyRate}</Text>
+              <Text style={styles.perDay}>/day</Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.meta} numberOfLines={1}>{getInzoziYear(car)}</Text>
+            <Text style={styles.meta} numberOfLines={1}>{getInzoziMileage(car)} · {getInzoziLocation(car)}</Text>
+            <Text style={styles.price}>{getInzoziPrice(car)}</Text>
+          </>
+        )}
       </View>
     </Pressable>
   );
@@ -117,4 +135,6 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.bold, fontSize: 13, color: colors.textPrimary },
   meta: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
   price: { fontFamily: fonts.extraBold, fontSize: 15, color: colors.primary, marginTop: 4, letterSpacing: -0.3 },
+  rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
+  perDay: { fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted, marginLeft: 2 },
 });

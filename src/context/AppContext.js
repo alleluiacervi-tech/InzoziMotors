@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { categories, formatPrice, formatMiles, cars as mockCars, conversations as initialConversations, sellerListings as initialSellerListings } from '../data/cars';
 import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
+import { RENTAL_CARS } from '../data/rentals';
 import authApi from '../api/auth';
 import carsApi from '../api/cars';
 import submissionsApi from '../api/submissions';
@@ -130,6 +131,29 @@ export function AppProvider({ children }) {
 
   // Comparison (max 3 cars)
   const [comparisonCars, setComparisonCars] = useState([]);
+
+  // Rentals — separate fleet from sale inventory (mock, no backend yet)
+  const [homeMode, setHomeMode] = useState('buy'); // 'buy' | 'rent'
+  const [rentalCars] = useState(RENTAL_CARS);
+  const [rentalBookings, setRentalBookings] = useState([]);
+  const bookRental = useCallback((booking) => {
+    const newBooking = {
+      id: 'rb' + Date.now(),
+      status: 'confirmed',
+      ...booking,
+    };
+    setRentalBookings((prev) => [newBooking, ...prev]);
+    setNotifications((prev) => [{
+      id: 'rental_' + Date.now(),
+      type: 'listing_update',
+      title: 'Rental booking confirmed',
+      body: `${booking.carTitle} is reserved from ${booking.startDate} for ${booking.days} day${booking.days > 1 ? 's' : ''}. Pick up at ${booking.center}.`,
+      time: 'Just now',
+      date: 'Today',
+      read: false,
+    }, ...prev]);
+    return newBooking.id;
+  }, []);
 
   // Socket state
   const [socket, setSocket] = useState(null);
@@ -874,6 +898,8 @@ export function AppProvider({ children }) {
     relistSubmission,
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
+    // Rentals
+    homeMode, setHomeMode, rentalCars, rentalBookings, bookRental,
     currency, toggleCurrency,
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
     // Chat messages

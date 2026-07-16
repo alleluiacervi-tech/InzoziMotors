@@ -49,7 +49,7 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars } = useApp();
   const [carouselIndex, setCarouselIndex] = useState(1);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -119,16 +119,74 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
+      {/* Buy / Rent mode switch */}
+      <View style={styles.modeSwitchWrap}>
+        <View style={styles.modeSwitch}>
+          {['buy', 'rent'].map((m) => {
+            const on = homeMode === m;
+            return (
+              <Pressable
+                key={m}
+                style={[styles.modeBtn, on && styles.modeBtnOn]}
+                onPress={() => setHomeMode(m)}
+              >
+                <Ionicons
+                  name={m === 'buy' ? 'pricetag-outline' : 'key-outline'}
+                  size={15}
+                  color={on ? '#fff' : colors.textSecondary}
+                />
+                <Text style={[styles.modeBtnText, on && styles.modeBtnTextOn]}>
+                  {m === 'buy' ? 'Buy' : 'Rent'}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Search Bar */}
         <View style={styles.searchWrapper}>
           <Pressable style={styles.searchBar} onPress={() => navigation.navigate('SearchResults')}>
             <Ionicons name="search" size={18} color={colors.textMuted} />
-            <Text style={styles.searchPlaceholder}>Search by brand, model, or keyword...</Text>
+            <Text style={styles.searchPlaceholder}>
+              {homeMode === 'rent' ? 'Search rental cars...' : 'Search by brand, model, or keyword...'}
+            </Text>
           </Pressable>
         </View>
 
+        {homeMode === 'rent' ? (
+          <>
+            {/* ── RENT MODE ── */}
+            <View style={styles.rentHero}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rentHeroTitle}>Certified rentals</Text>
+                <Text style={styles.rentHeroSub}>
+                  Every car 150-point inspected. Insurance & roadside assistance included.
+                </Text>
+              </View>
+              <View style={styles.rentHeroIcon}>
+                <Ionicons name="key" size={26} color={colors.primary} />
+              </View>
+            </View>
+
+            <View style={styles.sectionContainer}>
+              <SectionHeader title="Available in Kigali" />
+              <View style={styles.twoColumnGrid}>
+                {rentalCars.map((item) => (
+                  <View key={item.id} style={styles.gridCardWrapper}>
+                    <CarCard
+                      car={item}
+                      onPress={() => navigation.navigate('RentalDetail', { car: item })}
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
+          </>
+        ) : (
+        <>
         {/* ── HERO BANNER CAROUSEL ── */}
         <View style={styles.carouselContainer}>
           <ScrollView
@@ -241,6 +299,8 @@ export default function HomeScreen({ navigation }) {
             )}
           />
         </View>
+        </>
+        )}
 
         {/* ── FOOTER ── */}
         <View style={styles.footerContainer}>
@@ -322,6 +382,52 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: { paddingBottom: 40 },
+
+  // ── Buy/Rent mode switch ──
+  modeSwitchWrap: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  modeSwitch: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    padding: 3,
+  },
+  modeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+  },
+  modeBtnOn: { backgroundColor: colors.primary },
+  modeBtnText: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.textSecondary },
+  modeBtnTextOn: { color: '#fff' },
+
+  // ── Rent mode ──
+  rentHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: colors.greenTint,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    borderRadius: radius.xl,
+    marginHorizontal: 16,
+    marginTop: 4,
+    padding: 16,
+  },
+  rentHeroTitle: { fontFamily: fonts.extraBold, fontSize: 17, color: colors.textPrimary, letterSpacing: -0.3 },
+  rentHeroSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17 },
+  rentHeroIcon: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
 
   // ── Search ──
   searchWrapper: {
