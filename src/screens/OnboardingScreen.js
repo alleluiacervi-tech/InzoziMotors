@@ -24,7 +24,8 @@ export default function OnboardingScreen({ navigation }) {
 
   const finish = () => {
     setJSON('onboardingSeen', true);
-    navigation.replace('Welcome');
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.replace('Welcome');
   };
 
   const go = () => {

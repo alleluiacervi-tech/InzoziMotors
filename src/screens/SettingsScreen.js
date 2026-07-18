@@ -27,6 +27,7 @@ const GROUPS = [
   {
     title: 'Support',
     items: [
+      { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
       { icon: 'help-circle-outline', label: 'Help center', comingSoon: 'The help center is coming soon.' },
       { icon: 'document-text-outline', label: 'Terms & privacy', comingSoon: 'Terms & privacy policy pages are coming soon.' },
       { icon: 'star-outline', label: 'Rate Inzozi Motors', comingSoon: 'App store rating will be available after launch.' },
