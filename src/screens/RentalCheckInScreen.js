@@ -26,7 +26,11 @@ export default function RentalCheckInScreen({ navigation, route }) {
   const [showOwnPhotos, setShowOwnPhotos] = useState(false);
 
   const handleAgree = () => {
-    updateRentalBookingStatus(booking.id, isReturn ? 'completed' : 'active');
+    updateRentalBookingStatus(booking.id, isReturn ? 'completed' : 'active', {
+      ...STAFF_RECORD,
+      agreed_at: new Date().toISOString(),
+      own_photos: Object.keys(ownPhotos),
+    });
     if (isReturn) {
       Alert.alert(
         'Return complete ✓',

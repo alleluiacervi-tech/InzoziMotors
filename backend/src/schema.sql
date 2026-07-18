@@ -224,3 +224,53 @@ ALTER TABLE handovers   ADD COLUMN IF NOT EXISTS agreed_price    INT;
 -- Migrate old column names if upgrading from earlier schema:
 -- UPDATE handovers SET handover_date = scheduled_date, handover_time = scheduled_time
 --   WHERE handover_date IS NULL AND scheduled_date IS NOT NULL;
+
+-- ─── Rentals — Inzozi-owned fleet ─────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS rental_cars (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title            TEXT NOT NULL,
+  make             TEXT,
+  model            TEXT,
+  year             INT,
+  category         TEXT,
+  seats            INT DEFAULT 5,
+  fuel             TEXT,
+  transmission     TEXT,
+  mileage          INT,
+  daily_rate       INT NOT NULL,
+  weekly_rate      INT,
+  deposit          INT NOT NULL DEFAULT 0,
+  min_days         INT NOT NULL DEFAULT 1,
+  inspected        BOOLEAN NOT NULL DEFAULT TRUE,
+  inspection_score INT,
+  rating           NUMERIC(2,1),
+  trips            INT NOT NULL DEFAULT 0,
+  location         TEXT,                 -- neighbourhood the car is kept in
+  images           TEXT[],
+  status           TEXT NOT NULL DEFAULT 'active',  -- active | maintenance | retired
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS rental_bookings (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_ref     TEXT UNIQUE NOT NULL,             -- RB-XXXXX shown to users
+  rental_car_id   UUID NOT NULL REFERENCES rental_cars(id) ON DELETE CASCADE,
+  renter_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  start_date      DATE NOT NULL,
+  days            INT NOT NULL,
+  pickup_window   TEXT,                 -- "Morning · 8AM–12PM"
+  center          TEXT,                 -- home center, or airport meet & greet
+  airport_pickup  BOOLEAN NOT NULL DEFAULT FALSE,
+  subtotal        INT NOT NULL,
+  deposit         INT NOT NULL,
+  pickup_fee      INT NOT NULL DEFAULT 0,
+  total           INT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'upcoming', -- upcoming | active | completed | cancelled
+  pickup_record   JSONB,               -- staff condition record + renter agreement at pickup
+  return_record   JSONB,               -- same at return
+  booked_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rental_bookings_car    ON rental_bookings(rental_car_id);
+CREATE INDEX IF NOT EXISTS idx_rental_bookings_renter ON rental_bookings(renter_id);

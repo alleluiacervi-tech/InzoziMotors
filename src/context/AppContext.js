@@ -8,6 +8,7 @@ import submissionsApi from '../api/submissions';
 import handoversApi from '../api/handovers';
 import messagesApi from '../api/messages';
 import notificationsApi from '../api/notifications';
+import rentalsApi from '../api/rentals';
 import api, { BASE_URL, getToken } from '../api/client';
 import io from 'socket.io-client';
 import { getJSON, setJSON } from '../storage';
@@ -135,15 +136,28 @@ export function AppProvider({ children }) {
 
   // Rentals — separate fleet from sale inventory (mock, no backend yet)
   const [homeMode, setHomeMode] = useState('buy'); // 'buy' | 'rent'
-  const [rentalCars] = useState(RENTAL_CARS);
+  const [rentalCars, setRentalCars] = useState(RENTAL_CARS);
   const [rentalBookings, setRentalBookings] = useState([]);
-  const bookRental = useCallback((booking) => {
-    const newBooking = {
-      id: 'rb' + Date.now(),
-      status: 'confirmed',
-      ...booking,
-    };
-    setRentalBookings((prev) => [newBooking, ...prev]);
+  const bookRental = useCallback(async (booking) => {
+    try {
+      await rentalsApi.bookRental(booking.carId, {
+        start_date: booking.startDateISO,
+        days: booking.days,
+        pickup_window: booking.time,
+        airport_pickup: !!booking.airportPickup,
+        center: booking.center,
+      });
+      const mine = await rentalsApi.getMyBookings();
+      setRentalBookings(mine.map(mapRentalBooking));
+    } catch (err) {
+      console.warn('Rental booking API unreachable — booking locally:', err.message);
+      const newBooking = {
+        id: 'rb' + Date.now(),
+        status: 'confirmed',
+        ...booking,
+      };
+      setRentalBookings((prev) => [newBooking, ...prev]);
+    }
     setNotifications((prev) => [{
       id: 'rental_' + Date.now(),
       type: 'listing_update',
@@ -155,10 +169,12 @@ export function AppProvider({ children }) {
     }, ...prev]);
     return newBooking.id;
   }, []);
-  const updateRentalBookingStatus = useCallback((id, status) => {
+  const updateRentalBookingStatus = useCallback((id, status, record = null) => {
+    // Optimistic local update; backend sync is best-effort
     setRentalBookings((prev) =>
       prev.map((b) => (b.id === id ? { ...b, status } : b))
     );
+    rentalsApi.updateBookingStatus(id, status, record).catch(() => {});
   }, []);
 
   // Socket state
@@ -349,11 +365,71 @@ export function AppProvider({ children }) {
     return mockCars;
   }, [mapCar]);
 
+  // Rental fleet: API rows -> mobile shape; booked ranges -> greyed-out day indexes
+  const mapRentalCar = useCallback((rc) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const unavailable = new Set();
+    (rc.booked_ranges || []).forEach((r) => {
+      const offset = Math.round((new Date(r.start_date) - today) / 86400000);
+      for (let i = 0; i < r.days; i++) {
+        const idx = offset + i;
+        if (idx >= 0 && idx < 14) unavailable.add(idx);
+      }
+    });
+    return {
+      id: rc.id, title: rc.title, make: rc.make, model: rc.model, year: rc.year,
+      category: rc.category, seats: rc.seats, fuel: rc.fuel, transmission: rc.transmission,
+      mileage: rc.mileage, listingType: 'rental',
+      dailyRate: rc.daily_rate, weeklyRate: rc.weekly_rate, deposit: rc.deposit,
+      minDays: rc.min_days, inspected: rc.inspected, inspectionScore: rc.inspection_score,
+      rating: Number(rc.rating) || 0, trips: rc.trips, location: rc.location,
+      image: rc.images?.[0] || null, images: rc.images || [],
+      unavailableDays: [...unavailable],
+    };
+  }, []);
+
+  const mapRentalBooking = useCallback((b) => ({
+    id: b.id,
+    bookingRef: b.booking_ref,
+    carId: b.rental_car_id,
+    carTitle: b.car_title,
+    carImage: b.car_images?.[0] || null,
+    startDate: b.start_date,
+    time: b.pickup_window,
+    days: b.days,
+    center: b.center || b.car_location,
+    subtotal: b.subtotal,
+    deposit: b.deposit,
+    pickupFee: b.pickup_fee,
+    total: b.total,
+    status: b.status === 'upcoming' ? 'confirmed' : b.status,
+  }), []);
+
+  const fetchRentalCars = useCallback(async () => {
+    try {
+      const list = await rentalsApi.getRentalCars();
+      if (list && list.length) return list.map(mapRentalCar);
+    } catch (err) {
+      console.warn('Rentals API unreachable — using bundled fleet:', err.message);
+    }
+    return RENTAL_CARS;
+  }, [mapRentalCar]);
+
   // --- Initial Data Loader ---
 
   const loadInitialData = useCallback(async (user) => {
     setCars(await fetchCars());
+    setRentalCars(await fetchRentalCars());
     try {
+
+      if (user) {
+        try {
+          const myRentals = await rentalsApi.getMyBookings();
+          setRentalBookings(myRentals.map(mapRentalBooking));
+        } catch {}
+      }
+
 
       if (user) {
         const wishList = await carsApi.getSavedCars();
@@ -411,7 +487,7 @@ export function AppProvider({ children }) {
     } catch (err) {
       console.warn('Error loading initial data from API:', err);
     }
-  }, [fetchCars, mapSubmission, mapHandover, mapConversation, mapNotification]);
+  }, [fetchCars, fetchRentalCars, mapRentalBooking, mapSubmission, mapHandover, mapConversation, mapNotification]);
 
   // Check auth token and trigger load on app startup
   useEffect(() => {
@@ -428,10 +504,12 @@ export function AppProvider({ children }) {
           await loadInitialData(me);
         } else {
           setCars(await fetchCars());
+          setRentalCars(await fetchRentalCars());
         }
       } catch (err) {
         console.warn('Initial auth setup failed, falling back to public data:', err);
         setCars(await fetchCars());
+        setRentalCars(await fetchRentalCars());
       }
     };
     initAuth();

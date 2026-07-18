@@ -47,11 +47,15 @@ export default function RentalBookingScreen({ navigation, route }) {
 
   const handleConfirm = () => {
     if (!canBook) return;
+    const iso = new Date();
+    iso.setDate(iso.getDate() + startIdx);
     bookRental({
       carId: car.id,
       carTitle: car.title,
       carImage: car.image,
       startDate: `${startDate.full}`,
+      startDateISO: iso.toISOString().slice(0, 10),
+      airportPickup,
       time,
       days,
       center: center.name,
