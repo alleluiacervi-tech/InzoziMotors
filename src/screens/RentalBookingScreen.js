@@ -8,6 +8,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { DURATION_PRESETS, getRentalDates, calcTripCost, getPickupCenter, AIRPORT_PICKUP, PICKUP_WINDOWS } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
+import { openWhatsApp, INZOZI_WHATSAPP } from '../utils/whatsapp';
 
 
 export default function RentalBookingScreen({ navigation, route }) {
@@ -91,6 +92,16 @@ export default function RentalBookingScreen({ navigation, route }) {
           </View>
 
           <Button title="View My Rentals" onPress={() => navigation.navigate('MyRentals')} style={{ alignSelf: 'stretch' }} />
+          <Pressable
+            style={styles.waRow}
+            onPress={() => openWhatsApp(
+              INZOZI_WHATSAPP,
+              `Hi, I just booked the ${car.title} for ${startDate.full} (${time}) at ${center.name}. Booking question:`
+            )}
+          >
+            <Ionicons name="logo-whatsapp" size={17} color="#25D366" />
+            <Text style={styles.waRowText}>Questions? WhatsApp the center</Text>
+          </Pressable>
           <Pressable onPress={() => navigation.navigate('Main')} style={{ marginTop: 14 }}>
             <Text style={styles.viewRentals}>Back to Home</Text>
           </Pressable>
@@ -387,4 +398,10 @@ const styles = StyleSheet.create({
   },
   confirmNoteText: { flex: 1, fontSize: 12, fontFamily: fonts.medium, color: colors.amberText, lineHeight: 17 },
   viewRentals: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary, textAlign: 'center' },
+  waRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    alignSelf: 'stretch', paddingVertical: 13, marginTop: 10,
+    backgroundColor: '#E9F9EF', borderRadius: radius.xl,
+  },
+  waRowText: { fontSize: 13, fontFamily: fonts.bold, color: '#1DA851' },
 });

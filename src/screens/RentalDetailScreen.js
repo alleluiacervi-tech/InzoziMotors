@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
+import { openWhatsApp, INZOZI_WHATSAPP } from '../utils/whatsapp';
 
 const { width } = Dimensions.get('window');
 
@@ -213,6 +214,15 @@ export default function RentalDetailScreen({ navigation, route }) {
           </View>
           <Text style={styles.ctaDeposit}>+${car.deposit} deposit</Text>
         </View>
+        <Pressable
+          style={styles.waBtn}
+          onPress={() => openWhatsApp(
+            INZOZI_WHATSAPP,
+            `Hi Inzozi, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
+          )}
+        >
+          <Ionicons name="logo-whatsapp" size={24} color="#fff" />
+        </Pressable>
         <Button
           title="Book This Car"
           style={{ flex: 1 }}
@@ -354,6 +364,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.borderSoft,
     paddingHorizontal: 20, paddingTop: 12, ...shadows.floating,
+  },
+  waBtn: {
+    width: 52, height: 52, borderRadius: radius.lg,
+    backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
   },
   ctaPrice: { minWidth: 90 },
   ctaPriceValue: { fontSize: 22, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5 },

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Image, TextInput,
+  View, Text, StyleSheet, ScrollView, Image, TextInput, Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,7 +8,8 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
-import { formatPrice } from '../data/cars';
+import { formatPrice, getSellerWhatsApp } from '../data/cars';
+import { openWhatsApp } from '../utils/whatsapp';
 import { useApp } from '../context/AppContext';
 
 const HOW_IT_WORKS = [
@@ -20,6 +21,10 @@ const HOW_IT_WORKS = [
 
 // ─── Request phase ───────────────────────────────────────────────────────────
 function RequestState({ car, price, phone, setPhone, onSend, sending }) {
+  const askAvailability = () => {
+    const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
+    openWhatsApp(getSellerWhatsApp(car.seller), msg);
+  };
   return (
     <>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -97,6 +102,9 @@ function RequestState({ car, price, phone, setPhone, onSend, sending }) {
             <Ionicons name="checkmark-circle" size={14} color={colors.green} />
             <Text style={styles.sellerVerifiedText}>ID Verified</Text>
           </View>
+          <Pressable style={styles.waSmallBtn} onPress={askAvailability}>
+            <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
+          </Pressable>
         </View>
       </ScrollView>
 
@@ -105,6 +113,9 @@ function RequestState({ car, price, phone, setPhone, onSend, sending }) {
           <Text style={styles.footerLabel}>Asking price</Text>
           <Text style={styles.footerValue}>{formatPrice(price)}</Text>
         </View>
+        <Pressable style={styles.waBtn} onPress={askAvailability}>
+          <Ionicons name="logo-whatsapp" size={24} color="#fff" />
+        </Pressable>
         <Button
           title={sending ? 'Sending…' : 'Request This Car'}
           icon="paper-plane-outline"
@@ -372,6 +383,14 @@ const styles = StyleSheet.create({
   },
   nextText: { flex: 1, fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, lineHeight: 18 },
 
+  waBtn: {
+    width: 52, height: 52, borderRadius: radius.lg,
+    backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
+  },
+  waSmallBtn: {
+    width: 40, height: 40, borderRadius: radius.md,
+    backgroundColor: '#E9F9EF', alignItems: 'center', justifyContent: 'center',
+  },
   // Shared footer
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

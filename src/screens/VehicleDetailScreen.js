@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +9,7 @@ import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles, getSellerWhatsApp } from '../data/cars';
+import { openWhatsApp } from '../utils/whatsapp';
 import LoginModal from '../components/LoginModal';
 import {
   getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop,
@@ -82,9 +83,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
-  const openWhatsApp = () => {
+  const contactWhatsApp = () => {
     const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
-    Linking.openURL(`https://wa.me/${getSellerWhatsApp(car.seller)}?text=${encodeURIComponent(msg)}`).catch(() => {});
+    openWhatsApp(getSellerWhatsApp(car.seller), msg);
   };
 
   const infoRows = [
@@ -301,7 +302,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 <Text style={styles.ratingText}>{car.rating} · Verified seller · View profile</Text>
               </View>
             </View>
-            <Pressable style={styles.waSmallBtn} onPress={openWhatsApp}>
+            <Pressable style={styles.waSmallBtn} onPress={contactWhatsApp}>
               <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
             </Pressable>
             <Pressable
@@ -435,7 +436,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.ctaPriceValue}>{formatPrice(price)}</Text>
           <Text style={styles.ctaPriceRwf}>{formatRWF(price)}</Text>
         </View>
-        <Pressable style={styles.waBtn} onPress={openWhatsApp}>
+        <Pressable style={styles.waBtn} onPress={contactWhatsApp}>
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
         </Pressable>
         <Button

@@ -77,7 +77,7 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    console.error(`API Request error [${config.method || 'GET'} ${endpoint}]:`, error.message);
+    console.warn(`API unreachable [${config.method || 'GET'} ${endpoint}] — demo data will be used:`, error.message);
     throw error;
   }
 }

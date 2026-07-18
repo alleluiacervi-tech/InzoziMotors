@@ -408,7 +408,7 @@ export function AppProvider({ children }) {
         }
       }
     } catch (err) {
-      console.error('Error loading initial data from API:', err);
+      console.warn('Error loading initial data from API:', err);
     }
   }, [fetchCars, mapSubmission, mapHandover, mapConversation, mapNotification]);
 
@@ -429,7 +429,7 @@ export function AppProvider({ children }) {
           setCars(await fetchCars());
         }
       } catch (err) {
-        console.error('Initial auth setup failed, falling back to public data:', err);
+        console.warn('Initial auth setup failed, falling back to public data:', err);
         setCars(await fetchCars());
       }
     };
@@ -624,7 +624,7 @@ export function AppProvider({ children }) {
         setCurrentUser(me);
       }
     } catch (err) {
-      console.error('ID Verification submission API error:', err);
+      console.warn('ID Verification submission API error:', err);
       // Fallback
       setCurrentUser((prev) => prev ? { ...prev, id_verified: 'pending' } : null);
     } finally {
@@ -668,7 +668,7 @@ export function AppProvider({ children }) {
 
       return res.id;
     } catch (err) {
-      console.error('Submissions API unreachable — saving locally:', err.message);
+      console.warn('Submissions API unreachable — saving locally:', err.message);
       // Local fallback so the dashboard reflects what the seller just did
       const localSub = {
         id: 'sub' + Date.now(),
@@ -764,7 +764,7 @@ export function AppProvider({ children }) {
         prev.map((v) => v.id === verificationId ? { ...v, status: 'approved' } : v)
       );
     } catch (err) {
-      console.error('Error approving verification via Admin API:', err);
+      console.warn('Error approving verification via Admin API:', err);
     }
   }, []);
 
@@ -775,7 +775,7 @@ export function AppProvider({ children }) {
         prev.map((v) => v.id === verificationId ? { ...v, status: 'rejected' } : v)
       );
     } catch (err) {
-      console.error('Error rejecting verification via Admin API:', err);
+      console.warn('Error rejecting verification via Admin API:', err);
     }
   }, []);
 
@@ -790,7 +790,7 @@ export function AppProvider({ children }) {
       }
       return 'new_' + carId;
     } catch (err) {
-      console.error('Error resolving conversation:', err);
+      console.warn('Error resolving conversation:', err);
       return 'new_' + carId;
     }
   }, []);
@@ -812,7 +812,7 @@ export function AppProvider({ children }) {
       });
       setChatMessages((prev) => ({ ...prev, [convId]: mapped }));
     } catch (err) {
-      console.error('Error fetching message history:', err);
+      console.warn('Error fetching message history:', err);
     }
   }, [currentUser?.id]);
 
@@ -863,7 +863,7 @@ export function AppProvider({ children }) {
         return convId;
       }
     } catch (err) {
-      console.error('Error sending message:', err);
+      console.warn('Error sending message:', err);
     }
   }, [socket, currentUser?.name, mapConversation, loadConversationMessages]);
 
@@ -876,7 +876,7 @@ export function AppProvider({ children }) {
       await notificationsApi.markAsRead(id);
       setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
     } catch (err) {
-      console.error('Error marking notification read:', err);
+      console.warn('Error marking notification read:', err);
     }
   }, []);
 
@@ -885,7 +885,7 @@ export function AppProvider({ children }) {
       await notificationsApi.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch (err) {
-      console.error('Error marking all notifications read:', err);
+      console.warn('Error marking all notifications read:', err);
     }
   }, []);
 
@@ -910,7 +910,7 @@ export function AppProvider({ children }) {
             });
           }
         })
-        .catch((err) => console.error('Error completing inspection form:', err));
+        .catch((err) => console.warn('Error completing inspection form:', err));
     }
   }, [currentUser]);
 
@@ -934,7 +934,7 @@ export function AppProvider({ children }) {
 
       return res.booking_id;
     } catch (err) {
-      console.error('Handover API unreachable — booking locally:', err.message);
+      console.warn('Handover API unreachable — booking locally:', err.message);
       // Local fallback so checkout + order tracking work in the demo
       const localId = 'HB' + String(Date.now()).slice(-6);
       const localBooking = {
@@ -983,7 +983,7 @@ export function AppProvider({ children }) {
         setPurchaseRequests(myHandovers.map(mapHandover));
       }
     } catch (err) {
-      console.error('Error confirming handover via API:', err);
+      console.warn('Error confirming handover via API:', err);
     }
   }, [currentUser, mapHandover]);
 
