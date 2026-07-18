@@ -191,16 +191,20 @@ export function AppProvider({ children }) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     (async () => {
-      const [ids, searches, bookings, cur] = await Promise.all([
+      const [ids, searches, bookings, cur, requests, mode] = await Promise.all([
         getJSON('savedCarIds'),
         getJSON('savedSearches'),
         getJSON('rentalBookings'),
         getJSON('currency'),
+        getJSON('purchaseRequests'),
+        getJSON('homeMode'),
       ]);
       if (ids) setSavedCarIds(ids);
       if (searches) setSavedSearches(searches);
       if (bookings) setRentalBookings(bookings);
       if (cur) setCurrency(cur);
+      if (requests) setPurchaseRequests(requests);
+      if (mode) setHomeMode(mode);
       setHydrated(true);
     })();
   }, []);
@@ -208,6 +212,8 @@ export function AppProvider({ children }) {
   useEffect(() => { if (hydrated) setJSON('savedSearches', savedSearches); }, [savedSearches, hydrated]);
   useEffect(() => { if (hydrated) setJSON('rentalBookings', rentalBookings); }, [rentalBookings, hydrated]);
   useEffect(() => { if (hydrated) setJSON('currency', currency); }, [currency, hydrated]);
+  useEffect(() => { if (hydrated) setJSON('purchaseRequests', purchaseRequests); }, [purchaseRequests, hydrated]);
+  useEffect(() => { if (hydrated) setJSON('homeMode', homeMode); }, [homeMode, hydrated]);
 
   // --- Mappers to bridge Backend schema to Mobile UI keys ---
 

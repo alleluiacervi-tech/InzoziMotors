@@ -48,6 +48,9 @@ export default function MessagesScreen({ navigation }) {
             <Ionicons name="chatbubbles-outline" size={56} color={colors.border} />
             <Text style={styles.emptyTitle}>No messages yet</Text>
             <Text style={styles.emptySub}>Message a seller from any car page</Text>
+            <Pressable style={styles.emptyBtn} onPress={() => navigation.navigate('Main')}>
+              <Text style={styles.emptyBtnText}>Browse Cars</Text>
+            </Pressable>
           </View>
         }
       />
@@ -70,6 +73,11 @@ const styles = StyleSheet.create({
   badgeText: { color: '#fff', fontSize: 12, fontFamily: fonts.extraBold },
   sep: { height: 1, backgroundColor: colors.borderSoft, marginLeft: 66 },
   emptyState: { alignItems: 'center', gap: 12, paddingTop: 80, paddingHorizontal: 32 },
+  emptyBtn: {
+    marginTop: 8, paddingHorizontal: 24, paddingVertical: 12,
+    backgroundColor: colors.primary, borderRadius: 999,
+  },
+  emptyBtnText: { fontSize: 14, fontFamily: fonts.bold, color: '#fff' },
   emptyTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },
   emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center' },
 });
