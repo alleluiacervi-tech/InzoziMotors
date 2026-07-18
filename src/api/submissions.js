@@ -22,6 +22,13 @@ export const submissions = {
     // Body: { status, admin_notes, center, scheduled_date, scheduled_time }
     return await api.patch(`/submissions/${id}`, data);
   },
+
+  // Seller books their own inspection slot (offered right after submit)
+  scheduleInspection: async (id, { center, date, time }) => {
+    return await api.patch(`/submissions/${id}/schedule`, {
+      center, scheduled_date: date, scheduled_time: time,
+    });
+  },
 };
 
 export default submissions;

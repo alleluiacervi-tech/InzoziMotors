@@ -3,7 +3,7 @@ import api from './client';
 export const handovers = {
   // Book a handover slots at the inspection center (reserves car)
   bookHandover: async (data) => {
-    // Body: { car_id, center, handover_date, handover_time }
+    // Body: { car_id, contact_phone?, center?, handover_date?, handover_time? }
     return await api.post('/handovers', data);
   },
 

@@ -221,6 +221,7 @@ export function AppProvider({ children }) {
     return {
       id: c.id,
       title: c.title,
+      sellerPhone: c.seller_phone || null,
       make: c.make,
       model: c.model,
       year: c.year,
@@ -712,6 +713,22 @@ export function AppProvider({ children }) {
     }
   }, [mapSubmission]);
 
+  // Seller books an inspection slot — real API with local fallback
+  const scheduleInspection = useCallback(async (id, { center, date, time }) => {
+    try {
+      await submissionsApi.scheduleInspection(id, { center, date, time });
+      const list = await submissionsApi.getSubmissions();
+      setSubmissions(list.map(mapSubmission));
+    } catch (err) {
+      console.warn('Schedule API unreachable — updating locally:', err.message);
+      setSubmissions((prev) =>
+        prev.map((s) => s.id === id
+          ? { ...s, status: 'scheduled', statusDetail: `Inspection: ${date} · ${time} · ${center}`, center }
+          : s)
+      );
+    }
+  }, [mapSubmission]);
+
   const updateSubmissionStatus = useCallback((id, status, detail = '') => {
     // local update fallback
     setSubmissions((prev) =>
@@ -916,14 +933,15 @@ export function AppProvider({ children }) {
 
   // --- Handover Checkout Bookings ---
 
-  const bookHandover = useCallback(async (car, { center, date, time }) => {
+  const bookHandover = useCallback(async (car, { center, date, time, contactPhone } = {}) => {
     setLoading(true);
     try {
       const res = await handoversApi.bookHandover({
         car_id: car.id,
-        center,
-        handover_date: date,
-        handover_time: time,
+        center: center || null,
+        handover_date: date || null,
+        handover_time: time || null,
+        contact_phone: contactPhone || null,
       });
 
       const myHandovers = await handoversApi.getMyHandovers();
@@ -943,9 +961,10 @@ export function AppProvider({ children }) {
         carTitle: car.title,
         carImage: car.image,
         price: car.price || car.currentBid,
-        center,
-        date,
-        time,
+        center: center || 'To be arranged',
+        date: date || 'Pending confirmation',
+        time: time || '',
+        contactPhone: contactPhone || null,
         status: 'reserved',
         createdAt: new Date().toISOString(),
       };
@@ -1043,7 +1062,7 @@ export function AppProvider({ children }) {
     // Seller Listings
     sellerListings,
     // Submissions pipeline
-    submissions, addSubmission, updateSubmissionStatus,
+    submissions, addSubmission, updateSubmissionStatus, scheduleInspection,
     // ID Verification
     idVerificationStatus, submitIDVerification, approveIDVerification, rejectIDVerification,
     // Admin

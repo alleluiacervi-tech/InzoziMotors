@@ -23,7 +23,7 @@ const HOW_IT_WORKS = [
 function RequestState({ car, price, phone, setPhone, onSend, sending }) {
   const askAvailability = () => {
     const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
-    openWhatsApp(getSellerWhatsApp(car.seller), msg);
+    openWhatsApp(car.sellerPhone || getSellerWhatsApp(car.seller), msg);
   };
   return (
     <>
@@ -213,9 +213,7 @@ export default function CheckoutScreen({ navigation, route }) {
     setSending(true);
     try {
       const id = await bookHandover(car, {
-        center: 'To be arranged',
-        date: 'Pending confirmation',
-        time: phone ? `Contact: +250 ${phone}` : 'Contact via account',
+        contactPhone: phone ? `+250${phone.replace(/\s/g, '')}` : null,
       });
       setBookingId(id);
       setPhase('confirmed');

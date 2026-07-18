@@ -103,9 +103,10 @@ CREATE TABLE IF NOT EXISTS handovers (
   car_id          UUID REFERENCES cars(id),
   buyer_id        UUID NOT NULL REFERENCES users(id),
   seller_id       UUID NOT NULL REFERENCES users(id),
-  center          TEXT NOT NULL,
-  handover_date   TEXT NOT NULL,         -- "Jul 3, 2026" (display string from app)
-  handover_time   TEXT NOT NULL,         -- "10:00 AM"
+  center          TEXT,                  -- null until Inzozi arranges the slot
+  handover_date   TEXT,                  -- "Jul 3, 2026" (display string from app)
+  handover_time   TEXT,                  -- "10:00 AM"
+  contact_phone   TEXT,                  -- buyer's WhatsApp number for coordination
   agreed_price    INT,                   -- car price at time of booking (USD)
   status          TEXT NOT NULL DEFAULT 'pending',  -- pending | complete | cancelled
   confirmed_by    UUID REFERENCES users(id),        -- admin who confirmed
@@ -188,6 +189,13 @@ CREATE INDEX IF NOT EXISTS idx_submissions_seller ON submissions(seller_id);
 -- ─── Migration: add columns to existing installs ──────────────────────────────
 -- Safe to run repeatedly; ADD COLUMN IF NOT EXISTS is idempotent.
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS phone           TEXT;
+ALTER TABLE handovers   ADD COLUMN IF NOT EXISTS contact_phone   TEXT;
+ALTER TABLE handovers   ALTER COLUMN center        DROP NOT NULL;
+ALTER TABLE handovers   ALTER COLUMN handover_date DROP NOT NULL;
+ALTER TABLE handovers   ALTER COLUMN handover_time DROP NOT NULL;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS inspection_center TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS inspection_date   TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS inspection_time   TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS id_front_url    TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS id_back_url     TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS selfie_url      TEXT;

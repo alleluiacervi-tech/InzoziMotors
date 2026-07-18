@@ -85,7 +85,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
   const contactWhatsApp = () => {
     const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
-    openWhatsApp(getSellerWhatsApp(car.seller), msg);
+    openWhatsApp(car.sellerPhone || getSellerWhatsApp(car.seller), msg);
   };
 
   const infoRows = [

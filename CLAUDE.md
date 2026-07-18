@@ -740,20 +740,18 @@ All screens built and wired. See screen table above for full list.
 - [x] `GET /admin/stats` + `GET /admin/analytics` + `GET /admin/listings`
 - Not smoke-tested yet: Socket.io realtime chat, multipart file uploads (routes exist)
 
-### 6D. Connect Mobile App to API 🔲
-- [ ] Create `src/api/client.js` in mobile — Axios or fetch wrapper with base URL + JWT header
-- [ ] Create `src/api/auth.js` — login, register, me
-- [ ] Create `src/api/cars.js` — browse, detail, save
-- [ ] Create `src/api/submissions.js`
-- [ ] Create `src/api/handovers.js`
-- [ ] Create `src/api/messages.js`
-- [ ] Create `src/api/notifications.js`
-- [ ] Replace `AppContext` mock state with real API calls + loading/error states
-- [ ] Replace mock `cars` data with API browse response
-- [ ] Wire `SignInScreen` / `SignUpScreen` to `POST /auth/login` and `/register`
-- [ ] Store JWT in `SecureStore` (expo-secure-store), attach to all requests
-- [ ] Wire Socket.io client in `ChatScreen` for real-time messages
+### 6D. Connect Mobile App to API — mostly done (Jul 18, 2026)
+- [x] `src/api/client.js` — fetch wrapper, base URL + JWT header (SecureStore)
+- [x] `src/api/` modules: auth, cars, submissions, handovers, messages, notifications
+- [x] AppContext calls real API with graceful demo-data fallback when unreachable
+- [x] SignIn/SignUp wired to `POST /auth/login` / `/register` (offline demo fallback)
+- [x] Socket.io client wired in AppContext (join_conversation / send_message)
+- [x] Seller inspection booking → `PATCH /submissions/:id/schedule` (new endpoint)
+- [x] Purchase request sends `contact_phone`; slot fields now nullable (Inzozi arranges)
+- [x] Car detail exposes `seller_phone` → real WhatsApp contact (falls back to demo numbers)
+- [ ] Mobile modules for inspections report / reviews / saved-searches (screens still mock)
 - [ ] Wire push notifications (Expo Notifications + OneSignal)
+- [ ] Rentals backend — entire rental vertical (cars, bookings, availability, check-in records) is client-side mock
 
 ---
 
@@ -772,14 +770,14 @@ All screens built and wired. See screen table above for full list.
 - [x] `/handovers` — pending/confirmed/cancelled tabs, "Confirm → Mark Sold"
 - [x] `/users` — ID verification queue with document links, approve/reject
 - [x] `/analytics` — pipeline funnel, top makes, center utilisation, monthly sales
-- [ ] `/cars/new` — admin creates a listing (form + 36-photo upload UI) ← NOT BUILT
+- [x] `/listings/new` — admin creates a listing (built; needs click-test against API)
 
 ### Tech for admin web
 - [x] Scaffold `admin/` folder with Next.js 15 App Router
 - [x] Tailwind CSS (no shadcn — plain Tailwind components)
 - [x] API client (`admin/src/lib/api.ts`) — same backend, admin JWT
 - [x] Auth middleware — redirect to `/login` if no valid admin JWT
-- [ ] File upload UI for 36-angle photos (drag-and-drop grid) ← NOT BUILT
+- [x] `/listings/[id]/photos` — 36-angle photo upload page (built; upload flow not yet exercised)
 - [x] Inspection checklist form (7 categories × Pass/Flag/Fail)
 - [ ] Deploy to VPS under Nginx (blocked on VPS purchase)
 - Note: dashboard runs via `docker compose up` (port 3001) but has not been

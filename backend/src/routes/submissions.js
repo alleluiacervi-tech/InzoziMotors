@@ -10,8 +10,8 @@ router.post('/', requireAuth, async (req, res) => {
     make, model, year, mileage, condition, fuel_type, transmission,
     body_type, color, asking_price, notes,
   } = req.body;
-  if (!make || !model || !year || !asking_price) {
-    return res.status(400).json({ error: 'make, model, year, and asking_price are required' });
+  if (!make || !model || !year) {
+    return res.status(400).json({ error: 'make, model, and year are required' });
   }
   try {
     const { rows } = await pool.query(
@@ -21,7 +21,7 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'under_review')
        RETURNING *`,
       [req.user.id, make, model, year, mileage, condition, fuel_type,
-       transmission, body_type, color, asking_price, notes]
+       transmission, body_type, color, asking_price || 0, notes]
     );
     const sub = rows[0];
 
@@ -130,6 +130,51 @@ router.patch('/:id', requireAdmin, async (req, res) => {
     res.json(sub);
   } catch (err) {
     console.error('update submission error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /submissions/:id/schedule — seller books their own inspection slot
+// (the app offers this right after submit; approval is implicit in confirming)
+router.patch('/:id/schedule', requireAuth, async (req, res) => {
+  const { center, scheduled_date, scheduled_time } = req.body;
+  if (!center || !scheduled_date || !scheduled_time) {
+    return res.status(400).json({ error: 'center, scheduled_date, and scheduled_time are required' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `UPDATE submissions
+       SET status = 'scheduled',
+           inspection_center = $1, inspection_date = $2, inspection_time = $3
+       WHERE id = $4 AND seller_id = $5 AND status IN ('under_review', 'scheduled')
+       RETURNING *`,
+      [center, scheduled_date, scheduled_time, req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Submission not found or not schedulable' });
+    const sub = rows[0];
+
+    const parsed = new Date(`${scheduled_date} ${scheduled_time}`);
+    const scheduledAt = isNaN(parsed.getTime()) ? null : parsed;
+
+    await pool.query(
+      `INSERT INTO inspections
+         (submission_id, car_id, center, scheduled_date, scheduled_time, scheduled_at, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'scheduled')
+       ON CONFLICT DO NOTHING`,
+      [sub.id, sub.car_id, center, scheduled_date, scheduled_time, scheduledAt]
+    );
+
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, title, body, meta)
+       VALUES ($1, 'listing_update', 'Inspection booked', $2, $3)`,
+      [req.user.id,
+       `Your inspection is booked at ${center} on ${scheduled_date} at ${scheduled_time}. Bring the car, your ID and any service records.`,
+       JSON.stringify({ submissionId: sub.id })]
+    );
+
+    res.json(sub);
+  } catch (err) {
+    console.error('schedule submission error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

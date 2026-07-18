@@ -73,7 +73,7 @@ const DATES = getDates();
 export default function InspectionSchedulingScreen({ navigation, route }) {
   const carName = route?.params?.carName || 'Your Car';
   const submissionId = route?.params?.submissionId || null;
-  const { updateSubmissionStatus } = useApp();
+  const { scheduleInspection } = useApp();
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -83,13 +83,13 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
   const handleBook = () => {
     const center = CENTERS.find((c) => c.id === selectedCenter);
     const date = DATES.find((d) => d.key === selectedDate);
-    // Write the booking back to the submission so the dashboard reflects it
+    // Write the booking back to the submission (API when reachable, local otherwise)
     if (submissionId) {
-      updateSubmissionStatus(
-        submissionId,
-        'scheduled',
-        `Inspection: ${date.month} ${date.date} · ${selectedTime} · ${center.name}`
-      );
+      scheduleInspection(submissionId, {
+        center: center.name,
+        date: `${date.month} ${date.date}`,
+        time: selectedTime,
+      });
     }
     Alert.alert(
       'Inspection Booked!',

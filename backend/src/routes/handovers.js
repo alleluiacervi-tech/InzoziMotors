@@ -6,11 +6,9 @@ const router = express.Router();
 
 // POST /handovers — buyer books a handover slot
 router.post('/', requireAuth, async (req, res) => {
-  const { car_id, center, handover_date, handover_time } = req.body;
-  if (!car_id || !center || !handover_date || !handover_time) {
-    return res.status(400).json({
-      error: 'car_id, center, handover_date, and handover_time are required',
-    });
+  const { car_id, center, handover_date, handover_time, contact_phone } = req.body;
+  if (!car_id) {
+    return res.status(400).json({ error: 'car_id is required' });
   }
   try {
     const carRes = await pool.query(
@@ -26,11 +24,12 @@ router.post('/', requireAuth, async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO handovers
          (booking_id, car_id, buyer_id, seller_id, center,
-          handover_date, handover_time, agreed_price, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+          handover_date, handover_time, contact_phone, agreed_price, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
        RETURNING *`,
       [booking_id, car_id, req.user.id, car.seller_id,
-       center, handover_date, handover_time, car.price]
+       center || null, handover_date || null, handover_time || null,
+       contact_phone || null, car.price]
     );
     const handover = rows[0];
 
@@ -41,7 +40,9 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1, 'handover', 'Handover slot booked', $2, $3)`,
       [
         req.user.id,
-        `Your slot for the ${car.title} is confirmed at ${center} on ${handover_date} at ${handover_time}. The car is now reserved for you.`,
+        center && handover_date
+          ? `Your slot for the ${car.title} is confirmed at ${center} on ${handover_date} at ${handover_time}. The car is now reserved for you.`
+          : `Your request for the ${car.title} is in — the car is reserved for you. We'll contact you shortly to arrange the handover.`,
         JSON.stringify({ bookingId: booking_id, carId: car_id }),
       ]
     );
@@ -51,7 +52,9 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1, 'handover', 'A buyer has booked a handover', $2, $3)`,
       [
         car.seller_id,
-        `A buyer has booked a handover for your ${car.title} at ${center} on ${handover_date} at ${handover_time}. Please attend.`,
+        center && handover_date
+          ? `A buyer has booked a handover for your ${car.title} at ${center} on ${handover_date} at ${handover_time}. Please attend.`
+          : `A buyer wants your ${car.title}. Inzozi will coordinate the handover with both of you shortly.`,
         JSON.stringify({ bookingId: booking_id, carId: car_id }),
       ]
     );

@@ -105,7 +105,8 @@ router.get('/:id/history', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust,
+      `SELECT c.*, u.name AS seller_name, u.phone AS seller_phone,
+              u.trust_score AS seller_trust,
               u.response_rate AS seller_response_rate, u.completed_sales AS seller_sales,
               u.id_verified AS seller_id_verified
        FROM cars c
