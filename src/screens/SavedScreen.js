@@ -34,7 +34,11 @@ function SavedCarRow({ car, onPress, onRemove }) {
           )}
         </View>
         <View style={styles.rowPriceRow}>
-          <Text style={styles.rowPrice}>{formatPrice(car.type === 'auction' ? car.currentBid : car.price)}</Text>
+          <Text style={styles.rowPrice}>
+            {car.listingType === 'rental'
+              ? `$${car.dailyRate}/day`
+              : formatPrice(car.type === 'auction' ? car.currentBid : car.price)}
+          </Text>
           {drop > 0 && (
             <View style={styles.dropBadge}>
               <Ionicons name="arrow-down" size={10} color={colors.green} />
@@ -157,7 +161,7 @@ export default function SavedScreen({ navigation }) {
           renderItem={({ item }) => (
             <SavedCarRow
               car={item}
-              onPress={() => navigation.navigate('VehicleDetail', { car: item })}
+              onPress={() => navigation.navigate(item.listingType === 'rental' ? 'RentalDetail' : 'VehicleDetail', { car: item })}
               onRemove={() => handleRemove(item.id)}
             />
           )}

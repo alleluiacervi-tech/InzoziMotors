@@ -48,7 +48,7 @@ export default function CarListCard({ car, onPress }) {
         </View>
 
         <Text style={styles.meta} numberOfLines={1}>
-          {getRegYear(car)} · {car.mileage.toLocaleString('en-US')} km
+          {getRegYear(car)} · {(car.mileage ?? 0).toLocaleString('en-US')} km
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
           {car.fuel} · {getNeighborhood(car.id)}
@@ -67,7 +67,7 @@ export default function CarListCard({ car, onPress }) {
               </View>
             )}
           </View>
-          <Text style={styles.price}>${price.toLocaleString('en-US')}</Text>
+          <Text style={styles.price}>${(price ?? 0).toLocaleString('en-US')}</Text>
         </View>
       </View>
     </Pressable>

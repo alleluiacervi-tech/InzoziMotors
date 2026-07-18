@@ -809,9 +809,9 @@ export const conversations = [
 ];
 
 export const formatPrice = (n) =>
-  '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  '$' + (n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 
-export const formatMiles = (n) => n.toLocaleString('en-US') + ' km';
+export const formatMiles = (n) => (n ?? 0).toLocaleString('en-US') + ' km';
 
 // Demo WhatsApp number per seller — deterministic until the backend provides real ones
 export const getSellerWhatsApp = (sellerName = '') => {

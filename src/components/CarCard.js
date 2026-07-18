@@ -8,7 +8,7 @@ import { monthlyEstimate } from '../data/finance';
 
 const getInzoziYear = (car) => String(car.year);
 
-const getInzoziMileage = (car) => `${car.mileage.toLocaleString('en-US')} km`;
+const getInzoziMileage = (car) => `${(car.mileage ?? 0).toLocaleString('en-US')} km`;
 
 const getInzoziLocation = (car) => {
   const loc = car.location || '';
@@ -20,7 +20,7 @@ const getInzoziLocation = (car) => {
   return 'Kigali';
 };
 
-const getInzoziPrice = (car) => `$${car.price.toLocaleString('en-US')}`;
+const getInzoziPrice = (car) => `$${(car.price ?? car.currentBid ?? 0).toLocaleString('en-US')}`;
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
   const { isCarSaved, toggleSaveCar } = useApp();
