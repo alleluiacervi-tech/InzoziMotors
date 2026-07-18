@@ -53,10 +53,10 @@ import InzoziPromiseScreen from '../screens/InzoziPromiseScreen';
 
 const Stack = createNativeStackNavigator();
 
-export default function RootNavigator() {
+export default function RootNavigator({ initialRoute = 'Onboarding' }) {
   return (
     <Stack.Navigator
-      initialRouteName="Onboarding"
+      initialRouteName={initialRoute}
       screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
     >
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />

@@ -10,6 +10,7 @@ import messagesApi from '../api/messages';
 import notificationsApi from '../api/notifications';
 import api, { BASE_URL, getToken } from '../api/client';
 import io from 'socket.io-client';
+import { getJSON, setJSON } from '../storage';
 
 const AppContext = createContext();
 
@@ -183,6 +184,30 @@ export function AppProvider({ children }) {
   const toggleCurrency = useCallback(() => {
     setCurrency((prev) => (prev === 'USD' ? 'RWF' : 'USD'));
   }, []);
+
+  // --- Persistence: saved cars, saved searches, rental bookings, currency ---
+  // Hydrate once on mount; only persist after hydration so defaults never
+  // overwrite what the user already stored.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const [ids, searches, bookings, cur] = await Promise.all([
+        getJSON('savedCarIds'),
+        getJSON('savedSearches'),
+        getJSON('rentalBookings'),
+        getJSON('currency'),
+      ]);
+      if (ids) setSavedCarIds(ids);
+      if (searches) setSavedSearches(searches);
+      if (bookings) setRentalBookings(bookings);
+      if (cur) setCurrency(cur);
+      setHydrated(true);
+    })();
+  }, []);
+  useEffect(() => { if (hydrated) setJSON('savedCarIds', savedCarIds); }, [savedCarIds, hydrated]);
+  useEffect(() => { if (hydrated) setJSON('savedSearches', savedSearches); }, [savedSearches, hydrated]);
+  useEffect(() => { if (hydrated) setJSON('rentalBookings', rentalBookings); }, [rentalBookings, hydrated]);
+  useEffect(() => { if (hydrated) setJSON('currency', currency); }, [currency, hydrated]);
 
   // --- Mappers to bridge Backend schema to Mobile UI keys ---
 

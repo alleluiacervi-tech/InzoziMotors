@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +14,7 @@ import {
 import { AppProvider } from './src/context/AppContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AnimatedSplash from './src/components/AnimatedSplash';
+import { getJSON } from './src/storage';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -25,15 +26,20 @@ export default function App() {
     Inter_900Black,
   });
   const [splashDone, setSplashDone] = useState(false);
+  const [initialRoute, setInitialRoute] = useState(null);
 
-  if (!fontsLoaded) return null;
+  useEffect(() => {
+    getJSON('onboardingSeen', false).then((seen) => setInitialRoute(seen ? 'Welcome' : 'Onboarding'));
+  }, []);
+
+  if (!fontsLoaded || !initialRoute) return null;
 
   return (
     <AppProvider>
       <SafeAreaProvider>
         <NavigationContainer>
           <StatusBar style="dark" />
-          <RootNavigator />
+          <RootNavigator initialRoute={initialRoute} />
         </NavigationContainer>
         {!splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
       </SafeAreaProvider>

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { CarGlyph } from '../components/Logo';
 import Button from '../components/Button';
+import { setJSON } from '../storage';
 import { colors, fonts } from '../theme';
 
 const { width, height } = Dimensions.get('window');
@@ -21,8 +22,13 @@ export default function OnboardingScreen({ navigation }) {
   const ref = useRef(null);
   const last = idx === SLIDES.length - 1;
 
+  const finish = () => {
+    setJSON('onboardingSeen', true);
+    navigation.replace('Welcome');
+  };
+
   const go = () => {
-    if (last) navigation.replace('Welcome');
+    if (last) finish();
     else ref.current?.scrollTo({ x: width * (idx + 1), animated: true });
   };
 
@@ -53,7 +59,7 @@ export default function OnboardingScreen({ navigation }) {
 
       <Pressable
         style={[styles.skip, { top: insets.top + 14 }]}
-        onPress={() => navigation.replace('Welcome')}
+        onPress={finish}
         hitSlop={12}
       >
         <Text style={styles.skipText}>Skip</Text>
