@@ -23,7 +23,7 @@ function PinnedCarCard({ car, onViewListing }) {
   return (
     <View style={styles.pinnedCard}>
       <View style={styles.pinnedLabel}>
-        <Ionicons name="pin" size={10} color={colors.primary} />
+        <Ionicons name="pin" size={10} color={colors.textMuted} />
         <Text style={styles.pinnedLabelText}>Pinned listing</Text>
       </View>
       <View style={styles.pinnedContent}>
@@ -113,7 +113,7 @@ export default function ChatScreen({ navigation, route }) {
               style={styles.headerBtn}
               onPress={() => navigation.navigate('VehicleDetail', { car })}
             >
-              <Ionicons name="car-outline" size={18} color={colors.primary} />
+              <Ionicons name="car-outline" size={18} color={colors.textSecondary} />
             </Pressable>
           ) : null
         }
@@ -208,12 +208,12 @@ const styles = StyleSheet.create({
   },
   pinnedCard: {
     backgroundColor: colors.surface,
-    borderWidth: 1.5, borderColor: colors.primary + '44',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl,
     padding: 12, marginBottom: 4,
   },
   pinnedLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-  pinnedLabelText: { fontSize: 10, fontFamily: fonts.bold, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.4 },
+  pinnedLabelText: { fontSize: 10, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 },
   pinnedContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pinnedThumb: { width: 56, height: 42, borderRadius: radius.md, backgroundColor: colors.border },
   pinnedTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },

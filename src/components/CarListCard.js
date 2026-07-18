@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   certBadge: {
     position: 'absolute', top: 6, left: 6,
     flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: colors.primary,
+    backgroundColor: 'rgba(23,18,15,0.78)',
     paddingHorizontal: 6, paddingVertical: 2.5,
     borderRadius: 4,
   },

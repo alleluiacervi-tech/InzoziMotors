@@ -50,9 +50,9 @@ export const typography = {
 
 // Shadow presets — subtle, brand-warm, realistic depth
 export const shadows = {
-  // Standard card: very low lift, warm green tint
+  // Standard card: very low lift, neutral warm shadow
   card: {
-    shadowColor: '#0A3D1E',
+    shadowColor: '#1A1413',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -68,7 +68,7 @@ export const shadows = {
   },
   // Bottom nav / sticky footer
   floating: {
-    shadowColor: '#031A0C',
+    shadowColor: '#1A1413',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08,
     shadowRadius: 12,

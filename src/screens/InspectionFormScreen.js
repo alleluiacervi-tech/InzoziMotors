@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.card,
   },
-  accordionOpen: { borderColor: colors.primary + '55' },
+  accordionOpen: { borderColor: colors.border },
   accordionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   catIcon: { width: 38, height: 38, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   catName: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   },
   scorePill: {
     backgroundColor: colors.greenTint,
-    borderWidth: 1.5, borderColor: colors.primary + '44',
+    borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.pill,
     paddingHorizontal: 10, paddingVertical: 4,
   },

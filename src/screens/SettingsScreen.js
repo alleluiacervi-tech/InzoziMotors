@@ -10,7 +10,7 @@ const GROUPS = [
     title: 'Account',
     items: [
       { icon: 'person-outline', label: 'Edit profile', comingSoon: 'Profile editing is coming in a future update.' },
-      { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: 'Verified', screen: 'IDVerification' },
+      { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: 'Verified', comingSoon: 'Your ID is checked in person at the inspection center — nothing to upload.' },
       { icon: 'notifications-outline', label: 'Saved searches', screen: 'Saved' },
       { icon: 'location-outline', label: 'Addresses', comingSoon: 'Saved addresses are coming in a future update.' },
     ],

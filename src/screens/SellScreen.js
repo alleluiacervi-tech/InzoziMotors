@@ -7,7 +7,7 @@ import Button from '../components/Button';
 import { colors, radius, fonts } from '../theme';
 
 const STEPS = [
-  { icon: 'shield-checkmark-outline', title: 'Verify Ownership', sub: 'Upload ID & Title documents securely' },
+  { icon: 'shield-checkmark-outline', title: 'Zero Paperwork Upfront', sub: 'ID and ownership checked in person at your inspection' },
   { icon: 'scan-outline', title: '150-Point Curation', sub: 'Get certified by Inzozi inspection specialists' },
   { icon: 'ribbon-outline', title: 'Showcase Premium Status', sub: 'Position your car as high-intent certified property' },
   { icon: 'people-outline', title: 'Nationwide Client Match', sub: 'Direct connection with verified buyers across Kigali' },

@@ -6,10 +6,9 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
-import { RENTAL_CENTERS, DURATION_PRESETS, getRentalDates, calcTripCost } from '../data/rentals';
+import { DURATION_PRESETS, getRentalDates, calcTripCost, getPickupCenter, AIRPORT_PICKUP, PICKUP_WINDOWS } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
 
-const PICKUP_TIMES = ['9:00 AM', '11:00 AM', '2:00 PM', '4:00 PM'];
 
 export default function RentalBookingScreen({ navigation, route }) {
   const car = route.params?.car;
@@ -32,16 +31,17 @@ export default function RentalBookingScreen({ navigation, route }) {
     return first ? first.index : null;
   });
   const [days, setDays] = useState(durations[0]);
-  const [time, setTime] = useState(PICKUP_TIMES[0]);
-  const [centerId, setCenterId] = useState(RENTAL_CENTERS[0].id);
+  const [time, setTime] = useState(PICKUP_WINDOWS[0]);
+  const [airportPickup, setAirportPickup] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
   const cost = calcTripCost(car, days);
   const rangeFree = startIdx !== null && days ? rangeIsFree(startIdx, days) : true;
-  const canBook = startIdx !== null && days && centerId && rangeFree;
+  const canBook = startIdx !== null && days && rangeFree;
   const startDate = startIdx !== null ? dates[startIdx] : null;
-  const center = RENTAL_CENTERS.find((c) => c.id === centerId);
-  const pickupFee = center?.fee || 0;
+  const homeCenter = getPickupCenter(car);
+  const center = airportPickup ? AIRPORT_PICKUP : homeCenter;
+  const pickupFee = airportPickup ? AIRPORT_PICKUP.fee : 0;
   const totalDue = cost.total + pickupFee;
 
   const handleConfirm = () => {
@@ -138,10 +138,10 @@ export default function RentalBookingScreen({ navigation, route }) {
           })}
         </ScrollView>
 
-        {/* 2. Pickup time */}
-        <Text style={styles.sectionTitle}>Pickup time</Text>
+        {/* 2. Pickup window — staff confirm the exact time on WhatsApp */}
+        <Text style={styles.sectionTitle}>Pickup window</Text>
         <View style={styles.durationRow}>
-          {PICKUP_TIMES.map((t) => {
+          {PICKUP_WINDOWS.map((t) => {
             const on = time === t;
             return (
               <Pressable
@@ -183,35 +183,25 @@ export default function RentalBookingScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* 4. Pickup center */}
-        <Text style={styles.sectionTitle}>Pickup center</Text>
-        {RENTAL_CENTERS.map((c) => {
-          const on = centerId === c.id;
-          return (
-            <Pressable
-              key={c.id}
-              style={[styles.centerCard, on && styles.centerCardOn]}
-              onPress={() => setCenterId(c.id)}
-            >
-              <View style={[styles.centerRadio, on && styles.centerRadioOn]}>
-                {on && <View style={styles.centerRadioDot} />}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.centerName}>{c.name}</Text>
-                <Text style={styles.centerArea}>
-                  {c.airport
-                    ? `Meet & greet at arrivals · +$${c.fee} fee`
-                    : `${c.area}, Kigali · Open 8AM – 6PM`}
-                </Text>
-              </View>
-              <Ionicons
-                name={c.airport ? 'airplane-outline' : 'location-outline'}
-                size={18}
-                color={on ? colors.primary : colors.textMuted}
-              />
-            </Pressable>
-          );
-        })}
+        {/* 4. Pickup location — fixed to the car's home center */}
+        <Text style={styles.sectionTitle}>Pickup location</Text>
+        <View style={styles.centerCard}>
+          <View style={styles.centerIcon}>
+            <Ionicons name="location" size={16} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.centerName}>{homeCenter.name}</Text>
+            <Text style={styles.centerArea}>{homeCenter.area}, Kigali · Open 8AM – 6PM · This car is kept here</Text>
+          </View>
+        </View>
+        <Pressable style={styles.airportRow} onPress={() => setAirportPickup(!airportPickup)}>
+          <View style={[styles.airportCheck, airportPickup && styles.airportCheckOn]}>
+            {airportPickup && <Ionicons name="checkmark" size={13} color="#fff" />}
+          </View>
+          <Ionicons name="airplane-outline" size={16} color={colors.textSecondary} />
+          <Text style={styles.airportText}>Airport meet & greet instead</Text>
+          <Text style={styles.airportFee}>+${AIRPORT_PICKUP.fee}</Text>
+        </Pressable>
 
         {/* Cost breakdown */}
         <Text style={styles.sectionTitle}>Trip cost</Text>
@@ -319,17 +309,30 @@ const styles = StyleSheet.create({
   centerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface,
-    borderWidth: 1.5, borderColor: colors.border,
+    borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, padding: 14, marginBottom: 10,
+    ...shadows.card,
   },
-  centerCardOn: { borderColor: colors.primary, backgroundColor: colors.greenTint },
-  centerRadio: {
-    width: 20, height: 20, borderRadius: 10,
+  centerIcon: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  airportRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: radius.xl,
+  },
+  airportCheck: {
+    width: 20, height: 20, borderRadius: 6,
     borderWidth: 2, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  centerRadioOn: { borderColor: colors.primary },
-  centerRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  airportCheckOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  airportText: { flex: 1, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  airportFee: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   centerName: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   centerArea: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
   costCard: {

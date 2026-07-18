@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     gap: 14,
     backgroundColor: colors.greenTint,
     borderWidth: 1,
-    borderColor: '#DCFCE7',
+    borderColor: colors.border,
     borderRadius: radius.xl,
     marginHorizontal: 16,
     marginTop: 4,

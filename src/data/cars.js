@@ -813,4 +813,11 @@ export const formatPrice = (n) =>
 
 export const formatMiles = (n) => n.toLocaleString('en-US') + ' km';
 
+// Demo WhatsApp number per seller — deterministic until the backend provides real ones
+export const getSellerWhatsApp = (sellerName = '') => {
+  let h = 0;
+  for (let i = 0; i < sellerName.length; i++) h = (h * 31 + sellerName.charCodeAt(i)) % 10000000;
+  return '25078' + String(h).padStart(7, '0');
+};
+
 export default cars;

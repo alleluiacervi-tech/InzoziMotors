@@ -263,13 +263,13 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: 52, paddingHorizontal: 36, paddingBottom: 20 },
   emptyIconOuter: {
     width: 108, height: 108, borderRadius: 54,
-    backgroundColor: 'rgba(10,92,46,0.07)',
+    backgroundColor: 'rgba(22,163,74,0.07)',
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 22,
   },
   emptyIconInner: {
     width: 74, height: 74, borderRadius: 37,
-    backgroundColor: 'rgba(10,92,46,0.12)',
+    backgroundColor: 'rgba(22,163,74,0.13)',
     alignItems: 'center', justifyContent: 'center',
   },
   emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, textAlign: 'center', marginBottom: 8 },

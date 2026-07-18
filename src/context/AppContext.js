@@ -45,7 +45,7 @@ const INITIAL_SUBMISSIONS = [
     submittedDate: 'Jun 28, 2026', status: 'under_review',
     image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400&q=80',
     inspectionDate: null, center: null, listingId: null,
-    statusDetail: 'Our team is reviewing your submission',
+    statusDetail: 'Book your inspection slot to continue',
   },
 ];
 
@@ -659,7 +659,7 @@ export function AppProvider({ children }) {
         photos: data.photos,
         submittedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         status: 'under_review',
-        statusDetail: 'Our team is reviewing your submission',
+        statusDetail: 'Book your inspection slot to continue',
         inspectionDate: null,
         center: null,
         listingId: null,
@@ -670,7 +670,7 @@ export function AppProvider({ children }) {
         id: 'submit_' + Date.now(),
         type: 'listing_update',
         title: 'Submission received',
-        body: `${localSub.carTitle} is under review. We'll get back to you within 24 hours.`,
+        body: `${localSub.carTitle} is in. Book your inspection slot to continue.`,
         time: 'Just now',
         date: 'Today',
         read: false,

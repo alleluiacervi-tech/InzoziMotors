@@ -84,7 +84,7 @@ export default function FinancingScreen({ navigation, route }) {
 
         {/* Intro */}
         <View style={styles.introCard}>
-          <Ionicons name="cash-outline" size={22} color={colors.primary} />
+          <Ionicons name="cash-outline" size={22} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>Estimate monthly payments</Text>
             <Text style={styles.introSub}>Based on Rwanda commercial bank auto loan rates for 2026. Actual rates may vary — contact your bank for a formal quote.</Text>
@@ -212,8 +212,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 12, alignItems: 'flex-start',
     backgroundColor: colors.greenTint, borderRadius: radius.xl, padding: 14, marginBottom: 20,
   },
-  introTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, marginBottom: 3 },
-  introSub: { fontSize: 12, color: colors.primary, lineHeight: 18 },
+  introTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 3 },
+  introSub: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   fieldLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 8 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -222,14 +222,14 @@ const styles = StyleSheet.create({
   },
   inputPrefix: { fontSize: 16, fontFamily: fonts.bold, color: colors.textSecondary, marginRight: 6 },
   input: { flex: 1, fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },
-  inputSuffix: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
+  inputSuffix: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted },
   loanSummary: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 12, marginTop: 10,
   },
-  loanLabel: { flex: 1, fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
+  loanLabel: { flex: 1, fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted },
   loanValue: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary },
-  loanRwf: { fontSize: 10, color: colors.primary, opacity: 0.7 },
+  loanRwf: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
   termRow: { flexDirection: 'row', gap: 8 },
   termChip: {
     flex: 1, paddingVertical: 10, borderRadius: radius.lg,

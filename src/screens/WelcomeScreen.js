@@ -1,23 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../components/Logo';
-import Button from '../components/Button';
-import { colors, fonts } from '../theme';
+import { colors, fonts, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
-
-const TRUST_CHIPS = [
-  { icon: 'shield-checkmark-outline', label: '150-pt Inspection' },
-  { icon: 'person-outline', label: 'Verified Sellers' },
-  { icon: 'refresh-outline', label: '7-Day Returns' },
-];
-
-const STATS = ['240+ certified cars', '3 Kigali centres', '36-angle photos'];
-
-const HERO_CAR = 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=900&q=80';
 
 export default function WelcomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -29,277 +17,132 @@ export default function WelcomeScreen({ navigation }) {
   };
 
   return (
-    <LinearGradient
-      colors={[colors.navyLight, colors.navyMid, colors.navyDeep]}
-      locations={[0, 0.5, 1]}
-      style={styles.root}
-    >
-      <StatusBar style="light" />
-      <View style={[styles.content, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.root, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 14 }]}>
+      <StatusBar style="dark" />
 
-        {/* Top bar */}
-        <View style={styles.topBar}>
-          <Logo size={18} />
-          <View style={styles.langPill}>
-            <Text style={styles.langText}>EN</Text>
-          </View>
-        </View>
-
-        {/* Hero */}
-        <View style={styles.hero}>
-          {/* Ghost car image fades into the dark gradient */}
-          <Image source={{ uri: HERO_CAR }} style={styles.heroCar} resizeMode="cover" />
-          <LinearGradient
-            colors={['transparent', colors.navyDeep]}
-            style={styles.heroFade}
-            pointerEvents="none"
-          />
-
-          <Text style={styles.eyebrow}>KIGALI'S CERTIFIED MARKETPLACE</Text>
-
-          <Text style={styles.title}>
-            Rwanda's most{'\n'}trusted car{'\n'}marketplace.
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Every car professionally inspected before listing.{'\n'}No guesswork. No false listings.
-          </Text>
-
-          {/* Trust chips */}
-          <View style={styles.chips}>
-            {TRUST_CHIPS.map((chip) => (
-              <View key={chip.label} style={styles.chip}>
-                <Ionicons name={chip.icon} size={13} color={colors.greenLight} />
-                <Text style={styles.chipText}>{chip.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Stats strip */}
-          <View style={styles.statsRow}>
-            {STATS.map((s, i) => (
-              <React.Fragment key={s}>
-                {i > 0 && <Text style={styles.statsDot}>·</Text>}
-                <Text style={styles.statText}>{s}</Text>
-              </React.Fragment>
-            ))}
-          </View>
-        </View>
-
-        {/* CTAs */}
-        <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
-
-          {/* Intent selector — what brings you here today? */}
-          <Text style={styles.intentLabel}>WHAT BRINGS YOU HERE TODAY?</Text>
-          <View style={styles.intentRow}>
-            <Pressable style={styles.intentCard} onPress={() => enterAs('buy')}>
-              <View style={styles.intentIcon}>
-                <Ionicons name="pricetag" size={20} color={colors.greenLight} />
-              </View>
-              <Text style={styles.intentTitle}>Buy a Car</Text>
-              <Text style={styles.intentSub}>Certified used cars</Text>
-              <View style={styles.intentArrow}>
-                <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.9)" />
-              </View>
-            </Pressable>
-
-            <Pressable style={styles.intentCard} onPress={() => enterAs('rent')}>
-              <View style={styles.intentIcon}>
-                <Ionicons name="key" size={20} color={colors.greenLight} />
-              </View>
-              <Text style={styles.intentTitle}>Rent a Car</Text>
-              <Text style={styles.intentSub}>From $40 per day</Text>
-              <View style={styles.intentArrow}>
-                <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.9)" />
-              </View>
-            </Pressable>
-          </View>
-
-          <Button
-            title="Sell My Car"
-            icon="shield-checkmark-outline"
-            variant="secondary"
-            onDark
-            onPress={() => {
-              navigation.replace('Main');
-              navigation.navigate('Sell');
-            }}
-          />
-          <Pressable onPress={() => navigation.navigate('SignIn')}>
-            <Text style={styles.signin}>
-              Already have an account?{' '}
-              <Text style={styles.signinLink}>Sign in</Text>
-            </Text>
-          </Pressable>
-          <Text style={styles.terms}>
-            By continuing, you agree to our{' '}
-            <Text style={styles.termsStrong}>Terms</Text> &{' '}
-            <Text style={styles.termsStrong}>Privacy Policy</Text>.
-          </Text>
-        </View>
-
+      {/* Brand */}
+      <View style={styles.topBar}>
+        <Logo size={17} color={colors.textPrimary} />
+        <Pressable style={styles.langPill} hitSlop={8}>
+          <Text style={styles.langText}>EN</Text>
+        </Pressable>
       </View>
-    </LinearGradient>
+
+      {/* Hero — one clear value prop */}
+      <View style={styles.hero}>
+        <Text style={styles.title}>Rwanda's most trusted car marketplace.</Text>
+        <Text style={styles.subtitle}>Every car professionally inspected before it's listed.</Text>
+      </View>
+
+      {/* Actions */}
+      <View style={styles.actions}>
+        <View style={styles.intentRow}>
+          <Pressable style={({ pressed }) => [styles.intentCard, pressed && styles.pressed]} onPress={() => enterAs('buy')}>
+            <View style={styles.intentIcon}>
+              <Ionicons name="pricetag" size={19} color={colors.primary} />
+            </View>
+            <Text style={styles.intentTitle}>Buy a Car</Text>
+            <Text style={styles.intentSub}>Certified used cars</Text>
+          </Pressable>
+
+          <Pressable style={({ pressed }) => [styles.intentCard, pressed && styles.pressed]} onPress={() => enterAs('rent')}>
+            <View style={styles.intentIcon}>
+              <Ionicons name="key" size={19} color={colors.primary} />
+            </View>
+            <Text style={styles.intentTitle}>Rent a Car</Text>
+            <Text style={styles.intentSub}>From $40 / day</Text>
+          </Pressable>
+        </View>
+
+        {/* Sell — refined secondary path */}
+        <Pressable
+          style={({ pressed }) => [styles.sellRow, pressed && styles.pressed]}
+          onPress={() => { navigation.replace('Main'); navigation.navigate('Sell'); }}
+        >
+          <Ionicons name="car-sport-outline" size={20} color={colors.textPrimary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sellTitle}>Sell your car</Text>
+            <Text style={styles.sellSub}>We inspect, photograph and list it for you</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+
+        <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.signinWrap} hitSlop={8}>
+          <Text style={styles.signin}>
+            Already have an account? <Text style={styles.signinLink}>Sign in</Text>
+          </Text>
+        </Pressable>
+
+        <Text style={styles.terms}>
+          By continuing, you agree to our <Text style={styles.termsStrong}>Terms</Text> &{' '}
+          <Text style={styles.termsStrong}>Privacy Policy</Text>.
+        </Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: 28 },
+  root: { flex: 1, backgroundColor: colors.surface, paddingHorizontal: 24 },
 
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   langPill: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1, borderColor: colors.border,
+    paddingVertical: 6, paddingHorizontal: 13, borderRadius: 999,
   },
-  langText: { fontFamily: fonts.semiBold, color: '#fff', fontSize: 13 },
+  langText: { fontFamily: fonts.semiBold, color: colors.textSecondary, fontSize: 13 },
 
-  hero: { flex: 1, justifyContent: 'center', overflow: 'hidden' },
-  heroCar: {
-    position: 'absolute',
-    bottom: -30,
-    left: -28,
-    right: -28,
-    height: 260,
-    opacity: 0.22,
-  },
-  heroFade: {
-    position: 'absolute',
-    bottom: -30,
-    left: 0,
-    right: 0,
-    height: 120,
-  },
-
-  eyebrow: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    letterSpacing: 1.5,
-    color: colors.greenLight,
-    marginBottom: 16,
-  },
+  hero: { flex: 1, justifyContent: 'center' },
   title: {
-    fontFamily: fonts.extraBold,
-    fontSize: 40,
-    lineHeight: 44,
-    letterSpacing: -1.1,
-    color: '#fff',
-    marginBottom: 18,
+    fontFamily: fonts.black,
+    fontSize: 34, lineHeight: 40, letterSpacing: -1,
+    color: colors.textPrimary,
   },
   subtitle: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    lineHeight: 23,
-    color: 'rgba(226,232,240,0.8)',
-    marginBottom: 30,
-  },
-
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 26,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: 999,
-  },
-  chipText: {
-    fontFamily: fonts.semiBold,
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 12,
-  },
-
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  statText: {
     fontFamily: fonts.medium,
-    fontSize: 12,
-    color: 'rgba(148,163,184,0.9)',
-  },
-  statsDot: {
-    fontSize: 12,
-    color: 'rgba(148,163,184,0.45)',
+    fontSize: 15, lineHeight: 22,
+    color: colors.textMuted,
+    marginTop: 16,
   },
 
   actions: { gap: 12 },
-  intentLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    letterSpacing: 1.4,
-    color: 'rgba(148,163,184,0.9)',
-    textAlign: 'center',
-    marginBottom: 2,
-  },
   intentRow: { flexDirection: 'row', gap: 12 },
   intentCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    borderRadius: 18,
-    padding: 16,
-    position: 'relative',
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.xl, padding: 18,
+    ...shadows.card,
   },
   intentIcon: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(74,222,128,0.14)',
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  intentTitle: {
-    fontFamily: fonts.extraBold,
-    fontSize: 16,
-    color: '#fff',
-    letterSpacing: -0.3,
+  intentTitle: { fontFamily: fonts.extraBold, fontSize: 16, color: colors.textPrimary, letterSpacing: -0.3 },
+  intentSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 3 },
+
+  sellRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 13,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.lg, paddingVertical: 15, paddingHorizontal: 16,
   },
-  intentSub: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    color: 'rgba(226,232,240,0.7)',
-    marginTop: 3,
-  },
-  intentArrow: {
-    position: 'absolute',
-    top: 14, right: 14,
-    width: 26, height: 26, borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  signin: {
-    fontFamily: fonts.regular,
-    textAlign: 'center',
-    fontSize: 14,
-    color: 'rgba(226,232,240,0.85)',
-    marginTop: 4,
-  },
-  signinLink: { fontFamily: fonts.bold, color: colors.greenLight },
+  sellTitle: { fontFamily: fonts.bold, fontSize: 14.5, color: colors.textPrimary },
+  sellSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted, marginTop: 2 },
+
+  pressed: { opacity: 0.65 },
+
+  signinWrap: { alignItems: 'center', marginTop: 6 },
+  signin: { fontFamily: fonts.regular, fontSize: 14, color: colors.textSecondary },
+  signinLink: { fontFamily: fonts.bold, color: colors.primary },
+
   terms: {
-    fontFamily: fonts.regular,
-    textAlign: 'center',
-    fontSize: 11,
-    lineHeight: 17,
-    color: 'rgba(148,163,184,0.8)',
+    fontFamily: fonts.regular, textAlign: 'center',
+    fontSize: 11.5, lineHeight: 17, color: colors.textMuted,
+    marginTop: 2, paddingHorizontal: 12,
   },
-  termsStrong: { fontFamily: fonts.semiBold, color: 'rgba(226,232,240,0.9)' },
+  termsStrong: { fontFamily: fonts.semiBold, color: colors.textSecondary },
 });

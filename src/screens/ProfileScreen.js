@@ -9,7 +9,6 @@ import { colors, radius, shadows, fonts } from '../theme';
 const MENU_SELLER = [
   { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
   { icon: 'trending-up-outline', label: "What's My Car Worth?", screen: 'CarValuation' },
-  { icon: 'shield-checkmark-outline', label: 'ID Verification', screen: 'IDVerification' },
 ];
 
 const MENU_ACCOUNT = [
@@ -106,9 +105,7 @@ export default function ProfileScreen({ navigation }) {
                   <Badge variant="live" dot label="ID Verified" />
                 </>
               ) : (
-                <Pressable onPress={() => navigation.navigate('IDVerification')}>
-                  <Badge variant="tag" label="Verify your ID →" />
-                </Pressable>
+                <Badge variant="tag" label="ID verified at your first inspection" />
               )}
             </View>
           </View>

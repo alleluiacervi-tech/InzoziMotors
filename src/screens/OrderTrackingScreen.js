@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   viewBtn: {
     paddingHorizontal: 12, paddingVertical: 7,
     backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.primary + '44',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.lg,
   },
   viewBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   nextStepsCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.primary + '33',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, padding: 16, gap: 12,
   },
   nextTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },

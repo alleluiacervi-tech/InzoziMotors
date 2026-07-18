@@ -1,29 +1,31 @@
-// Inzozi Motors — Premium Forest Green Brand System
-// Primary brand color ties to Rwanda's identity: "Land of a Thousand Hills"
-// Updated Jun 29 2026: deeper, richer forest green for premium feel
+// Inzozi Motors — Signal Red Brand System
+// Bold, trustworthy red identity — confident and modern for East Africa's
+// premier certified car marketplace.
+// Rebranded Jul 18 2026: transitioned from Forest Green to Signal Red.
 export const colors = {
-  // Dark surfaces (Welcome screen gradient — deep forest)
-  navyDeep: '#031A0C',
-  navyMid: '#0B3D1C',
-  navyLight: '#0F5227',
+  // Dark surfaces (Welcome hero gradient — premium warm charcoal, red kept as accent)
+  navyDeep: '#17120F',
+  navyMid: '#281F1C',
+  navyLight: '#3A2D29',
 
-  // Brand Green — #0A5C2E is richer/darker than Tailwind green-700
-  primary: '#0A5C2E',
-  primaryBright: '#0D7A3C',
-  blueLight: '#34D37B',
-  blueTint: '#F0FAF5',
+  // Brand Red — warm, vivid, confident (used sparingly, as an accent)
+  primary: '#DA2C2C',
+  primaryBright: '#F0453A',
+  blueLight: '#F98F8A',
+  blueTint: '#F3F2F2',
 
   // Badge Colors
-  jeondan: '#0A5C2E',
+  jeondan: '#DA2C2C',
   jeondanPlus: '#1D4ED8',
   jeondanPlusPlus: '#D97706',
-  contract: '#C23B2B',
+  contract: '#B02418',
   alert: '#D97706',
 
-  // Semantic
-  green: '#0A5C2E',
-  greenLight: '#34D37B',
-  greenTint: '#F0FAF5',
+  // Semantic — true success green (pass / verified / online / savings).
+  // Brand red is reserved for prices, CTAs and active states only.
+  green: '#16A34A',
+  greenLight: '#4ADE80',
+  greenTint: '#F3F2F2',
   amber: '#D97706',
   amberTint: '#FEF3C7',
   amberText: '#B45309',
@@ -33,31 +35,31 @@ export const colors = {
   statusPendingBg: '#FEF3C7',
   statusScheduled: '#1D4ED8',
   statusScheduledBg: '#EFF6FF',
-  statusLive: '#0A5C2E',
-  statusLiveBg: '#F0FAF5',
+  statusLive: '#16A34A',
+  statusLiveBg: '#EAF6EE',
   statusReserved: '#7C3AED',
   statusReservedBg: '#F5F3FF',
   statusSold: '#6B7280',
   statusSoldBg: '#F5F5F5',
-  statusRejected: '#DC2626',
+  statusRejected: '#B91C1C',
   statusRejectedBg: '#FEF2F2',
 
-  alertRed: '#DC2626',
+  alertRed: '#B91C1C',
 
-  // Neutrals — very slightly green-warm
-  bg: '#F7F9F7',
+  // Neutrals — very slightly red-warm
+  bg: '#FAF8F8',
   surface: '#FFFFFF',
-  surfaceAlt: '#F4F6F4',
-  border: '#E3E8E4',
-  borderSoft: '#EDF0ED',
+  surfaceAlt: '#F6F4F4',
+  border: '#E8E3E3',
+  borderSoft: '#F0EDED',
 
   // Text
-  textPrimary: '#111B14',
-  textSecondary: '#374237',
-  textMuted: '#6B7A6E',
+  textPrimary: '#1B1313',
+  textSecondary: '#423737',
+  textMuted: '#7A6E6E',
   textOnDark: '#FFFFFF',
-  slate700: '#111B14',
-  slate600: '#374237',
+  slate700: '#1B1313',
+  slate600: '#423737',
 
   white: '#FFFFFF',
   black: '#000000',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -8,7 +8,7 @@ import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
-import { formatPrice, formatMiles } from '../data/cars';
+import { formatPrice, formatMiles, getSellerWhatsApp } from '../data/cars';
 import LoginModal from '../components/LoginModal';
 import {
   getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop,
@@ -82,6 +82,28 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
+  const openWhatsApp = () => {
+    const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
+    Linking.openURL(`https://wa.me/${getSellerWhatsApp(car.seller)}?text=${encodeURIComponent(msg)}`).catch(() => {});
+  };
+
+  const infoRows = [
+    { label: 'Make', value: car.make },
+    { label: 'Model', value: car.model },
+    { label: 'Year', value: String(car.year) },
+    { label: 'Body Type', value: car.category },
+    { label: 'Transmission', value: car.transmission },
+    { label: 'Fuel', value: car.fuel },
+    { label: 'Mileage', value: formatMiles(car.mileage) },
+    { label: 'Drive', value: `${driveType} drive` },
+    {
+      label: 'Inspection',
+      value: car.inspected
+        ? (car.inspectionScore ? `${car.inspectionScore}/150 Certified` : 'Inzozi Certified')
+        : 'Scheduled',
+    },
+  ].filter((r) => r.value != null && r.value !== '' && r.value !== 'undefined');
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -141,6 +163,16 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <View style={styles.titleRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>{car.title}</Text>
+              <View style={styles.pipeRow}>
+                {[car.make, car.model, car.category, String(car.year)]
+                  .filter(Boolean)
+                  .map((part, i, arr) => (
+                    <Text key={i} style={styles.pipePart}>
+                      {part}
+                      {i < arr.length - 1 && <Text style={styles.pipeSep}>{'  |  '}</Text>}
+                    </Text>
+                  ))}
+              </View>
               <View style={styles.metaRow}>
                 <Ionicons name="location-outline" size={14} color={colors.textMuted} />
                 <Text style={styles.meta}>{neighborhood}, Kigali</Text>
@@ -237,6 +269,23 @@ export default function VehicleDetailScreen({ navigation, route }) {
             ))}
           </View>
 
+          {/* Vehicle Information — full spec table */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <Ionicons name="car-sport-outline" size={18} color={colors.primary} />
+              <Text style={styles.infoHeaderText}>Vehicle Information</Text>
+            </View>
+            {infoRows.map((row, i) => (
+              <View
+                key={row.label}
+                style={[styles.infoRow, i === infoRows.length - 1 && styles.infoRowLast]}
+              >
+                <Text style={styles.infoLabel}>{row.label}</Text>
+                <Text style={styles.infoValue}>{row.value}</Text>
+              </View>
+            ))}
+          </View>
+
           {/* Seller */}
           <Pressable
             style={styles.sellerCard}
@@ -252,6 +301,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 <Text style={styles.ratingText}>{car.rating} · Verified seller · View profile</Text>
               </View>
             </View>
+            <Pressable style={styles.waSmallBtn} onPress={openWhatsApp}>
+              <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
+            </Pressable>
             <Pressable
               style={styles.msgBtn}
               onPress={() => executeWithAuth(() => navigation.navigate('Chat', { name: car.seller, car }))}
@@ -282,7 +334,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.inspectionTitle}>Vehicle History Report</Text>
-              <Text style={[styles.inspectionSub, { color: colors.primary }]}>RRA duty · ownership · accident history</Text>
+              <Text style={[styles.inspectionSub, { color: colors.textMuted }]}>RRA duty · ownership · accident history</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
@@ -383,8 +435,11 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.ctaPriceValue}>{formatPrice(price)}</Text>
           <Text style={styles.ctaPriceRwf}>{formatRWF(price)}</Text>
         </View>
+        <Pressable style={styles.waBtn} onPress={openWhatsApp}>
+          <Ionicons name="logo-whatsapp" size={24} color="#fff" />
+        </Pressable>
         <Button
-          title={isAuction ? 'Place a Bid' : 'Book Handover'}
+          title={isAuction ? 'Place a Bid' : 'Request via Inzozi'}
           style={{ flex: 1 }}
           onPress={() => navigation.navigate('Checkout', { car })}
         />
@@ -471,6 +526,26 @@ const styles = StyleSheet.create({
   },
   specValue: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
   specLabel: { fontSize: 11, color: colors.textMuted },
+  pipeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 5 },
+  pipePart: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
+  pipeSep: { fontFamily: fonts.bold, color: colors.primary },
+  infoCard: {
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2,
+    marginTop: 18, ...shadows.card,
+  },
+  infoHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  infoHeaderText: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  infoRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
+  },
+  infoRowLast: { borderBottomWidth: 0 },
+  infoLabel: { fontSize: 13.5, color: colors.textMuted },
+  infoValue: {
+    fontSize: 13.5, fontFamily: fonts.semiBold, color: colors.textPrimary,
+    maxWidth: '55%', textAlign: 'right',
+  },
   sellerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
@@ -487,6 +562,14 @@ const styles = StyleSheet.create({
   msgBtn: {
     width: 42, height: 42, borderRadius: radius.md,
     backgroundColor: colors.blueTint, alignItems: 'center', justifyContent: 'center',
+  },
+  waSmallBtn: {
+    width: 42, height: 42, borderRadius: radius.md,
+    backgroundColor: '#E9F9EF', alignItems: 'center', justifyContent: 'center',
+  },
+  waBtn: {
+    width: 52, height: 52, borderRadius: radius.lg,
+    backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
   },
   inspectionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -505,7 +588,7 @@ const styles = StyleSheet.create({
   financeStrip: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: '#DCFCE7',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, padding: 12, marginTop: 14,
   },
   financeIcon: {
@@ -552,8 +635,8 @@ const styles = StyleSheet.create({
     width: 38, height: 38, borderRadius: radius.md,
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  dutyLinkTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.primary },
-  dutyLinkSub: { fontSize: 12, color: colors.primary, marginTop: 2 },
+  dutyLinkTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  dutyLinkSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', gap: 14,

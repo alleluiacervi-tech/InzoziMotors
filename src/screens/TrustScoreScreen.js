@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   verifiedRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   verifiedPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.greenTint,
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill,
   },
   verifiedText: { fontSize: 12, fontFamily: fonts.bold, color: colors.green },

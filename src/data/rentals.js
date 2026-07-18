@@ -251,6 +251,25 @@ export const RENTAL_CENTERS = [
   { id: 'c4', name: "Kigali Int'l Airport", area: 'Kanombe', fee: 20, airport: true },
 ];
 
+// Each rental car lives at one Inzozi center — pickup happens where the car is.
+// Airport meet & greet stays available as an optional paid add-on.
+const HOME_CENTER_BY_AREA = {
+  Nyarutarama: 'c1', Kiyovu: 'c1', Kimihurura: 'c1',
+  Kicukiro: 'c2', Kanombe: 'c2',
+  Remera: 'c3', Kimironko: 'c3',
+};
+
+export function getPickupCenter(car) {
+  const area = (car.location || '').split(',')[0].trim();
+  const id = HOME_CENTER_BY_AREA[area] || 'c1';
+  return RENTAL_CENTERS.find((c) => c.id === id);
+}
+
+export const AIRPORT_PICKUP = RENTAL_CENTERS.find((c) => c.airport);
+
+// Pickup windows — staff confirm the exact time on WhatsApp
+export const PICKUP_WINDOWS = ['Morning · 8AM–12PM', 'Afternoon · 1PM–5PM'];
+
 // Digital check-in — photo walkaround slots (both at pickup and return)
 export const CHECKIN_PHOTOS = [
   { key: 'front', label: 'Front', icon: 'car-outline' },

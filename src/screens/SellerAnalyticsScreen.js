@@ -45,7 +45,7 @@ function BarChart({ data }) {
           <G key={d.label}>
             <Rect
               x={x} y={y} width={barWidth} height={barH}
-              rx={3} fill={isMax ? colors.primary : colors.primary + '66'}
+              rx={3} fill={isMax ? colors.primary : '#DBD5D3'}
             />
             <SvgText
               x={x + barWidth / 2} y={CHART_H + 14}
@@ -283,11 +283,11 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   emptySub: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 40 },
   tipsCard: {
-    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '33',
+    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, padding: 16, marginHorizontal: 16,
   },
-  tipsTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, marginBottom: 12 },
+  tipsTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 12 },
   tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  tipIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary + '18', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  tipText: { flex: 1, fontSize: 12, color: colors.primary, lineHeight: 18 },
+  tipIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  tipText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
 });

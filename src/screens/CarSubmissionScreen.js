@@ -15,19 +15,14 @@ const MAKES = ['Toyota', 'Honda', 'Nissan', 'Subaru', 'Mercedes', 'BMW', 'Mazda'
 const FUEL_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
 const TRANSMISSIONS = ['Automatic', 'Manual'];
 const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Van'];
-const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Needs Work'];
-const SERVICE_HISTORY = ['Full history', 'Partial history', 'Unknown'];
 const YEARS = Array.from({ length: 16 }, (_, i) => String(2026 - i));
+// Two optional reference shots — the 150-pt inspection and 36-angle shoot capture everything else
 const PHOTO_SLOTS = [
   { key: 'front', label: 'Front' },
-  { key: 'back', label: 'Rear' },
-  { key: 'left', label: 'Left side' },
-  { key: 'right', label: 'Right side' },
-  { key: 'interior', label: 'Interior' },
-  { key: 'engine', label: 'Engine bay' },
+  { key: 'side', label: 'Side' },
 ];
 
-const STEP_LABELS = ['Vehicle', 'Condition', 'Photos', 'Submit'];
+const STEP_LABELS = ['Vehicle', 'Price & Submit'];
 
 function ChipGroup({ options, selected, onSelect, multi = false }) {
   return (
@@ -93,7 +88,6 @@ export default function CarSubmissionScreen({ navigation, route }) {
     year: prefill.year ? String(prefill.year) : '',
     mileage: prefill.mileage ? String(prefill.mileage) : '',
     fuelType: '', transmission: '', bodyType: '', color: '',
-    condition: '', accidents: false, accidentNotes: '', serviceHistory: '', notes: '',
     askingPrice: '', sellerNotes: '',
   });
   const [photos, setPhotos] = useState({});
@@ -111,36 +105,37 @@ export default function CarSubmissionScreen({ navigation, route }) {
     : false;
 
   const canAdvanceStep0 = form.make && form.model && form.year && form.mileage && form.fuelType && form.transmission;
-  const canAdvanceStep1 = form.condition && form.serviceHistory;
-  const canAdvanceStep2 = true; // reference photos are optional — official photos are taken at inspection
 
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
+    const carTitle = `${form.year} ${form.make} ${form.model}`;
     try {
-      await addSubmission({
-        carTitle: `${form.year} ${form.make} ${form.model}`,
+      const submissionId = await addSubmission({
+        carTitle,
         make: form.make,
         model: form.model,
         year: Number(form.year),
         mileage: Number(form.mileage),
         askingPrice: Number(form.askingPrice) || 0,
-        condition: form.condition,
         fuelType: form.fuelType,
         transmission: form.transmission,
         bodyType: form.bodyType,
         color: form.color,
-        notes: form.notes,
-        accidentNotes: form.accidents ? form.accidentNotes : '',
-        serviceHistory: form.serviceHistory,
         sellerNotes: form.sellerNotes,
         photos,
         image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&q=80',
       });
       Alert.alert(
         'Submission Received!',
-        `Your ${form.year} ${form.make} ${form.model} has been submitted for review. Our team will reach out within 24 hours to discuss next steps.`,
-        [{ text: 'View My Submissions', onPress: () => navigation.navigate('SellerDashboard') }]
+        `Your ${carTitle} is in. Pick an inspection slot now — it takes 30 seconds.`,
+        [
+          {
+            text: 'Book Inspection Slot',
+            onPress: () => navigation.replace('InspectionScheduling', { carName: carTitle, submissionId }),
+          },
+          { text: 'Later', onPress: () => navigation.navigate('SellerDashboard'), style: 'cancel' },
+        ]
       );
     } catch (err) {
       Alert.alert('Something went wrong', 'Your submission could not be saved. Please try again.');
@@ -152,7 +147,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
   return (
     <Screen background={colors.bg}>
       <BackHeader title="Submit Your Car" onBack={() => { step > 0 ? setStep(step - 1) : navigation.goBack(); }} />
-      <StepBar current={step} total={4} />
+      <StepBar current={step} total={2} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} key={step}>
@@ -161,7 +156,9 @@ export default function CarSubmissionScreen({ navigation, route }) {
           {step === 0 && (
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Tell us about your car</Text>
-              <Text style={styles.stepSub}>Basic details help us prepare the listing and inspection.</Text>
+              <Text style={styles.stepSub}>
+                Just the basics — our 150-point inspection covers condition, history and everything else.
+              </Text>
 
               <Field label="Make">
                 <ChipGroup options={MAKES} selected={form.make} onSelect={(v) => set('make', v)} />
@@ -209,7 +206,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
                 />
               </Field>
               <Button
-                title={canAdvanceStep0 ? 'Continue — Condition' : 'Fill in the required fields'}
+                title={canAdvanceStep0 ? 'Continue — Price & Submit' : 'Fill in the required fields'}
                 onPress={() => setStep(1)}
                 disabled={!canAdvanceStep0}
                 style={{ marginTop: 8 }}
@@ -217,115 +214,11 @@ export default function CarSubmissionScreen({ navigation, route }) {
             </View>
           )}
 
-          {/* STEP 1: Condition */}
+          {/* STEP 1: Price & Submit */}
           {step === 1 && (
             <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Condition & History</Text>
-              <Text style={styles.stepSub}>Honest assessment helps us set the right expectations with buyers.</Text>
-
-              <Field label="Overall Condition">
-                <ChipGroup options={CONDITIONS} selected={form.condition} onSelect={(v) => set('condition', v)} />
-              </Field>
-
-              <Field label="Accident History">
-                <View style={styles.toggleRow}>
-                  <Text style={styles.toggleLabel}>Has the car been in any accidents?</Text>
-                  <Pressable
-                    style={[styles.toggle, form.accidents && styles.toggleOn]}
-                    onPress={() => set('accidents', !form.accidents)}
-                  >
-                    <View style={[styles.toggleKnob, form.accidents && styles.toggleKnobOn]} />
-                  </Pressable>
-                </View>
-                {form.accidents && (
-                  <TextInput
-                    style={[styles.input, styles.inputMulti, { marginTop: 10 }]}
-                    placeholder="Briefly describe the accident(s)..."
-                    placeholderTextColor={colors.textMuted}
-                    multiline
-                    numberOfLines={3}
-                    textAlignVertical="top"
-                    value={form.accidentNotes}
-                    onChangeText={(v) => set('accidentNotes', v)}
-                  />
-                )}
-              </Field>
-
-              <Field label="Service History">
-                <ChipGroup options={SERVICE_HISTORY} selected={form.serviceHistory} onSelect={(v) => set('serviceHistory', v)} />
-              </Field>
-
-              <Field label="Additional Notes for Our Team" hint="Modifications, known defects, anything we should know before inspection.">
-                <TextInput
-                  style={[styles.input, styles.inputMulti]}
-                  placeholder="Any modifications, known issues, or context for our inspectors..."
-                  placeholderTextColor={colors.textMuted}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                  value={form.notes}
-                  onChangeText={(v) => set('notes', v)}
-                />
-              </Field>
-
-              <Button
-                title={canAdvanceStep1 ? 'Continue — Photos' : 'Select condition & service history'}
-                onPress={() => setStep(2)}
-                disabled={!canAdvanceStep1}
-                style={{ marginTop: 8 }}
-              />
-            </View>
-          )}
-
-          {/* STEP 2: Reference Photos */}
-          {step === 2 && (
-            <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Reference Photos</Text>
-              <Text style={styles.stepSub}>
-                Upload your own photos for our team's reference only. Our photographer will take official listing photos at inspection.
-              </Text>
-
-              <View style={styles.photoGrid}>
-                {PHOTO_SLOTS.map((slot) => {
-                  const uploaded = !!photos[slot.key];
-                  return (
-                    <Pressable
-                      key={slot.key}
-                      style={[styles.photoSlot, uploaded && styles.photoSlotDone]}
-                      onPress={() => setPhotos((p) => ({ ...p, [slot.key]: true }))}
-                    >
-                      <Ionicons
-                        name={uploaded ? 'checkmark-circle' : 'camera-outline'}
-                        size={28}
-                        color={uploaded ? colors.primary : colors.textMuted}
-                      />
-                      <Text style={[styles.photoSlotLabel, uploaded && { color: colors.primary }]}>{slot.label}</Text>
-                      {uploaded && <Text style={styles.photoSlotDoneText}>Added</Text>}
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <View style={styles.photoNote}>
-                <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-                <Text style={styles.photoNoteText}>
-                  Photos are optional — they help our team prepare, but official listing photos are taken at inspection. You can skip this step.
-                </Text>
-              </View>
-
-              <Button
-                title="Continue — Price & Submit"
-                onPress={() => setStep(3)}
-                style={{ marginTop: 8 }}
-              />
-            </View>
-          )}
-
-          {/* STEP 3: Price & Submit */}
-          {step === 3 && (
-            <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Almost there</Text>
-              <Text style={styles.stepSub}>Your asking price is a reference — our team will suggest a competitive market price after inspection.</Text>
+              <Text style={styles.stepSub}>Your asking price is a reference — our team will suggest a certified market price after inspection.</Text>
 
               <Field label="Your Asking Price (USD)" hint="This is a reference. We'll provide a certified market price after inspection.">
                 <TextInput
@@ -358,8 +251,8 @@ export default function CarSubmissionScreen({ navigation, route }) {
                   </Text>
                   {form.askingPrice > 0 && (
                     <View style={[styles.aiSuggestCheck, { backgroundColor: priceInRange ? colors.greenTint : '#FEF3C7' }]}>
-                      <Ionicons name={priceInRange ? 'checkmark-circle' : 'warning-outline'} size={13} color={priceInRange ? colors.primary : colors.amber} />
-                      <Text style={[styles.aiSuggestCheckText, { color: priceInRange ? colors.primary : colors.amber }]}>
+                      <Ionicons name={priceInRange ? 'checkmark-circle' : 'warning-outline'} size={13} color={priceInRange ? colors.green : colors.amber} />
+                      <Text style={[styles.aiSuggestCheckText, { color: priceInRange ? colors.green : colors.amber }]}>
                         {priceInRange ? 'Your price is within the suggested range — great!' : 'Your price is outside the suggested range'}
                       </Text>
                     </View>
@@ -367,13 +260,36 @@ export default function CarSubmissionScreen({ navigation, route }) {
                 </View>
               )}
 
-              <Field label="Message to Our Team (optional)">
+              {/* Optional reference photos — 2 shots max */}
+              <Field label="Reference Photos (optional)" hint="Helps our team prepare. Official 36-angle listing photos are taken by our photographer at inspection.">
+                <View style={styles.photoGrid}>
+                  {PHOTO_SLOTS.map((slot) => {
+                    const uploaded = !!photos[slot.key];
+                    return (
+                      <Pressable
+                        key={slot.key}
+                        style={[styles.photoSlot, uploaded && styles.photoSlotDone]}
+                        onPress={() => setPhotos((p) => ({ ...p, [slot.key]: true }))}
+                      >
+                        <Ionicons
+                          name={uploaded ? 'checkmark-circle' : 'camera-outline'}
+                          size={26}
+                          color={uploaded ? colors.green : colors.textMuted}
+                        />
+                        <Text style={[styles.photoSlotLabel, uploaded && { color: colors.green }]}>{slot.label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Field>
+
+              <Field label="Anything we should know? (optional)">
                 <TextInput
                   style={[styles.input, styles.inputMulti]}
-                  placeholder="Anything else you'd like us to know? Urgency, location preference, availability for inspection..."
+                  placeholder="Known issues, modifications, urgency, availability..."
                   placeholderTextColor={colors.textMuted}
                   multiline
-                  numberOfLines={4}
+                  numberOfLines={3}
                   textAlignVertical="top"
                   value={form.sellerNotes}
                   onChangeText={(v) => set('sellerNotes', v)}
@@ -387,9 +303,6 @@ export default function CarSubmissionScreen({ navigation, route }) {
                   <SummaryRow label="Vehicle" value={`${form.year} ${form.make} ${form.model}`} />
                   <SummaryRow label="Mileage" value={`${Number(form.mileage || 0).toLocaleString()} km`} />
                   <SummaryRow label="Fuel / Trans" value={`${form.fuelType} · ${form.transmission}`} />
-                  <SummaryRow label="Condition" value={form.condition} />
-                  <SummaryRow label="Service records" value={form.serviceHistory} />
-                  <SummaryRow label="Photos uploaded" value={`${Object.keys(photos).length} / 6`} />
                   {form.askingPrice ? <SummaryRow label="Asking price" value={`$${Number(form.askingPrice).toLocaleString()}`} /> : null}
                 </View>
               </View>
@@ -398,9 +311,8 @@ export default function CarSubmissionScreen({ navigation, route }) {
               <View style={styles.timelineCard}>
                 <Text style={styles.timelineTitle}>What happens next</Text>
                 {[
-                  { icon: 'time-outline', text: 'Our team reviews your submission within 24 hours' },
-                  { icon: 'calendar-outline', text: 'We schedule a professional inspection at your convenience' },
-                  { icon: 'camera-outline', text: 'Our photographer takes 36-angle listing photos' },
+                  { icon: 'calendar-outline', text: 'Book your inspection slot right after submitting' },
+                  { icon: 'shield-checkmark-outline', text: 'Bring the car and your ID — we inspect, verify and photograph everything at the center' },
                   { icon: 'storefront-outline', text: 'Your car goes live on the marketplace' },
                 ].map((item, i) => (
                   <View key={i} style={styles.timelineRow}>
@@ -413,7 +325,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
               </View>
 
               <Button
-                title={submitting ? 'Submitting…' : 'Submit for Review'}
+                title={submitting ? 'Submitting…' : 'Submit & Book Inspection'}
                 icon="send-outline"
                 onPress={handleSubmit}
                 disabled={submitting}
@@ -484,21 +396,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12,
     fontSize: 15, color: colors.textPrimary,
   },
-  inputMulti: { height: 96, paddingTop: 12 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggleLabel: { fontSize: 14, color: colors.textPrimary, flex: 1 },
-  toggle: {
-    width: 46, height: 28, borderRadius: 14,
-    backgroundColor: colors.border,
-    padding: 3, justifyContent: 'center',
-  },
-  toggleOn: { backgroundColor: colors.primary, alignItems: 'flex-end' },
-  toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
-  toggleKnobOn: {},
-  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  inputMulti: { height: 84, paddingTop: 12 },
+  photoGrid: { flexDirection: 'row', gap: 10 },
   photoSlot: {
-    width: '30%',
-    aspectRatio: 1,
+    flex: 1,
+    aspectRatio: 1.6,
     backgroundColor: colors.surface,
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.xl,
@@ -506,14 +408,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     gap: 6,
   },
-  photoSlotDone: { borderColor: colors.primary, backgroundColor: colors.blueTint, borderStyle: 'solid' },
+  photoSlotDone: { borderColor: colors.green, backgroundColor: colors.statusLiveBg, borderStyle: 'solid' },
   photoSlotLabel: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
-  photoSlotDoneText: { fontSize: 10, color: colors.primary, fontFamily: fonts.bold },
-  photoNote: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: colors.blueTint, borderRadius: radius.lg, padding: 12, marginBottom: 8,
-  },
-  photoNoteText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   summaryCard: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -529,13 +425,13 @@ const styles = StyleSheet.create({
   summaryRowValue: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   timelineCard: {
     backgroundColor: colors.blueTint,
-    borderWidth: 1, borderColor: colors.primary + '30',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl,
     padding: 16,
     marginBottom: 20,
     gap: 12,
   },
-  timelineTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary, marginBottom: 2 },
+  timelineTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 2 },
   timelineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   timelineDot: {
     width: 28, height: 28, borderRadius: 14,
@@ -546,11 +442,11 @@ const styles = StyleSheet.create({
   timelineText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   aiSuggestCard: {
     backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.primary + '44',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, padding: 14, marginBottom: 16,
   },
   aiSuggestHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  aiSuggestTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
+  aiSuggestTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
   aiSuggestBeta: { marginLeft: 'auto', backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2 },
   aiSuggestBetaText: { fontSize: 9, fontFamily: fonts.bold, color: '#fff', textTransform: 'uppercase' },
   aiSuggestRange: { fontSize: 22, fontFamily: fonts.black, color: colors.primary, letterSpacing: -0.5, marginBottom: 2 },

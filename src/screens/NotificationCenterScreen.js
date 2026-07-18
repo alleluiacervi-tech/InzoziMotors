@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginHorizontal: 16, marginBottom: 4,
     backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.primary + '33',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, paddingHorizontal: 14, paddingVertical: 10,
   },
   unreadCountBadge: {

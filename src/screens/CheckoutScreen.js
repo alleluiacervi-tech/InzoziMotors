@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Image, Pressable,
+  View, Text, StyleSheet, ScrollView, Image, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,44 +11,15 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { useApp } from '../context/AppContext';
 
-const CENTERS = [
-  { id: 'nyarutarama', name: 'Nyarutarama Center', address: 'KG 9 Ave, Nyarutarama' },
-  { id: 'kicukiro', name: 'Kicukiro Center', address: 'KN 5 Rd, Kicukiro' },
-  { id: 'kimironko', name: 'Kimironko Center', address: 'KG 28 St, Kimironko' },
-];
-
-const getDates = () => {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const today = new Date();
-  return Array.from({ length: 10 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i + 1);
-    return {
-      label: days[d.getDay()],
-      date: d.getDate(),
-      display: `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`,
-      full: `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
-      available: d.getDay() !== 0,
-      key: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`,
-    };
-  });
-};
-
-const TIME_SLOTS = [
-  '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
-  '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM',
-];
-
 const HOW_IT_WORKS = [
-  { icon: 'calendar-outline', title: 'Pick a slot at our center', sub: 'Choose a date, time, and Inzozi center near you.' },
-  { icon: 'lock-closed-outline', title: 'Car reserved instantly', sub: 'Removed from the marketplace the moment you book.' },
-  { icon: 'people-outline', title: 'Meet at the Inzozi center', sub: 'Bring the seller. We verify everything together.' },
-  { icon: 'shield-checkmark-outline', title: 'Handover confirmed', sub: 'Ownership transferred. 7-day return guarantee starts.' },
+  { icon: 'paper-plane-outline', title: 'Send your request', sub: 'One tap — no payment, no commitment yet.' },
+  { icon: 'lock-closed-outline', title: 'We reserve the car', sub: 'Held for you while we confirm with the seller.' },
+  { icon: 'call-outline', title: 'We arrange the handover', sub: 'Inzozi contacts you on WhatsApp to set a time that suits you.' },
+  { icon: 'shield-checkmark-outline', title: 'Meet at the Inzozi center', sub: 'Payment, documents, transfer — 7-day return guarantee starts.' },
 ];
 
-// ─── Review phase ────────────────────────────────────────────────────────────
-function ReviewState({ car, price, onNext }) {
+// ─── Request phase ───────────────────────────────────────────────────────────
+function RequestState({ car, price, phone, setPhone, onSend, sending }) {
   return (
     <>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -69,16 +40,16 @@ function ReviewState({ car, price, onNext }) {
         )}
 
         <View style={styles.infoBox}>
-          <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+          <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.infoTitle}>How the handover works</Text>
+            <Text style={styles.infoTitle}>No payment in the app</Text>
             <Text style={styles.infoSub}>
-              No money changes hands in the app. Payment, documents, and ownership transfer all happen at the Inzozi center — where we protect both you and the seller.
+              Payment, documents and ownership transfer all happen at the Inzozi center — where we protect both you and the seller.
             </Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>What happens step by step</Text>
+        <Text style={styles.sectionTitle}>How it works</Text>
         <View style={styles.stepsCard}>
           {HOW_IT_WORKS.map((s, i) => (
             <View key={s.title} style={[styles.step, i < HOW_IT_WORKS.length - 1 && styles.stepBorder]}>
@@ -93,6 +64,23 @@ function ReviewState({ car, price, onNext }) {
             </View>
           ))}
         </View>
+
+        <Text style={styles.sectionTitle}>Where can we reach you?</Text>
+        <View style={styles.phoneRow}>
+          <View style={styles.phonePrefix}>
+            <Text style={styles.phonePrefixText}>+250</Text>
+          </View>
+          <TextInput
+            style={styles.phoneInput}
+            placeholder="7XX XXX XXX"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            maxLength={12}
+          />
+        </View>
+        <Text style={styles.phoneHint}>We'll confirm availability and arrange the handover on WhatsApp.</Text>
 
         <View style={styles.sellerCard}>
           <View style={styles.sellerAvatar}>
@@ -117,96 +105,12 @@ function ReviewState({ car, price, onNext }) {
           <Text style={styles.footerLabel}>Asking price</Text>
           <Text style={styles.footerValue}>{formatPrice(price)}</Text>
         </View>
-        <Button title="Book a Handover Slot" icon="calendar-outline" onPress={onNext} style={{ flex: 1 }} />
-      </View>
-    </>
-  );
-}
-
-// ─── Booking phase ───────────────────────────────────────────────────────────
-function BookingState({ onConfirm, onBack }) {
-  const DATES = getDates();
-  // Smart defaults: first center + first available date preselected — user only picks a time
-  const [selectedCenter, setSelectedCenter] = useState(CENTERS[0]);
-  const [selectedDate, setSelectedDate] = useState(DATES.find((d) => d.available) || null);
-  const [selectedTime, setSelectedTime] = useState(null);
-
-  const canConfirm = selectedCenter && selectedDate && selectedTime;
-
-  return (
-    <>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-
-        <Text style={styles.bookingSection}>Choose a center</Text>
-        {CENTERS.map((c) => (
-          <Pressable
-            key={c.id}
-            style={[styles.centerCard, selectedCenter?.id === c.id && styles.centerCardSelected]}
-            onPress={() => setSelectedCenter(c)}
-          >
-            <View style={[styles.centerDot, selectedCenter?.id === c.id && styles.centerDotSelected]} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.centerName, selectedCenter?.id === c.id && styles.centerNameSelected]}>{c.name}</Text>
-              <Text style={styles.centerAddress}>{c.address}</Text>
-            </View>
-            {selectedCenter?.id === c.id && (
-              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-            )}
-          </Pressable>
-        ))}
-
-        <Text style={[styles.bookingSection, { marginTop: 20 }]}>Choose a date</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRow}>
-          {DATES.map((d) => (
-            <Pressable
-              key={d.key}
-              style={[
-                styles.dateChip,
-                !d.available && styles.dateChipDisabled,
-                selectedDate?.key === d.key && styles.dateChipSelected,
-              ]}
-              onPress={() => d.available && setSelectedDate(d)}
-              disabled={!d.available}
-            >
-              <Text style={[styles.dateDow, selectedDate?.key === d.key && styles.dateDowSelected]}>{d.label}</Text>
-              <Text style={[styles.dateNum, selectedDate?.key === d.key && styles.dateNumSelected]}>{d.date}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        {selectedDate && (
-          <>
-            <Text style={[styles.bookingSection, { marginTop: 20 }]}>Choose a time</Text>
-            <View style={styles.timeGrid}>
-              {TIME_SLOTS.map((t) => (
-                <Pressable
-                  key={t}
-                  style={[styles.timeChip, selectedTime === t && styles.timeChipSelected]}
-                  onPress={() => setSelectedTime(t)}
-                >
-                  <Text style={[styles.timeText, selectedTime === t && styles.timeTextSelected]}>{t}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
-        )}
-
-        {canConfirm && (
-          <View style={styles.summaryBox}>
-            <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
-            <Text style={styles.summaryText}>
-              {selectedCenter.name} · {selectedDate.display} · {selectedTime}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-
-      <View style={styles.footer}>
         <Button
-          title={canConfirm ? 'Confirm Booking' : 'Choose a time slot'}
-          icon="shield-checkmark-outline"
-          onPress={() => onConfirm(selectedCenter.name, selectedDate.full, selectedTime)}
-          disabled={!canConfirm}
+          title={sending ? 'Sending…' : 'Request This Car'}
+          icon="paper-plane-outline"
+          onPress={onSend}
+          disabled={sending}
+          style={{ flex: 1 }}
         />
       </View>
     </>
@@ -214,27 +118,27 @@ function BookingState({ onConfirm, onBack }) {
 }
 
 // ─── Confirmed phase ─────────────────────────────────────────────────────────
-function ConfirmedState({ car, bookingId, center, date, time, onTrack, onMessage }) {
+function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
   return (
     <>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160 }}>
         <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.successHero}>
           <View style={styles.successIconWrap}>
             <Ionicons name="checkmark-circle" size={44} color={colors.greenLight} />
           </View>
-          <Text style={styles.successTitle}>Handover Booked!</Text>
+          <Text style={styles.successTitle}>Request Sent!</Text>
           <Text style={styles.successSub}>
-            The {car.title} is now reserved for you. No one else can book it.
+            The {car.title} is reserved for you while we confirm. We'll contact you shortly to arrange the handover.
           </Text>
         </LinearGradient>
 
         <View style={styles.bookingCard}>
-          <Text style={styles.bookingCardTitle}>Your booking</Text>
+          <Text style={styles.bookingCardTitle}>Your request</Text>
           {[
-            { icon: 'bookmark-outline', label: 'Booking ID', value: bookingId },
-            { icon: 'business-outline', label: 'Center', value: center },
-            { icon: 'calendar-outline', label: 'Date', value: date },
-            { icon: 'time-outline', label: 'Time', value: time },
+            { icon: 'bookmark-outline', label: 'Request ID', value: bookingId },
+            { icon: 'car-outline', label: 'Vehicle', value: car.title },
+            { icon: 'call-outline', label: 'Contact', value: phone ? `+250 ${phone}` : 'Via your account' },
+            { icon: 'time-outline', label: 'Next step', value: 'Inzozi confirms within 24h' },
           ].map((row) => (
             <View key={row.label} style={styles.bookingRow}>
               <Ionicons name={row.icon} size={15} color={colors.textMuted} />
@@ -254,7 +158,7 @@ function ConfirmedState({ car, bookingId, center, date, time, onTrack, onMessage
         <View style={styles.nextCard}>
           <Text style={styles.nextTitle}>While you wait</Text>
           {[
-            { icon: 'chatbubble-outline', text: 'Message the seller — confirm they know the date and center.' },
+            { icon: 'chatbubble-outline', text: 'Message the seller with any questions about the car.' },
             { icon: 'document-text-outline', text: 'Re-read the 150-point inspection report for this car.' },
             { icon: 'earth-outline', text: 'Check the Vehicle History for import origin and RRA duty records.' },
           ].map((item, i) => (
@@ -267,14 +171,16 @@ function ConfirmedState({ car, bookingId, center, date, time, onTrack, onMessage
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button title="Track Booking" icon="navigate-outline" onPress={onTrack} />
-        <Button
-          title="Message Seller"
-          variant="secondary"
-          icon="chatbubble-outline"
-          onPress={onMessage}
-          style={{ marginTop: 10 }}
-        />
+        <View style={{ flex: 1 }}>
+          <Button title="Track Request" icon="navigate-outline" onPress={onTrack} />
+          <Button
+            title="Message Seller"
+            variant="secondary"
+            icon="chatbubble-outline"
+            onPress={onMessage}
+            style={{ marginTop: 10 }}
+          />
+        </View>
       </View>
     </>
   );
@@ -286,50 +192,56 @@ export default function CheckoutScreen({ navigation, route }) {
   const price = car.type === 'auction' ? car.currentBid : car.price;
   const { bookHandover } = useApp();
 
-  const [phase, setPhase] = useState('review');
+  const [phase, setPhase] = useState('request');
+  const [phone, setPhone] = useState('');
+  const [sending, setSending] = useState(false);
   const [bookingId, setBookingId] = useState(null);
-  const [booking, setBooking] = useState({ center: '', date: '', time: '' });
 
-  const handleConfirm = async (center, date, time) => {
+  const handleSend = async () => {
+    if (sending) return;
+    setSending(true);
     try {
-      const id = await bookHandover(car, { center, date, time });
+      const id = await bookHandover(car, {
+        center: 'To be arranged',
+        date: 'Pending confirmation',
+        time: phone ? `Contact: +250 ${phone}` : 'Contact via account',
+      });
       setBookingId(id);
-      setBooking({ center, date, time });
       setPhase('confirmed');
     } catch (err) {
       // bookHandover has a local fallback, so this only fires on unexpected errors
-      console.error('Booking failed:', err);
+      console.error('Request failed:', err);
+    } finally {
+      setSending(false);
     }
   };
 
-  const titles = { review: 'Book a Handover', booking: 'Choose a Slot', confirmed: 'Booking Confirmed' };
+  const titles = { request: 'Request This Car', confirmed: 'Request Sent' };
 
   return (
     <Screen background={colors.bg}>
       <BackHeader
         title={titles[phase]}
         onBack={() => {
-          if (phase === 'booking') setPhase('review');
-          else if (phase === 'confirmed') navigation.navigate('Main');
+          if (phase === 'confirmed') navigation.navigate('Main');
           else navigation.goBack();
         }}
       />
-      {phase === 'review' && (
-        <ReviewState car={car} price={price} onNext={() => setPhase('booking')} />
-      )}
-      {phase === 'booking' && (
-        <BookingState
-          onConfirm={handleConfirm}
-          onBack={() => setPhase('review')}
+      {phase === 'request' && (
+        <RequestState
+          car={car}
+          price={price}
+          phone={phone}
+          setPhone={setPhone}
+          onSend={handleSend}
+          sending={sending}
         />
       )}
       {phase === 'confirmed' && (
         <ConfirmedState
           car={car}
           bookingId={bookingId}
-          center={booking.center}
-          date={booking.date}
-          time={booking.time}
+          phone={phone}
           onTrack={() => navigation.navigate('OrderTracking', { orderId: bookingId, car })}
           onMessage={() => navigation.navigate('Chat', { name: car.seller, car })}
         />
@@ -354,23 +266,23 @@ const styles = StyleSheet.create({
 
   certBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '33',
+    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.lg, padding: 12, marginBottom: 10,
   },
-  certBadgeText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.primary, flex: 1 },
+  certBadgeText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textPrimary, flex: 1 },
 
   infoBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
     backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 14, marginBottom: 16,
   },
-  infoTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
-  infoSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.primary, lineHeight: 17, marginTop: 3 },
+  infoTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
+  infoSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, lineHeight: 17, marginTop: 3 },
 
   sectionTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10 },
 
   stepsCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, overflow: 'hidden', marginBottom: 12,
+    borderRadius: radius.xl, overflow: 'hidden', marginBottom: 16,
   },
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14 },
   stepBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
@@ -385,6 +297,22 @@ const styles = StyleSheet.create({
   },
   stepTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   stepSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
+
+  // Phone
+  phoneRow: { flexDirection: 'row', gap: 8, marginBottom: 6 },
+  phonePrefix: {
+    paddingHorizontal: 14, justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt, borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: radius.lg,
+  },
+  phonePrefixText: { fontSize: 15, fontFamily: fonts.bold, color: colors.textSecondary },
+  phoneInput: {
+    flex: 1, backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.lg,
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 15, color: colors.textPrimary,
+  },
+  phoneHint: { fontSize: 12, color: colors.textMuted, lineHeight: 17, marginBottom: 16 },
 
   sellerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -405,48 +333,6 @@ const styles = StyleSheet.create({
   },
   sellerVerifiedText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
 
-  // Booking phase
-  bookingSection: { fontSize: 13, fontFamily: fonts.bold, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
-  centerCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
-    borderRadius: radius.xl, padding: 14, marginBottom: 8,
-  },
-  centerCardSelected: { borderColor: colors.primary, backgroundColor: colors.greenTint },
-  centerDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: colors.border },
-  centerDotSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
-  centerName: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
-  centerNameSelected: { color: colors.primary },
-  centerAddress: { fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
-
-  dateRow: { gap: 8, paddingBottom: 4 },
-  dateChip: {
-    width: 52, paddingVertical: 10, alignItems: 'center',
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.lg,
-  },
-  dateChipDisabled: { opacity: 0.35 },
-  dateChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  dateDow: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.textMuted, marginBottom: 4 },
-  dateDowSelected: { color: 'rgba(255,255,255,0.75)' },
-  dateNum: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  dateNumSelected: { color: '#fff' },
-
-  timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  timeChip: {
-    paddingHorizontal: 14, paddingVertical: 9,
-    backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.lg,
-  },
-  timeChipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  timeText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
-  timeTextSelected: { color: '#fff' },
-
-  summaryBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16,
-    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '44',
-    borderRadius: radius.xl, padding: 14,
-  },
-  summaryText: { flex: 1, fontSize: 13, fontFamily: fonts.semiBold, color: colors.primary },
-
   // Confirmed phase
   successHero: { margin: 16, marginBottom: 10, borderRadius: radius.xxl, padding: 28, alignItems: 'center', gap: 10 },
   successIconWrap: {
@@ -463,15 +349,15 @@ const styles = StyleSheet.create({
   },
   bookingCardTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 4 },
   bookingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  bookingRowLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.textMuted, width: 70 },
+  bookingRowLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.textMuted, width: 80 },
   bookingRowValue: { flex: 1, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
 
   guaranteeCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: 16, marginBottom: 10,
-    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.primary + '33',
+    backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, padding: 14,
   },
-  guaranteeText: { flex: 1, fontSize: 12, fontFamily: fonts.medium, color: colors.navyMid, lineHeight: 18 },
+  guaranteeText: { flex: 1, fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, lineHeight: 18 },
 
   nextCard: {
     marginHorizontal: 16, marginBottom: 10,
@@ -489,6 +375,7 @@ const styles = StyleSheet.create({
   // Shared footer
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     backgroundColor: colors.surface, ...shadows.floating,

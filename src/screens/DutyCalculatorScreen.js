@@ -50,7 +50,7 @@ export default function DutyCalculatorScreen({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Intro */}
         <View style={styles.introCard}>
-          <Ionicons name="calculator-outline" size={24} color={colors.primary} />
+          <Ionicons name="calculator-outline" size={24} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>Rwanda RRA Import Duty</Text>
             <Text style={styles.introSub}>
@@ -141,7 +141,7 @@ export default function DutyCalculatorScreen({ navigation }) {
 
             {/* RWF summary */}
             <View style={styles.rwfCard}>
-              <Ionicons name="swap-horizontal-outline" size={18} color={colors.primary} />
+              <Ionicons name="swap-horizontal-outline" size={18} color={colors.textSecondary} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.rwfTitle}>Grand total in Rwandan Francs</Text>
                 <Text style={styles.rwfValue}>{formatRWF(duty.grandTotal)}</Text>
@@ -167,11 +167,11 @@ const styles = StyleSheet.create({
   introCard: {
     flexDirection: 'row', gap: 14, alignItems: 'flex-start',
     backgroundColor: colors.greenTint,
-    borderWidth: 1, borderColor: colors.primary + '33',
+    borderWidth: 1, borderColor: colors.border,
     borderRadius: radius.xl, padding: 16, marginBottom: 22,
   },
-  introTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginBottom: 4 },
-  introSub: { fontSize: 13, color: colors.primary, lineHeight: 19, flex: 1 },
+  introTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 4 },
+  introSub: { fontSize: 13, color: colors.textSecondary, lineHeight: 19, flex: 1 },
   fieldLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 8 },
   fieldHint: { fontSize: 12, color: colors.textMuted, marginTop: 6 },
   inputRow: {
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   ccRateText: { fontSize: 11, fontFamily: fonts.bold, color: colors.textSecondary },
   ccRateTextActive: { color: '#fff' },
   ccDesc: { fontSize: 12, color: colors.textMuted },
-  ccDescActive: { color: colors.primary },
+  ccDescActive: { color: colors.textSecondary },
   calcBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, backgroundColor: colors.primary,
@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16, marginBottom: 16,
     backgroundColor: colors.greenTint, borderRadius: radius.xl, padding: 14,
   },
-  rwfTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
-  rwfValue: { fontSize: 22, fontFamily: fonts.black, color: colors.primary, marginTop: 2 },
+  rwfTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.textMuted },
+  rwfValue: { fontSize: 22, fontFamily: fonts.black, color: colors.textPrimary, marginTop: 2 },
   rwfNote: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
   disclaimer: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',

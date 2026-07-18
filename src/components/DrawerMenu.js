@@ -49,7 +49,6 @@ const MENU_SECTIONS = [
   {
     title: 'Trust & Safety',
     items: [
-      { icon: 'finger-print-outline', label: 'ID Verification', screen: 'IDVerification' },
       { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
     ],
   },

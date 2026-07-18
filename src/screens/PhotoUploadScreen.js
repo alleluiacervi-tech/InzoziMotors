@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 12,
   },
-  infoBannerText: { flex: 1, fontSize: 12, color: colors.primary, lineHeight: 18 },
+  infoBannerText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   group: { marginHorizontal: 16, marginBottom: 16 },
   groupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   groupTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
