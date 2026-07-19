@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 
 const UPLOAD_STEPS = [
@@ -70,11 +71,8 @@ export default function IDVerificationScreen({ navigation }) {
 
   const handleSubmit = () => {
     submitIDVerification();
-    Alert.alert(
-      'Documents Submitted',
-      'Our team will verify your identity within 24 hours. You\'ll receive a notification once approved.',
-      [{ text: 'Got it', onPress: () => navigation.goBack() }]
-    );
+    showToast('Documents submitted — we will verify your identity within 24 hours.', 'success');
+    navigation.goBack();
   };
 
   if (idVerificationStatus === 'pending' || idVerificationStatus === 'approved') {

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 
 const PIPELINE_STAGES = [
   { key: 'under_review', label: 'Review', icon: 'time-outline' },
@@ -96,10 +97,7 @@ export default function SellerDashboardScreen({ navigation }) {
     } else if (sub.status === 'approved') {
       navigation.navigate('InspectionScheduling', { carName: sub.carTitle, submissionId: sub.id });
     } else if (sub.status === 'scheduled') {
-      Alert.alert(
-        'Inspection Booked',
-        sub.statusDetail || `Your inspection for ${sub.carTitle} is confirmed. Bring your vehicle and service records.`,
-      );
+      showToast(sub.statusDetail || `Your inspection for ${sub.carTitle} is confirmed. Bring your vehicle and service records.`, 'info');
     } else if (sub.status === 'rejected') {
       navigation.navigate('CarSubmission', {
         prefill: { make: sub.make, model: sub.model, year: sub.year, mileage: sub.mileage },
@@ -111,15 +109,15 @@ export default function SellerDashboardScreen({ navigation }) {
     if (relistId === sub.id) {
       const price = parseFloat(relistPrice);
       if (!price || price <= 0) {
-        Alert.alert('Enter a valid price', 'Please enter a new asking price.');
+        showToast('Please enter a valid asking price.', 'error');
         return;
       }
       if (sub.status === 'live') {
         updateSubmissionPrice(sub.id, price);
-        Alert.alert('Price updated', 'Your listing stays live with the new price.');
+        showToast('Price updated — your listing stays live.', 'success');
       } else {
         relistSubmission(sub.id, price);
-        Alert.alert('Relisted!', 'Your car is back in the queue. Our team will review within 24 hours.');
+        showToast('Relisted — our team will review within 24 hours.', 'success');
       }
       setRelistId(null);
       setRelistPrice('');

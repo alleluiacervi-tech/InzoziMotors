@@ -191,7 +191,7 @@ export default function RentalBookingScreen({ navigation, route }) {
 
         {!rangeFree && (
           <View style={styles.rangeWarning}>
-            <Ionicons name="alert-circle-outline" size={14} color={colors.alertRed} />
+            <Ionicons name="information-circle-outline" size={14} color={colors.amber} />
             <Text style={styles.rangeWarningText}>
               Selected dates include unavailable days — choose another start date or shorter duration
             </Text>
@@ -307,11 +307,11 @@ const styles = StyleSheet.create({
   durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   rangeWarning: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 6,
-    backgroundColor: colors.statusRejectedBg,
+    backgroundColor: colors.amberTint,
     borderRadius: radius.md, paddingHorizontal: 10, paddingVertical: 8,
     marginTop: 12,
   },
-  rangeWarningText: { flex: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.alertRed, lineHeight: 15 },
+  rangeWarningText: { flex: 1, fontSize: 12, fontFamily: fonts.semiBold, color: colors.amberText, lineHeight: 17 },
   durationChip: {
     paddingHorizontal: 16, paddingVertical: 10,
     backgroundColor: colors.surface,

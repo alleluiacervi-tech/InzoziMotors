@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, Pressable, Image, Switch, Alert,
+  View, Text, StyleSheet, FlatList, Pressable, Image, Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { formatPrice } from '../data/cars';
 import { getPriceDrop, getSavedCount, getListedDaysAgo } from '../data/marketData';
 
@@ -119,17 +120,18 @@ export default function SavedScreen({ navigation }) {
   const [tab, setTab] = useState('saved');
 
   const handleRemove = (carId) => {
-    Alert.alert('Remove from saved?', '', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => toggleSaveCar(carId) },
-    ]);
+    showConfirm({
+      title: 'Remove from saved?',
+      confirmLabel: 'Remove', destructive: true,
+    }).then((ok) => { if (ok) toggleSaveCar(carId); });
   };
 
   const handleDeleteSearch = (id) => {
-    Alert.alert('Delete saved search?', 'You will stop receiving alerts for this search.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteSavedSearch(id) },
-    ]);
+    showConfirm({
+      title: 'Delete saved search?',
+      message: 'You will stop receiving alerts for this search.',
+      confirmLabel: 'Delete', destructive: true,
+    }).then((ok) => { if (ok) deleteSavedSearch(id); });
   };
 
   return (

@@ -1,4 +1,5 @@
-import { Linking, Alert } from 'react-native';
+import { Linking } from 'react-native';
+import { showToast } from '../components/Feedback';
 
 // Inzozi business line for rentals & support.
 // TODO: replace with the real Inzozi WhatsApp Business number before launch.
@@ -14,10 +15,7 @@ export async function openWhatsApp(phone, message) {
     try {
       await Linking.openURL(`https://wa.me/${phone}?text=${text}`);
     } catch {
-      Alert.alert(
-        'WhatsApp not available',
-        `Install WhatsApp, or reach them directly at +${phone}.`
-      );
+      showToast(`WhatsApp is not available — reach them directly at +${phone}.`, 'error');
     }
   }
 }

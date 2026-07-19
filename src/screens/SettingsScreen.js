@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 
 const GROUPS = [
   {
@@ -50,7 +51,7 @@ export default function SettingsScreen({ navigation }) {
     if (item.screen) {
       navigation.navigate(item.screen);
     } else if (item.comingSoon) {
-      Alert.alert('Coming soon', item.comingSoon);
+      showToast(item.comingSoon, 'info');
     }
   };
 

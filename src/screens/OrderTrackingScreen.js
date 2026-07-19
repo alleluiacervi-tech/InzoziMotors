@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image, Alert,
+  View, Text, StyleSheet, ScrollView, Pressable, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 import { formatPrice } from '../data/cars';
 
@@ -115,21 +116,16 @@ export default function OrderTrackingScreen({ navigation, route }) {
   const price = car ? (car.type === 'auction' ? car.currentBid : car.price) : 0;
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancel Request?',
-      "The seller will be notified. You can always send a new request if you change your mind.",
-      [
-        { text: 'Keep Request', style: 'cancel' },
-        {
-          text: 'Cancel Request',
-          style: 'destructive',
-          onPress: () => {
-            if (orderId) cancelHandover(orderId);
-            navigation.goBack();
-          },
-        },
-      ],
-    );
+    showConfirm({
+      title: 'Cancel this request?',
+      message: 'The seller will be notified. You can always send a new request if you change your mind.',
+      confirmLabel: 'Cancel Request', cancelLabel: 'Keep Request', destructive: true,
+    }).then((ok) => {
+      if (!ok) return;
+      if (orderId) cancelHandover(orderId);
+      showToast('Request cancelled.', 'info');
+      navigation.goBack();
+    });
   };
 
   return (

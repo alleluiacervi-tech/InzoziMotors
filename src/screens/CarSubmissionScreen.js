@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  TextInput, Alert, KeyboardAvoidingView, Platform
+  TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
 
@@ -126,19 +127,17 @@ export default function CarSubmissionScreen({ navigation, route }) {
         photos,
         image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&q=80',
       });
-      Alert.alert(
-        'Submission Received!',
-        `Your ${carTitle} is in. Pick an inspection slot now — it takes 30 seconds.`,
-        [
-          {
-            text: 'Book Inspection Slot',
-            onPress: () => navigation.replace('InspectionScheduling', { carName: carTitle, submissionId }),
-          },
-          { text: 'Later', onPress: () => navigation.navigate('SellerDashboard'), style: 'cancel' },
-        ]
-      );
+      showConfirm({
+        title: 'Submission received',
+        message: `Your ${carTitle} is in. Pick an inspection slot now — it takes 30 seconds.`,
+        confirmLabel: 'Book Inspection Slot',
+        cancelLabel: 'Later',
+      }).then((ok) => {
+        if (ok) navigation.replace('InspectionScheduling', { carName: carTitle, submissionId });
+        else navigation.navigate('SellerDashboard');
+      });
     } catch (err) {
-      Alert.alert('Something went wrong', 'Your submission could not be saved. Please try again.');
+      showToast('Your submission could not be saved. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }

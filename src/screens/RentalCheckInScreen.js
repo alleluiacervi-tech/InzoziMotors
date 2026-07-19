@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 import { CHECKIN_PHOTOS } from '../data/rentals';
 
@@ -31,19 +32,13 @@ export default function RentalCheckInScreen({ navigation, route }) {
       agreed_at: new Date().toISOString(),
       own_photos: Object.keys(ownPhotos),
     });
-    if (isReturn) {
-      Alert.alert(
-        'Return complete ✓',
-        'Your deposit will be refunded after the center check.',
-        [{ text: 'Done', onPress: () => navigation.goBack() }]
-      );
-    } else {
-      Alert.alert(
-        'Check-in complete ✓',
-        'Condition record saved to your booking. Enjoy the trip!',
-        [{ text: 'Done', onPress: () => navigation.goBack() }]
-      );
-    }
+    showToast(
+      isReturn
+        ? 'Return complete — your deposit is refunded after the center check.'
+        : 'Check-in complete — enjoy the trip!',
+      'success'
+    );
+    navigation.goBack();
   };
 
   return (

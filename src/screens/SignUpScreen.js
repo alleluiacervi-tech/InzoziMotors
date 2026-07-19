@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import Screen from '../components/Screen';
@@ -7,6 +7,7 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 
 function GoogleIcon() {
   return (
@@ -44,7 +45,7 @@ export default function SignUpScreen({ navigation }) {
       await signUpUser(name.trim(), email.trim(), password, 'buyer');
       navigation.replace('Main');
     } catch (err) {
-      Alert.alert('Sign Up Failed', err.message || 'Could not register user. Please try again.');
+      showToast(err.message || 'Could not create your account. Please try again.', 'error');
     }
   };
 
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textPrimary,
   },
-  inputError: { borderColor: '#EF4444' },
+  inputError: { borderColor: colors.danger, backgroundColor: colors.dangerTint },
   passwordWrap: {
     height: 52,
     borderWidth: 1,
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   passwordInput: { flex: 1, fontSize: 15, color: colors.textPrimary },
-  errorText: { fontSize: 12, color: '#EF4444', marginTop: 4, marginLeft: 4 },
+  errorText: { fontSize: 12.5, color: colors.textSecondary, marginTop: 5, marginLeft: 4, lineHeight: 17 },
   footer: { textAlign: 'center', fontSize: 14, color: colors.textSecondary },
   link: { color: colors.primary, fontFamily: fonts.bold },
 });

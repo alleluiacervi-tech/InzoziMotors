@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { INSPECTION_CATEGORIES } from '../data/inspectionData';
 import { useApp } from '../context/AppContext';
 
@@ -152,13 +153,12 @@ export default function InspectionFormScreen({ navigation, route }) {
 
   const handleGenerate = () => {
     if (totalAnswered < totalItems) {
-      Alert.alert(
-        'Incomplete Form',
-        `${totalItems - totalAnswered} item(s) still need a result. Fill all items before generating the report.`,
-        [
-          { text: 'Continue Anyway', onPress: () => proceed() },
-          { text: 'Go Back', style: 'cancel' },
-        ],
+      showConfirm({
+        title: 'Incomplete form',
+        message: `${totalItems - totalAnswered} item(s) still need a result. Fill all items before generating the report.`,
+        confirmLabel: 'Continue Anyway',
+        cancelLabel: 'Go Back',
+      }).then((ok) => { if (ok) proceed(); }
       );
     } else {
       proceed();

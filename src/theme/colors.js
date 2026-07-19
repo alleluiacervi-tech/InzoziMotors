@@ -50,6 +50,11 @@ export const colors = {
 
   alertRed: '#B91C1C',
 
+  // Feedback — calm, not alarming. Errors use a muted rose; the input
+  // border carries the state, message text stays neutral.
+  danger: '#B4233A',
+  dangerTint: '#FBECEF',
+
   // Neutrals — very slightly red-warm
   bg: '#FAF8F8',
   surface: '#FFFFFF',

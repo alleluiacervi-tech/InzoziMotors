@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 
 const CENTERS = [
@@ -91,11 +92,8 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
         time: selectedTime,
       });
     }
-    Alert.alert(
-      'Inspection Booked!',
-      `Your inspection is confirmed for ${date.label}, ${date.month} ${date.date} at ${selectedTime} at ${center.name}.\n\nBring your vehicle and all available service records.`,
-      [{ text: 'View Dashboard', onPress: () => navigation.navigate('SellerDashboard') }]
-    );
+    showToast(`Inspection booked — ${date.month} ${date.date} at ${selectedTime}, ${center.name}.`, 'success');
+    navigation.navigate('SellerDashboard');
   };
 
   return (

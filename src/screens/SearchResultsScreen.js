@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarListCard from '../components/CarListCard';
 import CarCard from '../components/CarCard';
 import { colors, radius, fonts } from '../theme';
+import { showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
@@ -136,7 +137,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                       ].filter(Boolean);
                       const label = parts.join(' · ') || 'All cars';
                       await createSavedSearch(label, { ...activeFilters, query: searchQuery.trim() });
-                      Alert.alert('Search saved', "We'll notify you when new matching cars are listed.");
+                      showToast("Search saved — we'll notify you when new matching cars are listed.", 'success');
                     }}
                   >
                     <Ionicons name="bookmark-outline" size={16} color={colors.textSecondary} />

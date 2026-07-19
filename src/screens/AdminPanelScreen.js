@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 
 const TABS = ['Submissions', 'IDs', 'Inspections', 'Handovers', 'Listings'];
@@ -201,7 +202,7 @@ function QueueTab({ verifications, onApprove, onReject }) {
                   <Pressable
                     key={doc}
                     style={styles.verifyDocChip}
-                    onPress={() => Alert.alert(doc, `Preview of ${v.name}'s ${doc.toLowerCase()}.\n\n(Full document viewer ships with the admin web dashboard.)`)}
+                    onPress={() => showToast('The full document viewer ships with the admin web dashboard.', 'info')}
                   >
                     <Ionicons name="document-text-outline" size={11} color={colors.primary} />
                     <Text style={styles.verifyDocText}>{doc}</Text>
@@ -351,51 +352,47 @@ export default function AdminPanelScreen({ navigation }) {
   const todayInspections = adminInspections.filter((i) => i.status === 'today').length;
 
   const handleApproveSubmission = (sub) => {
-    Alert.alert('Approve Submission?', `${sub.carTitle} will be approved — the seller can then book an inspection slot.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Approve',
-        onPress: () => updateSubmissionStatus(sub.id, 'approved', 'Approved — book your inspection at any Inzozi center'),
-      },
-    ]);
+    showConfirm({
+      title: 'Approve submission?',
+      message: `${sub.carTitle} will be approved — the seller can then book an inspection slot.`,
+      confirmLabel: 'Approve',
+    }).then((ok) => {
+      if (ok) updateSubmissionStatus(sub.id, 'approved', 'Approved — book your inspection at any Inzozi center');
+    });
   };
 
   const handleRejectSubmission = (sub) => {
-    Alert.alert('Request Changes?', `The seller will be asked to update the ${sub.carTitle} submission and resubmit.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Request Changes', style: 'destructive',
-        onPress: () => updateSubmissionStatus(sub.id, 'rejected', 'Please update your submission details and resubmit'),
-      },
-    ]);
+    showConfirm({
+      title: 'Request changes?',
+      message: `The seller will be asked to update the ${sub.carTitle} submission and resubmit.`,
+      confirmLabel: 'Request Changes', destructive: true,
+    }).then((ok) => {
+      if (ok) updateSubmissionStatus(sub.id, 'rejected', 'Please update your submission details and resubmit');
+    });
   };
 
   const handleApprove = (id) => {
-    Alert.alert('Approve Seller?', 'This seller will be notified and can submit cars for listing.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Approve', style: 'default',
-        onPress: () => adminApproveVerification(id),
-      },
-    ]);
+    showConfirm({
+      title: 'Approve seller?',
+      message: 'This seller will be notified and can submit cars for listing.',
+      confirmLabel: 'Approve',
+    }).then((ok) => { if (ok) adminApproveVerification(id); });
   };
 
   const handleReject = (id) => {
-    Alert.alert('Reject Verification?', 'The seller will be asked to resubmit clearer documents.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Reject', style: 'destructive', onPress: () => adminRejectVerification(id) },
-    ]);
+    showConfirm({
+      title: 'Reject verification?',
+      message: 'The seller will be asked to resubmit clearer documents.',
+      confirmLabel: 'Reject', destructive: true,
+    }).then((ok) => { if (ok) adminRejectVerification(id); });
   };
 
   const handleConfirmHandover = (handoverId, carName) => {
-    Alert.alert(
-      'Confirm Handover?',
-      `This will mark the ${carName} as sold and remove it from the marketplace. This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Confirm & Mark Sold', style: 'default', onPress: () => confirmHandover(handoverId) },
-      ],
-    );
+    showConfirm({
+      title: 'Confirm handover?',
+      message: `This will mark the ${carName} as sold and remove it from the marketplace. This cannot be undone.`,
+      confirmLabel: 'Confirm & Mark Sold',
+    }).then((ok) => { if (ok) confirmHandover(handoverId); });
   };
 
   return (

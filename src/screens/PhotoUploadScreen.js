@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Alert,
+  View, Text, StyleSheet, ScrollView, Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 import { PHOTO_GROUPS } from '../data/inspectionData';
 
 const TOTAL_REQUIRED = PHOTO_GROUPS.reduce((s, g) => {
@@ -53,22 +54,22 @@ export default function PhotoUploadScreen({ navigation, route }) {
     .reduce((s, g) => s + g.slots.filter((sl) => uploaded[sl.id]).length, 0);
 
   const handleSlotPress = (slotId) => {
-    Alert.alert(
-      'Upload Photo',
-      'In the full app, this opens the device camera. Mark as uploaded for demo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Uploaded',
-          onPress: () => setUploaded((prev) => ({ ...prev, [slotId]: true })),
-        },
-        uploaded[slotId] && {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => setUploaded((prev) => ({ ...prev, [slotId]: false })),
-        },
-      ].filter(Boolean),
-    );
+    if (uploaded[slotId]) {
+      showConfirm({
+        title: 'Remove this photo?',
+        confirmLabel: 'Remove', destructive: true,
+      }).then((ok) => {
+        if (ok) setUploaded((prev) => ({ ...prev, [slotId]: false }));
+      });
+      return;
+    }
+    showConfirm({
+      title: 'Upload photo',
+      message: 'In the full app, this opens the device camera. Mark as uploaded for demo?',
+      confirmLabel: 'Mark Uploaded',
+    }).then((ok) => {
+      if (ok) setUploaded((prev) => ({ ...prev, [slotId]: true }));
+    });
   };
 
   const handleMarkAll = () => {
@@ -79,25 +80,20 @@ export default function PhotoUploadScreen({ navigation, route }) {
 
   const handleSubmit = () => {
     if (requiredUploaded < TOTAL_REQUIRED) {
-      Alert.alert(
-        'Missing Required Photos',
-        `${TOTAL_REQUIRED - requiredUploaded} required photo(s) missing. All non-defect slots must be filled before publishing.`,
-        [
-          { text: 'Continue Anyway', onPress: proceed },
-          { text: 'Keep Uploading', style: 'cancel' },
-        ],
-      );
+      showConfirm({
+        title: 'Missing required photos',
+        message: `${TOTAL_REQUIRED - requiredUploaded} required photo(s) missing. All non-defect slots must be filled before publishing.`,
+        confirmLabel: 'Continue Anyway',
+        cancelLabel: 'Keep Uploading',
+      }).then((ok) => { if (ok) proceed(); });
     } else {
       proceed();
     }
   };
 
   const proceed = () => {
-    Alert.alert(
-      'Photos Submitted!',
-      'This listing will now be reviewed and published to the marketplace within 2 hours.',
-      [{ text: 'Back to Admin Panel', onPress: () => navigation.navigate('Main') }],
-    );
+    showToast('Photos submitted — the listing will be reviewed and published within 2 hours.', 'success');
+    navigation.navigate('Main');
   };
 
   const pct = Math.round((uploadedCount / TOTAL_SLOTS) * 100);

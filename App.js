@@ -14,6 +14,7 @@ import {
 import { AppProvider } from './src/context/AppContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AnimatedSplash from './src/components/AnimatedSplash';
+import FeedbackHost from './src/components/Feedback';
 import { getJSON } from './src/storage';
 
 export default function App() {
@@ -41,6 +42,7 @@ export default function App() {
           <StatusBar style="dark" />
           <RootNavigator initialRoute={initialRoute} />
         </NavigationContainer>
+        <FeedbackHost />
         {!splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
       </SafeAreaProvider>
     </AppProvider>

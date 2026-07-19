@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Share, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast, showConfirm } from '../components/Feedback';
 
 const HOW_IT_WORKS = [
   { icon: 'share-outline', step: '1', title: 'Share your code', desc: 'Send your unique referral code to friends who want to sell their car on Inzozi.' },
@@ -35,7 +36,7 @@ export default function ReferralScreen({ navigation }) {
         title: 'Join Inzozi Motors',
       });
     } catch (e) {
-      Alert.alert('Referral link copied!', `Share this code with friends: ${referralCode}`);
+      showToast(`Referral code ${referralCode} copied — share it with friends!`, 'success');
     }
   };
 
@@ -147,7 +148,7 @@ export default function ReferralScreen({ navigation }) {
           </View>
           <Pressable
             style={styles.whatsappOptIn}
-            onPress={() => Alert.alert('WhatsApp Notifications', 'This feature is coming soon. We\'ll notify you when it launches!')}
+            onPress={() => showToast("WhatsApp alerts are coming soon — we'll notify you at launch.", 'info')}
           >
             <Ionicons name="notifications-outline" size={16} color="#25D366" />
             <Text style={styles.whatsappOptInText}>Notify me when WhatsApp alerts launch</Text>
