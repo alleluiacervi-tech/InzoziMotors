@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
+import { LogoMark } from '../components/Logo';
 
 const PROMISES = [
   {
@@ -41,17 +41,15 @@ export default function InzoziPromiseScreen({ navigation }) {
       <BackHeader title="The Inzozi Promise" onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-        {/* Hero */}
-        <LinearGradient colors={[colors.navyLight, colors.navyMid]} style={styles.hero}>
-          <View style={styles.heroBadge}>
-            <Ionicons name="shield-checkmark" size={30} color="#fff" />
-          </View>
+        {/* Hero — the Inzozi identity */}
+        <View style={styles.hero}>
+          <LogoMark size={84} />
           <Text style={styles.heroTitle}>Our promise to every customer</Text>
           <Text style={styles.heroSub}>
             Buying or renting a car is one of the biggest decisions you'll make.
             These five guarantees apply to every single vehicle on Inzozi.
           </Text>
-        </LinearGradient>
+        </View>
 
         {/* Promises */}
         {PROMISES.map((p, i) => (
@@ -89,21 +87,18 @@ export default function InzoziPromiseScreen({ navigation }) {
 const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingBottom: 40 },
   hero: {
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xxl, padding: 24,
     alignItems: 'center', marginTop: 4, marginBottom: 16,
-  },
-  heroBadge: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 14,
+    ...shadows.card,
   },
   heroTitle: {
-    fontSize: 21, fontFamily: fonts.extraBold, color: '#fff',
-    textAlign: 'center', letterSpacing: -0.4,
+    fontSize: 21, fontFamily: fonts.extraBold, color: colors.textPrimary,
+    textAlign: 'center', letterSpacing: -0.4, marginTop: 16,
   },
   heroSub: {
-    fontSize: 13, fontFamily: fonts.regular, color: 'rgba(226,232,240,0.85)',
+    fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary,
     textAlign: 'center', marginTop: 8, lineHeight: 19,
   },
   card: {

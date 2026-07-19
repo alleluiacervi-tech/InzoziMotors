@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions } from 'react
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { CarGlyph } from '../components/Logo';
+import { LogoMark } from '../components/Logo';
 import Button from '../components/Button';
 import { setJSON } from '../storage';
 import { colors, fonts } from '../theme';
@@ -45,13 +45,15 @@ export default function OnboardingScreen({ navigation }) {
       >
         {SLIDES.map((s) => (
           <View key={s.key} style={styles.slide}>
-            <View style={styles.art}>
-              {s.car ? (
-                <CarGlyph width={128} body={colors.primary} glass={colors.surfaceAlt} />
-              ) : (
+            {s.car ? (
+              <View style={styles.artMark}>
+                <LogoMark size={208} />
+              </View>
+            ) : (
+              <View style={styles.art}>
                 <Ionicons name={s.icon} size={76} color={colors.primary} />
-              )}
-            </View>
+              </View>
+            )}
             <Text style={styles.title}>{s.title}</Text>
             <Text style={styles.sub}>{s.sub}</Text>
           </View>
@@ -92,11 +94,12 @@ const styles = StyleSheet.create({
     width: 208,
     height: 208,
     borderRadius: 104,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: '#F2F0EF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 44,
   },
+  artMark: { marginBottom: 44 },
   title: {
     fontSize: 25, fontFamily: fonts.black, color: colors.textPrimary,
     letterSpacing: -0.5, textAlign: 'center',
