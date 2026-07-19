@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
+import { getCertTier } from '../data/certification';
 import { monthlyEstimate } from '../data/finance';
 
 const getInzoziYear = (car) => String(car.year);
@@ -27,6 +28,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
   const saved = isCarSaved(car.id);
   const isContract = car.type === 'auction';
   const isRental = car.listingType === 'rental';
+  const tier = getCertTier(car);
 
   return (
     <Pressable style={[styles.card, shadows.card]} onPress={onPress}>
@@ -35,10 +37,10 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 
         {!hideOverlay && (
           <>
-            {car.inspected ? (
-              <View style={styles.certBadge}>
+            {tier ? (
+              <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
                 <Ionicons name="shield-checkmark" size={10} color="#fff" />
-                <Text style={styles.certBadgeText}>Certified</Text>
+                <Text style={styles.certBadgeText}>{tier.short}</Text>
               </View>
             ) : isContract ? (
               <Badge variant="contract" label="In Contract" style={styles.topLeft} />

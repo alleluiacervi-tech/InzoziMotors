@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, fonts } from '../theme';
+import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
 
@@ -15,6 +16,7 @@ const getRegYear = (car) => {
 };
 
 export default function CarListCard({ car, onPress }) {
+  const tier = getCertTier(car);
   const { isCarSaved, toggleSaveCar } = useApp();
   const saved = isCarSaved(car.id);
   const price = car.type === 'auction' ? car.currentBid : car.price;
@@ -26,10 +28,10 @@ export default function CarListCard({ car, onPress }) {
       {/* Photo */}
       <View style={styles.imageWrap}>
         <Image source={{ uri: car.image }} style={styles.image} resizeMode="cover" />
-        {car.inspected && (
-          <View style={styles.certBadge}>
+        {tier && (
+          <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
             <Ionicons name="shield-checkmark" size={9} color="#fff" />
-            <Text style={styles.certBadgeText}>Certified</Text>
+            <Text style={styles.certBadgeText}>{tier.short}</Text>
           </View>
         )}
       </View>

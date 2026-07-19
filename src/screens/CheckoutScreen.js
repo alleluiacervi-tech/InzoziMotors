@@ -16,11 +16,11 @@ const HOW_IT_WORKS = [
   { icon: 'paper-plane-outline', title: 'Send your request', sub: 'One tap — no payment, no commitment yet.' },
   { icon: 'lock-closed-outline', title: 'We reserve the car', sub: 'Held for you while we confirm with the seller.' },
   { icon: 'call-outline', title: 'We arrange the handover', sub: 'Inzozi contacts you on WhatsApp to set a time that suits you.' },
-  { icon: 'shield-checkmark-outline', title: 'Meet at the Inzozi center', sub: 'Payment, documents, transfer — 7-day return guarantee starts.' },
+  { icon: 'shield-checkmark-outline', title: 'Meet at the Inzozi center', sub: 'Payment, documents, transfer — then drive it for 7 days before the sale is final.' },
 ];
 
 // ─── Request phase ───────────────────────────────────────────────────────────
-function RequestState({ car, price, phone, setPhone, onSend, sending }) {
+function RequestState({ car, price, phone, setPhone, onSend, sending, navigation }) {
   const askAvailability = () => {
     const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
     openWhatsApp(car.sellerPhone || getSellerWhatsApp(car.seller), msg);
@@ -54,7 +54,12 @@ function RequestState({ car, price, phone, setPhone, onSend, sending }) {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>How it works</Text>
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionTitle}>How it works</Text>
+          <Pressable onPress={() => navigation.navigate('BuyingGuide')} hitSlop={8}>
+            <Text style={styles.guideLink}>Full guide</Text>
+          </Pressable>
+        </View>
         <View style={styles.stepsCard}>
           {HOW_IT_WORKS.map((s, i) => (
             <View key={s.title} style={[styles.step, i < HOW_IT_WORKS.length - 1 && styles.stepBorder]}>
@@ -162,7 +167,7 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
         <View style={styles.guaranteeCard}>
           <Ionicons name="shield-checkmark" size={16} color={colors.green} />
           <Text style={styles.guaranteeText}>
-            7-day return guarantee applies when handover is completed at the Inzozi center.
+            Drive it for 7 days — the guarantee starts when handover completes at the Inzozi center.
           </Text>
         </View>
 
@@ -239,6 +244,7 @@ export default function CheckoutScreen({ navigation, route }) {
       {phase === 'request' && (
         <RequestState
           car={car}
+          navigation={navigation}
           price={price}
           phone={phone}
           setPhone={setPhone}
@@ -288,6 +294,8 @@ const styles = StyleSheet.create({
   infoSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, lineHeight: 17, marginTop: 3 },
 
   sectionTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  guideLink: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.primary, marginBottom: 10 },
 
   stepsCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,

@@ -12,6 +12,8 @@ import { formatPrice, formatMiles, getSellerWhatsApp } from '../data/cars';
 import { openWhatsApp } from '../utils/whatsapp';
 import LoginModal from '../components/LoginModal';
 import PhotoViewer from '../components/PhotoViewer';
+import { getCertTier } from '../data/certification';
+import { CarGlyph } from '../components/Logo';
 import {
   getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop,
   getSavedCount, getListedDaysAgo, getNeighborhood, getDriveType, formatRWF,
@@ -71,6 +73,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const neighborhood = getNeighborhood(car.id);
   const driveType = getDriveType(car.id);
   const price = isAuction ? car.currentBid : car.price;
+  const tier = getCertTier(car);
 
   const similarCars = cars.filter(
     (c) => c.id !== car.id && (c.make === car.make || c.category === car.category)
@@ -84,6 +87,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
   };
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
+
+  const { recordCarView } = useApp();
+  React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
 
   const contactWhatsApp = () => {
     const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
@@ -101,8 +107,8 @@ export default function VehicleDetailScreen({ navigation, route }) {
     { label: 'Drive', value: `${driveType} drive` },
     {
       label: 'Inspection',
-      value: car.inspected
-        ? (car.inspectionScore ? `${car.inspectionScore}/150 Certified` : 'Inzozi Certified')
+      value: tier
+        ? (car.inspectionScore ? `${tier.label} · ${car.inspectionScore}/150` : tier.label)
         : 'Scheduled',
     },
   ].filter((r) => r.value != null && r.value !== '' && r.value !== 'undefined');
@@ -158,8 +164,8 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Text style={styles.indicatorText}>{activeIdx + 1} / {imageList.length}</Text>
             </View>
           )}
-          {car.inspected && (
-            <Badge variant="inspected" icon="checkmark" label="150-pt Inspected" style={styles.inspectBadge} />
+          {tier && (
+            <Badge variant={tier.variant} icon="shield-checkmark" label={tier.label} style={styles.inspectBadge} />
           )}
         </View>
 
@@ -277,7 +283,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           {/* Vehicle Information — full spec table */}
           <View style={styles.infoCard}>
             <View style={styles.infoHeader}>
-              <Ionicons name="car-sport-outline" size={18} color={colors.primary} />
+              <CarGlyph width={26} body={colors.primary} glass={colors.surface} />
               <Text style={styles.infoHeaderText}>Vehicle Information</Text>
             </View>
             {infoRows.map((row, i) => (
@@ -345,9 +351,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </Pressable>
 
           <View style={styles.trustChips}>
-            <Badge variant="tag" label="7-day returns" />
+            <Badge variant="tag" label="Drive it 7 days" />
             <Badge variant="tag" label={`${driveType} drive`} />
-            {car.inspected && <Badge variant="success" label="Inzozi Certified" />}
+            {tier && <Badge variant={tier.variant} label={tier.label} />}
           </View>
 
           <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('InzoziPromise')}>

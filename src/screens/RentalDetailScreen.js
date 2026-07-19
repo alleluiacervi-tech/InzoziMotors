@@ -8,6 +8,7 @@ import PhotoViewer from '../components/PhotoViewer';
 import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
+import { useApp } from '../context/AppContext';
 import { openWhatsApp, INZOZI_WHATSAPP } from '../utils/whatsapp';
 
 const { width } = Dimensions.get('window');
@@ -24,6 +25,8 @@ export default function RentalDetailScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [activeIdx, setActiveIdx] = useState(0);
   const [viewerIdx, setViewerIdx] = useState(null);
+  const { recordCarView } = useApp();
+  React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
 
   const dates = getRentalDates(14);
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];

@@ -201,19 +201,26 @@ export function AppProvider({ children }) {
     setCurrency((prev) => (prev === 'USD' ? 'RWF' : 'USD'));
   }, []);
 
+  // Recently viewed — powers the Home personalization rail
+  const [recentlyViewedIds, setRecentlyViewedIds] = useState([]);
+  const recordCarView = useCallback((id) => {
+    setRecentlyViewedIds((prev) => [id, ...prev.filter((x) => x !== id)].slice(0, 10));
+  }, []);
+
   // --- Persistence: saved cars, saved searches, rental bookings, currency ---
   // Hydrate once on mount; only persist after hydration so defaults never
   // overwrite what the user already stored.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     (async () => {
-      const [ids, searches, bookings, cur, requests, mode] = await Promise.all([
+      const [ids, searches, bookings, cur, requests, mode, viewed] = await Promise.all([
         getJSON('savedCarIds'),
         getJSON('savedSearches'),
         getJSON('rentalBookings'),
         getJSON('currency'),
         getJSON('purchaseRequests'),
         getJSON('homeMode'),
+        getJSON('recentlyViewedIds'),
       ]);
       if (ids) setSavedCarIds(ids);
       if (searches) setSavedSearches(searches);
@@ -221,6 +228,7 @@ export function AppProvider({ children }) {
       if (cur) setCurrency(cur);
       if (requests) setPurchaseRequests(requests);
       if (mode) setHomeMode(mode);
+      if (viewed) setRecentlyViewedIds(viewed);
       setHydrated(true);
     })();
   }, []);
@@ -230,6 +238,7 @@ export function AppProvider({ children }) {
   useEffect(() => { if (hydrated) setJSON('currency', currency); }, [currency, hydrated]);
   useEffect(() => { if (hydrated) setJSON('purchaseRequests', purchaseRequests); }, [purchaseRequests, hydrated]);
   useEffect(() => { if (hydrated) setJSON('homeMode', homeMode); }, [homeMode, hydrated]);
+  useEffect(() => { if (hydrated) setJSON('recentlyViewedIds', recentlyViewedIds); }, [recentlyViewedIds, hydrated]);
 
   // --- Mappers to bridge Backend schema to Mobile UI keys ---
 
@@ -1156,6 +1165,7 @@ export function AppProvider({ children }) {
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
     homeMode, setHomeMode, rentalCars, rentalBookings, bookRental, updateRentalBookingStatus,
+    recentlyViewedIds, recordCarView,
     currency, toggleCurrency,
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
     // Chat messages

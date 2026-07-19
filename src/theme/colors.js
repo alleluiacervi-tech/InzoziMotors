@@ -8,17 +8,18 @@ export const colors = {
   navyMid: '#281F1C',
   navyLight: '#3A2D29',
 
-  // Brand Red — warm, vivid, confident (used sparingly, as an accent)
-  primary: '#DA2C2C',
-  primaryBright: '#F0453A',
-  blueLight: '#F98F8A',
+  // Brand Red — Encar crimson (#DB0632, sampled from encar.com's own mark);
+  // used sparingly, as an accent
+  primary: '#DB0632',
+  primaryBright: '#F02050',
+  blueLight: '#F97C9B',
   blueTint: '#F3F2F2',
 
   // Badge Colors
-  jeondan: '#DA2C2C',
+  jeondan: '#DB0632',
   jeondanPlus: '#1D4ED8',
   jeondanPlusPlus: '#D97706',
-  contract: '#B02418',
+  contract: '#A80526',
   alert: '#D97706',
 
   // Semantic — true success green (pass / verified / online / savings).

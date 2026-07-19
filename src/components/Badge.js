@@ -23,6 +23,11 @@ const VARIANTS = {
   neutral: { bg: colors.surfaceAlt, fg: colors.slate600 },
   success: { bg: colors.greenTint, fg: colors.green },
 
+  // Certification tiers (Encar-style graded trust)
+  certPlus: { bg: colors.primary, fg: '#FFFFFF' },
+  cert: { bg: '#FBE4EA', fg: colors.primary },
+  inspectedTier: { bg: colors.surfaceAlt, fg: colors.slate600 },
+
   // Inzozi Specifics
   jeondan: { bg: colors.jeondan, fg: '#FFFFFF' },
   jeondanPlus: { bg: colors.jeondanPlus, fg: '#FFFFFF' },

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { LogoMark } from './Logo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius } from '../theme';
 import { useApp } from '../context/AppContext';
@@ -128,9 +129,12 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
           style={[styles.header, { paddingTop: insets.top + 16 }]}
         >
           <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.headerBrand}>INZOZI</Text>
-              <Text style={styles.headerSub}>Rwanda's Certified Marketplace</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <LogoMark size={34} />
+              <View>
+                <Text style={styles.headerBrand}>INZOZI</Text>
+                <Text style={styles.headerSub}>Rwanda's Certified Marketplace</Text>
+              </View>
             </View>
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
               <Ionicons name="close" size={20} color="rgba(255,255,255,0.8)" />

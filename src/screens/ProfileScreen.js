@@ -15,6 +15,7 @@ const MENU_ACCOUNT = [
   { icon: 'key-outline', label: 'My Rentals', screen: 'MyRentals' },
   { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
   { icon: 'shield-checkmark-outline', label: 'The Inzozi Promise', screen: 'InzoziPromise' },
+  { icon: 'book-outline', label: 'How Buying Works', screen: 'BuyingGuide' },
   { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
   { icon: 'help-circle-outline', label: 'Help & Support', screen: null },
 ];

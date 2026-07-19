@@ -12,7 +12,7 @@ import SectionHeader from '../components/SectionHeader';
 import DrawerMenu from '../components/DrawerMenu';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
-import { getListedDaysAgo, getSavedCount } from '../data/marketData';
+import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -50,7 +50,7 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalBookings } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalBookings, recentlyViewedIds, savedCarIds } = useApp();
   const hasUnread = notifications.some((n) => !n.read);
   const upcomingTrip = rentalBookings.find((b) => b.status === 'confirmed' || b.status === 'active');
   const [carouselIndex, setCarouselIndex] = useState(1);
@@ -92,6 +92,30 @@ export default function HomeScreen({ navigation }) {
 
   // Fresh = most recently listed; Popular = most saved — two genuinely different sections
   const freshCars = [...cars].sort((a, b) => getListedDaysAgo(a.id) - getListedDaysAgo(b.id)).slice(0, 4);
+
+  // ── Origin tabs (Encar-style: browse the way buyers think) ──
+  const [originTab, setOriginTab] = useState('All');
+  const ORIGIN_TABS = ['All', 'Imported', 'Local', 'EV·Hybrid'];
+  const originCars = cars.filter((c) => {
+    if (originTab === 'Imported') return getDriveType(c.id) === 'RHD';
+    if (originTab === 'Local') return getDriveType(c.id) === 'LHD';
+    if (originTab === 'EV·Hybrid') return ['Electric', 'Hybrid'].includes(c.fuel);
+    return true;
+  });
+
+  // ── Personalization rails ──
+  const allInventory = [...cars, ...rentalCars];
+  const recentlyViewed = recentlyViewedIds
+    .map((id) => allInventory.find((c) => c.id === id))
+    .filter(Boolean)
+    .slice(0, 8);
+  const savedCars = cars.filter((c) => savedCarIds.includes(c.id));
+  const likeSaved = savedCars.length
+    ? cars.filter((c) =>
+        !savedCarIds.includes(c.id) &&
+        savedCars.some((s) => s.make === c.make || s.category === c.category)
+      ).slice(0, 6)
+    : [];
   const popularCars = [...cars].sort((a, b) => getSavedCount(b.id) - getSavedCount(a.id)).slice(0, 5);
 
   return (
@@ -307,6 +331,93 @@ export default function HomeScreen({ navigation }) {
           ))}
         </View>
 
+        {/* ── BROWSE BY ORIGIN (Encar-style) ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.originRow}
+        >
+          {ORIGIN_TABS.map((t) => {
+            const on = originTab === t;
+            return (
+              <Pressable
+                key={t}
+                style={[styles.originChip, on && styles.originChipOn]}
+                onPress={() => setOriginTab(t)}
+              >
+                <Text style={[styles.originText, on && styles.originTextOn]}>{t}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {originTab !== 'All' ? (
+          <View style={styles.sectionContainer}>
+            <SectionHeader title={`${originTab} · ${originCars.length} cars`} />
+            <View style={styles.twoColumnGrid}>
+              {originCars.map((item) => (
+                <View key={item.id} style={styles.gridCardWrapper}>
+                  <CarCard
+                    car={item}
+                    onPress={() => navigation.navigate('VehicleDetail', { car: item })}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : (
+        <>
+        {/* ── RECENTLY VIEWED ── */}
+        {recentlyViewed.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader title="Recently Viewed" />
+            <FlatList
+              horizontal
+              data={recentlyViewed}
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListPadding}
+              renderItem={({ item }) => (
+                <View style={styles.horizontalCardWrapper}>
+                  <CarCard
+                    car={item}
+                    onPress={() => navigation.navigate(
+                      item.listingType === 'rental' ? 'RentalDetail' : 'VehicleDetail',
+                      { car: item }
+                    )}
+                  />
+                </View>
+              )}
+            />
+          </View>
+        )}
+
+        {/* ── MORE LIKE YOUR SAVED CARS ── */}
+        {likeSaved.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader
+              title="More Like Your Saved Cars"
+              actionLabel="Saved"
+              onAction={() => navigation.navigate('Saved')}
+            />
+            <FlatList
+              horizontal
+              data={likeSaved}
+              keyExtractor={(item) => item.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListPadding}
+              renderItem={({ item }) => (
+                <View style={styles.horizontalCardWrapper}>
+                  <CarCard
+                    car={item}
+                    onPress={() => navigation.navigate('VehicleDetail', { car: item })}
+                  />
+                </View>
+              )}
+            />
+          </View>
+        )}
+
         {/* ── FRESH THIS WEEK ── */}
         <View style={styles.sectionContainer}>
           <SectionHeader
@@ -356,6 +467,8 @@ export default function HomeScreen({ navigation }) {
             )}
           />
         </View>
+        </>
+        )}
         </>
         )}
 
@@ -597,6 +710,16 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   toolItem: { flex: 1, alignItems: 'center', gap: 6 },
+  originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },
+  originChip: {
+    paddingHorizontal: 16, paddingVertical: 9,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.border,
+  },
+  originChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  originText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  originTextOn: { color: '#fff' },
   toolIconCircle: {
     width: 46, height: 46, borderRadius: 23,
     alignItems: 'center', justifyContent: 'center',

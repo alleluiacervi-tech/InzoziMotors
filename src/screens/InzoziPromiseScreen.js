@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -15,8 +15,8 @@ const PROMISES = [
   },
   {
     icon: 'refresh',
-    title: '7-Day Return Guarantee',
-    desc: "Bought a car and something isn't right? Return it within 7 days of handover at any Inzozi center for a full refund. Applies to all certified purchases.",
+    title: 'Drive It for 7 Days',
+    desc: "Every certified purchase comes with a 7-day decision window. Drive it, live with it — if it doesn't match its inspection report, return it at any Inzozi center for a full refund.",
   },
   {
     icon: 'document-text',
@@ -49,6 +49,30 @@ export default function InzoziPromiseScreen({ navigation }) {
             Buying or renting a car is one of the biggest decisions you'll make.
             These five guarantees apply to every single vehicle on Inzozi.
           </Text>
+        </View>
+
+        {/* Refund conditions — transparent, no fine print */}
+        <View style={styles.refundCard}>
+          <Text style={styles.refundTitle}>The 7-day window, in plain terms</Text>
+          {[
+            { free: true,  text: 'Cancel before handover — always free' },
+            { free: true,  text: "Days 1–7: full refund if the car doesn't match its report" },
+            { free: false, text: 'Change of mind: reconditioning fee is deducted' },
+            { free: false, text: 'Over 300 km driven: per-km usage charge applies' },
+          ].map((r) => (
+            <View key={r.text} style={styles.refundRow}>
+              <Ionicons
+                name={r.free ? 'checkmark-circle' : 'information-circle-outline'}
+                size={15}
+                color={r.free ? colors.green : colors.amber}
+              />
+              <Text style={styles.refundText}>{r.text}</Text>
+            </View>
+          ))}
+          <Pressable style={styles.guideLink} onPress={() => navigation.navigate('BuyingGuide')}>
+            <Text style={styles.guideLinkText}>See the full buying guide</Text>
+            <Ionicons name="chevron-forward" size={13} color={colors.primary} />
+          </Pressable>
         </View>
 
         {/* Promises */}
@@ -97,6 +121,17 @@ const styles = StyleSheet.create({
     fontSize: 21, fontFamily: fonts.extraBold, color: colors.textPrimary,
     textAlign: 'center', letterSpacing: -0.4, marginTop: 16,
   },
+  refundCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 16, marginBottom: 16,
+    ...shadows.card,
+  },
+  refundTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10 },
+  refundRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
+  refundText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+  guideLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  guideLinkText: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
   heroSub: {
     fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary,
     textAlign: 'center', marginTop: 8, lineHeight: 19,
