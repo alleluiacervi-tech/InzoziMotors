@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, Rect, Defs, LinearGradient, Stop, G } from 'react-native-svg';
+import Svg, { Path, Circle, G } from 'react-native-svg';
 import { colors, fonts } from '../theme';
 
-// Shared Inzozi car silhouette (car-space ~ x:150–872, y:366–658).
-// White body with cut-out "glass" (set glass to the surrounding background).
-function CarPaths({ body = '#FFFFFF', glass = '#DA2C2C' }) {
+// The Inzozi Motors identity: the red car mark on a soft circular field.
+// Shared silhouette (car-space ~ x:150–872, y:366–658); "glass" is the
+// cut-out color — set it to whatever the mark sits on.
+function CarPaths({ body = colors.primary, glass = '#F2F0EF' }) {
   return (
     <G>
       <Path
@@ -30,7 +31,7 @@ function CarPaths({ body = '#FFFFFF', glass = '#DA2C2C' }) {
 }
 
 // Plain car glyph — car in `body` color on transparent (cut-outs = the bg it sits on).
-export function CarGlyph({ width = 120, body = '#FFFFFF', glass = colors.primary }) {
+export function CarGlyph({ width = 120, body = colors.primary, glass = '#F2F0EF' }) {
   const height = width * (312 / 742);
   return (
     <Svg width={width} height={height} viewBox="140 358 742 312">
@@ -39,21 +40,15 @@ export function CarGlyph({ width = 120, body = '#FFFFFF', glass = colors.primary
   );
 }
 
-// Badge mark — a mini app-icon (red rounded tile + white car). Reads on any background.
+// The canonical badge — red car centered on the soft circular field.
 export function LogoMark({ size = 30 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Defs>
-        <LinearGradient id="inzoziTile" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#E5403A" />
-          <Stop offset="1" stopColor="#C11C1C" />
-        </LinearGradient>
-      </Defs>
-      <Rect x="0" y="0" width="100" height="100" rx="24" fill="url(#inzoziTile)" />
+      <Circle cx="50" cy="50" r="50" fill="#F2F0EF" />
       <G transform="translate(50, 51)">
-        <G transform="scale(0.104)">
+        <G transform="scale(0.082)">
           <G transform="translate(-511, -512)">
-            <CarPaths body="#FFFFFF" glass="#D42222" />
+            <CarPaths body={colors.primary} glass="#F2F0EF" />
           </G>
         </G>
       </G>
@@ -61,7 +56,7 @@ export function LogoMark({ size = 30 }) {
   );
 }
 
-export default function Logo({ size = 18, color = '#fff' }) {
+export default function Logo({ size = 18, color = colors.textPrimary }) {
   return (
     <View style={styles.row}>
       <LogoMark size={size + 12} />
