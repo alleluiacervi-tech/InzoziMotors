@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Button from '../components/Button';
+import PhotoViewer from '../components/PhotoViewer';
 import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
@@ -22,6 +23,7 @@ export default function RentalDetailScreen({ navigation, route }) {
   const car = route.params?.car;
   const insets = useSafeAreaInsets();
   const [activeIdx, setActiveIdx] = useState(0);
+  const [viewerIdx, setViewerIdx] = useState(null);
 
   const dates = getRentalDates(14);
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
@@ -42,7 +44,9 @@ export default function RentalDetailScreen({ navigation, route }) {
             scrollEventThrottle={16}
           >
             {imageList.map((img, index) => (
-              <Image key={index} source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
+              <Pressable key={index} onPress={() => setViewerIdx(index)}>
+                <Image source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
+              </Pressable>
             ))}
           </ScrollView>
 
@@ -229,6 +233,13 @@ export default function RentalDetailScreen({ navigation, route }) {
           onPress={() => navigation.navigate('RentalBooking', { car })}
         />
       </View>
+
+      <PhotoViewer
+        visible={viewerIdx !== null}
+        images={imageList}
+        initialIndex={viewerIdx || 0}
+        onClose={() => setViewerIdx(null)}
+      />
     </View>
   );
 }

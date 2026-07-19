@@ -11,6 +11,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles, getSellerWhatsApp } from '../data/cars';
 import { openWhatsApp } from '../utils/whatsapp';
 import LoginModal from '../components/LoginModal';
+import PhotoViewer from '../components/PhotoViewer';
 import {
   getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop,
   getSavedCount, getListedDaysAgo, getNeighborhood, getDriveType, formatRWF,
@@ -54,6 +55,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const isAuction = car.type === 'auction';
   const [activeIdx, setActiveIdx] = useState(0);
   const [loginVisible, setLoginVisible] = useState(false);
+  const [viewerIdx, setViewerIdx] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
 
   const { cars } = useApp();
@@ -120,7 +122,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
             scrollEventThrottle={16}
           >
             {imageList.map((img, index) => (
-              <Image key={index} source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
+              <Pressable key={index} onPress={() => setViewerIdx(index)}>
+                <Image source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
+              </Pressable>
             ))}
           </ScrollView>
 
@@ -445,6 +449,13 @@ export default function VehicleDetailScreen({ navigation, route }) {
           onPress={() => navigation.navigate('Checkout', { car })}
         />
       </View>
+
+      <PhotoViewer
+        visible={viewerIdx !== null}
+        images={imageList}
+        initialIndex={viewerIdx || 0}
+        onClose={() => setViewerIdx(null)}
+      />
 
       <LoginModal
         visible={loginVisible}
