@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 
-const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting']
+const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
   live:         'bg-green-100 text-green-700',
   reserved:     'bg-purple-100 text-purple-700',

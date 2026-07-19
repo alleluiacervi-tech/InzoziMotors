@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS submissions (
   car_id          UUID REFERENCES cars(id) ON DELETE CASCADE,
   seller_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status          TEXT NOT NULL DEFAULT 'under_review',
-  -- under_review | scheduled | inspecting | live | rejected
+  -- under_review | scheduled | inspecting | inspected | live | rejected
   make            TEXT,
   model           TEXT,
   year            INT,
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS handovers (
   handover_time   TEXT,                  -- "10:00 AM"
   contact_phone   TEXT,                  -- buyer's WhatsApp number for coordination
   agreed_price    INT,                   -- car price at time of booking (USD)
-  status          TEXT NOT NULL DEFAULT 'pending',  -- pending | complete | cancelled
+  status          TEXT NOT NULL DEFAULT 'pending',  -- pending | confirmed | complete | cancelled
   confirmed_by    UUID REFERENCES users(id),        -- admin who confirmed
   booked_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   confirmed_at    TIMESTAMPTZ
@@ -274,3 +274,13 @@ CREATE TABLE IF NOT EXISTS rental_bookings (
 
 CREATE INDEX IF NOT EXISTS idx_rental_bookings_car    ON rental_bookings(rental_car_id);
 CREATE INDEX IF NOT EXISTS idx_rental_bookings_renter ON rental_bookings(renter_id);
+
+-- ─── Price history — one row per price change on a listing ───────────────────
+CREATE TABLE IF NOT EXISTS price_history (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  car_id      UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
+  price       INT NOT NULL,
+  changed_by  UUID REFERENCES users(id),
+  changed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_price_history_car ON price_history(car_id);

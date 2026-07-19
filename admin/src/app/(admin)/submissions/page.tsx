@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 
-const STATUS_TABS = ['all', 'pending', 'under_review', 'scheduled', 'inspecting', 'rejected']
+const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
 const STATUS_COLORS: Record<string, string> = {
   pending:      'bg-amber-100 text-amber-700',
@@ -14,12 +14,16 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function SubmissionsPage() {
-  const [tab, setTab]               = useState('pending')
+  const [tab, setTab]               = useState('under_review')
   const [items, setItems]           = useState<any[]>([])
   const [loading, setLoading]       = useState(true)
   const [actionId, setActionId]     = useState<string | null>(null)
   const [notes, setNotes]           = useState('')
   const [showNotesFor, setShowNotesFor] = useState<string | null>(null)
+  const [showScheduleFor, setShowScheduleFor] = useState<string | null>(null)
+  const [schedCenter, setSchedCenter] = useState('Nyarutarama Center')
+  const [schedDate, setSchedDate]     = useState('')
+  const [schedTime, setSchedTime]     = useState('10:00 AM')
 
   async function load(status: string) {
     setLoading(true)
@@ -89,7 +93,7 @@ export default function SubmissionsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-500">{sub.mileage?.toLocaleString()} km · {sub.condition} · {sub.transmission}</p>
-                  <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {new Date(sub.created_at).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {new Date(sub.submitted_at).toLocaleDateString()}</p>
                   {sub.asking_price && (
                     <p className="text-sm font-medium text-brand mt-1">
                       RWF {Number(sub.asking_price).toLocaleString()}
@@ -123,7 +127,7 @@ export default function SubmissionsPage() {
                 {sub.status === 'under_review' && (
                   <>
                     <button
-                      onClick={() => updateStatus(sub.id, 'scheduled')}
+                      onClick={() => setShowScheduleFor(showScheduleFor === sub.id ? null : sub.id)}
                       disabled={actionId === sub.id}
                       className="px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
                     >
@@ -147,6 +151,60 @@ export default function SubmissionsPage() {
                   </button>
                 )}
               </div>
+
+              {/* Inline scheduling form — creates the inspection appointment */}
+              {showScheduleFor === sub.id && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-200 flex flex-wrap items-end gap-3">
+                  <label className="text-xs text-gray-600">
+                    Center
+                    <select
+                      value={schedCenter}
+                      onChange={(e) => setSchedCenter(e.target.value)}
+                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+                    >
+                      <option>Nyarutarama Center</option>
+                      <option>Kicukiro Center</option>
+                      <option>Kimironko Center</option>
+                    </select>
+                  </label>
+                  <label className="text-xs text-gray-600">
+                    Date
+                    <input
+                      type="date"
+                      value={schedDate}
+                      onChange={(e) => setSchedDate(e.target.value)}
+                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+                    />
+                  </label>
+                  <label className="text-xs text-gray-600">
+                    Time
+                    <select
+                      value={schedTime}
+                      onChange={(e) => setSchedTime(e.target.value)}
+                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+                    >
+                      {['8:00 AM','9:00 AM','10:00 AM','11:00 AM','1:00 PM','2:00 PM','3:00 PM','4:00 PM'].map((t) => (
+                        <option key={t}>{t}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    onClick={() => {
+                      if (!schedDate) { alert('Pick a date'); return }
+                      updateStatus(sub.id, 'scheduled', {
+                        center: schedCenter,
+                        scheduled_date: schedDate,
+                        scheduled_time: schedTime,
+                      })
+                      setShowScheduleFor(null)
+                    }}
+                    disabled={actionId === sub.id}
+                    className="px-4 py-2 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
+                  >
+                    Book Appointment
+                  </button>
+                </div>
+              )}
 
               {/* Reject notes modal */}
               {showNotesFor === sub.id && (

@@ -28,8 +28,10 @@ require('./src/socket')(io);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded inspection photos
+// Serve uploaded car photos publicly; KYC identity docs are NEVER served here —
+// they go through the admin-gated GET /id-verification/doc/:filename route.
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
+app.use('/uploads/id-docs', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads', express.static(uploadDir));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────

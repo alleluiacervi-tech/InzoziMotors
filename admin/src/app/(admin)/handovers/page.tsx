@@ -29,8 +29,21 @@ export default function HandoversPage() {
 
   useEffect(() => { load(tab) }, [tab])
 
+  async function complete(id: string) {
+    if (!window.confirm('Mark this handover COMPLETE? The car will be marked as SOLD and both parties notified.')) return
+    setActionId(id)
+    try {
+      await api.completeHandover(id)
+      load(tab)
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setActionId(null)
+    }
+  }
+
   async function confirm(id: string) {
-    if (!window.confirm('Mark this handover complete? The car will be marked as SOLD and both parties will be notified.')) return
+    if (!window.confirm('Confirm this handover arrangement? Both parties will be notified.')) return
     setActionId(id)
     try {
       await api.confirmHandover(id)
@@ -92,20 +105,39 @@ export default function HandoversPage() {
                     </div>
                   </div>
                   <div className="mt-3 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-                    <p>📍 <strong>{h.center}</strong></p>
-                    <p>📅 {h.handover_date} at {h.handover_time}</p>
+                    <p>📍 <strong>{h.center || 'Slot not arranged yet'}</strong></p>
+                    <p>📅 {h.handover_date ? `${h.handover_date}${h.handover_time ? ` at ${h.handover_time}` : ''}` : 'Coordinate via buyer phone below'}</p>
+                    {h.contact_phone && <p>📞 {h.contact_phone}</p>}
                     <p className="mt-1 font-medium text-brand">RWF {Number(h.agreed_price || 0).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
 
               {tab === 'pending' && (
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={() => confirm(h.id)}
+                    disabled={actionId === h.id}
+                    className="flex-1 py-2.5 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-light transition-colors disabled:opacity-50"
+                  >
+                    {actionId === h.id ? 'Working…' : '✅ Confirm Arrangement'}
+                  </button>
+                  <button
+                    onClick={() => complete(h.id)}
+                    disabled={actionId === h.id}
+                    className="flex-1 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    Mark Sold Directly
+                  </button>
+                </div>
+              )}
+              {tab === 'confirmed' && (
                 <button
-                  onClick={() => confirm(h.id)}
+                  onClick={() => complete(h.id)}
                   disabled={actionId === h.id}
                   className="mt-4 w-full py-2.5 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-light transition-colors disabled:opacity-50"
                 >
-                  {actionId === h.id ? 'Confirming…' : '✅ Confirm Handover — Mark Sold'}
+                  {actionId === h.id ? 'Working…' : '🤝 Handover Done — Mark Sold'}
                 </button>
               )}
             </div>

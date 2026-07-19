@@ -85,6 +85,9 @@ router.get('/admin/all', requireAdmin, async (req, res) => {
 // PATCH /submissions/:id — admin updates status (and optionally schedules inspection)
 router.patch('/:id', requireAdmin, async (req, res) => {
   const { status, admin_notes, center, scheduled_date, scheduled_time } = req.body;
+  if (status === 'scheduled' && (!center || !scheduled_date || !scheduled_time)) {
+    return res.status(400).json({ error: 'Scheduling requires center, scheduled_date, and scheduled_time' });
+  }
   try {
     const { rows } = await pool.query(
       `UPDATE submissions

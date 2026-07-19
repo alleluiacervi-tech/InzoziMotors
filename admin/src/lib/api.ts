@@ -57,8 +57,12 @@ export const api = {
   // Handovers
   handovers: (status = 'pending') =>
     request<any[]>(`/handovers?status=${status}`),
-  confirmHandover: (id: string) =>
-    request<any>(`/handovers/${id}/confirm`, { method: 'PATCH' }),
+  confirmHandover: (id: string, data: any = {}) =>
+    request<any>(`/handovers/${id}/confirm`, { method: 'PATCH', body: JSON.stringify(data) }),
+  completeHandover: (id: string) =>
+    request<any>(`/handovers/${id}/complete`, { method: 'PATCH' }),
+  updateCar: (id: string, data: any) =>
+    request<any>(`/cars/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Listings — admin-only route that accepts any status
   cars: (params?: Record<string, string>) => {

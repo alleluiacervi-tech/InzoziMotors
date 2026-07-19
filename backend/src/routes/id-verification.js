@@ -1,9 +1,34 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+const fs = require('fs');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadIdDocs } = require('../middleware/upload');
 
 const router = express.Router();
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
+
+// GET /id-verification/doc/:filename — admin-only access to KYC files.
+// Accepts the JWT via Authorization header OR ?token= (so the admin dashboard's
+// <a>/<img> can load it — browser navigation can't set headers). KYC documents
+// are never served by the public static middleware.
+router.get('/doc/:filename', (req, res) => {
+  const header = req.headers.authorization;
+  const token = header && header.startsWith('Bearer ') ? header.slice(7) : req.query.token;
+  if (!token) return res.status(401).json({ error: 'No token provided' });
+  let user;
+  try { user = jwt.verify(token, process.env.JWT_SECRET); }
+  catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
+  if (user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+
+  const filename = path.basename(req.params.filename); // strip any traversal
+  const filePath = path.join(UPLOAD_DIR, 'id-docs', filename);
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'File not found' });
+  });
+});
 
 // POST /id-verification — seller uploads national ID + selfie
 router.post('/', requireAuth, uploadIdDocs.fields([
@@ -17,43 +42,44 @@ router.post('/', requireAuth, uploadIdDocs.fields([
   }
   try {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const docUrls = {
-      id_front: `${baseUrl}/uploads/id-docs/${files.id_front[0].filename}`,
-      id_back:  `${baseUrl}/uploads/id-docs/${files.id_back[0].filename}`,
-      selfie:   `${baseUrl}/uploads/id-docs/${files.selfie[0].filename}`,
-    };
+    // Point at the admin-gated file route, never the public static path
+    const url = (f) => `${baseUrl}/id-verification/doc/${f[0].filename}`;
 
+    // Persist onto the user row (single source of truth; resubmission overwrites)
     await pool.query(
-      `UPDATE users SET id_verified = 'pending' WHERE id = $1`,
-      [req.user.id]
+      `UPDATE users
+       SET id_verified = 'pending',
+           id_front_url = $2, id_back_url = $3, selfie_url = $4,
+           id_submitted_at = NOW()
+       WHERE id = $1`,
+      [req.user.id, url(files.id_front), url(files.id_back), url(files.selfie)]
     );
 
-    // Store doc URLs in a verification record (use notifications meta for now)
+    // Informational notification only — no document URLs stored in meta
     await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
+      `INSERT INTO notifications (user_id, type, title, body)
        VALUES ($1, 'listing_update', 'ID verification submitted',
-               'Your documents are under review. We will notify you within 24 hours.', $2)`,
-      [req.user.id, JSON.stringify({ type: 'id_verification', docs: docUrls, userId: req.user.id })]
+               'Your documents are under review. We will notify you within 24 hours.')`,
+      [req.user.id]
     );
 
     res.json({ status: 'pending', message: 'Documents submitted for review' });
   } catch (err) {
-    console.error(err.message);
+    console.error('id-verification submit error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// GET /id-verification/queue — admin: pending verifications
+// GET /id-verification/queue — admin: pending verifications (flat, deduped)
 router.get('/queue', requireAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT u.id, u.name, u.email, u.id_verified, u.created_at,
-              n.meta AS docs, n.created_at AS submitted_at
-       FROM users u
-       LEFT JOIN notifications n ON n.meta->>'userId' = u.id::text
-         AND n.meta->>'type' = 'id_verification'
-       WHERE u.id_verified = 'pending'
-       ORDER BY u.created_at ASC`
+      `SELECT id, name, email, phone, id_verified,
+              id_front_url, id_back_url, selfie_url,
+              id_submitted_at, created_at
+       FROM users
+       WHERE id_verified = 'pending'
+       ORDER BY id_submitted_at ASC NULLS LAST`
     );
     res.json(rows);
   } catch (err) {
@@ -61,38 +87,43 @@ router.get('/queue', requireAdmin, async (req, res) => {
   }
 });
 
-// PATCH /id-verification/:userId — admin approves or rejects
+// PATCH /id-verification/:userId — admin approves or rejects (idempotent)
 router.patch('/:userId', requireAdmin, async (req, res) => {
   const { decision } = req.body; // 'approved' | 'rejected'
   if (!['approved', 'rejected'].includes(decision)) {
     return res.status(400).json({ error: 'decision must be approved or rejected' });
   }
+  const client = await pool.connect();
   try {
-    await pool.query(
-      `UPDATE users SET id_verified = $1 WHERE id = $2`,
-      [decision, req.params.userId]
-    );
+    await client.query('BEGIN');
+    const cur = await client.query('SELECT id_verified FROM users WHERE id = $1 FOR UPDATE', [req.params.userId]);
+    if (!cur.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'User not found' }); }
+    const wasApproved = cur.rows[0].id_verified === 'approved';
+
+    await client.query(`UPDATE users SET id_verified = $1 WHERE id = $2`, [decision, req.params.userId]);
+
+    // Award the 30-pt ID component only on the first approval
+    if (decision === 'approved' && !wasApproved) {
+      await client.query(`UPDATE users SET trust_score = LEAST(trust_score + 30, 100) WHERE id = $1`, [req.params.userId]);
+    }
 
     const msg = decision === 'approved'
       ? 'Your ID has been verified. You can now submit cars for inspection.'
       : 'Your ID verification was not accepted. Please resubmit clearer photos.';
-
-    await pool.query(
+    await client.query(
       `INSERT INTO notifications (user_id, type, title, body)
        VALUES ($1, 'listing_update', $2, $3)`,
       [req.params.userId, `ID ${decision}`, msg]
     );
 
-    if (decision === 'approved') {
-      await pool.query(
-        `UPDATE users SET trust_score = trust_score + 30 WHERE id = $1`,
-        [req.params.userId]
-      );
-    }
-
+    await client.query('COMMIT');
     res.json({ success: true, decision });
   } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('id-verification decision error:', err.message);
     res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 

@@ -22,6 +22,13 @@ export default function UsersPage() {
 
   useEffect(() => { load() }, [])
 
+  // KYC files are admin-gated; append the token so browser navigation can load them
+  const docUrl = (url: string) => {
+    if (!url) return url
+    const t = typeof window !== 'undefined' ? localStorage.getItem('inzozi_admin_token') : null
+    return t ? `${url}${url.includes('?') ? '&' : '?'}token=${t}` : url
+  }
+
   async function decide(userId: string, decision: 'approved' | 'rejected') {
     if (!window.confirm(`${decision === 'approved' ? 'Approve' : 'Reject'} this ID verification?`)) return
     setActionId(userId)
@@ -73,7 +80,7 @@ export default function UsersPage() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {u.id_front_url && (
                       <a
-                        href={u.id_front_url}
+                        href={docUrl(u.id_front_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-xs text-brand underline hover:text-brand-light"
@@ -83,7 +90,7 @@ export default function UsersPage() {
                     )}
                     {u.id_back_url && (
                       <a
-                        href={u.id_back_url}
+                        href={docUrl(u.id_back_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-xs text-brand underline hover:text-brand-light"
@@ -93,7 +100,7 @@ export default function UsersPage() {
                     )}
                     {u.selfie_url && (
                       <a
-                        href={u.selfie_url}
+                        href={docUrl(u.selfie_url)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-xs text-brand underline hover:text-brand-light"

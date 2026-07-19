@@ -305,7 +305,7 @@ export function AppProvider({ children }) {
         image: h.car_images?.[0] || 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
         seller: h.seller_name,
       },
-      status: h.status === 'pending' ? 'reserved' : h.status === 'complete' ? 'complete' : 'cancelled',
+      status: h.status === 'pending' ? 'reserved' : h.status === 'confirmed' ? 'booked' : h.status === 'complete' ? 'complete' : 'cancelled',
       center: h.center,
       date: h.handover_date,
       time: h.handover_time,

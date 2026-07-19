@@ -204,8 +204,47 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 // PATCH /cars/:id/status  (admin changes status)
+// PATCH /cars/:id — admin edits listing fields; price changes are recorded
+router.patch('/:id', requireAdmin, async (req, res) => {
+  const EDITABLE = ['title', 'price', 'description', 'location', 'mileage', 'color', 'drive_side', 'images'];
+  const updates = [];
+  const params = [];
+  for (const field of EDITABLE) {
+    if (req.body[field] !== undefined) {
+      params.push(req.body[field]);
+      updates.push(`${field} = $${params.length}`);
+    }
+  }
+  if (!updates.length) return res.status(400).json({ error: 'No editable fields provided' });
+  if (req.body.price !== undefined && (!Number.isFinite(Number(req.body.price)) || Number(req.body.price) < 0)) {
+    return res.status(400).json({ error: 'price must be a non-negative number' });
+  }
+  try {
+    const before = await pool.query('SELECT price FROM cars WHERE id = $1', [req.params.id]);
+    if (!before.rows.length) return res.status(404).json({ error: 'Car not found' });
+
+    params.push(req.params.id);
+    const { rows } = await pool.query(
+      `UPDATE cars SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,
+      params
+    );
+
+    if (req.body.price !== undefined && Number(req.body.price) !== Number(before.rows[0].price)) {
+      await pool.query(
+        `INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)`,
+        [req.params.id, Number(req.body.price), req.user.id]
+      );
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('edit car error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.patch('/:id/status', requireAdmin, async (req, res) => {
-  const { status } = req.body;
+  // 'removed' is the admin-dashboard verb for archiving a listing
+  const status = req.body.status === 'removed' ? 'archived' : req.body.status;
   const allowed = ['under_review', 'scheduled', 'inspecting', 'live', 'reserved', 'sold', 'archived'];
   if (!allowed.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
