@@ -8,8 +8,11 @@ export const colors = {
   navyMid: '#281F1C',
   navyLight: '#3A2D29',
 
-  // Brand Red — Encar crimson (#DB0632, sampled from encar.com's own mark);
-  // used sparingly, as an accent
+  // Brand Red — Encar crimson (#DB0632, sampled from encar.com's own mark).
+  // DISCIPLINE: red appears ONLY as (1) a price, (2) a primary action,
+  // (3) a selected/active state, (4) the Certified+ tier badge, or
+  // (5) an inline action link. Informational icons, section decorations
+  // and menu rows are textSecondary — never red.
   primary: '#DB0632',
   primaryBright: '#F02050',
   blueLight: '#F97C9B',

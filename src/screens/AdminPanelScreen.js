@@ -25,7 +25,7 @@ function SubmissionsTab({ submissions, onApprove, onReject }) {
     <View style={styles.tabContent}>
       {toReview.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="checkmark-done-circle" size={48} color={colors.primary} />
+          <Ionicons name="checkmark-done-circle" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyTitle}>Queue is clear</Text>
           <Text style={styles.emptySub}>New seller submissions will appear here for review.</Text>
         </View>
@@ -94,7 +94,7 @@ function HandoversTab({ handovers, onConfirm }) {
     return (
       <View style={styles.tabContent}>
         <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={48} color={colors.primary} />
+          <Ionicons name="calendar-outline" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyTitle}>No handovers yet</Text>
           <Text style={styles.emptySub}>Booked handover slots will appear here.</Text>
         </View>
@@ -183,7 +183,7 @@ function QueueTab({ verifications, onApprove, onReject }) {
     <View style={styles.tabContent}>
       {pending.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="checkmark-done-circle" size={48} color={colors.primary} />
+          <Ionicons name="checkmark-done-circle" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyTitle}>All clear!</Text>
           <Text style={styles.emptySub}>No pending ID verifications.</Text>
         </View>
@@ -253,7 +253,7 @@ function InspectionsTab({ inspections, navigation }) {
                 <Text style={styles.inspSeller}>{i.seller}</Text>
                 <Text style={styles.inspCar}>{i.car}</Text>
                 <View style={styles.inspMeta}>
-                  <Ionicons name="time-outline" size={12} color={colors.primary} />
+                  <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
                   <Text style={[styles.inspMetaText, { color: colors.primary }]}>{i.time}</Text>
                   <View style={styles.inspMetaDot} />
                   <Ionicons name="location-outline" size={12} color={colors.textMuted} />

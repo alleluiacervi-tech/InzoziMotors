@@ -288,7 +288,7 @@ export default function SellerDashboardScreen({ navigation }) {
           ].map((item, i) => (
             <View key={i} style={styles.howRow}>
               <View style={styles.howDot}>
-                <Ionicons name={item.icon} size={14} color={colors.primary} />
+                <Ionicons name={item.icon} size={14} color={colors.textSecondary} />
               </View>
               <Text style={styles.howText}>{item.text}</Text>
             </View>

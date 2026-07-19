@@ -59,7 +59,7 @@ export default function ReferralScreen({ navigation }) {
             <Text style={styles.code}>{referralCode}</Text>
           </View>
           <Pressable style={styles.shareBtn} onPress={handleShare}>
-            <Ionicons name="share-social-outline" size={18} color={colors.primary} />
+            <Ionicons name="share-social-outline" size={18} color={colors.textSecondary} />
             <Text style={styles.shareBtnText}>Share via WhatsApp, SMS or link</Text>
           </Pressable>
         </LinearGradient>
@@ -97,7 +97,7 @@ export default function ReferralScreen({ navigation }) {
                 <Text style={styles.stepNumText}>{item.step}</Text>
               </View>
               <View style={styles.stepIcon}>
-                <Ionicons name={item.icon} size={18} color={colors.primary} />
+                <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.stepTitle}>{item.title}</Text>

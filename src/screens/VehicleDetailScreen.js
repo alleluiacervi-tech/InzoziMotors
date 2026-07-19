@@ -232,7 +232,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           {monthly && !isAuction && (
             <Pressable style={styles.financeStrip} onPress={() => navigation.navigate('Financing', { car })}>
               <View style={styles.financeIcon}>
-                <Ionicons name="card-outline" size={18} color={colors.primary} />
+                <Ionicons name="card-outline" size={18} color={colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.financeTitle}>
@@ -271,7 +271,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <View style={styles.specs}>
             {SPECS.map((s) => (
               <View key={s.key} style={styles.specCard}>
-                <Ionicons name={s.icon} size={20} color={colors.primary} />
+                <Ionicons name={s.icon} size={20} color={colors.textSecondary} />
                 <Text style={styles.specValue}>
                   {s.key === 'mileage' ? formatMiles(car.mileage) : String(car[s.key])}
                 </Text>
@@ -341,7 +341,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
           <Pressable style={[styles.inspectionRow, { marginTop: 8 }]} onPress={() => navigation.navigate('VehicleHistory', { car })}>
             <View style={[styles.inspectionIcon, { backgroundColor: colors.greenTint }]}>
-              <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+              <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.inspectionTitle}>Vehicle History Report</Text>
@@ -383,7 +383,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
             ].map((item, idx) => (
               <View key={idx} style={styles.highlightCard}>
                 <View style={styles.highlightIcon}>
-                  <Ionicons name={item.icon} size={20} color={colors.primary} />
+                  <Ionicons name={item.icon} size={20} color={colors.textSecondary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.highlightTitle}>{item.title}</Text>
@@ -428,7 +428,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           {/* Duty calculator link */}
           <Pressable style={styles.dutyLink} onPress={() => navigation.navigate('DutyCalculator')}>
             <View style={styles.dutyLinkIcon}>
-              <Ionicons name="calculator-outline" size={18} color={colors.primary} />
+              <Ionicons name="calculator-outline" size={18} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.dutyLinkTitle}>Estimate import duty</Text>

@@ -202,7 +202,7 @@ export default function RentalBookingScreen({ navigation, route }) {
         <Text style={styles.sectionTitle}>Pickup location</Text>
         <View style={styles.centerCard}>
           <View style={styles.centerIcon}>
-            <Ionicons name="location" size={16} color={colors.primary} />
+            <Ionicons name="location" size={16} color={colors.textSecondary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.centerName}>{homeCenter.name}</Text>
@@ -268,7 +268,7 @@ export default function RentalBookingScreen({ navigation, route }) {
 function ConfirmRow({ icon, label, value, last }) {
   return (
     <View style={[styles.confirmRow, !last && styles.confirmRowBorder]}>
-      <Ionicons name={icon} size={17} color={colors.primary} />
+      <Ionicons name={icon} size={17} color={colors.textSecondary} />
       <Text style={styles.confirmRowLabel}>{label}</Text>
       <Text style={styles.confirmRowValue} numberOfLines={1}>{value}</Text>
     </View>

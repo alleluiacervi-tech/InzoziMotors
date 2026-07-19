@@ -139,14 +139,14 @@ export default function SearchResultsScreen({ navigation, route }) {
                       Alert.alert('Search saved', "We'll notify you when new matching cars are listed.");
                     }}
                   >
-                    <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
+                    <Ionicons name="bookmark-outline" size={16} color={colors.textSecondary} />
                   </Pressable>
                 )}
                 <Pressable style={styles.layoutBtn} onPress={() => setLayout(isGrid ? 'list' : 'grid')} hitSlop={6}>
-                  <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.primary} />
+                  <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
                 </Pressable>
                 <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')}>
-                  <Ionicons name="map-outline" size={16} color={colors.primary} />
+                  <Ionicons name="map-outline" size={16} color={colors.textSecondary} />
                   <Text style={styles.mapText}>Map</Text>
                 </Pressable>
               </View>

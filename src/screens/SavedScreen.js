@@ -90,7 +90,7 @@ function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
     <View style={styles.empty}>
       <View style={styles.emptyIconOuter}>
         <View style={styles.emptyIconInner}>
-          <Ionicons name={icon} size={36} color={colors.primary} />
+          <Ionicons name={icon} size={36} color={colors.textSecondary} />
         </View>
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
@@ -98,7 +98,7 @@ function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
       <View style={styles.emptyFeatures}>
         {features.map((f) => (
           <View key={f} style={styles.emptyFeature}>
-            <Ionicons name="checkmark-circle" size={15} color={colors.primary} />
+            <Ionicons name="checkmark-circle" size={15} color={colors.textSecondary} />
             <Text style={styles.emptyFeatureText}>{f}</Text>
           </View>
         ))}

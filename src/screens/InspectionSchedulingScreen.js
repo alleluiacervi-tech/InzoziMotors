@@ -223,7 +223,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
               <ConfirmRow icon="time-outline" label="Time" value={selectedTime} />
             </View>
             <View style={styles.confirmNote}>
-              <Ionicons name="information-circle-outline" size={14} color={colors.primary} />
+              <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
               <Text style={styles.confirmNoteText}>Please arrive 10 minutes early. Bring all available service records.</Text>
             </View>
           </View>
@@ -245,7 +245,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
 function ConfirmRow({ icon, label, value }) {
   return (
     <View style={styles.confirmRow}>
-      <Ionicons name={icon} size={16} color={colors.primary} />
+      <Ionicons name={icon} size={16} color={colors.textSecondary} />
       <Text style={styles.confirmRowLabel}>{label}</Text>
       <Text style={styles.confirmRowValue}>{value}</Text>
     </View>

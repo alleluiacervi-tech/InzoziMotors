@@ -79,7 +79,7 @@ export default function InzoziPromiseScreen({ navigation }) {
         {PROMISES.map((p, i) => (
           <View key={p.title} style={styles.card}>
             <View style={styles.cardIcon}>
-              <Ionicons name={p.icon} size={20} color={colors.primary} />
+              <Ionicons name={p.icon} size={20} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={styles.cardTitleRow}>

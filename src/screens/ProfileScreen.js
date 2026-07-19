@@ -95,7 +95,7 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.nameRow}>
               <Text style={styles.name}>{currentUser.name}</Text>
               {idVerificationStatus === 'approved' && (
-                <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+                <Ionicons name="checkmark-circle" size={18} color={colors.green} />
               )}
             </View>
             <Text style={styles.email}>{currentUser.email}</Text>

@@ -118,7 +118,7 @@ export default function ComparisonScreen({ navigation }) {
           <View style={styles.emptyState}>
             <View style={styles.emptyIconOuter}>
               <View style={styles.emptyIconInner}>
-                <Ionicons name="git-compare-outline" size={36} color={colors.primary} />
+                <Ionicons name="git-compare-outline" size={36} color={colors.textSecondary} />
               </View>
             </View>
             <Text style={styles.emptyTitle}>Add 2 cars to compare</Text>
@@ -128,7 +128,7 @@ export default function ComparisonScreen({ navigation }) {
             <View style={styles.emptyFeatures}>
               {COMPARE_FEATURES.map((f) => (
                 <View key={f} style={styles.emptyFeature}>
-                  <Ionicons name="checkmark-circle" size={15} color={colors.primary} />
+                  <Ionicons name="checkmark-circle" size={15} color={colors.textSecondary} />
                   <Text style={styles.emptyFeatureText}>{f}</Text>
                 </View>
               ))}

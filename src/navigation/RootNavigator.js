@@ -51,6 +51,7 @@ import CarValuationScreen from '../screens/CarValuationScreen';
 // Trust
 import InzoziPromiseScreen from '../screens/InzoziPromiseScreen';
 import BuyingGuideScreen from '../screens/BuyingGuideScreen';
+import ShowroomScreen from '../screens/ShowroomScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -116,6 +117,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="CarValuation" component={CarValuationScreen} />
       <Stack.Screen name="InzoziPromise" component={InzoziPromiseScreen} />
       <Stack.Screen name="BuyingGuide" component={BuyingGuideScreen} />
+      <Stack.Screen name="Showroom" component={ShowroomScreen} options={{ animation: 'fade' }} />
     </Stack.Navigator>
   );
 }

@@ -104,7 +104,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           <View style={styles.specs}>
             {SPEC_ITEMS.map((s) => (
               <View key={s.key} style={styles.specCard}>
-                <Ionicons name={s.icon} size={19} color={colors.primary} />
+                <Ionicons name={s.icon} size={19} color={colors.textSecondary} />
                 <Text style={styles.specValue}>{String(car[s.key])}</Text>
                 <Text style={styles.specLabel}>{s.label}</Text>
               </View>
@@ -167,7 +167,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           <View style={styles.includesGrid}>
             {RENTAL_INCLUDES.map((item) => (
               <View key={item.label} style={styles.includeCard}>
-                <Ionicons name={item.icon} size={18} color={colors.primary} />
+                <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
                 <Text style={styles.includeLabel}>{item.label}</Text>
               </View>
             ))}

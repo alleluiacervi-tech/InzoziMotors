@@ -64,7 +64,7 @@ export default function BuyingGuideScreen({ navigation }) {
             </View>
             <View style={styles.stepCard}>
               <View style={styles.stepHead}>
-                <Ionicons name={s.icon} size={17} color={colors.primary} />
+                <Ionicons name={s.icon} size={17} color={colors.textSecondary} />
                 <Text style={styles.stepTitle}>{s.title}</Text>
               </View>
               <Text style={styles.stepDesc}>{s.desc}</Text>
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   stepLeft: { alignItems: 'center', width: 28 },
   stepNum: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.navyDeep,
     alignItems: 'center', justifyContent: 'center',
   },
   stepNumText: { fontSize: 12, fontFamily: fonts.extraBold, color: '#fff' },

@@ -198,7 +198,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                   onPress={() => handleItemPress(item)}
                 >
                   <View style={styles.menuIconWrap}>
-                    <Ionicons name={item.icon} size={18} color={colors.primary} />
+                    <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
                   </View>
                   <Text style={styles.menuLabel}>{item.label}</Text>
                   {item.isNew && (

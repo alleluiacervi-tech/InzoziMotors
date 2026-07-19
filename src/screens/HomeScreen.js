@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
-  FlatList, Dimensions, ImageBackground,
+  FlatList, Dimensions, ImageBackground, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -103,6 +103,26 @@ export default function HomeScreen({ navigation }) {
     return true;
   });
 
+  // ── Brand showrooms: only brands with 2+ cars earn a window ──
+  const showrooms = Object.values(
+    cars.reduce((acc, c) => {
+      (acc[c.make] = acc[c.make] || { brand: c.make, cars: [] }).cars.push(c);
+      return acc;
+    }, {})
+  )
+    .filter((g) => g.cars.length >= 2)
+    .map((g) => ({
+      ...g,
+      cars: [...g.cars].sort((a, b) => (b.inspectionScore || 0) - (a.inspectionScore || 0)),
+    }))
+    .sort((a, b) => b.cars.length - a.cars.length)
+    .slice(0, 6);
+  const centerWindow = {
+    brand: 'Inzozi Center',
+    subtitle: 'On display in Nyarutarama this week',
+    cars: [...cars].sort((a, b) => getListedDaysAgo(a.id) - getListedDaysAgo(b.id)).slice(0, 5),
+  };
+
   // ── Personalization rails ──
   const allInventory = [...cars, ...rentalCars];
   const recentlyViewed = recentlyViewedIds
@@ -145,7 +165,7 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.topBarRight}>
           <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('MapView')}>
-            <Ionicons name="map-outline" size={20} color={colors.primary} />
+            <Ionicons name="map-outline" size={20} color={colors.textSecondary} />
           </Pressable>
           <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')}>
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
@@ -225,7 +245,7 @@ export default function HomeScreen({ navigation }) {
                 </Text>
               </View>
               <View style={styles.rentHeroIcon}>
-                <Ionicons name="key" size={26} color={colors.primary} />
+                <Ionicons name="key" size={26} color={colors.textSecondary} />
               </View>
             </View>
 
@@ -324,11 +344,47 @@ export default function HomeScreen({ navigation }) {
               onPress={() => navigation.navigate(item.screen)}
             >
               <View style={styles.toolIconCircle}>
-                <Ionicons name={item.icon} size={22} color={colors.primary} />
+                <Ionicons name={item.icon} size={22} color={colors.textSecondary} />
               </View>
               <Text style={styles.toolLabel}>{item.label}</Text>
             </Pressable>
           ))}
+        </View>
+
+        {/* ── SHOWROOMS — walk past the glass ── */}
+        <View style={styles.sectionContainer}>
+          <SectionHeader title="Showrooms" />
+          <FlatList
+            horizontal
+            data={[centerWindow, ...showrooms]}
+            keyExtractor={(w) => w.brand}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalListPadding}
+            snapToInterval={SCREEN_WIDTH * 0.78 + 12}
+            decelerationRate="fast"
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.showroomWindow}
+                onPress={() => navigation.navigate('Showroom', {
+                  title: item.brand,
+                  subtitle: item.subtitle || `${item.cars.length} cars in the showroom`,
+                  cars: item.cars,
+                })}
+              >
+                <Image source={{ uri: item.cars[0].image }} style={styles.showroomPhoto} resizeMode="cover" />
+                <LinearGradient
+                  colors={['transparent', 'rgba(12,10,10,0.88)']}
+                  style={styles.showroomFade}
+                />
+                <View style={styles.showroomCaption}>
+                  <Text style={styles.showroomBrand}>{item.brand}</Text>
+                  <Text style={styles.showroomCount}>
+                    {item.subtitle || `${item.cars.length} cars · view the collection`}
+                  </Text>
+                </View>
+              </Pressable>
+            )}
+          />
         </View>
 
         {/* ── BROWSE BY ORIGIN (Encar-style) ── */}
@@ -600,7 +656,7 @@ const styles = StyleSheet.create({
   },
   tripCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.navyDeep,
     borderRadius: radius.xl,
     marginHorizontal: 16, marginTop: 4, marginBottom: 10,
     padding: 14,
@@ -710,6 +766,19 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   toolItem: { flex: 1, alignItems: 'center', gap: 6 },
+  showroomWindow: {
+    width: SCREEN_WIDTH * 0.78,
+    aspectRatio: 16 / 10,
+    borderRadius: radius.xxl,
+    overflow: 'hidden',
+    marginRight: 12,
+    backgroundColor: '#1C1A1A',
+  },
+  showroomPhoto: { width: '100%', height: '100%' },
+  showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
+  showroomCaption: { position: 'absolute', left: 16, right: 16, bottom: 14 },
+  showroomBrand: { fontSize: 19, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
+  showroomCount: { fontSize: 12, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },
   originChip: {
     paddingHorizontal: 16, paddingVertical: 9,

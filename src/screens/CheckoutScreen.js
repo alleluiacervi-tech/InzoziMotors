@@ -65,7 +65,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
             <View key={s.title} style={[styles.step, i < HOW_IT_WORKS.length - 1 && styles.stepBorder]}>
               <View style={styles.stepNum}><Text style={styles.stepNumText}>{i + 1}</Text></View>
               <View style={styles.stepIcon}>
-                <Ionicons name={s.icon} size={18} color={colors.primary} />
+                <Ionicons name={s.icon} size={18} color={colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.stepTitle}>{s.title}</Text>
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14 },
   stepBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   stepNum: {
-    width: 20, height: 20, borderRadius: 10, backgroundColor: colors.primary,
+    width: 20, height: 20, borderRadius: 10, backgroundColor: colors.navyDeep,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
   },
   stepNumText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff' },
