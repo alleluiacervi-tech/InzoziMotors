@@ -46,6 +46,8 @@ app.use('/id-verification', require('./src/routes/id-verification'));
 app.use('/saved-searches',  require('./src/routes/saved-searches'));
 app.use('/reviews',         require('./src/routes/reviews'));
 app.use('/rentals',         require('./src/routes/rentals'));
+app.use('/referrals',       require('./src/routes/referrals'));
+app.use('/disputes',        require('./src/routes/disputes'));
 app.use('/admin',           require('./src/routes/admin'));
 
 // Health check — PM2 / load balancer uses this
@@ -57,6 +59,10 @@ app.get('/health', (req, res) => {
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 
 app.use((err, req, res, next) => {
+  // Multer and file-filter errors are client mistakes, not server faults
+  if (err && (err.name === 'MulterError' || /image files/i.test(err.message || ''))) {
+    return res.status(400).json({ error: err.message });
+  }
   console.error(err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });

@@ -17,6 +17,12 @@ function makeToken(user) {
 // POST /auth/register
 router.post('/register', async (req, res) => {
   const { name, email, password, role = 'buyer' } = req.body;
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+  if (password && password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'name, email, and password are required' });
   }
@@ -81,6 +87,51 @@ router.get('/me', requireAuth, async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'User not found' });
     res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /auth/me — update own profile
+router.patch('/me', requireAuth, async (req, res) => {
+  const { name, phone, avatar_url } = req.body;
+  if (name !== undefined && !String(name).trim()) {
+    return res.status(400).json({ error: 'name cannot be empty' });
+  }
+  if (phone !== undefined && phone && !/^\+?[0-9 ]{9,16}$/.test(phone)) {
+    return res.status(400).json({ error: 'phone is not a valid phone number' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users
+       SET name = COALESCE($1, name), phone = COALESCE($2, phone),
+           avatar_url = COALESCE($3, avatar_url)
+       WHERE id = $4
+       RETURNING id, name, email, phone, role, id_verified, trust_score, avatar_url`,
+      [name || null, phone || null, avatar_url || null, req.user.id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /auth/change-password
+router.post('/change-password', requireAuth, async (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password || new_password.length < 6) {
+    return res.status(400).json({ error: 'current_password and a new_password of 6+ characters are required' });
+  }
+  try {
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    if (!rows.length || !rows[0].password_hash) {
+      return res.status(400).json({ error: 'Password login is not enabled for this account' });
+    }
+    const ok = await bcrypt.compare(current_password, rows[0].password_hash);
+    if (!ok) return res.status(401).json({ error: 'Current password is incorrect' });
+    const hash = await bcrypt.hash(new_password, 12);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.user.id]);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }

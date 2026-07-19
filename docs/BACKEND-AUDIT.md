@@ -4,6 +4,12 @@
 > (routes, mobile expectations, admin dashboard, schema, blueprint) →
 > cross-reference → per-gap adversarial verification against the code.
 > **All 32 gaps below were CONFIRMED with file-level evidence; 0 refuted.**
+>
+> **STATUS UPDATE (Jul 19 2026):** Tiers 1–3 implemented and smoke-tested (35 checks
+> passing) in commits 7ad2ead + follow-up. Remaining open items: multipart uploads with
+> real files end-to-end, admin dashboard click-test, mobile screens for referrals/disputes
+> wiring, dealer accounts backend, notification push delivery (OneSignal — Phase 8),
+> 36-angle car_photos write path (table exists; upload route still writes cars.images).
 
 ## HIGH — broken in practice, security, or business-critical
 

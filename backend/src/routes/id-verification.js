@@ -5,6 +5,7 @@ const fs = require('fs');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadIdDocs } = require('../middleware/upload');
+const { recomputeTrustScore } = require('../lib/trust');
 
 const router = express.Router();
 
@@ -102,10 +103,8 @@ router.patch('/:userId', requireAdmin, async (req, res) => {
 
     await client.query(`UPDATE users SET id_verified = $1 WHERE id = $2`, [decision, req.params.userId]);
 
-    // Award the 30-pt ID component only on the first approval
-    if (decision === 'approved' && !wasApproved) {
-      await client.query(`UPDATE users SET trust_score = LEAST(trust_score + 30, 100) WHERE id = $1`, [req.params.userId]);
-    }
+    // Trust score is recomputed from components — no ad-hoc increments
+    await recomputeTrustScore(req.params.userId, client);
 
     const msg = decision === 'approved'
       ? 'Your ID has been verified. You can now submit cars for inspection.'

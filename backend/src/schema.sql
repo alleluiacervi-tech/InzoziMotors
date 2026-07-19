@@ -284,3 +284,70 @@ CREATE TABLE IF NOT EXISTS price_history (
   changed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_price_history_car ON price_history(car_id);
+
+-- ─── Revenue — fees recorded at business events (collection is offline) ───────
+CREATE TABLE IF NOT EXISTS platform_fees (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  handover_id  UUID REFERENCES handovers(id),
+  seller_id    UUID NOT NULL REFERENCES users(id),
+  fee_type     TEXT NOT NULL CHECK (fee_type IN ('commission', 'certification', 'featured')),
+  amount       INT NOT NULL CHECK (amount >= 0),
+  status       TEXT NOT NULL DEFAULT 'due' CHECK (status IN ('due', 'paid', 'waived')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_platform_fees_seller ON platform_fees(seller_id);
+
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
+
+-- ─── Inspection centers — capacity-aware scheduling ──────────────────────────
+CREATE TABLE IF NOT EXISTS inspection_centers (
+  id             TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  area           TEXT,
+  address        TEXT,
+  daily_capacity INT NOT NULL DEFAULT 8,
+  active         BOOLEAN NOT NULL DEFAULT TRUE
+);
+INSERT INTO inspection_centers (id, name, area, address, daily_capacity) VALUES
+  ('nyarutarama', 'Nyarutarama Center', 'Nyarutarama', 'KG 9 Ave, Nyarutarama', 12),
+  ('kicukiro',    'Kicukiro Center',    'Kicukiro',    'KN 5 Rd, Kicukiro',      8),
+  ('kimironko',   'Kimironko Center',   'Kimironko',   'KG 28 St, Kimironko',    5)
+ON CONFLICT (id) DO NOTHING;
+
+-- ─── Structured listing photos (36-angle standard) ───────────────────────────
+-- cars.images TEXT[] stays for compatibility; this table adds angle + order.
+CREATE TABLE IF NOT EXISTS car_photos (
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  car_id    UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
+  angle_key TEXT,                      -- e.g. front, rear_left_45, wheel_fl
+  url       TEXT NOT NULL,
+  position  INT NOT NULL DEFAULT 0,
+  UNIQUE (car_id, position)
+);
+
+-- ─── Referrals ───────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS referrals (
+  user_id     UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  code        TEXT UNIQUE NOT NULL,
+  uses        INT NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS referral_redemptions (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code         TEXT NOT NULL REFERENCES referrals(code),
+  redeemed_by  UUID NOT NULL REFERENCES users(id),
+  redeemed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (code, redeemed_by)
+);
+
+-- ─── Disputes — post-handover mediation (7-day return window) ────────────────
+CREATE TABLE IF NOT EXISTS disputes (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  handover_id  UUID NOT NULL REFERENCES handovers(id),
+  raised_by    UUID NOT NULL REFERENCES users(id),
+  reason       TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'rejected')),
+  resolution   TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at  TIMESTAMPTZ
+);

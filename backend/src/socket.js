@@ -15,9 +15,21 @@ module.exports = function attachSocket(io) {
   });
 
   io.on('connection', (socket) => {
-    // Join a conversation room
-    socket.on('join_conversation', (conversationId) => {
-      socket.join(`conv:${conversationId}`);
+    // Join a conversation room — only participants may join (no eavesdropping)
+    socket.on('join_conversation', async (conversationId) => {
+      try {
+        const { rows } = await pool.query(
+          'SELECT 1 FROM conversations WHERE id = $1 AND (buyer_id = $2 OR seller_id = $2)',
+          [conversationId, socket.user.id]
+        );
+        if (rows.length || socket.user.role === 'admin') {
+          socket.join(`conv:${conversationId}`);
+        } else {
+          socket.emit('error', { message: 'Not a participant of this conversation' });
+        }
+      } catch {
+        socket.emit('error', { message: 'Failed to join conversation' });
+      }
     });
 
     socket.on('leave_conversation', (conversationId) => {

@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/', requireAuth, async (req, res) => {
   const {
     make, model, year, mileage, condition, fuel_type, transmission,
-    body_type, color, asking_price, notes,
+    body_type, color, asking_price, notes, reference_images,
   } = req.body;
   if (!make || !model || !year) {
     return res.status(400).json({ error: 'make, model, and year are required' });
@@ -17,11 +17,12 @@ router.post('/', requireAuth, async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO submissions
          (seller_id, make, model, year, mileage, condition, fuel_type,
-          transmission, body_type, color, asking_price, notes, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'under_review')
+          transmission, body_type, color, asking_price, notes, reference_images, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'under_review')
        RETURNING *`,
       [req.user.id, make, model, year, mileage, condition, fuel_type,
-       transmission, body_type, color, asking_price || 0, notes]
+       transmission, body_type, color, asking_price || 0, notes,
+       Array.isArray(reference_images) ? reference_images : null]
     );
     const sub = rows[0];
 

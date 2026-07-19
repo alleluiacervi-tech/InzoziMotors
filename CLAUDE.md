@@ -738,7 +738,16 @@ All screens built and wired. See screen table above for full list.
 - [x] `GET /reviews/trust-score/:userId` — full breakdown (id/sales/response/reviews)
 - [x] Comparison handled client-side (no backend route needed)
 - [x] `GET /admin/stats` + `GET /admin/analytics` + `GET /admin/listings`
-- Not smoke-tested yet: Socket.io realtime chat, multipart file uploads (routes exist)
+- Jul 19 2026 — audit tiers 1–3 fixed & smoke-tested (35 checks): KYC docs admin-gated,
+  ID verification on users columns, handover pending→confirmed→complete with transactions
+  + commission recording (platform_fees), weighted inspection scoring + publish threshold
+  + /inspections/:id/start, admin listing edit + price_history + price-drop and
+  saved-search alerts, trust-score recompute (lib/trust.js), socket join membership check,
+  PATCH /auth/me + change-password, /admin/users search, /cars/seller/mine,
+  /cars/valuation/estimate, /referrals, /disputes, rentals admin CRUD + booking photos,
+  real vehicle history from inspection data, pagination clamps + multer 400s.
+  See docs/BACKEND-AUDIT.md for the source audit.
+- Not smoke-tested yet: Socket.io realtime chat (membership check added), multipart uploads via real files
 
 ### 6D. Connect Mobile App to API — mostly done (Jul 18, 2026)
 - [x] `src/api/client.js` — fetch wrapper, base URL + JWT header (SecureStore)

@@ -28,6 +28,7 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [handover_id, req.user.id, h.seller_id, rating, comment]
     );
+    await recomputeTrustScore(seller_id || req.body.seller_id);
 
     // Update seller trust score based on avg rating
     await pool.query(

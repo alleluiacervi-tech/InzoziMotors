@@ -105,4 +105,24 @@ router.get('/listings', requireAdmin, async (req, res) => {
   }
 });
 
+// GET /admin/users?q= — search users by name/email/phone
+router.get('/users', requireAdmin, async (req, res) => {
+  const { q = '', limit = 25 } = req.query;
+  const safeLimit = Math.min(Math.max(parseInt(limit) || 25, 1), 100);
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, name, email, phone, role, id_verified, trust_score,
+              completed_sales, created_at
+       FROM users
+       WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [`%${q}%`, safeLimit]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

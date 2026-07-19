@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { recomputeTrustScore } = require('../lib/trust');
 
 const router = express.Router();
 
@@ -228,6 +229,18 @@ router.patch('/:id/complete', requireAdmin, async (req, res) => {
       await client.query(
         'UPDATE users SET completed_sales = completed_sales + 1 WHERE id = $1', [h.seller_id]
       );
+      await recomputeTrustScore(h.seller_id, client);
+
+      // Record the success commission — the revenue event of the business model
+      const rate = parseFloat(process.env.COMMISSION_RATE || '0.05');
+      const commission = Math.round((h.agreed_price || 0) * rate);
+      if (commission > 0) {
+        await client.query(
+          `INSERT INTO platform_fees (handover_id, seller_id, fee_type, amount, status)
+           VALUES ($1, $2, 'commission', $3, 'due')`,
+          [h.id, h.seller_id, commission]
+        );
+      }
 
       const carRes = await client.query('SELECT title FROM cars WHERE id = $1', [h.car_id]);
       const carTitle = carRes.rows[0]?.title || 'your car';

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,6 +6,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
 import { VEHICLE_HISTORY } from '../data/inspectionData';
+import inspectionsApi from '../api/inspections';
 
 function HistoryCard({ icon, iconBg, iconColor, title, value, sub, verified, warn }) {
   return (
@@ -59,7 +60,35 @@ function RRAStamp({ paid }) {
 export default function VehicleHistoryScreen({ navigation, route }) {
   const car = route.params?.car;
   const carId = car?.id || 'default';
-  const history = VEHICLE_HISTORY[carId] || VEHICLE_HISTORY.default;
+
+  // API cars (UUID ids) get the real history from the backend; demo cars fall
+  // back to bundled data. API fields are mapped onto the screen's shape.
+  const [apiHistory, setApiHistory] = useState(null);
+  useEffect(() => {
+    if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(car?.id || '')) return;
+    inspectionsApi.getVehicleHistory(car.id)
+      .then((h) => setApiHistory({
+        ...VEHICLE_HISTORY.default,
+        accidents: 0,
+        accidentLabel: h.accident_history,
+        mileageVerified: !!h.mileage_verified,
+        mileageNote: h.mileage_verified
+          ? 'Odometer verified at the 150-pt inspection'
+          : 'Not yet verified — inspection pending',
+        importOrigin: h.import_origin || 'Unknown',
+        importYear: h.year,
+        importNote: h.drive_side ? `${h.drive_side} drive` : '',
+        rraDutyPaid: h.rra_duty_paid === 'pass',
+        rraDutyNote: `RRA duty check: ${h.rra_duty_paid}`,
+        insuranceActive: h.insurance_valid === 'pass',
+        insuranceNote: `Insurance check at inspection: ${h.insurance_valid}`,
+        chassisNumber: h.vin || 'On file at Inzozi',
+        vinVerified: !!h.vin_verified,
+      }))
+      .catch(() => {});
+  }, [car?.id]);
+
+  const history = apiHistory || VEHICLE_HISTORY[carId] || VEHICLE_HISTORY.default;
 
   return (
     <Screen background={colors.bg}>

@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { uploadPhotos } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -201,6 +202,96 @@ router.patch('/bookings/:id/status', requireAuth, async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('rental status error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── Admin fleet CRUD ──────────────────────────────────────────────────────────
+
+// POST /rentals — admin adds a car to the fleet
+router.post('/', requireAdmin, async (req, res) => {
+  const { title, make, model, year, category, seats, fuel, transmission, mileage,
+          daily_rate, weekly_rate, deposit, min_days, inspection_score, location, images } = req.body;
+  if (!title || !daily_rate) {
+    return res.status(400).json({ error: 'title and daily_rate are required' });
+  }
+  if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) {
+    return res.status(400).json({ error: 'daily_rate must be a positive number' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO rental_cars
+         (title, make, model, year, category, seats, fuel, transmission, mileage,
+          daily_rate, weekly_rate, deposit, min_days, inspection_score, location, images)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+       RETURNING *`,
+      [title, make, model, year, category, seats || 5, fuel, transmission, mileage,
+       daily_rate, weekly_rate || daily_rate * 6, deposit || 0, min_days || 1,
+       inspection_score, location, images || []]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('rental create error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /rentals/:id — admin edits fleet car (rates, status active|maintenance|retired)
+router.patch('/:id', requireAdmin, async (req, res) => {
+  const EDITABLE = ['title', 'daily_rate', 'weekly_rate', 'deposit', 'min_days',
+                    'location', 'images', 'status', 'mileage'];
+  const updates = [];
+  const params = [];
+  for (const field of EDITABLE) {
+    if (req.body[field] !== undefined) {
+      params.push(req.body[field]);
+      updates.push(`${field} = $${params.length}`);
+    }
+  }
+  if (!updates.length) return res.status(400).json({ error: 'No editable fields provided' });
+  if (req.body.status && !['active', 'maintenance', 'retired'].includes(req.body.status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+  try {
+    params.push(req.params.id);
+    const { rows } = await pool.query(
+      `UPDATE rental_cars SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /rentals/bookings/:id/photos — condition photos at pickup/return
+// (renter documents their own booking; staff photos come via the same route as admin)
+router.post('/bookings/:id/photos', requireAuth, uploadPhotos.array('photos', 12), async (req, res) => {
+  if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
+  const { stage = 'pickup' } = req.body; // pickup | return
+  if (!['pickup', 'return'].includes(stage)) {
+    return res.status(400).json({ error: 'stage must be pickup or return' });
+  }
+  try {
+    const owner = req.user.role === 'admin' ? '' : ' AND renter_id = $2';
+    const params = req.user.role === 'admin' ? [req.params.id] : [req.params.id, req.user.id];
+    const cur = await pool.query(`SELECT * FROM rental_bookings WHERE id = $1${owner}`, params);
+    if (!cur.rows.length) return res.status(404).json({ error: 'Booking not found' });
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const urls = req.files.map((f) => `${baseUrl}/uploads/${f.destination.split('/uploads/')[1] || ''}/${f.filename}`.replace(/\/+/g, '/').replace(':/', '://'));
+    const col = stage === 'pickup' ? 'pickup_record' : 'return_record';
+    const { rows } = await pool.query(
+      `UPDATE rental_bookings
+       SET ${col} = COALESCE(${col}, '{}'::jsonb) || jsonb_build_object('photos', $1::jsonb)
+       WHERE id = $2
+       RETURNING *`,
+      [JSON.stringify(urls), req.params.id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('booking photos error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

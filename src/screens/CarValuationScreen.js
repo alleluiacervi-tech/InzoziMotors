@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
+import api from '../api/client';
 
 const MAKES = ['Toyota', 'Honda', 'Subaru', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Mazda', 'Nissan', 'Volkswagen'];
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
