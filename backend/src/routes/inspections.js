@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadPhotos } = require('../middleware/upload');
+const { matchSavedSearches } = require('../lib/alerts');
 
 const router = express.Router();
 
@@ -21,7 +22,10 @@ const ITEM_TO_CATEGORY = {};
 for (const [cat, def] of Object.entries(CATEGORY_WEIGHTS)) {
   for (const item of def.items) ITEM_TO_CATEGORY[item] = cat;
 }
-const PUBLISH_THRESHOLD = 70; // % — below this, admin reviews before anything goes live
+// Canonical scale is the 150-point score used everywhere (app tiers, seeds,
+// display "/150"). 105/150 = 70% — below this, admin reviews before publish.
+const SCORE_MAX = 150;
+const PUBLISH_THRESHOLD = 105;
 
 function computeWeightedScore(checklistResults) {
   const value = (v) => (v === 'pass' ? 1 : v === 'flag' ? 0.5 : 0);
@@ -49,7 +53,7 @@ function computeWeightedScore(checklistResults) {
     earned += (other.got / other.count) * w;
     total += w;
   }
-  return total > 0 ? Math.round((earned / total) * 100) : 0;
+  return total > 0 ? Math.round((earned / total) * SCORE_MAX) : 0;
 }
 
 
@@ -211,6 +215,7 @@ router.post('/:id/complete', requireAdmin, async (req, res) => {
     const passed = score >= PUBLISH_THRESHOLD;
 
     // Publish only when a listing exists AND the car clears the threshold.
+    let autoPublished = false;
     if (insp.car_id && passed) {
       await client.query(
         `UPDATE cars
@@ -218,6 +223,7 @@ router.post('/:id/complete', requireAdmin, async (req, res) => {
          WHERE id = $2`,
         [score, insp.car_id]
       );
+      autoPublished = true;
     } else if (insp.car_id) {
       await client.query(
         `UPDATE cars SET inspected = TRUE, inspection_score = $1 WHERE id = $2`,
@@ -234,12 +240,12 @@ router.post('/:id/complete', requireAdmin, async (req, res) => {
 
     const subRes = await client.query('SELECT seller_id FROM submissions WHERE id = $1', [insp.submission_id]);
     if (subRes.rows.length) {
-      const grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D';
+      const grade = score >= 128 ? 'A' : score >= 105 ? 'B' : score >= 83 ? 'C' : 'D';
       const body = insp.car_id && passed
-        ? `Your car passed the 150-point inspection with a score of ${score}% (Grade ${grade}). It is now live on the marketplace.`
+        ? `Your car passed the 150-point inspection with a score of ${score}/150 (Grade ${grade}). It is now live on the marketplace.`
         : passed
-          ? `Your car scored ${score}% (Grade ${grade}) on the 150-point inspection. Our team is preparing your listing — it goes live shortly.`
-          : `Your inspection report is ready (score ${score}%, Grade ${grade}). Some items need attention — our team will contact you about next steps.`;
+          ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team is preparing your listing — it goes live shortly.`
+          : `Your inspection report is ready (score ${score}/150, Grade ${grade}). Some items need attention — our team will contact you about next steps.`;
       await client.query(
         `INSERT INTO notifications (user_id, type, title, body, meta)
          VALUES ($1, 'listing_update', $2, $3, $4)`,
@@ -251,6 +257,15 @@ router.post('/:id/complete', requireAdmin, async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    // Saved-search alerts fire on BOTH publish paths (manual POST /cars and
+    // this auto-publish). Fire-and-forget after commit.
+    if (autoPublished) {
+      pool.query('SELECT * FROM cars WHERE id = $1', [insp.car_id])
+        .then(({ rows }) => rows[0] && matchSavedSearches(rows[0]))
+        .catch(() => {});
+    }
+
     res.json({ success: true, score, published: !!(insp.car_id && passed) });
   } catch (err) {
     await client.query('ROLLBACK');

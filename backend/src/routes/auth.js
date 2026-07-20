@@ -7,8 +7,9 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 function makeToken(user) {
+  // name is in the payload so socket messages can carry sender_name
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, name: user.name },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
   );

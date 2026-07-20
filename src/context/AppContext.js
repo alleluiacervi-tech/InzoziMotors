@@ -139,14 +139,16 @@ export function AppProvider({ children }) {
   const [rentalCars, setRentalCars] = useState(RENTAL_CARS);
   const [rentalBookings, setRentalBookings] = useState([]);
   const bookRental = useCallback(async (booking) => {
+    let bookingId;
     try {
-      await rentalsApi.bookRental(booking.carId, {
+      const created = await rentalsApi.bookRental(booking.carId, {
         start_date: booking.startDateISO,
         days: booking.days,
         pickup_window: booking.time,
         airport_pickup: !!booking.airportPickup,
         center: booking.center,
       });
+      bookingId = created?.id || created?.booking_ref;
       const mine = await rentalsApi.getMyBookings();
       setRentalBookings(mine.map(mapRentalBooking));
     } catch (err) {
@@ -156,6 +158,7 @@ export function AppProvider({ children }) {
         status: 'confirmed',
         ...booking,
       };
+      bookingId = newBooking.id;
       setRentalBookings((prev) => [newBooking, ...prev]);
     }
     setNotifications((prev) => [{
@@ -167,7 +170,7 @@ export function AppProvider({ children }) {
       date: 'Today',
       read: false,
     }, ...prev]);
-    return newBooking.id;
+    return bookingId;
   }, []);
   const updateRentalBookingStatus = useCallback((id, status, record = null) => {
     // Optimistic local update; backend sync is best-effort
@@ -277,9 +280,15 @@ export function AppProvider({ children }) {
 
   const mapSubmission = useCallback((sub) => {
     const dateStr = sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    // Backend columns are inspection_center / inspection_date / inspection_time
+    const center = sub.inspection_center || sub.center || null;
+    const inspectionWhen = [sub.inspection_date, sub.inspection_time].filter(Boolean).join(' · ');
+
     let detail = 'Our team is reviewing your submission';
-    if (sub.status === 'scheduled') {
-      detail = `Inspection scheduled at ${sub.center || 'Kigali Center'}`;
+    if (sub.status === 'approved') {
+      detail = 'Approved — book your inspection at any Inzozi center';
+    } else if (sub.status === 'scheduled') {
+      detail = `Inspection: ${inspectionWhen || 'booked'}${center ? ` · ${center}` : ''}`;
     } else if (sub.status === 'live') {
       detail = 'Active listing live on marketplace';
     } else if (sub.status === 'rejected') {
@@ -297,8 +306,8 @@ export function AppProvider({ children }) {
       submittedDate: dateStr,
       status: sub.status,
       image: sub.car_images?.[0] || sub.reference_images?.[0] || 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
-      inspectionDate: sub.status === 'scheduled' ? 'Scheduled' : null,
-      center: sub.center,
+      inspectionDate: inspectionWhen || null,
+      center,
       listingId: sub.car_id,
       statusDetail: detail,
     };
@@ -306,7 +315,8 @@ export function AppProvider({ children }) {
 
   const mapHandover = useCallback((h) => {
     return {
-      id: h.booking_id,
+      id: h.id,                    // UUID — what the API routes match on
+      bookingRef: h.booking_id,    // 'BK-…' — display only
       car: {
         id: h.car_id,
         title: h.car_title,
@@ -394,6 +404,7 @@ export function AppProvider({ children }) {
       minDays: rc.min_days, inspected: rc.inspected, inspectionScore: rc.inspection_score,
       rating: Number(rc.rating) || 0, trips: rc.trips, location: rc.location,
       image: rc.images?.[0] || null, images: rc.images || [],
+      safariReady: !!rc.safari_ready,
       unavailableDays: [...unavailable],
     };
   }, []);
@@ -1037,8 +1048,12 @@ export function AppProvider({ children }) {
       const notifs = await notificationsApi.getNotifications();
       setNotifications(notifs.map(mapNotification));
 
-      return res.booking_id;
+      // The UUID is what routes match on; screens show bookingRef for display
+      return res.id || res.booking_id;
     } catch (err) {
+      // Only fabricate a local booking when the backend is unreachable.
+      // A 4xx/409 is a real rejection (bad phone, car taken) — surface it.
+      if (!isNetworkError(err)) throw err;
       console.warn('Handover API unreachable — booking locally:', err.message);
       // Local fallback so checkout + order tracking work in the demo
       const localId = 'HB' + String(Date.now()).slice(-6);
@@ -1080,7 +1095,10 @@ export function AppProvider({ children }) {
 
   const confirmHandover = useCallback(async (handoverId) => {
     try {
-      await handoversApi.confirmHandover(handoverId);
+      // The backend split confirm (pending → confirmed) from complete
+      // (car sold + commission + trust). "Confirm & Mark Sold" needs both.
+      await handoversApi.confirmHandover(handoverId).catch(() => {}); // no-op if already confirmed
+      await handoversApi.completeHandover(handoverId);
       setHandovers((prev) =>
         prev.map((h) => h.id === handoverId ? { ...h, status: 'complete' } : h)
       );
@@ -1089,7 +1107,15 @@ export function AppProvider({ children }) {
         setPurchaseRequests(myHandovers.map(mapHandover));
       }
     } catch (err) {
-      console.warn('Error confirming handover via API:', err);
+      if (isNetworkError(err)) {
+        // Demo mode — local update only
+        setHandovers((prev) =>
+          prev.map((h) => h.id === handoverId ? { ...h, status: 'complete' } : h)
+        );
+        return;
+      }
+      console.warn('Error completing handover via API:', err);
+      throw err;
     }
   }, [currentUser, mapHandover]);
 

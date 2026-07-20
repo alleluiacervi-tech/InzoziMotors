@@ -5,10 +5,19 @@ const fs = require('fs');
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
+// Subfolder resolution:
+//   /inspections/cars/:carId/photos      -> cars/<carId>
+//   /rentals/bookings/:bookingId/photos  -> rentals/<bookingId>
+//   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)
+const resolveSubdir = (req) => {
+  if (req.params.carId) return `cars/${req.params.carId}`;
+  if (req.params.bookingId) return `rentals/${req.params.bookingId}`;
+  return 'id-docs';
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const sub = req.params.carId ? `cars/${req.params.carId}` : 'id-docs';
-    const dir = path.join(uploadDir, sub);
+    const dir = path.join(uploadDir, resolveSubdir(req));
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
@@ -23,6 +32,13 @@ const imageFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
   if (allowed.includes(ext)) cb(null, true);
   else cb(new Error('Only image files are allowed'));
+};
+
+// Public URL for an uploaded file — one implementation for every route.
+// Uses the resolved subdir (not string surgery on the OS path) so it works on Windows too.
+exports.publicUploadUrl = (req, file) => {
+  const base = `${req.protocol}://${req.get('host')}`;
+  return `${base}/uploads/${resolveSubdir(req)}/${file.filename}`;
 };
 
 exports.uploadPhotos = multer({ storage, fileFilter: imageFilter, limits: { fileSize: 10 * 1024 * 1024 } });

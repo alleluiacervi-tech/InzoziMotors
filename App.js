@@ -30,20 +30,26 @@ export default function App() {
   const [initialRoute, setInitialRoute] = useState(null);
 
   useEffect(() => {
-    getJSON('onboardingSeen', false).then((seen) => setInitialRoute(seen ? 'Welcome' : 'Onboarding'));
+    getJSON('onboardingSeen', false)
+      .then((seen) => setInitialRoute(seen ? 'Welcome' : 'Onboarding'))
+      .catch(() => setInitialRoute('Welcome'));
   }, []);
 
-  if (!fontsLoaded || !initialRoute) return null;
+  // Fonts gate everything (the splash itself uses them); the storage read only
+  // gates the navigator — the splash shows immediately and covers the wait.
+  if (!fontsLoaded) return null;
 
   return (
     <AppProvider>
       <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <RootNavigator initialRoute={initialRoute} />
-        </NavigationContainer>
+        {initialRoute && (
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <RootNavigator initialRoute={initialRoute} />
+          </NavigationContainer>
+        )}
         <FeedbackHost />
-        {!splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
+        {(!splashDone || !initialRoute) && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
       </SafeAreaProvider>
     </AppProvider>
   );

@@ -25,6 +25,11 @@ export const handovers = {
   confirmHandover: async (id) => {
     return await api.patch(`/handovers/${id}/confirm`);
   },
+
+  // Marks the car sold, records commission, updates seller trust
+  completeHandover: async (id) => {
+    return await api.patch(`/handovers/${id}/complete`);
+  },
 };
 
 export default handovers;

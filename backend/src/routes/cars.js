@@ -40,7 +40,8 @@ router.get('/', async (req, res) => {
        FROM cars c
        JOIN users u ON u.id = c.seller_id
        WHERE ${conditions.join(' AND ')}
-       ORDER BY ${safeSort} ${safeOrder}
+       ORDER BY (c.featured_until IS NOT NULL AND c.featured_until > NOW()) DESC,
+                ${safeSort} ${safeOrder}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
@@ -324,6 +325,67 @@ router.patch('/:id', requireAdmin, async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('edit car error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /cars/:id/price — seller changes the price of their own live listing.
+// No status regression; price history + price-drop alerts fire like admin edits.
+router.patch('/:id/price', requireAuth, async (req, res) => {
+  const price = Number(req.body.price);
+  if (!Number.isFinite(price) || price <= 0) {
+    return res.status(400).json({ error: 'price must be a positive number' });
+  }
+  try {
+    const before = await pool.query(
+      "SELECT price FROM cars WHERE id = $1 AND seller_id = $2 AND status = 'live'",
+      [req.params.id, req.user.id]
+    );
+    if (!before.rows.length) {
+      return res.status(404).json({ error: 'Live listing not found for this seller' });
+    }
+    const oldPrice = Number(before.rows[0].price);
+
+    const { rows } = await pool.query(
+      'UPDATE cars SET price = $1 WHERE id = $2 RETURNING *',
+      [price, req.params.id]
+    );
+    if (price !== oldPrice) {
+      await pool.query(
+        'INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)',
+        [req.params.id, price, req.user.id]
+      );
+      notifyPriceDrop(req.params.id, oldPrice, price, rows[0].title);
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('seller price edit error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /cars/:id/feature — admin boosts a listing to the top of browse.
+// Records the featured fee ('due' — collected offline like commissions).
+router.patch('/:id/feature', requireAdmin, async (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.body.days) || 7, 1), 30);
+  const fee = Math.max(parseInt(req.body.fee) || 0, 0);
+  try {
+    const { rows } = await pool.query(
+      `UPDATE cars SET featured_until = NOW() + ($1 || ' days')::interval
+       WHERE id = $2 AND status = 'live' RETURNING *`,
+      [String(days), req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Live listing not found' });
+    if (fee > 0) {
+      await pool.query(
+        `INSERT INTO platform_fees (seller_id, fee_type, amount, status)
+         VALUES ($1, 'featured', $2, 'due')`,
+        [rows[0].seller_id, fee]
+      );
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('feature car error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

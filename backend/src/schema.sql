@@ -211,6 +211,17 @@ ALTER TABLE submissions ADD COLUMN IF NOT EXISTS body_type       TEXT;
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS color           TEXT;
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS fuel_type       TEXT;
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS admin_notes     TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS reference_images TEXT[];
+
+-- One inspection per submission — rescheduling updates, never duplicates.
+-- Clean historical duplicates first so the index can build on old installs.
+DELETE FROM inspections a USING inspections b
+  WHERE a.submission_id = b.submission_id AND a.ctid < b.ctid;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inspections_submission ON inspections(submission_id);
+-- One review per completed handover
+DELETE FROM reviews a USING reviews b
+  WHERE a.handover_id = b.handover_id AND a.ctid < b.ctid;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_reviews_handover ON reviews(handover_id);
 
 ALTER TABLE inspections ADD COLUMN IF NOT EXISTS scheduled_date  TEXT;
 ALTER TABLE inspections ADD COLUMN IF NOT EXISTS scheduled_time  TEXT;
@@ -248,9 +259,11 @@ CREATE TABLE IF NOT EXISTS rental_cars (
   trips            INT NOT NULL DEFAULT 0,
   location         TEXT,                 -- neighbourhood the car is kept in
   images           TEXT[],
+  safari_ready     BOOLEAN NOT NULL DEFAULT FALSE,  -- 4x4 fit for park trips
   status           TEXT NOT NULL DEFAULT 'active',  -- active | maintenance | retired
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS safari_ready BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS rental_bookings (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -337,8 +350,10 @@ CREATE TABLE IF NOT EXISTS referral_redemptions (
   code         TEXT NOT NULL REFERENCES referrals(code),
   redeemed_by  UUID NOT NULL REFERENCES users(id),
   redeemed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  consumed_at  TIMESTAMPTZ,             -- set when the discount is applied to a commission
   UNIQUE (code, redeemed_by)
 );
+ALTER TABLE referral_redemptions ADD COLUMN IF NOT EXISTS consumed_at TIMESTAMPTZ;
 
 -- ─── Disputes — post-handover mediation (7-day return window) ────────────────
 CREATE TABLE IF NOT EXISTS disputes (

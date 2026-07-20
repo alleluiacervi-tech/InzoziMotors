@@ -8,8 +8,8 @@ import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
-import { formatPrice, formatMiles, getSellerWhatsApp } from '../data/cars';
-import { openWhatsApp } from '../utils/whatsapp';
+import { formatPrice, formatMiles } from '../data/cars';
+import { contactSellerOnWhatsApp } from '../utils/whatsapp';
 import LoginModal from '../components/LoginModal';
 import PhotoViewer from '../components/PhotoViewer';
 import { getCertTier } from '../data/certification';
@@ -91,10 +91,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const { recordCarView } = useApp();
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
 
-  const contactWhatsApp = () => {
-    const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
-    openWhatsApp(car.sellerPhone || getSellerWhatsApp(car.seller), msg);
-  };
+  const contactWhatsApp = () => contactSellerOnWhatsApp(car, formatPrice(price));
 
   const infoRows = [
     { label: 'Make', value: car.make },

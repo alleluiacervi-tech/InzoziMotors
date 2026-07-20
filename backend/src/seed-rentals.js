@@ -192,14 +192,16 @@ async function seed() {
     await pool.end();
     return;
   }
+  const SAFARI_MODELS = ['Land Cruiser Prado', 'Pajero Sport', 'Hilux', 'Jimny'];
   for (const c of FLEET) {
+    const safariReady = SAFARI_MODELS.includes(c[2]); // c[2] = model
     await pool.query(
       `INSERT INTO rental_cars
          (title, make, model, year, category, seats, fuel, transmission, mileage,
           daily_rate, weekly_rate, deposit, min_days, inspection_score, rating,
-          trips, location, images)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
-      c
+          trips, location, images, safari_ready)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+      [...c, safariReady]
     );
   }
   console.log(`✅ Seeded ${FLEET.length} rental cars`);

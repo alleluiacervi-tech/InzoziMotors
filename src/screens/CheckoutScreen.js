@@ -8,8 +8,9 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
-import { formatPrice, getSellerWhatsApp } from '../data/cars';
-import { openWhatsApp } from '../utils/whatsapp';
+import { formatPrice } from '../data/cars';
+import { contactSellerOnWhatsApp } from '../utils/whatsapp';
+import { showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 
 const HOW_IT_WORKS = [
@@ -21,10 +22,7 @@ const HOW_IT_WORKS = [
 
 // ─── Request phase ───────────────────────────────────────────────────────────
 function RequestState({ car, price, phone, setPhone, onSend, sending, navigation }) {
-  const askAvailability = () => {
-    const msg = `Hi ${car.seller}, I found your ${car.title} (${formatPrice(price)}) on Inzozi Motors. Is it still available?`;
-    openWhatsApp(car.sellerPhone || getSellerWhatsApp(car.seller), msg);
-  };
+  const askAvailability = () => contactSellerOnWhatsApp(car, formatPrice(price));
   return (
     <>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -215,16 +213,22 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const handleSend = async () => {
     if (sending) return;
+    // Rwanda mobile numbers: 9 digits starting with 7 (e.g. 788 123 456)
+    const digits = phone.replace(/\D/g, '');
+    if (digits && !/^7\d{8}$/.test(digits)) {
+      showToast('Enter a valid phone — 9 digits starting with 7, e.g. 788 123 456.', 'error');
+      return;
+    }
     setSending(true);
     try {
       const id = await bookHandover(car, {
-        contactPhone: phone ? `+250${phone.replace(/\s/g, '')}` : null,
+        contactPhone: digits ? `+250${digits}` : null,
       });
       setBookingId(id);
       setPhase('confirmed');
     } catch (err) {
-      // bookHandover has a local fallback, so this only fires on unexpected errors
-      console.error('Request failed:', err);
+      // Real backend rejection (bad input, car taken) — tell the buyer the truth
+      showToast(err.message || 'Request failed — please try again.', 'error');
     } finally {
       setSending(false);
     }

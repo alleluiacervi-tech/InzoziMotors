@@ -2,23 +2,9 @@ const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { recomputeTrustScore } = require('../lib/trust');
+const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
-
-async function withTransaction(fn) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await fn(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
-}
 
 // POST /handovers — buyer requests a car (slot optional; Inzozi arranges)
 router.post('/', requireAuth, async (req, res) => {
@@ -233,7 +219,34 @@ router.patch('/:id/complete', requireAdmin, async (req, res) => {
 
       // Record the success commission — the revenue event of the business model
       const rate = parseFloat(process.env.COMMISSION_RATE || '0.05');
-      const commission = Math.round((h.agreed_price || 0) * rate);
+      let commission = Math.round((h.agreed_price || 0) * rate);
+
+      // Referral reward: an unconsumed redemption by this seller discounts
+      // their next commission (blueprint: "commission discount on next listing")
+      if (commission > 0) {
+        const discountRate = parseFloat(process.env.REFERRAL_DISCOUNT || '0.2');
+        const redemption = await client.query(
+          `SELECT id FROM referral_redemptions
+           WHERE redeemed_by = $1 AND consumed_at IS NULL
+           ORDER BY redeemed_at ASC LIMIT 1 FOR UPDATE`,
+          [h.seller_id]
+        );
+        if (redemption.rows.length) {
+          commission = Math.round(commission * (1 - discountRate));
+          await client.query(
+            'UPDATE referral_redemptions SET consumed_at = NOW() WHERE id = $1',
+            [redemption.rows[0].id]
+          );
+          await client.query(
+            `INSERT INTO notifications (user_id, type, title, body, meta)
+             VALUES ($1, 'listing_update', 'Referral discount applied', $2, $3)`,
+            [h.seller_id,
+             `Your referral reward saved you ${Math.round(discountRate * 100)}% on this sale's commission.`,
+             JSON.stringify({ handoverId: h.id })]
+          );
+        }
+      }
+
       if (commission > 0) {
         await client.query(
           `INSERT INTO platform_fees (handover_id, seller_id, fee_type, amount, status)

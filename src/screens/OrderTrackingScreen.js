@@ -101,8 +101,12 @@ function StepRow({ step, state, isLast }) {
 export default function OrderTrackingScreen({ navigation, route }) {
   const { orderId, car: routeCar } = route.params || {};
   const { purchaseRequests, cancelHandover } = useApp();
+  // orderId may be the UUID (API) or a local/display ref — match either
+  const found = purchaseRequests.find((r) => r.id === orderId || r.bookingRef === orderId);
+  const cancelId = found?.id || orderId;
+  const displayRef = found?.bookingRef || orderId;
 
-  const request = purchaseRequests.find((r) => r.id === orderId);
+  const request = found;
   const car = request?.car || routeCar;
   const currentStatus = request?.status || 'reserved';
   const currentIdx = STATUS_ORDER.indexOf(currentStatus);
@@ -122,7 +126,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
       confirmLabel: 'Cancel Request', cancelLabel: 'Keep Request', destructive: true,
     }).then((ok) => {
       if (!ok) return;
-      if (orderId) cancelHandover(orderId);
+      if (cancelId) cancelHandover(cancelId);
       showToast('Request cancelled.', 'info');
       navigation.goBack();
     });
@@ -138,7 +142,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
           <View style={styles.heroTop}>
             <View>
               <Text style={styles.heroLabel}>Order ID</Text>
-              <Text style={styles.heroOrderId}>{orderId || 'ORD-DEMO'}</Text>
+              <Text style={styles.heroOrderId}>{displayRef || 'ORD-DEMO'}</Text>
             </View>
             <View style={[
               styles.statusChip,

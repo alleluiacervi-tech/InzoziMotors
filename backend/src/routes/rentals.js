@@ -1,9 +1,22 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { uploadPhotos } = require('../middleware/upload');
+const { uploadPhotos, publicUploadUrl } = require('../middleware/upload');
+const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
+
+// One definition of "booked ranges" — used by list, detail, and (as the
+// overlap predicate below) the booking route itself.
+const BOOKED_RANGES_SQL = `
+  COALESCE(
+    (SELECT json_agg(json_build_object('start_date', b.start_date, 'days', b.days))
+     FROM rental_bookings b
+     WHERE b.rental_car_id = rc.id
+       AND b.status IN ('upcoming', 'active')
+       AND b.start_date + b.days >= CURRENT_DATE),
+    '[]'
+  ) AS booked_ranges`;
 
 // Weekly rate kicks in per full week; remainder at the daily rate.
 // Mirrors calcTripCost in the mobile app — the server is the authority.
@@ -21,15 +34,7 @@ const AIRPORT_FEE = 20;
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT rc.*,
-              COALESCE(
-                (SELECT json_agg(json_build_object('start_date', b.start_date, 'days', b.days))
-                 FROM rental_bookings b
-                 WHERE b.rental_car_id = rc.id
-                   AND b.status IN ('upcoming', 'active')
-                   AND b.start_date + b.days >= CURRENT_DATE),
-                '[]'
-              ) AS booked_ranges
+      `SELECT rc.*, ${BOOKED_RANGES_SQL}
        FROM rental_cars rc
        WHERE rc.status = 'active'
        ORDER BY rc.daily_rate ASC`
@@ -84,15 +89,7 @@ router.get('/bookings', requireAdmin, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT rc.*,
-              COALESCE(
-                (SELECT json_agg(json_build_object('start_date', b.start_date, 'days', b.days))
-                 FROM rental_bookings b
-                 WHERE b.rental_car_id = rc.id
-                   AND b.status IN ('upcoming', 'active')
-                   AND b.start_date + b.days >= CURRENT_DATE),
-                '[]'
-              ) AS booked_ranges
+      `SELECT rc.*, ${BOOKED_RANGES_SQL}
        FROM rental_cars rc WHERE rc.id = $1`,
       [req.params.id]
     );
@@ -111,72 +108,80 @@ router.post('/:id/book', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'start_date and days are required' });
   }
   try {
-    const carRes = await pool.query(
-      "SELECT * FROM rental_cars WHERE id = $1 AND status = 'active'",
-      [req.params.id]
-    );
-    if (!carRes.rows.length) return res.status(404).json({ error: 'Rental car not found' });
-    const car = carRes.rows[0];
-    if (numDays < car.min_days) {
-      return res.status(400).json({ error: `Minimum rental is ${car.min_days} days` });
-    }
+    // Row-lock the car so two concurrent requests can't both pass the overlap
+    // check — same pattern as handover booking.
+    const booking = await withTransaction(async (client) => {
+      const carRes = await client.query(
+        "SELECT * FROM rental_cars WHERE id = $1 AND status = 'active' FOR UPDATE",
+        [req.params.id]
+      );
+      if (!carRes.rows.length) {
+        const e = new Error('Rental car not found'); e.status = 404; throw e;
+      }
+      const car = carRes.rows[0];
+      if (numDays < car.min_days) {
+        const e = new Error(`Minimum rental is ${car.min_days} days`); e.status = 400; throw e;
+      }
 
-    // Overlap check: [start, start+days) against existing upcoming/active bookings
-    const overlap = await pool.query(
-      `SELECT 1 FROM rental_bookings
-       WHERE rental_car_id = $1
-         AND status IN ('upcoming', 'active')
-         AND start_date < $2::date + $3::int
-         AND start_date + days > $2::date
-       LIMIT 1`,
-      [car.id, start_date, numDays]
-    );
-    if (overlap.rows.length) {
-      return res.status(409).json({ error: 'Selected dates are no longer available' });
-    }
+      // Overlap check: [start, start+days) against existing upcoming/active bookings
+      const overlap = await client.query(
+        `SELECT 1 FROM rental_bookings
+         WHERE rental_car_id = $1
+           AND status IN ('upcoming', 'active')
+           AND start_date < $2::date + $3::int
+           AND start_date + days > $2::date
+         LIMIT 1`,
+        [car.id, start_date, numDays]
+      );
+      if (overlap.rows.length) {
+        const e = new Error('Selected dates are no longer available'); e.status = 409; throw e;
+      }
 
-    const cost = tripCost(car, numDays);
-    const pickupFee = airport_pickup ? AIRPORT_FEE : 0;
-    const bookingRef = 'RB-' + Date.now().toString(36).toUpperCase();
+      const cost = tripCost(car, numDays);
+      const pickupFee = airport_pickup ? AIRPORT_FEE : 0;
+      const bookingRef = 'RB-' + Date.now().toString(36).toUpperCase();
 
-    const { rows } = await pool.query(
-      `INSERT INTO rental_bookings
-         (booking_ref, rental_car_id, renter_id, start_date, days, pickup_window,
-          center, airport_pickup, subtotal, deposit, pickup_fee, total, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'upcoming')
-       RETURNING *`,
-      [bookingRef, car.id, req.user.id, start_date, numDays, pickup_window || null,
-       center || null, !!airport_pickup, cost.subtotal, cost.deposit, pickupFee,
-       cost.total + pickupFee]
-    );
-    const booking = rows[0];
+      const { rows } = await client.query(
+        `INSERT INTO rental_bookings
+           (booking_ref, rental_car_id, renter_id, start_date, days, pickup_window,
+            center, airport_pickup, subtotal, deposit, pickup_fee, total, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'upcoming')
+         RETURNING *`,
+        [bookingRef, car.id, req.user.id, start_date, numDays, pickup_window || null,
+         center || null, !!airport_pickup, cost.subtotal, cost.deposit, pickupFee,
+         cost.total + pickupFee]
+      );
 
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
-       VALUES ($1, 'listing_update', 'Rental booking confirmed', $2, $3)`,
-      [req.user.id,
-       `${car.title} is reserved from ${start_date} for ${numDays} day${numDays > 1 ? 's' : ''}. Bring your driving licence and ID — payment is at the center.`,
-       JSON.stringify({ bookingRef, rentalCarId: car.id })]
-    );
+      await client.query(
+        `INSERT INTO notifications (user_id, type, title, body, meta)
+         VALUES ($1, 'listing_update', 'Rental booking confirmed', $2, $3)`,
+        [req.user.id,
+         `${car.title} is reserved from ${start_date} for ${numDays} day${numDays > 1 ? 's' : ''}. Bring your driving licence and ID — payment is at the center.`,
+         JSON.stringify({ bookingRef, rentalCarId: car.id })]
+      );
+
+      return rows[0];
+    });
 
     res.status(201).json(booking);
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     console.error('rental booking error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // PATCH /rentals/bookings/:id/status — check-in (active), return (completed), cancel
-// Renter can transition their own booking; the condition record is attached
-// by staff at the counter (or the renter's agreement stamp in the app).
+// Renter can transition their own booking; center staff (admin) can transition any.
 router.patch('/bookings/:id/status', requireAuth, async (req, res) => {
   const { status, record } = req.body;
   const ALLOWED = { upcoming: ['active', 'cancelled'], active: ['completed'] };
   if (!status) return res.status(400).json({ error: 'status is required' });
   try {
+    const isAdmin = req.user.role === 'admin';
     const cur = await pool.query(
-      'SELECT * FROM rental_bookings WHERE id = $1 AND renter_id = $2',
-      [req.params.id, req.user.id]
+      `SELECT * FROM rental_bookings WHERE id = $1${isAdmin ? '' : ' AND renter_id = $2'}`,
+      isAdmin ? [req.params.id] : [req.params.id, req.user.id]
     );
     if (!cur.rows.length) return res.status(404).json({ error: 'Booking not found' });
     const booking = cur.rows[0];
@@ -187,12 +192,12 @@ router.patch('/bookings/:id/status', requireAuth, async (req, res) => {
     const recordCol = status === 'active' ? 'pickup_record' : status === 'completed' ? 'return_record' : null;
     const { rows } = await pool.query(
       `UPDATE rental_bookings
-       SET status = $1${recordCol ? `, ${recordCol} = $4` : ''}
-       WHERE id = $2 AND renter_id = $3
+       SET status = $1${recordCol ? `, ${recordCol} = COALESCE(${recordCol}, '{}'::jsonb) || $3` : ''}
+       WHERE id = $2
        RETURNING *`,
       recordCol
-        ? [status, req.params.id, req.user.id, JSON.stringify(record || { agreed_at: new Date().toISOString() })]
-        : [status, req.params.id, req.user.id]
+        ? [status, req.params.id, JSON.stringify(record || { agreed_at: new Date().toISOString() })]
+        : [status, req.params.id]
     );
 
     if (status === 'completed') {
@@ -265,9 +270,10 @@ router.patch('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// POST /rentals/bookings/:id/photos — condition photos at pickup/return
-// (renter documents their own booking; staff photos come via the same route as admin)
-router.post('/bookings/:id/photos', requireAuth, uploadPhotos.array('photos', 12), async (req, res) => {
+// POST /rentals/bookings/:bookingId/photos — condition photos at pickup/return
+// (:bookingId param name matters — the upload middleware keys the storage
+// folder on it, landing files in uploads/rentals/<bookingId>)
+router.post('/bookings/:bookingId/photos', requireAuth, uploadPhotos.array('photos', 12), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
   const { stage = 'pickup' } = req.body; // pickup | return
   if (!['pickup', 'return'].includes(stage)) {
@@ -275,19 +281,18 @@ router.post('/bookings/:id/photos', requireAuth, uploadPhotos.array('photos', 12
   }
   try {
     const owner = req.user.role === 'admin' ? '' : ' AND renter_id = $2';
-    const params = req.user.role === 'admin' ? [req.params.id] : [req.params.id, req.user.id];
+    const params = req.user.role === 'admin' ? [req.params.bookingId] : [req.params.bookingId, req.user.id];
     const cur = await pool.query(`SELECT * FROM rental_bookings WHERE id = $1${owner}`, params);
     if (!cur.rows.length) return res.status(404).json({ error: 'Booking not found' });
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const urls = req.files.map((f) => `${baseUrl}/uploads/${f.destination.split('/uploads/')[1] || ''}/${f.filename}`.replace(/\/+/g, '/').replace(':/', '://'));
+    const urls = req.files.map((f) => publicUploadUrl(req, f));
     const col = stage === 'pickup' ? 'pickup_record' : 'return_record';
     const { rows } = await pool.query(
       `UPDATE rental_bookings
        SET ${col} = COALESCE(${col}, '{}'::jsonb) || jsonb_build_object('photos', $1::jsonb)
        WHERE id = $2
        RETURNING *`,
-      [JSON.stringify(urls), req.params.id]
+      [JSON.stringify(urls), req.params.bookingId]
     );
     res.json(rows[0]);
   } catch (err) {

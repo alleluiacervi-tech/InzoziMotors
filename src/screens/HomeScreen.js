@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
   FlatList, Dimensions, ImageBackground, Image,
@@ -59,11 +59,11 @@ export default function HomeScreen({ navigation }) {
   const [rentFilter, setRentFilter] = useState('All');
 
   const RENT_FILTERS = ['All', 'Safari-Ready', 'SUV', 'Sedan', 'Truck'];
-  const filteredRentals = rentalCars.filter((c) => {
+  const filteredRentals = useMemo(() => rentalCars.filter((c) => {
     if (rentFilter === 'All') return true;
     if (rentFilter === 'Safari-Ready') return c.safariReady;
     return c.category === rentFilter;
-  });
+  }), [rentalCars, rentFilter]);
 
   const carouselRef = useRef(null);
   const scrollTimerRef = useRef(null);
@@ -91,20 +91,25 @@ export default function HomeScreen({ navigation }) {
   };
 
   // Fresh = most recently listed; Popular = most saved — two genuinely different sections
-  const freshCars = [...cars].sort((a, b) => getListedDaysAgo(a.id) - getListedDaysAgo(b.id)).slice(0, 4);
+  // Sort by listing date once — freshCars and the center window both slice from it.
+  const carsByListedDate = useMemo(
+    () => [...cars].sort((a, b) => getListedDaysAgo(a.id) - getListedDaysAgo(b.id)),
+    [cars]
+  );
+  const freshCars = useMemo(() => carsByListedDate.slice(0, 4), [carsByListedDate]);
 
   // ── Origin tabs (Encar-style: browse the way buyers think) ──
   const [originTab, setOriginTab] = useState('All');
   const ORIGIN_TABS = ['All', 'Imported', 'Local', 'EV·Hybrid'];
-  const originCars = cars.filter((c) => {
+  const originCars = useMemo(() => cars.filter((c) => {
     if (originTab === 'Imported') return getDriveType(c.id) === 'RHD';
     if (originTab === 'Local') return getDriveType(c.id) === 'LHD';
     if (originTab === 'EV·Hybrid') return ['Electric', 'Hybrid'].includes(c.fuel);
     return true;
-  });
+  }), [cars, originTab]);
 
   // ── Brand showrooms: only brands with 2+ cars earn a window ──
-  const showrooms = Object.values(
+  const showrooms = useMemo(() => Object.values(
     cars.reduce((acc, c) => {
       (acc[c.make] = acc[c.make] || { brand: c.make, cars: [] }).cars.push(c);
       return acc;
@@ -116,27 +121,32 @@ export default function HomeScreen({ navigation }) {
       cars: [...g.cars].sort((a, b) => (b.inspectionScore || 0) - (a.inspectionScore || 0)),
     }))
     .sort((a, b) => b.cars.length - a.cars.length)
-    .slice(0, 6);
-  const centerWindow = {
+    .slice(0, 6), [cars]);
+  const centerWindow = useMemo(() => ({
     brand: 'Inzozi Center',
     subtitle: 'On display in Nyarutarama this week',
-    cars: [...cars].sort((a, b) => getListedDaysAgo(a.id) - getListedDaysAgo(b.id)).slice(0, 5),
-  };
+    cars: carsByListedDate.slice(0, 5),
+  }), [carsByListedDate]);
 
   // ── Personalization rails ──
-  const allInventory = [...cars, ...rentalCars];
-  const recentlyViewed = recentlyViewedIds
+  const allInventory = useMemo(() => [...cars, ...rentalCars], [cars, rentalCars]);
+  const recentlyViewed = useMemo(() => recentlyViewedIds
     .map((id) => allInventory.find((c) => c.id === id))
     .filter(Boolean)
-    .slice(0, 8);
-  const savedCars = cars.filter((c) => savedCarIds.includes(c.id));
-  const likeSaved = savedCars.length
-    ? cars.filter((c) =>
-        !savedCarIds.includes(c.id) &&
-        savedCars.some((s) => s.make === c.make || s.category === c.category)
-      ).slice(0, 6)
-    : [];
-  const popularCars = [...cars].sort((a, b) => getSavedCount(b.id) - getSavedCount(a.id)).slice(0, 5);
+    .slice(0, 8), [recentlyViewedIds, allInventory]);
+  const likeSaved = useMemo(() => {
+    const savedCars = cars.filter((c) => savedCarIds.includes(c.id));
+    return savedCars.length
+      ? cars.filter((c) =>
+          !savedCarIds.includes(c.id) &&
+          savedCars.some((s) => s.make === c.make || s.category === c.category)
+        ).slice(0, 6)
+      : [];
+  }, [cars, savedCarIds]);
+  const popularCars = useMemo(
+    () => [...cars].sort((a, b) => getSavedCount(b.id) - getSavedCount(a.id)).slice(0, 5),
+    [cars]
+  );
 
   return (
     <Screen background={colors.bg}>

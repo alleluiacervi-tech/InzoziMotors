@@ -1,10 +1,11 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { recomputeTrustScore } = require('../lib/trust');
 
 const router = express.Router();
 
-// POST /reviews — buyer leaves review after handover
+// POST /reviews — buyer leaves review after handover (one review per handover)
 router.post('/', requireAuth, async (req, res) => {
   const { handover_id, rating, comment } = req.body;
   if (!handover_id || !rating) {
@@ -23,23 +24,28 @@ router.post('/', requireAuth, async (req, res) => {
     }
     const h = hRes.rows[0];
 
+    const existing = await pool.query(
+      'SELECT id FROM reviews WHERE handover_id = $1',
+      [handover_id]
+    );
+    if (existing.rows.length) {
+      return res.status(409).json({ error: 'You already reviewed this purchase' });
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO reviews (handover_id, reviewer_id, seller_id, rating, comment)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [handover_id, req.user.id, h.seller_id, rating, comment]
     );
-    await recomputeTrustScore(seller_id || req.body.seller_id);
 
-    // Update seller trust score based on avg rating
-    await pool.query(
-      `UPDATE users SET trust_score = LEAST(100,
-         GREATEST(0, trust_score + ($1 - 3) * 2))
-       WHERE id = $2`,
-      [rating, h.seller_id]
-    );
+    // lib/trust is the only writer of users.trust_score
+    await recomputeTrustScore(h.seller_id);
 
     res.status(201).json(rows[0]);
   } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'You already reviewed this purchase' });
+    }
     console.error(err.message);
     res.status(500).json({ error: 'Server error' });
   }

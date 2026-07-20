@@ -9,7 +9,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
   try {
     const [
       listingsRes, submissionsRes, handoversRes,
-      idQueueRes, soldRes, revenueRes,
+      idQueueRes, soldRes, gmvRes, feesRes,
     ] = await Promise.all([
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'live'"),
       pool.query("SELECT COUNT(*) FROM submissions WHERE status IN ('under_review','pending')"),
@@ -17,6 +17,10 @@ router.get('/stats', requireAdmin, async (req, res) => {
       pool.query("SELECT COUNT(*) FROM users WHERE id_verified = 'pending'"),
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'sold'"),
       pool.query("SELECT COALESCE(SUM(price), 0) AS total FROM cars WHERE status = 'sold'"),
+      pool.query(`SELECT
+                    COALESCE(SUM(amount) FILTER (WHERE status IN ('due','paid')), 0) AS earned,
+                    COALESCE(SUM(amount) FILTER (WHERE status = 'due'), 0) AS due
+                  FROM platform_fees`),
     ]);
 
     res.json({
@@ -25,7 +29,10 @@ router.get('/stats', requireAdmin, async (req, res) => {
       pendingHandovers:      parseInt(handoversRes.rows[0].count),
       pendingIdVerifications: parseInt(idQueueRes.rows[0].count),
       totalSold:             parseInt(soldRes.rows[0].count),
-      totalRevenue:          parseInt(revenueRes.rows[0].total),
+      // GMV = value of cars sold; feeRevenue = Inzozi's actual earnings
+      totalGMV:              parseInt(gmvRes.rows[0].total),
+      totalRevenue:          parseInt(feesRes.rows[0].earned),
+      feesOutstanding:       parseInt(feesRes.rows[0].due),
     });
   } catch (err) {
     console.error(err.message);
@@ -120,6 +127,60 @@ router.get('/users', requireAdmin, async (req, res) => {
       [`%${q}%`, safeLimit]
     );
     res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ─── Fees ledger — the platform_fees table finally gets a read side ──────────
+
+// GET /admin/fees?status=due|paid|waived — commission/certification/featured rows
+router.get('/fees', requireAdmin, async (req, res) => {
+  const { status } = req.query;
+  const params = [];
+  let where = '';
+  if (status) {
+    if (!['due', 'paid', 'waived'].includes(status)) {
+      return res.status(400).json({ error: 'status must be due, paid, or waived' });
+    }
+    params.push(status);
+    where = 'WHERE f.status = $1';
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT f.*, u.name AS seller_name, h.booking_id, c.title AS car_title
+       FROM platform_fees f
+       JOIN users u ON u.id = f.seller_id
+       LEFT JOIN handovers h ON h.id = f.handover_id
+       LEFT JOIN cars c ON c.id = h.car_id
+       ${where}
+       ORDER BY f.created_at DESC`,
+      params
+    );
+    const totals = rows.reduce((acc, r) => {
+      acc[r.status] = (acc[r.status] || 0) + r.amount;
+      return acc;
+    }, {});
+    res.json({ fees: rows, totals });
+  } catch (err) {
+    console.error('fees list error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /admin/fees/:id — mark a fee paid (collected at the center) or waived
+router.patch('/fees/:id', requireAdmin, async (req, res) => {
+  const { status } = req.body;
+  if (!['paid', 'waived', 'due'].includes(status)) {
+    return res.status(400).json({ error: 'status must be paid, waived, or due' });
+  }
+  try {
+    const { rows } = await pool.query(
+      'UPDATE platform_fees SET status = $1 WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Fee not found' });
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }

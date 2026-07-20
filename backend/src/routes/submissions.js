@@ -83,13 +83,42 @@ router.get('/admin/all', requireAdmin, async (req, res) => {
   }
 });
 
+const SUBMISSION_STATUSES = ['under_review', 'approved', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected'];
+
+// Capacity check against inspection_centers (free-text centers pass through).
+// Returns an error string when the center's daily capacity is exhausted.
+async function centerCapacityError(center, date) {
+  const centerRes = await pool.query(
+    'SELECT id, daily_capacity FROM inspection_centers WHERE active = TRUE AND name ILIKE $1',
+    [center]
+  );
+  if (!centerRes.rows.length) return null; // unknown/free-text center — no cap to enforce
+  const cap = centerRes.rows[0].daily_capacity;
+  const cntRes = await pool.query(
+    `SELECT COUNT(*) FROM inspections
+     WHERE center ILIKE $1 AND scheduled_date = $2 AND status IN ('scheduled', 'in_progress')`,
+    [center, date]
+  );
+  if (Number(cntRes.rows[0].count) >= cap) {
+    return `${center} is fully booked on ${date} — choose another day or center`;
+  }
+  return null;
+}
+
 // PATCH /submissions/:id — admin updates status (and optionally schedules inspection)
 router.patch('/:id', requireAdmin, async (req, res) => {
   const { status, admin_notes, center, scheduled_date, scheduled_time } = req.body;
+  if (!SUBMISSION_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${SUBMISSION_STATUSES.join(', ')}` });
+  }
   if (status === 'scheduled' && (!center || !scheduled_date || !scheduled_time)) {
     return res.status(400).json({ error: 'Scheduling requires center, scheduled_date, and scheduled_time' });
   }
   try {
+    if (status === 'scheduled') {
+      const capErr = await centerCapacityError(center, scheduled_date);
+      if (capErr) return res.status(409).json({ error: capErr });
+    }
     const { rows } = await pool.query(
       `UPDATE submissions
        SET status = $1, admin_notes = COALESCE($2, admin_notes),
@@ -111,7 +140,10 @@ router.patch('/:id', requireAdmin, async (req, res) => {
         `INSERT INTO inspections
            (submission_id, car_id, center, scheduled_date, scheduled_time, scheduled_at, status)
          VALUES ($1, $2, $3, $4, $5, $6, 'scheduled')
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (submission_id) DO UPDATE
+           SET center = EXCLUDED.center, scheduled_date = EXCLUDED.scheduled_date,
+               scheduled_time = EXCLUDED.scheduled_time, scheduled_at = EXCLUDED.scheduled_at,
+               status = 'scheduled'`,
         [sub.id, sub.car_id, center, scheduled_date, scheduled_time, scheduledAt]
       );
     }
@@ -146,11 +178,14 @@ router.patch('/:id/schedule', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'center, scheduled_date, and scheduled_time are required' });
   }
   try {
+    const capErr = await centerCapacityError(center, scheduled_date);
+    if (capErr) return res.status(409).json({ error: capErr });
+
     const { rows } = await pool.query(
       `UPDATE submissions
        SET status = 'scheduled',
            inspection_center = $1, inspection_date = $2, inspection_time = $3
-       WHERE id = $4 AND seller_id = $5 AND status IN ('under_review', 'scheduled')
+       WHERE id = $4 AND seller_id = $5 AND status IN ('under_review', 'approved', 'scheduled')
        RETURNING *`,
       [center, scheduled_date, scheduled_time, req.params.id, req.user.id]
     );
@@ -160,11 +195,15 @@ router.patch('/:id/schedule', requireAuth, async (req, res) => {
     const parsed = new Date(`${scheduled_date} ${scheduled_time}`);
     const scheduledAt = isNaN(parsed.getTime()) ? null : parsed;
 
+    // Rescheduling updates the existing inspection instead of duplicating it
     await pool.query(
       `INSERT INTO inspections
          (submission_id, car_id, center, scheduled_date, scheduled_time, scheduled_at, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'scheduled')
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (submission_id) DO UPDATE
+         SET center = EXCLUDED.center, scheduled_date = EXCLUDED.scheduled_date,
+             scheduled_time = EXCLUDED.scheduled_time, scheduled_at = EXCLUDED.scheduled_at,
+             status = 'scheduled'`,
       [sub.id, sub.car_id, center, scheduled_date, scheduled_time, scheduledAt]
     );
 
