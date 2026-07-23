@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,7 +6,8 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import CarZoneMap from '../components/CarZoneMap';
 import { colors, radius, shadows, fonts } from '../theme';
-import { MOCK_INSPECTION_RESULT } from '../data/inspectionData';
+import { MOCK_INSPECTION_RESULT, buildReportFromApi } from '../data/inspectionData';
+import inspectionsApi from '../api/inspections';
 
 const CATEGORY_ICONS = {
   engine:      'cog-outline',
@@ -84,7 +85,21 @@ function CategoryRow({ cat, defaultExpanded }) {
 
 export default function InspectionReportScreen({ navigation, route }) {
   const car = route.params?.car;
-  const data = MOCK_INSPECTION_RESULT;
+  const [data, setData] = useState(MOCK_INSPECTION_RESULT);
+
+  // Real report for API-backed cars (UUID ids); mock ids ('1'…'25') keep the demo report
+  useEffect(() => {
+    const id = car?.id ? String(car.id) : '';
+    if (!id.includes('-')) return;
+    let alive = true;
+    inspectionsApi.getReport(id)
+      .then((report) => {
+        const mapped = buildReportFromApi(report);
+        if (alive && mapped) setData(mapped);
+      })
+      .catch(() => {}); // unreachable/404 → keep the demo report
+    return () => { alive = false; };
+  }, [car?.id]);
 
   const pct = data.score / data.maxScore;
   const certified = pct >= 0.88;

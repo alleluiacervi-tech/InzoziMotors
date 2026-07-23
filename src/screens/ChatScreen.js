@@ -53,12 +53,24 @@ export default function ChatScreen({ navigation, route }) {
   const name = route.params?.name || 'Bay Auto Group';
   const convId = route.params?.convId || 'c1';
   const car = route.params?.car || null;
-  const { getMessages, sendMessage, loadConversationMessages, getOrCreateConversation } = useApp();
+  const { getMessages, sendMessage, loadConversationMessages, getOrCreateConversation, sendTyping, typingConvId } = useApp();
   const [activeConvId, setActiveConvId] = useState(route.params?.convId);
   const messages = getMessages(activeConvId || convId);
   const [text, setText] = useState('');
   const scrollRef = useRef(null);
   const [showQuickReplies, setShowQuickReplies] = useState(true);
+  const typingTimer = useRef(null);
+  const otherIsTyping = typingConvId && typingConvId === activeConvId;
+
+  // Emit typing while the buyer writes; stop after a short pause
+  const handleTextChange = (v) => {
+    setText(v);
+    if (!activeConvId) return;
+    sendTyping(activeConvId, true);
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(() => sendTyping(activeConvId, false), 1500);
+  };
+  useEffect(() => () => { if (typingTimer.current) clearTimeout(typingTimer.current); }, []);
 
   useEffect(() => {
     if (!activeConvId && car) {
@@ -153,6 +165,18 @@ export default function ChatScreen({ navigation, route }) {
               </View>
             </View>
           ))}
+
+          {/* Typing indicator — realtime via socket */}
+          {otherIsTyping && (
+            <View style={[styles.bubbleRow, styles.bubbleRowThem]}>
+              <View style={styles.senderAvatar}>
+                <Text style={styles.senderInitial}>{name[0]}</Text>
+              </View>
+              <View style={[styles.bubble, styles.bubbleThem]}>
+                <Text style={[styles.bubbleText, { color: colors.textMuted }]}>typing…</Text>
+              </View>
+            </View>
+          )}
         </ScrollView>
 
         {/* Quick replies */}
@@ -182,7 +206,7 @@ export default function ChatScreen({ navigation, route }) {
             placeholder="Message…"
             placeholderTextColor={colors.textMuted}
             value={text}
-            onChangeText={setText}
+            onChangeText={handleTextChange}
             onSubmitEditing={() => send()}
             returnKeyType="send"
             onFocus={() => setShowQuickReplies(true)}

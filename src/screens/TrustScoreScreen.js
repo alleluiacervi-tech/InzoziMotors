@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
@@ -6,6 +6,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
+import reviewsApi from '../api/reviews';
 
 const SCORE_COMPONENTS = [
   {
@@ -143,10 +144,40 @@ function ComponentRow({ comp, profile, expanded, onToggle }) {
 
 export default function TrustScoreScreen({ navigation, route }) {
   const sellerName = route.params?.sellerName;
-  const profile = SELLER_PROFILES[sellerName] || DEFAULT_SELLER_PROFILE;
+  // Real user id (UUID) when navigated from an API-backed context; absent in demo mode
+  const userId = route.params?.userId || route.params?.sellerId || null;
+  const mockProfile = SELLER_PROFILES[sellerName] || DEFAULT_SELLER_PROFILE;
   const [expandedId, setExpandedId] = useState(null);
+  const [apiScore, setApiScore] = useState(null);
 
-  const score = SCORE_COMPONENTS.reduce((sum, c) => sum + c.getPts(profile), 0);
+  useEffect(() => {
+    if (!userId) return undefined;
+    let cancelled = false;
+    reviewsApi.getTrustScore(userId)
+      .then((data) => {
+        if (cancelled || !data || !data.breakdown) return;
+        const b = data.breakdown;
+        setApiScore({
+          totalScore: Number(data.total_score) || 0,
+          profile: {
+            idVerified: (b.id_verified?.points || 0) > 0,
+            completedSales: Number(b.completed_sales?.count ?? b.completed_sales?.points ?? 0),
+            responseRate: Number(b.response_rate?.rate ?? 0),
+            avgRating: b.reviews?.avg != null ? Number(b.reviews.avg) : 0,
+            totalReviews: Number(b.reviews?.count ?? 0),
+          },
+        });
+      })
+      .catch(() => {
+        // API unreachable — keep mock profile (demo mode)
+      });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const profile = apiScore ? apiScore.profile : mockProfile;
+  const score = apiScore
+    ? apiScore.totalScore
+    : SCORE_COMPONENTS.reduce((sum, c) => sum + c.getPts(profile), 0);
   const grade = getGrade(score);
 
   return (

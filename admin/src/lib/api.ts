@@ -88,4 +88,24 @@ export const api = {
     request<any>('/cars', { method: 'POST', body: JSON.stringify(data) }),
   uploadCarPhotos: (carId: string, formData: FormData) =>
     request<any>(`/inspections/cars/${carId}/photos`, { method: 'POST', body: formData }),
+
+  // Fees / revenue
+  getFees: (status?: string) =>
+    request<{ fees: any[]; totals: Record<string, number> }>(
+      `/admin/fees${status ? `?status=${status}` : ''}`
+    ),
+  updateFee: (id: string, status: 'paid' | 'waived' | 'due') =>
+    request<any>(`/admin/fees/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+
+  // Featured listings
+  featureCar: (id: string, days = 7) =>
+    request<any>(`/cars/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ days }) }),
+
+  // Rental bookings
+  getRentalBookings: (status?: string) =>
+    request<any[]>(`/rentals/bookings${status ? `?status=${status}` : ''}`),
+  updateRentalBookingStatus: (id: string, status: 'active' | 'completed' | 'cancelled') =>
+    request<any>(`/rentals/bookings/${id}/status`, {
+      method: 'PATCH', body: JSON.stringify({ status }),
+    }),
 }

@@ -7,7 +7,7 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
-import api from '../api/client';
+import carsApi from '../api/cars';
 
 const MAKES = ['Toyota', 'Honda', 'Subaru', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Mazda', 'Nissan', 'Volkswagen'];
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
@@ -19,16 +19,28 @@ export default function CarValuationScreen({ navigation }) {
   const [year, setYear] = useState(null);
   const [mileage, setMileage] = useState('');
   const [result, setResult] = useState(null);
+  const [estimating, setEstimating] = useState(false);
 
   const canEstimate = make && year && mileage;
 
-  const handleEstimate = () => {
-    if (!canEstimate) return;
-    const est = estimateValuation(
-      { make, year, mileage: parseInt(mileage.replace(/\D/g, ''), 10) || 0 },
-      cars
-    );
-    setResult(est);
+  const handleEstimate = async () => {
+    if (!canEstimate || estimating) return;
+    setEstimating(true);
+    const km = parseInt(mileage.replace(/\D/g, ''), 10) || 0;
+    try {
+      // Real market comparables from the platform when the API is up
+      const est = await carsApi.getValuation({ make, year, mileage: km });
+      if (est && est.comparables >= 2 && est.low && est.high) {
+        setResult({ low: est.low, high: est.high, comparables: est.comparables });
+        return;
+      }
+      // Not enough server-side data → local estimator over bundled inventory
+      setResult(estimateValuation({ make, year, mileage: km }, cars));
+    } catch {
+      setResult(estimateValuation({ make, year, mileage: km }, cars));
+    } finally {
+      setEstimating(false);
+    }
   };
 
   // ── Result state ──
@@ -151,10 +163,11 @@ export default function CarValuationScreen({ navigation }) {
         />
 
         <Button
-          title={canEstimate ? 'Get My Valuation' : 'Fill in make, year & mileage'}
+          title={estimating ? 'Checking the market…' : canEstimate ? 'Get My Valuation' : 'Fill in make, year & mileage'}
           icon="trending-up-outline"
           onPress={handleEstimate}
-          style={{ marginTop: 24, opacity: canEstimate ? 1 : 0.5 }}
+          disabled={!canEstimate || estimating}
+          style={{ marginTop: 24 }}
         />
 
         <View style={styles.privacyRow}>

@@ -11,6 +11,8 @@ const NAV = [
   { href: '/inspections', icon: '🔧', label: 'Inspections' },
   { href: '/handovers',   icon: '🤝', label: 'Handovers' },
   { href: '/listings',    icon: '🚗', label: 'Listings' },
+  { href: '/rentals',     icon: '🔑', label: 'Rentals' },
+  { href: '/fees',        icon: '💰', label: 'Revenue' },
   { href: '/users',       icon: '👤', label: 'Users / ID Queue' },
   { href: '/analytics',  icon: '📈', label: 'Analytics' },
 ]

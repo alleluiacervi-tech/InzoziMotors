@@ -81,6 +81,7 @@ module.exports = function attachSocket(io) {
     // Typing indicator — lightweight, no DB write
     socket.on('typing', ({ conversationId }) => {
       socket.to(`conv:${conversationId}`).emit('user_typing', {
+        conversationId,
         userId: socket.user.id,
         name: socket.user.name,
       });
@@ -88,6 +89,7 @@ module.exports = function attachSocket(io) {
 
     socket.on('stop_typing', ({ conversationId }) => {
       socket.to(`conv:${conversationId}`).emit('user_stop_typing', {
+        conversationId,
         userId: socket.user.id,
       });
     });

@@ -9,7 +9,9 @@ interface Stats {
   pendingHandovers: number
   pendingIdVerifications: number
   totalSold: number
+  totalGMV: number
   totalRevenue: number
+  feesOutstanding: number
 }
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
@@ -53,7 +55,11 @@ export default function DashboardPage() {
         <StatCard label="Pending Handovers"    value={s.pendingHandovers}       icon="🤝" color="bg-purple-100 text-purple-700" />
         <StatCard label="ID Queue"             value={s.pendingIdVerifications} icon="🪪" color="bg-blue-100 text-blue-700" />
         <StatCard label="Cars Sold"            value={s.totalSold}              icon="✅" color="bg-gray-100 text-gray-700" />
-        <StatCard label="Revenue (RWF)"        value={`${(s.totalRevenue / 1_000_000).toFixed(1)}M`} icon="💰" color="bg-green-100 text-green-700" />
+        <StatCard label="GMV (RWF)"            value={`${((s.totalGMV || 0) / 1_000_000).toFixed(1)}M`}     icon="🚙" color="bg-blue-100 text-blue-700" />
+        <StatCard label="Fee Revenue (RWF)"    value={`${((s.totalRevenue || 0) / 1_000_000).toFixed(1)}M`} icon="💰" color="bg-green-100 text-green-700" />
+        {(s.feesOutstanding || 0) > 0 && (
+          <StatCard label="Fees Outstanding (RWF)" value={Number(s.feesOutstanding).toLocaleString()} icon="⏳" color="bg-amber-100 text-amber-700" />
+        )}
       </div>
 
       {/* Quick links */}

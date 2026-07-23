@@ -21,6 +21,17 @@ export const cars = {
   },
 
   // Toggle bookmarked status (Save/Unsave) for a listing
+  // Seller changes the price of their own live listing
+  updateCarPrice: async (id, price) => {
+    return await api.patch(`/cars/${id}/price`, { price });
+  },
+
+  // Market-based valuation from live/sold comparables on the platform
+  getValuation: async ({ make, year, mileage }) => {
+    const params = new URLSearchParams({ make, year: String(year), mileage: String(mileage || '') });
+    return await api.get(`/cars/valuation/estimate?${params.toString()}`);
+  },
+
   saveCar: async (id) => {
     return await api.post(`/cars/save/${id}`);
   },

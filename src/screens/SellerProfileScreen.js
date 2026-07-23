@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Image,
 } from 'react-native';
@@ -9,6 +9,14 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
+import reviewsApi from '../api/reviews';
+
+function formatReviewDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 const SCORE_COMPONENTS = [
   {
@@ -108,7 +116,37 @@ function StarRating({ value, size = 14 }) {
 
 export default function SellerProfileScreen({ navigation, route }) {
   const sellerName = route.params?.sellerName || '';
-  const profile = SELLER_PROFILES[sellerName] || { ...DEFAULT_SELLER_PROFILE, name: sellerName || 'Seller' };
+  // Real seller id (UUID) when navigated from an API-backed listing; absent in demo mode
+  const sellerId = route.params?.sellerId || route.params?.userId || null;
+  const baseProfile = SELLER_PROFILES[sellerName] || { ...DEFAULT_SELLER_PROFILE, name: sellerName || 'Seller' };
+
+  const [apiReviews, setApiReviews] = useState(null);
+
+  useEffect(() => {
+    if (!sellerId) return undefined;
+    let cancelled = false;
+    reviewsApi.getSellerReviews(sellerId)
+      .then((data) => {
+        if (cancelled || !data || !Array.isArray(data.reviews)) return;
+        setApiReviews({
+          reviews: data.reviews.map((r) => ({
+            id: r.id,
+            buyer: r.reviewer_name || 'Buyer',
+            rating: r.rating,
+            text: r.comment || (r.car_title ? `Purchased: ${r.car_title}` : ''),
+            date: formatReviewDate(r.created_at),
+          })),
+          avgRating: data.average_rating != null ? Number(data.average_rating) : 0,
+          totalReviews: data.total != null ? Number(data.total) : data.reviews.length,
+        });
+      })
+      .catch(() => {
+        // API unreachable — keep mock reviews (demo mode)
+      });
+    return () => { cancelled = true; };
+  }, [sellerId]);
+
+  const profile = apiReviews ? { ...baseProfile, ...apiReviews } : baseProfile;
 
   const totalScore = SCORE_COMPONENTS.reduce((s, c) => s + c.calcPts(profile), 0);
 

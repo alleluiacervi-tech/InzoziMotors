@@ -6,11 +6,16 @@ import { api } from '@/lib/api'
 const STATUS_COLORS: Record<string, string> = {
   pending:   'bg-purple-100 text-purple-700',
   confirmed: 'bg-green-100 text-green-700',
+  complete:  'bg-gray-100 text-gray-600',
   cancelled: 'bg-gray-100 text-gray-500',
 }
 
+const TAB_LABELS: Record<string, string> = {
+  pending: 'pending', confirmed: 'confirmed', complete: 'completed', cancelled: 'cancelled',
+}
+
 export default function HandoversPage() {
-  const [tab, setTab]         = useState<'pending' | 'confirmed' | 'cancelled'>('pending')
+  const [tab, setTab]         = useState<'pending' | 'confirmed' | 'complete' | 'cancelled'>('pending')
   const [items, setItems]     = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
@@ -61,7 +66,7 @@ export default function HandoversPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6">
-        {(['pending', 'confirmed', 'cancelled'] as const).map((t) => (
+        {(['pending', 'confirmed', 'complete', 'cancelled'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -69,7 +74,7 @@ export default function HandoversPage() {
               tab === t ? 'bg-brand text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-brand'
             }`}
           >
-            {t}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
@@ -78,7 +83,7 @@ export default function HandoversPage() {
         <div className="text-gray-400 text-sm">Loading…</div>
       ) : items.length === 0 ? (
         <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No {tab} handovers.
+          No {TAB_LABELS[tab]} handovers.
         </div>
       ) : (
         <div className="space-y-4">
@@ -139,6 +144,14 @@ export default function HandoversPage() {
                 >
                   {actionId === h.id ? 'Working…' : '🤝 Handover Done — Mark Sold'}
                 </button>
+              )}
+              {tab === 'complete' && (
+                <div className="mt-4 flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+                  <span>✅ Completed — car sold{h.booking_id ? ` · Ref ${h.booking_id}` : ''}</span>
+                  {h.confirmed_at && (
+                    <span>Confirmed {new Date(h.confirmed_at).toLocaleDateString()}</span>
+                  )}
+                </div>
               )}
             </div>
           ))}

@@ -46,6 +46,22 @@ export default function ListingsPage() {
     }
   }
 
+  async function feature(id: string) {
+    if (!window.confirm('Feature this listing for 7 days? It will be boosted to the top of the feed.')) return
+    setActionId(id)
+    try {
+      await api.featureCar(id, 7)
+      load(statusFilter)
+    } catch (e: any) {
+      alert(e.message)
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  const isFeatured = (car: any) =>
+    car.featured_until && new Date(car.featured_until).getTime() > Date.now()
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -93,9 +109,16 @@ export default function ListingsPage() {
               <div className="p-4">
                 <div className="flex items-center justify-between mb-1 gap-2">
                   <span className="font-semibold text-gray-900 text-sm truncate">{car.year} {car.make} {car.model}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${STATUS_COLORS[car.status] || 'bg-gray-100 text-gray-600'}`}>
-                    {car.status}
-                  </span>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {isFeatured(car) && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600">
+                        ★ Featured
+                      </span>
+                    )}
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[car.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {car.status}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-xs text-gray-500">{car.mileage?.toLocaleString()} km · {car.location}</p>
                 <p className="text-sm font-bold text-brand mt-1">RWF {Number(car.price).toLocaleString()}</p>
@@ -110,6 +133,15 @@ export default function ListingsPage() {
                     >
                       Photos ({car.images?.length || 0})
                     </Link>
+                  )}
+                  {car.status === 'live' && !isFeatured(car) && (
+                    <button
+                      onClick={() => feature(car.id)}
+                      disabled={actionId === car.id}
+                      className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50"
+                    >
+                      Feature
+                    </button>
                   )}
                   {car.status === 'live' && (
                     <button

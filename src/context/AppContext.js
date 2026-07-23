@@ -182,6 +182,7 @@ export function AppProvider({ children }) {
 
   // Socket state
   const [socket, setSocket] = useState(null);
+  const [typingConvId, setTypingConvId] = useState(null);
 
   // Saved searches
   const [savedSearches, setSavedSearches] = useState(INITIAL_SAVED_SEARCHES);
@@ -480,6 +481,12 @@ export function AppProvider({ children }) {
         })));
 
         if (user.role === 'admin') {
+          // Admins see the whole submission pipeline, not just their own
+          try {
+            const adminSubs = await submissionsApi.getAdminSubmissions();
+            setSubmissions(adminSubs.map(mapSubmission));
+          } catch {}
+
           const queueList = await api.get('/id-verification/queue');
           setPendingVerifications(queueList.map((v) => ({
             id: v.id,
@@ -584,6 +591,14 @@ export function AppProvider({ children }) {
                 : c
             )
           );
+        });
+
+        // Typing indicator: track which conversation the other party is typing in
+        newSocket.on('user_typing', ({ conversationId }) => {
+          setTypingConvId(conversationId);
+        });
+        newSocket.on('user_stop_typing', () => {
+          setTypingConvId(null);
         });
 
         setSocket(newSocket);
@@ -828,19 +843,32 @@ export function AppProvider({ children }) {
   }, [mapSubmission]);
 
   const updateSubmissionStatus = useCallback((id, status, detail = '') => {
-    // local update fallback
+    // Local-first so the admin UI responds instantly; sync to the API for
+    // real (UUID) submissions — local demo ids just no-op server-side.
     setSubmissions((prev) =>
       prev.map((s) => s.id === id ? { ...s, status, statusDetail: detail } : s)
     );
+    if (String(id).includes('-')) {
+      submissionsApi.updateSubmissionStatus(id, { status, admin_notes: detail || undefined })
+        .catch(() => {});
+    }
   }, []);
 
   // Price change on a live listing — no status regression, listing stays live
   const updateSubmissionPrice = useCallback((id, newPrice) => {
+    let carId;
     setSubmissions((prev) =>
-      prev.map((s) => s.id === id
-        ? { ...s, askingPrice: newPrice, statusDetail: 'Price updated — listing stays live' }
-        : s)
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        carId = s.listingId;
+        return { ...s, askingPrice: newPrice, statusDetail: 'Price updated — listing stays live' };
+      })
     );
+    // Sync to the seller price-edit route for real listings (records price
+    // history + fires price-drop alerts server-side)
+    if (carId && String(carId).includes('-')) {
+      carsApi.updateCarPrice(carId, newPrice).catch(() => {});
+    }
     setNotifications((prev) => [{
       id: 'price_' + Date.now(),
       type: 'listing_update',
@@ -910,8 +938,24 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  // Join the socket room whenever a thread is opened — realtime messages
+  // previously only arrived for conversations created this session.
+  const joinConversation = useCallback((convId) => {
+    if (socket && convId && !String(convId).startsWith('new_')) {
+      socket.emit('join_conversation', convId);
+    }
+  }, [socket]);
+
+  // Typing signals for the thread currently being typed in
+  const sendTyping = useCallback((convId, isTyping) => {
+    if (socket && convId && !String(convId).startsWith('new_')) {
+      socket.emit(isTyping ? 'typing' : 'stop_typing', { conversationId: convId });
+    }
+  }, [socket]);
+
   const loadConversationMessages = useCallback(async (convId) => {
     if (convId.startsWith('new_')) return;
+    joinConversation(convId);
     try {
       const msgList = await messagesApi.getConversationMessages(convId);
       const mapped = msgList.map((m) => {
@@ -929,7 +973,7 @@ export function AppProvider({ children }) {
     } catch (err) {
       console.warn('Error fetching message history:', err);
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, joinConversation]);
 
   const sendMessage = useCallback(async (convId, text, carId = null) => {
     try {
@@ -1196,6 +1240,7 @@ export function AppProvider({ children }) {
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
     // Chat messages
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
+    joinConversation, sendTyping, typingConvId,
     // Authentication
     currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, loading, error,
   };

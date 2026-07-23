@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image,
+  View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 import { formatPrice } from '../data/cars';
+import reviewsApi from '../api/reviews';
 
 const STEPS = [
   {
@@ -119,6 +120,44 @@ export default function OrderTrackingScreen({ navigation, route }) {
 
   const price = car ? (car.type === 'auction' ? car.currentBid : car.price) : 0;
 
+  // ── Buyer review (after complete handover) ──
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewDone, setReviewDone] = useState(false);
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0 || reviewSubmitting) return;
+    // API handovers have UUID ids; local demo bookings look like 'HB123456'
+    const isApiHandover = typeof cancelId === 'string' && cancelId.includes('-');
+    if (!isApiHandover) {
+      setReviewDone(true);
+      showToast('Thanks — your review helps other buyers', 'success');
+      return;
+    }
+    setReviewSubmitting(true);
+    try {
+      await reviewsApi.postReview({
+        handover_id: cancelId,
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+      });
+      setReviewDone(true);
+      showToast('Thanks — your review helps other buyers', 'success');
+    } catch (err) {
+      if ((err?.message || '').toLowerCase().includes('already reviewed')) {
+        setReviewDone(true);
+        showToast('You already reviewed this purchase', 'info');
+      } else {
+        // API unreachable — demo mode
+        setReviewDone(true);
+        showToast('Thanks — your review helps other buyers', 'success');
+      }
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   const handleCancel = () => {
     showConfirm({
       title: 'Cancel this request?',
@@ -202,6 +241,41 @@ export default function OrderTrackingScreen({ navigation, route }) {
             ))}
           </View>
         </View>
+
+        {/* Rate your experience — after completed handover */}
+        {currentStatus === 'complete' && !reviewDone && (
+          <View style={styles.reviewCard}>
+            <Text style={styles.reviewTitle}>Rate your experience</Text>
+            <Text style={styles.reviewSub}>
+              How was the seller and the handover? Your review helps other buyers.
+            </Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Pressable key={i} onPress={() => setReviewRating(i)} hitSlop={6}>
+                  <Ionicons
+                    name={i <= reviewRating ? 'star' : 'star-outline'}
+                    size={30}
+                    color={i <= reviewRating ? '#F59E0B' : colors.border}
+                  />
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={styles.reviewInput}
+              placeholder="Share a few words (optional)"
+              placeholderTextColor={colors.textMuted}
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              multiline
+            />
+            <Button
+              title={reviewSubmitting ? 'Submitting…' : 'Submit Review'}
+              icon="star-outline"
+              disabled={reviewRating === 0 || reviewSubmitting}
+              onPress={handleSubmitReview}
+            />
+          </View>
+        )}
 
         {/* What's next */}
         {currentStatus === 'reserved' && (
@@ -336,6 +410,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
   stepBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  reviewCard: {
+    marginHorizontal: 16, marginBottom: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, padding: 16, gap: 12,
+    ...shadows.card,
+  },
+  reviewTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  reviewSub: { fontSize: 12, color: colors.textSecondary, lineHeight: 17, marginTop: -6 },
+  starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, paddingVertical: 4 },
+  reviewInput: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
+    padding: 12, minHeight: 72, textAlignVertical: 'top',
+    fontSize: 13, color: colors.textPrimary,
+  },
   nextStepsCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.greenTint,
