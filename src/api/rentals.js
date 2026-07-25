@@ -1,4 +1,5 @@
 import api from './client';
+import { appendImage } from '../utils/media';
 
 export const rentals = {
   // Active fleet, each car including booked_ranges for availability greying
@@ -23,6 +24,19 @@ export const rentals = {
   // record: optional condition record / agreement stamp
   updateBookingStatus: async (bookingId, status, record = null) => {
     return await api.patch(`/rentals/bookings/${bookingId}/status`, { status, record });
+  },
+
+  // Condition photos taken at the counter. stage: 'pickup' | 'return' — the
+  // server merges the URLs into that stage's record, so the evidence sits
+  // alongside the signed condition notes.
+  uploadBookingPhotos: async (bookingId, assets, stage = 'pickup') => {
+    if (!assets?.length) throw new Error('No photos to upload');
+    const formData = new FormData();
+    formData.append('stage', stage);
+    assets.forEach((asset, i) => {
+      appendImage(formData, 'photos', asset, asset.slotKey || `${stage}-${i + 1}`);
+    });
+    return await api.upload(`/rentals/bookings/${bookingId}/photos`, formData);
   },
 };
 

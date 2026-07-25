@@ -9,6 +9,7 @@ import { LogoMark } from './Logo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius } from '../theme';
 import { useApp } from '../context/AppContext';
+import { useSellerGate } from '../hooks/useSellerGate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.78, 320);
@@ -41,7 +42,8 @@ const MENU_SECTIONS = [
   {
     title: 'Sell a Car',
     items: [
-      { icon: 'car-outline', label: 'Submit My Car', screen: 'CarSubmission' },
+      { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
+      { icon: 'car-outline', label: 'Submit My Car', screen: 'CarSubmission', gated: true },
       { icon: 'time-outline', label: 'My Submissions', screen: 'SellerDashboard' },
       { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics' },
       { icon: 'people-outline', label: 'Referral Program', screen: 'Referral' },
@@ -51,6 +53,7 @@ const MENU_SECTIONS = [
     title: 'Trust & Safety',
     items: [
       { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
+      { icon: 'shield-half-outline', label: 'My Disputes', screen: 'Disputes' },
     ],
   },
 ];
@@ -58,6 +61,7 @@ const MENU_SECTIONS = [
 export default function DrawerMenu({ visible, onClose, navigation }) {
   const insets = useSafeAreaInsets();
   const { currentUser, isLoggedIn, logoutUser, setHomeMode } = useApp();
+  const gate = useSellerGate(navigation);
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -101,6 +105,10 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
     if (item.action === 'browseRentals') {
       setHomeMode('rent');
       navigate('Main');
+    } else if (item.gated) {
+      // Close first so the verification prompt isn't buried under the drawer
+      onClose();
+      setTimeout(() => gate(item.screen), 250);
     } else {
       navigate(item.screen);
     }

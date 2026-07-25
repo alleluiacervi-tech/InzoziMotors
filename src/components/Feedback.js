@@ -7,9 +7,11 @@ import { colors, radius, fonts, shadows } from '../theme';
 // Branded feedback layer — replaces OS Alert popups.
 //   showToast(message, 'success' | 'error' | 'info')  — calm bottom snackbar
 //   await showConfirm({ title, message, confirmLabel, cancelLabel, destructive })
+//   await showActionSheet({ title, message, options: [{ label, icon }] }) -> index | -1
 // Mount <FeedbackHost /> once (App.js); the imperative API works anywhere.
 let toastFn = null;
 let confirmFn = null;
+let sheetFn = null;
 
 export function showToast(message, type = 'info') {
   if (toastFn) toastFn(message, type);
@@ -17,6 +19,11 @@ export function showToast(message, type = 'info') {
 
 export function showConfirm(opts) {
   return confirmFn ? confirmFn(opts) : Promise.resolve(false);
+}
+
+// Resolves with the chosen option's index, or -1 if dismissed.
+export function showActionSheet(opts) {
+  return sheetFn ? sheetFn(opts) : Promise.resolve(-1);
 }
 
 const TOAST_META = {
@@ -55,6 +62,17 @@ export default function FeedbackHost() {
   const close = (result) => {
     if (confirm) confirm.resolve(result);
     setConfirm(null);
+  };
+
+  // ── Action sheet ──
+  const [sheet, setSheet] = useState(null);
+  useEffect(() => {
+    sheetFn = (opts) => new Promise((resolve) => setSheet({ ...opts, resolve }));
+    return () => { sheetFn = null; };
+  }, []);
+  const closeSheet = (index) => {
+    if (sheet) sheet.resolve(index);
+    setSheet(null);
   };
 
   const meta = toast ? (TOAST_META[toast.type] || TOAST_META.info) : null;
@@ -96,6 +114,28 @@ export default function FeedbackHost() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal visible={!!sheet} transparent animationType="fade" onRequestClose={() => closeSheet(-1)}>
+        <Pressable style={styles.backdrop} onPress={() => closeSheet(-1)}>
+          <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={styles.grabber} />
+            <Text style={styles.sheetTitle}>{sheet?.title}</Text>
+            {sheet?.message ? <Text style={styles.sheetMessage}>{sheet.message}</Text> : null}
+            <View style={styles.optionList}>
+              {(sheet?.options || []).map((opt, i) => (
+                <Pressable key={opt.label} style={styles.optionRow} onPress={() => closeSheet(i)}>
+                  {opt.icon ? <Ionicons name={opt.icon} size={19} color={colors.textSecondary} /> : null}
+                  <Text style={styles.optionText}>{opt.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </Pressable>
+              ))}
+            </View>
+            <Pressable style={styles.cancelBtn} onPress={() => closeSheet(-1)} hitSlop={6}>
+              <Text style={styles.cancelBtnText}>{sheet?.cancelLabel || 'Cancel'}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </>
   );
 }
@@ -131,6 +171,13 @@ const styles = StyleSheet.create({
   },
   confirmBtnDanger: { backgroundColor: colors.danger },
   confirmBtnText: { fontSize: 15, fontFamily: fonts.extraBold, color: '#FFFFFF' },
+  optionList: { marginTop: 18, gap: 8 },
+  optionRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.xl, paddingHorizontal: 16, paddingVertical: 15,
+  },
+  optionText: { flex: 1, fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   cancelBtn: { alignItems: 'center', paddingVertical: 14, marginTop: 2 },
   cancelBtnText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textSecondary },
 });

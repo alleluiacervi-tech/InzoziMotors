@@ -5,9 +5,51 @@ const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 
 const router = express.Router();
 
+// ─── Market intelligence ──────────────────────────────────────────────────────
+// The app used to fabricate "below market %" / "listed N days ago" from a
+// hardcoded table; the server is the only honest source of these numbers.
+// Two LATERAL passes per row — never an N+1 round trip. Exact make+model within
+// ±2 years first; if that pool is thin, fall back to make+body_type within ±3.
+// Fewer than 3 comparables is noise, not a market: market_avg stays NULL.
+const MIN_COMPARABLES = 3;
+
+const MARKET_LATERALS = `
+       LEFT JOIN LATERAL (
+         SELECT AVG(x.price)::int AS avg_price, COUNT(*)::int AS n
+         FROM cars x
+         WHERE x.id <> c.id AND x.status IN ('live', 'sold') AND x.price > 0
+           AND x.make ILIKE c.make AND x.model ILIKE c.model
+           AND x.year BETWEEN c.year - 2 AND c.year + 2
+       ) mk ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT AVG(x.price)::int AS avg_price, COUNT(*)::int AS n
+         FROM cars x
+         WHERE x.id <> c.id AND x.status IN ('live', 'sold') AND x.price > 0
+           AND x.make ILIKE c.make AND x.body_type ILIKE c.body_type
+           AND x.year BETWEEN c.year - 3 AND c.year + 3
+       ) bt ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT CASE WHEN mk.n >= ${MIN_COMPARABLES} THEN mk.avg_price
+                     WHEN bt.n >= ${MIN_COMPARABLES} THEN bt.avg_price END AS market_avg,
+                CASE WHEN mk.n >= ${MIN_COMPARABLES} THEN mk.n
+                     WHEN bt.n >= ${MIN_COMPARABLES} THEN bt.n ELSE 0 END AS comparables
+       ) mkt ON TRUE`;
+
+// below_market is clamped at 0 so the app can render it unconditionally;
+// market_diff keeps its sign (negative = under market).
+const MARKET_COLUMNS = `
+              mkt.market_avg, mkt.comparables,
+              GREATEST(0, COALESCE(mkt.market_avg, c.price) - c.price) AS below_market,
+              CASE WHEN mkt.market_avg IS NOT NULL AND mkt.market_avg > 0
+                   THEN ROUND(((c.price - mkt.market_avg)::numeric / mkt.market_avg) * 100)::int
+              END AS market_diff,
+              CASE WHEN c.listed_at IS NOT NULL
+                   THEN FLOOR(EXTRACT(EPOCH FROM (NOW() - c.listed_at)) / 86400)::int
+              END AS listed_days`;
+
 // GET /cars — browse with optional filters
 router.get('/', async (req, res) => {
-  const { make, model, min_price, max_price, min_year, max_year,
+  const { q, make, model, min_price, max_price, min_year, max_year,
           fuel_type, transmission, body_type, drive_side, status,
           sort = 'listed_at', order = 'desc', limit = 20, offset = 0 } = req.query;
 
@@ -26,6 +68,20 @@ router.get('/', async (req, res) => {
   if (body_type)     { params.push(body_type);     conditions.push(`body_type = $${params.length}`); }
   if (drive_side)    { params.push(drive_side);    conditions.push(`drive_side = $${params.length}`); }
 
+  // Free-text box in the app. Every term must match somewhere across the
+  // vehicle's identifying fields, so "toyota suv" narrows instead of widening.
+  // ILIKE over a handful of columns is right at this catalogue size; swap for
+  // a tsvector index when the inventory outgrows a few thousand rows.
+  if (q && String(q).trim()) {
+    String(q).trim().split(/\s+/).slice(0, 6).forEach((term) => {
+      params.push(`%${term}%`);
+      conditions.push(
+        `(title ILIKE $${params.length} OR make ILIKE $${params.length}
+          OR model ILIKE $${params.length} OR body_type ILIKE $${params.length})`
+      );
+    });
+  }
+
   const safeSort = ['listed_at', 'price', 'mileage', 'year', 'views'].includes(sort) ? sort : 'listed_at';
   const safeOrder = order === 'asc' ? 'ASC' : 'DESC';
 
@@ -34,15 +90,26 @@ router.get('/', async (req, res) => {
   params.push(safeLimit, safeOffset);
 
   try {
+    // Paginate first, enrich second: the market laterals then run for one page
+    // of cars, not the whole table. Ordering is repeated outside the CTE
+    // because a join makes no promise about preserving row order.
     const { rows } = await pool.query(
-      `SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust,
-              (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count
-       FROM cars c
+      `WITH page AS (
+         SELECT c.*
+         FROM cars c
+         WHERE ${conditions.join(' AND ')}
+         ORDER BY (c.featured_until IS NOT NULL AND c.featured_until > NOW()) DESC,
+                  c.${safeSort} ${safeOrder}
+         LIMIT $${params.length - 1} OFFSET $${params.length}
+       )
+       SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust,
+              (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
+${MARKET_COLUMNS}
+       FROM page c
        JOIN users u ON u.id = c.seller_id
-       WHERE ${conditions.join(' AND ')}
+${MARKET_LATERALS}
        ORDER BY (c.featured_until IS NOT NULL AND c.featured_until > NOW()) DESC,
-                ${safeSort} ${safeOrder}
-       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+                c.${safeSort} ${safeOrder}`,
       params
     );
     res.json(rows);
@@ -109,6 +176,9 @@ router.get('/:id/history', async (req, res) => {
 // GET /cars/:id
 router.get('/:id', async (req, res) => {
   try {
+    // price_history is ordered oldest-first, so element 0 is the original
+    // listing price. A car with no recorded changes returns [] — nothing is
+    // synthesised; the app renders an empty history rather than a fake one.
     const { rows } = await pool.query(
       `SELECT c.*, u.name AS seller_name, u.phone AS seller_phone,
               u.trust_score AS seller_trust,
@@ -116,9 +186,11 @@ router.get('/:id', async (req, res) => {
               u.id_verified AS seller_id_verified,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
               COALESCE((SELECT json_agg(json_build_object('price', ph.price, 'at', ph.changed_at) ORDER BY ph.changed_at)
-                        FROM price_history ph WHERE ph.car_id = c.id), '[]') AS price_history
+                        FROM price_history ph WHERE ph.car_id = c.id), '[]') AS price_history,
+${MARKET_COLUMNS}
        FROM cars c
        JOIN users u ON u.id = c.seller_id
+${MARKET_LATERALS}
        WHERE c.id = $1`,
       [req.params.id]
     );

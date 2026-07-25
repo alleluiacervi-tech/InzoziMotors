@@ -3,6 +3,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { recomputeTrustScore } = require('../lib/trust');
 const { withTransaction } = require('../lib/tx');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
@@ -42,24 +43,24 @@ router.post('/', requireAuth, async (req, res) => {
 
       await client.query("UPDATE cars SET status = 'reserved' WHERE id = $1", [car_id]);
 
-      await client.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'handover', 'Request received', $2, $3)`,
-        [req.user.id,
-         center && handover_date
-           ? `Your slot for the ${car.title} is confirmed at ${center} on ${handover_date} at ${handover_time}. The car is now reserved for you.`
-           : `Your request for the ${car.title} is in — the car is reserved for you. We'll contact you shortly to arrange the handover.`,
-         JSON.stringify({ bookingId: booking_id, carId: car_id })]
-      );
-      await client.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'handover', 'A buyer wants your car', $2, $3)`,
-        [car.seller_id,
-         center && handover_date
-           ? `A buyer has booked a handover for your ${car.title} at ${center} on ${handover_date} at ${handover_time}. Please attend.`
-           : `A buyer wants your ${car.title}. Inzozi will coordinate the handover with both of you shortly.`,
-         JSON.stringify({ bookingId: booking_id, carId: car_id })]
-      );
+      await notifyUser(client, {
+        user_id: req.user.id,
+        type: 'handover',
+        title: 'Request received',
+        body: center && handover_date
+          ? `Your slot for the ${car.title} is confirmed at ${center} on ${handover_date} at ${handover_time}. The car is now reserved for you.`
+          : `Your request for the ${car.title} is in — the car is reserved for you. We'll contact you shortly to arrange the handover.`,
+        meta: JSON.stringify({ bookingId: booking_id, carId: car_id }),
+      });
+      await notifyUser(client, {
+        user_id: car.seller_id,
+        type: 'handover',
+        title: 'A buyer wants your car',
+        body: center && handover_date
+          ? `A buyer has booked a handover for your ${car.title} at ${center} on ${handover_date} at ${handover_time}. Please attend.`
+          : `A buyer wants your ${car.title}. Inzozi will coordinate the handover with both of you shortly.`,
+        meta: JSON.stringify({ bookingId: booking_id, carId: car_id }),
+      });
 
       return { status: 201, body: rows[0] };
     });
@@ -171,13 +172,13 @@ router.patch('/:id/confirm', requireAdmin, async (req, res) => {
         : ' We will share the exact time and place shortly.';
 
       for (const [uid, title] of [[h.buyer_id, 'Handover confirmed'], [h.seller_id, 'Handover confirmed']]) {
-        await client.query(
-          `INSERT INTO notifications (user_id, type, title, body, meta)
-           VALUES ($1, 'handover', $2, $3, $4)`,
-          [uid, title,
-           `The handover for the ${carTitle} is confirmed.${slotText}`,
-           JSON.stringify({ bookingId: h.booking_id, carId: h.car_id })]
-        );
+        await notifyUser(client, {
+          user_id: uid,
+          type: 'handover',
+          title,
+          body: `The handover for the ${carTitle} is confirmed.${slotText}`,
+          meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
+        });
       }
 
       return { status: 200, body: updated };
@@ -237,13 +238,13 @@ router.patch('/:id/complete', requireAdmin, async (req, res) => {
             'UPDATE referral_redemptions SET consumed_at = NOW() WHERE id = $1',
             [redemption.rows[0].id]
           );
-          await client.query(
-            `INSERT INTO notifications (user_id, type, title, body, meta)
-             VALUES ($1, 'listing_update', 'Referral discount applied', $2, $3)`,
-            [h.seller_id,
-             `Your referral reward saved you ${Math.round(discountRate * 100)}% on this sale's commission.`,
-             JSON.stringify({ handoverId: h.id })]
-          );
+          await notifyUser(client, {
+            user_id: h.seller_id,
+            type: 'listing_update',
+            title: 'Referral discount applied',
+            body: `Your referral reward saved you ${Math.round(discountRate * 100)}% on this sale's commission.`,
+            meta: JSON.stringify({ handoverId: h.id }),
+          });
         }
       }
 
@@ -258,20 +259,20 @@ router.patch('/:id/complete', requireAdmin, async (req, res) => {
       const carRes = await client.query('SELECT title FROM cars WHERE id = $1', [h.car_id]);
       const carTitle = carRes.rows[0]?.title || 'your car';
 
-      await client.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'handover', 'Handover complete — car is yours!', $2, $3)`,
-        [h.buyer_id,
-         `The ${carTitle} handover is confirmed by Inzozi. Your 7-day return guarantee starts now.`,
-         JSON.stringify({ bookingId: h.booking_id, carId: h.car_id })]
-      );
-      await client.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'handover', 'Sale complete', $2, $3)`,
-        [h.seller_id,
-         `The handover for ${carTitle} has been confirmed by the Inzozi team. The listing is now closed.`,
-         JSON.stringify({ bookingId: h.booking_id, carId: h.car_id })]
-      );
+      await notifyUser(client, {
+        user_id: h.buyer_id,
+        type: 'handover',
+        title: 'Handover complete — car is yours!',
+        body: `The ${carTitle} handover is confirmed by Inzozi. Your 7-day return guarantee starts now.`,
+        meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
+      });
+      await notifyUser(client, {
+        user_id: h.seller_id,
+        type: 'handover',
+        title: 'Sale complete',
+        body: `The handover for ${carTitle} has been confirmed by the Inzozi team. The listing is now closed.`,
+        meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
+      });
 
       return { status: 200, body: { success: true } };
     });
@@ -298,13 +299,13 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
       const h = hRes.rows[0];
       await client.query("UPDATE handovers SET status = 'cancelled' WHERE id = $1", [h.id]);
       await client.query("UPDATE cars SET status = 'live' WHERE id = $1", [h.car_id]);
-      await client.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'handover', 'Handover cancelled', $2, $3)`,
-        [h.seller_id,
-         'The buyer cancelled their request. Your listing is live again.',
-         JSON.stringify({ bookingId: h.booking_id, carId: h.car_id })]
-      );
+      await notifyUser(client, {
+        user_id: h.seller_id,
+        type: 'handover',
+        title: 'Handover cancelled',
+        body: 'The buyer cancelled their request. Your listing is live again.',
+        meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
+      });
       return { status: 200, body: { success: true } };
     });
     res.status(result.status).json(result.body);

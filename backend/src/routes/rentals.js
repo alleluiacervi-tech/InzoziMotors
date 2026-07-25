@@ -3,6 +3,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadPhotos, publicUploadUrl } = require('../middleware/upload');
 const { withTransaction } = require('../lib/tx');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
@@ -152,13 +153,13 @@ router.post('/:id/book', requireAuth, async (req, res) => {
          cost.total + pickupFee]
       );
 
-      await client.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'listing_update', 'Rental booking confirmed', $2, $3)`,
-        [req.user.id,
-         `${car.title} is reserved from ${start_date} for ${numDays} day${numDays > 1 ? 's' : ''}. Bring your driving licence and ID — payment is at the center.`,
-         JSON.stringify({ bookingRef, rentalCarId: car.id })]
-      );
+      await notifyUser(client, {
+        user_id: req.user.id,
+        type: 'listing_update',
+        title: 'Rental booking confirmed',
+        body: `${car.title} is reserved from ${start_date} for ${numDays} day${numDays > 1 ? 's' : ''}. Bring your driving licence and ID — payment is at the center.`,
+        meta: JSON.stringify({ bookingRef, rentalCarId: car.id }),
+      });
 
       return rows[0];
     });

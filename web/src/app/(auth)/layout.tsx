@@ -1,0 +1,106 @@
+import Link from 'next/link'
+import type { ReactNode } from 'react'
+import { LogoMark } from '@/components/brand/Logo'
+import { Container, Icon, type IconName } from '@/components/ui'
+import { CENTERS } from '@/lib/site'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shell for sign in / sign up / password reset.
+//
+// Two columns: the form on the left, capped at 440px because a login form wider
+// than that reads as a data-entry screen rather than a door. The right column is
+// the one dark brand moment in the account flow — it answers "why should I make
+// an account here?" while the form answers "how". It is display-only, so it is
+// dropped entirely below lg rather than stacked; on a phone it would push the
+// form under the fold.
+//
+// Header and footer come from the root layout — auth is not a walled garden.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Every claim here is a mechanic that actually exists in the product. */
+const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
+  {
+    icon: 'shield-check',
+    title: '150-point inspection',
+    desc: 'Engine, brakes, body, interior, electronics, tyres and documentation are checked in person before a car can be listed.',
+  },
+  {
+    icon: 'eye-off',
+    title: 'Only Inzozi publishes',
+    desc: 'Sellers submit a car — they never post it. A listing goes live only after our team has inspected and photographed it.',
+  },
+  {
+    icon: 'refresh',
+    title: 'Seven days to decide',
+    desc: 'Every certified purchase carries a 7-day window. If the car does not match its report, return it to any center for a full refund.',
+  },
+  {
+    icon: 'cash',
+    title: 'No payment in the app',
+    desc: 'Money changes hands in person at an Inzozi center, never through this site. Buyers pay us nothing.',
+  },
+]
+
+export default function AuthLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="bg-surface-page">
+      {/* Columns stretch to the taller of the two, so the centers list can sit on
+          the bottom edge of the panel while the form stays optically centred. */}
+      <Container className="grid gap-12 py-12 lg:grid-cols-2 lg:gap-16 lg:py-20">
+        <div className="flex items-center justify-center">
+          <div className="w-full max-w-[440px]">{children}</div>
+        </div>
+
+        <aside className="hidden rounded-3xl bg-ink-900 p-10 text-white shadow-float lg:flex lg:flex-col xl:p-12">
+          <LogoMark size={48} />
+
+          <p className="mt-8 text-eyebrow font-bold uppercase text-brand-light">
+            The Inzozi difference
+          </p>
+          <h2 className="mt-3 max-w-sm text-[28px] font-extrabold leading-[1.15] tracking-[-0.025em]">
+            Why every listing here is a real car.
+          </h2>
+
+          <ul className="mt-9 space-y-6">
+            {TRUST_POINTS.map((point) => (
+              <li key={point.title} className="flex gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white/70">
+                  <Icon name={point.icon} size={19} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-bold">{point.title}</span>
+                  <span className="mt-1 block text-sm leading-relaxed text-white/70">
+                    {point.desc}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-9 text-sm text-white/70">
+            <Link
+              href="/promise"
+              className="font-bold text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
+            >
+              Read the full Inzozi Promise
+            </Link>
+          </p>
+
+          <div className="mt-auto border-t border-white/10 pt-7">
+            <p className="text-eyebrow font-bold uppercase text-white/50">
+              Inspection &amp; handover centers
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70">
+              {CENTERS.map((center) => (
+                <li key={center.id} className="flex items-center gap-1.5">
+                  <Icon name="location" size={14} />
+                  {center.name.replace(' Center', '')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      </Container>
+    </div>
+  )
+}

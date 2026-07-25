@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import { captureImage } from '../utils/media';
+import rentalsApi from '../api/rentals';
 import { useApp } from '../context/AppContext';
 import { CHECKIN_PHOTOS } from '../data/rentals';
 
-// Mock of what staff record at the counter — becomes API data in Phase 6
-const STAFF_RECORD = {
+// What the counter staff recorded, as stored on the booking's pickup_record /
+// return_record. Falls back to a neutral record when the booking predates the
+// digital walkaround (older demo bookings carry no record).
+const FALLBACK_RECORD = {
   photos: 12,
   odometer: '21,408 km',
   fuel: 'Full',
@@ -23,22 +27,60 @@ export default function RentalCheckInScreen({ navigation, route }) {
   const isReturn = route.params?.mode === 'return';
   const { updateRentalBookingStatus } = useApp();
 
+  const stage = isReturn ? 'return' : 'pickup';
+  const staffRecord = {
+    ...FALLBACK_RECORD,
+    ...(isReturn ? booking?.returnRecord : booking?.pickupRecord),
+  };
+
   const [ownPhotos, setOwnPhotos] = useState({});
   const [showOwnPhotos, setShowOwnPhotos] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleAgree = () => {
-    updateRentalBookingStatus(booking.id, isReturn ? 'completed' : 'active', {
-      ...STAFF_RECORD,
-      agreed_at: new Date().toISOString(),
-      own_photos: Object.keys(ownPhotos),
+  const handlePhotoPress = async (slot) => {
+    if (ownPhotos[slot.key]) {
+      setOwnPhotos((p) => {
+        const next = { ...p };
+        delete next[slot.key];
+        return next;
+      });
+      return;
+    }
+    const asset = await captureImage({
+      preset: 'quick',
+      title: slot.label,
+      message: 'Your own record of the car at this moment — stored with the booking.',
     });
-    showToast(
-      isReturn
-        ? 'Return complete — your deposit is refunded after the center check.'
-        : 'Check-in complete — enjoy the trip!',
-      'success'
-    );
-    navigation.goBack();
+    if (asset) setOwnPhotos((p) => ({ ...p, [slot.key]: asset }));
+  };
+
+  const handleAgree = async () => {
+    if (saving) return;
+    setSaving(true);
+    const shots = Object.entries(ownPhotos).map(([key, asset]) => ({ ...asset, slotKey: key }));
+    try {
+      // Photos first: they are the evidence the deposit check relies on, so a
+      // failed upload must not be hidden behind an already-completed booking.
+      if (shots.length) {
+        await rentalsApi.uploadBookingPhotos(booking.id, shots, stage);
+      }
+      updateRentalBookingStatus(booking.id, isReturn ? 'completed' : 'active', {
+        ...staffRecord,
+        agreed_at: new Date().toISOString(),
+        renter_photo_count: shots.length,
+      });
+      showToast(
+        isReturn
+          ? 'Return complete — your deposit is refunded after the center check.'
+          : 'Check-in complete — enjoy the trip!',
+        'success'
+      );
+      navigation.goBack();
+    } catch (err) {
+      showToast(err.message || 'Could not save your photos. Please try again.', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -65,10 +107,10 @@ export default function RentalCheckInScreen({ navigation, route }) {
         <Text style={styles.sectionTitle}>Condition recorded at the center</Text>
         <View style={styles.recordCard}>
           {[
-            { icon: 'images-outline', label: 'Walkaround photos', value: `${STAFF_RECORD.photos} angles` },
-            { icon: 'speedometer-outline', label: 'Odometer', value: STAFF_RECORD.odometer },
-            { icon: 'water-outline', label: 'Fuel level', value: STAFF_RECORD.fuel },
-            { icon: 'shield-checkmark-outline', label: 'Condition', value: STAFF_RECORD.condition },
+            { icon: 'images-outline', label: 'Walkaround photos', value: `${staffRecord.photos} angles` },
+            { icon: 'speedometer-outline', label: 'Odometer', value: staffRecord.odometer },
+            { icon: 'water-outline', label: 'Fuel level', value: staffRecord.fuel },
+            { icon: 'shield-checkmark-outline', label: 'Condition', value: staffRecord.condition },
           ].map((row, i, arr) => (
             <View key={row.label} style={[styles.recordRow, i < arr.length - 1 && styles.recordRowBorder]}>
               <View style={styles.recordIcon}>
@@ -80,7 +122,7 @@ export default function RentalCheckInScreen({ navigation, route }) {
           ))}
           <View style={styles.recordStamp}>
             <Ionicons name="checkmark-circle" size={13} color={colors.green} />
-            <Text style={styles.recordStampText}>{STAFF_RECORD.inspector}</Text>
+            <Text style={styles.recordStampText}>{staffRecord.inspector}</Text>
           </View>
         </View>
 
@@ -96,19 +138,24 @@ export default function RentalCheckInScreen({ navigation, route }) {
             <Text style={styles.sectionTitle}>Your photos (optional)</Text>
             <View style={styles.grid}>
               {CHECKIN_PHOTOS.slice(0, 4).map((slot) => {
-                const done = ownPhotos[slot.key];
+                const asset = ownPhotos[slot.key];
                 return (
                   <Pressable
                     key={slot.key}
-                    style={[styles.slot, done && styles.slotDone]}
-                    onPress={() => setOwnPhotos((p) => ({ ...p, [slot.key]: true }))}
+                    style={[styles.slot, asset && styles.slotDone]}
+                    onPress={() => handlePhotoPress(slot)}
                   >
-                    <Ionicons
-                      name={done ? 'checkmark-circle' : slot.icon}
-                      size={22}
-                      color={done ? colors.green : colors.textMuted}
-                    />
-                    <Text style={[styles.slotLabel, done && { color: colors.textPrimary }]}>{slot.label}</Text>
+                    {asset ? (
+                      <>
+                        <Image source={{ uri: asset.uri }} style={styles.slotImage} />
+                        <Ionicons name="close-circle" size={20} color="#fff" style={styles.slotRemove} />
+                      </>
+                    ) : (
+                      <>
+                        <Ionicons name={slot.icon} size={22} color={colors.textMuted} />
+                        <Text style={styles.slotLabel}>{slot.label}</Text>
+                      </>
+                    )}
                   </Pressable>
                 );
               })}
@@ -117,11 +164,17 @@ export default function RentalCheckInScreen({ navigation, route }) {
         )}
 
         <Button
-          title={isReturn ? 'I Agree — Complete Return' : 'I Agree — Start My Trip'}
+          title={
+            saving
+              ? 'Saving…'
+              : isReturn ? 'I Agree — Complete Return' : 'I Agree — Start My Trip'
+          }
           icon="checkmark-circle-outline"
           onPress={handleAgree}
+          disabled={saving}
           style={{ marginTop: 24 }}
         />
+        {saving && <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 10 }} />}
 
         <View style={styles.privacyRow}>
           <Ionicons name="lock-closed-outline" size={12} color={colors.textMuted} />
@@ -186,7 +239,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, paddingVertical: 16,
     alignItems: 'center', gap: 6,
   },
-  slotDone: { borderStyle: 'solid', borderColor: colors.green, backgroundColor: colors.statusLiveBg },
+  slotDone: {
+    borderStyle: 'solid', borderColor: colors.green,
+    height: 84, paddingVertical: 0, overflow: 'hidden',
+  },
+  slotImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  slotRemove: { position: 'absolute', top: 5, right: 5 },
   slotLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
   privacyRow: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center',

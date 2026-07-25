@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
 
@@ -73,6 +74,125 @@ router.post('/login', async (req, res) => {
     res.json({ user: safe, token: makeToken(user) });
   } catch (err) {
     console.error('login error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ─── Password reset ───────────────────────────────────────────────────────────
+// No email/SMS provider is wired yet, so the 6-digit code is logged server-side.
+// Setting RESET_CODE_ECHO=true also returns it in the response — an explicit
+// opt-in rather than anything inferred from NODE_ENV, because a host that echoes
+// the code hands every account, admin included, to any unauthenticated caller.
+// Phase 8 swaps the delivery for Africa's Talking / email — the endpoints and
+// the code flow stay identical and this knob goes away.
+
+const RESET_CODE_TTL = '30 minutes';
+const RESET_MAX_ATTEMPTS = 5;
+const RESET_INVALID = 'This reset code is invalid or has expired.';
+
+// POST /auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'email is required' });
+  const addr = String(email).toLowerCase();
+  try {
+    const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [addr]);
+    // Always 200 — a different answer for unknown addresses would tell an
+    // attacker which emails have accounts here.
+    if (!userRes.rows.length) return res.json({ success: true });
+    const userId = userRes.rows[0].id;
+
+    // One code per minute per account, so the endpoint can't be used to spam
+    const recent = await pool.query(
+      `SELECT 1 FROM password_resets
+       WHERE user_id = $1 AND used_at IS NULL AND expires_at > NOW()
+         AND created_at > NOW() - INTERVAL '60 seconds'`,
+      [userId]
+    );
+    if (recent.rows.length) return res.json({ success: true });
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = await bcrypt.hash(code, 10);
+    await withTransaction(async (client) => {
+      // Issuing a new code retires every older one
+      await client.query(
+        'UPDATE password_resets SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
+        [userId]
+      );
+      await client.query(
+        `INSERT INTO password_resets (user_id, code_hash, expires_at)
+         VALUES ($1, $2, NOW() + INTERVAL '${RESET_CODE_TTL}')`,
+        [userId, codeHash]
+      );
+    });
+
+    console.log(`[password-reset] ${addr} code=${code}`);
+
+    // Both conditions, so neither a forgotten NODE_ENV nor a stray opt-in on a
+    // deployed box is enough on its own to leak the code to the caller.
+    if (process.env.RESET_CODE_ECHO === 'true' && process.env.NODE_ENV !== 'production') {
+      return res.json({ success: true, dev_code: code });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('forgot-password error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  const { email, code, new_password } = req.body;
+  if (!email || !code || !new_password) {
+    return res.status(400).json({ error: 'email, code, and new_password are required' });
+  }
+  if (String(new_password).length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+  try {
+    const result = await withTransaction(async (client) => {
+      const userRes = await client.query(
+        'SELECT id FROM users WHERE email = $1',
+        [String(email).toLowerCase()]
+      );
+      if (!userRes.rows.length) return { status: 400, body: { error: RESET_INVALID } };
+      const userId = userRes.rows[0].id;
+
+      const resetRes = await client.query(
+        `SELECT * FROM password_resets
+         WHERE user_id = $1 AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1
+         FOR UPDATE`,
+        [userId]
+      );
+      if (!resetRes.rows.length) return { status: 400, body: { error: RESET_INVALID } };
+      const reset = resetRes.rows[0];
+
+      const ok = await bcrypt.compare(String(code), reset.code_hash);
+      if (!ok) {
+        // A 6-digit secret is guessable — burn the code after 5 wrong tries
+        const bumped = await client.query(
+          'UPDATE password_resets SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts',
+          [reset.id]
+        );
+        if (bumped.rows[0].attempts >= RESET_MAX_ATTEMPTS) {
+          await client.query('UPDATE password_resets SET used_at = NOW() WHERE id = $1', [reset.id]);
+        }
+        return { status: 400, body: { error: RESET_INVALID } };
+      }
+
+      const hash = await bcrypt.hash(String(new_password), 12);
+      await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, userId]);
+      // Retire this code and any other outstanding one — the account is settled
+      await client.query(
+        'UPDATE password_resets SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
+        [userId]
+      );
+      return { status: 200, body: { success: true } };
+    });
+    res.status(result.status).json(result.body);
+  } catch (err) {
+    console.error('reset-password error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

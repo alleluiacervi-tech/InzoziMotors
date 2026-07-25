@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarListCard from '../components/CarListCard';
 import CarCard from '../components/CarCard';
+import SkeletonCard from '../components/SkeletonCard';
 import { colors, radius, fonts } from '../theme';
 import { showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
@@ -14,8 +15,35 @@ const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
 const priceOf = (c) =>
   c.listingType === 'rental' ? c.dailyRate : c.type === 'auction' ? c.currentBid : c.price;
 
+// Applied to the local set when the API is unreachable, and always to rentals
+// (a small in-memory fleet with no server-side filtering).
+function filterLocally(list, { query, filters, sort }) {
+  let out = list;
+  if (query?.trim()) {
+    const q = query.toLowerCase().trim();
+    out = out.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.make.toLowerCase().includes(q) ||
+        c.model.toLowerCase().includes(q) ||
+        c.category.toLowerCase().includes(q)
+    );
+  }
+  if (filters) {
+    if (filters.make) out = out.filter((c) => c.make.toLowerCase() === filters.make.toLowerCase());
+    if (filters.body) out = out.filter((c) => c.category.toLowerCase() === filters.body.toLowerCase());
+    if (filters.fuel) out = out.filter((c) => c.fuel.toLowerCase() === filters.fuel.toLowerCase());
+    if (filters.maxPrice) out = out.filter((c) => priceOf(c) <= filters.maxPrice);
+  }
+  if (sort === 'Price ↑') out = [...out].sort((a, b) => priceOf(a) - priceOf(b));
+  else if (sort === 'Price ↓') out = [...out].sort((a, b) => priceOf(b) - priceOf(a));
+  else if (sort === 'Mileage') out = [...out].sort((a, b) => a.mileage - b.mileage);
+  else if (sort === 'Newest') out = [...out].sort((a, b) => b.year - a.year);
+  return out;
+}
+
 export default function SearchResultsScreen({ navigation, route }) {
-  const { cars, rentalCars, createSavedSearch } = useApp();
+  const { cars, rentalCars, createSavedSearch, searchCars } = useApp();
   const isRentMode = route.params?.mode === 'rent';
   const [sort, setSort] = useState('Best match');
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,11 +51,54 @@ export default function SearchResultsScreen({ navigation, route }) {
   const [layout, setLayout] = useState('list'); // 'list' | 'grid'
   const isGrid = layout === 'grid';
 
+  // Server-backed result set. `null` means "no server answer yet or ever" —
+  // the local list is rendered instead, so the screen is never empty.
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [exhausted, setExhausted] = useState(false);
+  // Guards against a slow earlier query overwriting a newer one
+  const requestId = useRef(0);
+
   useEffect(() => {
     if (route.params?.filters) {
       setActiveFilters(route.params.filters);
     }
   }, [route.params?.filters]);
+
+  // Debounced first page — typing shouldn't fire a request per keystroke.
+  useEffect(() => {
+    if (isRentMode) return;
+    const id = ++requestId.current;
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      const page = await searchCars({ query: searchQuery, filters: activeFilters, sort, offset: 0 });
+      if (id !== requestId.current) return; // a newer query already won
+      setResults(page ? page.items : null);
+      setExhausted(page ? page.exhausted : true);
+      setLoading(false);
+    }, searchQuery ? 350 : 0);
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeFilters, sort, isRentMode, searchCars]);
+
+  const loadMore = useCallback(async () => {
+    if (isRentMode || loadingMore || exhausted || !results?.length) return;
+    setLoadingMore(true);
+    const id = requestId.current;
+    const page = await searchCars({
+      query: searchQuery, filters: activeFilters, sort, offset: results.length,
+    });
+    if (id === requestId.current && page) {
+      // De-dupe defensively: a listing published mid-scroll shifts the offset
+      // window and would otherwise appear twice.
+      setResults((prev) => {
+        const seen = new Set((prev || []).map((c) => c.id));
+        return [...(prev || []), ...page.items.filter((c) => !seen.has(c.id))];
+      });
+      setExhausted(page.exhausted);
+    }
+    setLoadingMore(false);
+  }, [isRentMode, loadingMore, exhausted, results, searchQuery, activeFilters, sort, searchCars]);
 
   const removeFilter = (key) => {
     setActiveFilters((prev) => {
@@ -39,45 +110,12 @@ export default function SearchResultsScreen({ navigation, route }) {
     });
   };
 
-  // 1. Filter by Search Query
-  let filteredCars = isRentMode ? rentalCars : cars;
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase().trim();
-    filteredCars = filteredCars.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.make.toLowerCase().includes(q) ||
-        c.model.toLowerCase().includes(q) ||
-        c.category.toLowerCase().includes(q)
-    );
-  }
-
-  // 2. Filter by Active Filters
-  if (activeFilters) {
-    if (activeFilters.make) {
-      filteredCars = filteredCars.filter((c) => c.make.toLowerCase() === activeFilters.make.toLowerCase());
-    }
-    if (activeFilters.body) {
-      filteredCars = filteredCars.filter((c) => c.category.toLowerCase() === activeFilters.body.toLowerCase());
-    }
-    if (activeFilters.fuel) {
-      filteredCars = filteredCars.filter((c) => c.fuel.toLowerCase() === activeFilters.fuel.toLowerCase());
-    }
-    if (activeFilters.maxPrice) {
-      filteredCars = filteredCars.filter((c) => priceOf(c) <= activeFilters.maxPrice);
-    }
-  }
-
-  // 3. Sort Results
-  if (sort === 'Price ↑') {
-    filteredCars = [...filteredCars].sort((a, b) => priceOf(a) - priceOf(b));
-  } else if (sort === 'Price ↓') {
-    filteredCars = [...filteredCars].sort((a, b) => priceOf(b) - priceOf(a));
-  } else if (sort === 'Mileage') {
-    filteredCars = [...filteredCars].sort((a, b) => a.mileage - b.mileage);
-  } else if (sort === 'Newest') {
-    filteredCars = [...filteredCars].sort((a, b) => b.year - a.year);
-  }
+  const serverBacked = !isRentMode && results !== null;
+  const filteredCars = serverBacked
+    ? results
+    : filterLocally(isRentMode ? rentalCars : cars, {
+        query: searchQuery, filters: activeFilters, sort,
+      });
 
   return (
     <Screen background={colors.bg}>
@@ -118,11 +156,17 @@ export default function SearchResultsScreen({ navigation, route }) {
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: isGrid ? 10 : 16, paddingBottom: 20 }}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.6}
         ListHeaderComponent={
           <View style={isGrid && { paddingHorizontal: 6 }}>
             <View style={styles.resultRow}>
               <Text style={styles.resultCount}>
-                {filteredCars.length} {isRentMode ? 'rentals' : 'cars'} found
+                {/* With paging, the count is what's loaded so far — say so rather
+                    than implying the whole catalogue fits on screen. */}
+                {serverBacked && !exhausted
+                  ? `${filteredCars.length}+ cars`
+                  : `${filteredCars.length} ${isRentMode ? 'rentals' : 'cars'} found`}
               </Text>
               <View style={styles.resultActions}>
                 {(searchQuery.trim() || activeFilters) && !isRentMode && (
@@ -208,22 +252,35 @@ export default function SearchResultsScreen({ navigation, route }) {
             <CarListCard car={item} onPress={() => navigation.navigate(target, { car: item })} />
           );
         }}
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 20 }} />
+          ) : serverBacked && exhausted && filteredCars.length > 0 ? (
+            <Text style={styles.endOfList}>That's every match on Inzozi right now.</Text>
+          ) : null
+        }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="car-outline" size={52} color={colors.border} />
-            <Text style={styles.emptyTitle}>No cars found</Text>
-            <Text style={styles.emptySub}>
-              Try adjusting your search or removing filters
-            </Text>
-            {(activeFilters || searchQuery) && (
-              <Pressable
-                style={styles.clearBtn}
-                onPress={() => { setSearchQuery(''); setActiveFilters(null); }}
-              >
-                <Text style={styles.clearBtnText}>Clear all filters</Text>
-              </Pressable>
-            )}
-          </View>
+          loading ? (
+            <View style={{ gap: 12, paddingTop: 4 }}>
+              {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="car-outline" size={52} color={colors.border} />
+              <Text style={styles.emptyTitle}>No cars found</Text>
+              <Text style={styles.emptySub}>
+                Try adjusting your search or removing filters
+              </Text>
+              {(activeFilters || searchQuery) && (
+                <Pressable
+                  style={styles.clearBtn}
+                  onPress={() => { setSearchQuery(''); setActiveFilters(null); }}
+                >
+                  <Text style={styles.clearBtnText}>Clear all filters</Text>
+                </Pressable>
+              )}
+            </View>
+          )
         }
       />
     </Screen>
@@ -231,6 +288,10 @@ export default function SearchResultsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  endOfList: {
+    textAlign: 'center', paddingVertical: 22,
+    fontSize: 12.5, fontFamily: fonts.medium, color: colors.textMuted,
+  },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
   backBtn: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   searchBar: {

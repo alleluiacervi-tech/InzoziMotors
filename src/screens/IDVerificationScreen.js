@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
@@ -7,6 +7,7 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import { captureImage } from '../utils/media';
 import { useApp } from '../context/AppContext';
 
 const UPLOAD_STEPS = [
@@ -15,18 +16,21 @@ const UPLOAD_STEPS = [
     icon: 'card-outline',
     label: 'National ID — Front',
     hint: 'Clear photo showing your name, ID number, and photo',
+    preset: 'document',
   },
   {
     key: 'back',
     icon: 'card-outline',
     label: 'National ID — Back',
     hint: 'Clear photo of the back side of your ID card',
+    preset: 'document',
   },
   {
     key: 'selfie',
     icon: 'person-circle-outline',
     label: 'Selfie holding your ID',
     hint: 'Hold your ID next to your face — both must be clearly visible',
+    preset: 'selfie',
   },
 ];
 
@@ -59,20 +63,54 @@ function StatusScreen({ status }) {
   );
 }
 
-export default function IDVerificationScreen({ navigation }) {
+export default function IDVerificationScreen({ navigation, route }) {
   const { idVerificationStatus, submitIDVerification } = useApp();
-  const [uploads, setUploads] = useState({ front: false, back: false, selfie: false });
+  // Each slot holds the picked asset ({ uri, mimeType, … }) or null
+  const [docs, setDocs] = useState({ front: null, back: null, selfie: null });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleUpload = (key) => {
-    setUploads((prev) => ({ ...prev, [key]: true }));
+  // Where the seller was heading when the gate intercepted them, so submitting
+  // documents returns them to what they actually wanted to do.
+  const returnTo = route?.params?.returnTo;
+  const returnParams = route?.params?.returnParams;
+
+  const handleCapture = async (step) => {
+    const asset = await captureImage({
+      preset: step.preset,
+      title: step.label,
+      message: step.hint,
+    });
+    if (asset) setDocs((prev) => ({ ...prev, [step.key]: asset }));
   };
 
-  const allUploaded = Object.values(uploads).every(Boolean);
+  const handleRemove = async (step) => {
+    const ok = await showConfirm({
+      title: `Remove ${step.label}?`,
+      message: 'You will need to take this photo again before submitting.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (ok) setDocs((prev) => ({ ...prev, [step.key]: null }));
+  };
 
-  const handleSubmit = () => {
-    submitIDVerification();
-    showToast('Documents submitted — we will verify your identity within 24 hours.', 'success');
-    navigation.goBack();
+  const allUploaded = UPLOAD_STEPS.every((s) => docs[s.key]);
+
+  const handleSubmit = async () => {
+    if (!allUploaded || submitting) return;
+    setSubmitting(true);
+    try {
+      await submitIDVerification(docs);
+      showToast('Documents submitted — we will verify your identity within 24 hours.', 'success');
+      // Submission only makes the seller 'pending', so returning them to the
+      // gated screen would bounce them straight back. Send them to the
+      // dashboard where the pipeline shows what happens next.
+      if (returnTo) navigation.replace('SellerDashboard');
+      else navigation.goBack();
+    } catch (err) {
+      showToast(err.message || 'Could not submit your documents. Please try again.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (idVerificationStatus === 'pending' || idVerificationStatus === 'approved') {
@@ -85,7 +123,7 @@ export default function IDVerificationScreen({ navigation }) {
             <Button
               title="Submit a Car for Sale"
               icon="car-outline"
-              onPress={() => navigation.navigate('CarSubmission')}
+              onPress={() => navigation.replace(returnTo || 'CarSubmission', returnParams)}
             />
           </View>
         )}
@@ -113,29 +151,35 @@ export default function IDVerificationScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Required Documents</Text>
           <View style={styles.uploadList}>
-            {UPLOAD_STEPS.map((step, idx) => {
-              const done = uploads[step.key];
+            {UPLOAD_STEPS.map((step) => {
+              const asset = docs[step.key];
               return (
                 <Pressable
                   key={step.key}
-                  style={[styles.uploadCard, done && styles.uploadCardDone]}
-                  onPress={() => handleUpload(step.key)}
+                  style={[styles.uploadCard, asset && styles.uploadCardDone]}
+                  onPress={() => handleCapture(step)}
                 >
-                  <View style={[styles.uploadIconWrap, { backgroundColor: done ? colors.greenTint : colors.surfaceAlt }]}>
-                    <Ionicons
-                      name={done ? 'checkmark-circle' : step.icon}
-                      size={26}
-                      color={done ? colors.primary : colors.textMuted}
-                    />
-                  </View>
+                  {asset ? (
+                    <Image source={{ uri: asset.uri }} style={styles.thumb} />
+                  ) : (
+                    <View style={[styles.uploadIconWrap, { backgroundColor: colors.surfaceAlt }]}>
+                      <Ionicons name={step.icon} size={26} color={colors.textMuted} />
+                    </View>
+                  )}
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.uploadLabel, done && { color: colors.primary }]}>{step.label}</Text>
-                    <Text style={styles.uploadHint}>{done ? 'Uploaded successfully ✓' : step.hint}</Text>
+                    <Text style={[styles.uploadLabel, asset && { color: colors.primary }]}>{step.label}</Text>
+                    <Text style={styles.uploadHint}>
+                      {asset ? 'Photo ready — tap to retake' : step.hint}
+                    </Text>
                   </View>
-                  {!done && (
+                  {asset ? (
+                    <Pressable onPress={() => handleRemove(step)} hitSlop={10}>
+                      <Ionicons name="close-circle" size={22} color={colors.textMuted} />
+                    </Pressable>
+                  ) : (
                     <View style={styles.uploadBtn}>
                       <Ionicons name="camera-outline" size={14} color={colors.primary} />
-                      <Text style={styles.uploadBtnText}>Upload</Text>
+                      <Text style={styles.uploadBtnText}>Add</Text>
                     </View>
                   )}
                 </Pressable>
@@ -154,15 +198,18 @@ export default function IDVerificationScreen({ navigation }) {
 
         <View style={styles.submitWrap}>
           <Button
-            title="Submit for Verification"
+            title={submitting ? 'Submitting…' : 'Submit for Verification'}
             onPress={handleSubmit}
-            style={{ opacity: allUploaded ? 1 : 0.45 }}
+            disabled={!allUploaded || submitting}
+            style={{ opacity: allUploaded && !submitting ? 1 : 0.45 }}
           />
-          {!allUploaded && (
+          {submitting ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : !allUploaded ? (
             <Text style={styles.uploadReminder}>
-              Upload all 3 documents to continue
+              Add all 3 photos to continue
             </Text>
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </Screen>
@@ -230,6 +277,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  thumb: {
+    width: 50,
+    height: 50,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
   },
   uploadLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   uploadHint: { fontSize: 12, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },

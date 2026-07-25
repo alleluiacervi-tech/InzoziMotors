@@ -2,8 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Neutrals from src/theme/colors.js — very slightly red-warm. These were left
+   on the pre-rebrand green-tinted values (#F7F9F7 / #111B14) when the product
+   moved to Signal Red; the semantic greens elsewhere in the dashboard are
+   correct and intentional (success states), but the page ground was not. */
 body {
-  background-color: #F7F9F7;
-  color: #111B14;
+  background-color: #FAF8F8;
+  color: #1B1313;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

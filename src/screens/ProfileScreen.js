@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
 
 const MENU_SELLER = [
+  { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
   { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
   { icon: 'trending-up-outline', label: "What's My Car Worth?", screen: 'CarValuation' },
 ];
@@ -106,7 +107,18 @@ export default function ProfileScreen({ navigation }) {
                   <Badge variant="live" dot label="ID Verified" />
                 </>
               ) : (
-                <Badge variant="tag" label="ID verified at your first inspection" />
+                <Pressable onPress={() => navigation.navigate('IDVerification')}>
+                  <Badge
+                    variant="tag"
+                    label={
+                      idVerificationStatus === 'pending'
+                        ? 'ID under review'
+                        : idVerificationStatus === 'rejected'
+                        ? 'ID needs attention — tap to resubmit'
+                        : 'Verify your ID to sell'
+                    }
+                  />
+                </Pressable>
               )}
             </View>
           </View>

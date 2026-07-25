@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
+import adminApi from '../api/admin';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
@@ -302,39 +303,84 @@ function InspectionsTab({ inspections, navigation }) {
   );
 }
 
-const MOCK_LISTINGS = [
-  { id: '1', title: '2022 BMW 4 Series', price: '$42,500', status: 'live', views: 234, inquiries: 12 },
-  { id: '2', title: '2021 Mercedes C-Class', price: '$38,000', status: 'live', views: 187, inquiries: 8 },
-  { id: '3', title: '2020 Toyota RAV4', price: '$26,000', status: 'live', views: 156, inquiries: 6 },
-  { id: '4', title: '2019 Honda Civic', price: '$18,500', status: 'under_review', views: 0, inquiries: 0 },
-  { id: '5', title: '2018 Subaru Forester', price: '$22,000', status: 'scheduled', views: 0, inquiries: 0 },
-];
+// Admins browse every status, not just live — that is the whole point of the
+// admin listings route versus the public /cars feed.
+const LISTING_FILTERS = ['live', 'under_review', 'scheduled', 'reserved', 'sold'];
+const FILTER_LABEL = {
+  live: 'Live', under_review: 'Review', scheduled: 'Scheduled',
+  reserved: 'Reserved', sold: 'Sold',
+};
 
 function ListingsTab({ navigation, cars }) {
-  const openListing = (id) => {
-    const car = cars?.find((c) => c.id === id);
-    if (car) navigation.navigate('VehicleDetail', { car });
+  const [status, setStatus] = useState('live');
+  const [listings, setListings] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    adminApi.getListings({ status })
+      .then((rows) => { if (alive) setListings(rows); })
+      .catch((err) => {
+        console.warn('Admin listings unreachable — falling back to browse data:', err.message);
+        if (alive) setListings(null);
+      })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [status]);
+
+  // Without the admin route, show whatever the app already loaded for that status
+  const rows = listings || (cars || []).filter((c) => (c.status || 'live') === status);
+
+  const openListing = (row) => {
+    const car = cars?.find((c) => c.id === row.id);
+    navigation.navigate('VehicleDetail', { car: car || row });
   };
+
   return (
     <View style={styles.tabContent}>
-      {MOCK_LISTINGS.map((l) => (
-        <Pressable key={l.id} style={styles.listingCard} onPress={() => openListing(l.id)}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.listingTitle}>{l.title}</Text>
-            <Text style={styles.listingPrice}>{l.price}</Text>
-            {l.views > 0 && (
-              <View style={styles.listingMeta}>
-                <Ionicons name="eye-outline" size={12} color={colors.textMuted} />
-                <Text style={styles.listingMetaText}>{l.views} views</Text>
-                <View style={styles.inspMetaDot} />
-                <Ionicons name="chatbubble-outline" size={12} color={colors.textMuted} />
-                <Text style={styles.listingMetaText}>{l.inquiries} inquiries</Text>
-              </View>
-            )}
-          </View>
-          <StatusBadge status={l.status} />
-        </Pressable>
-      ))}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.listingFilters}
+      >
+        {LISTING_FILTERS.map((s) => (
+          <Pressable
+            key={s}
+            style={[styles.listingFilter, status === s && styles.listingFilterOn]}
+            onPress={() => setStatus(s)}
+          >
+            <Text style={[styles.listingFilterText, status === s && styles.listingFilterTextOn]}>
+              {FILTER_LABEL[s]}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {loading ? (
+        <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 24 }} />
+      ) : rows.length === 0 ? (
+        <Text style={styles.listingEmpty}>No {FILTER_LABEL[status].toLowerCase()} listings.</Text>
+      ) : (
+        rows.map((l) => (
+          <Pressable key={l.id} style={styles.listingCard} onPress={() => openListing(l)}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.listingTitle}>{l.title}</Text>
+              <Text style={styles.listingPrice}>${Number(l.price || 0).toLocaleString()}</Text>
+              {(l.views > 0 || l.saves_count > 0) && (
+                <View style={styles.listingMeta}>
+                  <Ionicons name="eye-outline" size={12} color={colors.textMuted} />
+                  <Text style={styles.listingMetaText}>{l.views || 0} views</Text>
+                  <View style={styles.inspMetaDot} />
+                  <Ionicons name="heart-outline" size={12} color={colors.textMuted} />
+                  <Text style={styles.listingMetaText}>{l.saves_count ?? l.saves ?? 0} saves</Text>
+                </View>
+              )}
+            </View>
+            <StatusBadge status={l.status} />
+          </Pressable>
+        ))
+      )}
     </View>
   );
 }
@@ -401,9 +447,9 @@ export default function AdminPanelScreen({ navigation }) {
         title="Admin Panel"
         onBack={() => navigation.goBack()}
         right={
-          <View style={styles.adminBadge}>
-            <Text style={styles.adminBadgeText}>INZOZI TEAM</Text>
-          </View>
+          <Pressable style={styles.analyticsLink} onPress={() => navigation.navigate('AdminAnalytics')}>
+            <Ionicons name="stats-chart-outline" size={17} color={colors.textSecondary} />
+          </Pressable>
         }
       />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -473,6 +519,11 @@ export default function AdminPanelScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  analyticsLink: {
+    width: 40, height: 40, borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center',
+  },
   adminBadge: {
     backgroundColor: colors.primary + '22',
     borderRadius: radius.pill,
@@ -600,6 +651,20 @@ const styles = StyleSheet.create({
   listingPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 2 },
   listingMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   listingMetaText: { fontSize: 11, color: colors.textMuted },
+  listingFilters: { gap: 8, paddingBottom: 4 },
+  listingFilter: {
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  listingFilterOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  listingFilterText: { fontSize: 12.5, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  listingFilterTextOn: { color: '#fff' },
+  listingEmpty: {
+    textAlign: 'center', paddingVertical: 28,
+    fontSize: 13, color: colors.textMuted,
+  },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
   badgeText: { fontSize: 11, fontFamily: fonts.bold },
   confirmHandoverBtn: {

@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: ui-sans-serif, system-ui, sans-serif;
+    /* Header height, so anchor links and sticky offsets agree everywhere */
+    --header-h: 68px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Anchors land below the sticky header instead of underneath it */
+    scroll-padding-top: calc(var(--header-h) + 16px);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Anyone who asks for less motion gets none of it — including the scroll
+     behaviour above, which is the one people most often forget. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    @apply bg-surface-page text-content antialiased;
+    font-family: var(--font-inter);
+    text-rendering: optimizeLegibility;
+  }
+
+  /* A single visible focus treatment across the site. Never remove it —
+     keyboard users navigate the whole marketplace with it. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-surface-page rounded-sm;
+  }
+
+  ::selection {
+    @apply bg-brand/15 text-content;
+  }
+
+  /* Headings inherit the brand's tight tracking rather than repeating it */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-balance;
+  }
+}
+
+@layer components {
+  /* Skip link — first tab stop on every page */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]
+           focus:rounded-lg focus:bg-ink-900 focus:px-4 focus:py-3 focus:text-sm
+           focus:font-semibold focus:text-white;
+  }
+
+  /* Loading placeholder that matches the app's SkeletonCard pulse */
+  .skeleton {
+    @apply relative overflow-hidden bg-surface-alt;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0.65) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+
+  /* Hairline used to separate dense rows without adding visual weight */
+  .hairline {
+    @apply border-b border-line-soft last:border-0;
+  }
+}
+
+@layer utilities {
+  /* Staggered reveal for sections; paired with the fade-up keyframe */
+  .stagger > * {
+    animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.08s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.14s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.2s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.26s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.32s; }
+
+  /* Hide scrollbars on horizontal rails without losing scrollability */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

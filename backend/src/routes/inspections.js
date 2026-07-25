@@ -3,6 +3,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadPhotos } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
@@ -246,14 +247,13 @@ router.post('/:id/complete', requireAdmin, async (req, res) => {
         : passed
           ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team is preparing your listing — it goes live shortly.`
           : `Your inspection report is ready (score ${score}/150, Grade ${grade}). Some items need attention — our team will contact you about next steps.`;
-      await client.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'listing_update', $2, $3, $4)`,
-        [subRes.rows[0].seller_id,
-         passed ? 'Inspection complete' : 'Inspection report ready',
-         body,
-         JSON.stringify({ inspectionId: insp.id, score, grade })]
-      );
+      await notifyUser(client, {
+        user_id: subRes.rows[0].seller_id,
+        type: 'listing_update',
+        title: passed ? 'Inspection complete' : 'Inspection report ready',
+        body,
+        meta: JSON.stringify({ inspectionId: insp.id, score, grade }),
+      });
     }
 
     await client.query('COMMIT');

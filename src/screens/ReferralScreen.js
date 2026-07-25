@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Share } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Share, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
+import referralsApi from '../api/referrals';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 
@@ -23,20 +24,56 @@ const WHATSAPP_FEATURES = [
 ];
 
 export default function ReferralScreen({ navigation }) {
-  const { currentUser } = useApp();
-  const [referred, setReferred] = useState(0);
-  const [rewards, setRewards] = useState(0);
+  const { currentUser, isLoggedIn } = useApp();
+  const [referral, setReferral] = useState(null);
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
 
-  const referralCode = 'INZ-' + (currentUser?.name || 'USER').split(' ')[0].toUpperCase().slice(0, 4) + '2026';
+  // The code is minted and owned by the server — a locally invented one would
+  // not match anything when a friend tried to redeem it.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let alive = true;
+    referralsApi.getMine()
+      .then((data) => { if (alive) setReferral(data); })
+      .catch((err) => console.warn('Referral code unreachable:', err.message));
+    return () => { alive = false; };
+  }, [isLoggedIn]);
+
+  const referralCode = referral?.code || '—';
+  const referred = referral?.redemptions ?? 0;
+  const hasCode = !!referral?.code;
 
   const handleShare = async () => {
+    if (!hasCode) {
+      showToast('Sign in so we can issue your referral code.', 'info');
+      return;
+    }
     try {
       await Share.share({
         message: `I use Inzozi Motors to sell cars in Kigali — certified, inspected, trusted. Sign up with my code ${referralCode} when you submit your car and we both save on fees. https://inzozimotors.rw/ref/${referralCode}`,
         title: 'Join Inzozi Motors',
       });
     } catch (e) {
-      showToast(`Referral code ${referralCode} copied — share it with friends!`, 'success');
+      showToast(`Referral code ${referralCode} — share it with friends!`, 'success');
+    }
+  };
+
+  const handleRedeem = async () => {
+    const code = redeemCode.trim().toUpperCase();
+    if (!code) {
+      showToast("Enter the code your friend shared with you.", 'error');
+      return;
+    }
+    setRedeeming(true);
+    try {
+      await referralsApi.redeem(code);
+      setRedeemCode('');
+      showToast('Code applied — your discount lands on your next sale commission.', 'success');
+    } catch (err) {
+      showToast(err.message || 'That code could not be applied.', 'error');
+    } finally {
+      setRedeeming(false);
     }
   };
 
@@ -73,13 +110,13 @@ export default function ReferralScreen({ navigation }) {
           </View>
           <View style={styles.trackerDivider} />
           <View style={styles.trackerItem}>
-            <Text style={[styles.trackerValue, { color: colors.green }]}>{rewards}</Text>
-            <Text style={styles.trackerLabel}>Rewards earned</Text>
+            <Text style={[styles.trackerValue, { color: colors.green }]}>{referral?.uses ?? 0}</Text>
+            <Text style={styles.trackerLabel}>Times used</Text>
           </View>
           <View style={styles.trackerDivider} />
           <View style={styles.trackerItem}>
-            <Text style={[styles.trackerValue, { color: colors.amber }]}>0</Text>
-            <Text style={styles.trackerLabel}>Pending</Text>
+            <Text style={[styles.trackerValue, { color: colors.amber }]}>{referred > 0 ? '10%' : '—'}</Text>
+            <Text style={styles.trackerLabel}>Next discount</Text>
           </View>
         </View>
 
@@ -88,6 +125,30 @@ export default function ReferralScreen({ navigation }) {
             <Text style={styles.emptyTrackerText}>No referrals yet — share your code to get started!</Text>
           </View>
         )}
+
+        {/* Redeem someone else's code */}
+        <Text style={styles.sectionTitle}>Got a code from a friend?</Text>
+        <View style={styles.redeemCard}>
+          <TextInput
+            style={styles.redeemInput}
+            placeholder="INZABC123"
+            placeholderTextColor={colors.textMuted}
+            value={redeemCode}
+            onChangeText={setRedeemCode}
+            autoCapitalize="characters"
+            autoCorrect={false}
+          />
+          <Pressable
+            style={[styles.redeemBtn, (!redeemCode.trim() || redeeming) && { opacity: 0.5 }]}
+            onPress={handleRedeem}
+            disabled={!redeemCode.trim() || redeeming}
+          >
+            <Text style={styles.redeemBtnText}>{redeeming ? 'Applying…' : 'Apply'}</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.redeemHint}>
+          The discount applies to the commission on your next completed sale.
+        </Text>
 
         {/* How it works */}
         <Text style={styles.sectionTitle}>How it works</Text>
@@ -180,6 +241,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 12, alignSelf: 'stretch', justifyContent: 'center',
   },
   shareBtnText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
+  redeemCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 16,
+  },
+  redeemInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 15, fontFamily: fonts.bold, letterSpacing: 1,
+    color: colors.textPrimary,
+  },
+  redeemBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingHorizontal: 20, paddingVertical: 13,
+  },
+  redeemBtnText: { fontSize: 14, fontFamily: fonts.bold, color: '#fff' },
+  redeemHint: {
+    fontSize: 11.5, color: colors.textMuted, lineHeight: 17,
+    marginHorizontal: 16, marginTop: 8,
+  },
   tracker: {
     flexDirection: 'row', backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,

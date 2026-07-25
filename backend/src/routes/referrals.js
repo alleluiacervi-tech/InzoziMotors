@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
@@ -45,12 +46,12 @@ router.post('/redeem', requireAuth, async (req, res) => {
     );
     if (!ins.rows.length) return res.status(409).json({ error: 'You already redeemed this code' });
     await pool.query('UPDATE referrals SET uses = uses + 1 WHERE code = $1', [code.toUpperCase()]);
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body)
-       VALUES ($1, 'listing_update', 'Your referral was used',
-               'Someone joined with your code — your commission discount grows.')`,
-      [refRes.rows[0].user_id]
-    );
+    await notifyUser(pool, {
+      user_id: refRes.rows[0].user_id,
+      type: 'listing_update',
+      title: 'Your referral was used',
+      body: 'Someone joined with your code — your commission discount grows.',
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

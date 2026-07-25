@@ -60,8 +60,6 @@ export default function RentalsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Rental Bookings</h1>
-
       {/* Tabs */}
       <div className="flex gap-1 mb-6">
         {(['upcoming', 'active', 'completed', 'cancelled'] as const).map((t) => (

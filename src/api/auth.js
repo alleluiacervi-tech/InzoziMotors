@@ -1,4 +1,5 @@
 import api, { setToken, removeToken } from './client';
+import { appendImage } from '../utils/media';
 
 export const auth = {
   // Register a new buyer or seller
@@ -24,24 +25,42 @@ export const auth = {
     return await api.get('/auth/me');
   },
 
-  // Submit National ID front/back + selfie for seller verification
-  submitIdVerification: async (idFrontUri, idBackUri, selfieUri) => {
+  // Submit National ID front/back + selfie for seller verification.
+  // Takes the assets returned by captureImage() — all three are mandatory
+  // server-side, so refuse early rather than sending a request that 400s.
+  submitIdVerification: async ({ front, back, selfie }) => {
+    if (!front?.uri || !back?.uri || !selfie?.uri) {
+      throw new Error('All three documents are required');
+    }
     const formData = new FormData();
-    
-    // Helper to format file upload entry
-    const appendFile = (form, key, uri) => {
-      if (!uri) return;
-      const filename = uri.split('/').pop();
-      const match = /\.(\w+)$/.exec(filename || '');
-      const type = match ? `image/${match[1]}` : 'image';
-      form.append(key, { uri, name: filename, type });
-    };
-
-    appendFile(formData, 'id_front', idFrontUri);
-    appendFile(formData, 'id_back', idBackUri);
-    appendFile(formData, 'selfie', selfieUri);
-
+    appendImage(formData, 'id_front', front, 'id-front');
+    appendImage(formData, 'id_back', back, 'id-back');
+    appendImage(formData, 'selfie', selfie, 'selfie');
     return await api.upload('/id-verification', formData);
+  },
+
+  // Update own profile (name / phone / avatar)
+  updateProfile: async (fields) => {
+    return await api.patch('/auth/me', fields);
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    return await api.post('/auth/change-password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+  },
+
+  // Password reset — the server always 200s so an attacker learns nothing
+  // about which emails exist.
+  forgotPassword: async (email) => {
+    return await api.post('/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (email, code, newPassword) => {
+    return await api.post('/auth/reset-password', {
+      email, code, new_password: newPassword,
+    });
   },
 
   // Log out the active session

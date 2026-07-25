@@ -93,7 +93,7 @@ export default function HomeScreen({ navigation }) {
   // Fresh = most recently listed; Popular = most saved — two genuinely different sections
   // Sort by listing date once — freshCars and the center window both slice from it.
   const carsByListedDate = useMemo(
-    () => [...cars].sort((a, b) => getListedDaysAgo(a.id) - getListedDaysAgo(b.id)),
+    () => [...cars].sort((a, b) => getListedDaysAgo(a) - getListedDaysAgo(b)),
     [cars]
   );
   const freshCars = useMemo(() => carsByListedDate.slice(0, 4), [carsByListedDate]);
@@ -102,8 +102,8 @@ export default function HomeScreen({ navigation }) {
   const [originTab, setOriginTab] = useState('All');
   const ORIGIN_TABS = ['All', 'Imported', 'Local', 'EV·Hybrid'];
   const originCars = useMemo(() => cars.filter((c) => {
-    if (originTab === 'Imported') return getDriveType(c.id) === 'RHD';
-    if (originTab === 'Local') return getDriveType(c.id) === 'LHD';
+    if (originTab === 'Imported') return getDriveType(c) === 'RHD';
+    if (originTab === 'Local') return getDriveType(c) === 'LHD';
     if (originTab === 'EV·Hybrid') return ['Electric', 'Hybrid'].includes(c.fuel);
     return true;
   }), [cars, originTab]);
@@ -144,7 +144,7 @@ export default function HomeScreen({ navigation }) {
       : [];
   }, [cars, savedCarIds]);
   const popularCars = useMemo(
-    () => [...cars].sort((a, b) => getSavedCount(b.id) - getSavedCount(a.id)).slice(0, 5),
+    () => [...cars].sort((a, b) => getSavedCount(b) - getSavedCount(a)).slice(0, 5),
     [cars]
   );
 

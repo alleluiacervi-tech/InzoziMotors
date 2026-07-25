@@ -15,9 +15,15 @@ export const cars = {
     return await api.get(endpoint);
   },
 
-  // Retrieve details of a specific vehicle listing
+  // Retrieve details of a specific vehicle listing. Richer than the browse
+  // payload — price history, seller phone, market position — and it counts a view.
   getCar: async (id) => {
     return await api.get(`/cars/${id}`);
+  },
+
+  // Seller's own listings with the counters the analytics screen needs
+  getMyListings: async () => {
+    return await api.get('/cars/seller/mine');
   },
 
   // Toggle bookmarked status (Save/Unsave) for a listing

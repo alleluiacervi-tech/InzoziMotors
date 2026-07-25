@@ -6,9 +6,9 @@ function token() {
 }
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
-    ...opts.headers,
+    ...(opts.headers as Record<string, string> | undefined),
   }
   if (!(opts.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
@@ -64,6 +64,12 @@ export const api = {
   updateCar: (id: string, data: any) =>
     request<any>(`/cars/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
+  // Disputes — the 7-day return guarantee queue
+  disputes: (status?: string) =>
+    request<any[]>(`/disputes${status ? `?status=${status}` : ''}`),
+  resolveDispute: (id: string, data: { status: 'resolved' | 'rejected'; resolution: string }) =>
+    request<any>(`/disputes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
   // Listings — admin-only route that accepts any status
   cars: (params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params).toString() : ''
@@ -100,6 +106,14 @@ export const api = {
   // Featured listings
   featureCar: (id: string, days = 7) =>
     request<any>(`/cars/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ days }) }),
+
+  // Rental fleet (rental_cars) — money fields are USD integers
+  rentalCars:    () => request<any[]>('/rentals'),
+  getRentalCar:  (id: string) => request<any>(`/rentals/${id}`),
+  createRentalCar: (data: any) =>
+    request<any>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
+  updateRentalCar: (id: string, data: any) =>
+    request<any>(`/rentals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Rental bookings
   getRentalBookings: (status?: string) =>

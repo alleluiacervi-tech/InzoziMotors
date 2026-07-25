@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable,
+  View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -8,6 +8,8 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import { captureImage } from '../utils/media';
+import inspectionsApi from '../api/inspections';
 import { PHOTO_GROUPS } from '../data/inspectionData';
 
 const TOTAL_REQUIRED = PHOTO_GROUPS.reduce((s, g) => {
@@ -18,64 +20,70 @@ const TOTAL_REQUIRED = PHOTO_GROUPS.reduce((s, g) => {
 
 const TOTAL_SLOTS = PHOTO_GROUPS.reduce((s, g) => s + g.slots.length, 0);
 
-function SlotCard({ slot, uploaded, onPress, optional }) {
+function SlotCard({ slot, asset, onPress, optional }) {
+  if (asset) {
+    return (
+      <Pressable style={[styles.slot, styles.slotFilled]} onPress={onPress}>
+        <Image source={{ uri: asset.uri }} style={styles.slotImage} />
+        <View style={styles.slotOverlay}>
+          <Text style={styles.slotOverlayLabel} numberOfLines={1}>{slot.label}</Text>
+        </View>
+        <View style={styles.slotCheckBadge}>
+          <Ionicons name="checkmark" size={12} color="#fff" />
+        </View>
+      </Pressable>
+    );
+  }
   return (
-    <Pressable
-      style={[styles.slot, uploaded && styles.slotUploaded, optional && styles.slotOptional]}
-      onPress={onPress}
-    >
-      {uploaded ? (
-        <>
-          <View style={styles.slotCheckCircle}>
-            <Ionicons name="checkmark" size={16} color="#fff" />
-          </View>
-          <Text style={styles.slotLabelUploaded} numberOfLines={2}>{slot.label}</Text>
-        </>
-      ) : (
-        <>
-          <View style={[styles.slotAddIcon, optional && styles.slotAddIconOptional]}>
-            <Ionicons name="camera-outline" size={18} color={optional ? colors.textMuted : colors.primary} />
-          </View>
-          <Text style={[styles.slotLabel, optional && styles.slotLabelOptional]} numberOfLines={2}>
-            {slot.label}
-          </Text>
-          {optional && <Text style={styles.optionalTag}>optional</Text>}
-        </>
-      )}
+    <Pressable style={[styles.slot, optional && styles.slotOptional]} onPress={onPress}>
+      <View style={[styles.slotAddIcon, optional && styles.slotAddIconOptional]}>
+        <Ionicons name="camera-outline" size={18} color={optional ? colors.textMuted : colors.primary} />
+      </View>
+      <Text style={[styles.slotLabel, optional && styles.slotLabelOptional]} numberOfLines={2}>
+        {slot.label}
+      </Text>
+      {optional && <Text style={styles.optionalTag}>optional</Text>}
     </Pressable>
   );
 }
 
 export default function PhotoUploadScreen({ navigation, route }) {
-  const { inspection, score } = route.params || {};
-  const [uploaded, setUploaded] = useState({});
-  const uploadedCount = Object.values(uploaded).filter(Boolean).length;
-  const requiredUploaded = PHOTO_GROUPS.filter((g) => g.group !== 'Defects (if any)')
-    .reduce((s, g) => s + g.slots.filter((sl) => uploaded[sl.id]).length, 0);
+  const { inspection, score, carId } = route.params || {};
+  // slotId -> captured asset. Keyed by slot so the standardised set stays
+  // ordered and every angle is traceable to the file that filled it.
+  const [shots, setShots] = useState({});
+  const [uploading, setUploading] = useState(false);
 
-  const handleSlotPress = (slotId) => {
-    if (uploaded[slotId]) {
-      showConfirm({
-        title: 'Remove this photo?',
-        confirmLabel: 'Remove', destructive: true,
-      }).then((ok) => {
-        if (ok) setUploaded((prev) => ({ ...prev, [slotId]: false }));
+  const uploadedCount = Object.keys(shots).length;
+  const requiredUploaded = PHOTO_GROUPS.filter((g) => g.group !== 'Defects (if any)')
+    .reduce((s, g) => s + g.slots.filter((sl) => shots[sl.id]).length, 0);
+
+  const handleSlotPress = async (slot) => {
+    if (shots[slot.id]) {
+      const choice = await showConfirm({
+        title: slot.label,
+        message: 'Replace this photo, or remove it from the set?',
+        confirmLabel: 'Retake',
+        cancelLabel: 'Remove',
       });
+      if (choice) {
+        const asset = await captureImage({ preset: 'listing', title: slot.label });
+        if (asset) setShots((prev) => ({ ...prev, [slot.id]: asset }));
+      } else {
+        setShots((prev) => {
+          const next = { ...prev };
+          delete next[slot.id];
+          return next;
+        });
+      }
       return;
     }
-    showConfirm({
-      title: 'Upload photo',
-      message: 'In the full app, this opens the device camera. Mark as uploaded for demo?',
-      confirmLabel: 'Mark Uploaded',
-    }).then((ok) => {
-      if (ok) setUploaded((prev) => ({ ...prev, [slotId]: true }));
+    const asset = await captureImage({
+      preset: 'listing',
+      title: slot.label,
+      message: slot.hint || 'Shoot straight on, in even light, filling the frame.',
     });
-  };
-
-  const handleMarkAll = () => {
-    const all = {};
-    PHOTO_GROUPS.forEach((g) => g.slots.forEach((s) => { all[s.id] = true; }));
-    setUploaded(all);
+    if (asset) setShots((prev) => ({ ...prev, [slot.id]: asset }));
   };
 
   const handleSubmit = () => {
@@ -83,32 +91,51 @@ export default function PhotoUploadScreen({ navigation, route }) {
       showConfirm({
         title: 'Missing required photos',
         message: `${TOTAL_REQUIRED - requiredUploaded} required photo(s) missing. All non-defect slots must be filled before publishing.`,
-        confirmLabel: 'Continue Anyway',
-        cancelLabel: 'Keep Uploading',
+        confirmLabel: 'Upload Anyway',
+        cancelLabel: 'Keep Shooting',
       }).then((ok) => { if (ok) proceed(); });
     } else {
       proceed();
     }
   };
 
-  const proceed = () => {
-    showToast('Photos submitted — the listing will be reviewed and published within 2 hours.', 'success');
-    navigation.navigate('Main');
+  const proceed = async () => {
+    // Upload in slot order so cars.images[0] is the front three-quarter hero
+    // shot the cards render, not whichever angle was shot first.
+    const ordered = PHOTO_GROUPS.flatMap((g) => g.slots)
+      .filter((slot) => shots[slot.id])
+      .map((slot) => ({ ...shots[slot.id], angleKey: slot.id }));
+
+    if (!ordered.length) {
+      showToast('Add at least one photo before uploading.', 'error');
+      return;
+    }
+
+    const targetCarId = carId || inspection?.car_id;
+    if (!targetCarId) {
+      // No listing row yet (demo path) — keep the flow moving rather than
+      // pretending an upload happened.
+      showToast('No listing linked to this inspection yet — create the listing first.', 'error');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const res = await inspectionsApi.uploadCarPhotos(targetCarId, ordered);
+      showToast(`${res.uploaded} photo${res.uploaded === 1 ? '' : 's'} uploaded to the listing.`, 'success');
+      navigation.navigate('Main');
+    } catch (err) {
+      showToast(err.message || 'Upload failed. Check your connection and try again.', 'error');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const pct = Math.round((uploadedCount / TOTAL_SLOTS) * 100);
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader
-        title="Photo Upload"
-        onBack={() => navigation.goBack()}
-        right={
-          <Pressable onPress={handleMarkAll}>
-            <Text style={styles.markAllBtn}>Demo: Fill All</Text>
-          </Pressable>
-        }
-      />
+      <BackHeader title="Photo Upload" onBack={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Header card */}
@@ -160,8 +187,8 @@ export default function PhotoUploadScreen({ navigation, route }) {
                   <SlotCard
                     key={slot.id}
                     slot={slot}
-                    uploaded={!!uploaded[slot.id]}
-                    onPress={() => handleSlotPress(slot.id)}
+                    asset={shots[slot.id]}
+                    onPress={() => handleSlotPress(slot)}
                     optional={isOptional}
                   />
                 ))}
@@ -190,15 +217,26 @@ export default function PhotoUploadScreen({ navigation, route }) {
       {/* Sticky CTA */}
       <View style={styles.cta}>
         <Button
-          title={requiredUploaded >= TOTAL_REQUIRED ? 'Submit for Listing' : `Upload ${TOTAL_REQUIRED - requiredUploaded} More Required`}
+          title={
+            uploading
+              ? `Uploading ${uploadedCount} photos…`
+              : requiredUploaded >= TOTAL_REQUIRED
+              ? 'Upload to Listing'
+              : `Shoot ${TOTAL_REQUIRED - requiredUploaded} More Required`
+          }
           icon={requiredUploaded >= TOTAL_REQUIRED ? 'cloud-upload-outline' : 'camera-outline'}
           onPress={handleSubmit}
+          disabled={uploading || uploadedCount === 0}
         />
-        <Text style={styles.ctaSub}>
-          {requiredUploaded >= TOTAL_REQUIRED
-            ? 'All required photos ready · Listing will go live within 2 hours'
-            : `${TOTAL_REQUIRED} required · Defect shots optional`}
-        </Text>
+        {uploading ? (
+          <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 8 }} />
+        ) : (
+          <Text style={styles.ctaSub}>
+            {requiredUploaded >= TOTAL_REQUIRED
+              ? 'All required angles captured · Uploads in slot order'
+              : `${TOTAL_REQUIRED} required · Defect shots optional`}
+          </Text>
+        )}
       </View>
     </Screen>
   );
@@ -249,10 +287,24 @@ const styles = StyleSheet.create({
     padding: 8, gap: 6,
     borderStyle: 'dashed',
   },
-  slotUploaded: {
+  slotFilled: {
     borderColor: colors.primary,
-    backgroundColor: colors.greenTint,
     borderStyle: 'solid',
+    padding: 0,
+    overflow: 'hidden',
+  },
+  slotImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  slotOverlay: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(23,18,15,0.72)',
+    paddingHorizontal: 6, paddingVertical: 4,
+  },
+  slotOverlayLabel: { fontSize: 8.5, fontFamily: fonts.bold, color: '#fff', textAlign: 'center' },
+  slotCheckBadge: {
+    position: 'absolute', top: 5, right: 5,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
   },
   slotOptional: {
     borderColor: colors.border,

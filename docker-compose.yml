@@ -10,7 +10,11 @@ version: '3.9'
 # Access:
 #   API        → http://localhost:3000
 #   Admin dash → http://localhost:3001
+#   Website    → http://localhost:3002
 #   DB direct  → localhost:5432  (user: inzozi, pass: inzozi_dev, db: inzozi_motors)
+#
+# The Expo app is NOT part of this stack — it runs on a device via `npm start`
+# at the repo root and reaches this API over the LAN.
 
 services:
 
@@ -73,6 +77,28 @@ services:
       PORT: 3001
     ports:
       - "3001:3001"
+
+  # ── Next.js Public Website ──────────────────────────────────────────────────
+  # Two different API URLs on purpose:
+  #   API_URL             — used by Server Components, resolved inside the Docker
+  #                         network, so page rendering never leaves the host.
+  #   NEXT_PUBLIC_API_URL — what a BROWSER would use; must be host-reachable.
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3000
+        NEXT_PUBLIC_SITE_URL: http://localhost:3002
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PORT: 3002
+      API_URL: http://api:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3002
+    ports:
+      - "3002:3002"
 
 volumes:
   postgres_data:
