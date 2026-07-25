@@ -48,6 +48,7 @@ app.use('/reviews',         require('./src/routes/reviews'));
 app.use('/rentals',         require('./src/routes/rentals'));
 app.use('/referrals',       require('./src/routes/referrals'));
 app.use('/disputes',        require('./src/routes/disputes'));
+app.use('/devices',         require('./src/routes/devices'));
 app.use('/admin',           require('./src/routes/admin'));
 
 // Health check — PM2 / load balancer uses this

@@ -6,6 +6,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadIdDocs } = require('../middleware/upload');
 const { recomputeTrustScore } = require('../lib/trust');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
@@ -57,12 +58,12 @@ router.post('/', requireAuth, uploadIdDocs.fields([
     );
 
     // Informational notification only — no document URLs stored in meta
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body)
-       VALUES ($1, 'listing_update', 'ID verification submitted',
-               'Your documents are under review. We will notify you within 24 hours.')`,
-      [req.user.id]
-    );
+    await notifyUser(pool, {
+      user_id: req.user.id,
+      type: 'listing_update',
+      title: 'ID verification submitted',
+      body: 'Your documents are under review. We will notify you within 24 hours.',
+    });
 
     res.json({ status: 'pending', message: 'Documents submitted for review' });
   } catch (err) {
@@ -109,11 +110,12 @@ router.patch('/:userId', requireAdmin, async (req, res) => {
     const msg = decision === 'approved'
       ? 'Your ID has been verified. You can now submit cars for inspection.'
       : 'Your ID verification was not accepted. Please resubmit clearer photos.';
-    await client.query(
-      `INSERT INTO notifications (user_id, type, title, body)
-       VALUES ($1, 'listing_update', $2, $3)`,
-      [req.params.userId, `ID ${decision}`, msg]
-    );
+    await notifyUser(client, {
+      user_id: req.params.userId,
+      type: 'listing_update',
+      title: `ID ${decision}`,
+      body: msg,
+    });
 
     await client.query('COMMIT');
     res.json({ success: true, decision });

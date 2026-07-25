@@ -1,17 +1,35 @@
 const express = require('express');
 const pool = require('../db');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requireVerified } = require('../middleware/auth');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
-// POST /submissions — seller submits a car for inspection
-router.post('/', requireAuth, async (req, res) => {
+const MAX_REFERENCE_IMAGES = 12;
+
+// POST /submissions — seller submits a car for inspection.
+// requireVerified, not requireAuth: identity is mandatory before a car can
+// enter the pipeline (blueprint rule), and the UI gate alone is not enforcement.
+router.post('/', requireVerified, async (req, res) => {
   const {
     make, model, year, mileage, condition, fuel_type, transmission,
     body_type, color, asking_price, notes, reference_images,
   } = req.body;
   if (!make || !model || !year) {
     return res.status(400).json({ error: 'make, model, and year are required' });
+  }
+  // reference_images lands in a TEXT[] column — anything but strings would
+  // either crash the insert or store garbage the app then renders as an <img>.
+  if (reference_images !== undefined && reference_images !== null) {
+    if (!Array.isArray(reference_images)) {
+      return res.status(400).json({ error: 'reference_images must be an array of image URLs' });
+    }
+    if (reference_images.length > MAX_REFERENCE_IMAGES) {
+      return res.status(400).json({ error: `reference_images is limited to ${MAX_REFERENCE_IMAGES} images` });
+    }
+    if (reference_images.some((img) => typeof img !== 'string' || !img.trim())) {
+      return res.status(400).json({ error: 'Each reference_images entry must be a non-empty string' });
+    }
   }
   try {
     const { rows } = await pool.query(
@@ -26,15 +44,13 @@ router.post('/', requireAuth, async (req, res) => {
     );
     const sub = rows[0];
 
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
-       VALUES ($1, 'listing_update', 'Submission received', $2, $3)`,
-      [
-        req.user.id,
-        'Your car has been submitted. Our team will review it within 24 hours.',
-        JSON.stringify({ submissionId: sub.id }),
-      ]
-    );
+    await notifyUser(pool, {
+      user_id: req.user.id,
+      type: 'listing_update',
+      title: 'Submission received',
+      body: 'Your car has been submitted. Our team will review it within 24 hours.',
+      meta: JSON.stringify({ submissionId: sub.id }),
+    });
 
     res.status(201).json(sub);
   } catch (err) {
@@ -155,12 +171,13 @@ router.patch('/:id', requireAdmin, async (req, res) => {
       live: 'Your car is now live on the marketplace!',
     };
     if (messages[status]) {
-      await pool.query(
-        `INSERT INTO notifications (user_id, type, title, body, meta)
-         VALUES ($1, 'listing_update', $2, $3, $4)`,
-        [sub.seller_id, `Submission ${status}`, messages[status],
-         JSON.stringify({ submissionId: sub.id })]
-      );
+      await notifyUser(pool, {
+        user_id: sub.seller_id,
+        type: 'listing_update',
+        title: `Submission ${status}`,
+        body: messages[status],
+        meta: JSON.stringify({ submissionId: sub.id }),
+      });
     }
 
     res.json(sub);
@@ -207,13 +224,13 @@ router.patch('/:id/schedule', requireAuth, async (req, res) => {
       [sub.id, sub.car_id, center, scheduled_date, scheduled_time, scheduledAt]
     );
 
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
-       VALUES ($1, 'listing_update', 'Inspection booked', $2, $3)`,
-      [req.user.id,
-       `Your inspection is booked at ${center} on ${scheduled_date} at ${scheduled_time}. Bring the car, your ID and any service records.`,
-       JSON.stringify({ submissionId: sub.id })]
-    );
+    await notifyUser(pool, {
+      user_id: req.user.id,
+      type: 'listing_update',
+      title: 'Inspection booked',
+      body: `Your inspection is booked at ${center} on ${scheduled_date} at ${scheduled_time}. Bring the car, your ID and any service records.`,
+      meta: JSON.stringify({ submissionId: sub.id }),
+    });
 
     res.json(sub);
   } catch (err) {

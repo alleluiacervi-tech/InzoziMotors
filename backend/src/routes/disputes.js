@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
@@ -37,13 +38,13 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1, $2, $3) RETURNING *`,
       [handover_id, req.user.id, reason.trim()]
     );
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
-       VALUES ($1, 'handover', 'Dispute received', $2, $3)`,
-      [req.user.id,
-       'We received your dispute. The Inzozi team will review it and contact both parties within 24 hours.',
-       JSON.stringify({ disputeId: rows[0].id })]
-    );
+    await notifyUser(pool, {
+      user_id: req.user.id,
+      type: 'handover',
+      title: 'Dispute received',
+      body: 'We received your dispute. The Inzozi team will review it and contact both parties within 24 hours.',
+      meta: JSON.stringify({ disputeId: rows[0].id }),
+    });
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('dispute error:', err.message);
@@ -109,14 +110,13 @@ router.patch('/:id', requireAdmin, async (req, res) => {
       [status, resolution || null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Open dispute not found' });
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
-       VALUES ($1, 'handover', $2, $3, $4)`,
-      [rows[0].raised_by,
-       `Dispute ${status}`,
-       resolution || `Your dispute has been ${status} by the Inzozi team.`,
-       JSON.stringify({ disputeId: rows[0].id })]
-    );
+    await notifyUser(pool, {
+      user_id: rows[0].raised_by,
+      type: 'handover',
+      title: `Dispute ${status}`,
+      body: resolution || `Your dispute has been ${status} by the Inzozi team.`,
+      meta: JSON.stringify({ disputeId: rows[0].id }),
+    });
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

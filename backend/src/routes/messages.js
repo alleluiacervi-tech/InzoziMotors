@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
@@ -105,15 +106,13 @@ router.post('/conversations', requireAuth, async (req, res) => {
     );
 
     // Notify seller
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
-       VALUES ($1, 'new_message', 'New message about your car', $2, $3)`,
-      [
-        car.seller_id,
-        `Someone sent you a message about your ${car.title}.`,
-        JSON.stringify({ conversationId: conv.id, carId: car_id }),
-      ]
-    );
+    await notifyUser(pool, {
+      user_id: car.seller_id,
+      type: 'new_message',
+      title: 'New message about your car',
+      body: `Someone sent you a message about your ${car.title}.`,
+      meta: JSON.stringify({ conversationId: conv.id, carId: car_id }),
+    });
 
     res.status(201).json({ conversation: conv, message: msgRes.rows[0] });
   } catch (err) {
@@ -147,11 +146,13 @@ router.post('/conversations/:id', requireAuth, async (req, res) => {
     );
 
     const otherId = req.user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id;
-    await pool.query(
-      `INSERT INTO notifications (user_id, type, title, body, meta)
-       VALUES ($1, 'new_message', 'New message', $2, $3)`,
-      [otherId, text.slice(0, 80), JSON.stringify({ conversationId: conv.id })]
-    );
+    await notifyUser(pool, {
+      user_id: otherId,
+      type: 'new_message',
+      title: 'New message',
+      body: text.slice(0, 80),
+      meta: JSON.stringify({ conversationId: conv.id }),
+    });
 
     res.status(201).json(rows[0]);
   } catch (err) {

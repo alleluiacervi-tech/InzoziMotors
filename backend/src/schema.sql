@@ -355,6 +355,32 @@ CREATE TABLE IF NOT EXISTS referral_redemptions (
 );
 ALTER TABLE referral_redemptions ADD COLUMN IF NOT EXISTS consumed_at TIMESTAMPTZ;
 
+-- ─── Password resets — 6-digit codes, hashed like passwords ──────────────────
+-- No mail/SMS provider exists yet; the code is logged server-side until Phase 8.
+CREATE TABLE IF NOT EXISTS password_resets (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash   TEXT NOT NULL,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  attempts    INT NOT NULL DEFAULT 0,     -- 5 wrong guesses burns the code
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);
+ALTER TABLE password_resets ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0;
+
+-- ─── Device tokens — Expo push targets ───────────────────────────────────────
+-- UNIQUE(token): a phone re-used by another account moves, never duplicates.
+CREATE TABLE IF NOT EXISTS device_tokens (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token       TEXT NOT NULL,
+  platform    TEXT,                       -- ios | android | web
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (token)
+);
+CREATE INDEX IF NOT EXISTS idx_device_tokens_user ON device_tokens(user_id);
+
 -- ─── Disputes — post-handover mediation (7-day return window) ────────────────
 CREATE TABLE IF NOT EXISTS disputes (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

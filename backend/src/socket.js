@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
+const { notifyUser } = require('./lib/notify');
 
 module.exports = function attachSocket(io) {
   // Authenticate every socket connection via JWT in handshake
@@ -68,11 +69,13 @@ module.exports = function attachSocket(io) {
 
         // Push notification to the other party if they're not in the room
         const otherId = socket.user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id;
-        await pool.query(
-          `INSERT INTO notifications (user_id, type, title, body, meta)
-           VALUES ($1, 'new_message', 'New message', $2, $3)`,
-          [otherId, text.trim().slice(0, 80), JSON.stringify({ conversationId })]
-        );
+        await notifyUser(pool, {
+          user_id: otherId,
+          type: 'new_message',
+          title: 'New message',
+          body: text.trim().slice(0, 80),
+          meta: JSON.stringify({ conversationId }),
+        });
       } catch (err) {
         socket.emit('error', { message: 'Failed to send message' });
       }
