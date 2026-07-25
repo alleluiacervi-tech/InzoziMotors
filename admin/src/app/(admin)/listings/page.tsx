@@ -128,6 +128,14 @@ export default function ListingsPage() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {car.status !== 'sold' && (
                     <Link
+                      href={`/listings/${car.id}/edit`}
+                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Edit
+                    </Link>
+                  )}
+                  {car.status !== 'sold' && (
+                    <Link
                       href={`/listings/${car.id}/photos`}
                       className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
                     >

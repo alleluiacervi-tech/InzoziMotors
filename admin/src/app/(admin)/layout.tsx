@@ -10,6 +10,7 @@ const NAV = [
   { href: '/submissions', icon: '📋', label: 'Submissions' },
   { href: '/inspections', icon: '🔧', label: 'Inspections' },
   { href: '/handovers',   icon: '🤝', label: 'Handovers' },
+  { href: '/disputes',    icon: '⚖️', label: 'Disputes' },
   { href: '/listings',    icon: '🚗', label: 'Listings' },
   { href: '/rentals',     icon: '🔑', label: 'Rentals' },
   { href: '/fees',        icon: '💰', label: 'Revenue' },
@@ -23,6 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser]       = useState<any>(null)
   const [ready, setReady]     = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [openDisputes, setOpenDisputes] = useState(0)
 
   useEffect(() => {
     api.me()
@@ -33,6 +35,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       })
       .catch(() => router.replace('/login'))
   }, [router])
+
+  // The 7-day return window is short — an open dispute has to be visible from every page.
+  useEffect(() => {
+    if (!ready) return
+    api.disputes('open')
+      .then((d) => setOpenDisputes(d.length))
+      .catch(() => setOpenDisputes(0))
+  }, [ready, pathname])
 
   function logout() {
     localStorage.removeItem('inzozi_admin_token')
@@ -88,6 +98,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <span className="text-base">{icon}</span>
                 {label}
+                {href === '/disputes' && openDisputes > 0 && (
+                  <span className="ml-auto min-w-5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold text-center">
+                    {openDisputes}
+                  </span>
+                )}
               </Link>
             )
           })}
