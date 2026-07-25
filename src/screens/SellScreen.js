@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import Button from '../components/Button';
 import { colors, radius, fonts } from '../theme';
+import { useSellerGate } from '../hooks/useSellerGate';
+import { useApp } from '../context/AppContext';
 
 const STEPS = [
   { icon: 'shield-checkmark-outline', title: 'Zero Paperwork Upfront', sub: 'ID and ownership checked in person at your inspection' },
@@ -15,11 +17,40 @@ const STEPS = [
 
 const OPTIONS = [
   { icon: 'trending-up-outline', title: "What's My Car Worth?", sub: 'Free instant estimate — 30 seconds', accent: colors.green, screen: 'CarValuation' },
-  { icon: 'shield-checkmark-outline', title: 'Submit for Certification', sub: '150-point inspection, we list it for you', accent: colors.primary, screen: 'CarSubmission' },
+  // Gated: identity has to be verified before a car can enter the pipeline
+  { icon: 'shield-checkmark-outline', title: 'Submit for Certification', sub: '150-point inspection, we list it for you', accent: colors.primary, screen: 'CarSubmission', gated: true },
   { icon: 'grid-outline', title: 'My Submissions', sub: 'Track your cars through the pipeline', accent: colors.amber, screen: 'SellerDashboard' },
 ];
 
+const VERIFY_BANNER = {
+  none: {
+    icon: 'shield-outline',
+    title: 'Verify your identity to sell',
+    body: 'One two-minute check, done once. It is what keeps every Inzozi listing real.',
+    cta: 'Start verification',
+  },
+  pending: {
+    icon: 'time-outline',
+    title: 'Identity check under review',
+    body: 'Our team is reviewing your documents — usually within 24 hours.',
+    cta: 'View status',
+  },
+  rejected: {
+    icon: 'alert-circle-outline',
+    title: 'Identity check needs attention',
+    body: 'Your documents were not accepted. Send clearer photos and we will re-check.',
+    cta: 'Re-submit documents',
+  },
+};
+
 export default function SellScreen({ navigation }) {
+  const gate = useSellerGate(navigation);
+  const { isLoggedIn, idVerificationStatus } = useApp();
+  const banner = isLoggedIn ? VERIFY_BANNER[idVerificationStatus] : null;
+
+  const go = (option) =>
+    option.gated ? gate(option.screen) : navigation.navigate(option.screen);
+
   return (
     <Screen background={colors.bg}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
@@ -50,10 +81,24 @@ export default function SellScreen({ navigation }) {
           </LinearGradient>
         </Pressable>
 
+        {/* Verification state — the one thing standing between a seller and listing */}
+        {banner && (
+          <Pressable style={styles.verifyCard} onPress={() => navigation.navigate('IDVerification')}>
+            <View style={styles.verifyIcon}>
+              <Ionicons name={banner.icon} size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.verifyTitle}>{banner.title}</Text>
+              <Text style={styles.verifyBody}>{banner.body}</Text>
+              <Text style={styles.verifyCta}>{banner.cta} →</Text>
+            </View>
+          </Pressable>
+        )}
+
         {/* Options */}
         <View style={styles.options}>
           {OPTIONS.map((o) => (
-            <Pressable key={o.title} style={styles.option} onPress={() => navigation.navigate(o.screen)}>
+            <Pressable key={o.title} style={styles.option} onPress={() => go(o)}>
               <View style={[styles.optionIcon, { backgroundColor: o.accent + '1A' }]}>
                 <Ionicons name={o.icon} size={22} color={o.accent} />
               </View>
@@ -85,7 +130,7 @@ export default function SellScreen({ navigation }) {
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <Button title="Submit for Inspection" icon="shield-checkmark-outline" onPress={() => navigation.navigate('CarSubmission')} />
+          <Button title="Submit for Inspection" icon="shield-checkmark-outline" onPress={() => gate('CarSubmission')} />
         </View>
       </ScrollView>
     </Screen>
@@ -109,6 +154,21 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, paddingHorizontal: 14, height: 52, marginTop: 18,
   },
   plateText: { flex: 1, fontSize: 15, color: 'rgba(226,232,240,0.9)' },
+  verifyCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    marginHorizontal: 20, marginBottom: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.primary + '33',
+    borderRadius: radius.xl, padding: 14,
+  },
+  verifyIcon: {
+    width: 42, height: 42, borderRadius: radius.md,
+    backgroundColor: colors.blueTint,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  verifyTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  verifyBody: { fontSize: 12.5, color: colors.textSecondary, marginTop: 3, lineHeight: 18 },
+  verifyCta: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.primary, marginTop: 8 },
   options: { paddingHorizontal: 20, gap: 10 },
   option: {
     flexDirection: 'row', alignItems: 'center', gap: 14,

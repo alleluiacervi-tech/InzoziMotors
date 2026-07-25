@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
+import { useSellerGate } from '../hooks/useSellerGate';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 
@@ -84,6 +85,7 @@ export default function SellerDashboardScreen({ navigation }) {
   const { submissions, relistSubmission, updateSubmissionPrice, cars } = useApp();
   const [relistId, setRelistId] = useState(null);
   const [relistPrice, setRelistPrice] = useState('');
+  const gate = useSellerGate(navigation);
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
@@ -99,7 +101,7 @@ export default function SellerDashboardScreen({ navigation }) {
     } else if (sub.status === 'scheduled') {
       showToast(sub.statusDetail || `Your inspection for ${sub.carTitle} is confirmed. Bring your vehicle and service records.`, 'info');
     } else if (sub.status === 'rejected') {
-      navigation.navigate('CarSubmission', {
+      gate('CarSubmission', {
         prefill: { make: sub.make, model: sub.model, year: sub.year, mileage: sub.mileage },
       });
     }
@@ -143,7 +145,7 @@ export default function SellerDashboardScreen({ navigation }) {
         title="My Submissions"
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.addBtn} onPress={() => navigation.navigate('CarSubmission')}>
+          <Pressable style={styles.addBtn} onPress={() => gate('CarSubmission')}>
             <Ionicons name="add" size={22} color={colors.slate700} />
           </Pressable>
         }
@@ -179,7 +181,7 @@ export default function SellerDashboardScreen({ navigation }) {
         {/* Section header */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>All Submissions</Text>
-          <Pressable style={styles.submitNewBtn} onPress={() => navigation.navigate('CarSubmission')}>
+          <Pressable style={styles.submitNewBtn} onPress={() => gate('CarSubmission')}>
             <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
             <Text style={styles.submitNewText}>Submit Another</Text>
           </Pressable>
@@ -269,7 +271,7 @@ export default function SellerDashboardScreen({ navigation }) {
         })}
 
         {/* Submit CTA */}
-        <Pressable style={styles.submitCta} onPress={() => navigation.navigate('CarSubmission')}>
+        <Pressable style={styles.submitCta} onPress={() => gate('CarSubmission')}>
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
           <Text style={styles.submitCtaText}>Submit another car for sale</Text>
         </Pressable>

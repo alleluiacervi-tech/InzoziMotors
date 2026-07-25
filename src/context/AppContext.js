@@ -11,6 +11,7 @@ import notificationsApi from '../api/notifications';
 import rentalsApi from '../api/rentals';
 import api, { BASE_URL, getToken } from '../api/client';
 import io from 'socket.io-client';
+import { syncPushToken, unregisterPushToken } from '../utils/push';
 import { getJSON, setJSON } from '../storage';
 
 const AppContext = createContext();
@@ -22,6 +23,20 @@ const DEFAULT_USER = {
   initials: 'AM',
   id_verified: 'none', // 'none' so the ID verification flow is demoable
 };
+
+// The API never returns initials — they are a display concern. One helper so
+// every place that adopts a user object renders the avatar the same way.
+function withInitials(user) {
+  if (!user) return user;
+  const initials = String(user.name || '')
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  return { ...user, initials: initials || 'IN' };
+}
 
 // Demo data — used when backend is unreachable (Phase 6 not yet deployed)
 const INITIAL_SUBMISSIONS = [
@@ -184,6 +199,9 @@ export function AppProvider({ children }) {
   const [socket, setSocket] = useState(null);
   const [typingConvId, setTypingConvId] = useState(null);
 
+  // Expo push token for this device, held so logout can unregister it
+  const [pushToken, setPushToken] = useState(null);
+
   // Saved searches
   const [savedSearches, setSavedSearches] = useState(INITIAL_SAVED_SEARCHES);
 
@@ -247,6 +265,11 @@ export function AppProvider({ children }) {
   // --- Mappers to bridge Backend schema to Mobile UI keys ---
 
   const mapCar = useCallback((c) => {
+    // Price history arrives as [{ price, at }, …]; the sparkline wants numbers.
+    const priceHistory = Array.isArray(c.price_history)
+      ? c.price_history.map((p) => Number(p.price)).filter(Number.isFinite)
+      : null;
+
     return {
       id: c.id,
       title: c.title,
@@ -255,7 +278,14 @@ export function AppProvider({ children }) {
       model: c.model,
       year: c.year,
       price: c.price,
+      // Market intelligence computed server-side from real comparables —
+      // these replace the hardcoded demo tables in data/marketData.js.
       belowMarket: c.below_market || 0,
+      marketAvg: Number.isFinite(c.market_avg) ? c.market_avg : null,
+      marketDiff: Number.isFinite(c.market_diff) ? c.market_diff : null,
+      comparables: c.comparables || 0,
+      listedDays: Number.isFinite(c.listed_days) ? c.listed_days : null,
+      priceHistory: priceHistory && priceHistory.length > 1 ? priceHistory : null,
       mileage: c.mileage,
       fuel: c.fuel_type || 'Petrol',
       transmission: c.transmission || 'Automatic',
@@ -271,7 +301,9 @@ export function AppProvider({ children }) {
       images: c.images && c.images.length ? c.images : ['https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80'],
       location: c.location || 'Kigali',
       drive_side: c.drive_side || 'RHD',
-      saves: c.saves || 0,
+      // saves_count is the live COUNT from saved_cars; cars.saves is a cached
+      // column that drifts, so prefer the count when the API sends it.
+      saves: Number.isFinite(c.saves_count) ? c.saves_count : (c.saves || 0),
       views: c.views || 0,
       status: c.status,
       description: c.description || '',
@@ -385,6 +417,56 @@ export function AppProvider({ children }) {
     return mockCars;
   }, [mapCar]);
 
+  // Server-side search. The database does the filtering, sorting and paging;
+  // the app only renders. Returns { items, exhausted } on success, or null when
+  // the backend is unreachable so the caller can fall back to the local set.
+  const PAGE_SIZE = 20;
+  const searchCars = useCallback(async ({ query, filters, sort, offset = 0 } = {}) => {
+    const params = { limit: PAGE_SIZE, offset };
+
+    if (query?.trim()) params.q = query.trim();
+    if (filters?.make) params.make = filters.make;
+    if (filters?.body) params.body_type = filters.body;
+    if (filters?.fuel) params.fuel_type = filters.fuel;
+    if (filters?.transmission) params.transmission = filters.transmission;
+    if (filters?.driveSide) params.drive_side = filters.driveSide;
+    if (filters?.minPrice) params.min_price = filters.minPrice;
+    if (filters?.maxPrice) params.max_price = filters.maxPrice;
+    if (filters?.minYear) params.min_year = filters.minYear;
+    if (filters?.maxYear) params.max_year = filters.maxYear;
+
+    // Only these columns are whitelisted server-side; anything else is ignored
+    const SORTS = {
+      'Price ↑': { sort: 'price', order: 'asc' },
+      'Price ↓': { sort: 'price', order: 'desc' },
+      'Mileage': { sort: 'mileage', order: 'asc' },
+      'Newest': { sort: 'year', order: 'desc' },
+      'Best match': { sort: 'listed_at', order: 'desc' },
+    };
+    Object.assign(params, SORTS[sort] || SORTS['Best match']);
+
+    try {
+      const rows = await carsApi.getCars(params);
+      return { items: rows.map(mapCar), exhausted: rows.length < PAGE_SIZE };
+    } catch (err) {
+      console.warn('Search API unreachable — filtering the local set:', err.message);
+      return null;
+    }
+  }, [mapCar]);
+
+  // Full detail for one listing — price history, seller phone, market position,
+  // and the server-side view counter. Returns null when unavailable so callers
+  // keep rendering whatever they already had.
+  const fetchCarDetail = useCallback(async (id) => {
+    if (!id || !String(id).includes('-')) return null; // demo ids aren't on the server
+    try {
+      return mapCar(await carsApi.getCar(id));
+    } catch (err) {
+      console.warn('Car detail unreachable — keeping list data:', err.message);
+      return null;
+    }
+  }, [mapCar]);
+
   // Rental fleet: API rows -> mobile shape; booked ranges -> greyed-out day indexes
   const mapRentalCar = useCallback((rc) => {
     const today = new Date();
@@ -424,6 +506,9 @@ export function AppProvider({ children }) {
     deposit: b.deposit,
     pickupFee: b.pickup_fee,
     total: b.total,
+    // Counter walkaround records — what check-in/return shows back to the renter
+    pickupRecord: b.pickup_record || null,
+    returnRecord: b.return_record || null,
     status: b.status === 'upcoming' ? 'confirmed' : b.status,
   }), []);
 
@@ -542,6 +627,15 @@ export function AppProvider({ children }) {
     initAuth();
   }, [loadInitialData, fetchCars]);
 
+  // Register this device for push once we know who is signed in. The server
+  // keys tokens to the user, so this has to run after auth, not at boot.
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let alive = true;
+    syncPushToken().then((token) => { if (alive && token) setPushToken(token); });
+    return () => { alive = false; };
+  }, [isLoggedIn]);
+
   // Connect Socket.io client on login
   useEffect(() => {
     if (isLoggedIn && currentUser) {
@@ -617,9 +711,12 @@ export function AppProvider({ children }) {
 
   // --- Auth operations ---
 
-  // True when the failure is connectivity (backend not deployed), not a rejected credential
+  // True when the failure is connectivity (backend not deployed), not a rejected
+  // credential. The client tags transport failures explicitly; the message test
+  // stays as a fallback for errors thrown outside the client wrapper.
   const isNetworkError = (err) =>
-    /fetch|network|timeout|abort/i.test(err?.message || '');
+    err?.isNetworkError === true ||
+    (err?.status === undefined && /fetch|network|timeout|abort/i.test(err?.message || ''));
 
   const loginUser = useCallback(async (email, password) => {
     setLoading(true);
@@ -691,6 +788,10 @@ export function AppProvider({ children }) {
   }, [loadInitialData]);
 
   const logoutUser = useCallback(async () => {
+    // Drop the push token BEFORE the auth token — the delete needs the JWT,
+    // and a shared handset must stop receiving the previous user's alerts.
+    await unregisterPushToken(pushToken);
+    setPushToken(null);
     try { await authApi.logout(); } catch {}
     setCurrentUser(DEFAULT_USER);
     setIsLoggedIn(false);
@@ -700,7 +801,7 @@ export function AppProvider({ children }) {
     setNotifications(INITIAL_NOTIFICATIONS || []);
     setConversations(initialConversations || []);
     setSavedSearches(INITIAL_SAVED_SEARCHES);
-  }, []);
+  }, [pushToken]);
 
   // --- Car wishlisting / bookmarking ---
 
@@ -724,27 +825,23 @@ export function AppProvider({ children }) {
 
   // --- ID Verification uploads ---
 
-  const submitIDVerification = useCallback(async () => {
+  // docs: { front, back, selfie } — assets from captureImage(), uploaded as
+  // real multipart files. A 4xx is a genuine rejection and must reach the user;
+  // only an unreachable backend falls back to the local demo state.
+  const submitIDVerification = useCallback(async (docs) => {
     setLoading(true);
     try {
-      // Mock uploads to trigger backend review pipeline
-      await authApi.submitIdVerification(
-        'file://placeholder_id_front.jpg',
-        'file://placeholder_id_back.jpg',
-        'file://placeholder_selfie.jpg'
-      );
-      if (currentUser) {
-        const me = await authApi.getMe();
-        setCurrentUser(me);
-      }
+      await authApi.submitIdVerification(docs);
+      const me = await authApi.getMe();
+      setCurrentUser(withInitials(me));
     } catch (err) {
-      console.warn('ID Verification submission API error:', err);
-      // Fallback
-      setCurrentUser((prev) => prev ? { ...prev, id_verified: 'pending' } : null);
+      if (!isNetworkError(err)) throw err;
+      console.warn('ID verification API unreachable — marking pending locally:', err.message);
+      setCurrentUser((prev) => (prev ? { ...prev, id_verified: 'pending' } : null));
     } finally {
       setLoading(false);
     }
-  }, [currentUser]);
+  }, []);
 
   const approveIDVerification = useCallback(() => {
     // legacy client mock trigger
@@ -782,6 +879,9 @@ export function AppProvider({ children }) {
 
       return res.id;
     } catch (err) {
+      // A rejection is an answer, not an outage — an unverified seller must
+      // never end up with a phantom local submission the server never accepted.
+      if (!isNetworkError(err)) throw err;
       console.warn('Submissions API unreachable — saving locally:', err.message);
       // Local fallback so the dashboard reflects what the seller just did
       const localSub = {
@@ -1234,6 +1334,7 @@ export function AppProvider({ children }) {
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
+    fetchCarDetail, searchCars,
     homeMode, setHomeMode, rentalCars, rentalBookings, bookRental, updateRentalBookingStatus,
     recentlyViewedIds, recordCarView,
     currency, toggleCurrency,

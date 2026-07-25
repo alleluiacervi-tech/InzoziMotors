@@ -21,7 +21,7 @@ export default function CarListCard({ car, onPress }) {
   const saved = isCarSaved(car.id);
   const price = car.type === 'auction' ? car.currentBid : car.price;
   const marketDiff = getMarketDiff(car);
-  const savedCount = getSavedCount(car.id);
+  const savedCount = getSavedCount(car);
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
@@ -53,7 +53,7 @@ export default function CarListCard({ car, onPress }) {
           {getRegYear(car)} · {(car.mileage ?? 0).toLocaleString('en-US')} km
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
-          {car.fuel} · {getNeighborhood(car.id)}
+          {car.fuel} · {getNeighborhood(car)}
         </Text>
 
         <View style={styles.bottomRow}>

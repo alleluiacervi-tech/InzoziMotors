@@ -49,28 +49,54 @@ const DRIVE_TYPES = {
   '21': 'LHD', '22': 'RHD', '23': 'LHD', '24': 'RHD', '25': 'LHD',
 };
 
-export function getNeighborhood(carId) {
-  return NEIGHBORHOOD_MAP[carId] || 'Kigali';
+// ─── Real data first, demo table second ──────────────────────────────────────
+// Every accessor below takes either a car object or a bare id. When the object
+// carries a server-computed value it wins; the hardcoded tables above only ever
+// serve the 25 bundled demo cars (ids '1'–'25'), which is why a real listing
+// used to show "0 saves · listed 14 days ago" no matter what the database said.
+
+const idOf = (carOrId) => (typeof carOrId === 'object' && carOrId ? carOrId.id : carOrId);
+const objOf = (carOrId) => (typeof carOrId === 'object' && carOrId ? carOrId : null);
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+
+export function getNeighborhood(carOrId) {
+  const car = objOf(carOrId);
+  if (car?.location) return car.location;
+  return NEIGHBORHOOD_MAP[idOf(carOrId)] || 'Kigali';
 }
 
-export function getListedDaysAgo(carId) {
-  return LISTED_DAYS_AGO[carId] || 14;
+export function getListedDaysAgo(carOrId) {
+  const car = objOf(carOrId);
+  if (isNum(car?.listedDays)) return car.listedDays;
+  return LISTED_DAYS_AGO[idOf(carOrId)] ?? 14;
 }
 
-export function getSavedCount(carId) {
-  return SAVED_COUNTS[carId] || 0;
+export function getSavedCount(carOrId) {
+  const car = objOf(carOrId);
+  if (isNum(car?.saves)) return car.saves;
+  return SAVED_COUNTS[idOf(carOrId)] || 0;
 }
 
-export function getPriceDrop(carId) {
-  return PRICE_DROPS[carId] || 0;
+// A real drop is the difference between the opening price and today's price.
+export function getPriceDrop(carOrId) {
+  const car = objOf(carOrId);
+  const history = car?.priceHistory;
+  if (Array.isArray(history) && history.length > 1) {
+    const drop = history[0] - history[history.length - 1];
+    return drop > 0 ? drop : 0;
+  }
+  return PRICE_DROPS[idOf(carOrId)] || 0;
 }
 
-export function getDriveType(carId) {
-  return DRIVE_TYPES[carId] || 'LHD';
+export function getDriveType(carOrId) {
+  const car = objOf(carOrId);
+  if (car?.drive_side) return car.drive_side;
+  return DRIVE_TYPES[idOf(carOrId)] || 'LHD';
 }
 
-// Market average = current price + below_market amount (if any), else +8%
+// Market average — server-computed from real comparables when available.
 export function getMarketAvg(car) {
+  if (isNum(car?.marketAvg)) return car.marketAvg;
   if (car.belowMarket) return car.price + car.belowMarket;
   if (car.type === 'auction') return Math.round((car.currentBid || car.price) * 1.06);
   return Math.round(car.price * 1.08);
@@ -78,13 +104,25 @@ export function getMarketAvg(car) {
 
 // % diff from market: negative = below, positive = above
 export function getMarketDiff(car) {
+  if (isNum(car?.marketDiff)) return car.marketDiff;
   const avg = getMarketAvg(car);
   const price = car.type === 'auction' ? (car.currentBid || car.price) : car.price;
+  if (!avg) return 0;
   return Math.round(((price - avg) / avg) * 100);
 }
 
-// 6-point price history for sparkline (oldest → newest)
+// True only when the number came from real comparables — screens use this to
+// decide whether to show a market claim at all rather than assert a guess.
+export function hasRealMarketData(car) {
+  return isNum(car?.marketAvg) && (car?.comparables || 0) >= 3;
+}
+
+// Price points for the sparkline (oldest → newest). Real history when the
+// listing has any; otherwise a flat demo curve for the bundled cars.
 export function getPriceHistory(car) {
+  const history = car?.priceHistory;
+  if (Array.isArray(history) && history.length > 1) return history;
+
   const drop = PRICE_DROPS[car.id] || 0;
   const base = car.type === 'auction' ? (car.currentBid || car.price) : car.price;
   if (drop > 0) {

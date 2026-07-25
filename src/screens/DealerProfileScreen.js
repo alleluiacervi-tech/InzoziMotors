@@ -38,6 +38,10 @@ const DEALERS = {
   },
 };
 
+// Which sellers get the branded dealer storefront rather than an individual's
+// trust profile. Exported so the car detail page can route to the right one.
+export const isDealerSeller = (name) => !!DEALERS[name];
+
 const DEFAULT_DEALER = {
   name: 'Inzozi Partner Dealer',
   tagline: 'Verified dealer · Kigali',

@@ -8,9 +8,10 @@ import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 
-export default function SignInScreen({ navigation }) {
+export default function SignInScreen({ navigation, route }) {
   const { loginUser } = useApp();
-  const [email, setEmail] = useState('');
+  // Carried over from a completed password reset so the user isn't retyping it
+  const [email, setEmail] = useState(route?.params?.email || '');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
@@ -50,7 +51,7 @@ export default function SignInScreen({ navigation }) {
 
         <View style={styles.labelRow}>
           <Text style={styles.label}>Password</Text>
-          <Pressable onPress={() => showToast('A reset link has been sent to your email.', 'success')}>
+          <Pressable onPress={() => navigation.navigate('ForgotPassword', { email: email.trim() })}>
             <Text style={styles.forgot}>Forgot?</Text>
           </Pressable>
         </View>

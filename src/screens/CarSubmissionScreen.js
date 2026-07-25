@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable,
+  View, Text, StyleSheet, ScrollView, Pressable, Image,
   TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import { captureImage } from '../utils/media';
 import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
 
@@ -107,6 +108,30 @@ export default function CarSubmissionScreen({ navigation, route }) {
 
   const canAdvanceStep0 = form.make && form.model && form.year && form.mileage && form.fuelType && form.transmission;
 
+  const handlePhotoPress = async (slot) => {
+    if (photos[slot.key]) {
+      const ok = await showConfirm({
+        title: `Remove the ${slot.label.toLowerCase()} photo?`,
+        confirmLabel: 'Remove',
+        destructive: true,
+      });
+      if (ok) {
+        setPhotos((p) => {
+          const next = { ...p };
+          delete next[slot.key];
+          return next;
+        });
+      }
+      return;
+    }
+    const asset = await captureImage({
+      preset: 'listing',
+      title: `${slot.label} photo`,
+      message: 'A quick reference shot — our photographer takes the official set at inspection.',
+    });
+    if (asset) setPhotos((p) => ({ ...p, [slot.key]: asset }));
+  };
+
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
@@ -137,7 +162,14 @@ export default function CarSubmissionScreen({ navigation, route }) {
         else navigation.navigate('SellerDashboard');
       });
     } catch (err) {
-      showToast('Your submission could not be saved. Please try again.', 'error');
+      // The server rejects unverified sellers — send them to verification
+      // rather than leaving them staring at a failed submit button.
+      if (err.code === 'ID_VERIFICATION_REQUIRED') {
+        showToast(err.message || 'Verify your identity before submitting a car.', 'error');
+        navigation.replace('IDVerification', { returnTo: 'CarSubmission' });
+        return;
+      }
+      showToast(err.message || 'Your submission could not be saved. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -263,19 +295,26 @@ export default function CarSubmissionScreen({ navigation, route }) {
               <Field label="Reference Photos (optional)" hint="Helps our team prepare. Official 36-angle listing photos are taken by our photographer at inspection.">
                 <View style={styles.photoGrid}>
                   {PHOTO_SLOTS.map((slot) => {
-                    const uploaded = !!photos[slot.key];
+                    const asset = photos[slot.key];
                     return (
                       <Pressable
                         key={slot.key}
-                        style={[styles.photoSlot, uploaded && styles.photoSlotDone]}
-                        onPress={() => setPhotos((p) => ({ ...p, [slot.key]: true }))}
+                        style={[styles.photoSlot, asset && styles.photoSlotDone]}
+                        onPress={() => handlePhotoPress(slot)}
                       >
-                        <Ionicons
-                          name={uploaded ? 'checkmark-circle' : 'camera-outline'}
-                          size={26}
-                          color={uploaded ? colors.green : colors.textMuted}
-                        />
-                        <Text style={[styles.photoSlotLabel, uploaded && { color: colors.green }]}>{slot.label}</Text>
+                        {asset ? (
+                          <>
+                            <Image source={{ uri: asset.uri }} style={styles.photoSlotImage} />
+                            <View style={styles.photoSlotBadge}>
+                              <Ionicons name="checkmark" size={12} color="#fff" />
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            <Ionicons name="camera-outline" size={26} color={colors.textMuted} />
+                            <Text style={styles.photoSlotLabel}>{slot.label}</Text>
+                          </>
+                        )}
                       </Pressable>
                     );
                   })}
@@ -407,7 +446,17 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     gap: 6,
   },
-  photoSlotDone: { borderColor: colors.green, backgroundColor: colors.statusLiveBg, borderStyle: 'solid' },
+  photoSlotDone: {
+    borderColor: colors.green, borderStyle: 'solid',
+    overflow: 'hidden', gap: 0,
+  },
+  photoSlotImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  photoSlotBadge: {
+    position: 'absolute', top: 6, right: 6,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: colors.green,
+    alignItems: 'center', justifyContent: 'center',
+  },
   photoSlotLabel: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
   summaryCard: {
     backgroundColor: colors.surface,

@@ -1,15 +1,17 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Rect, Text as SvgText, G } from 'react-native-svg';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
+import adminApi from '../api/admin';
 import { colors, radius, shadows, fonts } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const FUNNEL = [
+// Shown until /admin/analytics answers, and when the backend is unreachable.
+const DEMO_FUNNEL = [
   { label: 'Submitted', value: 48, icon: 'document-outline' },
   { label: 'Scheduled', value: 41, icon: 'calendar-outline' },
   { label: 'Inspected', value: 36, icon: 'scan-outline' },
@@ -17,7 +19,7 @@ const FUNNEL = [
   { label: 'Sold', value: 22, icon: 'checkmark-done-outline' },
 ];
 
-const TOP_MAKES = [
+const DEMO_TOP_MAKES = [
   { make: 'Toyota', count: 12 },
   { make: 'Honda', count: 8 },
   { make: 'Nissan', count: 6 },
@@ -25,11 +27,38 @@ const TOP_MAKES = [
   { make: 'BMW', count: 3 },
 ];
 
-const CENTERS = [
+const DEMO_CENTERS = [
   { name: 'Nyarutarama', scheduled: 8, capacity: 12 },
   { name: 'Kicukiro', scheduled: 5, capacity: 10 },
   { name: 'Kimihurura', scheduled: 3, capacity: 8 },
 ];
+
+// The funnel is cumulative: a car that is live also passed every earlier stage,
+// but the submissions table only stores its CURRENT status. Roll the counts
+// forward so the chart reads as a funnel instead of a status histogram.
+const FUNNEL_ORDER = [
+  { key: 'under_review', label: 'Submitted', icon: 'document-outline' },
+  { key: 'scheduled',    label: 'Scheduled', icon: 'calendar-outline' },
+  { key: 'inspected',    label: 'Inspected', icon: 'scan-outline' },
+  { key: 'live',         label: 'Live',      icon: 'storefront-outline' },
+  { key: 'sold',         label: 'Sold',      icon: 'checkmark-done-outline' },
+];
+
+function buildFunnel(pipelineRows) {
+  if (!pipelineRows?.length) return null;
+  const counts = {};
+  pipelineRows.forEach((r) => { counts[r.status] = parseInt(r.count, 10) || 0; });
+  return FUNNEL_ORDER.map((stage, i) => ({
+    label: stage.label,
+    icon: stage.icon,
+    // Everything at or beyond this stage reached this stage
+    value: FUNNEL_ORDER.slice(i).reduce((sum, s) => sum + (counts[s.key] || 0), 0),
+  }));
+}
+
+// Center capacity lives in the inspection_centers table; the analytics payload
+// reports scheduled/completed per center. Pair them where we know the capacity.
+const CENTER_CAPACITY = { Nyarutarama: 12, Kicukiro: 8, Kimironko: 5, Kimihurura: 8 };
 
 function MakeBarChart({ data }) {
   const maxVal = Math.max(...data.map((d) => d.count));
@@ -56,9 +85,11 @@ function MakeBarChart({ data }) {
   );
 }
 
-function FunnelStep({ step, total, isLast }) {
-  const pct = Math.round((step.value / FUNNEL[0].value) * 100);
-  const dropPct = isLast ? null : Math.round(((step.value - FUNNEL[FUNNEL.indexOf(step) + 1]?.value) / step.value) * 100);
+function FunnelStep({ step, total, next, isLast }) {
+  const pct = total > 0 ? Math.round((step.value / total) * 100) : 0;
+  const dropPct = isLast || !step.value || !next
+    ? null
+    : Math.round(((step.value - next.value) / step.value) * 100);
   return (
     <View style={styles.funnelStep}>
       <View style={styles.funnelLeft}>
@@ -85,8 +116,70 @@ function FunnelStep({ step, total, isLast }) {
   );
 }
 
+const money = (n) =>
+  n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${Number(n || 0).toLocaleString()}`;
+
 export default function AdminAnalyticsScreen({ navigation }) {
-  const conversionRate = Math.round((FUNNEL[4].value / FUNNEL[0].value) * 100);
+  const [data, setData] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      adminApi.getAnalytics().catch(() => null),
+      adminApi.getStats().catch(() => null),
+    ]).then(([analytics, statsRes]) => {
+      if (!alive) return;
+      setData(analytics);
+      setStats(statsRes);
+      setLoading(false);
+    });
+    return () => { alive = false; };
+  }, []);
+
+  const funnel = buildFunnel(data?.pipelineFunnel) || DEMO_FUNNEL;
+  const topMakes = data?.topMakes?.length
+    ? data.topMakes.slice(0, 5).map((m) => ({ make: m.make, count: parseInt(m.count, 10) || 0 }))
+    : DEMO_TOP_MAKES;
+  const centers = data?.centers?.length
+    ? data.centers.map((c) => ({
+        name: c.center,
+        scheduled: parseInt(c.scheduled, 10) || 0,
+        capacity: CENTER_CAPACITY[c.center] || 10,
+      }))
+    : DEMO_CENTERS;
+
+  const submitted = funnel[0]?.value || 0;
+  const sold = funnel[funnel.length - 1]?.value || 0;
+  const conversionRate = submitted > 0 ? Math.round((sold / submitted) * 100) : 0;
+
+  const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  const heroStats = stats
+    ? [
+        { label: 'Fee revenue', value: money(stats.totalRevenue) },
+        { label: 'In pipeline', value: String(stats.pendingSubmissions) },
+        { label: 'Active listings', value: String(stats.liveListings) },
+        { label: 'Sold', value: String(stats.totalSold) },
+      ]
+    : [
+        { label: 'Revenue est.', value: '$4.2k' },
+        { label: 'Submissions', value: '48' },
+        { label: 'Active listings', value: '31' },
+        { label: 'Sellers', value: '19' },
+      ];
+
+  if (loading) {
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title="Platform Analytics" onBack={() => navigation.goBack()} />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen background={colors.bg}>
@@ -96,14 +189,9 @@ export default function AdminAnalyticsScreen({ navigation }) {
 
         {/* Hero */}
         <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.hero}>
-          <Text style={styles.heroTitle}>June 2026</Text>
+          <Text style={styles.heroTitle}>{monthLabel}</Text>
           <View style={styles.heroStats}>
-            {[
-              { label: 'Revenue est.', value: '$4.2k' },
-              { label: 'Submissions', value: '48' },
-              { label: 'Active listings', value: '31' },
-              { label: 'Sellers', value: '19' },
-            ].map((s, i) => (
+            {heroStats.map((s, i) => (
               <React.Fragment key={s.label}>
                 {i > 0 && <View style={styles.heroDivider} />}
                 <View style={styles.heroStatItem}>
@@ -124,8 +212,14 @@ export default function AdminAnalyticsScreen({ navigation }) {
           <Text style={styles.cardTitle}>Listing Pipeline</Text>
           <Text style={styles.cardSub}>Drop-off at each stage this month</Text>
           <View style={styles.funnel}>
-            {FUNNEL.map((step, i) => (
-              <FunnelStep key={step.label} step={step} total={FUNNEL[0].value} isLast={i === FUNNEL.length - 1} />
+            {funnel.map((step, i) => (
+              <FunnelStep
+                key={step.label}
+                step={step}
+                total={funnel[0].value}
+                next={funnel[i + 1]}
+                isLast={i === funnel.length - 1}
+              />
             ))}
           </View>
         </View>
@@ -135,7 +229,7 @@ export default function AdminAnalyticsScreen({ navigation }) {
           <Text style={styles.cardTitle}>Top Makes</Text>
           <Text style={styles.cardSub}>Cars submitted this month</Text>
           <View style={{ marginTop: 12 }}>
-            <MakeBarChart data={TOP_MAKES} />
+            <MakeBarChart data={topMakes} />
           </View>
         </View>
 
@@ -144,7 +238,7 @@ export default function AdminAnalyticsScreen({ navigation }) {
           <Text style={styles.cardTitle}>Inspection Center Utilization</Text>
           <Text style={styles.cardSub}>Appointments booked vs capacity</Text>
           <View style={styles.centersGrid}>
-            {CENTERS.map((center) => {
+            {centers.map((center) => {
               const pct = Math.round((center.scheduled / center.capacity) * 100);
               return (
                 <View key={center.name} style={styles.centerCard}>
@@ -194,6 +288,7 @@ export default function AdminAnalyticsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   hero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
   heroTitle: { fontSize: 12, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
   heroStats: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },

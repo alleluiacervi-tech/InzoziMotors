@@ -6,6 +6,7 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import SignInScreen from '../screens/SignInScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import VehicleDetailScreen from '../screens/VehicleDetailScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
 import FiltersScreen from '../screens/FiltersScreen';
@@ -52,6 +53,7 @@ import CarValuationScreen from '../screens/CarValuationScreen';
 import InzoziPromiseScreen from '../screens/InzoziPromiseScreen';
 import BuyingGuideScreen from '../screens/BuyingGuideScreen';
 import ShowroomScreen from '../screens/ShowroomScreen';
+import DisputesScreen from '../screens/DisputesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -65,6 +67,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="SignUp" component={SignUpScreen} />
       <Stack.Screen name="SignIn" component={SignInScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Main" component={TabNavigator} />
       <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
       <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
@@ -118,6 +121,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="InzoziPromise" component={InzoziPromiseScreen} />
       <Stack.Screen name="BuyingGuide" component={BuyingGuideScreen} />
       <Stack.Screen name="Showroom" component={ShowroomScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="Disputes" component={DisputesScreen} />
     </Stack.Navigator>
   );
 }

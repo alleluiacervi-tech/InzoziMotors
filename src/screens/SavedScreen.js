@@ -11,9 +11,9 @@ import { formatPrice } from '../data/cars';
 import { getPriceDrop, getSavedCount, getListedDaysAgo } from '../data/marketData';
 
 function SavedCarRow({ car, onPress, onRemove }) {
-  const drop = getPriceDrop(car.id);
-  const saves = getSavedCount(car.id);
-  const daysAgo = getListedDaysAgo(car.id);
+  const drop = getPriceDrop(car);
+  const saves = getSavedCount(car);
+  const daysAgo = getListedDaysAgo(car);
 
   return (
     <Pressable style={styles.row} onPress={onPress}>

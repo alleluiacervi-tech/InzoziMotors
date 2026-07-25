@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,6 +6,7 @@ import Svg, { Rect, Text as SvgText, G } from 'react-native-svg';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
+import carsApi from '../api/cars';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 
@@ -21,7 +22,9 @@ const VIEWS_DATA = [
   { label: 'Sun', value: 15 },
 ];
 
-const MOCK_LISTING_ANALYTICS = {
+// Demo numbers for the bundled submissions (ids 'sub1'…). Real listings get
+// their counters from GET /cars/seller/mine — see loadAnalytics below.
+const DEMO_LISTING_ANALYTICS = {
   sub1: { views: 47, viewsThisWeek: 22, saves: 12, inquiries: 5, daysLive: 3, categoryAvgDays: 14, trend: 'up' },
   sub2: { views: 23, viewsThisWeek: 8, saves: 4, inquiries: 2, daysLive: 8, categoryAvgDays: 14, trend: 'flat' },
   sub3: { views: 0, viewsThisWeek: 0, saves: 0, inquiries: 0, daysLive: 0, categoryAvgDays: 14, trend: 'flat' },
@@ -84,18 +87,66 @@ function StatCard({ icon, label, value, sub, color }) {
 // New/unknown listings show an honest zero-state instead of another car's numbers
 const ZERO_ANALYTICS = { views: 0, viewsThisWeek: 0, saves: 0, inquiries: 0, daysLive: 0, categoryAvgDays: 14, trend: 'flat' };
 
+const daysSince = (iso) => {
+  if (!iso) return 0;
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  return Number.isFinite(days) && days >= 0 ? days : 0;
+};
+
 export default function SellerAnalyticsScreen({ navigation, route }) {
-  const { submissions } = useApp();
+  const { submissions, isLoggedIn } = useApp();
   const liveSubmissions = submissions.filter((s) => s.status === 'live' || s.status === 'sold');
   const [selectedId, setSelectedId] = useState(
     route?.params?.subId || liveSubmissions[0]?.id || 'sub1'
   );
 
-  const analytics = MOCK_LISTING_ANALYTICS[selectedId] || ZERO_ANALYTICS;
+  // Real counters, keyed by the submission id that owns each listing so the
+  // selector and the numbers stay in step.
+  const [liveAnalytics, setLiveAnalytics] = useState(null);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let alive = true;
+    carsApi.getMyListings()
+      .then((rows) => {
+        if (!alive || !rows?.length) return;
+        const byCarId = {};
+        rows.forEach((car) => {
+          byCarId[car.id] = {
+            views: car.views || 0,
+            // No per-day breakdown server-side yet, so don't invent one —
+            // "this week" stays absent rather than fabricated.
+            viewsThisWeek: null,
+            saves: car.saves_count ?? car.saves ?? 0,
+            inquiries: car.inquiries_count || 0,
+            daysLive: daysSince(car.listed_at),
+            categoryAvgDays: 14,
+            trend: 'flat',
+          };
+        });
+        // Submissions carry listingId -> car id; map the counters back onto them
+        const bySubmission = {};
+        submissions.forEach((sub) => {
+          if (sub.listingId && byCarId[sub.listingId]) {
+            bySubmission[sub.id] = byCarId[sub.listingId];
+          }
+        });
+        setLiveAnalytics(bySubmission);
+      })
+      .catch((err) => console.warn('Seller analytics unreachable — showing demo figures:', err.message));
+    return () => { alive = false; };
+  }, [isLoggedIn, submissions]);
+
+  const source = liveAnalytics && Object.keys(liveAnalytics).length
+    ? liveAnalytics
+    : DEMO_LISTING_ANALYTICS;
+
+  const analytics = source[selectedId] || ZERO_ANALYTICS;
   const selectedSub = liveSubmissions.find((s) => s.id === selectedId) || liveSubmissions[0];
   const allLive = submissions.filter((s) => s.status === 'live');
-  const totalViews = Object.values(MOCK_LISTING_ANALYTICS).reduce((a, b) => a + b.views, 0);
-  const totalSaves = Object.values(MOCK_LISTING_ANALYTICS).reduce((a, b) => a + b.saves, 0);
+  const totalViews = Object.values(source).reduce((a, b) => a + b.views, 0);
+  const totalSaves = Object.values(source).reduce((a, b) => a + b.saves, 0);
+  const totalInquiries = Object.values(source).reduce((a, b) => a + (b.inquiries || 0), 0);
 
   return (
     <Screen background={colors.bg}>
@@ -123,7 +174,7 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStatItem}>
-              <Text style={styles.heroStatValue}>7</Text>
+              <Text style={styles.heroStatValue}>{totalInquiries}</Text>
               <Text style={styles.heroStatLabel}>Inquiries</Text>
             </View>
           </View>
@@ -153,8 +204,17 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
                 <View>
                   <Text style={styles.chartTitle}>Views this week</Text>
                   <Text style={styles.chartSub}>
-                    <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{analytics.viewsThisWeek}</Text>
-                    {' '}views · {analytics.trend === 'up' ? '↑ trending up' : 'stable'}
+                    {analytics.viewsThisWeek === null ? (
+                      <>
+                        <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{analytics.views}</Text>
+                        {' '}views total · daily breakdown coming soon
+                      </>
+                    ) : (
+                      <>
+                        <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{analytics.viewsThisWeek}</Text>
+                        {' '}views · {analytics.trend === 'up' ? '↑ trending up' : 'stable'}
+                      </>
+                    )}
                   </Text>
                 </View>
                 <View style={[styles.trendChip, { backgroundColor: analytics.trend === 'up' ? colors.greenTint : colors.surfaceAlt }]}>

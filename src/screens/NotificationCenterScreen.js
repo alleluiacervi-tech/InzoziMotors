@@ -94,7 +94,9 @@ function DateSection({ date, notifications, onPress, onMarkRead }) {
 }
 
 export default function NotificationCenterScreen({ navigation }) {
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useApp();
+  const {
+    notifications, markNotificationRead, markAllNotificationsRead, cars, fetchCarDetail,
+  } = useApp();
   const [activeFilter, setActiveFilter] = useState(null);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -109,19 +111,41 @@ export default function NotificationCenterScreen({ navigation }) {
     return acc;
   }, {});
 
-  const handlePress = (notification) => {
-    if (notification.type === 'message') {
+  // Server notifications carry meta: { carId, bookingId, disputeId, … }.
+  // Route to the thing the notification is actually about.
+  const handlePress = async (notification) => {
+    if (!notification.read) markNotificationRead(notification.id);
+
+    const meta = notification.meta || {};
+    const carId = meta.carId || notification.carId;
+
+    if (notification.type === 'message' || notification.type === 'new_message') {
       navigation.navigate('Messages');
-    } else if (notification.carId) {
-      // navigate to car — for now just go to Messages as placeholder
-      navigation.navigate('Main');
-    } else if (notification.type === 'listing_update') {
-      const text = `${notification.title} ${notification.body || ''}`;
-      if (/rental|booking/i.test(text)) {
-        navigation.navigate('MyRentals');
-      } else {
-        navigation.navigate('SellerDashboard');
+      return;
+    }
+
+    if (carId) {
+      // Price drops and saved-search matches point at a listing — open it.
+      const car = cars.find((c) => c.id === carId) || (await fetchCarDetail(carId));
+      if (car) {
+        navigation.navigate('VehicleDetail', { car });
+        return;
       }
+    }
+
+    if (meta.disputeId) {
+      navigation.navigate('Disputes');
+      return;
+    }
+
+    if (meta.bookingId || notification.type === 'handover') {
+      navigation.navigate('OrderTracking');
+      return;
+    }
+
+    if (notification.type === 'listing_update') {
+      const text = `${notification.title} ${notification.body || ''}`;
+      navigation.navigate(/rental|booking/i.test(text) ? 'MyRentals' : 'SellerDashboard');
     }
   };
 

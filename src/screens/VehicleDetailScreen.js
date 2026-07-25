@@ -15,10 +15,11 @@ import PhotoViewer from '../components/PhotoViewer';
 import { getCertTier } from '../data/certification';
 import { CarGlyph } from '../components/Logo';
 import {
-  getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop,
+  getMarketDiff, getMarketAvg, getPriceHistory, getPriceDrop, hasRealMarketData,
   getSavedCount, getListedDaysAgo, getNeighborhood, getDriveType, formatRWF,
 } from '../data/marketData';
 import { monthlyEstimate } from '../data/finance';
+import { isDealerSeller } from './DealerProfileScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -50,9 +51,25 @@ function Sparkline({ data, width: w = 80, height: h = 30 }) {
 }
 
 export default function VehicleDetailScreen({ navigation, route }) {
-  const car = route.params?.car;
+  const listCar = route.params?.car;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, addToComparison, comparisonCars } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, addToComparison, comparisonCars, fetchCarDetail } = useApp();
+
+  // The browse payload is deliberately lean. The detail endpoint adds price
+  // history, the seller's phone and the full market comparison — and counts the
+  // view. Render the list version immediately, then upgrade in place.
+  const [detail, setDetail] = useState(null);
+  React.useEffect(() => {
+    let alive = true;
+    if (listCar?.id) {
+      fetchCarDetail(listCar.id).then((full) => {
+        if (alive && full) setDetail(full);
+      });
+    }
+    return () => { alive = false; };
+  }, [listCar?.id, fetchCarDetail]);
+
+  const car = detail || listCar;
   const saved = isCarSaved(car.id);
   const isAuction = car.type === 'auction';
   const [activeIdx, setActiveIdx] = useState(0);
@@ -66,14 +83,17 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
   const marketDiff = getMarketDiff(car);
   const marketAvg = getMarketAvg(car);
+  // Only a server-computed average backed by real comparables earns the count
+  const realMarket = hasRealMarketData(car);
   const priceHistory = getPriceHistory(car);
-  const priceDrop = getPriceDrop(car.id);
-  const savedCount = getSavedCount(car.id);
-  const listedDaysAgo = getListedDaysAgo(car.id);
-  const neighborhood = getNeighborhood(car.id);
-  const driveType = getDriveType(car.id);
+  const priceDrop = getPriceDrop(car);
+  const savedCount = getSavedCount(car);
+  const listedDaysAgo = getListedDaysAgo(car);
+  const neighborhood = getNeighborhood(car);
+  const driveType = getDriveType(car);
   const price = isAuction ? car.currentBid : car.price;
   const tier = getCertTier(car);
+  const isDealer = isDealerSeller(car.seller);
 
   const similarCars = cars.filter(
     (c) => c.id !== car.id && (c.make === car.make || c.category === car.category)
@@ -256,7 +276,11 @@ export default function VehicleDetailScreen({ navigation, route }) {
               ) : (
                 <Text style={styles.sparklineStable}>Stable since listing</Text>
               )}
-              <Text style={styles.marketAvgText}>Market avg: {formatPrice(marketAvg)}</Text>
+              <Text style={styles.marketAvgText}>
+                {realMarket
+                  ? `Market avg: ${formatPrice(marketAvg)} · ${car.comparables} similar sold`
+                  : `Market avg: ${formatPrice(marketAvg)}`}
+              </Text>
             </View>
             <View style={styles.sparklineRight}>
               <Sparkline data={priceHistory} width={80} height={32} />
@@ -294,10 +318,16 @@ export default function VehicleDetailScreen({ navigation, route }) {
             ))}
           </View>
 
-          {/* Seller */}
+          {/* Seller — professional dealers get their branded storefront,
+              private sellers get the individual trust profile */}
           <Pressable
             style={styles.sellerCard}
-            onPress={() => navigation.navigate('SellerProfile', { sellerName: car.seller })}
+            onPress={() =>
+              navigation.navigate(
+                isDealer ? 'DealerProfile' : 'SellerProfile',
+                isDealer ? { dealerName: car.seller } : { sellerName: car.seller }
+              )
+            }
           >
             <View style={styles.sellerAvatar}>
               <Text style={styles.sellerInitial}>{car.seller[0]}</Text>
@@ -306,7 +336,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Text style={styles.sellerName}>{car.seller}</Text>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={13} color={colors.amber} />
-                <Text style={styles.ratingText}>{car.rating} · Verified seller · View profile</Text>
+                <Text style={styles.ratingText}>
+                  {car.rating} · {isDealer ? 'Partner dealer' : 'Verified seller'} · View profile
+                </Text>
               </View>
             </View>
             <Pressable style={styles.waSmallBtn} onPress={contactWhatsApp}>

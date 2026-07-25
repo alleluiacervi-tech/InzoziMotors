@@ -46,7 +46,7 @@ function NeighborhoodPin({ hood, carCount, isSelected, onPress }) {
 }
 
 function CarListingCard({ car, onPress }) {
-  const daysAgo = getListedDaysAgo(car.id);
+  const daysAgo = getListedDaysAgo(car);
   return (
     <Pressable style={styles.listingCard} onPress={onPress}>
       <Image source={{ uri: car.image }} style={styles.listingThumb} resizeMode="cover" />
