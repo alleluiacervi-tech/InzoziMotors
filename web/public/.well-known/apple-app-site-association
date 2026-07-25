@@ -1,0 +1,22 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.inzozi.motors",
+        "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.com.inzozi.motors"],
+        "paths": ["/cars/*", "/download"],
+        "components": [
+          {
+            "/": "/cars/*",
+            "comment": "Certified listing detail — opens the car screen in the app."
+          },
+          {
+            "/": "/download",
+            "comment": "App landing page and deep-link target."
+          }
+        ]
+      }
+    ]
+  }
+}

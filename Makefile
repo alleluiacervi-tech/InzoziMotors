@@ -1,6 +1,6 @@
 .PHONY: dev build stop logs reset install
 
-## Start the full stack (DB + API + admin dashboard)
+## Start the full stack (DB + API + admin dashboard + website)
 dev:
 	docker compose up --build
 
@@ -25,3 +25,9 @@ reset:
 install:
 	cd backend && npm install
 	cd admin && npm install
+	cd web && npm install
+
+## Type-check both Next.js apps
+typecheck:
+	cd admin && npx tsc --noEmit
+	cd web && npx tsc --noEmit

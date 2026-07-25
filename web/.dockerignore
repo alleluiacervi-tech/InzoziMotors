@@ -1,0 +1,18 @@
+# Keep the build context small and keep secrets out of it. Note that
+# public/.well-known/ is deliberately NOT ignored — the Android and iOS app-link
+# files have to ship with the image.
+
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+.DS_Store
+Dockerfile
+.dockerignore
+README.md
+tsconfig.tsbuildinfo

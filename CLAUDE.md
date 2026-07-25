@@ -450,26 +450,56 @@ Defects (any): Honest close-ups of any damage noted in inspection
 
 ## 2. Project overview
 
-This is a **single (mono)repo** containing two halves that deploy to completely
-different places:
+This is a **single (mono)repo** containing four deployables that ship to
+completely different places:
 
 ```
 REPO_URL  (one repo)
-├── mobile/     <- Expo / React Native app  -> App Store + Play Store (NOT a server)
-├── backend/    <- Node.js API              -> Ubuntu VPS at https://api.yourdomain.com
-└── (optional)  package.json workspaces / turbo.json / shared packages
+├── src/, App.js   <- Expo / React Native app -> App Store + Play Store (NOT a server)
+├── backend/       <- Node.js + PostgreSQL API -> Ubuntu VPS, https://api.inzozimotors.rw
+├── admin/         <- Next.js team dashboard   -> VPS :3001, https://admin.inzozimotors.rw
+└── web/           <- Next.js public website   -> VPS :3002, https://inzozimotors.rw
 ```
 
-- **Frontend (`mobile/`)** — built with **Expo**, distributed through the
-  **Apple App Store** and **Google Play Store**. It is NOT hosted on a server.
-- **Backend (`backend/`)** — a **Node.js** API running on an **Ubuntu VPS**,
-  reachable at `https://api.yourdomain.com`. The app calls this URL.
+- **Mobile (repo root)** — Expo, distributed through the App Store and Play Store.
+  Not hosted on a server.
+- **Backend (`backend/`)** — the single source of truth. Every other surface is a
+  client of it. Nothing else talks to PostgreSQL directly.
+- **Admin (`admin/`)** — internal only. Admin JWT, full pipeline control.
+- **Web (`web/`)** — the public marketplace and marketing site.
 
-Data flow: `Expo app (phone)  ->  https://api.yourdomain.com  ->  Node.js + database on VPS`
+```
+ Expo app (phone) ─┐
+ Website (browser)─┼─→  https://api.inzozimotors.rw  →  Node.js + PostgreSQL on the VPS
+ Admin dashboard  ─┘
+```
 
-**Key monorepo rule:** the two halves never deploy together. The VPS only ever
-runs `backend/`; the stores only ever receive `mobile/`. Run backend commands
-from `backend/` and EAS commands from `mobile/`.
+**Key monorepo rule:** these never deploy together. The VPS runs `backend/`,
+`admin/` and `web/`; the stores only ever receive the Expo app.
+
+### One account, three surfaces
+
+The same `users` row, the same JWT, the same business rules serve all three
+clients. Consequences worth remembering before changing anything:
+
+- **A backend change affects every platform at once.** Adding a required field to
+  `POST /submissions` breaks the app AND the website.
+- **Token storage differs by threat model, deliberately.** The app uses
+  `expo-secure-store`; the website uses an **httpOnly cookie** and makes every
+  authenticated call from the Next server, because anything a browser script can
+  read is one XSS away from account takeover. Both send the identical
+  `Authorization: Bearer <jwt>` the backend already expects.
+- **Business logic is mirrored, not duplicated by accident.** `web/src/lib/business.ts`
+  is a deliberate port of `src/data/{certification,finance,marketData}.js`. Each
+  block names its mobile counterpart. Change both in the same commit, or the
+  valuation a seller sees on the web will disagree with the app and they will
+  trust neither. (Extracting a real shared package is blocked on the repo adopting
+  npm workspaces — the Expo/Metro resolver makes that a non-trivial migration.)
+- **Capability differences are honest, not hidden.** The web cannot capture ID
+  documents or the 36-angle seller photos, so it routes those steps to the app
+  rather than pretending. Everything else — browse, inspection reports, saved
+  cars and searches, purchase requests, account, disputes, referrals — works on
+  the web.
 
 ---
 
@@ -758,9 +788,53 @@ All screens built and wired. See screen table above for full list.
 - [x] Seller inspection booking → `PATCH /submissions/:id/schedule` (new endpoint)
 - [x] Purchase request sends `contact_phone`; slot fields now nullable (Inzozi arranges)
 - [x] Car detail exposes `seller_phone` → real WhatsApp contact (falls back to demo numbers)
-- [ ] Mobile modules for inspections report / reviews / saved-searches (screens still mock)
-- [ ] Wire push notifications (Expo Notifications + OneSignal)
-- [ ] Rentals backend — entire rental vertical (cars, bookings, availability, check-in records) is client-side mock
+- [x] Mobile modules for inspections report / reviews / saved-searches
+- [x] Push notifications — `expo-notifications` + `POST /devices/token`; server pushes
+      through `backend/src/lib/notify.js` on every in-app notification
+- [x] Rentals backend — fleet, bookings, availability, condition photos
+
+### 6E. Integration sprint — Jul 25, 2026
+
+Closed the gap between "screen exists" and "screen works".
+
+**Real photo capture everywhere** (`expo-image-picker`)
+- `src/utils/media.js` — one capture path (camera or library, per-surface quality
+  presets, permission copy, safe filename/extension so multer accepts the file)
+- Wired into ID verification, car submission reference shots, the 36-angle
+  listing shoot (uploads in slot order so `images[0]` is the hero), and rental
+  condition photos. No flow toggles a boolean any more.
+
+**The app can reach a real server**
+- `app.config.js` replaces `app.json` (deleted — it was a second source of truth
+  for the bundle id). API host resolves: `extra.apiUrl` → Metro LAN host →
+  emulator loopback. `eas.json` adds development/preview/production profiles.
+- `src/api/client.js` — request timeouts (12s, 60s for uploads), errors now carry
+  `status`/`code` so a 4xx is never mistaken for "backend is down".
+
+**Identity is actually mandatory**
+- `requireVerified` on `POST /submissions` (backend) + `src/hooks/useSellerGate.js`
+  in front of every seller entry point. `IDVerificationScreen` was unreachable —
+  it is now linked from Sell, Profile, and the drawer.
+
+**Market intelligence is real**
+- `GET /cars` and `/cars/:id` return `market_avg`, `market_diff`, `below_market`,
+  `comparables`, `listed_days` (LATERAL joins over a paginated CTE — no N+1).
+- `src/data/marketData.js` prefers those; its hardcoded tables now only serve the
+  25 bundled demo cars. `hasRealMarketData()` gates any claim about the market.
+
+**Search moved to the server** — `GET /cars?q=` (multi-term ILIKE) + filters +
+sort + `limit`/`offset`, with debounce, infinite scroll and a local fallback.
+
+**Newly connected screens** — SellerAnalytics (`/cars/seller/mine`),
+AdminAnalytics + AdminPanel listings (`/admin/*`), Referral (`/referrals/mine`,
+`/redeem`), notification taps deep-link to the car/order/dispute they describe.
+
+**New** — `DisputesScreen` (7-day guarantee had no buyer surface),
+`ForgotPasswordScreen` (+ `POST /auth/forgot-password` / `/reset-password`).
+
+Still open: no email/SMS provider (reset codes are logged server-side, and
+returned as `dev_code` only outside production), Kinyarwanda, Cloudinary,
+payments, automated tests, CI.
 
 ---
 

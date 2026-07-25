@@ -5,6 +5,15 @@ web-build/
 *.log
 .DS_Store
 *.orig.*
+.env
 .env*.local
 npm-debug.*
 yarn-error.*
+
+# Store signing credentials — never commit these
+play-service-account.json
+*-service-account.json
+*.p8
+*.p12
+*.keystore
+backend/uploads/
