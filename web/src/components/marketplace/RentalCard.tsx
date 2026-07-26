@@ -56,11 +56,11 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
       </div>
 
       <div className="p-4 sm:p-5">
-        <h3 className="truncate text-[15px] font-extrabold tracking-[-0.01em] text-content">
+        <h3 className="truncate text-body font-extrabold tracking-[-0.01em] text-content">
           {car.title}
         </h3>
 
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-content-secondary">
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-content-secondary">
           {car.seats ? <span>{car.seats} seats</span> : null}
           {car.transmission ? (
             <>
@@ -89,15 +89,15 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
           <div className="min-w-0">
             <p className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
               {formatUSD(car.daily_rate)}
-              <span className="text-[13px] font-bold text-content-muted"> / day</span>
+              <span className="text-caption font-bold text-content-muted"> / day</span>
             </p>
-            <p className="mt-0.5 text-[11px] text-content-muted">
+            <p className="mt-0.5 text-micro text-content-muted">
               {formatRWF(car.daily_rate)} · {formatUSD(car.deposit)} deposit, refundable
             </p>
           </div>
 
           {rating ? (
-            <span className="inline-flex items-center gap-1 rounded-pill bg-surface-alt px-2 py-1 text-[11px] font-bold text-content-secondary">
+            <span className="inline-flex items-center gap-1 rounded-pill bg-surface-alt px-2 py-1 text-micro font-bold text-content-secondary">
               <Icon name="star" size={11} />
               {rating}
               {car.trips > 0 ? ` · ${car.trips} trips` : ''}
@@ -106,7 +106,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
         </div>
 
         {car.min_days > 1 ? (
-          <p className="mt-3 border-t border-line-soft pt-3 text-[11px] text-content-muted">
+          <p className="mt-3 border-t border-line-soft pt-3 text-micro text-content-muted">
             Minimum {car.min_days} days
           </p>
         ) : null}

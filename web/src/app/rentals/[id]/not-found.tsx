@@ -10,7 +10,7 @@ export default function RentalNotFound() {
         <h1 className="text-headline font-extrabold text-content">
           This car is not in the fleet
         </h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-content-secondary">
+        <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
           It may have been retired or taken in for its service check. The rest of
           the fleet is still available.
         </p>

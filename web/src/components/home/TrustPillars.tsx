@@ -50,27 +50,29 @@ export function TrustPillars() {
         <ul className="mt-12 divide-y divide-line-soft overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">
           {ROWS.map((row) => (
             <li key={row.dimension} className="p-4 sm:p-5">
-              <h3 className="px-2 pb-3 pt-1 text-[12px] font-bold uppercase tracking-[0.1em] text-content-muted">
+              <h3 className="px-4 pb-3 pt-1 text-micro font-bold uppercase tracking-[0.1em] text-content-muted">
                 {row.dimension}
               </h3>
 
               <div className="grid gap-2 sm:grid-cols-2 sm:gap-4">
-                <div className="rounded-2xl p-4">
-                  <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-content-muted">
+                {/* Quiet, anchored, flat — the noticeboard world. */}
+                <div className="rounded-xl bg-surface-alt p-4">
+                  <p className="flex items-center gap-1.5 text-micro font-bold uppercase tracking-[0.1em] text-content-muted">
                     <Icon name="close" size={12} />
                     Elsewhere
                   </p>
-                  <p className="mt-2 text-[15px] leading-relaxed text-content-secondary">
+                  <p className="mt-2 text-body leading-relaxed text-content-secondary">
                     {row.elsewhere}
                   </p>
                 </div>
 
-                <div className="rounded-2xl bg-surface-alt p-4 ring-1 ring-inset ring-line">
-                  <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-content">
+                {/* The raised surface — ours. */}
+                <div className="rounded-xl bg-surface p-4 shadow-card ring-1 ring-inset ring-line">
+                  <p className="flex items-center gap-1.5 text-micro font-bold uppercase tracking-[0.1em] text-content">
                     <Icon name="check" size={12} className="text-success" />
                     On Inzozi
                   </p>
-                  <p className="mt-2 text-[15px] font-medium leading-relaxed text-content">
+                  <p className="mt-2 text-body font-medium leading-relaxed text-content">
                     {row.inzozi}
                   </p>
                 </div>
@@ -79,7 +81,7 @@ export function TrustPillars() {
           ))}
         </ul>
 
-        <p className="mt-8 text-[15px] text-content-secondary">
+        <p className="mt-8 text-body text-content-secondary">
           <Link
             href="/promise"
             className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"

@@ -42,8 +42,8 @@ export function RefundTable({ className = '' }: { className?: string }) {
             className={`mt-0.5 shrink-0 ${row.free ? 'text-success' : 'text-warning'}`}
           />
           <div className="min-w-0">
-            <p className="text-[15px] font-extrabold text-content">{row.when}</p>
-            <p className="mt-1 text-[14px] leading-relaxed text-content-secondary">{row.terms}</p>
+            <p className="text-body font-extrabold text-content">{row.when}</p>
+            <p className="mt-1 text-caption leading-relaxed text-content-secondary">{row.terms}</p>
           </div>
         </li>
       ))}

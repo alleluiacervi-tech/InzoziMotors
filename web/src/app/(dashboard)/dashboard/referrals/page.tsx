@@ -61,7 +61,7 @@ export default async function ReferralsPage() {
             <Card className="p-5 sm:p-6">
               <ReferralCode code={referral.code} />
 
-              <p className="mt-4 max-w-prose text-[13px] leading-relaxed text-content-secondary">
+              <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-secondary">
                 Your code is issued by Inzozi and never changes. It works for anyone with an
                 account — the discount is applied automatically when their sale completes at a
                 center.
@@ -84,24 +84,24 @@ export default async function ReferralsPage() {
             <PanelHeading id="code-usage" title="How your code is doing" />
             <div className="grid gap-3 sm:grid-cols-2">
               <Card className="p-5">
-                <p className="text-[13px] font-bold uppercase tracking-wide text-content-muted">
+                <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
                   People who redeemed it
                 </p>
                 <p className="mt-2 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
                   {referral.redemptions}
                 </p>
-                <p className="mt-2 text-[13px] leading-relaxed text-content-muted">
+                <p className="mt-2 text-caption leading-relaxed text-content-muted">
                   Accounts that have applied your code to their profile.
                 </p>
               </Card>
               <Card className="p-5">
-                <p className="text-[13px] font-bold uppercase tracking-wide text-content-muted">
+                <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
                   Times used
                 </p>
                 <p className="mt-2 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
                   {referral.uses}
                 </p>
-                <p className="mt-2 text-[13px] leading-relaxed text-content-muted">
+                <p className="mt-2 text-caption leading-relaxed text-content-muted">
                   Counted by our system each time the code is successfully redeemed.
                 </p>
               </Card>
@@ -113,7 +113,7 @@ export default async function ReferralsPage() {
       <section className="mt-8" aria-labelledby="redeem">
         <PanelHeading id="redeem" title="Redeem someone else’s code" />
         <Card className="p-5 sm:p-6">
-          <p className="mb-5 max-w-prose text-[13px] leading-relaxed text-content-secondary">
+          <p className="mb-5 max-w-prose text-caption leading-relaxed text-content-secondary">
             If someone gave you their code, apply it here. The discount comes off the commission on
             your next completed sale — nothing is charged now, and buyers never pay a commission at
             all.

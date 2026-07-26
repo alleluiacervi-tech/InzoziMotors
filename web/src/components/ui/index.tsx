@@ -18,8 +18,9 @@ export function Section({
   children: ReactNode
   className?: string
   /** `page` is the default warm off-white; `surface` lifts a band to pure white;
-   *  `ink` is the dark band used sparingly for emphasis moments. */
-  tone?: 'page' | 'surface' | 'alt' | 'ink'
+   *  `ink` is the dark band used sparingly for emphasis moments; `ink-soft` is
+   *  one step lighter so a closing band still reads against the ink-900 footer. */
+  tone?: 'page' | 'surface' | 'alt' | 'ink' | 'ink-soft'
   id?: string
 }) {
   const tones = {
@@ -27,11 +28,36 @@ export function Section({
     surface: 'bg-surface text-content',
     alt: 'bg-surface-alt text-content',
     ink: 'bg-ink-900 text-white',
+    'ink-soft': 'bg-ink-800 text-white',
   }
   return (
     <section id={id} className={`py-16 sm:py-24 ${tones[tone]} ${className}`}>
       {children}
     </section>
+  )
+}
+
+/**
+ * The one sanctioned eyebrow. Hand-rolling this pattern is what let six pages
+ * drift apart — every eyebrow on the site renders through here, and `mb-3` is
+ * the only sanctioned margin.
+ */
+export function Eyebrow({
+  children, tone = 'brand', className = '',
+}: {
+  children: ReactNode
+  tone?: 'brand' | 'invert' | 'muted'
+  className?: string
+}) {
+  const tones = {
+    brand: 'text-brand',
+    invert: 'text-white/50',
+    muted: 'text-content-muted',
+  }
+  return (
+    <p className={`mb-3 text-eyebrow font-bold uppercase ${tones[tone]} ${className}`}>
+      {children}
+    </p>
   )
 }
 
@@ -48,12 +74,10 @@ export function SectionHeading({
     <div
       className={`${align === 'center' ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'} ${className}`}
     >
-      {eyebrow ? (
-        <p className="mb-3 text-eyebrow font-bold uppercase text-brand">{eyebrow}</p>
-      ) : null}
+      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
       <h2 className="text-headline font-extrabold text-content">{title}</h2>
       {description ? (
-        <p className="mt-4 text-[17px] leading-relaxed text-content-secondary">{description}</p>
+        <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">{description}</p>
       ) : null}
     </div>
   )
@@ -109,7 +133,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-[11px] font-bold leading-none ${BADGE_TONES[tone]} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-micro font-bold leading-none ${BADGE_TONES[tone]} ${className}`}
     >
       {icon ? <Icon name={icon} size={12} /> : null}
       {children}
@@ -134,7 +158,7 @@ export function StatusPill({ status, label }: { status: string; label?: string }
 // ─── Forms ───────────────────────────────────────────────────────────────────
 
 const FIELD_BASE =
-  'w-full rounded-xl border bg-surface px-4 text-[15px] text-content placeholder:text-content-muted ' +
+  'w-full rounded-xl border bg-surface px-4 text-body text-content placeholder:text-content-muted ' +
   'transition-colors duration-200 disabled:opacity-60'
 
 export function Field({
@@ -154,7 +178,7 @@ export function Field({
     <div className={className}>
       <label
         htmlFor={htmlFor}
-        className="mb-2 block text-[13px] font-bold uppercase tracking-wide text-content-muted"
+        className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted"
       >
         {label}
         {required ? <span className="ml-1 text-brand">*</span> : null}

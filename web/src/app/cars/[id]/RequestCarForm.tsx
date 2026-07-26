@@ -27,7 +27,7 @@ export function RequestCarForm({ carId, phone }: { carId: string; phone?: string
         <Button href="/dashboard" variant="outline" fullWidth>
           Track this request
         </Button>
-        <p className="text-[12px] leading-relaxed text-content-muted">
+        <p className="text-micro leading-relaxed text-content-muted">
           Cancelling before handover is always free, and the car goes back on the
           marketplace when you do.
         </p>
@@ -59,7 +59,7 @@ export function RequestCarForm({ carId, phone }: { carId: string; phone?: string
 
       <SubmitButton />
 
-      <p className="text-[12px] leading-relaxed text-content-muted">
+      <p className="text-micro leading-relaxed text-content-muted">
         No payment now, and none in the app. You pay at the center on handover
         day, once you have seen the car and the documents.
       </p>

@@ -44,6 +44,16 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="bg-surface-page">
+      {/* Phones are the majority in Rwanda, and below lg the ink aside
+          disappears — this compact band keeps the brand on the page instead of
+          leaving a bare form. It is the mobile page's one ink moment. */}
+      <div className="flex items-center gap-3 bg-ink-900 px-5 py-5 lg:hidden">
+        <LogoMark size={30} />
+        <p className="text-caption font-semibold text-white/60">
+          Every car inspected. Every seller verified.
+        </p>
+      </div>
+
       {/* Columns stretch to the taller of the two, so the centers list can sit on
           the bottom edge of the panel while the form stays optically centred. */}
       <Container className="grid gap-12 py-12 lg:grid-cols-2 lg:gap-16 lg:py-20">
@@ -57,7 +67,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <p className="mt-8 text-eyebrow font-bold uppercase text-brand-light">
             The Inzozi difference
           </p>
-          <h2 className="mt-3 max-w-sm text-[28px] font-extrabold leading-[1.15] tracking-[-0.025em]">
+          <h2 className="mt-3 max-w-sm text-headline font-extrabold">
             Why every listing here is a real car.
           </h2>
 
@@ -68,7 +78,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                   <Icon name={point.icon} size={19} />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[15px] font-bold">{point.title}</span>
+                  <span className="block text-body font-bold">{point.title}</span>
                   <span className="mt-1 block text-sm leading-relaxed text-white/70">
                     {point.desc}
                   </span>

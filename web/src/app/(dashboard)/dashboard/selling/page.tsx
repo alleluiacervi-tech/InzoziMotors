@@ -72,7 +72,7 @@ export default async function SellingPage() {
 
       {!verified ? (
         <Card className="mb-8 p-6">
-          <h2 className="text-[17px] font-extrabold text-content">
+          <h2 className="text-title-sm font-extrabold text-content">
             Verify your identity to start selling
           </h2>
           <p className="mt-2 max-w-prose text-sm leading-relaxed text-content-secondary">
@@ -86,13 +86,13 @@ export default async function SellingPage() {
               <li key={step.title} className="flex gap-3">
                 <span
                   aria-hidden="true"
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-alt text-[13px] font-extrabold text-content-secondary"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-alt text-caption font-extrabold text-content-secondary"
                 >
                   {index + 1}
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-extrabold text-content">{step.title}</p>
-                  <p className="mt-0.5 text-[13px] leading-relaxed text-content-secondary">
+                  <p className="mt-0.5 text-caption leading-relaxed text-content-secondary">
                     {step.desc}
                   </p>
                 </div>
@@ -129,8 +129,8 @@ export default async function SellingPage() {
                   <Card className="p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="text-[17px] font-extrabold text-content">{name}</h3>
-                        <p className="mt-1 text-[13px] text-content-muted">
+                        <h3 className="text-title-sm font-extrabold text-content">{name}</h3>
+                        <p className="mt-1 text-caption text-content-muted">
                           Submitted {formatDate(submission.submitted_at)}
                           {submission.mileage ? ` · ${formatKm(submission.mileage)}` : ''}
                         </p>
@@ -142,7 +142,7 @@ export default async function SellingPage() {
                     </div>
 
                     {submission.asking_price > 0 ? (
-                      <p className="mt-3 text-[13px] text-content-secondary">
+                      <p className="mt-3 text-caption text-content-secondary">
                         Asking{' '}
                         <span className="font-extrabold text-content">
                           {formatUSD(submission.asking_price)}
@@ -165,7 +165,7 @@ export default async function SellingPage() {
                     )}
 
                     {submission.inspection_center && submission.inspection_date ? (
-                      <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-surface-alt px-4 py-3 text-[13px] text-content-secondary">
+                      <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-surface-alt px-4 py-3 text-caption text-content-secondary">
                         <Icon name="calendar" size={15} className="text-content-muted" />
                         Inspection at{' '}
                         <span className="font-bold text-content">
@@ -231,7 +231,7 @@ export default async function SellingPage() {
 
                     <div className="min-w-0 flex-1 p-5">
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <h3 className="text-[17px] font-extrabold text-content">
+                        <h3 className="text-title-sm font-extrabold text-content">
                           <Link href={`/cars/${car.id}`} className="hover:text-brand">
                             {car.title}
                           </Link>
@@ -246,32 +246,32 @@ export default async function SellingPage() {
                         <span className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
                           {formatUSD(car.price)}
                         </span>
-                        <span className="ml-2 text-[13px] text-content-muted">
+                        <span className="ml-2 text-caption text-content-muted">
                           {formatRWF(car.price)}
                         </span>
                       </p>
 
                       <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-line-soft pt-4">
                         <div>
-                          <dt className="text-[11px] font-bold uppercase tracking-wide text-content-muted">
+                          <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">
                             Views
                           </dt>
-                          <dd className="text-[17px] font-extrabold text-content">{car.views}</dd>
+                          <dd className="text-title-sm font-extrabold text-content">{car.views}</dd>
                         </div>
                         <div>
-                          <dt className="text-[11px] font-bold uppercase tracking-wide text-content-muted">
+                          <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">
                             Saves
                           </dt>
-                          <dd className="text-[17px] font-extrabold text-content">
+                          <dd className="text-title-sm font-extrabold text-content">
                             {car.saves_count ?? car.saves ?? 0}
                           </dd>
                         </div>
                         {car.listed_at ? (
                           <div>
-                            <dt className="text-[11px] font-bold uppercase tracking-wide text-content-muted">
+                            <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">
                               Listed
                             </dt>
-                            <dd className="text-[17px] font-extrabold text-content">
+                            <dd className="text-title-sm font-extrabold text-content">
                               {formatDate(car.listed_at)}
                             </dd>
                           </div>
@@ -286,7 +286,7 @@ export default async function SellingPage() {
                             title={car.title}
                           />
                         ) : (
-                          <p className="text-[13px] leading-relaxed text-content-secondary">
+                          <p className="text-caption leading-relaxed text-content-secondary">
                             A buyer has reserved this car, so the price is locked while we arrange
                             the handover. If the request is cancelled it goes back on sale
                             automatically.
@@ -312,7 +312,7 @@ export default async function SellingPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3 p-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-content">{car.title}</p>
-                      <p className="text-[13px] text-content-muted">
+                      <p className="text-caption text-content-muted">
                         {formatUSD(car.price)}
                         {car.sold_at ? ` · sold ${formatDate(car.sold_at)}` : ''}
                       </p>

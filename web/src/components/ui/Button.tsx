@@ -6,7 +6,7 @@ import type { ComponentProps, ReactNode } from 'react'
 // and a <button> otherwise — never a div, so keyboard and screen-reader
 // behaviour is correct without extra ARIA.
 
-type Variant = 'primary' | 'secondary' | 'outline' | 'dark' | 'ghost'
+type Variant = 'primary' | 'secondary' | 'outline' | 'dark' | 'ghost' | 'inverse'
 type Size = 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<Variant, string> = {
@@ -20,11 +20,14 @@ const VARIANTS: Record<Variant, string> = {
     'bg-ink-900 text-white hover:bg-ink-800 active:scale-[0.99]',
   ghost:
     'bg-transparent text-content-secondary hover:bg-surface-alt hover:text-content',
+  // Secondary action on ink bands — replaces three per-page white-border hacks
+  inverse:
+    'border border-white/25 bg-transparent text-white hover:border-white/50 hover:bg-white/10 active:scale-[0.99]',
 }
 
 const SIZES: Record<Size, string> = {
   sm: 'h-10 px-4 text-sm gap-1.5 rounded-lg',
-  md: 'h-12 px-6 text-[15px] gap-2 rounded-xl',
+  md: 'h-12 px-6 text-body gap-2 rounded-xl',
   lg: 'h-14 px-8 text-base gap-2.5 rounded-xl',
 }
 

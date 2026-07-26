@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 const TOOLS: { href: string; icon: IconName; title: string; body: string; meta: string }[] = [
   {
-    href: '/sell#valuation',
+    href: '/tools/valuation',
     icon: 'chart',
     title: 'Free valuation',
     body: 'What your car is worth today, priced against cars actually listed and sold on Inzozi. If there are not enough comparable cars, we say so rather than guess.',
@@ -50,7 +50,7 @@ export default function ToolsPage() {
           <h1 className="text-display font-extrabold text-content">
             Work out the numbers before you commit
           </h1>
-          <p className="mt-5 text-[17px] leading-relaxed text-content-secondary">
+          <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
             Three calculators built for the Rwandan market. No account, no phone number, no
             follow-up call — they are here because a buyer or seller who understands the numbers
             makes a better decision.
@@ -69,10 +69,10 @@ export default function ToolsPage() {
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                 <Icon name={tool.icon} size={22} />
               </span>
-              <p className="mt-4 text-[11px] font-bold uppercase tracking-wide text-content-muted">
+              <p className="mt-4 text-micro font-bold uppercase tracking-wide text-content-muted">
                 {tool.meta}
               </p>
-              <h2 className="mt-1.5 text-[19px] font-extrabold text-content">{tool.title}</h2>
+              <h2 className="mt-1.5 text-title-sm font-extrabold text-content">{tool.title}</h2>
               <p className="mt-2 flex-1 text-sm leading-relaxed text-content-secondary">
                 {tool.body}
               </p>

@@ -43,9 +43,23 @@ import { RequestCarForm } from './RequestCarForm'
 
 type PageProps = { params: Promise<{ id: string }> }
 
+/** Hard ceiling on the primary fetch. This is the page the whole business runs
+ *  through — a hung API must surface the designed error boundary in seconds,
+ *  never leave a buyer staring at a blank tab. */
+const LOAD_TIMEOUT_MS = 5_000
+
+function withTimeout<T>(promise: Promise<T>): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Listing took too long to load')), LOAD_TIMEOUT_MS)
+    ),
+  ])
+}
+
 async function loadCar(id: string): Promise<Car | null> {
   try {
-    return await carsApi.get(id)
+    return await withTimeout(carsApi.get(id))
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return null
     throw err
@@ -157,7 +171,7 @@ export default async function CarDetailPage({ params }: PageProps) {
         <nav aria-label="Breadcrumb">
           {/* Separators live inside their list item, so a screen reader counts
               four crumbs rather than seven. */}
-          <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-content-muted">
+          <ol className="flex flex-wrap items-center gap-1.5 text-caption text-content-muted">
             <li className="flex items-center gap-1.5">
               <Link href="/" className="hover:text-content">
                 Home
@@ -216,7 +230,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
               <h1 className="mt-3 text-headline font-extrabold text-content">{car.title}</h1>
 
-              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-content-secondary">
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-content-secondary">
                 <span>{car.year}</span>
                 <span aria-hidden className="text-line">·</span>
                 <span>{formatKm(car.mileage)}</span>
@@ -248,54 +262,41 @@ export default async function CarDetailPage({ params }: PageProps) {
           <aside className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="p-5 sm:p-6">
+                {/* Zone 1 — price. The market sentence shows its work: amount
+                    and sample size, never a bare percentage in a pill. */}
                 <p className="text-[32px] font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.price)}
                 </p>
-                <p className="mt-2 text-sm text-content-secondary">{formatRWF(car.price)}</p>
+                <p className="mt-2 text-caption text-content-secondary">
+                  {formatRWF(car.price)} · ~{formatUSD(monthly)}/mo est.
+                </p>
 
-                {market ? (
+                {market && car.market_avg ? (
                   <p
-                    className={`mt-3 inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-[12px] font-bold ${
+                    className={`mt-3 text-caption font-semibold ${
                       market.tone === 'good'
-                        ? 'bg-success-tint text-success'
+                        ? 'text-success'
                         : market.tone === 'high'
-                        ? 'bg-warning-tint text-warning-text'
-                        : 'bg-surface-alt text-content-muted'
+                        ? 'text-warning-text'
+                        : 'text-content-muted'
                     }`}
                   >
-                    <Icon name={market.tone === 'good' ? 'trending-down' : 'trending-up'} size={12} />
-                    {market.label}
-                    <span className="font-semibold opacity-80">
-                      · {car.comparables} similar cars
-                    </span>
+                    {market.tone === 'neutral'
+                      ? `At market price · ${car.comparables} similar cars`
+                      : `${formatRWF(Math.abs(car.market_avg - car.price))} ${
+                          market.tone === 'good' ? 'below' : 'above'
+                        } the average of ${car.comparables} similar cars`}
                   </p>
                 ) : null}
 
                 {drop > 0 ? (
-                  <p className="mt-3 text-[13px] font-semibold text-warning-text">
+                  <p className="mt-2 text-caption font-semibold text-warning-text">
                     Reduced by {formatUSD(drop)} since it was listed
                   </p>
                 ) : null}
 
-                <p className="mt-4 border-t border-line-soft pt-4 text-sm text-content-secondary">
-                  <span className="font-bold text-content">~{formatUSD(monthly)} a month</span> if
-                  financed
-                </p>
-                <p className="mt-1 text-[12px] leading-relaxed text-content-muted">
-                  An estimate only, using {FINANCE_TERMS.downPaymentPct}% deposit,{' '}
-                  {FINANCE_TERMS.annualRatePct}% a year over {FINANCE_TERMS.termMonths} months.
-                  Inzozi does not lend — your bank sets the real terms.
-                </p>
-
-                {priceHistory.length >= 2 ? (
-                  <div className="mt-5 border-t border-line-soft pt-4">
-                    <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-content-muted">
-                      Asking price since listing
-                    </p>
-                    <Sparkline points={priceHistory} />
-                  </div>
-                ) : null}
-
+                {/* Zone 2 — action. Second, not fifth: the decision surface sits
+                    directly under the price, above every disclaimer. */}
                 <div className="mt-5 border-t border-line-soft pt-5">
                   {!isAvailable ? (
                     <div className="space-y-4">
@@ -327,7 +328,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                       >
                         Request this car
                       </Button>
-                      <p className="text-[12px] leading-relaxed text-content-muted">
+                      <p className="text-micro leading-relaxed text-content-muted">
                         Sign in first so we can reserve the car in your name. No
                         payment now, and none in the app —{' '}
                         <Link href="/how-it-works" className="font-bold text-brand hover:underline">
@@ -337,24 +338,66 @@ export default async function CarDetailPage({ params }: PageProps) {
                       </p>
                     </div>
                   )}
+
+                  <div className="mt-4 space-y-2">
+                    {CONTACT.whatsappVerified ? (
+                      <Button
+                        href={whatsappHref}
+                        variant="outline"
+                        fullWidth
+                        target="_blank"
+                        leadingIcon={<Icon name="whatsapp" size={17} className="text-content-secondary" />}
+                      >
+                        Ask a question on WhatsApp
+                      </Button>
+                    ) : null}
+                    <OpenInAppButton path={`car/${car.id}`} variant="ghost" fullWidth />
+                  </div>
+
+                  <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">
+                    <Icon name="shield" size={14} className="mt-px shrink-0" />
+                    The Inzozi 7-Day Guarantee · Handover at an Inzozi center
+                  </p>
                 </div>
 
-                <div className="mt-5 space-y-2 border-t border-line-soft pt-5">
-                  <Button
-                    href={whatsappHref}
-                    variant="outline"
-                    fullWidth
-                    target="_blank"
-                    leadingIcon={<Icon name="whatsapp" size={17} className="text-content-secondary" />}
-                  >
-                    Ask a question on WhatsApp
-                  </Button>
-                  <OpenInAppButton path={`car/${car.id}`} variant="ghost" fullWidth />
-                </div>
+                {/* Zone 3 — context, collapsed. Estimates and history matter,
+                    but they never again sit visually equal to the CTA. */}
+                <details className="group mt-5 border-t border-line-soft pt-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between text-caption font-bold text-content [&::-webkit-details-marker]:hidden">
+                    Price history &amp; financing
+                    <Icon name="chevron-down" size={16} className="transition-transform group-open:rotate-180" />
+                  </summary>
+
+                  <div className="pt-4">
+                    {priceHistory.length >= 2 ? (
+                      <div className="mb-4">
+                        <p className="mb-2 text-micro font-bold uppercase tracking-wide text-content-muted">
+                          Asking price since listing
+                        </p>
+                        <Sparkline points={priceHistory} />
+                      </div>
+                    ) : null}
+
+                    <p className="text-caption text-content-secondary">
+                      <span className="font-bold text-content">~{formatUSD(monthly)} a month</span>{' '}
+                      if financed
+                    </p>
+                    <p className="mt-1 text-micro leading-relaxed text-content-muted">
+                      An estimate only, using {FINANCE_TERMS.downPaymentPct}% deposit,{' '}
+                      {FINANCE_TERMS.annualRatePct}% a year over {FINANCE_TERMS.termMonths} months.
+                      Inzozi does not lend — your bank sets the real terms.
+                    </p>
+                    <p className="mt-3 text-caption">
+                      <Link href="/tools/import-duty" className="font-bold text-brand hover:underline">
+                        Estimate RRA import duty
+                      </Link>
+                    </p>
+                  </div>
+                </details>
               </Card>
 
-              <p className="mt-4 flex items-start gap-2 px-1 text-[12px] leading-relaxed text-content-muted">
-                <Icon name="shield" size={14} className="mt-0.5" />
+              <p className="mt-4 flex items-start gap-2 px-1 text-micro leading-relaxed text-content-muted">
+                <Icon name="location" size={14} className="mt-0.5" />
                 Handovers happen at an Inzozi center in Kigali, with our team
                 present for the documents and the RRA transfer.
               </p>
@@ -374,11 +417,24 @@ export default async function CarDetailPage({ params }: PageProps) {
                 <h2 id="about-heading" className="mb-3 text-title font-extrabold text-content">
                   About this car
                 </h2>
-                <p className="max-w-prose whitespace-pre-line text-[15px] leading-relaxed text-content-secondary">
+                <p className="max-w-prose whitespace-pre-line text-body leading-relaxed text-content-secondary">
                   {car.description}
                 </p>
               </section>
             ) : null}
+
+            {/* The provenance claim, stated exactly once on this page — three
+                facts above the report they produced. */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-line-soft bg-surface-alt px-5 py-4">
+              {['Inspected by our mechanics', 'Photographed at our center', 'Published by Inzozi'].map(
+                (fact) => (
+                  <p key={fact} className="flex items-center gap-1.5 text-caption font-semibold text-content-secondary">
+                    <Icon name="check-circle" size={15} className="text-success" />
+                    {fact}
+                  </p>
+                )
+              )}
+            </div>
 
             <InspectionReportCard report={report} />
 
@@ -389,30 +445,26 @@ export default async function CarDetailPage({ params }: PageProps) {
               </Alert>
             ) : null}
 
+            {/* The named guarantee, between the evidence and the history. */}
+            <Card className="p-5 sm:p-6">
+              <h2 className="text-title-sm font-extrabold text-content">
+                The Inzozi 7-Day Guarantee
+              </h2>
+              <p className="mt-2 max-w-prose text-body leading-relaxed text-content-secondary">
+                From the day of handover you have 7 days: if this car doesn&apos;t match the
+                report above, return it to any Inzozi center for a full refund. It applies to
+                every purchase handed over at our centers — no premium tier required.
+              </p>
+              <p className="mt-3 text-caption">
+                <Link href="/legal/guarantee" className="font-bold text-brand hover:underline">
+                  The guarantee terms in full
+                </Link>
+              </p>
+            </Card>
+
             <VehicleHistoryCard history={vehicleHistory} />
 
             <SellerCard car={car} />
-
-            <Card className="p-5 sm:p-6">
-              <p className="text-eyebrow font-bold uppercase text-brand">How this listing was made</p>
-              <h2 className="mt-2 text-title font-extrabold text-content">
-                We inspected it, we photographed it, we published it
-              </h2>
-              <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-content-secondary">
-                Sellers cannot post on Inzozi. This car was brought to one of our
-                centers, checked over 150 points by our mechanics and shot from the
-                same 36 angles as every other listing. The report above is what they
-                recorded, flags included.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Button href="/promise" variant="outline" size="sm">
-                  The Inzozi Promise
-                </Button>
-                <Button href="/how-it-works" variant="ghost" size="sm">
-                  How buying works
-                </Button>
-              </div>
-            </Card>
 
             <section aria-labelledby="next-heading">
               <h2 id="next-heading" className="mb-4 text-title font-extrabold text-content">
@@ -421,11 +473,11 @@ export default async function CarDetailPage({ params }: PageProps) {
               <ol className="space-y-4">
                 {BUYING_STEPS.slice(0, 4).map((step, index) => (
                   <li key={step.title} className="flex gap-4">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-surface-alt text-[13px] font-extrabold text-content-secondary">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-surface-alt text-caption font-extrabold text-content-secondary">
                       {index + 1}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[15px] font-bold text-content">{step.title}</p>
+                      <p className="text-body font-bold text-content">{step.title}</p>
                       <p className="mt-1 max-w-prose text-sm leading-relaxed text-content-secondary">
                         {step.desc}
                       </p>
@@ -482,8 +534,8 @@ function SellerCard({ car }: { car: Car }) {
             <Icon name="user" size={20} />
           </span>
           <div>
-            <p className="text-[15px] font-bold text-content">{car.seller_name}</p>
-            <p className="text-[13px] text-content-muted">
+            <p className="text-body font-bold text-content">{car.seller_name}</p>
+            <p className="text-caption text-content-muted">
               {verified ? 'Identity verified by Inzozi' : 'Identity not yet verified'}
             </p>
           </div>
@@ -492,16 +544,15 @@ function SellerCard({ car }: { car: Car }) {
         {verified ? <Badge tone="success" icon="shield-check">Verified seller</Badge> : null}
 
         {typeof car.seller_sales === 'number' && car.seller_sales > 0 ? (
-          <p className="text-[13px] text-content-secondary">
+          <p className="text-caption text-content-secondary">
             <span className="font-bold text-content">{car.seller_sales}</span> completed{' '}
             {car.seller_sales === 1 ? 'sale' : 'sales'} through Inzozi
           </p>
         ) : null}
       </div>
 
-      <p className="mt-4 max-w-prose text-[13px] leading-relaxed text-content-muted">
-        You deal with Inzozi, not the seller. We hold the handover at our center,
-        check both sets of documents and process the RRA transfer with you.
+      <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-muted">
+        You deal with Inzozi, not the seller — the handover happens at our center.
       </p>
     </Card>
   )

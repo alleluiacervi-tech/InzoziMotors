@@ -55,8 +55,8 @@ function DetailRow({ icon, label, value }: { icon: 'location' | 'calendar' | 'cl
     <div className="flex items-start gap-2">
       <Icon name={icon} size={15} className="mt-0.5 text-content-muted" />
       <div className="min-w-0">
-        <dt className="text-[11px] font-bold uppercase tracking-wide text-content-muted">{label}</dt>
-        <dd className="truncate text-[13px] font-semibold text-content">{value}</dd>
+        <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">{label}</dt>
+        <dd className="truncate text-caption font-semibold text-content">{value}</dd>
       </div>
     </div>
   )
@@ -92,12 +92,12 @@ export function RequestCard({ handover }: { handover: Handover }) {
         <div className="min-w-0 flex-1 p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-[17px] font-extrabold text-content">
+              <h3 className="text-title-sm font-extrabold text-content">
                 <Link href={`/cars/${handover.car_id}`} className="hover:text-brand">
                   {handover.car_title ?? 'Your request'}
                 </Link>
               </h3>
-              <p className="mt-1 text-[13px] text-content-muted">
+              <p className="mt-1 text-caption text-content-muted">
                 Reference {handover.booking_id} · requested {formatDate(handover.booked_at)}
               </p>
             </div>
@@ -113,7 +113,7 @@ export function RequestCard({ handover }: { handover: Handover }) {
               <span className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
                 {formatUSD(price)}
               </span>
-              <span className="ml-2 text-[13px] text-content-muted">{formatRWF(price)}</span>
+              <span className="ml-2 text-caption text-content-muted">{formatRWF(price)}</span>
             </p>
           ) : null}
 
@@ -136,8 +136,8 @@ export function RequestCard({ handover }: { handover: Handover }) {
           ) : null}
 
           <div className="mt-4 rounded-xl bg-surface-alt p-4">
-            <p className="text-[13px] font-extrabold text-content">{step.title}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-content-secondary">{step.body}</p>
+            <p className="text-caption font-extrabold text-content">{step.title}</p>
+            <p className="mt-1 text-caption leading-relaxed text-content-secondary">{step.body}</p>
           </div>
 
           {handover.status === 'complete' ? (
@@ -162,7 +162,7 @@ export function RequestCard({ handover }: { handover: Handover }) {
                 </p>
               </Alert>
             ) : (
-              <p className="mt-4 text-[13px] leading-relaxed text-content-muted">
+              <p className="mt-4 text-caption leading-relaxed text-content-muted">
                 The {RETURN_WINDOW_DAYS}-day return window has closed and the sale is final.
                 Warranty questions still go through our support team.
               </p>

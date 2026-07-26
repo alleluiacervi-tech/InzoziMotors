@@ -40,7 +40,7 @@ export function SortSelect({ filters, sort }: { filters: Filters; sort: SortValu
         ) : null
       )}
 
-      <label htmlFor={id} className="hidden text-[13px] font-semibold text-content-muted sm:block">
+      <label htmlFor={id} className="hidden text-caption font-semibold text-content-muted sm:block">
         Sort
       </label>
       <label htmlFor={id} className="sr-only sm:hidden">

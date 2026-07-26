@@ -108,7 +108,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
 
       <Container className="pt-6">
         <nav aria-label="Breadcrumb">
-          <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-content-muted">
+          <ol className="flex flex-wrap items-center gap-1.5 text-caption text-content-muted">
             <li className="flex items-center gap-1.5">
               <Link href="/" className="hover:text-content">
                 Home
@@ -207,7 +207,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   </div>
                 </dl>
 
-                <p className="mt-3 text-[12px] leading-relaxed text-content-muted">
+                <p className="mt-3 text-micro leading-relaxed text-content-muted">
                   The deposit is refundable and comes back the same day, once the
                   return check is done at the center.
                 </p>
@@ -225,7 +225,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   <OpenInAppButton path={`rental/${car.id}`} label="Book in the app" fullWidth />
                 </div>
 
-                <p className="mt-4 text-[12px] leading-relaxed text-content-muted">
+                <p className="mt-4 text-micro leading-relaxed text-content-muted">
                   Nothing is charged online. You pay at the center when you collect
                   the car, after we have gone through it together.
                 </p>
@@ -259,7 +259,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                       key={quote.days}
                       className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-5 py-4"
                     >
-                      <p className="text-[15px] font-bold text-content">
+                      <p className="text-body font-bold text-content">
                         {quote.days} {quote.days === 1 ? 'day' : 'days'}
                       </p>
                       <p className="text-sm text-content-secondary">
@@ -273,7 +273,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                     </li>
                   ))}
                 </ul>
-                <p className="border-t border-line-soft bg-surface-alt px-5 py-4 text-[12px] leading-relaxed text-content-muted">
+                <p className="border-t border-line-soft bg-surface-alt px-5 py-4 text-micro leading-relaxed text-content-muted">
                   Full weeks are billed at the weekly rate and the remaining days at
                   the daily rate. Airport meet-and-greet adds{' '}
                   {formatUSD(AIRPORT_PICKUP_FEE)}. We confirm the final figure before
@@ -295,7 +295,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                     <span className="mt-0.5 text-content-secondary">
                       <Icon name={item.icon} size={19} />
                     </span>
-                    <span className="text-[14px] font-semibold text-content">{item.label}</span>
+                    <span className="text-caption font-semibold text-content">{item.label}</span>
                   </li>
                 ))}
               </ul>
@@ -307,7 +307,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                 {RENTAL_REQUIREMENTS.map((requirement) => (
                   <li key={requirement} className="flex items-start gap-3">
                     <Icon name="check" size={17} className="mt-0.5 text-content-secondary" />
-                    <span className="text-[15px] leading-relaxed text-content-secondary">
+                    <span className="text-body leading-relaxed text-content-secondary">
                       {requirement}
                     </span>
                   </li>
@@ -322,9 +322,9 @@ export default async function RentalDetailPage({ params }: PageProps) {
               <ul className="grid gap-3 sm:grid-cols-3">
                 {CENTERS.map((center) => (
                   <li key={center.id} className="rounded-xl border border-line-soft bg-surface p-4">
-                    <p className="text-[14px] font-bold text-content">{center.name}</p>
-                    <p className="mt-1 text-[13px] text-content-secondary">{center.address}</p>
-                    <p className="mt-2 text-[12px] text-content-muted">{center.hours}</p>
+                    <p className="text-caption font-bold text-content">{center.name}</p>
+                    <p className="mt-1 text-caption text-content-secondary">{center.address}</p>
+                    <p className="mt-2 text-micro text-content-muted">{center.hours}</p>
                   </li>
                 ))}
               </ul>
@@ -345,7 +345,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
               <h2 className="text-title font-extrabold text-content">
                 Renting to see whether you want to buy?
               </h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-content-secondary">
+              <p className="mt-2 text-body leading-relaxed text-content-secondary">
                 Plenty of buyers do. The same 150-point standard applies to the cars
                 on the marketplace, and every purchase carries the 7-day drive-it
                 guarantee.

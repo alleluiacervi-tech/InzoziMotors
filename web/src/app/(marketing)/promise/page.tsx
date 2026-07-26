@@ -77,14 +77,14 @@ export default function PromisePage() {
                       size={19}
                       className={`mt-0.5 shrink-0 ${row.free ? 'text-success' : 'text-warning'}`}
                     />
-                    <span className="text-[16px] leading-relaxed text-content">{row.text}</span>
+                    <span className="text-title-sm leading-relaxed text-content">{row.text}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             <div>
-              <h3 className="text-[13px] font-bold uppercase tracking-[0.1em] text-content-muted">
+              <h3 className="text-caption font-bold uppercase tracking-[0.1em] text-content-muted">
                 The same conditions, in full
               </h3>
               <RefundTable className="mt-5" />
@@ -113,17 +113,17 @@ export default function PromisePage() {
                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-alt text-content-secondary">
                       <Icon name={promise.icon} size={22} />
                     </span>
-                    <span className="text-[13px] font-extrabold tabular-nums tracking-[0.1em] text-content-muted sm:mt-4 sm:block sm:text-center">
+                    <span className="text-caption font-extrabold tabular-nums tracking-[0.1em] text-content-muted sm:mt-4 sm:block sm:text-center">
                       {String(i + 1).padStart(2, '0')}
                     </span>
                   </div>
 
                   <div>
                     <h3 className="text-title font-extrabold text-content">{promise.title}</h3>
-                    <p className="mt-3 max-w-prose text-[16px] leading-relaxed text-content-secondary">
+                    <p className="mt-3 max-w-prose text-title-sm leading-relaxed text-content-secondary">
                       {promise.desc}
                     </p>
-                    <p className="mt-4 max-w-prose border-t border-line-soft pt-4 text-[15px] leading-relaxed text-content-secondary">
+                    <p className="mt-4 max-w-prose border-t border-line-soft pt-4 text-body leading-relaxed text-content-secondary">
                       {DETAIL[promise.title]}
                     </p>
                   </div>
@@ -132,7 +132,7 @@ export default function PromisePage() {
             ))}
           </ol>
 
-          <p className="mt-12 max-w-prose text-[13px] leading-relaxed text-content-muted">
+          <p className="mt-12 max-w-prose text-caption leading-relaxed text-content-muted">
             The {RETURN_WINDOW_DAYS}-day return guarantee applies to purchases handed over at an
             Inzozi center. Deposit refunds follow the documented return check. Full terms are
             available at any center and in the{' '}

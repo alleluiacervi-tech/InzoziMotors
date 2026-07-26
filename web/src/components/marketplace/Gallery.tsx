@@ -64,7 +64,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
             >
               <Icon name="chevron-right" size={20} />
             </button>
-            <p className="absolute bottom-3 right-3 rounded-pill bg-ink-900/70 px-3 py-1.5 text-[12px] font-bold text-white">
+            <p className="absolute bottom-3 right-3 rounded-pill bg-ink-900/70 px-3 py-1.5 text-micro font-bold text-white">
               {active + 1} / {count}
             </p>
           </>

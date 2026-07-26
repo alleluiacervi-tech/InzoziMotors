@@ -98,10 +98,10 @@ export function VehicleHistoryCard({ history }: { history: VehicleHistory | null
               key={row.label}
               className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-5 py-3.5 sm:px-6"
             >
-              <dt className="text-[13px] font-bold uppercase tracking-wide text-content-muted">
+              <dt className="text-caption font-bold uppercase tracking-wide text-content-muted">
                 {row.label}
               </dt>
-              <dd className={`flex min-w-0 items-center gap-2 text-[14px] font-semibold ${tone.className}`}>
+              <dd className={`flex min-w-0 items-center gap-2 text-caption font-semibold ${tone.className}`}>
                 <Icon name={tone.icon} size={15} />
                 <span className="break-words">{row.value}</span>
               </dd>

@@ -59,7 +59,7 @@ export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail:
         <p className="mt-2 text-right">
           <Link
             href={forgotHref}
-            className="text-[13px] font-bold text-brand transition-colors hover:text-brand-deep"
+            className="text-caption font-bold text-brand transition-colors hover:text-brand-deep"
           >
             Forgot your password?
           </Link>

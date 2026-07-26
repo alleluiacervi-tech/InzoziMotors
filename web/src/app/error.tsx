@@ -33,7 +33,7 @@ export default function Error({
           <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
             This page didn’t load.
           </h1>
-          <p className="mt-5 text-[17px] leading-relaxed text-content-secondary">
+          <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
             The fault is on our side, not yours. Nothing you were doing has been lost — no request
             is ever completed by a page loading. Try again, and if it keeps happening, tell us and
             we will look at it.
@@ -52,7 +52,7 @@ export default function Error({
           </div>
 
           {error.digest ? (
-            <p className="mt-10 border-t border-line-soft pt-6 text-[13px] text-content-muted">
+            <p className="mt-10 border-t border-line-soft pt-6 text-caption text-content-muted">
               Reference for support:{' '}
               <span className="font-mono font-semibold text-content-secondary">{error.digest}</span>
             </p>

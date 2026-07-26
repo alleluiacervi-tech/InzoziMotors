@@ -83,7 +83,7 @@ export function FilterSheet({
         <Icon name="filter" size={17} className="text-content-secondary" />
         Filters
         {count > 0 ? (
-          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-pill bg-brand px-1.5 text-[11px] font-extrabold text-white">
+          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-pill bg-brand px-1.5 text-micro font-extrabold text-white">
             {count}
           </span>
         ) : null}

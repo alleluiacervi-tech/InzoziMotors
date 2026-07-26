@@ -11,15 +11,23 @@ export const metadata: Metadata = {
   alternates: { canonical: '/contact' },
 }
 
+// "All of them real" is a literal claim — the WhatsApp channel only joins the
+// list once the verified business number replaces the placeholder (the honesty
+// gate in lib/site.ts). Shipping a fake number on a contact page is exactly the
+// scam signal this company exists to kill.
 const CHANNELS = [
-  {
-    icon: 'whatsapp' as const,
-    label: 'WhatsApp',
-    value: CONTACT.whatsappDisplay,
-    href: `https://wa.me/${CONTACT.whatsapp}`,
-    note: 'The fastest way to reach us. Handover arrangements, viewings and questions about a specific listing.',
-    external: true,
-  },
+  ...(CONTACT.whatsappVerified
+    ? [
+        {
+          icon: 'whatsapp' as const,
+          label: 'WhatsApp',
+          value: CONTACT.whatsappDisplay,
+          href: `https://wa.me/${CONTACT.whatsapp}`,
+          note: 'The fastest way to reach us. Handover arrangements, viewings and questions about a specific listing.',
+          external: true,
+        },
+      ]
+    : []),
   {
     icon: 'mail' as const,
     label: 'General email',
@@ -52,7 +60,7 @@ export default function ContactPage() {
         <Container>
           <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
             <div>
-              <SectionHeading eyebrow="Reach us" title="Three ways, all of them real" />
+              <SectionHeading eyebrow="Reach us" title={CHANNELS.length === 3 ? "Three ways, all of them real" : "Two ways, both of them real"} />
 
               <ul className="mt-10 space-y-3">
                 {CHANNELS.map((channel) => (
@@ -68,13 +76,13 @@ export default function ContactPage() {
                         <Icon name={channel.icon} size={20} />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-[12px] font-bold uppercase tracking-[0.1em] text-content-muted">
+                        <span className="block text-micro font-bold uppercase tracking-[0.1em] text-content-muted">
                           {channel.label}
                         </span>
-                        <span className="mt-1 block break-words text-[16px] font-extrabold text-content">
+                        <span className="mt-1 block break-words text-title-sm font-extrabold text-content">
                           {channel.value}
                         </span>
-                        <span className="mt-1.5 block text-[14px] leading-relaxed text-content-secondary">
+                        <span className="mt-1.5 block text-caption leading-relaxed text-content-secondary">
                           {channel.note}
                         </span>
                       </span>
@@ -84,20 +92,26 @@ export default function ContactPage() {
               </ul>
             </div>
 
-            {/* This form has no server behind it — by design. It GETs straight to
-                wa.me with the message as a query parameter, so it works with
-                JavaScript disabled and nothing is silently swallowed. */}
+            {/* This form has no server behind it — by design. It GETs straight
+                to wa.me (or mailto) with the message pre-filled, so it works
+                with JavaScript disabled and nothing is silently swallowed.
+                Same honesty gate: WhatsApp only once the number is real. */}
             <div className="rounded-3xl border border-line-soft bg-surface p-6 shadow-card sm:p-8">
               <h2 className="text-title font-extrabold text-content">Write your message here</h2>
-              <p className="mt-2 text-[15px] leading-relaxed text-content-secondary">
-                We do not run a contact inbox on this website, so this button opens WhatsApp with
-                what you have written already typed in. Nothing is sent from this page.
+              <p className="mt-2 text-body leading-relaxed text-content-secondary">
+                {CONTACT.whatsappVerified
+                  ? 'We do not run a contact inbox on this website, so this button opens WhatsApp with what you have written already typed in. Nothing is sent from this page.'
+                  : 'We do not run a contact inbox on this website, so this button opens your email app with what you have written already typed in. Nothing is sent from this page.'}
               </p>
 
               <form
-                action={`https://wa.me/${CONTACT.whatsapp}`}
+                action={
+                  CONTACT.whatsappVerified
+                    ? `https://wa.me/${CONTACT.whatsapp}`
+                    : `mailto:${CONTACT.email}`
+                }
                 method="get"
-                target="_blank"
+                target={CONTACT.whatsappVerified ? '_blank' : undefined}
                 className="mt-7"
               >
                 <Field
@@ -107,7 +121,7 @@ export default function ContactPage() {
                 >
                   <Textarea
                     id="wa-text"
-                    name="text"
+                    name={CONTACT.whatsappVerified ? 'text' : 'body'}
                     required
                     maxLength={900}
                     placeholder="Hello Inzozi — I would like to ask about…"
@@ -118,9 +132,11 @@ export default function ContactPage() {
                   type="submit"
                   fullWidth
                   className="mt-6"
-                  leadingIcon={<Icon name="whatsapp" size={19} />}
+                  leadingIcon={
+                    <Icon name={CONTACT.whatsappVerified ? 'whatsapp' : 'mail'} size={19} />
+                  }
                 >
-                  Open WhatsApp
+                  {CONTACT.whatsappVerified ? 'Open WhatsApp' : 'Open your email app'}
                 </Button>
               </form>
             </div>

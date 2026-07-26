@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Button, Card, Container, Icon, Section, SectionHeading, type IconName } from '@/components/ui'
+import { Button, Card, Container, Eyebrow, Icon, Section, SectionHeading, type IconName } from '@/components/ui'
 import { AppLaunch } from './AppLaunch'
 
 // The app landing page, and the target every universal / app link lands on when
@@ -112,11 +112,11 @@ export default async function DownloadPage({
       <Section tone="surface">
         <Container>
           <div className="max-w-2xl">
-            <p className="text-eyebrow font-bold uppercase text-brand">The Inzozi app</p>
+            <Eyebrow>The Inzozi app</Eyebrow>
             <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
               Inzozi Motors on your phone
             </h1>
-            <p className="mt-5 text-[17px] leading-relaxed text-content-secondary">
+            <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
               The same certified marketplace and the same account, with the parts that only make
               sense on a phone: the camera work for verification, and alerts the moment a price
               moves. Free, on iPhone and Android.
@@ -140,10 +140,10 @@ export default async function DownloadPage({
               <Card key={item.title} className="p-6">
                 {/* Informational icons stay neutral — red is for actions only. */}
                 <Icon name={item.icon} size={24} className="text-content-secondary" />
-                <h3 className="mt-4 text-[17px] font-extrabold tracking-[-0.01em] text-content">
+                <h3 className="mt-4 text-title-sm font-extrabold tracking-[-0.01em] text-content">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-content-secondary">
+                <p className="mt-2 text-caption leading-relaxed text-content-secondary">
                   {item.body}
                 </p>
               </Card>
@@ -165,8 +165,8 @@ export default async function DownloadPage({
               <li key={item.title} className="flex gap-4">
                 <Icon name={item.icon} size={22} className="mt-0.5 text-content-muted" />
                 <div className="min-w-0">
-                  <h3 className="text-[15px] font-extrabold text-content">{item.title}</h3>
-                  <p className="mt-1 text-[14px] leading-relaxed text-content-secondary">
+                  <h3 className="text-body font-extrabold text-content">{item.title}</h3>
+                  <p className="mt-1 text-caption leading-relaxed text-content-secondary">
                     {item.body}
                   </p>
                 </div>
@@ -188,21 +188,17 @@ export default async function DownloadPage({
             <h2 className="text-headline font-extrabold tracking-[-0.025em] text-white">
               No payment, anywhere
             </h2>
-            <p className="mt-5 text-[17px] leading-relaxed text-white/70">
+            <p className="mt-5 text-title-sm leading-relaxed text-white/70">
               There is no payment feature in the app or on this site, and there is not going to be
               one. Money changes hands in person at an Inzozi center on the day of handover, with
               our team checking the documents alongside you. That is exactly what makes the 7-day
               drive-it guarantee something we can honour.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button href="/promise">Read the Inzozi Promise</Button>
-              <Link
-                href="/how-it-works"
-                className="inline-flex min-h-[44px] items-center gap-2 text-[15px] font-bold text-white underline underline-offset-4"
-              >
+              <Button href="/how-it-works" variant="inverse" trailingIcon={<Icon name="arrow-right" size={17} />}>
                 How buying works
-                <Icon name="arrow-right" size={17} />
-              </Link>
+              </Button>
             </div>
           </div>
         </Container>

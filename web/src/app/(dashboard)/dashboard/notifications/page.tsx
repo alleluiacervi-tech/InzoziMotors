@@ -78,7 +78,7 @@ export default async function NotificationsPage() {
             <section key={group.key} aria-labelledby={`day-${group.key}`}>
               <h2
                 id={`day-${group.key}`}
-                className="mb-3 text-[13px] font-bold uppercase tracking-wide text-content-muted"
+                className="mb-3 text-caption font-bold uppercase tracking-wide text-content-muted"
               >
                 {group.label}
               </h2>
@@ -115,14 +115,14 @@ export default async function NotificationsPage() {
                               {notification.read ? null : <Badge tone="info">New</Badge>}
                             </div>
 
-                            <p className="mt-1 text-[13px] leading-relaxed text-content-secondary">
+                            <p className="mt-1 text-caption leading-relaxed text-content-secondary">
                               {notification.body}
                             </p>
 
                             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                               <time
                                 dateTime={notification.created_at}
-                                className="text-[11px] text-content-muted"
+                                className="text-micro text-content-muted"
                               >
                                 {new Date(notification.created_at).toLocaleTimeString('en-US', {
                                   hour: 'numeric',
@@ -133,7 +133,7 @@ export default async function NotificationsPage() {
                               {target ? (
                                 <Link
                                   href={target.href}
-                                  className="inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand hover:underline"
+                                  className="inline-flex min-h-[44px] items-center gap-1 text-caption font-bold text-brand hover:underline"
                                 >
                                   {target.label}
                                   <Icon name="chevron-right" size={13} />
@@ -145,7 +145,7 @@ export default async function NotificationsPage() {
                                   <input type="hidden" name="id" value={notification.id} />
                                   <button
                                     type="submit"
-                                    className="inline-flex min-h-[44px] items-center text-[13px] font-bold text-content-muted underline-offset-2 hover:text-content hover:underline"
+                                    className="inline-flex min-h-[44px] items-center text-caption font-bold text-content-muted underline-offset-2 hover:text-content hover:underline"
                                   >
                                     Mark read
                                     <span className="sr-only">: {notification.title}</span>

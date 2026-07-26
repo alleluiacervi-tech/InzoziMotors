@@ -24,7 +24,7 @@ export default function RentalsError({
         <h1 className="text-headline font-extrabold text-content">
           We could not load the fleet
         </h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-content-secondary">
+        <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
           Something on our side is not answering. The cars are still here — try
           again, or message the team and we will check availability for you.
         </p>

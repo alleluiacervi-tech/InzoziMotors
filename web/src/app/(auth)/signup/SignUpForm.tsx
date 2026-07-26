@@ -35,8 +35,8 @@ function RoleCard({
           or a selected card would lose its red border under the cursor. */}
       <span className="flex h-full flex-col rounded-2xl border-2 border-line bg-surface p-4 pr-11 transition-all duration-200 ease-brand hover:shadow-card peer-checked:border-brand peer-checked:bg-brand/[0.04] peer-focus-visible:ring-2 peer-focus-visible:ring-brand peer-focus-visible:ring-offset-2">
         <Icon name={icon} size={20} className="text-content-muted" />
-        <span className="mt-2.5 text-[15px] font-extrabold text-content">{title}</span>
-        <span className="mt-1 text-[13px] leading-relaxed text-content-secondary">{desc}</span>
+        <span className="mt-2.5 text-body font-extrabold text-content">{title}</span>
+        <span className="mt-1 text-caption leading-relaxed text-content-secondary">{desc}</span>
       </span>
 
       {/* Two siblings rather than one styled child: `peer-*` reaches siblings
@@ -107,7 +107,7 @@ export function SignUpForm({ next }: { next: string }) {
       />
 
       <fieldset>
-        <legend className="mb-2 block text-[13px] font-bold uppercase tracking-wide text-content-muted">
+        <legend className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted">
           What brings you here
         </legend>
         <div className="grid gap-3 sm:grid-cols-2">

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Alert, Button, Card, Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { PageHeader } from '@/components/marketing/PageHeader'
 import { StepTimeline } from '@/components/marketing/Steps'
+import { BUYING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
 import { RefundTable } from '@/components/marketing/RefundTable'
 import { BUYING_STEPS, SELLING_STEPS } from '@/lib/site'
 
@@ -68,13 +69,13 @@ export default function HowItWorksPage() {
                 title="Buying a car"
                 description="From the moment you request a car to the day your guarantee window closes."
               />
-              <p className="mt-6 text-[15px] leading-relaxed text-content-secondary">
+              <p className="mt-6 text-body leading-relaxed text-content-secondary">
                 Requesting a car costs nothing and commits you to nothing. It reserves the
                 vehicle and takes it off the marketplace while we confirm with the seller.
               </p>
             </div>
 
-            <StepTimeline steps={BUYING_STEPS} />
+            <PipelineModules steps={BUYING_PIPELINE} />
           </div>
         </Container>
       </Section>
@@ -96,12 +97,12 @@ export default function HowItWorksPage() {
                 Seven days, counted from the day the car is handed to you at an Inzozi center —
                 not from the day you requested it.
               </Alert>
-              <p className="mt-6 text-[15px] leading-relaxed text-content-secondary">
+              <p className="mt-6 text-body leading-relaxed text-content-secondary">
                 A return is judged against the published inspection report. If the car does not
                 match what we certified, the refund is full and the fault is ours to carry with
                 the seller.
               </p>
-              <p className="mt-4 text-[15px]">
+              <p className="mt-4 text-body">
                 <Link
                   href="/legal/guarantee"
                   className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
@@ -112,6 +113,52 @@ export default function HowItWorksPage() {
               </p>
             </div>
           </div>
+
+          {/* The honest-scope block — stating what the check does NOT cover is
+              what makes the rest of the page believable. Plain card, no tint,
+              no red: limits are stated, not dramatized. */}
+          <Card className="mt-12 border-line p-6 sm:p-8">
+            <h3 className="text-title-sm font-extrabold text-content">
+              What the 150 points cover — and don&apos;t
+            </h3>
+            <div className="mt-5 grid gap-8 sm:grid-cols-2">
+              <div>
+                <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
+                  Covered, item by item
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {[
+                    'Engine & drivetrain', 'Brakes & steering', 'Body & exterior',
+                    'Interior & comfort', 'Electronics & safety', 'Tyres & wheels',
+                    'Documentation — registration, service history, RRA duty',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-body text-content-secondary">
+                      <Icon name="check" size={16} className="mt-1 shrink-0 text-success" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
+                  Not covered
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {[
+                    'Wear that develops after handover',
+                    'Consumables — fuel, wiper blades, bulbs — once you drive off',
+                    'Damage from use, accident or neglect after the 7-day window',
+                    'Faults the report already flagged and you accepted',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-body text-content-secondary">
+                      <Icon name="minus" size={16} className="mt-1 shrink-0 text-content-muted" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </Card>
         </Container>
       </Section>
 
@@ -131,8 +178,8 @@ export default function HowItWorksPage() {
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                     <Icon name={item.icon} size={20} />
                   </div>
-                  <h3 className="mt-5 text-[17px] font-extrabold text-content">{item.title}</h3>
-                  <p className="mt-2 text-[14px] leading-relaxed text-content-secondary">
+                  <h3 className="mt-5 text-title-sm font-extrabold text-content">{item.title}</h3>
+                  <p className="mt-2 text-caption leading-relaxed text-content-secondary">
                     {item.desc}
                   </p>
                 </Card>
@@ -154,8 +201,8 @@ export default function HowItWorksPage() {
               />
 
               <div className="mt-8 rounded-2xl border border-line-soft bg-surface p-6 shadow-card">
-                <h3 className="text-[15px] font-extrabold text-content">What it costs</h3>
-                <p className="mt-2.5 text-[14px] leading-relaxed text-content-secondary">
+                <h3 className="text-body font-extrabold text-content">What it costs</h3>
+                <p className="mt-2.5 text-caption leading-relaxed text-content-secondary">
                   A certification fee covers the inspection, the professional photography and the
                   listing. A small success commission applies only when the handover completes.
                   Buyers pay nothing, ever.

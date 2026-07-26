@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Container, Section, SectionHeading } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
+import { StatBand } from '@/components/home/StatBand'
+import { BrowseEntry } from '@/components/home/BrowseEntry'
 import { TrustPillars } from '@/components/home/TrustPillars'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { HowItWorks } from '@/components/home/HowItWorks'
@@ -73,10 +75,14 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero />
-      <TrustPillars />
+      {/* The newest live listing doubles as the hero image — a marketplace
+          opens with a car, not an illustration. */}
+      <Hero car={featured[0] ?? null} />
+      <StatBand />
+      <BrowseEntry />
       <FeaturedCars cars={featured} />
       <HowItWorks />
+      <TrustPillars />
       <PromiseGrid />
       <AppShowcase />
 

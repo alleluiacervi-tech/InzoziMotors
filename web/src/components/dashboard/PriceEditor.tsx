@@ -40,7 +40,7 @@ export function PriceEditor({
         </button>
         <LiveRegion>{state?.ok ? state.message : ''}</LiveRegion>
         {state?.ok ? (
-          <p className="mt-2 text-[13px] font-semibold text-success">{state.message}</p>
+          <p className="mt-2 text-caption font-semibold text-success">{state.message}</p>
         ) : null}
       </div>
     )

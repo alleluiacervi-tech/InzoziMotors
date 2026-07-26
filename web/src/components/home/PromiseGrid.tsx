@@ -1,56 +1,92 @@
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
-import { PROMISES } from '@/lib/site'
+import { InspectionReportCard } from '@/components/marketplace/InspectionReportCard'
+import type { InspectionReport } from '@/lib/types'
 
-// The five guarantees, copy untouched from lib/site.ts (which is itself lifted
-// from InzoziPromiseScreen). The first card is given the wide cell because the
-// 150-point check is the one the other four rest on.
+// The Promise as a ledger, not a card grid. Each claim is one line, and under
+// it one line naming HOW it is enforced — evidence over assertion. No icons:
+// the icon-square treatment made guarantees look like features. The 150-point
+// row embeds a real report render as its proof; the report IS our product
+// screenshot.
+
+const LEDGER: { claim: string; proof: string; featured?: boolean }[] = [
+  {
+    claim: '150-Point Certification',
+    proof: 'Enforced in code: no car reaches “live” without an inspection record and a published score.',
+    featured: true,
+  },
+  {
+    claim: 'Drive It for 7 Days',
+    proof: 'Every purchase handed over at an Inzozi center carries the Inzozi 7-Day Guarantee, in writing.',
+  },
+  {
+    claim: 'Verified History',
+    proof: 'Ownership, mileage and RRA duty status are checked against the inspection — unknowns are labelled unknown, never guessed.',
+  },
+  {
+    claim: 'Deposit-Back Guarantee',
+    proof: 'Rental deposits are returned after the documented return check — condition photos protect both sides.',
+  },
+  {
+    claim: 'Zero Fake Listings',
+    proof: 'Only the Inzozi team can publish a listing, and only after physically inspecting the car. Sellers cannot post.',
+  },
+]
+
+// A representative report so the ledger can show the real component with real
+// anatomy. Labelled as a sample in the caption — never passed off as a live car.
+const SAMPLE_REPORT: InspectionReport = {
+  score: 143,
+  completed_at: undefined as unknown as string,
+  checklist_results: {
+    'Engine oil condition': 'pass',
+    'Brake pads — front': 'pass',
+    'Windscreen condition': 'flag',
+    'Tyre tread depth — rear left': 'flag',
+    'Service history': 'pass',
+    'RRA duty paid stamp': 'pass',
+  },
+}
 
 export function PromiseGrid() {
   return (
     <Section tone="alt">
       <Container>
-        <SectionHeading
-          eyebrow="The Inzozi Promise"
-          title="Five guarantees, on every vehicle"
-          description="They apply to every car on the marketplace and every car in the rental fleet. There is no premium tier that buys you a better promise."
-        />
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <SectionHeading
+              eyebrow="The Inzozi Promise"
+              title="Five things that are always true here"
+              description="They apply to every car on the marketplace and every car in the rental fleet. There is no premium tier that buys you a better promise."
+            />
+            <p className="mt-8 text-body text-content-secondary">
+              <Link
+                href="/promise"
+                className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
+              >
+                The promise in full, including the fine print
+                <Icon name="arrow-right" size={16} />
+              </Link>
+            </p>
+          </div>
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {PROMISES.map((promise, i) => (
-            <li
-              key={promise.title}
-              className={`rounded-2xl border border-line-soft bg-surface p-6 shadow-card sm:p-7 ${
-                i === 0 ? 'sm:col-span-2' : ''
-              }`}
-            >
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
-                <Icon name={promise.icon} size={20} />
-              </div>
-
-              <div className="mt-5 flex items-baseline gap-2.5">
-                <span className="text-[12px] font-extrabold tabular-nums tracking-[0.1em] text-content-muted">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <h3 className="text-[17px] font-extrabold text-content">{promise.title}</h3>
-              </div>
-
-              <p className="mt-2.5 max-w-prose text-[14px] leading-relaxed text-content-secondary">
-                {promise.desc}
-              </p>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-8 text-[15px] text-content-secondary">
-          <Link
-            href="/promise"
-            className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
-          >
-            The promise in full, including the fine print
-            <Icon name="arrow-right" size={16} />
-          </Link>
-        </p>
+          <ul>
+            {LEDGER.map((row) => (
+              <li key={row.claim} className="hairline py-6 first:pt-0">
+                <h3 className="text-title-sm font-extrabold text-content">{row.claim}</h3>
+                <p className="mt-1.5 text-caption text-content-muted">{row.proof}</p>
+                {row.featured ? (
+                  <div className="mt-5 max-w-md">
+                    <InspectionReportCard report={SAMPLE_REPORT} />
+                    <p className="mt-2 text-micro text-content-muted">
+                      A sample report — every listing publishes its own.
+                    </p>
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
       </Container>
     </Section>
   )
