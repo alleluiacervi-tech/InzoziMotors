@@ -47,7 +47,7 @@ export function Header({ user }: { user: User | null }) {
           : 'border-transparent bg-surface-page'
       }`}
     >
-      <div className="mx-auto flex h-full max-w-content items-center gap-4 px-5 sm:px-8">
+      <div className="mx-auto flex h-full max-w-content items-center gap-4 px-5 sm:px-8 lg:px-12">
         <Link href="/" aria-label="Inzozi Motors — home" className="shrink-0">
           <Logo size={17} />
         </Link>

@@ -17,6 +17,12 @@ import { CENTERS, FAQS, SITE } from '@/lib/site'
 import { InkClose } from '@/components/layout/InkClose'
 import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
 
+// The page reads live inventory (catalogue makes for the valuation) — render
+// it per request like /cars, never at build. Prerendering it made the BUILD
+// depend on API reachability, which is exactly the coupling the rest of the
+// site is designed to avoid.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Sell your car in Kigali',
   description:
