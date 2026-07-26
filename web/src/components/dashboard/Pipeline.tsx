@@ -69,7 +69,7 @@ export function Pipeline({ current }: { current: number }) {
               />
             </div>
             <span
-              className={`mt-2 truncate text-center text-[11px] leading-tight ${
+              className={`mt-2 truncate text-center text-micro leading-tight ${
                 active
                   ? 'font-extrabold text-content'
                   : done

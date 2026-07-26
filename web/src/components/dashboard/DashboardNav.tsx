@@ -40,7 +40,7 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
                   aria-current={active ? 'page' : undefined}
                   className={`flex h-11 items-center gap-2 whitespace-nowrap rounded-xl px-3.5 text-sm font-bold transition-colors ${
                     active
-                      ? 'bg-brand text-white'
+                      ? 'bg-brand/10 text-brand'
                       : 'text-content-secondary hover:bg-surface-alt hover:text-content'
                   }`}
                 >
@@ -48,7 +48,7 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
                   {item.label}
                   {item.href === '/dashboard/notifications' && unread > 0 ? (
                     <span
-                      className={`rounded-pill px-1.5 py-0.5 text-[11px] leading-none ${
+                      className={`rounded-pill px-1.5 py-0.5 text-micro leading-none ${
                         active ? 'bg-white/25 text-white' : 'bg-info-tint text-info'
                       }`}
                     >
@@ -71,7 +71,7 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
               <Link
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-bold transition-colors ${
+                className={`flex h-11 items-center gap-3 rounded-xl px-3 text-body font-bold transition-colors ${
                   active
                     ? 'bg-brand/10 text-brand'
                     : 'text-content-secondary hover:bg-surface-alt hover:text-content'
@@ -80,7 +80,7 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
                 <Icon name={item.icon} size={18} />
                 <span className="flex-1 truncate">{item.label}</span>
                 {item.href === '/dashboard/notifications' && unread > 0 ? (
-                  <span className="rounded-pill bg-info-tint px-2 py-0.5 text-[11px] font-bold leading-none text-info">
+                  <span className="rounded-pill bg-info-tint px-2 py-0.5 text-micro font-bold leading-none text-info">
                     {unread}
                     <span className="sr-only"> unread</span>
                   </span>

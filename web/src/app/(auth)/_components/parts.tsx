@@ -13,7 +13,7 @@ export function AuthHeading({ title, children }: { title: string; children?: Rea
         {title}
       </h1>
       {children ? (
-        <p className="mt-3 text-[15px] leading-relaxed text-content-secondary">{children}</p>
+        <p className="mt-3 text-body leading-relaxed text-content-secondary">{children}</p>
       ) : null}
     </div>
   )
@@ -43,7 +43,7 @@ export function AuthSwitch({
  */
 export function OneAccountNote({ className = '' }: { className?: string }) {
   return (
-    <p className={`flex gap-2.5 text-[13px] leading-relaxed text-content-muted ${className}`}>
+    <p className={`flex gap-2.5 text-caption leading-relaxed text-content-muted ${className}`}>
       <Icon name="phone" size={15} className="mt-px" />
       <span>
         One account, every platform. Your saved cars, saved searches and purchase requests are

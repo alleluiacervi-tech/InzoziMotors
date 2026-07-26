@@ -24,13 +24,13 @@ export function StatTile({
     >
       <span className="flex items-center gap-2 text-content-muted">
         <Icon name={icon} size={16} />
-        <span className="text-[13px] font-bold uppercase tracking-wide">{label}</span>
+        <span className="text-caption font-bold uppercase tracking-wide">{label}</span>
       </span>
       <span className="mt-3 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
         {value}
       </span>
       {/* Reserved height, so a tile without a hint stays level with its row. */}
-      <span className="mt-2 min-h-[2.25rem] text-[13px] leading-snug text-content-muted">
+      <span className="mt-2 min-h-[2.25rem] text-caption leading-snug text-content-muted">
         {hint}
       </span>
     </Link>

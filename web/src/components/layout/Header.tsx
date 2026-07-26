@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
 import { Button, Icon } from '@/components/ui'
-import { NAV_LINKS } from '@/lib/site'
+import { CONTACT, NAV_LINKS } from '@/lib/site'
 import type { User } from '@/lib/types'
 
 /**
@@ -61,7 +61,7 @@ export function Header({ user }: { user: User | null }) {
                   aria-current={isActive(link.href) ? 'page' : undefined}
                   className={`relative rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                     isActive(link.href)
-                      ? 'text-brand'
+                      ? 'bg-brand/10 text-brand'
                       : 'text-content-secondary hover:bg-surface-alt hover:text-content'
                   }`}
                 >
@@ -73,6 +73,20 @@ export function Header({ user }: { user: User | null }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* WhatsApp as header furniture — Rwanda's channel, the way Autochek
+              puts a phone number in the header. Gated: renders only once the
+              real business number is verified, never the placeholder. */}
+          {CONTACT.whatsappVerified ? (
+            <a
+              href={`https://wa.me/${CONTACT.whatsapp}`}
+              rel="noopener noreferrer"
+              className="hidden items-center gap-2 rounded-lg px-3 py-2 text-caption font-semibold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content lg:flex"
+            >
+              <Icon name="whatsapp" size={17} />
+              {CONTACT.whatsappDisplay}
+            </a>
+          ) : null}
+
           <Link
             href="/cars"
             aria-label="Search cars"
@@ -129,9 +143,9 @@ export function Header({ user }: { user: User | null }) {
                   <Link
                     href={link.href}
                     aria-current={isActive(link.href) ? 'page' : undefined}
-                    className={`flex items-center justify-between rounded-xl px-4 py-3.5 text-[15px] font-bold ${
+                    className={`flex items-center justify-between rounded-xl px-4 py-3.5 text-body font-bold ${
                       isActive(link.href)
-                        ? 'bg-brand/8 text-brand'
+                        ? 'bg-brand/10 text-brand'
                         : 'text-content hover:bg-surface-alt'
                     }`}
                   >

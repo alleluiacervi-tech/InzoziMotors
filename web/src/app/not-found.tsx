@@ -53,7 +53,7 @@ export default function NotFound() {
           <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
             This page isn’t here.
           </h1>
-          <p className="mt-5 text-[17px] leading-relaxed text-content-secondary">
+          <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
             The car may have been sold and taken off the marketplace, or the link may be out of
             date. Nothing on Inzozi disappears without a reason — every listing is published and
             removed by our team.
@@ -70,7 +70,7 @@ export default function NotFound() {
         </div>
 
         <div className="mt-14 border-t border-line-soft pt-10">
-          <h2 className="text-[13px] font-bold uppercase tracking-wide text-content-muted">
+          <h2 className="text-caption font-bold uppercase tracking-wide text-content-muted">
             Try one of these
           </h2>
 
@@ -85,8 +85,8 @@ export default function NotFound() {
                   {/* Wayfinding icons stay neutral — red is reserved for actions. */}
                   <Icon name={item.icon} size={20} className="mt-0.5 text-content-muted" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-bold text-content">{item.label}</span>
-                    <span className="mt-1 block text-[13px] leading-relaxed text-content-secondary">
+                    <span className="block text-body font-bold text-content">{item.label}</span>
+                    <span className="mt-1 block text-caption leading-relaxed text-content-secondary">
                       {item.description}
                     </span>
                   </span>

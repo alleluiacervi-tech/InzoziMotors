@@ -45,7 +45,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
           <Badge tone={grade === 'A' || grade === 'B' ? 'success' : grade === 'C' ? 'warning' : 'danger'}>
             Grade {grade}
           </Badge>
-          <p className="text-[13px] text-content-secondary">
+          <p className="text-caption text-content-secondary">
             {summary.checked} checks recorded
             {report.completed_at ? ` · ${formatDate(report.completed_at)}` : ''}
           </p>
@@ -59,7 +59,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
           <div className={`h-full rounded-pill ${tone.bar}`} style={{ width: `${percent}%` }} />
         </div>
 
-        <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-[13px] font-semibold">
+        <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-caption font-semibold">
           <span className="inline-flex items-center gap-1.5 text-success">
             <Icon name="check-circle" size={14} />
             {summary.pass} passed
@@ -81,8 +81,8 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
           return (
             <li key={category.id} className="px-5 py-4 sm:px-6">
               <div className="flex items-baseline justify-between gap-4">
-                <p className="text-[15px] font-bold text-content">{category.name}</p>
-                <p className="shrink-0 text-[13px] font-bold text-content-secondary">
+                <p className="text-body font-bold text-content">{category.name}</p>
+                <p className="shrink-0 text-caption font-bold text-content-secondary">
                   {category.earned}
                   <span className="font-semibold text-content-muted"> / {category.weight}</span>
                 </p>
@@ -97,7 +97,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
                 />
               </div>
 
-              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] font-semibold">
+              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro font-semibold">
                 <span className="text-success">{category.pass} passed</span>
                 {category.flag ? (
                   <span className="text-warning-text">{category.flag} flagged</span>
@@ -110,7 +110,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
                   {category.issues.map((issue) => (
                     <li
                       key={issue.item}
-                      className="flex items-start gap-2 text-[13px] leading-relaxed text-content-secondary"
+                      className="flex items-start gap-2 text-caption leading-relaxed text-content-secondary"
                     >
                       <Icon
                         name={issue.verdict === 'fail' ? 'close-circle' : 'alert'}
@@ -134,7 +134,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
 
       {report.notes ? (
         <div className="border-t border-line-soft bg-surface-alt px-5 py-4 sm:px-6">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-content-muted">
+          <p className="text-micro font-bold uppercase tracking-wide text-content-muted">
             Mechanic&rsquo;s notes
           </p>
           <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-content-secondary">
@@ -143,7 +143,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
         </div>
       ) : null}
 
-      <p className="border-t border-line-soft px-5 py-4 text-[12px] leading-relaxed text-content-muted sm:px-6">
+      <p className="border-t border-line-soft px-5 py-4 text-micro leading-relaxed text-content-muted sm:px-6">
         Recorded by an Inzozi mechanic at the inspection center, not by the seller.
         The same report is attached to the car at handover.
       </p>

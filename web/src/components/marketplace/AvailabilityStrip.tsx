@@ -41,7 +41,7 @@ export function AvailabilityStrip({
                 <span className="text-[10px] font-bold uppercase tracking-wide">
                   {day.date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
                 </span>
-                <span className="text-[15px] font-extrabold">
+                <span className="text-body font-extrabold">
                   {day.date.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
                 </span>
                 <span className="sr-only">
@@ -53,7 +53,7 @@ export function AvailabilityStrip({
         })}
       </ul>
 
-      <p className="mt-2 text-[12px] text-content-muted">
+      <p className="mt-2 text-micro text-content-muted">
         {free} of the next 14 days are free. Dates are confirmed when we reply.
       </p>
     </div>

@@ -47,7 +47,7 @@ function ToggleButton({ enabled }: { enabled: boolean }) {
       disabled={pending}
       aria-pressed={enabled}
       aria-busy={pending || undefined}
-      className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-[13px] font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content disabled:opacity-50"
+      className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content disabled:opacity-50"
     >
       <span
         aria-hidden="true"
@@ -74,7 +74,7 @@ function DeleteButtons({ onCancel }: { onCancel: () => void }) {
         type="submit"
         disabled={pending}
         aria-busy={pending || undefined}
-        className="inline-flex h-11 items-center rounded-xl border border-danger/30 px-3 text-[13px] font-bold text-danger transition-colors hover:bg-danger-tint disabled:opacity-50"
+        className="inline-flex h-11 items-center rounded-xl border border-danger/30 px-3 text-caption font-bold text-danger transition-colors hover:bg-danger-tint disabled:opacity-50"
       >
         {pending ? 'Deleting…' : 'Yes, delete'}
       </button>
@@ -82,7 +82,7 @@ function DeleteButtons({ onCancel }: { onCancel: () => void }) {
         type="button"
         onClick={onCancel}
         disabled={pending}
-        className="inline-flex h-11 items-center rounded-xl px-3 text-[13px] font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content"
+        className="inline-flex h-11 items-center rounded-xl px-3 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content"
       >
         Keep it
       </button>
@@ -104,11 +104,11 @@ export function SavedSearchRow({ search }: { search: SavedSearch }) {
         <div className="min-w-0 flex-1">
           <Link
             href={searchHref(search.filters)}
-            className="text-[15px] font-extrabold text-content hover:text-brand"
+            className="text-body font-extrabold text-content hover:text-brand"
           >
             {search.label}
           </Link>
-          <p className="mt-1 text-[13px] text-content-muted">
+          <p className="mt-1 text-caption text-content-muted">
             {parts.length > 0 ? parts.join(' · ') : 'All certified cars'}
           </p>
           {error ? (

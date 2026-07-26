@@ -1,34 +1,16 @@
-import { Badge, Container, Icon, Section } from '@/components/ui'
-import type { IconName } from '@/components/ui'
+import { Badge, Container, Eyebrow, Icon, Section } from '@/components/ui'
 import { LogoMark } from '@/components/brand/Logo'
 import { StoreButtons } from '@/components/app/StoreButtons'
+import { AppCapabilities } from '@/components/app/AppCapabilities'
 
 // There are no screenshot assets in this repo, and shipping an invented one
 // would be a lie about a product a visitor can download in thirty seconds. So
-// the device is drawn from the same primitives the real app uses: a frame, a
-// listing card, a certification badge. It is an abstraction, not a mock-up of a
-// specific car — no price, no plate, no fabricated model.
+// the device is drawn from the same primitives the real app uses — and its
+// listing card carries REAL typographic content (a representative title, a red
+// price, the Certified+ badge) so it reads as the product, not a loading state.
 //
-// The whole illustration is aria-hidden; the list beside it is the accessible
+// The whole illustration is aria-hidden; the copy beside it is the accessible
 // version of the same message.
-
-const APP_ONLY: { icon: IconName; title: string; desc: string }[] = [
-  {
-    icon: 'camera',
-    title: 'Camera capture for verification',
-    desc: 'Sellers photograph their national ID and take a live selfie in the app. That check has to happen on a device with a camera, so it lives there.',
-  },
-  {
-    icon: 'bell',
-    title: 'Push notifications',
-    desc: 'A price drop on a car you saved, a reply from our team, a new match for a saved search — the moment it happens rather than the next time you visit.',
-  },
-  {
-    icon: 'user',
-    title: 'One account, both places',
-    desc: 'Saved cars, saved searches, purchase requests and your whole history are the same on the web and in the app. Sign in once on each.',
-  },
-]
 
 function PhoneMock() {
   return (
@@ -40,13 +22,13 @@ function PhoneMock() {
 
           <div className="mt-4 flex items-center gap-2">
             <LogoMark size={22} />
-            <span className="text-[12px] font-extrabold text-content">Inzozi Motors</span>
+            <span className="text-micro font-extrabold text-content">Inzozi Motors</span>
             <span className="ml-auto text-content-muted">
               <Icon name="bell" size={15} />
             </span>
           </div>
 
-          {/* abstracted listing card */}
+          {/* miniature listing card — real content at reduced scale */}
           <div className="mt-3 overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card">
             <div className="relative flex aspect-[4/3] items-center justify-center bg-surface-alt">
               <Icon name="car" size={52} className="text-content-muted opacity-50" />
@@ -56,10 +38,10 @@ function PhoneMock() {
                 </Badge>
               </div>
             </div>
-            <div className="space-y-2 p-3">
-              <div className="h-2.5 w-3/4 rounded-pill bg-line" />
-              <div className="h-2 w-1/2 rounded-pill bg-line-soft" />
-              <div className="flex items-center gap-1.5 pt-1 text-[10px] font-bold text-content-muted">
+            <div className="p-3">
+              <p className="text-micro font-extrabold text-content">2020 Toyota RAV4 · automatic</p>
+              <p className="mt-0.5 text-caption font-extrabold text-brand">$26,000</p>
+              <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-bold text-content-muted">
                 <Icon name="document" size={12} />
                 150-point report attached
               </div>
@@ -91,30 +73,17 @@ export function AppShowcase() {
           <PhoneMock />
 
           <div>
-            <p className="mb-3 text-eyebrow font-bold uppercase text-brand">The app</p>
+            <Eyebrow>The app</Eyebrow>
             <h2 className="text-headline font-extrabold text-content">
               Everything works on the web. The app adds a camera and a tap on the shoulder.
             </h2>
-            <p className="mt-4 max-w-prose text-[17px] leading-relaxed text-content-secondary">
+            <p className="mt-4 max-w-prose text-title-sm leading-relaxed text-content-secondary">
               Browsing, full inspection reports, saved cars and searches, purchase requests and
-              your entire account work here in the browser. Two things genuinely need a phone.
+              your entire account work here in the browser. ID capture and the 36-angle shoot
+              need a camera — finish those in the app.
             </p>
 
-            <ul className="mt-9 space-y-6">
-              {APP_ONLY.map((item) => (
-                <li key={item.title} className="flex gap-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
-                    <Icon name={item.icon} size={18} />
-                  </span>
-                  <div>
-                    <h3 className="text-[15px] font-extrabold text-content">{item.title}</h3>
-                    <p className="mt-1.5 max-w-prose text-[14px] leading-relaxed text-content-secondary">
-                      {item.desc}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <AppCapabilities className="mt-9" />
 
             <StoreButtons className="mt-9" />
           </div>

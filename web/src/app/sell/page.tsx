@@ -13,7 +13,9 @@ import {
   type IconName,
 } from '@/components/ui'
 import { cars } from '@/lib/api'
-import { CENTERS, FAQS, SELLING_STEPS, SITE } from '@/lib/site'
+import { CENTERS, FAQS, SITE } from '@/lib/site'
+import { InkClose } from '@/components/layout/InkClose'
+import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
 
 export const metadata: Metadata = {
   title: 'Sell your car in Kigali',
@@ -96,56 +98,49 @@ export default async function SellPage() {
 
   return (
     <>
-      {/* ─── Hero ─────────────────────────────────────────────────────────── */}
-      <Section tone="surface" className="pb-12 pt-12 sm:pb-16 sm:pt-20">
+      {/* ─── Hero — the valuation IS the hero ─────────────────────────────── */}
+      <Section tone="surface" id="valuation" className="pb-12 pt-12 sm:pb-16 sm:pt-20">
         <Container>
-          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
               <p className="mb-4 text-eyebrow font-bold uppercase text-brand">Sell your car</p>
               <h1 className="text-display font-extrabold text-content">
-                You bring the car once. We do the rest.
+                What&apos;s your car worth in Kigali?
               </h1>
-              <p className="mt-5 max-w-prose text-[17px] leading-relaxed text-content-secondary">
-                Inzozi inspects your car on 150 points, photographs it to one standard, publishes
-                the listing, finds and verifies the buyer, and processes the RRA transfer with you
-                at the center. You keep control of the price the whole way.
+              <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-content-secondary">
+                Priced from cars actually listed and sold on Inzozi — never a lookup table. If the
+                number works, we inspect it on 150 points, photograph it to one standard, publish
+                the listing, verify the buyer and process the RRA transfer with you at the center.
               </p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button href="#valuation" size="lg">
-                  Get a free valuation
-                </Button>
-                <Button href="#cost" variant="outline" size="lg">
-                  See what it costs
-                </Button>
-              </div>
+              <ul className="mt-8 space-y-3">
+                {[
+                  'The valuation takes about ten seconds and needs no account',
+                  'You keep control of the price the whole way',
+                  'Buyers pay nothing — demand on your listing stays high',
+                ].map((line) => (
+                  <li key={line} className="flex gap-3">
+                    <Icon name="check-circle" size={20} className="mt-0.5 shrink-0 text-success" />
+                    <span className="text-body leading-relaxed text-content">{line}</span>
+                  </li>
+                ))}
+              </ul>
 
-              <p className="mt-4 text-sm text-content-muted">
-                The valuation takes about ten seconds and needs no account.
+              <p className="mt-6 text-caption text-content-muted">
+                <Link href="#cost" className="font-bold text-brand hover:underline">
+                  See what selling costs
+                </Link>{' '}
+                — two charges, both quoted before you commit.
               </p>
             </div>
 
             <Card className="p-6 sm:p-8">
-              <h2 className="text-[13px] font-bold uppercase tracking-wide text-content-muted">
-                What Inzozi handles
+              <h2 className="text-caption font-bold uppercase tracking-wide text-content-muted">
+                Free valuation
               </h2>
-              <ul className="mt-5 space-y-4">
-                {[
-                  '150-point mechanical and documentation inspection',
-                  '36 professional photographs, shot by our team',
-                  'The listing, the enquiries and the buyer checks',
-                  'The RRA ownership transfer, at the center',
-                ].map((line) => (
-                  <li key={line} className="flex gap-3">
-                    <Icon name="check-circle" size={20} className="mt-0.5 text-content-secondary" />
-                    <span className="text-[15px] leading-relaxed text-content">{line}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 border-t border-line-soft pt-5 text-sm leading-relaxed text-content-secondary">
-                Sellers cannot publish listings on Inzozi. Only our team can, and only after
-                physically inspecting the car — which is exactly why buyers trust what they see.
-              </p>
+              <div className="mt-4">
+                <ValuationTool makes={makes} currentYear={currentYear} />
+              </div>
             </Card>
           </div>
         </Container>
@@ -166,7 +161,7 @@ export default async function SellPage() {
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                   <Icon name={item.icon} size={22} />
                 </span>
-                <h3 className="mt-4 text-[17px] font-extrabold text-content">{item.title}</h3>
+                <h3 className="mt-4 text-title-sm font-extrabold text-content">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-content-secondary">{item.body}</p>
               </Card>
             ))}
@@ -183,40 +178,8 @@ export default async function SellPage() {
             description="Your submission carries a status from the moment you send it until the day the car is handed over. Nothing happens without you being told."
           />
 
-          <ol className="mt-12 max-w-3xl">
-            {SELLING_STEPS.map((step, index) => (
-              <li key={step.title} className="flex gap-4 sm:gap-6">
-                <div className="flex flex-col items-center">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[13px] font-extrabold text-white">
-                    {index + 1}
-                  </span>
-                  {index < SELLING_STEPS.length - 1 ? (
-                    <span aria-hidden="true" className="mt-2 w-px flex-1 bg-line" />
-                  ) : null}
-                </div>
-                <div className={index < SELLING_STEPS.length - 1 ? 'pb-8' : ''}>
-                  <h3 className="text-[17px] font-extrabold text-content">{step.title}</h3>
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-content-secondary">
-                    {step.desc}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Container>
-      </Section>
-
-      {/* ─── Valuation ────────────────────────────────────────────────────── */}
-      <Section id="valuation">
-        <Container>
-          <SectionHeading
-            eyebrow="Free valuation"
-            title="What is your car worth today?"
-            description="Priced from cars actually listed and sold on Inzozi — never a lookup table. Where we do not have enough comparable cars to be sure, we say so instead of inventing a figure."
-          />
-
-          <div className="mt-10">
-            <ValuationTool makes={makes} currentYear={currentYear} />
+          <div className="mt-12">
+            <PipelineModules steps={LISTING_PIPELINE} />
           </div>
         </Container>
       </Section>
@@ -233,7 +196,7 @@ export default async function SellPage() {
           <div className="mt-12 grid gap-4 lg:grid-cols-3">
             <Card className="p-6">
               <Badge tone="neutral">Paid once, upfront</Badge>
-              <h3 className="mt-4 text-[17px] font-extrabold text-content">Certification fee</h3>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">Certification fee</h3>
               <p className="mt-2 text-sm leading-relaxed text-content-secondary">
                 Covers the 150-point inspection, the professional photography and publishing your
                 listing. It pays for real work by real people, which is why it is charged whether
@@ -244,7 +207,7 @@ export default async function SellPage() {
 
             <Card className="p-6">
               <Badge tone="success">Only when it sells</Badge>
-              <h3 className="mt-4 text-[17px] font-extrabold text-content">Success commission</h3>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">Success commission</h3>
               <p className="mt-2 text-sm leading-relaxed text-content-secondary">
                 A small share of the sale price, charged when the handover completes at an Inzozi
                 center. It is quoted with your certification fee, before inspection. If the car
@@ -254,7 +217,7 @@ export default async function SellPage() {
 
             <Card className="p-6">
               <Badge tone="neutral">Optional</Badge>
-              <h3 className="mt-4 text-[17px] font-extrabold text-content">Featured placement</h3>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">Featured placement</h3>
               <p className="mt-2 text-sm leading-relaxed text-content-secondary">
                 Moves your listing to the top of browse for a set number of days. Useful on a
                 crowded model, unnecessary on a rare one. Never applied unless you ask for it.
@@ -264,7 +227,7 @@ export default async function SellPage() {
 
           <div className="mt-8 flex flex-col gap-3 rounded-2xl bg-ink-900 p-6 text-white sm:flex-row sm:items-center sm:gap-5 sm:p-8">
             <Icon name="info" size={22} className="text-white/70" />
-            <p className="text-[15px] leading-relaxed text-white/85">
+            <p className="text-body leading-relaxed text-white/85">
               <span className="font-extrabold text-white">Buyers pay nothing, ever.</span> No
               buyer&apos;s premium, no booking fee, no charge to see the inspection report. That is
               deliberate — it keeps demand on your listing as high as it can be.
@@ -282,20 +245,20 @@ export default async function SellPage() {
               <h2 className="text-headline font-extrabold text-content">
                 One step has to happen in the app
               </h2>
-              <p className="mt-4 text-[17px] leading-relaxed text-content-secondary">
+              <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
                 Submitting a car requires a one-time identity check: a photo of your national ID,
                 front and back, and a selfie. A browser cannot capture those reliably enough for us
                 to stand behind them, so this single step happens in the Inzozi app. It takes about
                 two minutes, and you never do it again.
               </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-content-secondary">
+              <p className="mt-4 text-body leading-relaxed text-content-secondary">
                 It is also the reason there are no fake listings on Inzozi. Every seller on this
                 marketplace is a verified person, checked by our team.
               </p>
             </div>
 
             <Card className="p-6 sm:p-8">
-              <h3 className="text-[13px] font-bold uppercase tracking-wide text-content-muted">
+              <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
                 Where each step happens
               </h3>
               <ul className="mt-5 space-y-3.5">
@@ -307,10 +270,10 @@ export default async function SellPage() {
                   { where: 'Center', what: 'Inspection, photography, handover and RRA transfer' },
                 ].map((row) => (
                   <li key={row.what} className="flex items-start gap-3">
-                    <span className="mt-0.5 w-[52px] shrink-0 rounded-pill bg-surface-alt px-2 py-1 text-center text-[11px] font-bold uppercase tracking-wide text-content-muted">
+                    <span className="mt-0.5 w-[52px] shrink-0 rounded-pill bg-surface-alt px-2 py-1 text-center text-micro font-bold uppercase tracking-wide text-content-muted">
                       {row.where}
                     </span>
-                    <span className="text-[15px] leading-relaxed text-content-secondary">
+                    <span className="text-body leading-relaxed text-content-secondary">
                       {row.what}
                     </span>
                   </li>
@@ -344,7 +307,7 @@ export default async function SellPage() {
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {CENTERS.map((center) => (
               <Card key={center.id} className="p-6">
-                <h3 className="text-[17px] font-extrabold text-content">{center.name}</h3>
+                <h3 className="text-title-sm font-extrabold text-content">{center.name}</h3>
                 <p className="mt-3 flex items-start gap-2.5 text-sm leading-relaxed text-content-secondary">
                   <Icon name="location" size={17} className="mt-0.5 text-content-muted" />
                   {center.address}
@@ -368,7 +331,7 @@ export default async function SellPage() {
             <div className="mt-10 max-w-3xl divide-y divide-line-soft border-y border-line-soft">
               {sellerFaqs.map((faq) => (
                 <details key={faq.q} className="group py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[16px] font-extrabold text-content [&::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-title-sm font-extrabold text-content [&::-webkit-details-marker]:hidden">
                     {faq.q}
                     <Icon
                       name="chevron-down"
@@ -376,7 +339,7 @@ export default async function SellPage() {
                       className="shrink-0 text-content-muted transition-transform duration-200 group-open:rotate-180"
                     />
                   </summary>
-                  <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-content-secondary">
+                  <p className="mt-3 max-w-prose text-body leading-relaxed text-content-secondary">
                     {faq.a}
                   </p>
                 </details>
@@ -387,27 +350,22 @@ export default async function SellPage() {
       ) : null}
 
       {/* ─── Close ────────────────────────────────────────────────────────── */}
-      <Section tone="ink">
-        <Container>
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-headline font-extrabold text-white">
-              Find out what it is worth first
-            </h2>
-            <p className="mt-4 text-[17px] leading-relaxed text-white/70">
-              The valuation costs nothing and commits you to nothing. If the number works, verify
-              your ID in the app and book an inspection at the center nearest you.
-            </p>
-            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button href="#valuation" size="lg">
-                Value my car
-              </Button>
-              <Button href="/how-it-works" variant="dark" size="lg" className="border border-white/20">
-                How buying works
-              </Button>
-            </div>
-          </div>
-        </Container>
-      </Section>
+      <InkClose
+        headline="Find out what it is worth first"
+        actions={
+          <>
+            <Button href="#valuation" size="lg">
+              Value my car
+            </Button>
+            <Button href="/download" variant="inverse" size="lg">
+              Get the app to submit
+            </Button>
+          </>
+        }
+      >
+        The valuation costs nothing and commits you to nothing. If the number works, verify
+        your ID in the app and book an inspection at the center nearest you.
+      </InkClose>
     </>
   )
 }

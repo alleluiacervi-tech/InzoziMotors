@@ -18,7 +18,7 @@ export function PageHeader({
       <div className="max-w-prose">
         <h1 className="text-title font-extrabold text-content">{title}</h1>
         {description ? (
-          <p className="mt-2 text-[15px] leading-relaxed text-content-secondary">{description}</p>
+          <p className="mt-2 text-body leading-relaxed text-content-secondary">{description}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
@@ -44,10 +44,10 @@ export function PanelHeading({
 }) {
   return (
     <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <Tag id={id} className="text-[17px] font-extrabold text-content">
+      <Tag id={id} className="text-title-sm font-extrabold text-content">
         {title}
       </Tag>
-      {hint ? <p className="text-[13px] text-content-muted">{hint}</p> : null}
+      {hint ? <p className="text-caption text-content-muted">{hint}</p> : null}
       {action ? <div className="ml-auto">{action}</div> : null}
     </div>
   )

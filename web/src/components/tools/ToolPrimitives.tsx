@@ -53,7 +53,7 @@ export function NumberField({
         {prefix ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[15px] font-bold text-content-muted"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-body font-bold text-content-muted"
           >
             {prefix}
           </span>
@@ -75,7 +75,7 @@ export function NumberField({
         {suffix ? (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[15px] font-bold text-content-muted"
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-body font-bold text-content-muted"
           >
             {suffix}
           </span>
@@ -113,7 +113,7 @@ export function ChipGroup<T extends string>({
 }) {
   return (
     <fieldset>
-      <legend className="mb-2 block text-[13px] font-bold uppercase tracking-wide text-content-muted">
+      <legend className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted">
         {legend}
       </legend>
       <div className={columns === 2 ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'}>
@@ -129,7 +129,7 @@ export function ChipGroup<T extends string>({
             />
             <span
               className="flex min-h-[44px] flex-col items-center justify-center rounded-xl border border-line
-                         bg-surface px-3 py-2 text-center text-[13px] font-bold leading-tight text-content-secondary
+                         bg-surface px-3 py-2 text-center text-caption font-bold leading-tight text-content-secondary
                          transition-all duration-200 ease-brand sm:px-4 sm:text-sm
                          peer-hover:border-content-muted
                          peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white peer-checked:shadow-brand
@@ -137,7 +137,7 @@ export function ChipGroup<T extends string>({
             >
               {option.label}
               {option.hint ? (
-                <span className="mt-0.5 text-[11px] font-semibold opacity-70">{option.hint}</span>
+                <span className="mt-0.5 text-micro font-semibold opacity-70">{option.hint}</span>
               ) : null}
             </span>
           </label>
@@ -162,7 +162,7 @@ export function ResultPanel({
     <div
       className={`rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 ${className}`}
     >
-      <h3 className="text-[13px] font-bold uppercase tracking-wide text-content-muted">{title}</h3>
+      <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">{title}</h3>
       <div className="mt-4">{children}</div>
     </div>
   )
@@ -182,7 +182,7 @@ export function Headline({
 }) {
   return (
     <div>
-      <p className="text-[13px] font-semibold text-content-secondary">{label}</p>
+      <p className="text-caption font-semibold text-content-secondary">{label}</p>
       <p className="mt-1.5 break-words text-[clamp(1.5rem,6vw,2.25rem)] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-brand">
         {value}
       </p>
@@ -212,7 +212,7 @@ export function ResultRow({
         <p
           className={
             emphasis
-              ? 'text-[15px] font-extrabold text-content'
+              ? 'text-body font-extrabold text-content'
               : 'text-sm font-semibold text-content-secondary'
           }
         >

@@ -30,7 +30,7 @@ export function FaqAccordion({
       <div className="divide-y divide-line-soft overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">
         {items.map((item) => (
           <details key={item.q} className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-5 text-[15px] font-extrabold text-content transition-colors hover:bg-surface-alt sm:px-8 [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-5 text-body font-extrabold text-content transition-colors hover:bg-surface-alt sm:px-8 [&::-webkit-details-marker]:hidden">
               {item.q}
               <Icon
                 name="chevron-down"
@@ -38,7 +38,7 @@ export function FaqAccordion({
                 className="shrink-0 text-content-muted transition-transform duration-300 ease-brand group-open:rotate-180"
               />
             </summary>
-            <p className="max-w-prose px-5 pb-6 text-[15px] leading-relaxed text-content-secondary sm:px-8">
+            <p className="max-w-prose px-5 pb-6 text-body leading-relaxed text-content-secondary sm:px-8">
               {item.a}
             </p>
           </details>

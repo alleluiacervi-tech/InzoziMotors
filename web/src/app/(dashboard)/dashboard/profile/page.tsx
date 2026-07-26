@@ -74,7 +74,7 @@ export default async function ProfilePage() {
             <Card className="p-5 sm:p-6">
               <div className="flex flex-wrap items-center gap-3">
                 <Badge tone={verification.tone}>{verification.label}</Badge>
-                <p className="text-[13px] text-content-muted">
+                <p className="text-caption text-content-muted">
                   Account created {formatDate(user.created_at)}
                 </p>
               </div>

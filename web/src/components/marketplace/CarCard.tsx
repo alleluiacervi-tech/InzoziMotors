@@ -69,6 +69,15 @@ export function CarCard({
           {isHighDemand(car) ? <Badge tone="danger">High demand</Badge> : null}
         </div>
 
+        {/* The 36-angle standard is the signature — advertise it on every card.
+            Only a real count renders; one fallback image is not a photo set. */}
+        {(car.images?.length ?? 0) >= 2 ? (
+          <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-pill bg-ink-900/70 px-2 py-1 text-micro font-bold text-white backdrop-blur-sm">
+            <Icon name="camera" size={11} />
+            {car.images!.length} photos
+          </span>
+        ) : null}
+
         {car.status === 'reserved' ? (
           <div className="absolute inset-0 flex items-center justify-center bg-ink-900/55 backdrop-blur-[2px]">
             <span className="rounded-pill bg-white/95 px-4 py-2 text-xs font-extrabold text-content">
@@ -79,11 +88,13 @@ export function CarCard({
       </div>
 
       <div className={`p-4 sm:p-5 ${isRow ? 'flex flex-1 flex-col' : ''}`}>
-        <h3 className="truncate text-[15px] font-extrabold tracking-[-0.01em] text-content">
+        <h3 className="truncate text-body font-extrabold tracking-[-0.01em] text-content">
           {car.title}
         </h3>
 
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-content-secondary">
+        {/* Spec strip — fixed order on every card: year · km · fuel ·
+            transmission · location. Sameness is the point. */}
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-content-secondary">
           <span>{car.year}</span>
           <span aria-hidden className="text-line">·</span>
           <span>{formatKm(car.mileage)}</span>
@@ -91,6 +102,12 @@ export function CarCard({
             <>
               <span aria-hidden className="text-line">·</span>
               <span>{car.fuel_type}</span>
+            </>
+          ) : null}
+          {car.transmission ? (
+            <>
+              <span aria-hidden className="text-line">·</span>
+              <span>{car.transmission}</span>
             </>
           ) : null}
           {car.location ? (
@@ -105,40 +122,43 @@ export function CarCard({
         </p>
 
         {isRow && car.description ? (
-          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-content-secondary">
+          <p className="mt-3 line-clamp-2 text-body leading-relaxed text-content-secondary">
             {car.description}
           </p>
         ) : null}
 
-        <div className={`flex items-end justify-between gap-3 ${isRow ? 'mt-auto pt-4' : 'mt-4'}`}>
-          <div className="min-w-0">
-            {/* Price is one of the few places brand red is allowed. */}
-            <p className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
-              {formatUSD(car.price)}
-            </p>
-            <p className="mt-0.5 text-[11px] text-content-muted">
-              {formatRWF(car.price)} · ~{formatUSD(monthlyEstimate(car.price))}/mo
-            </p>
-          </div>
+        <div className={isRow ? 'mt-auto pt-4' : 'mt-4'}>
+          {/* Price is one of the few places brand red is allowed. */}
+          <p className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
+            {formatUSD(car.price)}
+          </p>
+          <p className="mt-0.5 text-micro text-content-muted">
+            {formatRWF(car.price)} · ~{formatUSD(monthlyEstimate(car.price))}/mo est.
+          </p>
 
-          {market ? (
-            <span
-              className={`inline-flex items-center gap-1 rounded-pill px-2 py-1 text-[11px] font-bold ${
+          {/* The market line shows its work — amount and sample size, never a
+              bare percentage. Its own line; it never crowds the price. */}
+          {market && car.market_avg ? (
+            <p
+              className={`mt-2 text-micro font-semibold ${
                 market.tone === 'good'
-                  ? 'bg-success-tint text-success'
+                  ? 'text-success'
                   : market.tone === 'high'
-                  ? 'bg-warning-tint text-warning-text'
-                  : 'bg-surface-alt text-content-muted'
+                  ? 'text-warning-text'
+                  : 'text-content-muted'
               }`}
             >
-              <Icon name={market.tone === 'good' ? 'trending-down' : 'trending-up'} size={11} />
-              {market.label}
-            </span>
+              {market.tone === 'neutral'
+                ? `At market price · ${car.comparables} similar cars`
+                : `${formatRWF(Math.abs(car.market_avg - car.price))} ${
+                    market.tone === 'good' ? 'below' : 'above'
+                  } the average of ${car.comparables} similar cars`}
+            </p>
           ) : null}
         </div>
 
         {listedAgo(car) ? (
-          <p className="mt-3 border-t border-line-soft pt-3 text-[11px] text-content-muted">
+          <p className="mt-3 border-t border-line-soft pt-3 text-micro text-content-muted">
             {listedAgo(car)}
             {car.saves_count ? ` · ${car.saves_count} saved` : ''}
           </p>

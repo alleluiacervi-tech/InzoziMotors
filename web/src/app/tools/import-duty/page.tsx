@@ -62,7 +62,7 @@ export default function ImportDutyPage() {
             <h1 className="text-display font-extrabold text-content">
               Rwanda import duty calculator
             </h1>
-            <p className="mt-5 text-[17px] leading-relaxed text-content-secondary">
+            <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
               Most cars in Rwanda are imported, so the sticker price abroad is only half the
               question. Work out what RRA will add — customs, excise, VAT and the infrastructure
               levy — before you commit to a car you have not seen.
@@ -97,7 +97,7 @@ export default function ImportDutyPage() {
             {CHAIN.map((step, index) => (
               <li key={step.title} className="flex gap-4 sm:gap-6">
                 <div className="flex flex-col items-center">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-900 text-[13px] font-extrabold text-white">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-900 text-caption font-extrabold text-white">
                     {index + 1}
                   </span>
                   {index < CHAIN.length - 1 ? (
@@ -105,8 +105,8 @@ export default function ImportDutyPage() {
                   ) : null}
                 </div>
                 <div className={index < CHAIN.length - 1 ? 'pb-8' : ''}>
-                  <h3 className="text-[17px] font-extrabold text-content">{step.title}</h3>
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-content-secondary">
+                  <h3 className="text-title-sm font-extrabold text-content">{step.title}</h3>
+                  <p className="mt-1.5 text-body leading-relaxed text-content-secondary">
                     {step.body}
                   </p>
                 </div>
@@ -147,7 +147,7 @@ export default function ImportDutyPage() {
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                   <Icon name={item.icon} size={22} />
                 </span>
-                <h3 className="mt-4 text-[17px] font-extrabold text-content">{item.title}</h3>
+                <h3 className="mt-4 text-title-sm font-extrabold text-content">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-content-secondary">{item.body}</p>
               </Card>
             ))}
@@ -162,7 +162,7 @@ export default function ImportDutyPage() {
             <h2 className="text-headline font-extrabold text-white">
               Or buy a car that has already landed
             </h2>
-            <p className="mt-4 text-[17px] leading-relaxed text-white/70">
+            <p className="mt-4 text-title-sm leading-relaxed text-white/70">
               Every car on Inzozi is already in Rwanda, duty settled. Its documentation — including
               the RRA duty stamp — is checked during the 150-point inspection and published on the
               listing, so the price you see is the price you pay.

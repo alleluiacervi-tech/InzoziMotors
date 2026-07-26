@@ -21,7 +21,7 @@ export function ActiveFilters({ filters, sort }: { filters: Filters; sort: SortV
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[13px] font-semibold text-content-muted">Filtering by</span>
+      <span className="text-caption font-semibold text-content-muted">Filtering by</span>
 
       {active.map((field) => {
         const value = filters[field]
@@ -31,7 +31,7 @@ export function ActiveFilters({ filters, sort }: { filters: Filters; sort: SortV
             key={field}
             href={buildBrowseHref(withoutFilter(filters, field), { sort })}
             scroll={false}
-            className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface py-1.5 pl-3 pr-2 text-[13px] font-semibold text-content transition-colors hover:border-content-muted hover:bg-surface-alt"
+            className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface py-1.5 pl-3 pr-2 text-caption font-semibold text-content transition-colors hover:border-content-muted hover:bg-surface-alt"
           >
             {chipLabel(field, value)}
             <span className="sr-only">— remove {FILTER_LABELS[field].toLowerCase()} filter</span>
@@ -44,7 +44,7 @@ export function ActiveFilters({ filters, sort }: { filters: Filters; sort: SortV
         <Link
           href={buildBrowseHref({}, { sort })}
           scroll={false}
-          className="rounded-pill px-2 py-1.5 text-[13px] font-bold text-brand underline-offset-4 hover:underline"
+          className="rounded-pill px-2 py-1.5 text-caption font-bold text-brand underline-offset-4 hover:underline"
         >
           Clear all
         </Link>

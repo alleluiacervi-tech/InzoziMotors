@@ -58,7 +58,7 @@ export function Sparkline({ points, className = '' }: { points: PricePoint[]; cl
         <circle cx={last.x} cy={last.y} r={3} className="fill-brand" />
       </svg>
 
-      <figcaption className="mt-2 flex items-center justify-between text-[12px] text-content-muted">
+      <figcaption className="mt-2 flex items-center justify-between text-micro text-content-muted">
         <span>
           {formatUSD(opening)} · {formatDate(points[0].at)}
         </span>

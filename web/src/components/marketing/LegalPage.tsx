@@ -24,10 +24,10 @@ export type LegalSection = {
 export function Prose({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`max-w-prose text-[15px] leading-relaxed text-content-secondary
+      className={`max-w-prose text-body leading-relaxed text-content-secondary
         [&>*+*]:mt-4
         [&_a]:font-bold [&_a]:text-brand [&_a]:underline [&_a]:underline-offset-2
-        [&_h3]:mt-7 [&_h3]:text-[15px] [&_h3]:font-extrabold [&_h3]:text-content
+        [&_h3]:mt-7 [&_h3]:text-body [&_h3]:font-extrabold [&_h3]:text-content
         [&_li]:relative [&_li]:pl-5
         [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:top-[0.62em] [&_li]:before:h-[5px] [&_li]:before:w-[5px] [&_li]:before:rounded-pill [&_li]:before:bg-content-muted [&_li]:before:content-['']
         [&_strong]:font-bold [&_strong]:text-content
@@ -70,7 +70,7 @@ export function LegalPage({
                   <li key={section.id} className="shrink-0">
                     <a
                       href={`#${section.id}`}
-                      className="flex items-center gap-2 whitespace-nowrap rounded-pill border border-line bg-surface px-3.5 py-2 text-[13px] font-semibold text-content-secondary transition-colors hover:border-content-muted lg:whitespace-normal lg:items-start lg:rounded-lg lg:border-0 lg:bg-transparent lg:px-2 lg:py-1.5 lg:text-[14px] lg:font-normal lg:hover:bg-surface-alt lg:hover:text-content"
+                      className="flex items-center gap-2 whitespace-nowrap rounded-pill border border-line bg-surface px-3.5 py-2 text-caption font-semibold text-content-secondary transition-colors hover:border-content-muted lg:whitespace-normal lg:items-start lg:rounded-lg lg:border-0 lg:bg-transparent lg:px-2 lg:py-1.5 lg:text-caption lg:font-normal lg:hover:bg-surface-alt lg:hover:text-content"
                     >
                       <span className="tabular-nums text-content-muted">
                         {String(i + 1).padStart(2, '0')}

@@ -14,7 +14,7 @@ export function CancelRequestButton({ id, carTitle }: { id: string; carTitle: st
 
   if (state?.ok) {
     return (
-      <p role="status" className="text-[13px] font-semibold text-content-secondary">
+      <p role="status" className="text-caption font-semibold text-content-secondary">
         {state.message}
       </p>
     )
@@ -42,7 +42,7 @@ export function CancelRequestButton({ id, carTitle }: { id: string; carTitle: st
   return (
     <div className="rounded-xl border border-line bg-surface-alt p-4">
       <p className="text-sm font-bold text-content">Cancel your request for the {carTitle}?</p>
-      <p className="mt-1 text-[13px] leading-relaxed text-content-secondary">
+      <p className="mt-1 text-caption leading-relaxed text-content-secondary">
         The reservation ends and the car goes back on the marketplace, where another buyer can
         request it. Cancelling is free — nothing has been paid.
       </p>

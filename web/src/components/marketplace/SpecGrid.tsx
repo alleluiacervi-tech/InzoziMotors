@@ -22,13 +22,13 @@ export function SpecGrid({ specs, className = '' }: { specs: Spec[]; className?:
     <dl className={`grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line-soft bg-line-soft sm:grid-cols-3 ${className}`}>
       {present.map((spec) => (
         <div key={spec.label} className="bg-surface p-4">
-          <dt className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-content-muted">
+          <dt className="flex items-center gap-1.5 text-micro font-bold uppercase tracking-wide text-content-muted">
             {spec.icon ? <Icon name={spec.icon} size={13} /> : null}
             {spec.label}
           </dt>
-          <dd className="mt-1.5 text-[15px] font-bold text-content">{spec.value}</dd>
+          <dd className="mt-1.5 text-body font-bold text-content">{spec.value}</dd>
           {spec.hint ? (
-            <dd className="mt-0.5 text-[12px] leading-relaxed text-content-muted">{spec.hint}</dd>
+            <dd className="mt-0.5 text-micro leading-relaxed text-content-muted">{spec.hint}</dd>
           ) : null}
         </div>
       ))}

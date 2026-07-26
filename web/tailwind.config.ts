@@ -100,6 +100,13 @@ const config: Config = {
         'display': ['clamp(2.25rem, 4.5vw, 3.5rem)', { lineHeight: '1.06', letterSpacing: '-0.03em' }],
         'headline': ['clamp(1.75rem, 3vw, 2.5rem)', { lineHeight: '1.12', letterSpacing: '-0.025em' }],
         'title': ['clamp(1.25rem, 2vw, 1.5rem)', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
+        // The lower half of the ladder. Arbitrary text-[Npx] values are banned
+        // site-wide — every size below `title` is one of these four, and
+        // nothing on the site renders under 12px.
+        'title-sm': ['1.0625rem', { lineHeight: '1.35', letterSpacing: '-0.01em' }], // 17px — card/panel titles
+        'body': ['0.9375rem', { lineHeight: '1.6' }], //                                15px — default copy
+        'caption': ['0.8125rem', { lineHeight: '1.5' }], //                             13px — spec strips, meta
+        'micro': ['0.75rem', { lineHeight: '1.4' }], //                                 12px — footnotes, logistics
         'eyebrow': ['0.75rem', { lineHeight: '1', letterSpacing: '0.14em' }],
       },
 

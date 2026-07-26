@@ -83,15 +83,15 @@ export default async function DisputesPage() {
           <dl>
             {TERMS.map((term) => (
               <div key={term.when} className="hairline flex flex-col gap-1 p-4 sm:flex-row sm:gap-6">
-                <dt className="text-[13px] font-extrabold text-content sm:w-52 sm:shrink-0">
+                <dt className="text-caption font-extrabold text-content sm:w-52 sm:shrink-0">
                   {term.when}
                 </dt>
-                <dd className="text-[13px] leading-relaxed text-content-secondary">{term.what}</dd>
+                <dd className="text-caption leading-relaxed text-content-secondary">{term.what}</dd>
               </div>
             ))}
           </dl>
         </Card>
-        <p className="mt-3 text-[13px] leading-relaxed text-content-muted">
+        <p className="mt-3 text-caption leading-relaxed text-content-muted">
           Returns are handled at the center where the handover took place.{' '}
           <Link href="/legal/guarantee" className="font-bold text-brand hover:underline">
             Read the full terms
@@ -114,10 +114,10 @@ export default async function DisputesPage() {
                 <li key={handover.id}>
                   <Card className="p-5">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h3 className="text-[15px] font-extrabold text-content">
+                      <h3 className="text-body font-extrabold text-content">
                         {handover.car_title ?? 'Your purchase'}
                       </h3>
-                      <p className="text-[13px] text-content-muted">
+                      <p className="text-caption text-content-muted">
                         Reference {handover.booking_id} · {daysLeft}{' '}
                         {daysLeft === 1 ? 'day' : 'days'} left
                       </p>
@@ -158,10 +158,10 @@ export default async function DisputesPage() {
                 <Card className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="text-[15px] font-extrabold text-content">
+                      <h3 className="text-body font-extrabold text-content">
                         {dispute.car_title ?? 'Purchase'}
                       </h3>
-                      <p className="mt-1 text-[13px] text-content-muted">
+                      <p className="mt-1 text-caption text-content-muted">
                         {dispute.booking_id ? `Reference ${dispute.booking_id} · ` : ''}
                         raised {formatDate(dispute.created_at)}
                       </p>
@@ -178,21 +178,21 @@ export default async function DisputesPage() {
                     />
                   </div>
 
-                  <p className="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-content-secondary">
+                  <p className="mt-3 whitespace-pre-line text-caption leading-relaxed text-content-secondary">
                     {dispute.reason}
                   </p>
 
                   {dispute.status === 'open' ? (
-                    <p className="mt-4 rounded-xl bg-surface-alt px-4 py-3 text-[13px] leading-relaxed text-content-secondary">
+                    <p className="mt-4 rounded-xl bg-surface-alt px-4 py-3 text-caption leading-relaxed text-content-secondary">
                       Our team reviews this and contacts you and the seller within 24 hours. Keep the
                       car at the agreed condition until we have spoken.
                     </p>
                   ) : (
                     <div className="mt-4 rounded-xl bg-surface-alt px-4 py-3">
-                      <p className="text-[13px] font-extrabold text-content">
+                      <p className="text-caption font-extrabold text-content">
                         Closed {formatDate(dispute.resolved_at)}
                       </p>
-                      <p className="mt-1 text-[13px] leading-relaxed text-content-secondary">
+                      <p className="mt-1 text-caption leading-relaxed text-content-secondary">
                         {dispute.resolution ??
                           'Our team recorded the outcome without a written note. Contact support if you need the detail.'}
                       </p>

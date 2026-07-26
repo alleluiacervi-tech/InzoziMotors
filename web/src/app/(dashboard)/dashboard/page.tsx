@@ -185,7 +185,7 @@ export default async function DashboardOverviewPage() {
                 {nextSteps.map((step) => (
                   <Card key={step.title} className="flex flex-col p-5">
                     <Icon name={step.icon} size={20} className="text-content-secondary" />
-                    <h3 className="mt-3 text-[15px] font-extrabold text-content">{step.title}</h3>
+                    <h3 className="mt-3 text-body font-extrabold text-content">{step.title}</h3>
                     <p className="mt-2 flex-1 text-sm leading-relaxed text-content-secondary">
                       {step.body}
                     </p>
@@ -229,12 +229,12 @@ export default async function DashboardOverviewPage() {
                                 </h3>
                                 {notification.read ? null : <Badge tone="info">New</Badge>}
                               </div>
-                              <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-content-secondary">
+                              <p className="mt-1 line-clamp-2 text-caption leading-relaxed text-content-secondary">
                                 {notification.body}
                               </p>
                               <time
                                 dateTime={notification.created_at}
-                                className="mt-1 block text-[11px] text-content-muted"
+                                className="mt-1 block text-micro text-content-muted"
                               >
                                 {formatRelative(notification.created_at)}
                               </time>
@@ -242,7 +242,7 @@ export default async function DashboardOverviewPage() {
                             {target ? (
                               <Link
                                 href={target.href}
-                                className="inline-flex min-h-[44px] shrink-0 items-center text-[13px] font-bold text-brand hover:underline"
+                                className="inline-flex min-h-[44px] shrink-0 items-center text-caption font-bold text-brand hover:underline"
                               >
                                 {target.label}
                               </Link>
@@ -319,7 +319,7 @@ export default async function DashboardOverviewPage() {
                                 .filter(Boolean)
                                 .join(' ')}
                           </span>
-                          <span className="block text-[13px] text-content-muted">
+                          <span className="block text-caption text-content-muted">
                             {SUBMISSION_STATUS_LABEL[submission.status] ?? submission.status}
                           </span>
                         </span>

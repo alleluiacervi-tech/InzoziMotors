@@ -20,6 +20,14 @@ export const APP = {
   iosBundleId: 'com.inzozi.motors',
   playStoreUrl: 'https://play.google.com/store/apps/details?id=com.inzozi.motors',
   appStoreUrl: 'https://apps.apple.com/app/inzozi-motors/id0000000000',
+  /**
+   * HONESTY GATE. The store records don't exist yet, so every store badge and
+   * store link on the site renders as absence (or "coming soon" copy) until
+   * this flips. Flip it when the real App Store id and Play listing are live —
+   * a button to a 404 store page is exactly the scam signal Inzozi exists to
+   * kill.
+   */
+  storesLive: false,
 } as const
 
 /** Inzozi business line. TODO: replace with the real WhatsApp Business number
@@ -29,6 +37,13 @@ export const CONTACT = {
   whatsappDisplay: '+250 788 000 000',
   email: 'hello@inzozimotors.rw',
   supportEmail: 'support@inzozimotors.rw',
+  /**
+   * HONESTY GATE. The number above is a placeholder. Every WhatsApp surface —
+   * header furniture, contact page, escalation links in empty states — checks
+   * this flag and renders nothing while it is false. "Three ways to reach us,
+   * all of them real" must be literally true.
+   */
+  whatsappVerified: false,
 } as const
 
 /** Inspection centers — mirrors the inspection_centers table seeded in schema.sql. */
@@ -56,12 +71,14 @@ export const CENTERS = [
   },
 ] as const
 
+// Three verbs and the trust page. Kept deliberately short — a marketplace nav
+// that grows becomes a portal nav, and portals read as classifieds. /promise
+// stays reachable from the footer and every trust surface.
 export const NAV_LINKS = [
-  { href: '/cars', label: 'Buy a car' },
-  { href: '/rentals', label: 'Rent' },
-  { href: '/sell', label: 'Sell your car' },
+  { href: '/cars', label: 'Buy' },
+  { href: '/rentals', label: 'Rentals' },
+  { href: '/sell', label: 'Sell' },
   { href: '/how-it-works', label: 'How it works' },
-  { href: '/promise', label: 'The Promise' },
 ] as const
 
 export const FOOTER_LINKS = [
@@ -71,7 +88,7 @@ export const FOOTER_LINKS = [
       { href: '/cars', label: 'Browse certified cars' },
       { href: '/rentals', label: 'Rent a car' },
       { href: '/sell', label: 'Sell your car' },
-      { href: '/sell#valuation', label: 'Free valuation' },
+      { href: '/tools/valuation', label: 'Free valuation' },
       { href: '/tools/import-duty', label: 'Import duty calculator' },
     ],
   },

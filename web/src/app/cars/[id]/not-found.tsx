@@ -15,7 +15,7 @@ export default function CarNotFound() {
         <h1 className="text-headline font-extrabold text-content">
           This car is no longer listed
         </h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-content-secondary">
+        <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
           It has either been sold or taken off the marketplace. Cars clear
           inspection every week, so there is usually something close.
         </p>

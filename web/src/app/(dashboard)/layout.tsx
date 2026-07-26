@@ -49,12 +49,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <div className="flex items-center gap-3">
                 <span
                   aria-hidden="true"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-alt text-[17px] font-extrabold text-content-secondary"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-alt text-title-sm font-extrabold text-content-secondary"
                 >
                   {initial}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-[15px] font-extrabold text-content">{user.name}</p>
+                  <p className="truncate text-body font-extrabold text-content">{user.name}</p>
                   <p className="truncate text-xs text-content-muted">{ROLE_LABEL[user.role]}</p>
                 </div>
               </div>

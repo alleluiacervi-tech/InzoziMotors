@@ -30,7 +30,7 @@ export default function CarsError({
         <h1 className="text-headline font-extrabold text-content">
           We could not load the listings
         </h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-content-secondary">
+        <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
           This is on our side, not yours. The cars are still there — try again in
           a moment.
         </p>

@@ -61,7 +61,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
 
       {stage === 'request' ? (
         <>
-          <p className="text-[15px] leading-relaxed text-content-secondary">
+          <p className="text-body leading-relaxed text-content-secondary">
             Enter the email on your account and we will send a 6-digit code. It is valid for 30
             minutes.
           </p>
@@ -96,7 +96,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
         <>
           <input type="hidden" name="email" value={sentTo} />
 
-          <p className="text-[15px] leading-relaxed text-content-secondary">
+          <p className="text-body leading-relaxed text-content-secondary">
             If <span className="font-bold text-content">{sentTo}</span> has an account, a 6-digit
             code is on its way. It expires in 30 minutes, and five wrong attempts cancel it.
           </p>

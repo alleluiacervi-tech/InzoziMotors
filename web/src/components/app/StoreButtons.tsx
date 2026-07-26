@@ -7,9 +7,12 @@ import { useDeviceStoreUrl } from './useDeepLink'
 /**
  * App Store / Play Store buttons.
  *
- * Both are always rendered (a desktop visitor may want to send the link to
- * their phone), but the one matching the visitor's platform is highlighted, so
- * the right target is obvious without hiding the other.
+ * HONESTY GATE: while APP.storesLive is false (the store records don't exist
+ * yet) this renders a plain "coming soon" line instead of badges — a store
+ * button that 404s is exactly the scam signal this product exists to kill.
+ *
+ * Once live: both badges render (a desktop visitor may want to send the link
+ * to their phone), with the visitor's own platform highlighted.
  */
 export function StoreButtons({
   tone = 'light',
@@ -21,6 +24,18 @@ export function StoreButtons({
   className?: string
 }) {
   const platform = useDeviceStoreUrl()
+
+  if (!APP.storesLive) {
+    return (
+      <p
+        className={`text-caption font-semibold ${
+          tone === 'dark' ? 'text-white/55' : 'text-content-muted'
+        } ${className}`}
+      >
+        Coming to the App Store and Google Play.
+      </p>
+    )
+  }
 
   const base =
     'inline-flex items-center gap-3 rounded-xl border transition-all duration-200 ease-brand active:scale-[0.99]'
@@ -65,10 +80,8 @@ export function StoreButtons({
         >
           <Icon name={store.icon} size={size === 'sm' ? 22 : 26} />
           <span className="text-left leading-tight">
-            <span className={`block ${size === 'sm' ? 'text-[9px]' : 'text-[10px]'} opacity-60`}>
-              {store.caption}
-            </span>
-            <span className={`block font-bold ${size === 'sm' ? 'text-[13px]' : 'text-[15px]'}`}>
+            <span className="block text-micro opacity-60">{store.caption}</span>
+            <span className={`block font-bold ${size === 'sm' ? 'text-caption' : 'text-body'}`}>
               {store.name}
             </span>
           </span>

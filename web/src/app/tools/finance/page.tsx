@@ -34,7 +34,7 @@ export default function FinancePage() {
           <div className="max-w-3xl">
             <p className="mb-4 text-eyebrow font-bold uppercase text-brand">Free tool</p>
             <h1 className="text-display font-extrabold text-content">Car finance calculator</h1>
-            <p className="mt-5 text-[17px] leading-relaxed text-content-secondary">
+            <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
               Two ways round the same question. Start from a car you have found and see the monthly
               payment, or start from what you can pay each month and see which cars that reaches.
             </p>
@@ -86,7 +86,7 @@ export default function FinancePage() {
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                   <Icon name={item.icon} size={22} />
                 </span>
-                <h3 className="mt-4 text-[17px] font-extrabold text-content">{item.title}</h3>
+                <h3 className="mt-4 text-title-sm font-extrabold text-content">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-content-secondary">{item.body}</p>
               </Card>
             ))}
@@ -101,7 +101,7 @@ export default function FinancePage() {
             <h2 className="text-headline font-extrabold text-white">
               Payment still happens at the center
             </h2>
-            <p className="mt-4 text-[17px] leading-relaxed text-white/70">
+            <p className="mt-4 text-title-sm leading-relaxed text-white/70">
               However you fund it, money changes hands in person on handover day — never through
               the app or the website. Your bank pays at the center, we complete the RRA transfer
               with you, and the 7-day guarantee starts that day.
