@@ -16,4 +16,5 @@ play-service-account.json
 *.p8
 *.p12
 *.keystore
-backend/uploads/
+backend/uploads/*
+!backend/uploads/seed/

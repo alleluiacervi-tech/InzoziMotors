@@ -1,8 +1,9 @@
 'use client'
 
 import Image, { type StaticImageData } from 'next/image'
+import Link from 'next/link'
 import { useCallback, useState } from 'react'
-import { Button, Icon } from '@/components/ui'
+import { Icon } from '@/components/ui'
 
 // The hero stage's client half: manual rotation between at most three slides.
 // Deliberately NOT an autoplaying carousel — autoplay taxes LCP, fights
@@ -11,7 +12,7 @@ import { Button, Icon } from '@/components/ui'
 // a user choice.
 
 export interface HeroSlide {
-  /** A remote URL (real listing photo) or a bundled marketing asset. */
+  /** A remote URL or a bundled marketing asset. */
   image: string | StaticImageData | null
   alt: string
   eyebrow: string
@@ -19,8 +20,6 @@ export interface HeroSlide {
   caption: string
   href: string
   cta: string
-  /** Present only when the slide is a real listing. */
-  priceLabel?: string
 }
 
 export function HeroRotator({ slides }: { slides: HeroSlide[] }) {
@@ -75,16 +74,22 @@ export function HeroRotator({ slides }: { slides: HeroSlide[] }) {
           <h1 className="text-display-xl font-extrabold">{slide.headline}</h1>
           <p className="mt-4 max-w-xl text-title-sm leading-relaxed text-white/75">
             {slide.caption}
-            {slide.priceLabel ? (
-              <span className="ml-2 font-extrabold text-white">{slide.priceLabel}</span>
-            ) : null}
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Button href={slide.href} size="lg" trailingIcon={<Icon name="arrow-right" size={18} />}>
-              {slide.cta}
-            </Button>
-          </div>
+          {/* The quiet CTA — confidence is expressed by not shouting. An
+              underlined text action with a generous touch target, in the
+              reference site's "Find More" register. */}
+          <Link
+            href={slide.href}
+            className="group mt-8 inline-flex min-h-[44px] items-center gap-2 text-body font-bold text-white underline decoration-white/40 underline-offset-8 transition-colors hover:decoration-white"
+          >
+            {slide.cta}
+            <Icon
+              name="arrow-right"
+              size={17}
+              className="transition-transform duration-300 ease-brand group-hover:translate-x-1"
+            />
+          </Link>
         </div>
 
         {count > 1 ? (
