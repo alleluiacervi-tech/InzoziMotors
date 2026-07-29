@@ -50,27 +50,29 @@ export function BrowseEntry({ cars }: { cars: Car[] }) {
             const photo = familyImage(family)
             return (
               <Reveal key={family} delay={i * 90}>
+                {/* The model-grid card: the whole vehicle contained on a clean
+                    studio field, name below — never a portrait crop of a wide
+                    side profile. */}
                 <Link
                   href={`/cars?body_type=${family}`}
-                  className="group relative block overflow-hidden rounded-2xl bg-ink-900 shadow-card transition-all duration-300 ease-brand hover:-translate-y-1 hover:shadow-card-lg"
+                  className="group block overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card transition-all duration-300 ease-brand hover:-translate-y-1 hover:border-line hover:shadow-card-lg"
                 >
-                  <div className="relative aspect-[4/5]">
+                  <div className="relative aspect-[16/10] bg-surface-alt">
                     <Image
                       src={photo.image}
                       alt={photo.alt}
                       fill
                       sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.04]"
+                      className="object-contain p-4 transition-transform duration-500 ease-brand group-hover:scale-[1.04]"
                       {...(typeof photo.image !== 'string' ? { placeholder: 'blur' as const } : {})}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink-900/80 via-ink-900/10 to-transparent" />
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
+                  <div className="flex items-center justify-between gap-3 p-5">
                     <div>
-                      <h3 className="text-title-sm font-extrabold">{family}s</h3>
-                      <p className="mt-0.5 text-caption text-white/70">Certified · Kigali</p>
+                      <h3 className="text-title-sm font-extrabold text-content">{family}s</h3>
+                      <p className="mt-0.5 text-caption text-content-muted">Certified · Kigali</p>
                     </div>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill border border-white/30 transition-colors group-hover:border-white/70 group-hover:bg-white/10">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill border border-line text-content-secondary transition-colors group-hover:border-content-muted group-hover:bg-surface-alt">
                       <Icon name="arrow-right" size={16} />
                     </span>
                   </div>
