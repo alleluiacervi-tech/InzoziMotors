@@ -33,7 +33,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
           alt={`${car.title} — Inzozi rental fleet`}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.04]"
+          className="object-contain p-2 transition-transform duration-500 ease-brand group-hover:scale-[1.03]"
           priority={priority}
         />
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">

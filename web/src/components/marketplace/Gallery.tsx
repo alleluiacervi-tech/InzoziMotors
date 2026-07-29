@@ -42,7 +42,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
           alt={`${title} — photo ${active + 1} of ${count}, shot at an Inzozi inspection center`}
           fill
           sizes="(max-width: 1024px) 100vw, 780px"
-          className="object-cover"
+          className="object-contain p-3"
           priority={active === 0}
         />
 
@@ -91,7 +91,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
                   alt=""
                   fill
                   sizes="96px"
-                  className="object-cover"
+                  className="object-contain p-1"
                 />
               </button>
             </li>
