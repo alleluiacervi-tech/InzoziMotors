@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
+import { CardPhotoFlick } from './CardPhotoFlick'
 import {
   formatKm, formatRWF, formatUSD, getCertTier, isHighDemand, isNewListing,
   listedAgo, marketPosition, monthlyEstimate, priceDrop,
@@ -45,14 +46,25 @@ export function CarCard({
           isRow ? 'aspect-[4/3] sm:aspect-auto sm:w-72 sm:shrink-0' : 'aspect-[4/3]'
         }`}
       >
-        <Image
-          src={image}
-          alt={`${car.title} — photographed at an Inzozi Motors inspection center`}
-          fill
-          sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
-          className="object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.04]"
-          priority={priority}
-        />
+        {/* Multi-photo listings preview their angles on hover/tap — the
+            36-angle standard, felt on the card itself. */}
+        {(car.images?.length ?? 0) >= 2 ? (
+          <CardPhotoFlick
+            images={car.images!}
+            alt={`${car.title} — photographed at an Inzozi Motors inspection center`}
+            sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
+            priority={priority}
+          />
+        ) : (
+          <Image
+            src={image}
+            alt={`${car.title} — photographed at an Inzozi Motors inspection center`}
+            fill
+            sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
+            className="object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.04]"
+            priority={priority}
+          />
+        )}
 
         {/* Trust badges sit top-left; urgency signals top-right, so the two
             never compete for the same corner. */}
