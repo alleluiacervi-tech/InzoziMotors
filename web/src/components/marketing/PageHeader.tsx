@@ -30,7 +30,7 @@ export function PageHeader({
         <h1 className="max-w-4xl text-display font-extrabold text-content">{title}</h1>
 
         {lede ? (
-          <p className="mt-6 max-w-prose text-title-sm leading-relaxed text-content-secondary sm:text-lg">
+          <p className="mt-6 max-w-prose text-title-sm leading-relaxed text-content-secondary">
             {lede}
           </p>
         ) : null}

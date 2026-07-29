@@ -189,10 +189,10 @@ export function Field({
       </label>
       {children}
       {hint && !error ? (
-        <p id={hintId} className="mt-2 text-xs leading-relaxed text-content-muted">{hint}</p>
+        <p id={hintId} className="mt-2 text-micro leading-relaxed text-content-muted">{hint}</p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="mt-2 text-xs font-semibold text-danger">
+        <p id={errorId} role="alert" className="mt-2 text-micro font-semibold text-danger">
           {error}
         </p>
       ) : null}
@@ -271,7 +271,7 @@ export function Alert({
       className={`flex gap-3 rounded-xl border px-4 py-3.5 ${t.box} ${className}`}
     >
       <Icon name={t.icon} size={18} className="mt-0.5" />
-      <div className="min-w-0 flex-1 text-sm leading-relaxed">
+      <div className="min-w-0 flex-1 text-caption leading-relaxed">
         {title ? <p className="font-bold">{title}</p> : null}
         {children ? <div className={title ? 'mt-1 opacity-90' : ''}>{children}</div> : null}
       </div>
@@ -293,9 +293,9 @@ export function EmptyState({
       <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-alt text-content-muted">
         <Icon name={icon} size={28} />
       </div>
-      <h3 className="text-lg font-extrabold text-content">{title}</h3>
+      <h3 className="text-title-sm font-extrabold text-content">{title}</h3>
       {description ? (
-        <p className="mt-2 max-w-sm text-sm leading-relaxed text-content-secondary">{description}</p>
+        <p className="mt-2 max-w-sm text-caption leading-relaxed text-content-secondary">{description}</p>
       ) : null}
       {action ? <div className="mt-6">{action}</div> : null}
     </div>

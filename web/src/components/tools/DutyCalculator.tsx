@@ -72,7 +72,7 @@ export function DutyCalculator() {
             columns={2}
           />
 
-          <p className="text-xs leading-relaxed text-content-muted">
+          <p className="text-micro leading-relaxed text-content-muted">
             Excise is the only rate that moves with engine size. Everything else is charged the
             same way on every imported car.
           </p>
@@ -133,7 +133,7 @@ export function DutyCalculator() {
                 />
               </div>
 
-              <p className="rounded-xl bg-surface-alt px-4 py-3 text-xs leading-relaxed text-content-secondary">
+              <p className="rounded-xl bg-surface-alt px-4 py-3 text-micro leading-relaxed text-content-secondary">
                 An estimate for planning. RRA assesses duty against its own valuation of the
                 vehicle, which can differ from your invoice — age, body type and condition all
                 move the figure. The assessment at clearing is the one that counts.

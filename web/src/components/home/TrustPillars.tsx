@@ -9,31 +9,24 @@ import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 // classifieds side is deliberately flat and quiet. No red — this section
 // persuades with contrast, not with brand colour.
 
+// Three rows, not five — the photography and seller-identity stories already
+// live in the pipeline and the Promise ledger. A comparison earns its length
+// only where the contrast is sharpest.
 const ROWS = [
   {
     dimension: 'Who publishes the listing',
     elsewhere: 'Anyone with a phone number and a price in mind.',
-    inzozi: 'Only the Inzozi team, and only after the car has been in our hands.',
-  },
-  {
-    dimension: 'The photographs',
-    elsewhere: 'Shot on the seller’s phone, in whatever light there was.',
-    inzozi: '36 standard angles shot by our photographers at the center — the same set for every car.',
+    inzozi: 'Only our team, after the car has been in our hands.',
   },
   {
     dimension: 'Mechanical condition',
-    elsewhere: 'Described by the person who wants to sell it to you.',
-    inzozi: 'A 150-point check across engine, brakes, body, interior, electronics, tyres and documents — published in full.',
-  },
-  {
-    dimension: 'Seller identity',
-    elsewhere: 'Optional. Often nothing more than a number.',
-    inzozi: 'A national ID check is mandatory before a car can even be submitted.',
+    elsewhere: 'Described by the person selling it to you.',
+    inzozi: '150 points checked and published in full — flags included.',
   },
   {
     dimension: 'After you hand over the money',
-    elsewhere: 'No guarantee and nobody to return to.',
-    inzozi: 'Seven days to bring the car back to any center if it does not match its report.',
+    elsewhere: 'No guarantee, and nobody to return to.',
+    inzozi: 'Seven days to bring it back if it doesn’t match its report.',
   },
 ]
 
@@ -43,8 +36,8 @@ export function TrustPillars() {
       <Container>
         <SectionHeading
           eyebrow="The difference"
-          title="Nothing on Inzozi gets listed unseen."
-          description="A classifieds site is a noticeboard: it carries whatever is posted to it. Inzozi is the opposite arrangement — we take the car in, check it, photograph it, and put our own name on the listing."
+          title="Nothing here is listed unseen"
+          description="A classifieds site carries whatever is posted to it. We put our own name on every listing."
         />
 
         <ul className="mt-12 divide-y divide-line-soft overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">

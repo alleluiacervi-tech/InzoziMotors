@@ -12,8 +12,8 @@ export function HowItWorks() {
       <Container>
         <SectionHeading
           eyebrow="How it works"
-          title="From a seller’s driveway to your hands, in five steps"
-          description="Nothing here happens out of sight. Every step in the middle is done by our team, at our centers, on the record."
+          title="Driveway to handover, in five steps"
+          description="Every step in the middle is done by our team, on the record."
         />
 
         <div className="mt-12">

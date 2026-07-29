@@ -26,7 +26,7 @@ const VARIANTS: Record<Variant, string> = {
 }
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-10 px-4 text-sm gap-1.5 rounded-lg',
+  sm: 'h-10 px-4 text-caption gap-1.5 rounded-lg',
   md: 'h-12 px-6 text-body gap-2 rounded-xl',
   lg: 'h-14 px-8 text-base gap-2.5 rounded-xl',
 }

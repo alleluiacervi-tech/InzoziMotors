@@ -90,11 +90,12 @@ export default async function HomePage() {
         <Container>
           <SectionHeading
             eyebrow="Questions"
-            title="The things people ask before they commit"
-            description="If something here is still unclear, message us on WhatsApp — a person answers."
+            title="Before you commit"
           />
+          {/* Five, not all eight — the full set lives on /how-it-works. A
+              homepage FAQ is a preview, not an archive. */}
           <div className="mt-12">
-            <FaqAccordion items={FAQS} structuredData />
+            <FaqAccordion items={FAQS.slice(0, 5)} structuredData />
           </div>
         </Container>
       </Section>

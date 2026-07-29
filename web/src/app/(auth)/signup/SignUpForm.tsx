@@ -125,7 +125,7 @@ export function SignUpForm({ next }: { next: string }) {
             desc="Submit your car for inspection and let our team list it."
           />
         </div>
-        <p className="mt-3 flex gap-2 text-xs leading-relaxed text-content-muted">
+        <p className="mt-3 flex gap-2 text-micro leading-relaxed text-content-muted">
           <Icon name="info" size={14} className="mt-px" />
           <span>
             Selling needs a one-time ID check, and that step happens in the Inzozi app — a
@@ -137,7 +137,7 @@ export function SignUpForm({ next }: { next: string }) {
 
       <SubmitButton pendingLabel="Creating your account…">Create account</SubmitButton>
 
-      <p className="text-center text-xs leading-relaxed text-content-muted">
+      <p className="text-center text-micro leading-relaxed text-content-muted">
         By creating an account you agree to our{' '}
         <Link href="/legal/terms" className="font-bold text-brand transition-colors hover:text-brand-deep">
           Terms of Service

@@ -104,7 +104,7 @@ export default async function NotificationsPage() {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3
-                                className={`text-sm ${
+                                className={`text-caption ${
                                   notification.read
                                     ? 'font-semibold text-content-secondary'
                                     : 'font-extrabold text-content'

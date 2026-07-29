@@ -222,7 +222,7 @@ export function FilterPanel({
             </option>
           ))}
         </Select>
-        <p id={fieldId('drive_side-hint')} className="mt-2 text-xs leading-relaxed text-content-muted">
+        <p id={fieldId('drive_side-hint')} className="mt-2 text-micro leading-relaxed text-content-muted">
           Most imports from Japan are right-hand drive. Cars bought new in Rwanda
           are usually left-hand drive.
         </p>

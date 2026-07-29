@@ -112,7 +112,7 @@ export function SavedSearchRow({ search }: { search: SavedSearch }) {
             {parts.length > 0 ? parts.join(' · ') : 'All certified cars'}
           </p>
           {error ? (
-            <p role="alert" className="mt-2 text-xs font-semibold text-danger">
+            <p role="alert" className="mt-2 text-micro font-semibold text-danger">
               {error}
             </p>
           ) : null}

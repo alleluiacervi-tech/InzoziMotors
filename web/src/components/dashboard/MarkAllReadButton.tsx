@@ -15,7 +15,7 @@ export function MarkAllReadButton({ unread }: { unread: number }) {
         <span className="sr-only"> ({unread} unread)</span>
       </SubmitButton>
       {state?.error ? (
-        <p role="alert" className="mt-2 text-xs font-semibold text-danger">
+        <p role="alert" className="mt-2 text-micro font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

@@ -84,7 +84,7 @@ export function VehicleHistoryCard({ history }: { history: VehicleHistory | null
       <div className="border-b border-line-soft p-5 sm:p-6">
         <p className="text-eyebrow font-bold uppercase text-brand">Vehicle history</p>
         <h2 className="mt-2 text-title font-extrabold text-content">The paperwork</h2>
-        <p className="mt-2 text-sm leading-relaxed text-content-secondary">
+        <p className="mt-2 text-caption leading-relaxed text-content-secondary">
           Checked at the center against the documents the seller brought.
           Anything we could not confirm is marked not verified.
         </p>

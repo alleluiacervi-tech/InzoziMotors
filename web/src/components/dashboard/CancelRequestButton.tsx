@@ -26,12 +26,12 @@ export function CancelRequestButton({ id, carTitle }: { id: string; carTitle: st
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-sm font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
+          className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
         >
           Cancel this request
         </button>
         {state?.error ? (
-          <p role="alert" className="mt-2 text-xs font-semibold text-danger">
+          <p role="alert" className="mt-2 text-micro font-semibold text-danger">
             {state.error}
           </p>
         ) : null}
@@ -41,7 +41,7 @@ export function CancelRequestButton({ id, carTitle }: { id: string; carTitle: st
 
   return (
     <div className="rounded-xl border border-line bg-surface-alt p-4">
-      <p className="text-sm font-bold text-content">Cancel your request for the {carTitle}?</p>
+      <p className="text-caption font-bold text-content">Cancel your request for the {carTitle}?</p>
       <p className="mt-1 text-caption leading-relaxed text-content-secondary">
         The reservation ends and the car goes back on the marketplace, where another buyer can
         request it. Cancelling is free — nothing has been paid.
@@ -54,13 +54,13 @@ export function CancelRequestButton({ id, carTitle }: { id: string; carTitle: st
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-bold text-content-secondary transition-colors hover:bg-surface hover:text-content"
+          className="inline-flex h-10 items-center rounded-lg px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface hover:text-content"
         >
           Keep my request
         </button>
       </form>
       {state?.error ? (
-        <p role="alert" className="mt-2 text-xs font-semibold text-danger">
+        <p role="alert" className="mt-2 text-micro font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

@@ -168,7 +168,7 @@ export default async function SellPage() {
                   <Icon name={item.icon} size={22} />
                 </span>
                 <h3 className="mt-4 text-title-sm font-extrabold text-content">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-content-secondary">{item.body}</p>
+                <p className="mt-2 text-caption leading-relaxed text-content-secondary">{item.body}</p>
               </Card>
             ))}
           </div>
@@ -203,7 +203,7 @@ export default async function SellPage() {
             <Card className="p-6">
               <Badge tone="neutral">Paid once, upfront</Badge>
               <h3 className="mt-4 text-title-sm font-extrabold text-content">Certification fee</h3>
-              <p className="mt-2 text-sm leading-relaxed text-content-secondary">
+              <p className="mt-2 text-caption leading-relaxed text-content-secondary">
                 Covers the 150-point inspection, the professional photography and publishing your
                 listing. It pays for real work by real people, which is why it is charged whether
                 or not the car sells. We confirm the amount with you before your inspection is
@@ -214,7 +214,7 @@ export default async function SellPage() {
             <Card className="p-6">
               <Badge tone="success">Only when it sells</Badge>
               <h3 className="mt-4 text-title-sm font-extrabold text-content">Success commission</h3>
-              <p className="mt-2 text-sm leading-relaxed text-content-secondary">
+              <p className="mt-2 text-caption leading-relaxed text-content-secondary">
                 A small share of the sale price, charged when the handover completes at an Inzozi
                 center. It is quoted with your certification fee, before inspection. If the car
                 does not sell, there is nothing to pay.
@@ -224,7 +224,7 @@ export default async function SellPage() {
             <Card className="p-6">
               <Badge tone="neutral">Optional</Badge>
               <h3 className="mt-4 text-title-sm font-extrabold text-content">Featured placement</h3>
-              <p className="mt-2 text-sm leading-relaxed text-content-secondary">
+              <p className="mt-2 text-caption leading-relaxed text-content-secondary">
                 Moves your listing to the top of browse for a set number of days. Useful on a
                 crowded model, unnecessary on a rare one. Never applied unless you ask for it.
               </p>
@@ -288,7 +288,7 @@ export default async function SellPage() {
 
               <div className="mt-7 border-t border-line-soft pt-6">
                 <StoreButtons size="sm" />
-                <p className="mt-4 text-xs leading-relaxed text-content-muted">
+                <p className="mt-4 text-micro leading-relaxed text-content-muted">
                   Already have the app?{' '}
                   <Link href="/download" className="font-bold text-brand hover:underline">
                     Open the seller flow
@@ -314,11 +314,11 @@ export default async function SellPage() {
             {CENTERS.map((center) => (
               <Card key={center.id} className="p-6">
                 <h3 className="text-title-sm font-extrabold text-content">{center.name}</h3>
-                <p className="mt-3 flex items-start gap-2.5 text-sm leading-relaxed text-content-secondary">
+                <p className="mt-3 flex items-start gap-2.5 text-caption leading-relaxed text-content-secondary">
                   <Icon name="location" size={17} className="mt-0.5 text-content-muted" />
                   {center.address}
                 </p>
-                <p className="mt-2 flex items-start gap-2.5 text-sm leading-relaxed text-content-secondary">
+                <p className="mt-2 flex items-start gap-2.5 text-caption leading-relaxed text-content-secondary">
                   <Icon name="clock" size={17} className="mt-0.5 text-content-muted" />
                   {center.hours}
                 </p>

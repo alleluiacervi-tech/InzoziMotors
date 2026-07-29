@@ -75,7 +75,7 @@ export default async function SellingPage() {
           <h2 className="text-title-sm font-extrabold text-content">
             Verify your identity to start selling
           </h2>
-          <p className="mt-2 max-w-prose text-sm leading-relaxed text-content-secondary">
+          <p className="mt-2 max-w-prose text-caption leading-relaxed text-content-secondary">
             Sellers are verified before a car can enter the pipeline. It is a one-time check —
             a photo of your national ID and a selfie, captured in the Inzozi app — and it is the
             reason buyers trust what they see here. Nothing else on your account is affected.
@@ -91,7 +91,7 @@ export default async function SellingPage() {
                   {index + 1}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-extrabold text-content">{step.title}</p>
+                  <p className="text-caption font-extrabold text-content">{step.title}</p>
                   <p className="mt-0.5 text-caption leading-relaxed text-content-secondary">
                     {step.desc}
                   </p>
@@ -181,7 +181,7 @@ export default async function SellingPage() {
                       <p className="mt-4">
                         <Link
                           href={`/cars/${submission.car_id}`}
-                          className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-brand hover:underline"
+                          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
                         >
                           View the listing
                           <Icon name="arrow-right" size={15} />
@@ -311,7 +311,7 @@ export default async function SellingPage() {
                 <li key={car.id} className="hairline">
                   <div className="flex flex-wrap items-center justify-between gap-3 p-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-content">{car.title}</p>
+                      <p className="truncate text-caption font-bold text-content">{car.title}</p>
                       <p className="text-caption text-content-muted">
                         {formatUSD(car.price)}
                         {car.sold_at ? ` · sold ${formatDate(car.sold_at)}` : ''}

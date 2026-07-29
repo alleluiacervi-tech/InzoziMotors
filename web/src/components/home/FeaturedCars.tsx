@@ -16,7 +16,7 @@ export function FeaturedCars({ cars }: { cars: Car[] }) {
           <SectionHeading
             eyebrow="Just listed"
             title="Certified and available now"
-            description="Every car here has passed the 150-point check and been photographed at one of our centers."
+            description="Fresh from inspection at our Kigali centers."
           />
           <Link
             href="/cars"

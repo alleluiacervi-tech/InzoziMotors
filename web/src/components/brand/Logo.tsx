@@ -7,9 +7,11 @@ const FIELD = '#F2F0EF'
 
 /**
  * Shared car silhouette. `glass` is the cut-out colour: set it to whatever the
- * mark sits on, exactly as in the React Native original.
+ * mark sits on, exactly as in the React Native original. Exported so brand
+ * compositions (HeroScene) can build on the same path data instead of
+ * approximating it.
  */
-function CarPaths({ body = BRAND, glass = FIELD }: { body?: string; glass?: string }) {
+export function CarPaths({ body = BRAND, glass = FIELD }: { body?: string; glass?: string }) {
   return (
     <g>
       <path

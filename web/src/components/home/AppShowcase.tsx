@@ -78,9 +78,8 @@ export function AppShowcase() {
               Everything works on the web. The app adds a camera and a tap on the shoulder.
             </h2>
             <p className="mt-4 max-w-prose text-title-sm leading-relaxed text-content-secondary">
-              Browsing, full inspection reports, saved cars and searches, purchase requests and
-              your entire account work here in the browser. ID capture and the 36-angle shoot
-              need a camera — finish those in the app.
+              Browse, save, request and manage everything right here. Two things need a
+              camera — finish those in the app.
             </p>
 
             <AppCapabilities className="mt-9" />

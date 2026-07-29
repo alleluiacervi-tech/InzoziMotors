@@ -285,7 +285,7 @@ export function FinanceCalculator() {
 
 function Disclaimer() {
   return (
-    <p className="rounded-xl bg-surface-alt px-4 py-3 text-xs leading-relaxed text-content-secondary">
+    <p className="rounded-xl bg-surface-alt px-4 py-3 text-micro leading-relaxed text-content-secondary">
       Inzozi does not lend and does not arrange finance. {FINANCE_TERMS.annualRatePct}% a year is a
       representative Kigali market rate — your bank sets its own based on your profile, and usually
       adds arrangement fees and required insurance on top. Treat this as a starting point for that

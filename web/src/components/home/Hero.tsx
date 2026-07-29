@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Badge, Button, Container, Eyebrow, Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { CarGlyph } from '@/components/brand/Logo'
+import { HeroScene } from '@/components/brand/HeroScene'
 import { formatUSD, getCertTier } from '@/lib/business'
 import type { Car } from '@/lib/types'
 
@@ -70,17 +71,16 @@ function HeroCar({ car }: { car: Car }) {
   )
 }
 
-/** API-outage fallback — branded and honest, never a skeleton, never blank. */
+/** No listing to show — the brand illustration, never a skeleton or a stock
+ *  photo of a car we don't have. */
 function HeroFallback() {
   return (
     <div>
-      <div className="flex aspect-[4/3] items-center justify-center rounded-3xl bg-surface-alt">
-        <div className="opacity-20">
-          <CarGlyph width={256} body="#3A2D29" glass="#F6F4F4" />
-        </div>
+      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-3xl bg-surface">
+        <HeroScene className="h-full w-full" />
       </div>
       <p className="mt-3 text-micro text-content-muted">
-        Photographed at our Kigali center · 36 standard angles
+        Every listing: inspected, photographed, published by us
       </p>
     </div>
   )
@@ -100,8 +100,8 @@ export function Hero({ car }: { car: Car | null }) {
             </h1>
 
             <p className="mt-6 max-w-xl text-title-sm leading-relaxed text-content-secondary">
-              Sellers bring us the car; we inspect it on 150 points, photograph it ourselves and
-              publish it under our own name. Nothing goes live any other way.
+              Every listing is inspected, photographed and published by our own team —
+              nothing goes live any other way.
             </p>
 
             <form

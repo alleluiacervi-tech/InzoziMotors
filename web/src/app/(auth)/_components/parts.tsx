@@ -28,7 +28,7 @@ export function AuthSwitch({
   label: string
 }) {
   return (
-    <p className="mt-7 text-center text-sm text-content-secondary">
+    <p className="mt-7 text-center text-caption text-content-secondary">
       {prompt}{' '}
       <Link href={href} className="font-bold text-brand transition-colors hover:text-brand-deep">
         {label}

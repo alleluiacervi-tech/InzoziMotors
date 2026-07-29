@@ -186,12 +186,12 @@ export default async function DashboardOverviewPage() {
                   <Card key={step.title} className="flex flex-col p-5">
                     <Icon name={step.icon} size={20} className="text-content-secondary" />
                     <h3 className="mt-3 text-body font-extrabold text-content">{step.title}</h3>
-                    <p className="mt-2 flex-1 text-sm leading-relaxed text-content-secondary">
+                    <p className="mt-2 flex-1 text-caption leading-relaxed text-content-secondary">
                       {step.body}
                     </p>
                     <Link
                       href={step.href}
-                      className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-brand hover:underline"
+                      className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
                     >
                       {step.cta}
                       <Icon name="arrow-right" size={15} />
@@ -223,7 +223,7 @@ export default async function DashboardOverviewPage() {
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3
-                                  className={`text-sm ${notification.read ? 'font-semibold text-content-secondary' : 'font-extrabold text-content'}`}
+                                  className={`text-caption ${notification.read ? 'font-semibold text-content-secondary' : 'font-extrabold text-content'}`}
                                 >
                                   {notification.title}
                                 </h3>
@@ -257,7 +257,7 @@ export default async function DashboardOverviewPage() {
                   <div className="px-3">
                     <Link
                       href="/dashboard/notifications"
-                      className="inline-flex min-h-[44px] items-center text-sm font-bold text-brand hover:underline"
+                      className="inline-flex min-h-[44px] items-center text-caption font-bold text-brand hover:underline"
                     >
                       All notifications
                     </Link>
@@ -298,7 +298,7 @@ export default async function DashboardOverviewPage() {
                 action={
                   <Link
                     href="/dashboard/selling"
-                    className="inline-flex min-h-[44px] items-center text-sm font-bold text-brand hover:underline"
+                    className="inline-flex min-h-[44px] items-center text-caption font-bold text-brand hover:underline"
                   >
                     Full pipeline
                   </Link>
@@ -313,7 +313,7 @@ export default async function DashboardOverviewPage() {
                         className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-surface-alt"
                       >
                         <span className="min-w-0">
-                          <span className="block truncate text-sm font-bold text-content">
+                          <span className="block truncate text-caption font-bold text-content">
                             {submission.car_title ??
                               [submission.year, submission.make, submission.model]
                                 .filter(Boolean)

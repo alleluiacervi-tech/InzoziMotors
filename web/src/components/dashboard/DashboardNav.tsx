@@ -38,7 +38,7 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
                 <Link
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex h-11 items-center gap-2 whitespace-nowrap rounded-xl px-3.5 text-sm font-bold transition-colors ${
+                  className={`flex h-11 items-center gap-2 whitespace-nowrap rounded-xl px-3.5 text-caption font-bold transition-colors ${
                     active
                       ? 'bg-brand/10 text-brand'
                       : 'text-content-secondary hover:bg-surface-alt hover:text-content'
