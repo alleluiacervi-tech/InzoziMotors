@@ -137,7 +137,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
           <p className="text-micro font-bold uppercase tracking-wide text-content-muted">
             Mechanic&rsquo;s notes
           </p>
-          <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-content-secondary">
+          <p className="mt-1.5 whitespace-pre-line text-caption leading-relaxed text-content-secondary">
             {report.notes}
           </p>
         </div>

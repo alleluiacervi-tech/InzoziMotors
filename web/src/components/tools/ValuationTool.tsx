@@ -114,7 +114,7 @@ export function ValuationTool({
             {pending ? 'Checking the market…' : 'Get my valuation'}
           </Button>
 
-          <p className="text-xs leading-relaxed text-content-muted">
+          <p className="text-micro leading-relaxed text-content-muted">
             No account, no phone number. We do not call you afterwards.
           </p>
         </div>
@@ -131,7 +131,7 @@ export function ValuationTool({
                 {state.message}. We price from cars actually listed or sold on Inzozi, so a make
                 and year we have not handled yet gets no number rather than a guess.
               </Alert>
-              <p className="text-sm leading-relaxed text-content-secondary">
+              <p className="text-caption leading-relaxed text-content-secondary">
                 An inspection still tells you where your {state.make} stands. Our team prices it
                 against the market on the day it is certified, and you keep the final say.
               </p>
@@ -210,7 +210,7 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
         />
       </div>
 
-      <p className="rounded-xl bg-surface-alt px-4 py-3 text-xs leading-relaxed text-content-secondary">
+      <p className="rounded-xl bg-surface-alt px-4 py-3 text-micro leading-relaxed text-content-secondary">
         This is a market estimate, not an offer. The final asking price is yours — we confirm it
         with you after the 150-point inspection, when we know the car&apos;s real condition.
       </p>
@@ -231,7 +231,7 @@ function NextSteps() {
       >
         Submit this car for inspection
       </Button>
-      <p className="text-center text-xs leading-relaxed text-content-muted">
+      <p className="text-center text-micro leading-relaxed text-content-muted">
         Submission starts with a one-time ID check, which happens in the app.{' '}
         <a
           href={`https://wa.me/${CONTACT.whatsapp}`}

@@ -57,7 +57,7 @@ export function PromiseGrid() {
             <SectionHeading
               eyebrow="The Inzozi Promise"
               title="Five things that are always true here"
-              description="They apply to every car on the marketplace and every car in the rental fleet. There is no premium tier that buys you a better promise."
+              description="Every car, marketplace or rental. No premium tier buys a better promise."
             />
             <p className="mt-8 text-body text-content-secondary">
               <Link

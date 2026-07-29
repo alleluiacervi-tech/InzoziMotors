@@ -73,10 +73,10 @@ export default function ToolsPage() {
                 {tool.meta}
               </p>
               <h2 className="mt-1.5 text-title-sm font-extrabold text-content">{tool.title}</h2>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-content-secondary">
+              <p className="mt-2 flex-1 text-caption leading-relaxed text-content-secondary">
                 {tool.body}
               </p>
-              <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-brand">
+              <span className="mt-5 inline-flex items-center gap-1.5 text-caption font-bold text-brand">
                 Open
                 <Icon
                   name="arrow-right"

@@ -478,7 +478,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     </span>
                     <div className="min-w-0">
                       <p className="text-body font-bold text-content">{step.title}</p>
-                      <p className="mt-1 max-w-prose text-sm leading-relaxed text-content-secondary">
+                      <p className="mt-1 max-w-prose text-caption leading-relaxed text-content-secondary">
                         {step.desc}
                       </p>
                     </div>

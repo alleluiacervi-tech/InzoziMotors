@@ -153,7 +153,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
 
               <h1 className="mt-3 text-headline font-extrabold text-content">{car.title}</h1>
 
-              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-content-secondary">
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-content-secondary">
                 {rating ? (
                   <span className="inline-flex items-center gap-1">
                     <Icon name="star" size={14} />
@@ -188,9 +188,9 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   {formatUSD(car.daily_rate)}
                   <span className="text-base font-bold text-content-muted"> / day</span>
                 </p>
-                <p className="mt-2 text-sm text-content-secondary">{formatRWF(car.daily_rate)} a day</p>
+                <p className="mt-2 text-caption text-content-secondary">{formatRWF(car.daily_rate)} a day</p>
 
-                <dl className="mt-5 space-y-2 border-t border-line-soft pt-4 text-sm">
+                <dl className="mt-5 space-y-2 border-t border-line-soft pt-4 text-caption">
                   <div className="flex items-baseline justify-between gap-4">
                     <dt className="text-content-muted">Weekly rate</dt>
                     <dd className="font-bold text-content">{formatUSD(weekly)}</dd>
@@ -262,7 +262,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                       <p className="text-body font-bold text-content">
                         {quote.days} {quote.days === 1 ? 'day' : 'days'}
                       </p>
-                      <p className="text-sm text-content-secondary">
+                      <p className="text-caption text-content-secondary">
                         <span className="font-bold text-content">{formatUSD(quote.subtotal)}</span>{' '}
                         rental
                         <span className="text-content-muted">
@@ -328,7 +328,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 max-w-prose text-sm leading-relaxed text-content-secondary">
+              <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-secondary">
                 Cars are collected from the center they are kept at. Airport
                 meet-and-greet at Kigali International is available as an add-on for{' '}
                 {formatUSD(AIRPORT_PICKUP_FEE)}.

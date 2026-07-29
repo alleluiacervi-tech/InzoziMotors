@@ -22,10 +22,10 @@ export function HandoverRow({ handover }: { handover: Handover }) {
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold text-content">
+        <span className="block truncate text-caption font-bold text-content">
           {handover.car_title ?? 'Your request'}
         </span>
-        <span className="block truncate text-xs text-content-muted">
+        <span className="block truncate text-micro text-content-muted">
           {handover.booking_id} · {formatUSD(handover.agreed_price ?? handover.price)} ·{' '}
           {formatDate(handover.booked_at)}
         </span>

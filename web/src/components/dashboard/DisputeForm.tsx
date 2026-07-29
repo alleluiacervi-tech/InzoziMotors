@@ -34,7 +34,7 @@ export function DisputeForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-sm font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
+        className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
       >
         Raise a dispute
         <span className="sr-only"> for the {carTitle}</span>
@@ -77,7 +77,7 @@ export function DisputeForm({
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content"
+          className="inline-flex h-10 items-center rounded-lg px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content"
         >
           Cancel
         </button>

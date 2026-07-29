@@ -23,7 +23,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
     return (
       <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 rounded-2xl border border-line-soft bg-surface-alt text-content-muted">
         <Icon name="camera" size={30} />
-        <p className="px-6 text-center text-sm">
+        <p className="px-6 text-center text-caption">
           Photos for this car are still being processed at the center.
         </p>
       </div>

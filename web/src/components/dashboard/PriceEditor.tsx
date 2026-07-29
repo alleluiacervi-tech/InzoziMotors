@@ -33,7 +33,7 @@ export function PriceEditor({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-sm font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
+          className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
         >
           Change price
           <span className="sr-only"> for {title}</span>
@@ -98,7 +98,7 @@ export function PriceEditor({
             setValue(String(currentPrice))
             setOpen(false)
           }}
-          className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-bold text-content-secondary transition-colors hover:bg-surface hover:text-content"
+          className="inline-flex h-10 items-center rounded-lg px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface hover:text-content"
         >
           Cancel
         </button>

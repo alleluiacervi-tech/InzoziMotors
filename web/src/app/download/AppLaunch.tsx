@@ -81,7 +81,7 @@ export function AppLaunch({
               <button
                 type="button"
                 onClick={() => openInApp(to)}
-                className="inline-flex min-h-[44px] items-center text-sm font-bold text-brand underline underline-offset-4"
+                className="inline-flex min-h-[44px] items-center text-caption font-bold text-brand underline underline-offset-4"
               >
                 Try opening the app again
               </button>
@@ -89,7 +89,7 @@ export function AppLaunch({
             {webFallback ? (
               <Link
                 href={webFallback}
-                className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-brand underline underline-offset-4"
+                className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand underline underline-offset-4"
               >
                 Continue on the web
                 <Icon name="arrow-right" size={15} />
@@ -113,7 +113,7 @@ export function AppLaunch({
             href={other.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-content-secondary underline underline-offset-4 hover:text-content"
+            className="inline-flex min-h-[44px] items-center gap-2 text-caption font-semibold text-content-secondary underline underline-offset-4 hover:text-content"
           >
             <Icon name={other.icon} size={18} className="text-content-muted" />
             Using another phone? {other.label}
@@ -122,7 +122,7 @@ export function AppLaunch({
       ) : (
         <div>
           <StoreButtons />
-          <p className="mt-4 text-sm text-content-muted">
+          <p className="mt-4 text-caption text-content-muted">
             Open <span className="font-semibold text-content-secondary">{shortUrl()}</span> on your
             phone to install it directly.
           </p>

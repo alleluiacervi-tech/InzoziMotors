@@ -130,7 +130,7 @@ export function ChipGroup<T extends string>({
             <span
               className="flex min-h-[44px] flex-col items-center justify-center rounded-xl border border-line
                          bg-surface px-3 py-2 text-center text-caption font-bold leading-tight text-content-secondary
-                         transition-all duration-200 ease-brand sm:px-4 sm:text-sm
+                         transition-all duration-200 ease-brand sm:px-4 sm:text-caption
                          peer-hover:border-content-muted
                          peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white peer-checked:shadow-brand
                          peer-focus-visible:ring-2 peer-focus-visible:ring-brand peer-focus-visible:ring-offset-2"
@@ -186,8 +186,8 @@ export function Headline({
       <p className="mt-1.5 break-words text-[clamp(1.5rem,6vw,2.25rem)] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-brand">
         {value}
       </p>
-      {sub ? <p className="mt-2 text-sm font-bold text-content-secondary tabular-nums">{sub}</p> : null}
-      {note ? <p className="mt-2 text-xs leading-relaxed text-content-muted">{note}</p> : null}
+      {sub ? <p className="mt-2 text-caption font-bold text-content-secondary tabular-nums">{sub}</p> : null}
+      {note ? <p className="mt-2 text-micro leading-relaxed text-content-muted">{note}</p> : null}
     </div>
   )
 }
@@ -213,22 +213,22 @@ export function ResultRow({
           className={
             emphasis
               ? 'text-body font-extrabold text-content'
-              : 'text-sm font-semibold text-content-secondary'
+              : 'text-caption font-semibold text-content-secondary'
           }
         >
           {label}
         </p>
-        {hint ? <p className="mt-0.5 text-xs leading-relaxed text-content-muted">{hint}</p> : null}
+        {hint ? <p className="mt-0.5 text-micro leading-relaxed text-content-muted">{hint}</p> : null}
       </div>
       <div className="shrink-0 text-right">
         <p
           className={`tabular-nums ${
-            emphasis ? 'text-lg font-extrabold text-content' : 'text-sm font-bold text-content'
+            emphasis ? 'text-lg font-extrabold text-content' : 'text-caption font-bold text-content'
           }`}
         >
           {value}
         </p>
-        {sub ? <p className="mt-0.5 text-xs tabular-nums text-content-muted">{sub}</p> : null}
+        {sub ? <p className="mt-0.5 text-micro tabular-nums text-content-muted">{sub}</p> : null}
       </div>
     </div>
   )
@@ -244,7 +244,7 @@ export const WRAPPING_LABEL = '!whitespace-normal text-center leading-tight'
 /** Shown before there is anything to calculate, so the panel is never blank. */
 export function ResultPlaceholder({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm leading-relaxed text-content-muted">
+    <p className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-caption leading-relaxed text-content-muted">
       {children}
     </p>
   )

@@ -148,7 +148,7 @@ export default function ImportDutyPage() {
                   <Icon name={item.icon} size={22} />
                 </span>
                 <h3 className="mt-4 text-title-sm font-extrabold text-content">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-content-secondary">{item.body}</p>
+                <p className="mt-2 text-caption leading-relaxed text-content-secondary">{item.body}</p>
               </Card>
             ))}
           </div>

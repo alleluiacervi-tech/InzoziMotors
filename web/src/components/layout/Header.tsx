@@ -59,7 +59,7 @@ export function Header({ user }: { user: User | null }) {
                 <Link
                   href={link.href}
                   aria-current={isActive(link.href) ? 'page' : undefined}
-                  className={`relative rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                  className={`relative rounded-lg px-3 py-2 text-caption font-semibold transition-colors ${
                     isActive(link.href)
                       ? 'bg-brand/10 text-brand'
                       : 'text-content-secondary hover:bg-surface-alt hover:text-content'

@@ -85,7 +85,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
 
           <SubmitButton pendingLabel="Sending…">Send reset code</SubmitButton>
 
-          <p className="text-center text-sm text-content-secondary">
+          <p className="text-center text-caption text-content-secondary">
             Remembered it?{' '}
             <Link href="/signin" className="font-bold text-brand transition-colors hover:text-brand-deep">
               Back to sign in
@@ -153,7 +153,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
             Reset password
           </SubmitButton>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-caption">
             <button
               type="submit"
               name="intent"

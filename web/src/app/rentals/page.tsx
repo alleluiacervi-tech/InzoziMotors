@@ -145,7 +145,7 @@ export default async function RentalsPage({ searchParams }: PageProps) {
       <PageIntro
         eyebrow="Rentals"
         title="Rent a certified car in Kigali"
-        description="Every car in the fleet passes the same 150-point inspection as the cars we sell. Your deposit comes back in full after the return check — same day, at the center."
+        description="The same 150-point standard as the cars we sell. Deposits back in full after the return check."
       />
 
       <Container className="py-8 sm:py-10">

@@ -180,7 +180,7 @@ export default async function CarsPage({ searchParams }: PageProps) {
       <PageIntro
         eyebrow="The marketplace"
         title={browseHeading(filters)}
-        description="Every one inspected on the same 150 points, photographed at our centers. Browsing is free, and buyers never pay us a fee."
+        description="Every car inspected on the same 150 points. Buyers never pay a fee."
       />
 
       <Container className="py-8 sm:py-10">

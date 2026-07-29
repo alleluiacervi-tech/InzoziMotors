@@ -55,14 +55,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-body font-extrabold text-content">{user.name}</p>
-                  <p className="truncate text-xs text-content-muted">{ROLE_LABEL[user.role]}</p>
+                  <p className="truncate text-micro text-content-muted">{ROLE_LABEL[user.role]}</p>
                 </div>
               </div>
 
               <form action={signOutAction} className="ml-auto lg:ml-0">
                 <button
                   type="submit"
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content lg:w-full"
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content lg:w-full"
                 >
                   <Icon name="logout" size={16} />
                   Sign out

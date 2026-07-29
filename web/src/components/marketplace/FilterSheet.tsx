@@ -78,7 +78,7 @@ export function FilterSheet({
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-bold text-content transition-colors hover:border-content-muted lg:hidden"
+        className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-caption font-bold text-content transition-colors hover:border-content-muted lg:hidden"
       >
         <Icon name="filter" size={17} className="text-content-secondary" />
         Filters

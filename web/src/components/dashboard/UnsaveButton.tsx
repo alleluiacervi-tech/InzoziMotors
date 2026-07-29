@@ -25,7 +25,7 @@ export function UnsaveButton({ carId, title }: { carId: string; title: string })
         <span className="sr-only"> — {title}</span>
       </SubmitButton>
       {state?.error ? (
-        <p role="alert" className="mt-1 text-center text-xs font-semibold text-danger">
+        <p role="alert" className="mt-1 text-center text-micro font-semibold text-danger">
           {state.error}
         </p>
       ) : null}

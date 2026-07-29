@@ -79,7 +79,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-body font-bold">{point.title}</span>
-                  <span className="mt-1 block text-sm leading-relaxed text-white/70">
+                  <span className="mt-1 block text-caption leading-relaxed text-white/70">
                     {point.desc}
                   </span>
                 </span>
@@ -87,7 +87,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             ))}
           </ul>
 
-          <p className="mt-9 text-sm text-white/70">
+          <p className="mt-9 text-caption text-white/70">
             <Link
               href="/promise"
               className="font-bold text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
@@ -100,7 +100,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             <p className="text-eyebrow font-bold uppercase text-white/50">
               Inspection &amp; handover centers
             </p>
-            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/70">
+            <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-caption text-white/70">
               {CENTERS.map((center) => (
                 <li key={center.id} className="flex items-center gap-1.5">
                   <Icon name="location" size={14} />

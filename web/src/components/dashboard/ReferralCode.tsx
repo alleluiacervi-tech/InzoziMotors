@@ -29,7 +29,7 @@ export function ReferralCode({ code }: { code: string }) {
       <button
         type="button"
         onClick={copy}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
       >
         <Icon name={copied ? 'check' : 'document'} size={16} />
         {copied ? 'Copied' : 'Copy code'}
