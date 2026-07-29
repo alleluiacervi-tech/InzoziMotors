@@ -14,7 +14,7 @@ export interface PipelineStep {
   title: string
   desc: string
   /** At most one step per row carries an image — the one that earns it. */
-  image?: { image: string; alt: string }
+  image?: { image: import('next/image').StaticImageData | string; alt: string }
 }
 
 /** The listing pipeline, seller-facing. The homepage and /sell share it. */

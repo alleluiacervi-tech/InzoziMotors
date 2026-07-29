@@ -61,6 +61,7 @@ export function BrowseEntry({ cars }: { cars: Car[] }) {
                       fill
                       sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                       className="object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.04]"
+                      {...(typeof photo.image !== 'string' ? { placeholder: 'blur' as const } : {})}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-ink-900/80 via-ink-900/10 to-transparent" />
                   </div>
