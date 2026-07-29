@@ -94,7 +94,7 @@ async function FleetResults({
       ) : null}
 
       {visible.length ? (
-        <ul className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {visible.map((car, index) => (
             <li key={car.id}>
               <RentalCard car={car} priority={index < 3} />

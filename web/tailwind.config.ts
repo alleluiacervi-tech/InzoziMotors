@@ -111,7 +111,11 @@ const config: Config = {
       },
 
       maxWidth: {
-        content: '1200px',
+        // The site frame. 1200px read as a floating strip on 1920px monitors —
+        // a photo-led marketplace should fill the room it's given. Text columns
+        // are capped per-element (max-w-2xl / max-w-prose), so widening the
+        // frame widens imagery and grids, never line lengths.
+        content: '1400px',
         prose: '68ch',
       },
 

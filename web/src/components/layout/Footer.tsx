@@ -9,7 +9,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-line bg-ink-900 text-white">
-      <div className="mx-auto max-w-content px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-content px-5 py-16 sm:px-8 sm:py-20 lg:px-12">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_2.6fr]">
           <div>
             <Logo size={19} tone="light" />
