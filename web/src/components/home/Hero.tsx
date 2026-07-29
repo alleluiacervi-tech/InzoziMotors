@@ -1,19 +1,20 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { Badge, Button, Container, Eyebrow, Icon } from '@/components/ui'
+import { Button, Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui'
-import { CarGlyph } from '@/components/brand/Logo'
-import { HeroScene } from '@/components/brand/HeroScene'
-import { formatUSD, getCertTier } from '@/lib/business'
+import { HERO_SLIDES } from '@/lib/imagery'
+import { formatKm, formatUSD } from '@/lib/business'
 import type { Car } from '@/lib/types'
+import { HeroRotator, type HeroSlide } from './HeroRotator'
 
-// The whole proposition in two lines, and a real car above the fold — a
-// marketplace that opens with an actual listing instead of an illustration.
-// Search is the hero's only primary action: for a marketplace, search IS the
-// hero. Browse/sell entries live in the nav, BrowseEntry, and the closer.
+// The hero is a full-viewport photographic stage — one idea per viewport, the
+// image doing the persuading, one quiet CTA. Slides are REAL LISTINGS first:
+// the three newest certified cars, photographed by our own team. Only when no
+// live listing has a photo does the stage fall back to curated marketing
+// photography (lib/imagery.ts — never presented as a listing, no price, no
+// badge).
 //
-// The search box is a real GET form pointed at /cars, so it works with
-// JavaScript disabled and produces a shareable, indexable URL.
+// Search follows immediately in a light band: AVATR sells six objects and
+// needs no search; a marketplace's first action IS search, so it gets the
+// second viewport-stop rather than competing with the photograph.
 
 const TRUST_STRIP: { icon: IconName; label: string }[] = [
   { icon: 'shield-check', label: '150-point inspection' },
@@ -21,94 +22,50 @@ const TRUST_STRIP: { icon: IconName; label: string }[] = [
   { icon: 'cash', label: 'Buyers pay nothing' },
 ]
 
-/** The newest live listing, rendered as the hero image. */
-function HeroCar({ car }: { car: Car }) {
-  const tier = getCertTier(car)
-  const image = car.images?.[0]
+function slidesFrom(cars: Car[]): HeroSlide[] {
+  const listings = cars
+    .filter((car) => car.images?.[0])
+    .slice(0, 3)
+    .map((car): HeroSlide => ({
+      image: car.images![0],
+      alt: `${car.title} — photographed at an Inzozi Motors center`,
+      eyebrow: 'Just certified',
+      headline: car.title,
+      caption: [String(car.year), formatKm(car.mileage), car.location].filter(Boolean).join(' · '),
+      priceLabel: formatUSD(car.price),
+      href: `/cars/${car.id}`,
+      cta: 'View this car',
+    }))
 
-  return (
-    <div>
-      <Link
-        href={`/cars/${car.id}`}
-        className="group relative block overflow-hidden rounded-3xl shadow-card-lg"
-      >
-        <div className="relative aspect-[4/3] bg-surface-alt">
-          {image ? (
-            <Image
-              src={image}
-              alt={car.title}
-              fill
-              priority
-              sizes="(min-width: 1024px) 45vw, 100vw"
-              className="object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.02]"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <CarGlyph width={220} body="#E8E3E3" glass="#F6F4F4" />
-            </div>
-          )}
-        </div>
+  if (listings.length) return listings
 
-        {tier ? (
-          <div className="absolute left-4 top-4">
-            <Badge tone={tier.key === 'plus' ? 'certPlus' : 'cert'} icon="shield-check">
-              {tier.short}
-            </Badge>
-          </div>
-        ) : null}
-
-        {/* Photo overlays use white for the price — red loses legibility on
-            photography; the red-price rule applies on light surfaces. */}
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-ink-900/70 p-4 text-white backdrop-blur">
-          <p className="min-w-0 truncate text-title-sm font-extrabold">{car.title}</p>
-          <p className="shrink-0 text-title-sm font-extrabold">{formatUSD(car.price)}</p>
-        </div>
-      </Link>
-      <p className="mt-3 text-micro text-content-muted">
-        Photographed at our Kigali center · 36 standard angles
-      </p>
-    </div>
-  )
+  return HERO_SLIDES.map((slide): HeroSlide => ({
+    image: slide.image,
+    alt: slide.alt,
+    eyebrow: "Rwanda's certified marketplace",
+    headline: slide.headline,
+    caption: slide.caption,
+    href: slide.href,
+    cta: slide.cta,
+  }))
 }
 
-/** No listing to show — the brand illustration, never a skeleton or a stock
- *  photo of a car we don't have. */
-function HeroFallback() {
+export function Hero({ cars }: { cars: Car[] }) {
   return (
-    <div>
-      <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-3xl bg-surface">
-        <HeroScene className="h-full w-full" />
-      </div>
-      <p className="mt-3 text-micro text-content-muted">
-        Every listing: inspected, photographed, published by us
-      </p>
-    </div>
-  )
-}
+    <>
+      <HeroRotator slides={slidesFrom(cars)} />
 
-export function Hero({ car }: { car: Car | null }) {
-  return (
-    <section className="border-b border-line-soft bg-surface-page">
-      <Container className="py-16 sm:py-20 lg:py-24">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="animate-fade-up">
-            <Eyebrow>Rwanda&apos;s certified marketplace</Eyebrow>
-
-            <h1 className="text-display-xl font-extrabold text-content">
-              <span className="block">Every car inspected.</span>
-              <span className="block">Every seller verified.</span>
-            </h1>
-
-            <p className="mt-6 max-w-xl text-title-sm leading-relaxed text-content-secondary">
-              Every listing is inspected, photographed and published by our own team —
-              nothing goes live any other way.
-            </p>
-
+      {/* The marketplace's first action, in its own light band directly under
+          the stage. A real GET form: works without JavaScript, produces a
+          shareable, indexable URL. */}
+      <section className="border-b border-line-soft bg-surface">
+        <div className="mx-auto w-full max-w-content px-5 py-8 sm:px-8 lg:px-12">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <form
               action="/cars"
               method="get"
               role="search"
-              className="mt-9 flex max-w-xl items-center gap-2 rounded-2xl border border-line bg-surface p-2 shadow-card transition-colors focus-within:border-content-muted"
+              className="flex w-full max-w-xl items-center gap-2 rounded-2xl border border-line bg-surface p-2 shadow-card transition-colors focus-within:border-content-muted"
             >
               <label htmlFor="hero-search" className="sr-only">
                 Search certified cars
@@ -129,7 +86,7 @@ export function Hero({ car }: { car: Car | null }) {
               </Button>
             </form>
 
-            <ul className="mt-10 flex flex-wrap items-center gap-x-7 gap-y-3">
+            <ul className="flex flex-wrap items-center gap-x-7 gap-y-3">
               {TRUST_STRIP.map((item) => (
                 <li
                   key={item.label}
@@ -141,13 +98,9 @@ export function Hero({ car }: { car: Car | null }) {
               ))}
             </ul>
           </div>
-
-          <div className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            {car ? <HeroCar car={car} /> : <HeroFallback />}
-          </div>
         </div>
-      </Container>
-    </section>
+      </section>
+    </>
   )
 }
 
