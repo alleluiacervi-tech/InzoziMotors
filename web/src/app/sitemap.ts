@@ -26,6 +26,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: Freq; priority: number }[]
   { path: '/sell', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/how-it-works', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/promise', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/tools/valuation', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/tools/import-duty', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/contact', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/about', changeFrequency: 'monthly', priority: 0.5 },
