@@ -1,16 +1,13 @@
 import { Button, Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { HERO_SLIDES } from '@/lib/imagery'
-import { formatKm, formatUSD } from '@/lib/business'
-import type { Car } from '@/lib/types'
 import { HeroRotator, type HeroSlide } from './HeroRotator'
 
 // The hero is a full-viewport photographic stage — one idea per viewport, the
-// image doing the persuading, one quiet CTA. Slides are REAL LISTINGS first:
-// the three newest certified cars, photographed by our own team. Only when no
-// live listing has a photo does the stage fall back to curated marketing
-// photography (lib/imagery.ts — never presented as a listing, no price, no
-// badge).
+// image doing the persuading, one quiet CTA. By decision, the stage always
+// runs the curated brand photography (lib/imagery.ts): the hero is the brand
+// moment, and the inventory gets its own showcase directly below (FeaturedCars,
+// BrowseEntry), where real listings carry real prices.
 //
 // Search follows immediately in a light band: AVATR sells six objects and
 // needs no search; a marketplace's first action IS search, so it gets the
@@ -22,38 +19,20 @@ const TRUST_STRIP: { icon: IconName; label: string }[] = [
   { icon: 'cash', label: 'Buyers pay nothing' },
 ]
 
-function slidesFrom(cars: Car[]): HeroSlide[] {
-  const listings = cars
-    .filter((car) => car.images?.[0])
-    .slice(0, 3)
-    .map((car): HeroSlide => ({
-      image: car.images![0],
-      alt: `${car.title} — photographed at an Inzozi Motors center`,
-      eyebrow: 'Just certified',
-      headline: car.title,
-      caption: [String(car.year), formatKm(car.mileage), car.location].filter(Boolean).join(' · '),
-      priceLabel: formatUSD(car.price),
-      href: `/cars/${car.id}`,
-      cta: 'View this car',
-    }))
+const SLIDES: HeroSlide[] = HERO_SLIDES.map((slide) => ({
+  image: slide.image,
+  alt: slide.alt,
+  eyebrow: "Rwanda's certified marketplace",
+  headline: slide.headline,
+  caption: slide.caption,
+  href: slide.href,
+  cta: slide.cta,
+}))
 
-  if (listings.length) return listings
-
-  return HERO_SLIDES.map((slide): HeroSlide => ({
-    image: slide.image,
-    alt: slide.alt,
-    eyebrow: "Rwanda's certified marketplace",
-    headline: slide.headline,
-    caption: slide.caption,
-    href: slide.href,
-    cta: slide.cta,
-  }))
-}
-
-export function Hero({ cars }: { cars: Car[] }) {
+export function Hero() {
   return (
     <>
-      <HeroRotator slides={slidesFrom(cars)} />
+      <HeroRotator slides={SLIDES} />
 
       {/* The marketplace's first action, in its own light band directly under
           the stage. A real GET form: works without JavaScript, produces a

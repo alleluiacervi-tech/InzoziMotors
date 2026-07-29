@@ -193,6 +193,18 @@ async function seed() {
     return;
   }
   const SAFARI_MODELS = ['Land Cruiser Prado', 'Pajero Sport', 'Hilux', 'Jimny'];
+  // Same marketing photography as the sale seeds (backend/uploads/seed) — the
+  // fleet is the same product wearing the same clothes. Index 17 is images[].
+  const ASSET_BASE = process.env.SEED_ASSET_BASE || 'http://localhost:3000';
+  const su = (f) => `${ASSET_BASE}/uploads/seed/${f}`;
+  const RENTAL_IMAGE_SETS = [
+    [su('suv-side-03.jpeg'), su('suv-side-04.jpeg')],
+    [su('suv-side-07.jpeg'), su('suv-side-studio.jpeg')],
+    [su('paint-silver.jpeg'), su('paint-glossy-grey.jpeg')],
+    [su('paint-blue.jpeg'), su('paint-white.jpeg')],
+  ];
+  FLEET.forEach((c, i) => { c[17] = RENTAL_IMAGE_SETS[i % RENTAL_IMAGE_SETS.length]; });
+
   for (const c of FLEET) {
     const safariReady = SAFARI_MODELS.includes(c[2]); // c[2] = model
     await pool.query(

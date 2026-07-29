@@ -77,7 +77,7 @@ export default async function HomePage() {
     <>
       {/* The newest live listing doubles as the hero image — a marketplace
           opens with a car, not an illustration. */}
-      <Hero cars={featured} />
+      <Hero />
       <StatBand />
       <BrowseEntry cars={featured} />
       <FeaturedCars cars={featured} />

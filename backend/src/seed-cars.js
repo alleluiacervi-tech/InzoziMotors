@@ -234,6 +234,23 @@ async function seed() {
 
   const sellerId = await ensureSeller();
 
+  // Marketing photography shipped with the repo (backend/uploads/seed) replaces
+  // the Unsplash placeholders, so seeded listings look like the real product on
+  // every surface. SEED_ASSET_BASE must be a host the CLIENT can reach —
+  // localhost is right for the web on the same machine; a phone needs the LAN IP.
+  const ASSET_BASE = process.env.SEED_ASSET_BASE || 'http://localhost:3000';
+  const su = (f) => `${ASSET_BASE}/uploads/seed/${f}`;
+  const SEED_IMAGE_SETS = [
+    [su('hero-sedan-studio.jpeg'), su('paint-purple.jpeg'), su('paint-glossy-black.jpeg')],
+    [su('suv-side-studio.jpeg'), su('suv-side-03.jpeg'), su('suv-side-04.jpeg')],
+    [su('hero-gt-coast.jpeg'), su('paint-skylight-silk.jpeg'), su('paint-silver.jpeg')],
+    [su('hero-suv-courtyard.jpeg'), su('suv-side-07.jpeg'), su('paint-solar-bronze.jpeg')],
+    [su('paint-blue.jpeg'), su('paint-01.jpeg'), su('paint-03.jpeg')],
+    [su('paint-glossy-grey.jpeg'), su('paint-05.jpeg'), su('paint-06.jpeg')],
+    [su('paint-white.jpeg'), su('paint-grey.jpeg'), su('paint-purple-2.jpeg')],
+  ];
+  CARS.forEach((c, i) => { c.images = SEED_IMAGE_SETS[i % SEED_IMAGE_SETS.length]; });
+
   for (const c of CARS) {
     const { rows: inserted } = await pool.query(
       `INSERT INTO cars
