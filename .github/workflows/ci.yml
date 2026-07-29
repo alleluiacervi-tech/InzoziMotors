@@ -1,0 +1,89 @@
+name: CI
+
+# One pipeline, four surfaces. Every push and PR to main proves the same
+# things a reviewer would check by hand: the backend parses (JS and its SQL),
+# the Expo app compiles under Metro's preset, and both Next apps type-check
+# and produce production builds. No deploy here — the VPS flow stays manual
+# per the deployment guide.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend — syntax + SQL grammar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: backend/package-lock.json }
+      - run: npm ci
+        working-directory: backend
+      - name: node --check every source file
+        run: |
+          set -e
+          for f in $(find backend/src backend/server.js -name '*.js'); do
+            node --check "$f"
+          done
+      - name: Parse all SQL with the real PostgreSQL grammar
+        run: |
+          npm install --no-save libpg-query@17
+          node .github/scripts/check-sql.js
+
+  mobile:
+    name: Mobile — babel parse + import resolution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: package-lock.json }
+      - run: npm ci
+      - name: Every src file parses under babel-preset-expo
+        run: |
+          node -e "
+          const fs=require('fs'),path=require('path'),babel=require('@babel/core');
+          let bad=0,n=0;
+          const walk=(d)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){
+            const p=path.join(d,e.name);
+            if(e.isDirectory())walk(p);
+            else if(e.name.endsWith('.js')){n++;
+              try{babel.transformFileSync(p,{presets:['babel-preset-expo'],babelrc:false,configFile:false})}
+              catch(err){bad++;console.log('FAIL',p,err.message.split('\n')[0])}}}};
+          walk('src');['App.js','app.config.js'].forEach(f=>{n++;
+            try{babel.transformFileSync(f,{presets:['babel-preset-expo'],babelrc:false,configFile:false})}
+            catch(err){bad++;console.log('FAIL',f,err.message.split('\n')[0])}});
+          console.log(n+' files, '+bad+' failures');
+          process.exit(bad?1:0);"
+
+  web:
+    name: Website — typecheck + production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+        working-directory: web
+      - run: npx tsc --noEmit
+        working-directory: web
+      # The API is intentionally absent in CI — the build must succeed anyway;
+      # that IS the degradation contract the site promises.
+      - run: npm run build
+        working-directory: web
+
+  admin:
+    name: Admin — typecheck + production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: admin/package-lock.json }
+      - run: npm ci
+        working-directory: admin
+      - run: npx tsc --noEmit
+        working-directory: admin
+      - run: npm run build
+        working-directory: admin

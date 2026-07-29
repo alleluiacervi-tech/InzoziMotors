@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { sendResetCode } = require('../lib/mailer');
 const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
@@ -126,7 +127,11 @@ router.post('/forgot-password', async (req, res) => {
       );
     });
 
-    console.log(`[password-reset] ${addr} code=${code}`);
+    // Real delivery when SMTP is configured; the server log remains the
+    // fallback so development needs no provider. The response never reveals
+    // whether the send happened — that would leak account existence.
+    const delivered = await sendResetCode(addr, code);
+    if (!delivered) console.log(`[password-reset] ${addr} code=${code}`);
 
     // Both conditions, so neither a forgotten NODE_ENV nor a stray opt-in on a
     // deployed box is enough on its own to leak the code to the caller.
