@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import Image, { type StaticImageData } from 'next/image'
 import { useCallback, useState } from 'react'
 import { Button, Icon } from '@/components/ui'
 
@@ -11,7 +11,8 @@ import { Button, Icon } from '@/components/ui'
 // a user choice.
 
 export interface HeroSlide {
-  image: string | null
+  /** A remote URL (real listing photo) or a bundled marketing asset. */
+  image: string | StaticImageData | null
   alt: string
   eyebrow: string
   headline: string
@@ -58,6 +59,9 @@ export function HeroRotator({ slides }: { slides: HeroSlide[] }) {
               priority={i === 0}
               sizes="100vw"
               className="object-cover"
+              // Bundled marketing assets carry intrinsic data for a blur-up;
+              // remote listing URLs cannot, so they load plain.
+              {...(typeof s.image !== 'string' ? { placeholder: 'blur' as const } : {})}
             />
           ) : null}
           {/* Legibility gradient — text sits on ink, not on the photo */}
