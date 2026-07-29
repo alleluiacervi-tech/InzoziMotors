@@ -69,14 +69,26 @@ async function BrowseResults({
   sort: SortValue
   offset: number
 }) {
-  const [results, facetSource] = await Promise.all([
-    carsApi.list(toCarQuery(filters, sort, offset)),
+  // BOTH calls are allowed to fail. An unreachable API renders the designed
+  // degraded state below — never the route error boundary. "No cars matched"
+  // and "we couldn't reach the marketplace" are different truths, so the
+  // primary call records WHICH one happened rather than collapsing both to [].
+  const [primary, facetSource] = await Promise.all([
+    carsApi.list(toCarQuery(filters, sort, offset)).then(
+      (rows) => ({ rows, reachable: true }),
+      (err: unknown) => {
+        console.error('browse inventory unavailable:', (err as Error).message)
+        return { rows: [] as Car[], reachable: false }
+      }
+    ),
     // Filter options come from real inventory. If that call fails the page is
     // still perfectly usable — it just falls back to the keyword and range
     // fields, so a facet outage never takes browse down with it.
     carsApi.list({ limit: 100 }).catch(() => [] as Car[]),
   ])
 
+  const results = primary.rows
+  const apiDown = !primary.reachable
   const facets = facetSource.length ? buildFacets(facetSource) : EMPTY_FACETS
 
   return (
@@ -96,12 +108,15 @@ async function BrowseResults({
             <FilterSheet facets={facets} filters={filters} sort={sort} />
             {/* "on this page" whenever more may exist — the API returns a
                 page, never a total, so a bare count would be a claim we
-                cannot back. */}
-            <p className="text-caption text-content-secondary">
-              <span className="font-bold text-content">{results.length}</span>
-              {results.length === 1 ? ' car' : ' cars'}
-              {offset > 0 || results.length === PAGE_SIZE ? ' on this page' : ''}
-            </p>
+                cannot back. When the API is down we claim nothing: "0 cars"
+                would be a statement about inventory we cannot see. */}
+            {!apiDown ? (
+              <p className="text-caption text-content-secondary">
+                <span className="font-bold text-content">{results.length}</span>
+                {results.length === 1 ? ' car' : ' cars'}
+                {offset > 0 || results.length === PAGE_SIZE ? ' on this page' : ''}
+              </p>
+            ) : null}
           </div>
           <SortSelect filters={filters} sort={sort} />
         </div>
@@ -110,7 +125,23 @@ async function BrowseResults({
           <ActiveFilters filters={filters} sort={sort} />
         </div>
 
-        {results.length ? (
+        {apiDown ? (
+          <EmptyState
+            icon="alert"
+            title="The marketplace is briefly unreachable"
+            description="The cars are still there — this page just couldn't reach them. Try again in a moment."
+            action={
+              <Button
+                href={buildBrowseHref(filters, { sort })}
+                variant="outline"
+                leadingIcon={<Icon name="refresh" size={16} />}
+              >
+                Try again
+              </Button>
+            }
+            className="mt-6 rounded-2xl border border-line-soft bg-surface"
+          />
+        ) : results.length ? (
           <>
             <ul className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, index) => (
