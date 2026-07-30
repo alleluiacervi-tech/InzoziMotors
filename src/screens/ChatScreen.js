@@ -28,7 +28,7 @@ function PinnedCarCard({ car, onViewListing }) {
       </View>
       <View style={styles.pinnedContent}>
         {car.image ? (
-          <Image source={{ uri: car.image }} style={styles.pinnedThumb} resizeMode="cover" />
+          <Image source={{ uri: car.image }} style={styles.pinnedThumb} resizeMode="contain" />
         ) : null}
         <View style={{ flex: 1 }}>
           <Text style={styles.pinnedTitle} numberOfLines={1}>{car.title}</Text>

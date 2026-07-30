@@ -1,3 +1,4 @@
+import { STUDIO } from './carImageAssets';
 // Inzozi Motors — Phase 2 shared data: inspection categories, vehicle history, seller profiles, notifications
 
 // ─── 150-Point Inspection Categories ─────────────────────────────────────────
@@ -302,8 +303,8 @@ export const SELLER_PROFILES = {
     avgRating: 4.8,
     totalReviews: 22,
     activeListings: [
-      { id: '1', title: '2022 Tesla Model 3', price: '$24,900', image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=400&q=80' },
-      { id: '5', title: '2021 Audi Q5', price: '$38,500', image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=400&q=80' },
+      { id: '1', title: '2022 Tesla Model 3', price: '$24,900', image: STUDIO.heroSedan },
+      { id: '5', title: '2021 Audi Q5', price: '$38,500', image: STUDIO.suvSideStudio },
     ],
     reviews: [
       { id: 'r1', buyer: 'Marie C.', rating: 5, text: 'Excellent experience! Car was exactly as described. Very responsive seller.', date: 'Jun 15, 2026' },
@@ -324,7 +325,7 @@ export const SELLER_PROFILES = {
     avgRating: 4.6,
     totalReviews: 11,
     activeListings: [
-      { id: '2', title: '2021 BMW 4 Series', price: '$31,500', image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&q=80' },
+      { id: '2', title: '2021 BMW 4 Series', price: '$31,500', image: STUDIO.heroGt },
     ],
     reviews: [
       { id: 'r1', buyer: 'Jean Pierre H.', rating: 5, text: 'Great BMW, very well maintained. Seller was helpful throughout.', date: 'Jun 2, 2026' },

@@ -27,7 +27,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
     <>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.carCard}>
-          <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="cover" />
+          <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="contain" />
           <View style={{ flex: 1 }}>
             <Text style={styles.carTitle}>{car.title}</Text>
             <Text style={styles.carSeller}>{car.seller}</Text>

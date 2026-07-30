@@ -121,7 +121,7 @@ export default function RentalBookingScreen({ navigation, route }) {
 
         {/* Car summary */}
         <View style={styles.carCard}>
-          <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="cover" />
+          <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="contain" />
           <View style={{ flex: 1 }}>
             <Text style={styles.carTitle} numberOfLines={1}>{car.title}</Text>
             <Text style={styles.carMeta}>{car.seats} seats · {car.transmission} · {car.fuel}</Text>

@@ -49,7 +49,7 @@ function CarListingCard({ car, onPress }) {
   const daysAgo = getListedDaysAgo(car);
   return (
     <Pressable style={styles.listingCard} onPress={onPress}>
-      <Image source={{ uri: car.image }} style={styles.listingThumb} resizeMode="cover" />
+      <Image source={{ uri: car.image }} style={styles.listingThumb} resizeMode="contain" />
       <View style={styles.listingBody}>
         <Text style={styles.listingTitle} numberOfLines={2}>{car.title}</Text>
         <View style={styles.listingMeta}>

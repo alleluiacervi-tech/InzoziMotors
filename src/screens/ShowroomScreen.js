@@ -56,7 +56,7 @@ export default function ShowroomScreen({ navigation, route }) {
                 { car: item }
               )}
             >
-              <Image source={{ uri: item.image }} style={styles.photo} resizeMode="cover" />
+              <Image source={{ uri: item.image }} style={styles.photo} resizeMode="contain" />
             </Pressable>
           </View>
         )}

@@ -49,7 +49,7 @@ export default function MyRentalsScreen({ navigation }) {
           return (
             <View key={b.id} style={styles.card}>
               <View style={styles.cardTop}>
-                <Image source={{ uri: b.carImage }} style={styles.thumb} resizeMode="cover" />
+                <Image source={{ uri: b.carImage }} style={styles.thumb} resizeMode="contain" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.carTitle} numberOfLines={1}>{b.carTitle}</Text>
                   <Text style={styles.meta}>

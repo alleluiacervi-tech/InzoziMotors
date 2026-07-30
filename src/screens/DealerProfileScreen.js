@@ -60,7 +60,7 @@ const DEFAULT_DEALER = {
 function ListingCard({ car, onPress }) {
   return (
     <Pressable style={styles.listingCard} onPress={onPress}>
-      <Image source={{ uri: car.image }} style={styles.listingThumb} resizeMode="cover" />
+      <Image source={{ uri: car.image }} style={styles.listingThumb} resizeMode="contain" />
       {car.inspected && (
         <View style={styles.listingCert}>
           <Ionicons name="shield-checkmark" size={10} color={colors.green} />

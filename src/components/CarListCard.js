@@ -27,7 +27,7 @@ export default function CarListCard({ car, onPress }) {
     <Pressable style={styles.card} onPress={onPress}>
       {/* Photo */}
       <View style={styles.imageWrap}>
-        <Image source={{ uri: car.image }} style={styles.image} resizeMode="cover" />
+        <Image source={{ uri: car.image }} style={styles.image} resizeMode="contain" />
         {tier && (
           <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
             <Ionicons name="shield-checkmark" size={9} color="#fff" />

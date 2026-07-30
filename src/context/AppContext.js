@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { DEFAULT_CAR_IMAGE, DEFAULT_CAR_IMAGES, STUDIO } from '../data/carImageAssets';
 import { categories, formatPrice, formatMiles, cars as mockCars, conversations as initialConversations, sellerListings as initialSellerListings } from '../data/cars';
 import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
 import { RENTAL_CARS } from '../data/rentals';
@@ -44,7 +45,7 @@ const INITIAL_SUBMISSIONS = [
     id: 'sub1', carTitle: '2020 Toyota RAV4 XLE AWD',
     make: 'Toyota', model: 'RAV4', year: 2020, mileage: 34100, askingPrice: 26000,
     submittedDate: 'Jun 25, 2026', status: 'live',
-    image: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
+    image: STUDIO.suvSideStudio,
     inspectionDate: null, center: 'Nyarutarama', listingId: '3',
     statusDetail: 'Listed 3 days ago · 47 views',
   },
@@ -52,7 +53,7 @@ const INITIAL_SUBMISSIONS = [
     id: 'sub2', carTitle: '2019 Honda Civic Sport',
     make: 'Honda', model: 'Civic', year: 2019, mileage: 41000, askingPrice: 18500,
     submittedDate: 'Jun 27, 2026', status: 'scheduled',
-    image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400&q=80',
+    image: STUDIO.paintWhite,
     inspectionDate: 'Jun 29, 2026 · 10:00 AM', center: 'Kicukiro', listingId: null,
     statusDetail: 'Inspection: Jun 29 · 10:00 AM · Kicukiro Center',
   },
@@ -60,7 +61,7 @@ const INITIAL_SUBMISSIONS = [
     id: 'sub3', carTitle: '2018 Subaru Forester XT',
     make: 'Subaru', model: 'Forester', year: 2018, mileage: 58000, askingPrice: 22000,
     submittedDate: 'Jun 28, 2026', status: 'under_review',
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400&q=80',
+    image: STUDIO.paintSilver,
     inspectionDate: null, center: null, listingId: null,
     statusDetail: 'Book your inspection slot to continue',
   },
@@ -297,8 +298,8 @@ export function AppProvider({ children }) {
       inspectionScore: c.inspection_score,
       returnDays: 7,
       type: 'sale',
-      image: c.images?.[0] || 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
-      images: c.images && c.images.length ? c.images : ['https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80'],
+      image: c.images?.[0] || DEFAULT_CAR_IMAGE,
+      images: c.images && c.images.length ? c.images : DEFAULT_CAR_IMAGES,
       location: c.location || 'Kigali',
       drive_side: c.drive_side || 'RHD',
       // saves_count is the live COUNT from saved_cars; cars.saves is a cached
@@ -338,7 +339,7 @@ export function AppProvider({ children }) {
       askingPrice: sub.asking_price,
       submittedDate: dateStr,
       status: sub.status,
-      image: sub.car_images?.[0] || sub.reference_images?.[0] || 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
+      image: sub.car_images?.[0] || sub.reference_images?.[0] || STUDIO.heroSedan,
       inspectionDate: inspectionWhen || null,
       center,
       listingId: sub.car_id,
@@ -354,7 +355,7 @@ export function AppProvider({ children }) {
         id: h.car_id,
         title: h.car_title,
         price: h.price,
-        image: h.car_images?.[0] || 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
+        image: h.car_images?.[0] || STUDIO.paintBlack,
         seller: h.seller_name,
       },
       status: h.status === 'pending' ? 'reserved' : h.status === 'confirmed' ? 'booked' : h.status === 'complete' ? 'complete' : 'cancelled',
@@ -908,7 +909,7 @@ export function AppProvider({ children }) {
         inspectionDate: null,
         center: null,
         listingId: null,
-        image: data.image || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&q=80',
+        image: data.image || STUDIO.suvSideStudio,
       };
       setSubmissions((prev) => [localSub, ...prev]);
       setNotifications((prev) => [{
