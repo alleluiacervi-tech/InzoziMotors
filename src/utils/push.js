@@ -51,7 +51,7 @@ export async function registerForPush() {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Inzozi Motors',
         importance: Notifications.AndroidImportance.DEFAULT,
-        lightColor: '#DB0632',
+        lightColor: '#C63F3D',
       });
     }
 

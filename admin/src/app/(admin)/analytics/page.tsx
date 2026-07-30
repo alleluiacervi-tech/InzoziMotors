@@ -30,7 +30,7 @@ function HBar({ label, value, max, detail }: { label: string; value: number; max
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-surface-alt">
         <div
-          className="h-full rounded-full bg-brand"
+          className="h-full rounded-full bg-gray-500"
           style={{ width: `${Math.max(3, Math.round((value / Math.max(max, 1)) * 100))}%` }}
         />
       </div>

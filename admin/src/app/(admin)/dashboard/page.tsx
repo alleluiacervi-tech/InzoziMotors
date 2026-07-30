@@ -148,10 +148,10 @@ export default function DashboardPage() {
 
       {/* Operational counts — each one is a doorway, not a decoration */}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Live listings" value={s.liveListings} icon="car" tone="success" href="/listings" />
-        <StatCard label="Pending submissions" value={s.pendingSubmissions} icon="document" tone="warning" href="/submissions" sub="awaiting review" />
-        <StatCard label="Pending handovers" value={s.pendingHandovers} icon="key" tone="info" href="/handovers" sub="confirm to record the sale" />
-        <StatCard label="ID queue" value={s.pendingIdVerifications} icon="user" tone="brand" href="/users" sub="sellers waiting" />
+        <StatCard label="Live listings" value={s.liveListings} icon="car" href="/listings" />
+        <StatCard label="Pending submissions" value={s.pendingSubmissions} icon="document" href="/submissions" sub="awaiting review" />
+        <StatCard label="Pending handovers" value={s.pendingHandovers} icon="key" href="/handovers" sub="confirm to record the sale" />
+        <StatCard label="ID queue" value={s.pendingIdVerifications} icon="user" href="/users" sub="sellers waiting" />
       </div>
 
       {/* Charts */}
@@ -192,7 +192,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-surface-alt">
                     <div
-                      className="h-full rounded-full bg-brand"
+                      className="h-full rounded-full bg-gray-500"
                       style={{ width: `${Math.max(4, Math.round((f.value / funnelMax) * 100))}%` }}
                     />
                   </div>

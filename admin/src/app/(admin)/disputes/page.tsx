@@ -5,8 +5,8 @@ import { api } from '@/lib/api'
 import { Icon } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
-  open:     'bg-red-100 text-red-700',
-  resolved: 'bg-green-100 text-green-700',
+  open:     'bg-warning-tint text-warning-text',
+  resolved: 'bg-success-tint text-success',
   rejected: 'bg-gray-100 text-gray-600',
 }
 

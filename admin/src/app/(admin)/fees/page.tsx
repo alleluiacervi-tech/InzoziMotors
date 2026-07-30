@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { fmtUSD, fmtRWF } from '@/components/ui'
 
+// Fee types are categories, not statuses — they don't earn a hue each.
 const TYPE_COLORS: Record<string, string> = {
-  commission:    'bg-purple-100 text-purple-700',
-  certification: 'bg-blue-100 text-blue-700',
-  featured:      'bg-amber-100 text-amber-700',
+  commission:    'bg-gray-100 text-gray-600',
+  certification: 'bg-gray-100 text-gray-600',
+  featured:      'bg-gray-100 text-gray-600',
 }
 
 interface Fee {
@@ -120,7 +121,7 @@ export default function FeesPage() {
                         <button
                           onClick={() => setStatus(f.id, 'paid')}
                           disabled={actionId === f.id}
-                          className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50"
+                          className="px-2 py-1 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                         >
                           Mark Paid
                         </button>

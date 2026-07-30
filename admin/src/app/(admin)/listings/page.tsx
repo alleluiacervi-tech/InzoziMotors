@@ -7,12 +7,12 @@ import { fmtUSD, Icon } from '@/components/ui'
 
 const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
-  live:         'bg-green-100 text-green-700',
+  live:         'bg-success-tint text-success',
   reserved:     'bg-purple-100 text-purple-700',
   sold:         'bg-gray-100 text-gray-600',
-  under_review: 'bg-amber-100 text-amber-700',
-  scheduled:    'bg-indigo-100 text-indigo-700',
-  inspecting:   'bg-blue-100 text-blue-700',
+  under_review: 'bg-warning-tint text-warning-text',
+  scheduled:    'bg-info-tint text-info',
+  inspecting:   'bg-info-tint text-info',
 }
 
 export default function ListingsPage() {
@@ -138,7 +138,7 @@ export default function ListingsPage() {
                   {car.status !== 'sold' && (
                     <Link
                       href={`/listings/${car.id}/photos`}
-                      className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                     >
                       Photos ({car.images?.length || 0})
                     </Link>
@@ -147,7 +147,7 @@ export default function ListingsPage() {
                     <button
                       onClick={() => feature(car.id)}
                       disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50"
+                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                       Feature
                     </button>
@@ -165,7 +165,7 @@ export default function ListingsPage() {
                     <button
                       onClick={() => updateStatus(car.id, 'live')}
                       disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 disabled:opacity-50"
+                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                       Un-reserve
                     </button>

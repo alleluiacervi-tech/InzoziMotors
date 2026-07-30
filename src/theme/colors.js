@@ -8,21 +8,21 @@ export const colors = {
   navyMid: '#281F1C',
   navyLight: '#3A2D29',
 
-  // Brand Red — Encar crimson (#DB0632, sampled from encar.com's own mark).
+  // Brand Red — Inzozi brick red #C63F3D (canonical brand primary).
   // DISCIPLINE: red appears ONLY as (1) a price, (2) a primary action,
   // (3) a selected/active state, (4) the Certified+ tier badge, or
   // (5) an inline action link. Informational icons, section decorations
   // and menu rows are textSecondary — never red.
-  primary: '#DB0632',
-  primaryBright: '#F02050',
-  blueLight: '#F97C9B',
+  primary: '#C63F3D',
+  primaryBright: '#D75553',
+  blueLight: '#E89290',
   blueTint: '#F3F2F2',
 
   // Badge Colors
-  jeondan: '#DB0632',
+  jeondan: '#C63F3D',
   jeondanPlus: '#1D4ED8',
   jeondanPlusPlus: '#D97706',
-  contract: '#A80526',
+  contract: '#9E3230',
   alert: '#D97706',
 
   // Semantic — true success green (pass / verified / online / savings).

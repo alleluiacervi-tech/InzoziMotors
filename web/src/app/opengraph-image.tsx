@@ -18,7 +18,7 @@ export const alt = `${SITE.name} — ${SITE.tagline}`
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-const BRAND = '#DB0632'
+const BRAND = '#C63F3D'
 const FIELD = '#F2F0EF'
 const INK = '#1B1313'
 const SECONDARY = '#423737'

@@ -5,10 +5,10 @@ import { api } from '@/lib/api'
 import { fmtUSD } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
-  upcoming:  'bg-blue-100 text-blue-700',
-  active:    'bg-green-100 text-green-700',
+  upcoming:  'bg-info-tint text-info',
+  active:    'bg-success-tint text-success',
   completed: 'bg-gray-100 text-gray-600',
-  cancelled: 'bg-red-100 text-red-700',
+  cancelled: 'bg-gray-100 text-gray-500',
 }
 
 interface RentalBooking {
@@ -123,7 +123,7 @@ export default function RentalsPage() {
                             <button
                               onClick={() => transition(b.id, 'active', 'Check the renter in? The booking becomes ACTIVE.')}
                               disabled={actionId === b.id}
-                              className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50"
+                              className="px-2 py-1 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                             >
                               Check In
                             </button>

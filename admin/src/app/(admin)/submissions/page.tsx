@@ -7,11 +7,11 @@ import { fmtUSD } from '@/components/ui'
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:      'bg-amber-100 text-amber-700',
-  under_review: 'bg-blue-100 text-blue-700',
-  scheduled:    'bg-indigo-100 text-indigo-700',
-  inspecting:   'bg-purple-100 text-purple-700',
-  rejected:     'bg-red-100 text-red-700',
+  pending:      'bg-warning-tint text-warning-text',
+  under_review: 'bg-warning-tint text-warning-text',
+  scheduled:    'bg-info-tint text-info',
+  inspecting:   'bg-info-tint text-info',
+  rejected:     'bg-danger-tint text-danger-strong',
 }
 
 export default function SubmissionsPage() {
@@ -113,7 +113,7 @@ export default function SubmissionsPage() {
                     <button
                       onClick={() => updateStatus(sub.id, 'under_review')}
                       disabled={actionId === sub.id}
-                      className="px-3 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                     >
                       Mark Under Review
                     </button>
@@ -146,7 +146,7 @@ export default function SubmissionsPage() {
                   <button
                     onClick={() => updateStatus(sub.id, 'inspecting')}
                     disabled={actionId === sub.id}
-                    className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                   >
                     Mark Inspecting
                   </button>
