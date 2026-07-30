@@ -232,7 +232,7 @@ export default function SellerProfileScreen({ navigation, route }) {
                       /* navigate to car detail */
                     }}
                   >
-                    <Image source={{ uri: listing.image }} style={styles.listingImage} resizeMode="cover" />
+                    <Image source={{ uri: listing.image }} style={styles.listingImage} resizeMode="contain" />
                     <Text style={styles.listingTitle} numberOfLines={2}>{listing.title}</Text>
                     <Text style={styles.listingPrice}>{listing.price}</Text>
                     <View style={styles.listingBadge}>

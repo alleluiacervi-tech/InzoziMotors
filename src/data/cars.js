@@ -1,3 +1,4 @@
+import { demoSet, STUDIO } from './carImageAssets';
 // Mock vehicle data for the Inzozi Motors frontend.
 // Images use Unsplash source URLs so the UI renders without bundled assets.
 
@@ -23,12 +24,8 @@ const rawCars = [
     inspectionScore: 148,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
-      'https://images.unsplash.com/photo-1617704548623-340376564e68?w=800&q=80',
-      'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80',
-    ],
+    image: demoSet('EV', 0)[0],
+    images: demoSet('EV', 0),
     location: 'San Francisco, CA',
   },
   {
@@ -52,11 +49,8 @@ const rawCars = [
     bids: 12,
     reserveMet: true,
     timeLeft: '1d 4h',
-    image: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80',
-      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80',
-    ],
+    image: demoSet('Sedan', 0)[0],
+    images: demoSet('Sedan', 0),
     location: 'Oakland, CA',
   },
   {
@@ -78,8 +72,8 @@ const rawCars = [
     inspectionScore: 145,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=800&q=80'],
+    image: demoSet('SUV', 0)[0],
+    images: demoSet('SUV', 0),
     location: 'Berkeley, CA',
   },
   {
@@ -100,8 +94,8 @@ const rawCars = [
     inspectionScore: 124,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1603598154505-0192e5365a35?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1603598154505-0192e5365a35?w=800&q=80'],
+    image: demoSet('Truck', 0)[0],
+    images: demoSet('Truck', 0),
     location: 'San Jose, CA',
   },
   {
@@ -122,8 +116,8 @@ const rawCars = [
     inspectionScore: 141,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1633867449547-93e8d4e2a9b1?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1633867449547-93e8d4e2a9b1?w=800&q=80'],
+    image: demoSet('EV', 1)[0],
+    images: demoSet('EV', 1),
     location: 'Palo Alto, CA',
   },
   {
@@ -147,8 +141,8 @@ const rawCars = [
     bids: 8,
     reserveMet: false,
     timeLeft: '11h',
-    image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80'],
+    image: demoSet('SUV', 1)[0],
+    images: demoSet('SUV', 1),
     location: 'San Francisco, CA',
   },
   {
@@ -169,8 +163,8 @@ const rawCars = [
     inspectionScore: 136,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&q=80'],
+    image: demoSet('EV', 2)[0],
+    images: demoSet('EV', 2),
     location: 'San Francisco, CA',
   },
   {
@@ -192,8 +186,8 @@ const rawCars = [
     inspectionScore: 149,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80'],
+    image: demoSet('Sedan', 1)[0],
+    images: demoSet('Sedan', 1),
     location: 'Oakland, CA',
   },
   {
@@ -217,8 +211,8 @@ const rawCars = [
     bids: 5,
     reserveMet: false,
     timeLeft: '1d 2h',
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'],
+    image: demoSet('SUV', 2)[0],
+    images: demoSet('SUV', 2),
     location: 'Oakland, CA',
   },
   {
@@ -239,8 +233,8 @@ const rawCars = [
     inspectionScore: 143,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80'],
+    image: demoSet('Truck', 1)[0],
+    images: demoSet('Truck', 1),
     location: 'San Jose, CA',
   },
   {
@@ -262,8 +256,8 @@ const rawCars = [
     inspectionScore: 121,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80'],
+    image: demoSet('EV', 3)[0],
+    images: demoSet('EV', 3),
     location: 'Palo Alto, CA',
   },
   {
@@ -287,8 +281,8 @@ const rawCars = [
     bids: 9,
     reserveMet: true,
     timeLeft: '4h 30m',
-    image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80'],
+    image: demoSet('Sedan', 2)[0],
+    images: demoSet('Sedan', 2),
     location: 'Palo Alto, CA',
   },
   {
@@ -309,8 +303,8 @@ const rawCars = [
     inspectionScore: 146,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80'],
+    image: demoSet('Coupe', 0)[0],
+    images: demoSet('Coupe', 0),
     location: 'San Francisco, CA',
   },
   {
@@ -335,8 +329,8 @@ const rawCars = [
     bids: 14,
     reserveMet: true,
     timeLeft: '8h 15m',
-    image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80'],
+    image: demoSet('Coupe', 1)[0],
+    images: demoSet('Coupe', 1),
     location: 'San Jose, CA',
   },
   {
@@ -357,8 +351,8 @@ const rawCars = [
     inspectionScore: 133,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&q=80'],
+    image: demoSet('Hatchback', 0)[0],
+    images: demoSet('Hatchback', 0),
     location: 'Oakland, CA',
   },
   {
@@ -380,8 +374,8 @@ const rawCars = [
     inspectionScore: 144,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80'],
+    image: demoSet('Hatchback', 1)[0],
+    images: demoSet('Hatchback', 1),
     location: 'San Jose, CA',
   },
   {
@@ -402,8 +396,8 @@ const rawCars = [
     inspectionScore: 122,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80'],
+    image: demoSet('Supercar', 0)[0],
+    images: demoSet('Supercar', 0),
     location: 'Palo Alto, CA',
   },
   {
@@ -427,8 +421,8 @@ const rawCars = [
     bids: 18,
     reserveMet: false,
     timeLeft: '1d 5h',
-    image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80'],
+    image: demoSet('Supercar', 1)[0],
+    images: demoSet('Supercar', 1),
     location: 'San Francisco, CA',
   },
   {
@@ -449,8 +443,8 @@ const rawCars = [
     inspectionScore: 131,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80'],
+    image: demoSet('SUV', 3)[0],
+    images: demoSet('SUV', 3),
     location: 'San Jose, CA',
   },
   {
@@ -471,8 +465,8 @@ const rawCars = [
     inspectionScore: 147,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80'],
+    image: demoSet('SUV', 4)[0],
+    images: demoSet('SUV', 4),
     location: 'San Jose, CA',
   },
   {
@@ -494,8 +488,8 @@ const rawCars = [
     inspectionScore: 125,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80'],
+    image: demoSet('Sedan', 3)[0],
+    images: demoSet('Sedan', 3),
     location: 'San Jose, CA',
   },
   {
@@ -519,8 +513,8 @@ const rawCars = [
     bids: 11,
     reserveMet: true,
     timeLeft: '16h 20m',
-    image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80'],
+    image: demoSet('Sedan', 4)[0],
+    images: demoSet('Sedan', 4),
     location: 'San Francisco, CA',
   },
   {
@@ -541,8 +535,8 @@ const rawCars = [
     inspectionScore: 142,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80'],
+    image: demoSet('EV', 4)[0],
+    images: demoSet('EV', 4),
     location: 'Palo Alto, CA',
   },
   {
@@ -564,8 +558,8 @@ const rawCars = [
     inspectionScore: 128,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&q=80'],
+    image: demoSet('EV', 5)[0],
+    images: demoSet('EV', 5),
     location: 'San Jose, CA',
   },
   {
@@ -586,122 +580,39 @@ const rawCars = [
     inspectionScore: 135,
     returnDays: 7,
     type: 'sale',
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'],
+    image: demoSet('Truck', 2)[0],
+    images: demoSet('Truck', 2),
     location: 'Berkeley, CA',
   },
 ];
 
+// Gallery = the same studio set as the card hero, so detail matches list.
 const VEHICLE_IMAGES = {
-  '1': [
-    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',
-    'https://images.unsplash.com/photo-1617704548623-340376564e68?w=800&q=80',
-    'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
-    'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80'
-  ],
-  '2': [
-    'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80',
-    'https://images.unsplash.com/photo-1556800572-1b8aeef2c54f?w=800&q=80',
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
-  ],
-  '3': [
-    'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=800&q=80',
-    'https://images.unsplash.com/photo-1621007947382-cc34aa8668c2?w=800&q=80',
-    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80'
-  ],
-  '4': [
-    'https://images.unsplash.com/photo-1603598154505-0192e5365a35?w=800&q=80',
-    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80',
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
-  ],
-  '5': [
-    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',
-    'https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=800&q=80',
-    'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80'
-  ],
-  '6': [
-    'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80',
-    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
-  ],
-  '7': [
-    'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&q=80',
-    'https://images.unsplash.com/photo-1611245801313-0570b795276e?w=800&q=80',
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
-  ],
-  '8': [
-    'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
-    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80',
-    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80'
-  ],
-  '9': [
-    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80',
-    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80'
-  ],
-  '10': [
-    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80',
-    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
-  ],
-  '11': [
-    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',
-    'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80'
-  ],
-  '12': [
-    'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80',
-    'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80'
-  ],
-  '13': [
-    'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80',
-    'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80',
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
-  ],
-  '14': [
-    'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80',
-    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80'
-  ],
-  '15': [
-    'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&q=80',
-    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80'
-  ],
-  '16': [
-    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80',
-    'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&q=80'
-  ],
-  '17': [
-    'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80',
-    'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80'
-  ],
-  '18': [
-    'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80',
-    'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80'
-  ],
-  '19': [
-    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80',
-    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
-  ],
-  '20': [
-    'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80',
-    'https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=800&q=80'
-  ],
-  '21': [
-    'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
-    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80'
-  ],
-  '22': [
-    'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
-    'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=800&q=80'
-  ],
-  '23': [
-    'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80',
-    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80'
-  ],
-  '24': [
-    'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&q=80',
-    'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80'
-  ],
-  '25': [
-    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
-    'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80'
-  ]
+  '1': demoSet('EV', 0),
+  '2': demoSet('Sedan', 0),
+  '3': demoSet('SUV', 0),
+  '4': demoSet('Truck', 0),
+  '5': demoSet('EV', 1),
+  '6': demoSet('SUV', 1),
+  '7': demoSet('EV', 2),
+  '8': demoSet('Sedan', 1),
+  '9': demoSet('SUV', 2),
+  '10': demoSet('Truck', 1),
+  '11': demoSet('EV', 3),
+  '12': demoSet('Sedan', 2),
+  '13': demoSet('Coupe', 0),
+  '14': demoSet('Coupe', 1),
+  '15': demoSet('Hatchback', 0),
+  '16': demoSet('Hatchback', 1),
+  '17': demoSet('Supercar', 0),
+  '18': demoSet('Supercar', 1),
+  '19': demoSet('SUV', 3),
+  '20': demoSet('SUV', 4),
+  '21': demoSet('Sedan', 3),
+  '22': demoSet('Sedan', 4),
+  '23': demoSet('EV', 4),
+  '24': demoSet('EV', 5),
+  '25': demoSet('Truck', 2),
 };
 
 const KIGALI_LOCATIONS = [
@@ -739,33 +650,33 @@ const enrichedCars = rawCars.map((car, idx) => {
   if (list.length <= 1) {
     if (car.category === 'EV') {
       list.push(
-        'https://images.unsplash.com/photo-1563720223185-11003d516935?w=800&q=80',
-        'https://images.unsplash.com/photo-1554744512-d6c603f27c54?w=800&q=80',
-        'https://images.unsplash.com/photo-1617704548623-340376564e68?w=800&q=80'
+        STUDIO.paintSilver,
+        STUDIO.heroSedan,
+        STUDIO.suvSideStudio
       );
     } else if (car.category === 'SUV') {
       list.push(
-        'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
-        'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80',
-        'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80'
+        STUDIO.paintWhite,
+        STUDIO.paintSilver,
+        STUDIO.heroSedan
       );
     } else if (car.category === 'Truck') {
       list.push(
-        'https://images.unsplash.com/photo-1533557838117-7cc82763de40?w=800&q=80',
-        'https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80',
-        'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80'
+        STUDIO.suvSideStudio,
+        STUDIO.paintWhite,
+        STUDIO.paintSilver
       );
     } else if (car.category === 'Supercar' || car.category === 'Coupe') {
       list.push(
-        'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800&q=80',
-        'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80',
-        'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?w=800&q=80'
+        STUDIO.heroSedan,
+        STUDIO.suvSideStudio,
+        STUDIO.paintWhite
       );
     } else { // Sedan / Hatchback
       list.push(
-        'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80',
-        'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80',
-        'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?w=800&q=80'
+        STUDIO.paintSilver,
+        STUDIO.heroSedan,
+        STUDIO.suvSideStudio
       );
     }
   }
@@ -789,7 +700,7 @@ export const sellerListings = [
     bids: 12,
     timeLeft: '1d 4h left',
     status: 'live',
-    image: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=400&q=80',
+    image: STUDIO.paintWhite,
   },
   {
     id: 's2',
@@ -799,7 +710,7 @@ export const sellerListings = [
     bids: 7,
     timeLeft: '11h left',
     status: 'live',
-    image: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=400&q=80',
+    image: STUDIO.paintSilver,
   },
 ];
 

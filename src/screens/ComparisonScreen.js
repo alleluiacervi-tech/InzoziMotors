@@ -37,7 +37,7 @@ function CarColumn({ car, onRemove, style }) {
       <Pressable style={styles.removeChip} onPress={onRemove}>
         <Ionicons name="close" size={14} color={colors.textMuted} />
       </Pressable>
-      <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="cover" />
+      <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="contain" />
       <Text style={styles.carTitle} numberOfLines={2}>{car.title}</Text>
       {car.inspected && (
         <View style={styles.certPill}>

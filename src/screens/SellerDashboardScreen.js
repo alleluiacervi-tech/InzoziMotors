@@ -194,7 +194,7 @@ export default function SellerDashboardScreen({ navigation }) {
             <View key={sub.id} style={styles.subCard}>
               {/* Card Header */}
               <View style={styles.subCardTop}>
-                <Image source={{ uri: sub.image }} style={styles.subThumb} resizeMode="cover" />
+                <Image source={{ uri: sub.image }} style={styles.subThumb} resizeMode="contain" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.subTitle}>{sub.carTitle}</Text>
                   <Text style={styles.subDate}>Submitted {sub.submittedDate}</Text>

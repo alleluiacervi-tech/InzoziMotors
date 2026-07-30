@@ -210,7 +210,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
         {/* Car summary */}
         {car && (
           <View style={styles.carCard}>
-            <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="cover" />
+            <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="contain" />
             <View style={{ flex: 1 }}>
               <Text style={styles.carTitle} numberOfLines={2}>{car.title}</Text>
               <Text style={styles.carSeller}>{car.seller}</Text>

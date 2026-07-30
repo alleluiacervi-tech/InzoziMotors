@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { STUDIO } from '../data/carImageAssets';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
   FlatList, Dimensions, ImageBackground, Image,
@@ -22,21 +23,21 @@ const BANNER_SLIDES = [
     brand: 'Inzozi Certified',
     tagline: 'Every car inspected before listing. No exceptions.',
     tag: 'Trust',
-    image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=800&q=80',
+    image: STUDIO.heroSedan,
   },
   {
     id: 2,
     brand: '150-Point Check',
     tagline: 'Certified mechanics. Full report before you buy.',
     tag: 'Inspection',
-    image: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=800&q=80',
+    image: STUDIO.heroSuv,
   },
   {
     id: 3,
     brand: 'Certify Your Car',
     tagline: 'Submit for our 150-point inspection. We list it for you.',
     tag: 'Sell',
-    image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80',
+    image: STUDIO.heroGt,
   },
 ];
 
@@ -313,7 +314,7 @@ export default function HomeScreen({ navigation }) {
                 key={slide.id}
                 source={{ uri: slide.image }}
                 style={styles.carouselSlide}
-                resizeMode="cover"
+                resizeMode="contain"
               >
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.72)']}
@@ -381,7 +382,7 @@ export default function HomeScreen({ navigation }) {
                   cars: item.cars,
                 })}
               >
-                <Image source={{ uri: item.cars[0].image }} style={styles.showroomPhoto} resizeMode="cover" />
+                <Image source={{ uri: item.cars[0].image }} style={styles.showroomPhoto} resizeMode="contain" />
                 <LinearGradient
                   colors={['transparent', 'rgba(12,10,10,0.88)']}
                   style={styles.showroomFade}

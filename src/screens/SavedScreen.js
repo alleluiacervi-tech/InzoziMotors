@@ -17,7 +17,7 @@ function SavedCarRow({ car, onPress, onRemove }) {
 
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <Image source={{ uri: car.image }} style={styles.thumb} resizeMode="cover" />
+      <Image source={{ uri: car.image }} style={styles.thumb} resizeMode="contain" />
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle} numberOfLines={2}>{car.title}</Text>
         <View style={styles.rowMeta}>

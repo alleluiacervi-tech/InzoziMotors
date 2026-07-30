@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { STUDIO } from '../data/carImageAssets';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Image,
   TextInput, KeyboardAvoidingView, Platform
@@ -150,7 +151,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
         color: form.color,
         sellerNotes: form.sellerNotes,
         photos,
-        image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&q=80',
+        image: STUDIO.paintWhite,
       });
       showConfirm({
         title: 'Submission received',

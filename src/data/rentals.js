@@ -1,3 +1,4 @@
+import { STUDIO } from './carImageAssets';
 // Mock rental fleet — separate inventory from sale listings.
 // Every rental car is Inzozi-certified (same 150-point inspection as sale cars).
 
@@ -24,10 +25,10 @@ export const RENTAL_CARS = [
     trips: 42,
     location: 'Nyarutarama, Kigali',
     unavailableDays: [2, 3, 9],
-    image: 'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=800&q=80',
+    image: STUDIO.suvSideStudio,
     images: [
-      'https://images.unsplash.com/photo-1568844293986-8d0400bd4745?w=800&q=80',
-      'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80',
+      STUDIO.paintWhite,
+      STUDIO.suvSide04,
     ],
     seller: 'Inzozi Fleet',
   },
@@ -54,10 +55,10 @@ export const RENTAL_CARS = [
     trips: 67,
     location: 'Kimihurura, Kigali',
     unavailableDays: [0, 1, 6, 7],
-    image: 'https://images.unsplash.com/photo-1594502184342-2e12f877aa73?w=800&q=80',
+    image: STUDIO.paintSilver,
     images: [
-      'https://images.unsplash.com/photo-1594502184342-2e12f877aa73?w=800&q=80',
-      'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&q=80',
+      STUDIO.heroSuv,
+      STUDIO.paintGrey,
     ],
     seller: 'Inzozi Fleet',
   },
@@ -83,10 +84,10 @@ export const RENTAL_CARS = [
     trips: 89,
     location: 'Remera, Kigali',
     unavailableDays: [4],
-    image: 'https://images.unsplash.com/photo-1623869675781-80aa31012a5a?w=800&q=80',
+    image: STUDIO.suvSide07,
     images: [
-      'https://images.unsplash.com/photo-1623869675781-80aa31012a5a?w=800&q=80',
-      'https://images.unsplash.com/photo-1590362891991-f776e747a588?w=800&q=80',
+      STUDIO.paintBlue,
+      STUDIO.paintGlossyGrey,
     ],
     seller: 'Inzozi Fleet',
   },
@@ -113,9 +114,9 @@ export const RENTAL_CARS = [
     trips: 38,
     location: 'Kicukiro, Kigali',
     unavailableDays: [5, 6, 12],
-    image: 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&q=80',
+    image: STUDIO.suvSide03,
     images: [
-      'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&q=80',
+      STUDIO.paintSkylight,
     ],
     seller: 'Inzozi Fleet',
   },
@@ -142,9 +143,9 @@ export const RENTAL_CARS = [
     trips: 51,
     location: 'Kanombe, Kigali',
     unavailableDays: [8, 9, 10],
-    image: 'https://images.unsplash.com/photo-1559416523-140ddc3d238c?w=800&q=80',
+    image: STUDIO.paint01,
     images: [
-      'https://images.unsplash.com/photo-1559416523-140ddc3d238c?w=800&q=80',
+      STUDIO.suvSideStudio,
     ],
     seller: 'Inzozi Fleet',
   },
@@ -170,9 +171,9 @@ export const RENTAL_CARS = [
     trips: 24,
     location: 'Nyarutarama, Kigali',
     unavailableDays: [],
-    image: 'https://images.unsplash.com/photo-1633859036120-b41cbfd2bf30?w=800&q=80',
+    image: STUDIO.paintWhite,
     images: [
-      'https://images.unsplash.com/photo-1633859036120-b41cbfd2bf30?w=800&q=80',
+      STUDIO.suvSide04,
     ],
     seller: 'Inzozi Fleet',
   },
@@ -199,9 +200,9 @@ export const RENTAL_CARS = [
     trips: 33,
     location: 'Kiyovu, Kigali',
     unavailableDays: [1, 2],
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
+    image: STUDIO.paintSilver,
     images: [
-      'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&q=80',
+      STUDIO.heroSuv,
     ],
     seller: 'Inzozi Fleet',
   },
@@ -227,9 +228,9 @@ export const RENTAL_CARS = [
     trips: 19,
     location: 'Kimihurura, Kigali',
     unavailableDays: [11, 12, 13],
-    image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80',
+    image: STUDIO.paintGrey,
     images: [
-      'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&q=80',
+      STUDIO.suvSide07,
     ],
     seller: 'Inzozi Fleet',
   },

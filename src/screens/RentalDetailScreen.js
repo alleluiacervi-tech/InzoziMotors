@@ -48,7 +48,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           >
             {imageList.map((img, index) => (
               <Pressable key={index} onPress={() => setViewerIdx(index)}>
-                <Image source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
+                <Image source={{ uri: img }} style={styles.heroImage} resizeMode="contain" />
               </Pressable>
             ))}
           </ScrollView>

@@ -33,7 +33,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
   return (
     <Pressable style={[styles.card, shadows.card]} onPress={onPress}>
       <View style={styles.imageWrap}>
-        <Image source={{ uri: car.image }} style={styles.image} resizeMode="cover" />
+        <Image source={{ uri: car.image }} style={styles.image} resizeMode="contain" />
 
         {!hideOverlay && (
           <>
