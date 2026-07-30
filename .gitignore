@@ -18,3 +18,4 @@ play-service-account.json
 *.keystore
 backend/uploads/*
 !backend/uploads/seed/
+.logs/

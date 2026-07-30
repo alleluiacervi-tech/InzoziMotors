@@ -1,9 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { LogoMark } from '@/components/Logo'
+
+function storeSession(token: string) {
+  localStorage.setItem('inzozi_admin_token', token)
+  // Also set cookie so SSR middleware can read it
+  document.cookie = `inzozi_admin_token=${token}; path=/; max-age=604800`
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -11,6 +17,29 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+
+  // Hand-off from the public website: an admin signed in through the normal
+  // navbar arrives here with the JWT in the URL fragment (never sent to any
+  // server). Validate it against the API before trusting it, then sign in.
+  useEffect(() => {
+    const match = window.location.hash.match(/token=([^&]+)/)
+    if (!match) return
+    const token = decodeURIComponent(match[1])
+    history.replaceState(null, '', window.location.pathname)
+    setLoading(true)
+    localStorage.setItem('inzozi_admin_token', token)
+    api.me()
+      .then((user) => {
+        if (user.role !== 'admin') throw new Error('Admin access only.')
+        storeSession(token)
+        router.replace('/dashboard')
+      })
+      .catch((err: any) => {
+        localStorage.removeItem('inzozi_admin_token')
+        setError(err.message || 'Sign-in link expired — please sign in below.')
+        setLoading(false)
+      })
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -23,9 +52,7 @@ export default function LoginPage() {
         setLoading(false)
         return
       }
-      localStorage.setItem('inzozi_admin_token', token)
-      // Also set cookie so SSR middleware can read it
-      document.cookie = `inzozi_admin_token=${token}; path=/; max-age=604800`
+      storeSession(token)
       router.replace('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Login failed')

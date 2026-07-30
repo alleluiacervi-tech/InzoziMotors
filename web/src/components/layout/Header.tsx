@@ -95,6 +95,18 @@ export function Header({ user }: { user: User | null }) {
             <Icon name="search" size={20} />
           </Link>
 
+          {user?.role === 'admin' ? (
+            <Button
+              href="/admin-portal"
+              prefetch={false}
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex"
+            >
+              Admin
+            </Button>
+          ) : null}
+
           {user ? (
             <Button href="/dashboard" variant="secondary" size="sm" className="hidden sm:inline-flex">
               <Icon name="user" size={16} />
@@ -157,6 +169,11 @@ export function Header({ user }: { user: User | null }) {
             </ul>
 
             <div className="mt-6 space-y-3 border-t border-line-soft pt-6">
+              {user?.role === 'admin' ? (
+                <Button href="/admin-portal" prefetch={false} variant="secondary" fullWidth>
+                  Admin dashboard
+                </Button>
+              ) : null}
               {user ? (
                 <Button href="/dashboard" variant="outline" fullWidth leadingIcon={<Icon name="user" size={18} />}>
                   My dashboard
