@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { fmtUSD } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
   upcoming:  'bg-blue-100 text-blue-700',
@@ -91,7 +92,7 @@ export default function RentalsPage() {
                 <th className="px-4 py-3 font-medium">Renter</th>
                 <th className="px-4 py-3 font-medium">Start</th>
                 <th className="px-4 py-3 font-medium">Center</th>
-                <th className="px-4 py-3 font-medium text-right">Total (RWF)</th>
+                <th className="px-4 py-3 font-medium text-right">Total (USD)</th>
                 {(tab === 'upcoming' || tab === 'active') && (
                   <th className="px-4 py-3 font-medium text-right">Actions</th>
                 )}
@@ -112,7 +113,7 @@ export default function RentalsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">{b.center || '—'}</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">
-                    {Number(b.total).toLocaleString()}
+                    {fmtUSD(b.total)}
                   </td>
                   {(tab === 'upcoming' || tab === 'active') && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">

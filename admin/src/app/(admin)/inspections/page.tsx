@@ -110,7 +110,7 @@ export default function InspectionsPage() {
               )}
               {insp.status === 'complete' && (
                 insp.car_id ? (
-                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">✅ Live Listing</span>
+                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">Live Listing</span>
                 ) : (
                   <Link
                     href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}

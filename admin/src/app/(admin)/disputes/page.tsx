@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
   open:     'bg-red-100 text-red-700',
@@ -104,7 +105,7 @@ export default function DisputesPage() {
           counts.open > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100 shadow-sm'
         }`}
       >
-        <span className="text-2xl">{counts.open > 0 ? '⚠️' : '✅'}</span>
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${counts.open > 0 ? 'bg-red-100 text-red-700' : 'bg-green-50 text-green-700'}`}><Icon name={counts.open > 0 ? 'alert' : 'check'} size={20} /></span>
         <div>
           <p className={`text-2xl font-bold ${counts.open > 0 ? 'text-red-700' : 'text-gray-900'}`}>
             {counts.open}

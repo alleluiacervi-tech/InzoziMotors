@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/ui'
 
 // Pre-defined Encar photography slots (26 required shots)
 const PHOTO_GUIDE_SLOTS = [
@@ -163,7 +164,7 @@ export default function CarPhotosPage() {
               onChange={handleFileChange}
               className="hidden"
             />
-            <span className="text-4xl mb-3">📸</span>
+            <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500"><Icon name="camera" size={24} /></span>
             <p className="text-sm font-semibold text-gray-800">Drag and drop photos here</p>
             <p className="text-xs text-gray-500 mt-1">or click to browse from files (Max 40 files, JPEG/PNG/WebP)</p>
             

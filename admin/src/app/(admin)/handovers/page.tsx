@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { fmtUSD, fmtRWF } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
   pending:   'bg-purple-100 text-purple-700',
@@ -110,10 +111,10 @@ export default function HandoversPage() {
                     </div>
                   </div>
                   <div className="mt-3 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-                    <p>📍 <strong>{h.center || 'Slot not arranged yet'}</strong></p>
-                    <p>📅 {h.handover_date ? `${h.handover_date}${h.handover_time ? ` at ${h.handover_time}` : ''}` : 'Coordinate via buyer phone below'}</p>
-                    {h.contact_phone && <p>📞 {h.contact_phone}</p>}
-                    <p className="mt-1 font-medium text-brand">RWF {Number(h.agreed_price || 0).toLocaleString()}</p>
+                    <p><strong>{h.center || 'Slot not arranged yet'}</strong></p>
+                    <p>{h.handover_date ? `${h.handover_date}${h.handover_time ? ` at ${h.handover_time}` : ''}` : 'Coordinate via buyer phone below'}</p>
+                    {h.contact_phone && <p>Contact: {h.contact_phone}</p>}
+                    <p className="mt-1 font-medium text-brand">{fmtUSD(h.agreed_price || 0)} <span className="font-normal text-gray-400">≈ {fmtRWF(h.agreed_price || 0)}</span></p>
                   </div>
                 </div>
               </div>
@@ -125,7 +126,7 @@ export default function HandoversPage() {
                     disabled={actionId === h.id}
                     className="flex-1 py-2.5 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-light transition-colors disabled:opacity-50"
                   >
-                    {actionId === h.id ? 'Working…' : '✅ Confirm Arrangement'}
+                    {actionId === h.id ? 'Working…' : 'Confirm Arrangement'}
                   </button>
                   <button
                     onClick={() => complete(h.id)}
@@ -142,12 +143,12 @@ export default function HandoversPage() {
                   disabled={actionId === h.id}
                   className="mt-4 w-full py-2.5 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-light transition-colors disabled:opacity-50"
                 >
-                  {actionId === h.id ? 'Working…' : '🤝 Handover Done — Mark Sold'}
+                  {actionId === h.id ? 'Working…' : 'Handover Done — Mark Sold'}
                 </button>
               )}
               {tab === 'complete' && (
                 <div className="mt-4 flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-                  <span>✅ Completed — car sold{h.booking_id ? ` · Ref ${h.booking_id}` : ''}</span>
+                  <span>Completed — car sold{h.booking_id ? ` · Ref ${h.booking_id}` : ''}</span>
                   {h.confirmed_at && (
                     <span>Confirmed {new Date(h.confirmed_at).toLocaleDateString()}</span>
                   )}

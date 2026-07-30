@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { fmtUSD, fmtRWF } from '@/components/ui'
 
 const TYPE_COLORS: Record<string, string> = {
   commission:    'bg-purple-100 text-purple-700',
@@ -92,7 +93,7 @@ export default function FeesPage() {
                 <th className="px-4 py-3 font-medium">Seller</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Booking</th>
-                <th className="px-4 py-3 font-medium text-right">Amount (RWF)</th>
+                <th className="px-4 py-3 font-medium text-right">Amount (USD)</th>
                 {tab === 'due' && <th className="px-4 py-3 font-medium text-right">Actions</th>}
               </tr>
             </thead>
@@ -111,7 +112,7 @@ export default function FeesPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{f.booking_id || '—'}</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">
-                    {Number(f.amount).toLocaleString()}
+                    {fmtUSD(f.amount)}
                   </td>
                   {tab === 'due' && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -142,7 +143,8 @@ export default function FeesPage() {
                   Total {tab}
                 </td>
                 <td className="px-4 py-3 text-right font-bold text-brand whitespace-nowrap">
-                  RWF {Number(tabTotal).toLocaleString()}
+                  {fmtUSD(tabTotal)}
+                  <span className="ml-1.5 text-[11px] font-medium text-gray-400">≈ {fmtRWF(tabTotal)}</span>
                 </td>
                 {tab === 'due' && <td />}
               </tr>
