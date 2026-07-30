@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { LogoMark } from '@/components/Logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -38,7 +39,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-4">
-            <span className="text-3xl">🚗</span>
+            <LogoMark size={40} />
           </div>
           <h1 className="text-2xl font-bold text-white">Inzozi Motors</h1>
           <p className="text-white/60 text-sm mt-1">Admin Dashboard</p>

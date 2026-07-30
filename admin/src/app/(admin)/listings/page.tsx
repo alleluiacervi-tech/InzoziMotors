@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { fmtUSD, Icon } from '@/components/ui'
 
 const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
@@ -101,9 +102,9 @@ export default function ListingsPage() {
             <div key={car.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               {/* Thumbnail */}
               {car.images?.[0] ? (
-                <img src={car.images[0]} alt={car.model} className="w-full h-36 object-cover" />
+                <img src={car.images[0]} alt={car.model} className="w-full h-36 object-contain bg-gray-100 p-1.5" />
               ) : (
-                <div className="w-full h-36 bg-gray-100 flex items-center justify-center text-4xl">🚗</div>
+                <div className="w-full h-36 bg-gray-100 flex items-center justify-center text-gray-300"><Icon name="car" size={32} /></div>
               )}
 
               <div className="p-4">
@@ -112,7 +113,7 @@ export default function ListingsPage() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {isFeatured(car) && (
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600">
-                        ★ Featured
+                        Featured
                       </span>
                     )}
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[car.status] || 'bg-gray-100 text-gray-600'}`}>
@@ -121,7 +122,7 @@ export default function ListingsPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">{car.mileage?.toLocaleString()} km · {car.location}</p>
-                <p className="text-sm font-bold text-brand mt-1">RWF {Number(car.price).toLocaleString()}</p>
+                <p className="text-sm font-bold text-brand mt-1">{fmtUSD(car.price)}</p>
                 <p className="text-xs text-gray-400">{car.views || 0} views</p>
 
                 {/* Actions */}

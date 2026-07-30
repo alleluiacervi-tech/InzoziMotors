@@ -11,8 +11,12 @@ function ListingCreatorForm() {
   const submissionId = searchParams.get('submissionId') || ''
   const inspectionId = searchParams.get('inspectionId') || ''
 
-  // Form states
+  // Seller picker — the API requires seller_id; nobody should type a UUID.
   const [sellerId, setSellerId] = useState('')
+  const [sellerLabel, setSellerLabel] = useState('')
+  const [sellerQuery, setSellerQuery] = useState('')
+  const [sellerResults, setSellerResults] = useState<any[]>([])
+  const [sellerSearching, setSellerSearching] = useState(false)
   const [title, setTitle] = useState('')
   const [make, setMake] = useState('')
   const [model, setModel] = useState('')
@@ -40,6 +44,7 @@ function ListingCreatorForm() {
       api.getInspection(inspectionId)
         .then((data) => {
           setSellerId(data.seller_id || '')
+          setSellerLabel(data.seller_name || data.seller_email || (data.seller_id ? 'Seller from inspection record' : ''))
           setMake(data.sub_make || '')
           setModel(data.sub_model || '')
           setYear(String(data.sub_year || ''))
@@ -67,6 +72,20 @@ function ListingCreatorForm() {
       setTitle(`${year} ${make} ${model}`.trim())
     }
   }, [make, model, year, inspectionId])
+
+  // Debounced seller search against /admin/users
+  useEffect(() => {
+    const q = sellerQuery.trim()
+    if (q.length < 2) { setSellerResults([]); return }
+    setSellerSearching(true)
+    const t = setTimeout(() => {
+      api.searchUsers(q)
+        .then(setSellerResults)
+        .catch(() => setSellerResults([]))
+        .finally(() => setSellerSearching(false))
+    }, 300)
+    return () => clearTimeout(t)
+  }, [sellerQuery])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -118,16 +137,62 @@ function ListingCreatorForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Core details */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Seller User ID *</label>
-            <input
-              type="text"
-              required
-              value={sellerId}
-              onChange={(e) => setSellerId(e.target.value)}
-              placeholder="e.g. uuid-of-seller"
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-            />
+          <div className="relative">
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Seller *</label>
+            {sellerId ? (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                <span className="truncate text-sm font-semibold text-gray-800">{sellerLabel || sellerId}</span>
+                <button
+                  type="button"
+                  onClick={() => { setSellerId(''); setSellerLabel(''); setSellerQuery('') }}
+                  className="shrink-0 text-xs font-semibold text-gray-500 hover:text-brand"
+                >
+                  Change
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={sellerQuery}
+                  onChange={(e) => setSellerQuery(e.target.value)}
+                  placeholder="Search by name, email or phone…"
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
+                />
+                {sellerQuery.trim().length >= 2 && (
+                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {sellerSearching ? (
+                      <p className="px-3 py-2.5 text-xs text-gray-400">Searching…</p>
+                    ) : sellerResults.length === 0 ? (
+                      <p className="px-3 py-2.5 text-xs text-gray-400">No matching users.</p>
+                    ) : (
+                      sellerResults.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            setSellerId(u.id)
+                            setSellerLabel(`${u.name} · ${u.email}`)
+                            setSellerResults([])
+                          }}
+                          className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-gray-50"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-gray-800">{u.name}</span>
+                            <span className="block truncate text-xs text-gray-500">{u.email}</span>
+                          </span>
+                          {u.id_verified === 'approved' && (
+                            <span className="shrink-0 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                              ID verified
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Listing Title *</label>

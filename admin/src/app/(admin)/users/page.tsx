@@ -85,7 +85,7 @@ export default function UsersPage() {
                         rel="noreferrer"
                         className="text-xs text-brand underline hover:text-brand-light"
                       >
-                        🪪 ID Front
+                        ID Front
                       </a>
                     )}
                     {u.id_back_url && (
@@ -95,7 +95,7 @@ export default function UsersPage() {
                         rel="noreferrer"
                         className="text-xs text-brand underline hover:text-brand-light"
                       >
-                        🪪 ID Back
+                        ID Back
                       </a>
                     )}
                     {u.selfie_url && (
@@ -105,7 +105,7 @@ export default function UsersPage() {
                         rel="noreferrer"
                         className="text-xs text-brand underline hover:text-brand-light"
                       >
-                        🤳 Selfie
+                        Selfie
                       </a>
                     )}
                   </div>
@@ -119,14 +119,14 @@ export default function UsersPage() {
                   disabled={actionId === u.id}
                   className="flex-1 py-2.5 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-light transition-colors disabled:opacity-50"
                 >
-                  ✅ Approve
+                  Approve
                 </button>
                 <button
                   onClick={() => decide(u.id, 'rejected')}
                   disabled={actionId === u.id}
                   className="flex-1 py-2.5 bg-red-50 text-red-700 text-sm font-semibold rounded-xl hover:bg-red-100 transition-colors border border-red-200 disabled:opacity-50"
                 >
-                  ✗ Reject
+                  Reject
                 </button>
               </div>
             </div>

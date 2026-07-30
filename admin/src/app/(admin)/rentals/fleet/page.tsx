@@ -519,7 +519,7 @@ export default function RentalFleetPage() {
                   <td className="px-4 py-3 text-right text-gray-600">{c.min_days}</td>
                   <td className="px-4 py-3">
                     {c.safari_ready
-                      ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-brand-tint text-brand">🦁 Safari</span>
+                      ? <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-brand-tint text-brand">Safari</span>
                       : <span className="text-xs text-gray-400">—</span>}
                   </td>
                   <td className="px-4 py-3">

@@ -80,6 +80,8 @@ export const api = {
     request<any>(`/cars/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // Users / ID verification
+  searchUsers: (q: string, limit = 8) =>
+    request<any[]>(`/admin/users?q=${encodeURIComponent(q)}&limit=${limit}`),
   idVerificationQueue: () => request<any[]>('/id-verification/queue'),
   decideVerification:  (userId: string, decision: string) =>
     request<any>(`/id-verification/${userId}`, {

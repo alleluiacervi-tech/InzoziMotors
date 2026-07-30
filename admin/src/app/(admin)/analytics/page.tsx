@@ -2,27 +2,46 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { Card, PageHeader, EmptyState, BarChart, fmtUSD } from '@/components/ui'
 
-function Bar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
-  const pct = max > 0 ? (value / max) * 100 : 0
+// Same funnel order + labels as the dashboard — a funnel reads in pipeline
+// order (top of funnel first), never sorted by count.
+const FUNNEL_ORDER = ['under_review', 'pending', 'scheduled', 'inspecting', 'inspected', 'live', 'sold', 'rejected']
+const FUNNEL_LABELS: Record<string, string> = {
+  under_review: 'Under review', pending: 'Pending', scheduled: 'Inspection booked',
+  inspecting: 'Being inspected', inspected: 'Inspected', live: 'Live', sold: 'Sold', rejected: 'Rejected',
+}
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const monthLabel = (ym: string) => {
+  const m = parseInt(ym.slice(5), 10)
+  return `${MONTH_NAMES[m - 1] ?? ym} ’${ym.slice(2, 4)}`
+}
+
+function HBar({ label, value, max, detail }: { label: string; value: number; max: number; detail?: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-gray-500 w-28 truncate flex-shrink-0">{label}</span>
-      <div className="flex-1 h-6 bg-gray-100 rounded-md overflow-hidden">
+    <div>
+      <div className="mb-1 flex items-baseline justify-between text-xs">
+        <span className="font-semibold text-content-secondary">{label}</span>
+        <span className="font-bold text-content">
+          {value}
+          {detail ? <span className="ml-1 font-medium text-content-muted">{detail}</span> : null}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-surface-alt">
         <div
-          className={`h-full rounded-md transition-all duration-500 ${color}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full bg-brand"
+          style={{ width: `${Math.max(3, Math.round((value / Math.max(max, 1)) * 100))}%` }}
         />
       </div>
-      <span className="text-xs font-semibold text-gray-700 w-8 text-right flex-shrink-0">{value}</span>
     </div>
   )
 }
 
 export default function AnalyticsPage() {
-  const [data, setData]       = useState<any>(null)
+  const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     api.analytics()
@@ -31,100 +50,116 @@ export default function AnalyticsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="text-gray-400 text-sm">Loading analytics…</div>
-  if (error)   return <div className="text-red-600 text-sm">Error: {error}</div>
+  if (loading) return <div className="text-sm text-content-muted">Loading analytics…</div>
+  if (error) {
+    return (
+      <Card>
+        <EmptyState icon="alert" title="Couldn’t load analytics" description={error} />
+      </Card>
+    )
+  }
 
-  const {
-    topMakes = [],
-    pipelineFunnel = [],
-    centers = [],
-    monthlySales = [],
-  } = data || {}
+  const { topMakes = [], pipelineFunnel = [], centers = [], monthlySales = [] } = data || {}
 
-  const maxMakeCount   = Math.max(...topMakes.map((m: any) => m.count), 1)
-  const maxCenterCount = Math.max(...centers.map((c: any) => c.scheduled), 1)
-  const maxMonthly     = Math.max(...monthlySales.map((m: any) => m.total_sold), 1)
+  const funnelRaw = new Map(pipelineFunnel.map((f: any) => [f.status, Number(f.count) || 0]))
+  const funnel = FUNNEL_ORDER.filter((st) => funnelRaw.has(st)).map((st) => ({
+    label: FUNNEL_LABELS[st] ?? st,
+    value: funnelRaw.get(st) as number,
+  }))
+  const funnelMax = Math.max(...funnel.map((f) => f.value), 1)
+
+  const makes = topMakes.map((m: any) => ({ label: m.make, value: Number(m.count) || 0 }))
+  const makesMax = Math.max(...makes.map((m: { value: number }) => m.value), 1)
+
+  const monthlyCount = monthlySales.map((m: any) => ({ label: monthLabel(m.month), value: Number(m.total_sold) || 0 }))
+  const monthlyValue = monthlySales.map((m: any) => ({ label: monthLabel(m.month), value: Number(m.total_value) || 0 }))
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
+    <div>
+      <PageHeader
+        title="Analytics"
+        description="How the marketplace and the inspection pipeline are performing."
+      />
 
-      {/* Pipeline funnel */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Listing Pipeline Funnel</h2>
-        <div className="flex items-end gap-3 flex-wrap">
-          {pipelineFunnel.map((stage: any, i: number) => {
-            const maxCount = Math.max(...pipelineFunnel.map((s: any) => s.count), 1)
-            const height   = Math.max(20, (stage.count / maxCount) * 100)
-            const colors   = ['bg-amber-400', 'bg-blue-400', 'bg-indigo-400', 'bg-purple-400', 'bg-brand', 'bg-gray-400']
-            return (
-              <div key={stage.status} className="flex flex-col items-center gap-1 flex-1 min-w-[60px]">
-                <span className="text-sm font-bold text-gray-800">{stage.count}</span>
-                <div
-                  className={`w-full rounded-t-lg ${colors[i % colors.length]}`}
-                  style={{ height: `${height}px` }}
-                />
-                <span className="text-xs text-gray-500 text-center capitalize">{stage.status.replace('_', ' ')}</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Monthly sales — cars */}
+        <Card className="p-5">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-bold text-content">Cars sold per month</h2>
+            <span className="text-xs text-content-muted">last 6 months</span>
+          </div>
+          <BarChart data={monthlyCount} height={150} emptyLabel="No completed sales yet" />
+        </Card>
 
-      <div className="grid md:grid-cols-2 gap-6">
+        {/* Monthly sales — value */}
+        <Card className="p-5">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-bold text-content">Sales value per month</h2>
+            <span className="text-xs text-content-muted">USD</span>
+          </div>
+          <BarChart data={monthlyValue} height={150} formatValue={(v) => fmtUSD(v)} emptyLabel="No completed sales yet" />
+        </Card>
+
+        {/* Pipeline funnel */}
+        <Card className="p-5">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-bold text-content">Submission pipeline</h2>
+            <span className="text-xs text-content-muted">all time</span>
+          </div>
+          {funnel.length === 0 ? (
+            <EmptyState icon="document" title="No submissions yet" description="Seller submissions appear here as they enter the pipeline." />
+          ) : (
+            <div className="space-y-3">
+              {funnel.map((f) => (
+                <HBar key={f.label} label={f.label} value={f.value} max={funnelMax} />
+              ))}
+            </div>
+          )}
+        </Card>
+
         {/* Top makes */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Top Makes (Live + Sold)</h2>
-          <div className="space-y-2">
-            {topMakes.length === 0 ? (
-              <p className="text-xs text-gray-400">No data yet</p>
-            ) : (
-              topMakes.map((m: any) => (
-                <Bar key={m.make} label={m.make} value={m.count} max={maxMakeCount} color="bg-brand" />
-              ))
-            )}
+        <Card className="p-5">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-bold text-content">Top makes</h2>
+            <span className="text-xs text-content-muted">live + sold</span>
           </div>
-        </div>
+          {makes.length === 0 ? (
+            <EmptyState icon="car" title="No listings yet" description="Makes rank here once cars are live on the marketplace." />
+          ) : (
+            <div className="space-y-3">
+              {makes.map((m: { label: string; value: number }) => (
+                <HBar key={m.label} label={m.label} value={m.value} max={makesMax} />
+              ))}
+            </div>
+          )}
+        </Card>
 
-        {/* Centers */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Inspection Centers (Scheduled This Month)</h2>
-          <div className="space-y-2">
-            {centers.length === 0 ? (
-              <p className="text-xs text-gray-400">No data yet</p>
-            ) : (
-              centers.map((c: any) => (
-                <Bar key={c.center} label={c.center} value={c.scheduled} max={maxCenterCount} color="bg-indigo-500" />
-              ))
-            )}
+        {/* Inspection centers */}
+        <Card className="p-5 lg:col-span-2">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-bold text-content">Inspection centers</h2>
+            <span className="text-xs text-content-muted">scheduled vs completed</span>
           </div>
-        </div>
-      </div>
-
-      {/* Monthly sales */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Monthly Sales (Last 6 Months)</h2>
-        {monthlySales.length === 0 ? (
-          <p className="text-xs text-gray-400">No sales data yet</p>
-        ) : (
-          <div className="flex items-end gap-4">
-            {monthlySales.map((m: any) => {
-              const height = Math.max(16, (m.total_sold / maxMonthly) * 120)
-              return (
-                <div key={m.month} className="flex flex-col items-center gap-1 flex-1">
-                  <span className="text-xs font-semibold text-gray-700">{m.total_sold}</span>
-                  <div
-                    className="w-full bg-brand rounded-t-lg"
-                    style={{ height: `${height}px` }}
-                  />
-                  <span className="text-xs text-gray-500">
-                    {new Date(m.month + '-01').toLocaleDateString('en', { month: 'short' })}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
+          {centers.length === 0 ? (
+            <EmptyState
+              icon="location"
+              title="No inspections booked yet"
+              description="Center workload shows here once sellers book inspection appointments."
+            />
+          ) : (
+            <div className="space-y-3">
+              {centers.map((c: any) => (
+                <HBar
+                  key={c.center}
+                  label={c.center}
+                  value={Number(c.scheduled) || 0}
+                  max={Math.max(...centers.map((x: any) => Number(x.scheduled) || 0), 1)}
+                  detail={`· ${Number(c.completed) || 0} completed`}
+                />
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   )
