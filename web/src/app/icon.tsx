@@ -20,7 +20,7 @@ export const runtime = 'edge'
 export const size = { width: 32, height: 32 }
 export const contentType = 'image/png'
 
-const BRAND = '#DB0632'
+const BRAND = '#C63F3D'
 const FIELD = '#F2F0EF'
 
 /** Path data copied verbatim from CarPaths in Logo.tsx. Satori cannot draw

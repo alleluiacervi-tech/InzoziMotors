@@ -159,7 +159,7 @@ export function BarChart({
           <div key={d.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5">
             <span className="text-[10px] font-bold text-content-secondary">{formatValue(d.value)}</span>
             <div
-              className={`w-full max-w-[44px] rounded-t-md ${d.value === max ? 'bg-brand' : 'bg-line'}`}
+              className={`w-full max-w-[44px] rounded-t-md ${d.value === max ? 'bg-gray-700' : 'bg-gray-300'}`}
               style={{ height: h }}
             />
             <span className="w-full truncate text-center text-[10px] text-content-muted">{d.label}</span>

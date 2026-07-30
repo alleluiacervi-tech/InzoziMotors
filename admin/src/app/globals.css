@@ -12,11 +12,11 @@ body {
 
 /* One visible focus treatment — keyboard operators run this tool all day. */
 :focus-visible {
-  outline: 2px solid #db0632;
+  outline: 2px solid #c63f3d;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 ::selection {
-  background: rgba(219, 6, 50, 0.15);
+  background: rgba(198, 63, 61, 0.15);
 }

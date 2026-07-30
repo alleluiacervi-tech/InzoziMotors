@@ -6,9 +6,9 @@ import { api } from '@/lib/api'
 
 const CENTERS = ['all', 'Nyarutarama', 'Kicukiro', 'Kimironko']
 const STATUS_COLORS: Record<string, string> = {
-  scheduled:  'bg-indigo-100 text-indigo-700',
-  inspecting: 'bg-purple-100 text-purple-700',
-  complete:   'bg-green-100 text-green-700',
+  scheduled:  'bg-info-tint text-info',
+  inspecting: 'bg-info-tint text-info',
+  complete:   'bg-success-tint text-success',
 }
 
 function todayISO() {

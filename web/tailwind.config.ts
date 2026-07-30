@@ -16,9 +16,9 @@ const config: Config = {
         // primary action, a selected/active state, the Certified+ badge, or an
         // inline action link. Never as decoration.
         brand: {
-          DEFAULT: '#DB0632',
-          bright: '#F02050',
-          deep: '#A80526',
+          DEFAULT: '#C63F3D',
+          bright: '#D75553',
+          deep: '#9E3230',
           light: '#F97C9B',
           tint: '#F3F2F2',
         },
@@ -88,8 +88,8 @@ const config: Config = {
         card: '0 2px 8px rgba(26, 20, 19, 0.08)',
         'card-lg': '0 8px 28px rgba(26, 20, 19, 0.10)',
         float: '0 12px 40px rgba(26, 20, 19, 0.14)',
-        brand: '0 4px 14px rgba(219, 6, 50, 0.28)',
-        'brand-lg': '0 10px 34px rgba(219, 6, 50, 0.30)',
+        brand: '0 4px 14px rgba(198, 63, 61, 0.28)',
+        'brand-lg': '0 10px 34px rgba(198, 63, 61, 0.30)',
         inset: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
       },
 

@@ -11,7 +11,7 @@ export const runtime = 'edge'
 export const size = { width: 180, height: 180 }
 export const contentType = 'image/png'
 
-const BRAND = '#DB0632'
+const BRAND = '#C63F3D'
 const FIELD = '#F2F0EF'
 
 /** Path data copied verbatim from CarPaths in src/components/brand/Logo.tsx. */

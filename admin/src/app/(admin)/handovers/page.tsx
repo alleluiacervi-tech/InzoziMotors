@@ -5,8 +5,8 @@ import { api } from '@/lib/api'
 import { fmtUSD, fmtRWF } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:   'bg-purple-100 text-purple-700',
-  confirmed: 'bg-green-100 text-green-700',
+  pending:   'bg-warning-tint text-warning-text',
+  confirmed: 'bg-info-tint text-info',
   complete:  'bg-gray-100 text-gray-600',
   cancelled: 'bg-gray-100 text-gray-500',
 }
@@ -124,7 +124,7 @@ export default function HandoversPage() {
                   <button
                     onClick={() => confirm(h.id)}
                     disabled={actionId === h.id}
-                    className="flex-1 py-2.5 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-light transition-colors disabled:opacity-50"
+                    className="flex-1 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-50"
                   >
                     {actionId === h.id ? 'Working…' : 'Confirm Arrangement'}
                   </button>
@@ -141,7 +141,7 @@ export default function HandoversPage() {
                 <button
                   onClick={() => complete(h.id)}
                   disabled={actionId === h.id}
-                  className="mt-4 w-full py-2.5 bg-brand text-white text-sm font-semibold rounded-xl hover:bg-brand-light transition-colors disabled:opacity-50"
+                  className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
                   {actionId === h.id ? 'Working…' : 'Handover Done — Mark Sold'}
                 </button>

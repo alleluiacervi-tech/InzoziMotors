@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 
 const STATUS_COLORS: Record<string, string> = {
-  active:      'bg-green-100 text-green-700',
-  maintenance: 'bg-amber-100 text-amber-700',
+  active:      'bg-success-tint text-success',
+  maintenance: 'bg-warning-tint text-warning-text',
   retired:     'bg-gray-100 text-gray-600',
 }
 

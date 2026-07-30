@@ -2,7 +2,7 @@
 // Same path data, same proportions, so the mark on the website and the mark in
 // the app are pixel-identical rather than "close enough".
 
-const BRAND = '#DB0632'
+const BRAND = '#C63F3D'
 const FIELD = '#F2F0EF'
 
 /**
