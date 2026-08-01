@@ -254,7 +254,7 @@ export default async function SellPage() {
               <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
                 Submitting a car requires a one-time identity check: a photo of your national ID,
                 front and back, and a selfie. A browser cannot capture those reliably enough for us
-                to stand behind them, so this single step happens in the Sawa app. It takes about
+                to stand behind them, so this single step happens in the Sawa Cars app. It takes about
                 two minutes, and you never do it again.
               </p>
               <p className="mt-4 text-body leading-relaxed text-content-secondary">

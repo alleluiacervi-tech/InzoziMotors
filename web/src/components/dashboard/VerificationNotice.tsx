@@ -15,7 +15,7 @@ const COPY: Record<
     tone: 'info',
     title: 'Selling starts with a one-time identity check',
     body:
-      'Buying, saving cars and making requests all work without it. To submit a car for inspection we first confirm who you are — a photo of your national ID and a selfie in the Sawa app. Our team reviews it within 24 hours.',
+      'Buying, saving cars and making requests all work without it. To submit a car for inspection we first confirm who you are — a photo of your national ID and a selfie in the Sawa Cars app. Our team reviews it within 24 hours.',
   },
   pending: {
     tone: 'info',
@@ -27,7 +27,7 @@ const COPY: Record<
     tone: 'warning',
     title: 'Your identity check needs another attempt',
     body:
-      'Usually this means a photo was blurred or the ID was partly out of frame. Open the Sawa app and resubmit — there is no limit on attempts, and nothing else on your account is affected.',
+      'Usually this means a photo was blurred or the ID was partly out of frame. Open the Sawa Cars app and resubmit — there is no limit on attempts, and nothing else on your account is affected.',
   },
 }
 
@@ -40,7 +40,7 @@ export function VerificationNotice({ status }: { status: IdVerificationStatus })
       <p>{copy.body}</p>
       <p className="mt-2">
         <Link href="/download" className="font-bold underline underline-offset-2">
-          Get the Sawa app
+          Get the Sawa Cars app
         </Link>
       </p>
     </Alert>

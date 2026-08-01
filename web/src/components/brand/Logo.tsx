@@ -61,8 +61,10 @@ export function WordMark({
 }
 
 /**
- * Full lockup: squircle + wordmark. The SVGs are decorative; the accessible
- * name comes from this component, so screen readers announce "Sawa" once.
+ * Horizontal lockup for headers — the squircle beside the product name set as
+ * text. The drawn wordmark reads "SAWA" alone, so the full name lives here in
+ * type rather than in the mark. Use LogoStack where the brand artwork itself is
+ * the point. The SVG is decorative; the accessible name comes from the text.
  */
 export function Logo({
   size = 20,
@@ -76,9 +78,16 @@ export function Logo({
   id?: string
 }) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className}`} aria-label="Sawa">
+    <span className={`inline-flex items-center gap-2.5 ${className}`} aria-label="Sawa Cars">
       <LogoMark size={Math.round(size * 1.85)} id={id} />
-      <WordMark height={size} color={tone === 'light' ? '#FFFFFF' : BRAND} />
+      <span
+        className={`font-bold tracking-[-0.02em] ${
+          tone === 'light' ? 'text-white' : 'text-content'
+        }`}
+        style={{ fontSize: size }}
+      >
+        Sawa Cars
+      </span>
     </span>
   )
 }

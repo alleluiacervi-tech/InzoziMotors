@@ -7,7 +7,7 @@ import { CENTERS } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'About Sawa',
   description:
-    'Sawa is the middleman in Rwanda’s used-car market: we inspect every car on a 150-point check, photograph it ourselves and publish the listing under our own name. Three inspection centers in Kigali.',
+    'Sawa Cars is the middleman in Rwanda’s used-car market: we inspect every car on a 150-point check, photograph it ourselves and publish the listing under our own name. Three inspection centers in Kigali.',
   alternates: { canonical: '/about' },
 }
 
@@ -124,7 +124,7 @@ export default function AboutPage() {
         <Container>
           <SectionHeading
             eyebrow="Where we draw the line"
-            title="Four things Sawa will not do"
+            title="Four things Sawa Cars will not do"
             description="Most of what makes this marketplace trustworthy is what it refuses to offer."
           />
 

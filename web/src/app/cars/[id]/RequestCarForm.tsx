@@ -20,7 +20,7 @@ export function RequestCarForm({ carId, phone }: { carId: string; phone?: string
     return (
       <div className="space-y-4">
         <Alert tone="success" title="Request received">
-          The car is reserved for you under booking {state.bookingId}. Sawa will
+          The car is reserved for you under booking {state.bookingId}. Sawa Cars will
           contact you on WhatsApp within 24 hours to agree a handover time at the
           center that suits you.
         </Alert>

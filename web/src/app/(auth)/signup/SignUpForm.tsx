@@ -128,7 +128,7 @@ export function SignUpForm({ next }: { next: string }) {
         <p className="mt-3 flex gap-2 text-micro leading-relaxed text-content-muted">
           <Icon name="info" size={14} className="mt-px" />
           <span>
-            Selling needs a one-time ID check, and that step happens in the Sawa app — a
+            Selling needs a one-time ID check, and that step happens in the Sawa Cars app — a
             browser cannot capture your ID and selfie. Everything after it, from submitting the
             car to booking the inspection, works here. You can switch to selling at any time.
           </span>

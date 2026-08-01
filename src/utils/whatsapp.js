@@ -28,7 +28,7 @@ export async function openWhatsApp(phone, message) {
 
 // One message builder for every "contact seller" surface, so the copy
 // can't drift between screens. Falls back to Sawa's business line —
-// never a fabricated number (Sawa is the middleman anyway).
+// never a fabricated number (Sawa Cars is the middleman anyway).
 export function contactSellerOnWhatsApp(car, price) {
   const number = car.sellerPhone || SAWA_WHATSAPP;
   const viaSawa = !car.sellerPhone;

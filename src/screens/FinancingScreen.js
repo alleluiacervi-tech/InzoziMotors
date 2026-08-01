@@ -199,7 +199,7 @@ export default function FinancingScreen({ navigation, route }) {
         <View style={styles.disclaimer}>
           <Ionicons name="information-circle-outline" size={13} color={colors.textMuted} />
           <Text style={styles.disclaimerText}>
-            This is a rough estimate only. Actual rates, fees and eligibility depend on your credit profile, bank policies, and the specific vehicle. Contact your bank for a formal auto loan quote. Sawa does not facilitate loans.
+            This is a rough estimate only. Actual rates, fees and eligibility depend on your credit profile, bank policies, and the specific vehicle. Contact your bank for a formal auto loan quote. Sawa Cars does not facilitate loans.
           </Text>
         </View>
       </ScrollView>

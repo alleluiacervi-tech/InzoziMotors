@@ -19,7 +19,7 @@ const satoshi = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'Sawa — Admin',
+  title: 'Sawa Cars — Admin',
   description: 'Internal operations dashboard',
 }
 

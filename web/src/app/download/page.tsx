@@ -11,21 +11,21 @@ import { AppLaunch } from './AppLaunch'
 export const metadata: Metadata = {
   title: 'Get the app',
   description:
-    'The Sawa app for iPhone and Android. Browse certified cars, read full inspection reports, and get price-drop alerts. Everything except the camera work also runs on the website.',
+    'The Sawa Cars app for iPhone and Android. Browse certified cars, read full inspection reports, and get price-drop alerts. Everything except the camera work also runs on the website.',
   alternates: { canonical: '/download' },
   // The share card has to be named explicitly. Declaring `openGraph` here
   // replaces the root layout's object wholesale, and the root
   // opengraph-image.tsx file convention does not re-merge into it — without
   // this, a /download link shared in WhatsApp arrives with no image at all.
   openGraph: {
-    title: 'Get the Sawa app',
+    title: 'Get the Sawa Cars app',
     description:
       'Browse certified cars, read full inspection reports, and get price-drop alerts on your phone.',
     url: '/download',
     images: ['/opengraph-image'],
   },
   twitter: {
-    title: 'Get the Sawa app',
+    title: 'Get the Sawa Cars app',
     description:
       'Browse certified cars, read full inspection reports, and get price-drop alerts on your phone.',
     images: ['/opengraph-image'],
@@ -112,7 +112,7 @@ export default async function DownloadPage({
       <Section tone="surface">
         <Container>
           <div className="max-w-2xl">
-            <Eyebrow>The Sawa app</Eyebrow>
+            <Eyebrow>The Sawa Cars app</Eyebrow>
             <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
               Sawa on your phone
             </h1>

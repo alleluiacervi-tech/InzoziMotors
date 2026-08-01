@@ -10,7 +10,7 @@ const DEV_FALLBACK = null; // resolved on-device in src/api/client.js
 
 export default ({ config }) => ({
   ...config,
-  name: 'Sawa',
+  name: 'Sawa Cars',
   slug: 'sawa',
   version: '1.0.0',
   orientation: 'portrait',

@@ -132,7 +132,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
   // Always the Sawa business line, never car.seller_phone. The app can surface
   // a seller's number to a signed-in buyer; a public page cannot, because it is
-  // crawled — and because Sawa is the middleman, so the conversation belongs
+  // crawled — and because Sawa Cars is the middleman, so the conversation belongs
   // with us anyway.
   const contactMessage = `Hi Sawa, I'm interested in the ${car.title} (${formatUSD(car.price)}) on your website. Is it still available?`
   const whatsappHref = `https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(contactMessage)}`
@@ -385,7 +385,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     <p className="mt-1 text-micro leading-relaxed text-content-muted">
                       An estimate only, using {FINANCE_TERMS.downPaymentPct}% deposit,{' '}
                       {FINANCE_TERMS.annualRatePct}% a year over {FINANCE_TERMS.termMonths} months.
-                      Sawa does not lend — your bank sets the real terms.
+                      Sawa Cars does not lend — your bank sets the real terms.
                     </p>
                     <p className="mt-3 text-caption">
                       <Link href="/tools/import-duty" className="font-bold text-brand hover:underline">

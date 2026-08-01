@@ -68,7 +68,7 @@ export function AppLaunch({
       {to ? (
         <Alert
           tone="info"
-          title={handedOff ? 'Opening the app…' : 'This link opens in the Sawa app'}
+          title={handedOff ? 'Opening the app…' : 'This link opens in the Sawa Cars app'}
           className="mb-6"
         >
           <p>

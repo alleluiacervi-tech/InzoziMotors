@@ -32,21 +32,21 @@ const SECTIONS: LegalSection[] = [
   },
   {
     id: 'what-sawa-is',
-    heading: 'What Sawa is, and what it is not',
+    heading: 'What Sawa Cars is, and what it is not',
     body: (
       <>
         <p>
-          Sawa is the party in the middle of a private sale. We inspect the vehicle, photograph
+          Sawa Cars is the party in the middle of a private sale. We inspect the vehicle, photograph
           it, publish the listing under our own name and host the handover at one of our centers.
           Sellers cannot publish listings themselves.
         </p>
         <p>
-          <strong>Sawa is not a payment provider, an escrow service or a bank.</strong> No money
+          <strong>Sawa Cars is not a payment provider, an escrow service or a bank.</strong> No money
           moves through this website or the app. The price is settled between buyer and seller in
           person at a center, in our presence.
         </p>
         <p>
-          Sawa is not the owner of the vehicle unless a listing says otherwise. The seller
+          Sawa Cars is not the owner of the vehicle unless a listing says otherwise. The seller
           remains the owner until the transfer completes.
         </p>
       </>

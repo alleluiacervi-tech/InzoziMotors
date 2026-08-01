@@ -1,7 +1,7 @@
 import React, { useId } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Circle, G, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 
 // useId() returns a value wrapped in punctuation (":r0:" / "«r0»") that is not
 // a legal SVG id, and an illegal id makes url(#…) resolve to nothing — the mark
@@ -50,14 +50,16 @@ export function WordMark({ height = 18, color = colors.primary, tagline = false 
 }
 
 /**
- * Horizontal lockup — squircle + wordmark. `size` is the wordmark cap height,
- * matching the previous component's API so callers do not change.
+ * Horizontal lockup for headers — the squircle beside the product name set as
+ * text. The drawn wordmark reads "SAWA" alone, so the full name lives here in
+ * type rather than in the mark. Use LogoStack where the brand artwork itself
+ * is the point.
  */
-export default function Logo({ size = 18, color = colors.primary }) {
+export default function Logo({ size = 18, color = colors.textPrimary }) {
   return (
     <View style={styles.row}>
       <LogoMark size={Math.round(size * 1.85)} />
-      <WordMark height={size} color={color} />
+      <Text style={[styles.word, { fontSize: size, color }]}>Sawa Cars</Text>
     </View>
   );
 }
@@ -111,5 +113,6 @@ export function CarGlyph({ width = 120, body = colors.primary, glass = '#F2F0EF'
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  word: { fontFamily: fonts.bold, letterSpacing: -0.3 },
   stack: { alignItems: 'center', gap: 14 },
 });

@@ -77,7 +77,7 @@ export default async function SellingPage() {
           </h2>
           <p className="mt-2 max-w-prose text-caption leading-relaxed text-content-secondary">
             Sellers are verified before a car can enter the pipeline. It is a one-time check —
-            a photo of your national ID and a selfie, captured in the Sawa app — and it is the
+            a photo of your national ID and a selfie, captured in the Sawa Cars app — and it is the
             reason buyers trust what they see here. Nothing else on your account is affected.
           </p>
 

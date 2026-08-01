@@ -3,7 +3,7 @@ import type { Car } from '@/lib/types'
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter options, derived from the inventory that actually exists.
 //
-// A hardcoded make list would offer buyers thirty brands Sawa has never
+// A hardcoded make list would offer buyers thirty brands Sawa Cars has never
 // listed, and every one of those clicks lands on an empty page. So the options
 // come from a page of live listings instead: if it is not in the yard, it is
 // not in the dropdown.

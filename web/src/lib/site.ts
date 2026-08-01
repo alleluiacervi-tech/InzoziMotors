@@ -4,10 +4,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SITE = {
-  name: 'Sawa',
+  name: 'Sawa Cars',
   tagline: 'Rwanda’s certified car marketplace',
   description:
-    'Every car on Sawa is physically inspected on a 150-point check, photographed by our team, and backed by a 7-day drive-it guarantee. Buy, sell or rent with confidence in Kigali.',
+    'Every car on Sawa Cars is physically inspected on a 150-point check, photographed by our team, and backed by a 7-day drive-it guarantee. Buy, sell or rent with confidence in Kigali.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://sawacars.com',
   locale: 'en_RW',
   themeColor: '#CC050F',
