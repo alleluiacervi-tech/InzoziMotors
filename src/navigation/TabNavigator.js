@@ -10,14 +10,26 @@ import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import SavedScreen from '../screens/SavedScreen';
 
 const Tab = createBottomTabNavigator();
 
 const ICONS = {
   Home: 'home',
-  Search: 'search',
+  Search: 'car-sport',
+  Saved: 'heart',
   Messages: 'chatbubble-ellipses',
   Profile: 'person',
+};
+
+// Route names stay as they are so every existing navigate() call keeps working;
+// only what the user reads changes.
+const LABELS = {
+  Home: 'Home',
+  Search: 'Cars',
+  Saved: 'Saved',
+  Messages: 'Messages',
+  Profile: 'Account',
 };
 
 function TabBar({ state, descriptors, navigation }) {
@@ -75,7 +87,7 @@ function TabBar({ state, descriptors, navigation }) {
               )}
             </View>
             <Text style={[styles.label, { color, fontWeight: focused ? '700' : '600' }]}>
-              {route.name}
+              {LABELS[route.name]}
             </Text>
           </Pressable>
         );
@@ -93,6 +105,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Saved" component={SavedScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

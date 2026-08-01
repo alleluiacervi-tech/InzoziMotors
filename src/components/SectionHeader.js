@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { colors, fonts } from '../theme';
 
 // "Title ........ See all" row used above content sections.
-export default function SectionHeader({ title, actionLabel = 'See all', onAction }) {
+export default function SectionHeader({ title, actionLabel = 'View all', onAction }) {
   return (
     <View style={styles.row}>
       <Text style={styles.title}>{title}</Text>
@@ -25,5 +25,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   title: { fontSize: 17, fontFamily: fonts.bold, letterSpacing: -0.2, color: colors.textPrimary },
-  action: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.primary },
+  action: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.primary },
 });

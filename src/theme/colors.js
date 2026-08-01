@@ -15,6 +15,8 @@ export const colors = {
   // and menu rows are textSecondary — never red.
   primary: '#CC050F',
   primaryBright: '#DE0714',
+  // Soft wash of the brand red — icon chips and other quiet brand surfaces.
+  primaryTint: '#FDEBEC',
   blueLight: '#EE8B90',
   blueTint: '#F3F2F2',
 
