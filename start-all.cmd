@@ -1,6 +1,6 @@
 @echo off
 rem ─────────────────────────────────────────────────────────────────────────────
-rem Inzozi Motors — start the whole local stack, detached from this window.
+rem Sawa — start the whole local stack, detached from this window.
 rem Safe to re-run: each service is skipped if its port is already in use.
 rem   PostgreSQL :5432 · API :3000 · Admin :3001 · Website :3002
 rem Stop everything with stop-all.cmd
@@ -21,7 +21,7 @@ if errorlevel 1 (
 echo [2/4] API on :3000...
 netstat -ano | findstr /R /C:":3000 .*LISTENING" >nul
 if errorlevel 1 (
-  start "inzozi-api" /min cmd /c "cd /d "%ROOT%backend" && node server.js"
+  start "sawa-api" /min cmd /c "cd /d "%ROOT%backend" && node server.js"
 ) else (
   echo        already running
 )
@@ -29,7 +29,7 @@ if errorlevel 1 (
 echo [3/4] Admin dashboard on :3001...
 netstat -ano | findstr /R /C:":3001 .*LISTENING" >nul
 if errorlevel 1 (
-  start "inzozi-admin" /min cmd /c "cd /d "%ROOT%admin" && npm start"
+  start "sawa-admin" /min cmd /c "cd /d "%ROOT%admin" && npm start"
 ) else (
   echo        already running
 )
@@ -37,14 +37,14 @@ if errorlevel 1 (
 echo [4/4] Website on :3002...
 netstat -ano | findstr /R /C:":3002 .*LISTENING" >nul
 if errorlevel 1 (
-  start "inzozi-web" /min cmd /c "cd /d "%ROOT%web" && npm start"
+  start "sawa-web" /min cmd /c "cd /d "%ROOT%web" && npm start"
 ) else (
   echo        already running
 )
 
 echo.
 echo   Website  http://localhost:3002
-echo   Admin    http://localhost:3001   (admin@inzozi.rw / admin1234)
+echo   Admin    http://localhost:3001   (admin@sawacars.com / admin1234)
 echo   API      http://localhost:3000/health
 echo.
 endlocal

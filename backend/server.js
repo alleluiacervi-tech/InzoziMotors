@@ -71,5 +71,5 @@ app.use((err, req, res, next) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '3000');
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Inzozi Motors API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  console.log(`Sawa API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });

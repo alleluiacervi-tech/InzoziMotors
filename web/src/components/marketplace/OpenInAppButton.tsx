@@ -14,7 +14,7 @@ export function OpenInAppButton({
   fullWidth,
   className = '',
 }: {
-  /** App linking path, e.g. `car/<id>` → inzozimotors://car/<id>. */
+  /** App linking path, e.g. `car/<id>` → sawa://car/<id>. */
   path: string
   label?: string
   variant?: 'outline' | 'secondary' | 'ghost'

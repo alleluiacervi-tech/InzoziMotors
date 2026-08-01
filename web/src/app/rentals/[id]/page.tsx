@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const description =
     `Rent the ${car.title} in Kigali from ${formatUSD(car.daily_rate)} a day. ` +
-    'Inspected on the Inzozi 150-point check, insurance and unlimited kilometres included, ' +
+    'Inspected on the Sawa 150-point check, insurance and unlimited kilometres included, ' +
     'deposit returned in full after the return check.'
 
   const image = car.images?.[0]
@@ -84,7 +84,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
     .map((days) => tripCost(car, days))
 
   const whatsappHref = `https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
-    `Hi Inzozi, I would like to rent the ${car.title} (${formatUSD(car.daily_rate)}/day). My dates are:`
+    `Hi Sawa, I would like to rent the ${car.title} (${formatUSD(car.daily_rate)}/day). My dates are:`
   )}`
 
   const specs: Spec[] = [

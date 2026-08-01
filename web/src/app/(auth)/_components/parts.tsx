@@ -49,7 +49,7 @@ export function OneAccountNote({ className = '' }: { className?: string }) {
         One account, every platform. Your saved cars, saved searches and purchase requests are
         the same here and in the{' '}
         <Link href="/download" className="font-bold text-brand transition-colors hover:text-brand-deep">
-          Inzozi app
+          Sawa app
         </Link>
         .
       </span>

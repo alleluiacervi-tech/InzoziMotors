@@ -17,13 +17,13 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // Monthly payment estimator.
 //
-// monthlyEstimate() in lib/business is this same PMT formula frozen at Inzozi's
+// monthlyEstimate() in lib/business is this same PMT formula frozen at Sawa's
 // standard terms (20% deposit, 60 months). Letting the visitor move the deposit
 // and the term means running the formula again, so it is written once here and
 // seeded from FINANCE_TERMS — at 20% / 60 months the two agree by construction,
 // which is what keeps the listing cards and this page telling one story.
 //
-// Inzozi does not lend. The rate is a representative Kigali market rate; the
+// Sawa does not lend. The rate is a representative Kigali market rate; the
 // bank quotes its own.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -286,7 +286,7 @@ export function FinanceCalculator() {
 function Disclaimer() {
   return (
     <p className="rounded-xl bg-surface-alt px-4 py-3 text-micro leading-relaxed text-content-secondary">
-      Inzozi does not lend and does not arrange finance. {FINANCE_TERMS.annualRatePct}% a year is a
+      Sawa does not lend and does not arrange finance. {FINANCE_TERMS.annualRatePct}% a year is a
       representative Kigali market rate — your bank sets its own based on your profile, and usually
       adds arrangement fees and required insurance on top. Treat this as a starting point for that
       conversation.

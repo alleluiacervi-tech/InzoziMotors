@@ -1,5 +1,5 @@
 @echo off
-rem Stop the local Inzozi stack started by start-all.cmd.
+rem Stop the local Sawa stack started by start-all.cmd.
 setlocal
 set "PG=C:\Users\DIGITAL AXIS\pg16"
 

@@ -7,7 +7,7 @@ import { CONTACT } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Contact & centers',
   description:
-    'Reach the Inzozi Motors team on WhatsApp or by email, and find opening hours and addresses for our three inspection and handover centers in Kigali.',
+    'Reach the Sawa team on WhatsApp or by email, and find opening hours and addresses for our three inspection and handover centers in Kigali.',
   alternates: { canonical: '/contact' },
 }
 
@@ -124,7 +124,7 @@ export default function ContactPage() {
                     name={CONTACT.whatsappVerified ? 'text' : 'body'}
                     required
                     maxLength={900}
-                    placeholder="Hello Inzozi — I would like to ask about…"
+                    placeholder="Hello Sawa — I would like to ask about…"
                   />
                 </Field>
 

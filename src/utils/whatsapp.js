@@ -1,9 +1,9 @@
 import { Linking } from 'react-native';
 import { showToast } from '../components/Feedback';
 
-// Inzozi business line for rentals & support.
-// TODO: replace with the real Inzozi WhatsApp Business number before launch.
-export const INZOZI_WHATSAPP = '250788000000';
+// Sawa business line for rentals & support.
+// TODO: replace with the real Sawa WhatsApp Business number before launch.
+export const SAWA_WHATSAPP = '250788000000';
 
 // Open a WhatsApp chat: try the app scheme first (fast, no browser hop),
 // fall back to wa.me in the browser, and explain if neither works.
@@ -27,13 +27,13 @@ export async function openWhatsApp(phone, message) {
 }
 
 // One message builder for every "contact seller" surface, so the copy
-// can't drift between screens. Falls back to Inzozi's business line —
-// never a fabricated number (Inzozi is the middleman anyway).
+// can't drift between screens. Falls back to Sawa's business line —
+// never a fabricated number (Sawa is the middleman anyway).
 export function contactSellerOnWhatsApp(car, price) {
-  const number = car.sellerPhone || INZOZI_WHATSAPP;
-  const viaInzozi = !car.sellerPhone;
-  const msg = viaInzozi
-    ? `Hi Inzozi, I'm interested in the ${car.title} (${price}) listed by ${car.seller}. Is it still available?`
-    : `Hi ${car.seller}, I found your ${car.title} (${price}) on Inzozi Motors. Is it still available?`;
+  const number = car.sellerPhone || SAWA_WHATSAPP;
+  const viaSawa = !car.sellerPhone;
+  const msg = viaSawa
+    ? `Hi Sawa, I'm interested in the ${car.title} (${price}) listed by ${car.seller}. Is it still available?`
+    : `Hi ${car.seller}, I found your ${car.title} (${price}) on Sawa. Is it still available?`;
   return openWhatsApp(number, msg);
 }

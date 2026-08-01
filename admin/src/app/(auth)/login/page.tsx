@@ -6,9 +6,9 @@ import { api } from '@/lib/api'
 import { LogoMark } from '@/components/Logo'
 
 function storeSession(token: string) {
-  localStorage.setItem('inzozi_admin_token', token)
+  localStorage.setItem('sawa_admin_token', token)
   // Also set cookie so SSR middleware can read it
-  document.cookie = `inzozi_admin_token=${token}; path=/; max-age=604800`
+  document.cookie = `sawa_admin_token=${token}; path=/; max-age=604800`
 }
 
 export default function LoginPage() {
@@ -27,7 +27,7 @@ export default function LoginPage() {
     const token = decodeURIComponent(match[1])
     history.replaceState(null, '', window.location.pathname)
     setLoading(true)
-    localStorage.setItem('inzozi_admin_token', token)
+    localStorage.setItem('sawa_admin_token', token)
     api.me()
       .then((user) => {
         if (user.role !== 'admin') throw new Error('Admin access only.')
@@ -35,7 +35,7 @@ export default function LoginPage() {
         router.replace('/dashboard')
       })
       .catch((err: any) => {
-        localStorage.removeItem('inzozi_admin_token')
+        localStorage.removeItem('sawa_admin_token')
         setError(err.message || 'Sign-in link expired — please sign in below.')
         setLoading(false)
       })
@@ -68,7 +68,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-4">
             <LogoMark size={40} />
           </div>
-          <h1 className="text-2xl font-bold text-white">Inzozi Motors</h1>
+          <h1 className="text-2xl font-bold text-white">Sawa</h1>
           <p className="text-white/60 text-sm mt-1">Admin Dashboard</p>
         </div>
 
@@ -90,7 +90,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                placeholder="admin@inzozi.rw"
+                placeholder="admin@sawacars.com"
               />
             </div>
             <div>

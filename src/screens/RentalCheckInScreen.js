@@ -19,7 +19,7 @@ const FALLBACK_RECORD = {
   odometer: '21,408 km',
   fuel: 'Full',
   condition: 'No new damage noted',
-  inspector: 'Inzozi staff · Center walkaround',
+  inspector: 'Sawa staff · Center walkaround',
 };
 
 export default function RentalCheckInScreen({ navigation, route }) {

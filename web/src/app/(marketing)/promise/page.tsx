@@ -7,7 +7,7 @@ import { PROMISES } from '@/lib/site'
 import { RETURN_WINDOW_DAYS } from '@/lib/business'
 
 export const metadata: Metadata = {
-  title: 'The Inzozi Promise',
+  title: 'The Sawa Promise',
   description:
     'Five guarantees on every vehicle: a 150-point certification, a 7-day drive-it window, verified history, deposit-back on rentals, and zero fake listings.',
   alternates: { canonical: '/promise' },
@@ -28,10 +28,10 @@ const DETAIL: Record<string, string> = {
   'Deposit-Back Guarantee':
     'Rental deposits are returned in full after the return check, the same day, at the center. Condition photographs are taken when you collect the car and again when you bring it back, so neither side has to argue from memory.',
   'Zero Fake Listings':
-    'Sellers submit cars; they cannot publish them. Only the Inzozi team creates a listing, and only after the car has physically been at a center. Every photograph on this site was taken by our photographers in the same 36 standard angles, which is what makes two listings genuinely comparable.',
+    'Sellers submit cars; they cannot publish them. Only the Sawa team creates a listing, and only after the car has physically been at a center. Every photograph on this site was taken by our photographers in the same 36 standard angles, which is what makes two listings genuinely comparable.',
 }
 
-// Verbatim from the plain-terms block in src/screens/InzoziPromiseScreen.js.
+// Verbatim from the plain-terms block in src/screens/SawaPromiseScreen.js.
 const WINDOW_ROWS = [
   { free: true, text: 'Cancel before handover — always free' },
   { free: true, text: `Days 1–${RETURN_WINDOW_DAYS}: full refund if the car doesn’t match its report` },
@@ -43,9 +43,9 @@ export default function PromisePage() {
   return (
     <>
       <PageHeader
-        eyebrow="The Inzozi Promise"
+        eyebrow="The Sawa Promise"
         title="Our promise to every customer"
-        lede="Buying or renting a car is one of the biggest decisions you will make. These five guarantees apply to every single vehicle on Inzozi — for sale or for rent, first listing or fiftieth."
+        lede="Buying or renting a car is one of the biggest decisions you will make. These five guarantees apply to every single vehicle on Sawa — for sale or for rent, first listing or fiftieth."
         actions={
           <>
             <Button href="/cars" trailingIcon={<Icon name="arrow-right" size={18} />}>
@@ -134,7 +134,7 @@ export default function PromisePage() {
 
           <p className="mt-12 max-w-prose text-caption leading-relaxed text-content-muted">
             The {RETURN_WINDOW_DAYS}-day return guarantee applies to purchases handed over at an
-            Inzozi center. Deposit refunds follow the documented return check. Full terms are
+            Sawa center. Deposit refunds follow the documented return check. Full terms are
             available at any center and in the{' '}
             <Link href="/legal/guarantee" className="font-bold text-brand hover:underline">
               guarantee terms

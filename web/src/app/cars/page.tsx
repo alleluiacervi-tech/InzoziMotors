@@ -46,7 +46,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   return {
     title: `${browseHeading(filters)}`,
     description:
-      `${description} listed by Inzozi Motors in Kigali. Every car is physically ` +
+      `${description} listed by Sawa in Kigali. Every car is physically ` +
       'inspected on our 150-point check, photographed by our team and covered by ' +
       'the 7-day drive-it guarantee. Buyers pay no fees.',
     alternates: { canonical: buildBrowseHref(filters, { sort }) },

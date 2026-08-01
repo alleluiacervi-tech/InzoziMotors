@@ -1,7 +1,7 @@
 {
-  "name": "inzozi-motors-api",
+  "name": "sawa-api",
   "version": "1.0.0",
-  "description": "Inzozi Motors — backend API",
+  "description": "Sawa — backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const SESSION_COOKIE = 'inzozi_session'
+const SESSION_COOKIE = 'sawa_session'
 
 /**
  * Edge guard for the dashboard.

@@ -56,7 +56,7 @@ const labelCls = 'block text-xs font-semibold text-gray-700 mb-1'
 // car goes to maintenance/retired the only handle left on it is its id. Booking
 // history recovers the ones that have been rented; this registry remembers the
 // rest, so parking a brand-new car in the workshop is not a one-way door.
-const REGISTRY_KEY = 'inzozi_rental_off_fleet_ids'
+const REGISTRY_KEY = 'sawa_rental_off_fleet_ids'
 
 function readRegistry(): string[] {
   if (typeof window === 'undefined') return []

@@ -139,7 +139,7 @@ export default function InspectionReportScreen({ navigation, route }) {
           {certified ? (
             <View style={styles.certifiedBadge}>
               <Ionicons name="shield-checkmark" size={16} color="#fff" />
-              <Text style={styles.certifiedText}>Inzozi Certified — Scored ≥ 88%</Text>
+              <Text style={styles.certifiedText}>Sawa Certified — Scored ≥ 88%</Text>
             </View>
           ) : (
             <View style={[styles.certifiedBadge, styles.warnBadge]}>
@@ -259,7 +259,7 @@ export default function InspectionReportScreen({ navigation, route }) {
           </View>
           <View style={styles.explainerRow}>
             <View style={[styles.explainerDot, { backgroundColor: colors.primary }]} />
-            <Text style={styles.explainerText}>This report was completed by a certified Inzozi mechanic on-site. Results are not provided by the seller.</Text>
+            <Text style={styles.explainerText}>This report was completed by a certified Sawa mechanic on-site. Results are not provided by the seller.</Text>
           </View>
         </View>
 
@@ -272,7 +272,7 @@ export default function InspectionReportScreen({ navigation, route }) {
           />
           <View style={{ flex: 1 }}>
             <Text style={[styles.footerTitle, certified && styles.footerTitleCertified]}>
-              {certified ? 'Inzozi Certified Vehicle' : 'Inspected but Not Certified'}
+              {certified ? 'Sawa Certified Vehicle' : 'Inspected but Not Certified'}
             </Text>
             <Text style={styles.footerSub}>
               {certified

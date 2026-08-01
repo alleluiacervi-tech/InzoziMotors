@@ -1,5 +1,5 @@
 import { STUDIO } from './carImageAssets';
-// Inzozi Motors — Phase 2 shared data: inspection categories, vehicle history, seller profiles, notifications
+// Sawa — Phase 2 shared data: inspection categories, vehicle history, seller profiles, notifications
 
 // ─── 150-Point Inspection Categories ─────────────────────────────────────────
 export const INSPECTION_CATEGORIES = [
@@ -240,7 +240,7 @@ export function buildReportFromApi(report) {
     date: report.completed_at
       ? new Date(report.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : 'Recently',
-    inspector: 'Inzozi Inspection Team',
+    inspector: 'Sawa Inspection Team',
     certified: score >= 132,
     categories,
   };
@@ -340,7 +340,7 @@ export const DEFAULT_SELLER_PROFILE = {
   initials: 'VS',
   memberSince: 'Feb 2025',
   location: 'Kigali, Rwanda',
-  bio: 'Verified Inzozi seller. All vehicles fully inspected before listing.',
+  bio: 'Verified Sawa seller. All vehicles fully inspected before listing.',
   trustScore: 72,
   idVerified: true,
   completedSales: 3,

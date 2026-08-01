@@ -5,7 +5,7 @@ import { ResetForm } from './ResetForm'
 
 export const metadata: Metadata = {
   title: 'Reset your password',
-  description: 'Reset the password on your Inzozi Motors account with a one-time code.',
+  description: 'Reset the password on your Sawa account with a one-time code.',
   robots: { index: false, follow: true },
 }
 

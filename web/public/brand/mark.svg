@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512" role="img" aria-label="Inzozi Motors">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512" role="img" aria-label="Sawa">
   <circle cx="50" cy="50" r="50" fill="#F2F0EF"/>
   <g transform="translate(50 51) scale(0.082) translate(-511 -512)">
     <path d="M 150 520 C 150 494 160 480 188 472 L 250 456 C 262 452 271 446 279 436 C 300 398 339 370 390 366 L 560 366 C 610 368 648 390 675 430 C 689 450 705 460 724 464 L 812 478 C 850 484 872 498 872 524 L 872 550 C 872 556 867 560 860 560 L 160 560 C 153 560 150 554 150 548 Z" fill="#DB0632"/>

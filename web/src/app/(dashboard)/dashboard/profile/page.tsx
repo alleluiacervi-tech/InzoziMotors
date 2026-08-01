@@ -37,13 +37,13 @@ const VERIFICATION: Record<
     label: 'Needs another attempt',
     tone: 'danger',
     body:
-      'The photos we received were not clear enough to confirm. Open the Inzozi app and resubmit — there is no limit on attempts.',
+      'The photos we received were not clear enough to confirm. Open the Sawa app and resubmit — there is no limit on attempts.',
   },
   none: {
     label: 'Not started',
     tone: 'neutral',
     body:
-      'Buying, saving and requests all work without this. Verification is only needed to sell a car, and it happens in the Inzozi app: a photo of your national ID and a selfie.',
+      'Buying, saving and requests all work without this. Verification is only needed to sell a car, and it happens in the Sawa app: a photo of your national ID and a selfie.',
   },
 }
 

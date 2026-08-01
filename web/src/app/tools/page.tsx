@@ -6,7 +6,7 @@ import { SITE } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Free car tools for Rwanda',
   description:
-    'Free calculators for anyone buying, selling or importing a car in Rwanda: a market valuation from real Inzozi sales, the full RRA import duty breakdown, and a monthly finance estimate.',
+    'Free calculators for anyone buying, selling or importing a car in Rwanda: a market valuation from real Sawa sales, the full RRA import duty breakdown, and a monthly finance estimate.',
   alternates: { canonical: '/tools' },
   openGraph: {
     title: `Free car tools · ${SITE.name}`,
@@ -22,7 +22,7 @@ const TOOLS: { href: string; icon: IconName; title: string; body: string; meta: 
     href: '/tools/valuation',
     icon: 'chart',
     title: 'Free valuation',
-    body: 'What your car is worth today, priced against cars actually listed and sold on Inzozi. If there are not enough comparable cars, we say so rather than guess.',
+    body: 'What your car is worth today, priced against cars actually listed and sold on Sawa. If there are not enough comparable cars, we say so rather than guess.',
     meta: 'For sellers',
   },
   {

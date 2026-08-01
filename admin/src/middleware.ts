@@ -9,7 +9,7 @@ export function middleware(req: NextRequest) {
   // Token is stored client-side; the middleware just guards SSR navigation.
   // The real auth check happens in the client layout via the API /auth/me call.
   // If a user manually hits a protected page without JS (e.g. curl), they get redirected.
-  const token = req.cookies.get('inzozi_admin_token')?.value
+  const token = req.cookies.get('sawa_admin_token')?.value
   if (!token) {
     const url = req.nextUrl.clone()
     url.pathname = '/login'

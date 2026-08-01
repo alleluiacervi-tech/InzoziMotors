@@ -18,7 +18,7 @@ import suvSideStudio from '@/assets/marketing/suv-side-studio.jpeg'
 // PROVENANCE / LICENSING — the local images in src/assets/marketing were
 // supplied by the team and are manufacturer press assets. Acceptable while the
 // site is pre-launch; before public launch they must be either licensed or
-// replaced with Inzozi's own photography (the 36-angle sets shot at our
+// replaced with Sawa's own photography (the 36-angle sets shot at our
 // centers). When that day comes, this file is the only place to swap.
 //
 // Static imports on purpose: next/image gets intrinsic dimensions and can

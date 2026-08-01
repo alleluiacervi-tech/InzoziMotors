@@ -29,7 +29,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
       pendingHandovers:      parseInt(handoversRes.rows[0].count),
       pendingIdVerifications: parseInt(idQueueRes.rows[0].count),
       totalSold:             parseInt(soldRes.rows[0].count),
-      // GMV = value of cars sold; feeRevenue = Inzozi's actual earnings
+      // GMV = value of cars sold; feeRevenue = Sawa's actual earnings
       totalGMV:              parseInt(gmvRes.rows[0].total),
       totalRevenue:          parseInt(feesRes.rows[0].earned),
       feesOutstanding:       parseInt(feesRes.rows[0].due),

@@ -1,5 +1,5 @@
 import { demoSet, STUDIO } from './carImageAssets';
-// Mock vehicle data for the Inzozi Motors frontend.
+// Mock vehicle data for the Sawa frontend.
 // Images use Unsplash source URLs so the UI renders without bundled assets.
 
 export const categories = ['All', 'SUV', 'Sedan', 'EV', 'Truck', 'Coupe', 'Hatchback', 'Supercar'];

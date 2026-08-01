@@ -165,7 +165,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Pressable
                 style={styles.circleBtn}
                 onPress={() => Share.share({
-                  message: `${car.title} — ${formatPrice(price)} on Inzozi Motors. Every car 150-point inspected.`,
+                  message: `${car.title} — ${formatPrice(price)} on Sawa. Every car 150-point inspected.`,
                 }).catch(() => {})}
               >
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
@@ -385,9 +385,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
             {tier && <Badge variant={tier.variant} label={tier.label} />}
           </View>
 
-          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('InzoziPromise')}>
+          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-            <Text style={styles.promiseLinkText}>Backed by the Inzozi Promise</Text>
+            <Text style={styles.promiseLinkText}>Backed by the Sawa Promise</Text>
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
@@ -396,7 +396,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.desc}>
             {car.year} {car.make} {car.model} · {formatMiles(car.mileage)} · {car.fuel}, {car.transmission?.toLowerCase()} transmission.
             {car.inspected
-              ? ' Passed the full Inzozi 150-point inspection and is protected by our 7-day return guarantee.'
+              ? ' Passed the full Sawa 150-point inspection and is protected by our 7-day return guarantee.'
               : ' Inspection scheduled — full report will be attached before handover.'}
             {marketDiff < 0 ? ` Priced ${Math.abs(marketDiff)}% below the Kigali market average for this model.` : ''}
           </Text>
@@ -479,7 +479,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
         </Pressable>
         <Button
-          title={isAuction ? 'Place a Bid' : 'Request via Inzozi'}
+          title={isAuction ? 'Place a Bid' : 'Request via Sawa'}
           style={{ flex: 1 }}
           onPress={() => navigation.navigate('Checkout', { car })}
         />

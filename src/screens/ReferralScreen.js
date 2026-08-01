@@ -10,7 +10,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 
 const HOW_IT_WORKS = [
-  { icon: 'share-outline', step: '1', title: 'Share your code', desc: 'Send your unique referral code to friends who want to sell their car on Inzozi.' },
+  { icon: 'share-outline', step: '1', title: 'Share your code', desc: 'Send your unique referral code to friends who want to sell their car on Sawa.' },
   { icon: 'car-outline', step: '2', title: 'Friend submits a car', desc: 'When they submit their first car using your code, the referral is counted.' },
   { icon: 'pricetag-outline', step: '3', title: 'You save on fees', desc: 'You receive a 10% discount on your next listing fee, automatically applied.' },
 ];
@@ -51,8 +51,8 @@ export default function ReferralScreen({ navigation }) {
     }
     try {
       await Share.share({
-        message: `I use Inzozi Motors to sell cars in Kigali — certified, inspected, trusted. Sign up with my code ${referralCode} when you submit your car and we both save on fees. https://inzozimotors.rw/ref/${referralCode}`,
-        title: 'Join Inzozi Motors',
+        message: `I use Sawa to sell cars in Kigali — certified, inspected, trusted. Sign up with my code ${referralCode} when you submit your car and we both save on fees. https://sawacars.com/ref/${referralCode}`,
+        title: 'Join Sawa',
       });
     } catch (e) {
       showToast(`Referral code ${referralCode} — share it with friends!`, 'success');

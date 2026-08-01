@@ -1,5 +1,5 @@
--- Inzozi Motors — PostgreSQL schema
--- Fresh install: psql -U inzozi -d inzozi_motors -f src/schema.sql
+-- Sawa — PostgreSQL schema
+-- Fresh install: psql -U sawa -d sawa -f src/schema.sql
 -- All statements are idempotent (IF NOT EXISTS / ON CONFLICT DO NOTHING).
 
 -- ─── Users ───────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS handovers (
   car_id          UUID REFERENCES cars(id),
   buyer_id        UUID NOT NULL REFERENCES users(id),
   seller_id       UUID NOT NULL REFERENCES users(id),
-  center          TEXT,                  -- null until Inzozi arranges the slot
+  center          TEXT,                  -- null until Sawa arranges the slot
   handover_date   TEXT,                  -- "Jul 3, 2026" (display string from app)
   handover_time   TEXT,                  -- "10:00 AM"
   contact_phone   TEXT,                  -- buyer's WhatsApp number for coordination
@@ -236,7 +236,7 @@ ALTER TABLE handovers   ADD COLUMN IF NOT EXISTS agreed_price    INT;
 -- UPDATE handovers SET handover_date = scheduled_date, handover_time = scheduled_time
 --   WHERE handover_date IS NULL AND scheduled_date IS NOT NULL;
 
--- ─── Rentals — Inzozi-owned fleet ─────────────────────────────────────────────
+-- ─── Rentals — Sawa-owned fleet ─────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS rental_cars (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),

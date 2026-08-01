@@ -61,7 +61,7 @@ export default function FinancePage() {
           <SectionHeading
             eyebrow="Before you take it to a bank"
             title="Three things that will change this number"
-            description="Inzozi does not lend and takes no commission from any lender. This tool exists so you walk into the bank knowing roughly what to expect."
+            description="Sawa does not lend and takes no commission from any lender. This tool exists so you walk into the bank knowing roughly what to expect."
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

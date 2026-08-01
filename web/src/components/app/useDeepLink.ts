@@ -50,7 +50,7 @@ export function storeUrlFor(platform: Platform): string {
  * later and finds the App Store loaded behind it.
  *
  * `path` maps to the app's linking config, e.g. `car/<uuid>` →
- * inzozimotors://car/<uuid>. The scheme is declared in app.config.js.
+ * sawa://car/<uuid>. The scheme is declared in app.config.js.
  */
 export function useOpenInApp() {
   const platform = usePlatform()

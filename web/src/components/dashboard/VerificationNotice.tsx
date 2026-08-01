@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Alert } from '@/components/ui'
 import type { IdVerificationStatus } from '@/lib/types'
 
-// Identity verification is what makes every Inzozi listing real, and it is the
+// Identity verification is what makes every Sawa listing real, and it is the
 // one thing the website genuinely cannot do — the ID and selfie capture lives
 // in the app. So this explains rather than nags, and it never blocks the
 // buying side of the account, which needs no verification at all.
@@ -15,7 +15,7 @@ const COPY: Record<
     tone: 'info',
     title: 'Selling starts with a one-time identity check',
     body:
-      'Buying, saving cars and making requests all work without it. To submit a car for inspection we first confirm who you are — a photo of your national ID and a selfie in the Inzozi app. Our team reviews it within 24 hours.',
+      'Buying, saving cars and making requests all work without it. To submit a car for inspection we first confirm who you are — a photo of your national ID and a selfie in the Sawa app. Our team reviews it within 24 hours.',
   },
   pending: {
     tone: 'info',
@@ -27,7 +27,7 @@ const COPY: Record<
     tone: 'warning',
     title: 'Your identity check needs another attempt',
     body:
-      'Usually this means a photo was blurred or the ID was partly out of frame. Open the Inzozi app and resubmit — there is no limit on attempts, and nothing else on your account is affected.',
+      'Usually this means a photo was blurred or the ID was partly out of frame. Open the Sawa app and resubmit — there is no limit on attempts, and nothing else on your account is affected.',
   },
 }
 
@@ -40,7 +40,7 @@ export function VerificationNotice({ status }: { status: IdVerificationStatus })
       <p>{copy.body}</p>
       <p className="mt-2">
         <Link href="/download" className="font-bold underline underline-offset-2">
-          Get the Inzozi app
+          Get the Sawa app
         </Link>
       </p>
     </Alert>

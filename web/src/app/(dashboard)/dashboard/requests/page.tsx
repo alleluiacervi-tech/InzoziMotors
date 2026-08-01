@@ -34,7 +34,7 @@ export default async function RequestsPage() {
     <>
       <PageHeader
         title="Requests"
-        description="Every car you have asked for. Requesting reserves the car and costs nothing — payment happens in person at an Inzozi center on the day of handover."
+        description="Every car you have asked for. Requesting reserves the car and costs nothing — payment happens in person at an Sawa center on the day of handover."
       />
 
       {error ? (

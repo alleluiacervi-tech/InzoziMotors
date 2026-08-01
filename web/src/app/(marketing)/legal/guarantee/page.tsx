@@ -8,7 +8,7 @@ import { RETURN_WINDOW_DAYS } from '@/lib/business'
 export const metadata: Metadata = {
   title: '7-day guarantee terms',
   description:
-    'The full terms of the Inzozi Motors 7-day drive-it guarantee: what it covers, the refund conditions, how to start a return, and what falls outside it.',
+    'The full terms of the Sawa 7-day drive-it guarantee: what it covers, the refund conditions, how to start a return, and what falls outside it.',
   alternates: { canonical: '/legal/guarantee' },
 }
 
@@ -19,12 +19,12 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Every car bought through Inzozi and handed over at an Inzozi center comes with{' '}
+          Every car bought through Sawa and handed over at an Sawa center comes with{' '}
           {RETURN_WINDOW_DAYS} days to change your mind. The window opens on the day of the
           handover and closes {RETURN_WINDOW_DAYS} days later.
         </p>
         <p>
-          Inside it, you may return the car to any Inzozi center. What you get back depends on
+          Inside it, you may return the car to any Sawa center. What you get back depends on
           why you are returning it, which is the subject of the next two sections.
         </p>
       </>
@@ -92,7 +92,7 @@ const SECTIONS: LegalSection[] = [
           </li>
           <li>Say what does not match, and which item on the report it relates to.</li>
           <li>
-            Bring the car to any Inzozi center with its documents and keys. Our mechanics run a
+            Bring the car to any Sawa center with its documents and keys. Our mechanics run a
             return check against the original report.
           </li>
           <li>
@@ -115,7 +115,7 @@ const SECTIONS: LegalSection[] = [
             warranty claim, if one applies, goes through Support.
           </li>
           <li>
-            Vehicles not handed over at an Inzozi center. If a buyer and seller arrange something
+            Vehicles not handed over at an Sawa center. If a buyer and seller arrange something
             privately, we are not in the middle of it and the guarantee does not attach.
           </li>
           <li>Modifications made to the car after you took it.</li>
@@ -145,7 +145,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <ul>
         <li>
-          <Link href="/promise">The Inzozi Promise</Link> — the five guarantees this one belongs
+          <Link href="/promise">The Sawa Promise</Link> — the five guarantees this one belongs
           to.
         </li>
         <li>

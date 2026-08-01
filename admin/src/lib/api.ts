@@ -2,7 +2,7 @@ const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
 function token() {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem('inzozi_admin_token')
+  return localStorage.getItem('sawa_admin_token')
 }
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {

@@ -15,7 +15,7 @@ const MENU_SELLER = [
 const MENU_ACCOUNT = [
   { icon: 'key-outline', label: 'My Rentals', screen: 'MyRentals' },
   { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
-  { icon: 'shield-checkmark-outline', label: 'The Inzozi Promise', screen: 'InzoziPromise' },
+  { icon: 'shield-checkmark-outline', label: 'The Sawa Promise', screen: 'SawaPromise' },
   { icon: 'book-outline', label: 'How Buying Works', screen: 'BuyingGuide' },
   { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
   { icon: 'help-circle-outline', label: 'Help & Support', screen: null },

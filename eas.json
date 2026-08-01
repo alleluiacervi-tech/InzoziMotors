@@ -13,14 +13,14 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.inzozimotors.rw"
+        "EXPO_PUBLIC_API_URL": "https://api.sawacars.com"
       }
     },
     "production": {
       "autoIncrement": true,
       "android": { "buildType": "app-bundle" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.inzozimotors.rw"
+        "EXPO_PUBLIC_API_URL": "https://api.sawacars.com"
       }
     }
   },

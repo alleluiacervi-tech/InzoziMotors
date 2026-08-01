@@ -269,7 +269,7 @@ export default function InspectionFormScreen({ navigation, route }) {
           onPress={handleGenerate}
         />
         <Text style={styles.ctaSub}>
-          Score: {totalScore}/150 · {pct}% · {totalScore >= 132 ? 'Eligible for Inzozi Certified badge' : 'Below certified threshold (88%)'}
+          Score: {totalScore}/150 · {pct}% · {totalScore >= 132 ? 'Eligible for Sawa Certified badge' : 'Below certified threshold (88%)'}
         </Text>
       </View>
     </Screen>

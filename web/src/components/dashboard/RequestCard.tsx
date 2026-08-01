@@ -16,7 +16,7 @@ import type { Handover } from '@/lib/types'
 // status vocabulary is the backend's own — pending, confirmed, complete,
 // cancelled — so what a buyer reads here matches what the admin sees.
 
-/** What Inzozi does next, per status. No payment step exists anywhere. */
+/** What Sawa does next, per status. No payment step exists anywhere. */
 function nextStep(handover: Handover): { title: string; body: string } {
   switch (handover.status) {
     case 'pending':
@@ -149,7 +149,7 @@ export function RequestCard({ handover }: { handover: Handover }) {
               >
                 <p>
                   Drive it and live with it. If the car does not match its published inspection
-                  report, return it to any Inzozi center for a full refund. Change-of-mind returns
+                  report, return it to any Sawa center for a full refund. Change-of-mind returns
                   are accepted with a reconditioning fee, and a per-km charge applies beyond 300 km.
                 </p>
                 <p className="mt-2">

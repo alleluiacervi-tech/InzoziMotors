@@ -30,7 +30,7 @@ export default function LoginModal({ visible, onClose, onLoginSuccess }) {
             <Logo size={28} />
           </View>
 
-          <Text style={styles.title}>Inzozi Motors</Text>
+          <Text style={styles.title}>Sawa</Text>
           <Text style={styles.subtitle}>
             Log in easily to send real-time{'\n'}inquiries to our dealers.
           </Text>

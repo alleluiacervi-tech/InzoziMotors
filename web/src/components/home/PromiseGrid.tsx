@@ -17,7 +17,7 @@ const LEDGER: { claim: string; proof: string; featured?: boolean }[] = [
   },
   {
     claim: 'Drive It for 7 Days',
-    proof: 'Every purchase handed over at an Inzozi center carries the Inzozi 7-Day Guarantee, in writing.',
+    proof: 'Every purchase handed over at an Sawa center carries the Sawa 7-Day Guarantee, in writing.',
   },
   {
     claim: 'Verified History',
@@ -29,7 +29,7 @@ const LEDGER: { claim: string; proof: string; featured?: boolean }[] = [
   },
   {
     claim: 'Zero Fake Listings',
-    proof: 'Only the Inzozi team can publish a listing, and only after physically inspecting the car. Sellers cannot post.',
+    proof: 'Only the Sawa team can publish a listing, and only after physically inspecting the car. Sellers cannot post.',
   },
 ]
 
@@ -55,7 +55,7 @@ export function PromiseGrid() {
         <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <SectionHeading
-              eyebrow="The Inzozi Promise"
+              eyebrow="The Sawa Promise"
               title="Five things that are always true here"
               description="Every car, marketplace or rental. No premium tier buys a better promise."
             />

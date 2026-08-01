@@ -20,7 +20,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_SLIDES = [
   {
     id: 1,
-    brand: 'Inzozi Certified',
+    brand: 'Sawa Certified',
     tagline: 'Every car inspected before listing. No exceptions.',
     tag: 'Trust',
     image: STUDIO.heroSedan,
@@ -124,7 +124,7 @@ export default function HomeScreen({ navigation }) {
     .sort((a, b) => b.cars.length - a.cars.length)
     .slice(0, 6), [cars]);
   const centerWindow = useMemo(() => ({
-    brand: 'Inzozi Center',
+    brand: 'Sawa Center',
     subtitle: 'On display in Nyarutarama this week',
     cars: carsByListedDate.slice(0, 5),
   }), [carsByListedDate]);
@@ -546,11 +546,11 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.footerLinkText}>Log In</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
-            <Pressable onPress={() => navigation.navigate('InzoziPromise')}>
+            <Pressable onPress={() => navigation.navigate('SawaPromise')}>
               <Text style={styles.footerLinkText}>Our Promise</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
-            <Pressable onPress={() => navigation.navigate('InzoziPromise')}>
+            <Pressable onPress={() => navigation.navigate('SawaPromise')}>
               <Text style={styles.footerLinkText}>About Us</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
@@ -558,7 +558,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.footerLinkText}>Settings</Text>
             </Pressable>
           </View>
-          <Text style={styles.copyrightText}>© 2026 Inzozi Motors. All rights reserved.</Text>
+          <Text style={styles.copyrightText}>© 2026 Sawa. All rights reserved.</Text>
         </View>
 
       </ScrollView>

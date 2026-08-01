@@ -8,7 +8,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { DURATION_PRESETS, getRentalDates, calcTripCost, getPickupCenter, AIRPORT_PICKUP, PICKUP_WINDOWS } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
-import { openWhatsApp, INZOZI_WHATSAPP } from '../utils/whatsapp';
+import { openWhatsApp, SAWA_WHATSAPP } from '../utils/whatsapp';
 
 
 export default function RentalBookingScreen({ navigation, route }) {
@@ -99,7 +99,7 @@ export default function RentalBookingScreen({ navigation, route }) {
           <Pressable
             style={styles.waRow}
             onPress={() => openWhatsApp(
-              INZOZI_WHATSAPP,
+              SAWA_WHATSAPP,
               `Hi, I just booked the ${car.title} for ${startDate.full} (${time}) at ${center.name}. Booking question:`
             )}
           >
@@ -250,7 +250,7 @@ export default function RentalBookingScreen({ navigation, route }) {
           <Text style={styles.costRwf}>≈ {formatRWF(totalDue)}</Text>
           <View style={styles.noPayChip}>
             <Ionicons name="shield-checkmark-outline" size={13} color={colors.green} />
-            <Text style={styles.noPayText}>No payment now — pay at the Inzozi center</Text>
+            <Text style={styles.noPayText}>No payment now — pay at the Sawa center</Text>
           </View>
         </View>
 

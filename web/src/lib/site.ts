@@ -4,39 +4,39 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SITE = {
-  name: 'Inzozi Motors',
+  name: 'Sawa',
   tagline: 'Rwanda’s certified car marketplace',
   description:
-    'Every car on Inzozi Motors is physically inspected on a 150-point check, photographed by our team, and backed by a 7-day drive-it guarantee. Buy, sell or rent with confidence in Kigali.',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://inzozimotors.rw',
+    'Every car on Sawa is physically inspected on a 150-point check, photographed by our team, and backed by a 7-day drive-it guarantee. Buy, sell or rent with confidence in Kigali.',
+  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://sawacars.com',
   locale: 'en_RW',
   themeColor: '#C63F3D',
 } as const
 
 /** App identifiers — must match app.config.js in the Expo project. */
 export const APP = {
-  scheme: 'inzozimotors',
-  androidPackage: 'com.inzozi.motors',
-  iosBundleId: 'com.inzozi.motors',
-  playStoreUrl: 'https://play.google.com/store/apps/details?id=com.inzozi.motors',
-  appStoreUrl: 'https://apps.apple.com/app/inzozi-motors/id0000000000',
+  scheme: 'sawa',
+  androidPackage: 'com.sawacars.app',
+  iosBundleId: 'com.sawacars.app',
+  playStoreUrl: 'https://play.google.com/store/apps/details?id=com.sawacars.app',
+  appStoreUrl: 'https://apps.apple.com/app/sawa/id0000000000',
   /**
    * HONESTY GATE. The store records don't exist yet, so every store badge and
    * store link on the site renders as absence (or "coming soon" copy) until
    * this flips. Flip it when the real App Store id and Play listing are live —
-   * a button to a 404 store page is exactly the scam signal Inzozi exists to
+   * a button to a 404 store page is exactly the scam signal Sawa exists to
    * kill.
    */
   storesLive: false,
 } as const
 
-/** Inzozi business line. TODO: replace with the real WhatsApp Business number
+/** Sawa business line. TODO: replace with the real WhatsApp Business number
  *  before launch — the same placeholder lives in src/utils/whatsapp.js. */
 export const CONTACT = {
   whatsapp: '250788000000',
   whatsappDisplay: '+250 788 000 000',
-  email: 'hello@inzozimotors.rw',
-  supportEmail: 'support@inzozimotors.rw',
+  email: 'hello@sawacars.com',
+  supportEmail: 'support@sawacars.com',
   /**
    * HONESTY GATE. The number above is a placeholder. Every WhatsApp surface —
    * header furniture, contact page, escalation links in empty states — checks
@@ -95,8 +95,8 @@ export const FOOTER_LINKS = [
   {
     heading: 'Company',
     links: [
-      { href: '/about', label: 'About Inzozi' },
-      { href: '/promise', label: 'The Inzozi Promise' },
+      { href: '/about', label: 'About Sawa' },
+      { href: '/promise', label: 'The Sawa Promise' },
       { href: '/how-it-works', label: 'How buying works' },
       { href: '/contact', label: 'Contact & centers' },
     ],
@@ -120,18 +120,18 @@ export const FOOTER_LINKS = [
   },
 ] as const
 
-/** The five guarantees — copy lifted verbatim from InzoziPromiseScreen so the
+/** The five guarantees — copy lifted verbatim from SawaPromiseScreen so the
  *  wording a customer reads on the site is the wording in the app. */
 export const PROMISES = [
   {
     icon: 'shield',
     title: '150-Point Certification',
-    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Inzozi. No exceptions, no seller shortcuts.',
+    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa. No exceptions, no seller shortcuts.',
   },
   {
     icon: 'refresh',
     title: 'Drive It for 7 Days',
-    desc: 'Every certified purchase comes with a 7-day decision window. Drive it, live with it — if it doesn’t match its inspection report, return it at any Inzozi center for a full refund.',
+    desc: 'Every certified purchase comes with a 7-day decision window. Drive it, live with it — if it doesn’t match its inspection report, return it at any Sawa center for a full refund.',
   },
   {
     icon: 'document',
@@ -146,7 +146,7 @@ export const PROMISES = [
   {
     icon: 'eye-off',
     title: 'Zero Fake Listings',
-    desc: 'Only the Inzozi team can publish listings, and only after physically inspecting the car. Every photo is shot by our photographers. If it looks real, it is.',
+    desc: 'Only the Sawa team can publish listings, and only after physically inspecting the car. Every photo is shot by our photographers. If it looks real, it is.',
   },
 ] as const
 
@@ -158,11 +158,11 @@ export const BUYING_STEPS = [
   },
   {
     title: 'We arrange everything',
-    desc: 'Inzozi contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.',
+    desc: 'Sawa contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.',
   },
   {
     title: 'Handover at the center',
-    desc: 'Meet at an Inzozi center. Payment happens there — in person, never in the app. We check documents with both of you.',
+    desc: 'Meet at an Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.',
   },
   {
     title: 'Ownership transfer',
@@ -180,7 +180,7 @@ export const BUYING_STEPS = [
 
 /** Seller journey — mirrors the pipeline in CLAUDE.md and SellerDashboardScreen. */
 export const SELLING_STEPS = [
-  { title: 'Verify your identity', desc: 'A one-time ID check. It is what keeps every Inzozi listing real — and it takes about two minutes.' },
+  { title: 'Verify your identity', desc: 'A one-time ID check. It is what keeps every Sawa listing real — and it takes about two minutes.' },
   { title: 'Submit your car', desc: 'Tell us the make, model, mileage and your asking price. We suggest a range from real comparable sales.' },
   { title: 'Book your inspection', desc: 'Pick a center and a slot. Bring the car and your service records.' },
   { title: 'We inspect and photograph', desc: 'Our mechanics run the 150-point check; our photographers shoot the standard 36 angles.' },
@@ -191,7 +191,7 @@ export const SELLING_STEPS = [
 export const FAQS = [
   {
     q: 'Do I pay anything through the app or website?',
-    a: 'Never. There is no payment feature at all. Payment happens physically at an Inzozi center at handover — that is what protects both you and the seller.',
+    a: 'Never. There is no payment feature at all. Payment happens physically at an Sawa center at handover — that is what protects both you and the seller.',
   },
   {
     q: 'What does the 150-point inspection actually cover?',
@@ -199,11 +199,11 @@ export const FAQS = [
   },
   {
     q: 'How does the 7-day guarantee work?',
-    a: 'From the day of handover you have 7 days. If the car does not match its published inspection report, return it to any Inzozi center for a full refund. Change-of-mind returns are accepted with a reconditioning fee, and a per-km charge applies beyond 300 km.',
+    a: 'From the day of handover you have 7 days. If the car does not match its published inspection report, return it to any Sawa center for a full refund. Change-of-mind returns are accepted with a reconditioning fee, and a per-km charge applies beyond 300 km.',
   },
   {
     q: 'Can sellers list cars themselves?',
-    a: 'No — and that is the point. Only the Inzozi team publishes listings, and only after physically inspecting and photographing the car. Sellers submit a car for inspection; they never post directly.',
+    a: 'No — and that is the point. Only the Sawa team publishes listings, and only after physically inspecting and photographing the car. Sellers submit a car for inspection; they never post directly.',
   },
   {
     q: 'What does it cost to sell?',

@@ -5,9 +5,9 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const pool = require('./db');
 
-const ADMIN_EMAIL    = process.env.SEED_ADMIN_EMAIL    || 'admin@inzozi.rw';
+const ADMIN_EMAIL    = process.env.SEED_ADMIN_EMAIL    || 'admin@sawacars.com';
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'admin1234';
-const ADMIN_NAME     = process.env.SEED_ADMIN_NAME     || 'Inzozi Admin';
+const ADMIN_NAME     = process.env.SEED_ADMIN_NAME     || 'Sawa Admin';
 
 async function seed() {
   const hash = await bcrypt.hash(ADMIN_PASSWORD, 12);

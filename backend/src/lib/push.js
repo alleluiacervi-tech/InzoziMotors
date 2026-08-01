@@ -20,7 +20,7 @@ async function sendExpoPush(tokens, { title, body, data } = {}) {
     const chunk = valid.slice(i, i + CHUNK_SIZE);
     const messages = chunk.map((to) => ({
       to,
-      title: title || 'Inzozi Motors',
+      title: title || 'Sawa',
       body: body || '',
       data: data || {},
       sound: 'default',

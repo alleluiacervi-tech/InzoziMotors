@@ -93,7 +93,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
           <Text style={styles.sub}>
             {step === 0
               ? 'Tell us the email on your account and we will send a 6-digit reset code.'
-              : `If ${email} has an Inzozi account, a 6-digit code is on its way. It expires in 30 minutes.`}
+              : `If ${email} has an Sawa account, a 6-digit code is on its way. It expires in 30 minutes.`}
           </Text>
 
           {step === 0 ? (

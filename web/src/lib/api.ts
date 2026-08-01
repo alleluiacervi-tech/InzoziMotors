@@ -102,7 +102,7 @@ async function request<T>(
     const message =
       (err as Error)?.name === 'AbortError'
         ? 'The request timed out.'
-        : 'Could not reach Inzozi Motors. Please try again.'
+        : 'Could not reach Sawa. Please try again.'
     throw new ApiError(message, 0)
   } finally {
     clearTimeout(timer)
@@ -234,7 +234,7 @@ export const handovers = {
   mine: (token: string) => request<Handover[]>('/handovers/my', { token }),
   selling: (token: string) => request<Handover[]>('/handovers/selling', { token }),
 
-  /** Reserve a car. No payment — Inzozi arranges the handover offline. */
+  /** Reserve a car. No payment — Sawa arranges the handover offline. */
   book: (
     token: string,
     body: { car_id: string; contact_phone?: string; center?: string | null; handover_date?: string | null; handover_time?: string | null }

@@ -5,7 +5,7 @@ import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 // than a table so it stays readable at 320px without a horizontal scroller.
 //
 // Each row is its own grid, so the two columns always align with each other and
-// never with an unrelated row. The Inzozi side is the raised surface; the
+// never with an unrelated row. The Sawa side is the raised surface; the
 // classifieds side is deliberately flat and quiet. No red — this section
 // persuades with contrast, not with brand colour.
 
@@ -16,17 +16,17 @@ const ROWS = [
   {
     dimension: 'Who publishes the listing',
     elsewhere: 'Anyone with a phone number and a price in mind.',
-    inzozi: 'Only our team, after the car has been in our hands.',
+    sawa: 'Only our team, after the car has been in our hands.',
   },
   {
     dimension: 'Mechanical condition',
     elsewhere: 'Described by the person selling it to you.',
-    inzozi: '150 points checked and published in full — flags included.',
+    sawa: '150 points checked and published in full — flags included.',
   },
   {
     dimension: 'After you hand over the money',
     elsewhere: 'No guarantee, and nobody to return to.',
-    inzozi: 'Seven days to bring it back if it doesn’t match its report.',
+    sawa: 'Seven days to bring it back if it doesn’t match its report.',
   },
 ]
 
@@ -63,10 +63,10 @@ export function TrustPillars() {
                 <div className="rounded-xl bg-surface p-4 shadow-card ring-1 ring-inset ring-line">
                   <p className="flex items-center gap-1.5 text-micro font-bold uppercase tracking-[0.1em] text-content">
                     <Icon name="check" size={12} className="text-success" />
-                    On Inzozi
+                    On Sawa
                   </p>
                   <p className="mt-2 text-body font-medium leading-relaxed text-content">
-                    {row.inzozi}
+                    {row.sawa}
                   </p>
                 </div>
               </div>

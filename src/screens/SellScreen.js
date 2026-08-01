@@ -10,7 +10,7 @@ import { useApp } from '../context/AppContext';
 
 const STEPS = [
   { icon: 'shield-checkmark-outline', title: 'Zero Paperwork Upfront', sub: 'ID and ownership checked in person at your inspection' },
-  { icon: 'scan-outline', title: '150-Point Curation', sub: 'Get certified by Inzozi inspection specialists' },
+  { icon: 'scan-outline', title: '150-Point Curation', sub: 'Get certified by Sawa inspection specialists' },
   { icon: 'ribbon-outline', title: 'Showcase Premium Status', sub: 'Position your car as high-intent certified property' },
   { icon: 'people-outline', title: 'Nationwide Client Match', sub: 'Direct connection with verified buyers across Kigali' },
 ];
@@ -26,7 +26,7 @@ const VERIFY_BANNER = {
   none: {
     icon: 'shield-outline',
     title: 'Verify your identity to sell',
-    body: 'One two-minute check, done once. It is what keeps every Inzozi listing real.',
+    body: 'One two-minute check, done once. It is what keeps every Sawa listing real.',
     cta: 'Start verification',
   },
   pending: {

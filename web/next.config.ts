@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     // so resizing and AVIF/WebP negotiation are worth real money in LCP.
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
-      { protocol: 'https', hostname: '**.inzozimotors.rw' },
+      { protocol: 'https', hostname: '**.sawacars.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'http', hostname: '10.0.2.2' },

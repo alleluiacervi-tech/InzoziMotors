@@ -5,7 +5,7 @@ import { CONTACT, SITE } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Privacy policy',
   description:
-    'What Inzozi Motors collects, why, who can see it, and how identity documents are handled. One account across the app and the website.',
+    'What Sawa collects, why, who can see it, and how identity documents are handled. One account across the app and the website.',
   alternates: { canonical: '/legal/privacy' },
 }
 
@@ -32,7 +32,7 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li>Your name, email address and phone number.</li>
           <li>
-            Your password, stored only as a cryptographic hash. Nobody at Inzozi can read it,
+            Your password, stored only as a cryptographic hash. Nobody at Sawa can read it,
             including us.
           </li>
         </ul>
@@ -92,7 +92,7 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li>They are never shown on a listing, and never shared with buyers or other sellers.</li>
           <li>
-            Access is restricted to the Inzozi team members who review verifications. The
+            Access is restricted to the Sawa team members who review verifications. The
             documents sit behind an administrator-only route; an ordinary account cannot reach
             them even with a direct link.
           </li>
@@ -215,7 +215,7 @@ const SECTIONS: LegalSection[] = [
     heading: 'Children',
     body: (
       <p>
-        Inzozi accounts are for adults. We do not knowingly collect information from anyone under
+        Sawa accounts are for adults. We do not knowingly collect information from anyone under
         18, and we delete it if we discover we have.
       </p>
     ),

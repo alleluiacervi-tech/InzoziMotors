@@ -26,13 +26,13 @@ const STEPS = [
     icon: 'calendar-outline',
     doneIcon: 'calendar',
     title: 'Handover Slot Booked',
-    sub: 'You, the seller, and our team meet at the Inzozi center.',
+    sub: 'You, the seller, and our team meet at the Sawa center.',
   },
   {
     key: 'handover',
     icon: 'people-outline',
     doneIcon: 'people',
-    title: 'At the Inzozi Center',
+    title: 'At the Sawa Center',
     sub: 'Payment verified. Ownership documents processed by our team.',
   },
   {
@@ -40,7 +40,7 @@ const STEPS = [
     icon: 'ribbon-outline',
     doneIcon: 'ribbon',
     title: 'Done — Car is Yours',
-    sub: 'Your 7-day Inzozi return guarantee is now active.',
+    sub: 'Your 7-day Sawa return guarantee is now active.',
   },
 ];
 
@@ -284,8 +284,8 @@ export default function OrderTrackingScreen({ navigation, route }) {
             {[
               { icon: 'chatbubble-outline', text: 'Message the seller — make sure they know your booked date, time, and center.' },
               { icon: 'document-text-outline', text: 'Re-read the 150-point inspection report. Bring any questions to the center.' },
-              { icon: 'people-outline', text: 'Come to the Inzozi center on the day. Our team verifies payment and transfers ownership.' },
-              { icon: 'shield-checkmark-outline', text: 'Once Inzozi confirms, your 7-day return guarantee starts immediately.' },
+              { icon: 'people-outline', text: 'Come to the Sawa center on the day. Our team verifies payment and transfers ownership.' },
+              { icon: 'shield-checkmark-outline', text: 'Once Sawa confirms, your 7-day return guarantee starts immediately.' },
             ].map((item, i) => (
               <View key={i} style={styles.nextRow}>
                 <View style={styles.nextIcon}>
@@ -297,11 +297,11 @@ export default function OrderTrackingScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* Inzozi guarantee */}
+        {/* Sawa guarantee */}
         <View style={styles.guaranteeCard}>
           <Ionicons name="shield-checkmark" size={18} color={colors.green} />
           <Text style={styles.guaranteeText}>
-            7-day return guarantee · 150-point certified · Inzozi-witnessed handover
+            7-day return guarantee · 150-point certified · Sawa-witnessed handover
           </Text>
         </View>
 

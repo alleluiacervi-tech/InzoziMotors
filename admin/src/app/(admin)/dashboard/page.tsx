@@ -122,7 +122,7 @@ export default function DashboardPage() {
         }
       />
 
-      {/* Money — Inzozi's earnings first, marketplace volume second */}
+      {/* Money — Sawa's earnings first, marketplace volume second */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <RevenueCard
           label="Fee revenue (earned)"

@@ -9,8 +9,8 @@ import { colors, radius, shadows, fonts } from '../theme';
 // conditions + FAQ, so buyers know every step before they commit.
 const STEPS = [
   { icon: 'paper-plane-outline', title: 'Request the car', desc: 'One tap, no payment. The car is reserved for you while we confirm with the seller. Cancelling before handover is always free.' },
-  { icon: 'call-outline', title: 'We arrange everything', desc: 'Inzozi contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.' },
-  { icon: 'shield-checkmark-outline', title: 'Handover at the center', desc: 'Meet at an Inzozi center. Payment happens there — in person, never in the app. We check documents with both of you.' },
+  { icon: 'call-outline', title: 'We arrange everything', desc: 'Sawa contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.' },
+  { icon: 'shield-checkmark-outline', title: 'Handover at the center', desc: 'Meet at an Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.' },
   { icon: 'document-text-outline', title: 'Ownership transfer', desc: 'We process the RRA transfer with you at the center. New registration documents typically complete within 2–3 working days.' },
   { icon: 'car-outline', title: 'Insure before you drive', desc: "Third-party insurance is required before the car leaves the center. Bring a policy, or our team helps you arrange one on the spot." },
   { icon: 'time-outline', title: 'Drive it for 7 days', desc: "Your guarantee window. If the car doesn't match its inspection report, bring it back — see the conditions below." },
@@ -25,11 +25,11 @@ const REFUND_ROWS = [
 ];
 
 const FAQS = [
-  { q: 'Do I pay anything in the app?', a: 'Never. The app has no payment feature at all. Payment happens physically at the Inzozi center at handover — that is what protects both you and the seller.' },
+  { q: 'Do I pay anything in the app?', a: 'Never. The app has no payment feature at all. Payment happens physically at the Sawa center at handover — that is what protects both you and the seller.' },
   { q: 'What if the seller sells the car to someone else?', a: "Once you request a car it is reserved and removed from the marketplace. Only you can complete or release that reservation." },
   { q: 'Can I inspect the car myself before paying?', a: 'Yes — the handover happens at our center, where you can check the car against its 150-point report before any money changes hands. You can also ask for a WhatsApp video viewing first.' },
   { q: 'What documents do I need?', a: 'Your national ID, proof of insurance (or arrange it at the center), and payment. We handle the RRA paperwork with you.' },
-  { q: 'How does the 7-day guarantee work exactly?', a: 'From the day of handover you have 7 days. If the car does not match its published inspection report, return it to any Inzozi center for a full refund. Change-of-mind returns are accepted with a reconditioning fee, and a per-km charge applies beyond 300 km.' },
+  { q: 'How does the 7-day guarantee work exactly?', a: 'From the day of handover you have 7 days. If the car does not match its published inspection report, return it to any Sawa center for a full refund. Change-of-mind returns are accepted with a reconditioning fee, and a per-km charge applies beyond 300 km.' },
 ];
 
 function Faq({ q, a }) {
@@ -52,7 +52,7 @@ export default function BuyingGuideScreen({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         <Text style={styles.lede}>
-          Six steps, no surprises. Payment stays at the center, and every step is backed by the Inzozi Promise.
+          Six steps, no surprises. Payment stays at the center, and every step is backed by the Sawa Promise.
         </Text>
 
         {/* Timeline */}
@@ -95,9 +95,9 @@ export default function BuyingGuideScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Common questions</Text>
         {FAQS.map((f) => <Faq key={f.q} q={f.q} a={f.a} />)}
 
-        <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('InzoziPromise')}>
+        <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
           <Ionicons name="shield-checkmark-outline" size={15} color={colors.primary} />
-          <Text style={styles.promiseLinkText}>Read the full Inzozi Promise</Text>
+          <Text style={styles.promiseLinkText}>Read the full Sawa Promise</Text>
           <Ionicons name="chevron-forward" size={14} color={colors.primary} />
         </Pressable>
       </ScrollView>

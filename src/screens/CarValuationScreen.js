@@ -60,7 +60,7 @@ export default function CarValuationScreen({ navigation }) {
             </View>
             <Text style={styles.resultBasis}>
               {result.comparables >= 2
-                ? `Based on ${result.comparables} similar ${make} cars on Inzozi`
+                ? `Based on ${result.comparables} similar ${make} cars on Sawa`
                 : 'Based on current Kigali market data'}
             </Text>
           </View>
@@ -72,7 +72,7 @@ export default function CarValuationScreen({ navigation }) {
               and 3× faster. The inspection is the listing.
             </Text>
             {[
-              { icon: 'calendar-outline', text: 'Book a free inspection slot at any Inzozi center' },
+              { icon: 'calendar-outline', text: 'Book a free inspection slot at any Sawa center' },
               { icon: 'shield-checkmark-outline', text: 'Pass the 150-point check — we photograph & list it' },
               { icon: 'cash-outline', text: 'Meet verified buyers, hand over at our center' },
             ].map((s) => (

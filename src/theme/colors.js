@@ -1,4 +1,4 @@
-// Inzozi Motors — Signal Red Brand System
+// Sawa — Signal Red Brand System
 // Bold, trustworthy red identity — confident and modern for East Africa's
 // premier certified car marketplace.
 // Rebranded Jul 18 2026: transitioned from Forest Green to Signal Red.
@@ -8,7 +8,7 @@ export const colors = {
   navyMid: '#281F1C',
   navyLight: '#3A2D29',
 
-  // Brand Red — Inzozi brick red #C63F3D (canonical brand primary).
+  // Brand Red — Sawa brick red #C63F3D (canonical brand primary).
   // DISCIPLINE: red appears ONLY as (1) a price, (2) a primary action,
   // (3) a selected/active state, (4) the Certified+ tier badge, or
   // (5) an inline action link. Informational icons, section decorations

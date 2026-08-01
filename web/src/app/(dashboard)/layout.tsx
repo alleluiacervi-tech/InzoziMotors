@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 const ROLE_LABEL: Record<UserRole, string> = {
   buyer: 'Buyer account',
   seller: 'Seller account',
-  admin: 'Inzozi team',
+  admin: 'Sawa team',
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {

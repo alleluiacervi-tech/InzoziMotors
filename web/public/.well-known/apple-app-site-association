@@ -3,8 +3,8 @@
     "apps": [],
     "details": [
       {
-        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.inzozi.motors",
-        "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.com.inzozi.motors"],
+        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.sawacars.app",
+        "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.com.sawacars.app"],
         "paths": ["/cars/*", "/download"],
         "components": [
           {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# Inzozi Motors — start the whole local stack, detached from this terminal.
+# Sawa — start the whole local stack, detached from this terminal.
 # Safe to re-run: each service is skipped if its port is already in use.
 #   PostgreSQL :5432 (Docker) · API :3000 · Admin :3001 · Website :3002
 # Stop everything with ./stop-all.sh   Logs land in .logs/
@@ -12,17 +12,17 @@ mkdir -p "$ROOT/.logs"
 port_in_use() { ss -tln 2>/dev/null | grep -qE ":$1\b"; }
 
 echo
-echo "[1/4] PostgreSQL (Docker: inzozi-db)..."
+echo "[1/4] PostgreSQL (Docker: sawa-db)..."
 if port_in_use 5432; then
   echo "       already running"
 else
-  if docker start inzozi-db >/dev/null 2>&1; then :; else
-    docker run -d --name inzozi-db --restart unless-stopped \
-      -e POSTGRES_DB=inzozi_motors -e POSTGRES_USER=inzozi -e POSTGRES_PASSWORD=inzozi_dev \
-      -v inzozimotors_postgres_data:/var/lib/postgresql/data \
+  if docker start sawa-db >/dev/null 2>&1; then :; else
+    docker run -d --name sawa-db --restart unless-stopped \
+      -e POSTGRES_DB=sawa -e POSTGRES_USER=sawa -e POSTGRES_PASSWORD=sawa_dev \
+      -v sawa_postgres_data:/var/lib/postgresql/data \
       -p 5432:5432 postgres:16-alpine >/dev/null
   fi
-  until docker exec inzozi-db pg_isready -U inzozi -d inzozi_motors >/dev/null 2>&1; do sleep 1; done
+  until docker exec sawa-db pg_isready -U sawa -d sawa >/dev/null 2>&1; do sleep 1; done
 fi
 
 echo "[2/4] API on :3000..."
@@ -48,6 +48,6 @@ fi
 
 echo
 echo "  Website  http://localhost:3002"
-echo "  Admin    http://localhost:3001   (admin@inzozi.rw / admin1234)"
+echo "  Admin    http://localhost:3001   (admin@sawacars.com / admin1234)"
 echo "  API      http://localhost:3000/health"
 echo

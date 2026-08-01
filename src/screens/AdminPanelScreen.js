@@ -403,7 +403,7 @@ export default function AdminPanelScreen({ navigation }) {
       message: `${sub.carTitle} will be approved — the seller can then book an inspection slot.`,
       confirmLabel: 'Approve',
     }).then((ok) => {
-      if (ok) updateSubmissionStatus(sub.id, 'approved', 'Approved — book your inspection at any Inzozi center');
+      if (ok) updateSubmissionStatus(sub.id, 'approved', 'Approved — book your inspection at any Sawa center');
     });
   };
 

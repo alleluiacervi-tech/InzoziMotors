@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { colors, fonts } from '../theme';
 
-// The Inzozi Motors identity: the red car mark on a soft circular field.
+// The Sawa identity: the red car mark on a soft circular field.
 // Shared silhouette (car-space ~ x:150–872, y:366–658); "glass" is the
 // cut-out color — set it to whatever the mark sits on.
 function CarPaths({ body = colors.primary, glass = '#F2F0EF' }) {
@@ -60,7 +60,7 @@ export default function Logo({ size = 18, color = colors.textPrimary }) {
   return (
     <View style={styles.row}>
       <LogoMark size={size + 12} />
-      <Text style={[styles.word, { fontSize: size, color }]}>Inzozi Motors</Text>
+      <Text style={[styles.word, { fontSize: size, color }]}>Sawa</Text>
     </View>
   );
 }

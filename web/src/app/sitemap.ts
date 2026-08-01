@@ -4,7 +4,7 @@ import { SITE } from '@/lib/site'
 import type { Car, RentalCar } from '@/lib/types'
 
 // Every live listing belongs in here — a car nobody can find is a car nobody
-// buys, and the catalogue is the only part of Inzozi that earns search traffic.
+// buys, and the catalogue is the only part of Sawa that earns search traffic.
 //
 // NOTHING in this file is allowed to throw. `next build` renders the sitemap
 // like any other route, so an unreachable API during a deploy would fail the

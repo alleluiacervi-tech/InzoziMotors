@@ -35,7 +35,7 @@ export default function SignInScreen({ navigation, route }) {
       <BackHeader onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.sub}>Sign in to continue to Inzozi Motors.</Text>
+        <Text style={styles.sub}>Sign in to continue to Sawa.</Text>
 
         <Text style={[styles.label, { marginTop: 26 }]}>Email</Text>
         <TextInput

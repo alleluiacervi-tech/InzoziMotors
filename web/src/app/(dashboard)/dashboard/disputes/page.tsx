@@ -68,7 +68,7 @@ export default async function DisputesPage() {
     <>
       <PageHeader
         title="Disputes"
-        description={`Every certified purchase comes with a ${RETURN_WINDOW_DAYS}-day decision window. Drive it, live with it — and if it does not match its inspection report, bring it back to any Inzozi center.`}
+        description={`Every certified purchase comes with a ${RETURN_WINDOW_DAYS}-day decision window. Drive it, live with it — and if it does not match its inspection report, bring it back to any Sawa center.`}
       />
 
       {failed ? (

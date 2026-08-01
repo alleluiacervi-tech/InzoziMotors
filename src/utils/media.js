@@ -25,8 +25,8 @@ async function ensurePermission(source) {
   if (!granted) {
     showToast(
       source === 'camera'
-        ? 'Camera access is off. Enable it for Inzozi Motors in your phone settings.'
-        : 'Photo access is off. Enable it for Inzozi Motors in your phone settings.',
+        ? 'Camera access is off. Enable it for Sawa in your phone settings.'
+        : 'Photo access is off. Enable it for Sawa in your phone settings.',
       'error'
     );
   }

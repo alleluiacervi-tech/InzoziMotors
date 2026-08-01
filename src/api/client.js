@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 
-const TOKEN_KEY = 'inzozi_auth_token';
+const TOKEN_KEY = 'sawa_auth_token';
 
 // Resolution order, most explicit first:
 //   1. extra.apiUrl        — set per build profile in eas.json (production/preview)

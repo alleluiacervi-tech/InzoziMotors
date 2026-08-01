@@ -7,9 +7,9 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const pool = require('./db');
 
-const SELLER_EMAIL    = process.env.SEED_SELLER_EMAIL    || 'seller@inzozi.rw';
+const SELLER_EMAIL    = process.env.SEED_SELLER_EMAIL    || 'seller@sawacars.com';
 const SELLER_PASSWORD = process.env.SEED_SELLER_PASSWORD || 'seller1234';
-const SELLER_NAME     = process.env.SEED_SELLER_NAME     || 'Inzozi Demo Seller';
+const SELLER_NAME     = process.env.SEED_SELLER_NAME     || 'Sawa Demo Seller';
 
 // title, make, model, year, mileage(km), fuel_type, transmission, body_type,
 // color, price(USD), location, drive_side, description, images[], inspection_score(/150)
@@ -20,7 +20,7 @@ const CARS = [
     mileage: 18420, fuel: 'Electric', transmission: 'Automatic',
     body: 'Sedan', color: 'Pearl White', price: 24900,
     location: 'Nyarutarama, Kigali', drive: 'LHD',
-    description: 'Long Range AWD with autopilot. Single owner, full charging kit included. Passed the Inzozi 150-point inspection with flying colours.',
+    description: 'Long Range AWD with autopilot. Single owner, full charging kit included. Passed the Sawa 150-point inspection with flying colours.',
     score: 147,
     images: [
       'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=800&q=80',

@@ -1,6 +1,6 @@
-# Inzozi Motors — website
+# Sawa — website
 
-The public web platform for Inzozi Motors: the certified marketplace, the rental
+The public web platform for Sawa: the certified marketplace, the rental
 fleet, the seller journey, and every buyer's account. Next.js 15 (App Router),
 React 19, Tailwind 3.4, TypeScript strict. No other runtime dependencies.
 
@@ -9,7 +9,7 @@ It is the **third** client of one backend, not a separate product:
 ```
 backend/   Node + Express + PostgreSQL API   →  the single source of truth
 ├── src/       Expo app (iOS + Android)      →  App Store / Play Store
-├── admin/     Next.js admin dashboard       →  Inzozi team only, port 3001
+├── admin/     Next.js admin dashboard       →  Sawa team only, port 3001
 └── web/       this — the public website     →  port 3002
 ```
 
@@ -128,9 +128,9 @@ Everything below is a deliberate placeholder. Search for the exact strings.
 
 2. **`public/.well-known/apple-app-site-association`** —
    `REPLACE_WITH_APPLE_TEAM_ID` (twice). developer.apple.com → **Membership
-   details → Team ID** (10 characters). The `appID` is `<TeamID>.com.inzozi.motors`.
+   details → Team ID** (10 characters). The `appID` is `<TeamID>.com.sawacars.app`.
    Universal Links also require the **Associated Domains** capability
-   (`applinks:inzozimotors.rw`) on the iOS build.
+   (`applinks:sawacars.com`) on the iOS build.
 
 3. **`src/lib/site.ts` → `APP.appStoreUrl`** — currently `id0000000000`. The real
    Apple ID appears in App Store Connect once the app record exists.
@@ -143,8 +143,8 @@ Everything below is a deliberate placeholder. Search for the exact strings.
    silently poisons every shared link.
 
 6. **The Expo app has no deep-link route table yet.** `app.config.js` declares
-   `scheme: 'inzozimotors'`, but `src/navigation/RootNavigator.js` has no
-   `linking` config, so `inzozimotors://car/<id>` currently opens the app on its
+   `scheme: 'sawa'`, but `src/navigation/RootNavigator.js` has no
+   `linking` config, so `sawa://car/<id>` currently opens the app on its
    home screen rather than the car. Both `.well-known` files and
    `useDeepLink.ts` are ready for it; the app side needs the matching `linking`
    prefixes and screen map before app links are worth announcing. Add
@@ -166,11 +166,11 @@ Standalone output (`output: 'standalone'` in `next.config.ts`), same shape as
 
 ```bash
 docker build \
-  --build-arg NEXT_PUBLIC_API_URL=https://api.inzozimotors.rw \
-  --build-arg NEXT_PUBLIC_SITE_URL=https://inzozimotors.rw \
-  -t inzozi-web .
+  --build-arg NEXT_PUBLIC_API_URL=https://api.sawacars.com \
+  --build-arg NEXT_PUBLIC_SITE_URL=https://sawacars.com \
+  -t sawa-web .
 
-docker run -p 3002:3002 -e API_URL=http://127.0.0.1:3000 inzozi-web
+docker run -p 3002:3002 -e API_URL=http://127.0.0.1:3000 sawa-web
 ```
 
 `NEXT_PUBLIC_*` are **build args** — they are baked into the browser bundle, so

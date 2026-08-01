@@ -278,7 +278,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
                   </Text>
                   <Text style={styles.aiSuggestSub}>
                     {comparablesCount
-                      ? `Based on ${comparablesCount} similar ${form.make} cars on Inzozi`
+                      ? `Based on ${comparablesCount} similar ${form.make} cars on Sawa`
                       : 'Based on current Kigali market data'}
                   </Text>
                   {form.askingPrice > 0 && (

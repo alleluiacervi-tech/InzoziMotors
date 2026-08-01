@@ -9,7 +9,7 @@ import { APP, SITE } from '@/lib/site'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: `${SITE.name} — ${SITE.tagline}`,
-    short_name: 'Inzozi',
+    short_name: 'Sawa',
     description: SITE.description,
     id: '/',
     start_url: '/',

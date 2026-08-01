@@ -1,4 +1,4 @@
-# Inzozi Motors — UX & Design Audit
+# Sawa — UX & Design Audit
 > Jul 17, 2026 · Full-app trace of buyer, seller, renter, and admin flows.
 > Every finding verified against actual code with file:line references.
 

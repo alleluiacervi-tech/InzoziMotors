@@ -1,8 +1,8 @@
 {
-  "name": "inzozi-motors-web",
+  "name": "sawa-web",
   "version": "1.0.0",
   "private": true,
-  "description": "Inzozi Motors — official web platform. Shares the backend, API, auth and business logic with the Expo mobile apps.",
+  "description": "Sawa — official web platform. Shares the backend, API, auth and business logic with the Expo mobile apps.",
   "scripts": {
     "dev": "next dev -p 3002",
     "build": "next build",

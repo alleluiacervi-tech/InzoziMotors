@@ -50,7 +50,7 @@ import RentalCheckInScreen from '../screens/RentalCheckInScreen';
 import SellScreen from '../screens/SellScreen';
 import CarValuationScreen from '../screens/CarValuationScreen';
 // Trust
-import InzoziPromiseScreen from '../screens/InzoziPromiseScreen';
+import SawaPromiseScreen from '../screens/SawaPromiseScreen';
 import BuyingGuideScreen from '../screens/BuyingGuideScreen';
 import ShowroomScreen from '../screens/ShowroomScreen';
 import DisputesScreen from '../screens/DisputesScreen';
@@ -118,7 +118,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="RentalCheckIn" component={RentalCheckInScreen} />
       <Stack.Screen name="Sell" component={SellScreen} />
       <Stack.Screen name="CarValuation" component={CarValuationScreen} />
-      <Stack.Screen name="InzoziPromise" component={InzoziPromiseScreen} />
+      <Stack.Screen name="SawaPromise" component={SawaPromiseScreen} />
       <Stack.Screen name="BuyingGuide" component={BuyingGuideScreen} />
       <Stack.Screen name="Showroom" component={ShowroomScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="Disputes" component={DisputesScreen} />

@@ -1,4 +1,4 @@
-# Inzozi Motors — Production Deployment & Release Plan
+# Sawa — Production Deployment & Release Plan
 
 > **Version:** 1.0 · **Date:** August 1, 2026 · **Status:** Pre-launch planning
 >
@@ -42,7 +42,7 @@ logistics, not engineering (engineering is ~2 weeks).
 | Backend API | Feature-complete, 15 route modules, smoke-tested (38/38 + 35 audit checks), Dockerized. Health endpoint exists. No tests in CI, no helmet/rate-limit. |
 | Public website | Next.js 15.1.3 — browse, sell, rentals, tools, auth, dashboard, **legal/privacy pages exist**, full SEO scaffolding (sitemap, robots, OG images, manifest). |
 | Admin dashboard | All 10 pages built, runs in Docker — **never click-tested end-to-end against the API**. |
-| Mobile app | All Phase 1–5 screens wired with offline demo fallback; real photo capture; push token registration. `com.inzozi.motors`, v1.0.0, Android API 36 pinned ✅, permission strings written ✅. |
+| Mobile app | All Phase 1–5 screens wired with offline demo fallback; real photo capture; push token registration. `com.sawacars.app`, v1.0.0, Android API 36 pinned ✅, permission strings written ✅. |
 | EAS config | Profiles ready, but **`eas init` not run** (no projectId) and `ascAppId` is a placeholder. |
 | Assets | Icon + adaptive icon 1024×1024 ✅. Splash is only 1024×1024 (upscales badly on tall phones). No Play feature graphic, no screenshots. |
 | CI | Syntax/typecheck/build on all four surfaces. No tests, no deploy, no `npm audit`. |
@@ -116,7 +116,7 @@ valid fallback; pick one, don't mix.)
         │    Nginx (host)     │  80/443, Let's Encrypt, gzip,
         │                     │  security headers, rate limit
         └──┬───────┬───────┬──┘
-   api.inzozi…  inzozi….rw  admin.inzozi…
+   api.sawacars… sawacars.com admin.sawacars…
         │           │           │
    ┌────┴────┐ ┌────┴────┐ ┌────┴────┐
    │api :3000│ │web :3002│ │adm :3001│   containers bound to 127.0.0.1
@@ -140,8 +140,8 @@ valid fallback; pick one, don't mix.)
 
 ### 4.3 Domains & DNS
 
-Register `inzozimotors.rw` through a RICTA-accredited registrar. All A
-records → VPS IP:
+Register `sawacars.com` through any major registrar (Cloudflare Registrar or
+Namecheap recommended). All A records → VPS IP:
 
 | Record | Serves |
 |---|---|
@@ -168,10 +168,10 @@ Low TTL (300s) before launch; add `CAA 0 issue "letsencrypt.org"`.
 
 - All `ports:` bound to `127.0.0.1`; **remove the 5432 mapping entirely**.
 - `NODE_ENV=production`; secrets via untracked `.env.prod` (chmod 600).
-- Build args: `NEXT_PUBLIC_API_URL=https://api.inzozimotors.rw`,
-  `NEXT_PUBLIC_SITE_URL=https://inzozimotors.rw`; web's internal
+- Build args: `NEXT_PUBLIC_API_URL=https://api.sawacars.com`,
+  `NEXT_PUBLIC_SITE_URL=https://sawacars.com`; web's internal
   `API_URL=http://api:3000` stays.
-- `CORS_ORIGINS=https://inzozimotors.rw,https://www.inzozimotors.rw,https://admin.inzozimotors.rw`
+- `CORS_ORIGINS=https://sawacars.com,https://www.sawacars.com,https://admin.sawacars.com`
   (the native app sends no Origin header — CORS doesn't apply to it).
 - Remove `SEED_ADMIN_*` after first boot; rotate the admin password.
 - Per-service log rotation: `json-file`, `max-size: 10m`, `max-file: 5`.
@@ -188,7 +188,7 @@ user + SSH key → **checkpoint: confirm deploy login before disabling root
 SSH** → disable root/password auth, `ufw` (OpenSSH, 80, 443), fail2ban,
 unattended-upgrades. Install Docker + compose plugin, Nginx, Certbot.
 
-**Phase B — Stack up (day 1–2):** Clone repo to `/srv/inzozi`; human pastes
+**Phase B — Stack up (day 1–2):** Clone repo to `/srv/sawa`; human pastes
 `.env.prod` secrets; `docker compose -f docker-compose.yml -f
 docker-compose.prod.yml up -d --build`; verify `/health` on all three
 services; Nginx server blocks → `nginx -t` → reload; Certbot on all four
@@ -247,12 +247,12 @@ Production `.env.prod` (human-provided; never committed, never echoed):
 
 ```
 NODE_ENV=production            PORT=3000
-DB_HOST=db DB_NAME=inzozi_motors DB_USER=inzozi DB_PASSWORD=<strong>
+DB_HOST=db DB_NAME=sawa DB_USER=sawa DB_PASSWORD=<strong>
 JWT_SECRET=<openssl rand -base64 64>   JWT_EXPIRES_IN=7d
-CORS_ORIGINS=https://inzozimotors.rw,https://www.inzozimotors.rw,https://admin.inzozimotors.rw
+CORS_ORIGINS=https://sawacars.com,https://www.sawacars.com,https://admin.sawacars.com
 UPLOAD_DIR=/app/uploads
 SMTP_HOST=smtp-relay.brevo.com SMTP_PORT=587 SMTP_USER=… SMTP_PASS=…
-MAIL_FROM=Inzozi Motors <no-reply@inzozimotors.rw>
+MAIL_FROM=Sawa <no-reply@sawacars.com>
 # RESET_CODE_ECHO must NOT be set; SEED_ADMIN_* removed after first boot
 ```
 
@@ -292,7 +292,7 @@ expedited Apple review — which is why Play always releases at
 **Account (start immediately — longest lead time):** Apple Developer
 Program, $99/yr. Enrolling as a company requires a **D-U-N-S number** (free,
 days–weeks — the same number serves Google). Create the app record in App
-Store Connect (bundle ID `com.inzozi.motors`) → put its Apple ID into
+Store Connect (bundle ID `com.sawacars.app`) → put its Apple ID into
 `eas.json` `submit.production.ios.ascAppId`. Create an **App Store Connect
 API key** for `eas submit`.
 
@@ -333,8 +333,8 @@ screenshots mismatch.
 - *Personal account:* new accounts must run a **closed test with ≥12 testers
   continuously enrolled for 14 days** before production access.
 - *Organization account:* needs a D-U-N-S number but is **exempt from the
-  12-tester rule**, and shows "Inzozi Motors Ltd" as the developer. **If
-  Inzozi is a registered company, choose this.**
+  12-tester rule**, and shows "Sawa Ltd" as the developer. **If
+  Sawa is a registered company, choose this.**
 
 **Setup:** create the app record; complete Store listing, App content
 (privacy policy URL, ads = No, Data Safety form mirroring the Apple answers
@@ -449,7 +449,7 @@ closed test (14d if personal) ▢ Apple submission ▢ staged rollout plan
 | Service | Purpose | Cost |
 |---|---|---|
 | VPS (Hetzner CPX31-class) | All server surfaces | ~€16/mo |
-| Domain `.rw` | via RICTA registrar | ~$30–50/yr |
+| Domain `sawacars.com` | any registrar | ~$10–15/yr |
 | Apple Developer Program | App Store | $99/yr |
 | Google Play Console | Play Store | $25 once |
 | Expo EAS | Builds/submit | $0 free tier (~30 builds/mo) |

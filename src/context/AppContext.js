@@ -320,7 +320,7 @@ export function AppProvider({ children }) {
 
     let detail = 'Our team is reviewing your submission';
     if (sub.status === 'approved') {
-      detail = 'Approved — book your inspection at any Inzozi center';
+      detail = 'Approved — book your inspection at any Sawa center';
     } else if (sub.status === 'scheduled') {
       detail = `Inspection: ${inspectionWhen || 'booked'}${center ? ` · ${center}` : ''}`;
     } else if (sub.status === 'live') {
@@ -393,7 +393,7 @@ export function AppProvider({ children }) {
 
     return {
       id: conv.id,
-      name: otherName || 'Inzozi Motors User',
+      name: otherName || 'Sawa User',
       last: conv.last_message || 'No messages yet',
       time: timeStr,
       unread: parseInt(conv.unread_count || 0),

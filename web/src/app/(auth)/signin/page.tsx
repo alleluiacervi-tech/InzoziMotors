@@ -9,7 +9,7 @@ import { SignInForm } from './SignInForm'
 // otherwise crawl with a hundred `?next=` variants.
 export const metadata: Metadata = {
   title: 'Sign in',
-  description: 'Sign in to Inzozi Motors to see your saved cars, saved searches and purchase requests.',
+  description: 'Sign in to Sawa to see your saved cars, saved searches and purchase requests.',
   robots: { index: false, follow: true },
 }
 
@@ -30,7 +30,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
 
       <SignInForm next={next} defaultEmail={first(params.email)} />
 
-      <AuthSwitch prompt="New to Inzozi Motors?" href="/signup" label="Create an account" />
+      <AuthSwitch prompt="New to Sawa?" href="/signup" label="Create an account" />
 
       <OneAccountNote className="mt-8 border-t border-line-soft pt-6" />
     </>

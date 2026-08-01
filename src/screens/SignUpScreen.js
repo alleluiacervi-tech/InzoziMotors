@@ -54,7 +54,7 @@ export default function SignUpScreen({ navigation }) {
       <BackHeader onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Create account</Text>
-        <Text style={styles.sub}>Join 2M+ buyers and sellers on Inzozi Motors.</Text>
+        <Text style={styles.sub}>Join 2M+ buyers and sellers on Sawa.</Text>
 
         <View style={styles.socials}>
           <Pressable style={[styles.social, styles.socialLight]} onPress={handleSocialSignUp}>

@@ -163,7 +163,7 @@ export default function ImportDutyPage() {
               Or buy a car that has already landed
             </h2>
             <p className="mt-4 text-title-sm leading-relaxed text-white/70">
-              Every car on Inzozi is already in Rwanda, duty settled. Its documentation — including
+              Every car on Sawa is already in Rwanda, duty settled. Its documentation — including
               the RRA duty stamp — is checked during the 150-point inspection and published on the
               listing, so the price you see is the price you pay.
             </p>

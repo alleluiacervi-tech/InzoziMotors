@@ -29,7 +29,7 @@ export function getCertTier(car: Pick<Car, 'inspected' | 'inspection_score'>): C
   if (!car?.inspected) return null
   const score = car.inspection_score || 0
   if (score >= 140) return { key: 'plus', label: 'Certified+', short: 'Certified+' }
-  if (score >= 120) return { key: 'certified', label: 'Inzozi Certified', short: 'Certified' }
+  if (score >= 120) return { key: 'certified', label: 'Sawa Certified', short: 'Certified' }
   return { key: 'inspected', label: '150-pt Inspected', short: 'Inspected' }
 }
 

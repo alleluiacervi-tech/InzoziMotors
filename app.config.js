@@ -10,12 +10,12 @@ const DEV_FALLBACK = null; // resolved on-device in src/api/client.js
 
 export default ({ config }) => ({
   ...config,
-  name: 'Inzozi Motors',
-  slug: 'inzozi-motors',
+  name: 'Sawa',
+  slug: 'sawa',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  scheme: 'inzozimotors',
+  scheme: 'sawa',
   userInterfaceStyle: 'light',
   newArchEnabled: true,
   splash: {
@@ -26,13 +26,13 @@ export default ({ config }) => ({
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.inzozi.motors',
+    bundleIdentifier: 'com.sawacars.app',
     infoPlist: {
       // Seller KYC documents and the 36-angle listing shoot both need the camera
       NSCameraUsageDescription:
-        'Inzozi Motors uses the camera to photograph your ID for seller verification and to capture vehicle photos.',
+        'Sawa uses the camera to photograph your ID for seller verification and to capture vehicle photos.',
       NSPhotoLibraryUsageDescription:
-        'Inzozi Motors needs access to your photos so you can attach existing vehicle or ID images.',
+        'Sawa needs access to your photos so you can attach existing vehicle or ID images.',
     },
   },
   android: {
@@ -40,7 +40,7 @@ export default ({ config }) => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#FFFFFF',
     },
-    package: 'com.inzozi.motors',
+    package: 'com.sawacars.app',
     permissions: ['CAMERA', 'READ_MEDIA_IMAGES'],
   },
   web: {
@@ -55,9 +55,9 @@ export default ({ config }) => ({
       'expo-image-picker',
       {
         photosPermission:
-          'Inzozi Motors needs access to your photos so you can attach existing vehicle or ID images.',
+          'Sawa needs access to your photos so you can attach existing vehicle or ID images.',
         cameraPermission:
-          'Inzozi Motors uses the camera to photograph your ID for seller verification and to capture vehicle photos.',
+          'Sawa uses the camera to photograph your ID for seller verification and to capture vehicle photos.',
       },
     ],
     [

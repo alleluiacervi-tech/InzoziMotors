@@ -9,7 +9,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
 import { useApp } from '../context/AppContext';
-import { openWhatsApp, INZOZI_WHATSAPP } from '../utils/whatsapp';
+import { openWhatsApp, SAWA_WHATSAPP } from '../utils/whatsapp';
 
 const { width } = Dimensions.get('window');
 
@@ -59,7 +59,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             </Pressable>
             <Pressable
               style={styles.circleBtn}
-              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Inzozi Motors` }).catch(() => {})}
+              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa` }).catch(() => {})}
             >
               <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
             </Pressable>
@@ -163,7 +163,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           </View>
 
           {/* What's included */}
-          <Text style={styles.sectionTitle}>Every Inzozi rental includes</Text>
+          <Text style={styles.sectionTitle}>Every Sawa rental includes</Text>
           <View style={styles.includesGrid}>
             {RENTAL_INCLUDES.map((item) => (
               <View key={item.label} style={styles.includeCard}>
@@ -173,9 +173,9 @@ export default function RentalDetailScreen({ navigation, route }) {
             ))}
           </View>
 
-          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('InzoziPromise')}>
+          <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-            <Text style={styles.promiseLinkText}>Backed by the Inzozi Promise</Text>
+            <Text style={styles.promiseLinkText}>Backed by the Sawa Promise</Text>
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
@@ -198,7 +198,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>How renting works</Text>
           {[
             { n: '1', t: 'Book your dates', d: 'Choose pickup date and duration — instant confirmation.' },
-            { n: '2', t: 'Pick up at an Inzozi center', d: 'Bring your driving licence and ID. Pay at pickup.' },
+            { n: '2', t: 'Pick up at an Sawa center', d: 'Bring your driving licence and ID. Pay at pickup.' },
             { n: '3', t: 'Drive & return', d: 'Return to the same center. Deposit refunded after a quick check.' },
           ].map((step) => (
             <View key={step.n} style={styles.stepRow}>
@@ -224,8 +224,8 @@ export default function RentalDetailScreen({ navigation, route }) {
         <Pressable
           style={styles.waBtn}
           onPress={() => openWhatsApp(
-            INZOZI_WHATSAPP,
-            `Hi Inzozi, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
+            SAWA_WHATSAPP,
+            `Hi Sawa, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
           )}
         >
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />

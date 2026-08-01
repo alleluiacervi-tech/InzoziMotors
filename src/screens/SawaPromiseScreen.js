@@ -11,12 +11,12 @@ const PROMISES = [
   {
     icon: 'shield-checkmark',
     title: '150-Point Certification',
-    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Inzozi. No exceptions, no seller shortcuts.',
+    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa. No exceptions, no seller shortcuts.',
   },
   {
     icon: 'refresh',
     title: 'Drive It for 7 Days',
-    desc: "Every certified purchase comes with a 7-day decision window. Drive it, live with it — if it doesn't match its inspection report, return it at any Inzozi center for a full refund.",
+    desc: "Every certified purchase comes with a 7-day decision window. Drive it, live with it — if it doesn't match its inspection report, return it at any Sawa center for a full refund.",
   },
   {
     icon: 'document-text',
@@ -31,23 +31,23 @@ const PROMISES = [
   {
     icon: 'eye-off',
     title: 'Zero Fake Listings',
-    desc: 'Only the Inzozi team can publish listings, and only after physically inspecting the car. Every photo is shot by our photographers. If it looks real, it is.',
+    desc: 'Only the Sawa team can publish listings, and only after physically inspecting the car. Every photo is shot by our photographers. If it looks real, it is.',
   },
 ];
 
-export default function InzoziPromiseScreen({ navigation }) {
+export default function SawaPromiseScreen({ navigation }) {
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="The Inzozi Promise" onBack={() => navigation.goBack()} />
+      <BackHeader title="The Sawa Promise" onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-        {/* Hero — the Inzozi identity */}
+        {/* Hero — the Sawa identity */}
         <View style={styles.hero}>
           <LogoMark size={84} />
           <Text style={styles.heroTitle}>Our promise to every customer</Text>
           <Text style={styles.heroSub}>
             Buying or renting a car is one of the biggest decisions you'll make.
-            These five guarantees apply to every single vehicle on Inzozi.
+            These five guarantees apply to every single vehicle on Sawa.
           </Text>
         </View>
 
@@ -93,7 +93,7 @@ export default function InzoziPromiseScreen({ navigation }) {
 
         {/* Fine print */}
         <Text style={styles.finePrint}>
-          The 7-day return guarantee applies to purchases handed over at an Inzozi center.
+          The 7-day return guarantee applies to purchases handed over at an Sawa center.
           Deposit refunds follow the documented return check. Full terms available at any center.
         </Text>
 

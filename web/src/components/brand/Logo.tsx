@@ -1,4 +1,4 @@
-// The Inzozi Motors identity — a direct port of src/components/Logo.js.
+// The Sawa identity — a direct port of src/components/Logo.js.
 // Same path data, same proportions, so the mark on the website and the mark in
 // the app are pixel-identical rather than "close enough".
 
@@ -88,7 +88,7 @@ export function LogoMark({ size = 32, className }: { size?: number; className?: 
 /**
  * Full lockup: mark + wordmark. The `<title>`-free SVGs above are decorative;
  * the accessible name comes from this component's text, so screen readers
- * announce "Inzozi Motors" once rather than twice.
+ * announce "Sawa" once rather than twice.
  */
 export function Logo({
   size = 20,
@@ -108,7 +108,7 @@ export function Logo({
         }`}
         style={{ fontSize: size }}
       >
-        Inzozi Motors
+        Sawa
       </span>
     </span>
   )

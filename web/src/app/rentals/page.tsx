@@ -190,7 +190,7 @@ export default async function RentalsPage({ searchParams }: PageProps) {
                 {CONTACT.whatsappVerified ? (
                   <Button
                     href={`https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
-                      'Hi Inzozi, I would like to rent a car. Here are my dates:'
+                      'Hi Sawa, I would like to rent a car. Here are my dates:'
                     )}`}
                     target="_blank"
                     fullWidth

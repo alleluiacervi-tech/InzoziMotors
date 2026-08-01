@@ -82,7 +82,7 @@ export default function VehicleHistoryScreen({ navigation, route }) {
         rraDutyNote: `RRA duty check: ${h.rra_duty_paid}`,
         insuranceActive: h.insurance_valid === 'pass',
         insuranceNote: `Insurance check at inspection: ${h.insurance_valid}`,
-        chassisNumber: h.vin || 'On file at Inzozi',
+        chassisNumber: h.vin || 'On file at Sawa',
         vinVerified: !!h.vin_verified,
       }))
       .catch(() => {});

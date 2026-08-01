@@ -84,8 +84,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .join(' · ')
 
   const description = car.inspected
-    ? `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali. Passed the Inzozi 150-point inspection, photographed by our team, covered by the 7-day drive-it guarantee.`
-    : `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali, listed by Inzozi Motors.`
+    ? `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali. Passed the Sawa 150-point inspection, photographed by our team, covered by the 7-day drive-it guarantee.`
+    : `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali, listed by Sawa.`
 
   const image = car.images?.[0]
 
@@ -130,11 +130,11 @@ export default async function CarDetailPage({ params }: PageProps) {
   const isAvailable = car.status === 'live'
   const isOwnListing = Boolean(user && user.id === car.seller_id)
 
-  // Always the Inzozi business line, never car.seller_phone. The app can surface
+  // Always the Sawa business line, never car.seller_phone. The app can surface
   // a seller's number to a signed-in buyer; a public page cannot, because it is
-  // crawled — and because Inzozi is the middleman, so the conversation belongs
+  // crawled — and because Sawa is the middleman, so the conversation belongs
   // with us anyway.
-  const contactMessage = `Hi Inzozi, I'm interested in the ${car.title} (${formatUSD(car.price)}) on your website. Is it still available?`
+  const contactMessage = `Hi Sawa, I'm interested in the ${car.title} (${formatUSD(car.price)}) on your website. Is it still available?`
   const whatsappHref = `https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(contactMessage)}`
 
   const specs: Spec[] = [
@@ -356,7 +356,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
                   <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">
                     <Icon name="shield" size={14} className="mt-px shrink-0" />
-                    The Inzozi 7-Day Guarantee · Handover at an Inzozi center
+                    The Sawa 7-Day Guarantee · Handover at an Sawa center
                   </p>
                 </div>
 
@@ -385,7 +385,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     <p className="mt-1 text-micro leading-relaxed text-content-muted">
                       An estimate only, using {FINANCE_TERMS.downPaymentPct}% deposit,{' '}
                       {FINANCE_TERMS.annualRatePct}% a year over {FINANCE_TERMS.termMonths} months.
-                      Inzozi does not lend — your bank sets the real terms.
+                      Sawa does not lend — your bank sets the real terms.
                     </p>
                     <p className="mt-3 text-caption">
                       <Link href="/tools/import-duty" className="font-bold text-brand hover:underline">
@@ -398,7 +398,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
               <p className="mt-4 flex items-start gap-2 px-1 text-micro leading-relaxed text-content-muted">
                 <Icon name="location" size={14} className="mt-0.5" />
-                Handovers happen at an Inzozi center in Kigali, with our team
+                Handovers happen at an Sawa center in Kigali, with our team
                 present for the documents and the RRA transfer.
               </p>
             </div>
@@ -426,7 +426,7 @@ export default async function CarDetailPage({ params }: PageProps) {
             {/* The provenance claim, stated exactly once on this page — three
                 facts above the report they produced. */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-line-soft bg-surface-alt px-5 py-4">
-              {['Inspected by our mechanics', 'Photographed at our center', 'Published by Inzozi'].map(
+              {['Inspected by our mechanics', 'Photographed at our center', 'Published by Sawa'].map(
                 (fact) => (
                   <p key={fact} className="flex items-center gap-1.5 text-caption font-semibold text-content-secondary">
                     <Icon name="check-circle" size={15} className="text-success" />
@@ -448,11 +448,11 @@ export default async function CarDetailPage({ params }: PageProps) {
             {/* The named guarantee, between the evidence and the history. */}
             <Card className="p-5 sm:p-6">
               <h2 className="text-title-sm font-extrabold text-content">
-                The Inzozi 7-Day Guarantee
+                The Sawa 7-Day Guarantee
               </h2>
               <p className="mt-2 max-w-prose text-body leading-relaxed text-content-secondary">
                 From the day of handover you have 7 days: if this car doesn&apos;t match the
-                report above, return it to any Inzozi center for a full refund. It applies to
+                report above, return it to any Sawa center for a full refund. It applies to
                 every purchase handed over at our centers — no premium tier required.
               </p>
               <p className="mt-3 text-caption">
@@ -497,7 +497,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <div>
                 <p className="text-eyebrow font-bold uppercase text-brand">Similar cars</p>
                 <h2 className="mt-2 text-headline font-extrabold text-content">
-                  More {car.make} on Inzozi
+                  More {car.make} on Sawa
                 </h2>
               </div>
               <Button href={`/cars?make=${encodeURIComponent(car.make)}`} variant="outline" size="sm">
@@ -536,7 +536,7 @@ function SellerCard({ car }: { car: Car }) {
           <div>
             <p className="text-body font-bold text-content">{car.seller_name}</p>
             <p className="text-caption text-content-muted">
-              {verified ? 'Identity verified by Inzozi' : 'Identity not yet verified'}
+              {verified ? 'Identity verified by Sawa' : 'Identity not yet verified'}
             </p>
           </div>
         </div>
@@ -546,13 +546,13 @@ function SellerCard({ car }: { car: Car }) {
         {typeof car.seller_sales === 'number' && car.seller_sales > 0 ? (
           <p className="text-caption text-content-secondary">
             <span className="font-bold text-content">{car.seller_sales}</span> completed{' '}
-            {car.seller_sales === 1 ? 'sale' : 'sales'} through Inzozi
+            {car.seller_sales === 1 ? 'sale' : 'sales'} through Sawa
           </p>
         ) : null}
       </div>
 
       <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-muted">
-        You deal with Inzozi, not the seller — the handover happens at our center.
+        You deal with Sawa, not the seller — the handover happens at our center.
       </p>
     </Card>
   )

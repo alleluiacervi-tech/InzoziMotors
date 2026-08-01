@@ -81,7 +81,7 @@ export async function estimateValuationAction(
         year,
         message:
           result.message ||
-          'There are not enough comparable cars on Inzozi to price this one yet.',
+          'There are not enough comparable cars on Sawa to price this one yet.',
       }
     }
 
@@ -104,7 +104,7 @@ export async function estimateValuationAction(
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.isNetworkError) {
-        return { status: 'error', message: 'We could not reach Inzozi Motors. Please try again.' }
+        return { status: 'error', message: 'We could not reach Sawa. Please try again.' }
       }
       return { status: 'error', message: err.message }
     }

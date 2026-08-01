@@ -16,8 +16,8 @@ import { useApp } from '../context/AppContext';
 const HOW_IT_WORKS = [
   { icon: 'paper-plane-outline', title: 'Send your request', sub: 'One tap — no payment, no commitment yet.' },
   { icon: 'lock-closed-outline', title: 'We reserve the car', sub: 'Held for you while we confirm with the seller.' },
-  { icon: 'call-outline', title: 'We arrange the handover', sub: 'Inzozi contacts you on WhatsApp to set a time that suits you.' },
-  { icon: 'shield-checkmark-outline', title: 'Meet at the Inzozi center', sub: 'Payment, documents, transfer — then drive it for 7 days before the sale is final.' },
+  { icon: 'call-outline', title: 'We arrange the handover', sub: 'Sawa contacts you on WhatsApp to set a time that suits you.' },
+  { icon: 'shield-checkmark-outline', title: 'Meet at the Sawa center', sub: 'Payment, documents, transfer — then drive it for 7 days before the sale is final.' },
 ];
 
 // ─── Request phase ───────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
         {car.inspected && (
           <View style={styles.certBadge}>
             <Ionicons name="shield-checkmark" size={15} color={colors.green} />
-            <Text style={styles.certBadgeText}>Inzozi Certified · 150-point inspection passed</Text>
+            <Text style={styles.certBadgeText}>Sawa Certified · 150-point inspection passed</Text>
           </View>
         )}
 
@@ -47,7 +47,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
           <View style={{ flex: 1 }}>
             <Text style={styles.infoTitle}>No payment in the app</Text>
             <Text style={styles.infoSub}>
-              Payment, documents and ownership transfer all happen at the Inzozi center — where we protect both you and the seller.
+              Payment, documents and ownership transfer all happen at the Sawa center — where we protect both you and the seller.
             </Text>
           </View>
         </View>
@@ -152,7 +152,7 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
             { icon: 'bookmark-outline', label: 'Request ID', value: bookingId },
             { icon: 'car-outline', label: 'Vehicle', value: car.title },
             { icon: 'call-outline', label: 'Contact', value: phone ? `+250 ${phone}` : 'Via your account' },
-            { icon: 'time-outline', label: 'Next step', value: 'Inzozi confirms within 24h' },
+            { icon: 'time-outline', label: 'Next step', value: 'Sawa confirms within 24h' },
           ].map((row) => (
             <View key={row.label} style={styles.bookingRow}>
               <Ionicons name={row.icon} size={15} color={colors.textMuted} />
@@ -165,7 +165,7 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
         <View style={styles.guaranteeCard}>
           <Ionicons name="shield-checkmark" size={16} color={colors.green} />
           <Text style={styles.guaranteeText}>
-            Drive it for 7 days — the guarantee starts when handover completes at the Inzozi center.
+            Drive it for 7 days — the guarantee starts when handover completes at the Sawa center.
           </Text>
         </View>
 

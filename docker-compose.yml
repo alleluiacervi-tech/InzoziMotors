@@ -1,6 +1,6 @@
 version: '3.9'
 
-# ─── Inzozi Motors — full local stack ────────────────────────────────────────
+# ─── Sawa — full local stack ────────────────────────────────────────
 # Clone the repo, then:
 #   docker compose up --build
 #
@@ -11,7 +11,7 @@ version: '3.9'
 #   API        → http://localhost:3000
 #   Admin dash → http://localhost:3001
 #   Website    → http://localhost:3002
-#   DB direct  → localhost:5432  (user: inzozi, pass: inzozi_dev, db: inzozi_motors)
+#   DB direct  → localhost:5432  (user: sawa, pass: sawa_dev, db: sawa)
 #
 # The Expo app is NOT part of this stack — it runs on a device via `npm start`
 # at the repo root and reaches this API over the LAN.
@@ -23,15 +23,15 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB:       inzozi_motors
-      POSTGRES_USER:     inzozi
-      POSTGRES_PASSWORD: inzozi_dev
+      POSTGRES_DB:       sawa
+      POSTGRES_USER:     sawa
+      POSTGRES_PASSWORD: sawa_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U inzozi -d inzozi_motors"]
+      test: ["CMD-SHELL", "pg_isready -U sawa -d sawa"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -46,16 +46,16 @@ services:
     environment:
       DB_HOST:              db
       DB_PORT:              5432
-      DB_NAME:              inzozi_motors
-      DB_USER:              inzozi
-      DB_PASSWORD:          inzozi_dev
+      DB_NAME:              sawa
+      DB_USER:              sawa
+      DB_PASSWORD:          sawa_dev
       JWT_SECRET:           dev_jwt_secret_change_in_production
       JWT_EXPIRES_IN:       30d
       PORT:                 3000
       NODE_ENV:             development
       CORS_ORIGINS:         "*"
       UPLOAD_DIR:           /app/uploads
-      SEED_ADMIN_EMAIL:     admin@inzozi.rw
+      SEED_ADMIN_EMAIL:     admin@sawacars.com
       SEED_ADMIN_PASSWORD:  admin1234
     ports:
       - "3000:3000"

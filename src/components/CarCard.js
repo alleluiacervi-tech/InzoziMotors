@@ -7,11 +7,11 @@ import Badge from './Badge';
 import { getCertTier } from '../data/certification';
 import { monthlyEstimate } from '../data/finance';
 
-const getInzoziYear = (car) => String(car.year);
+const getSawaYear = (car) => String(car.year);
 
-const getInzoziMileage = (car) => `${(car.mileage ?? 0).toLocaleString('en-US')} km`;
+const getSawaMileage = (car) => `${(car.mileage ?? 0).toLocaleString('en-US')} km`;
 
-const getInzoziLocation = (car) => {
+const getSawaLocation = (car) => {
   const loc = car.location || '';
   if (loc.includes('Nyarutarama')) return 'Nyarutarama';
   if (loc.includes('Kiyovu')) return 'Kiyovu';
@@ -21,7 +21,7 @@ const getInzoziLocation = (car) => {
   return 'Kigali';
 };
 
-const getInzoziPrice = (car) => `$${(car.price ?? car.currentBid ?? 0).toLocaleString('en-US')}`;
+const getSawaPrice = (car) => `$${(car.price ?? car.currentBid ?? 0).toLocaleString('en-US')}`;
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
   const { isCarSaved, toggleSaveCar } = useApp();
@@ -71,7 +71,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
               {car.seats} seats · {car.transmission}
             </Text>
             <Text style={styles.meta} numberOfLines={1}>
-              <Ionicons name="star" size={10} color={colors.amber} /> {car.rating} ({car.trips} trips) · {getInzoziLocation(car)}
+              <Ionicons name="star" size={10} color={colors.amber} /> {car.rating} ({car.trips} trips) · {getSawaLocation(car)}
             </Text>
             <View style={styles.rentalPriceRow}>
               <Text style={styles.price}>${car.dailyRate}</Text>
@@ -80,9 +80,9 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
           </>
         ) : (
           <>
-            <Text style={styles.meta} numberOfLines={1}>{getInzoziYear(car)}</Text>
-            <Text style={styles.meta} numberOfLines={1}>{getInzoziMileage(car)} · {getInzoziLocation(car)}</Text>
-            <Text style={styles.price}>{getInzoziPrice(car)}</Text>
+            <Text style={styles.meta} numberOfLines={1}>{getSawaYear(car)}</Text>
+            <Text style={styles.meta} numberOfLines={1}>{getSawaMileage(car)} · {getSawaLocation(car)}</Text>
+            <Text style={styles.price}>{getSawaPrice(car)}</Text>
             {car.price ? (
               <Text style={styles.monthly}>Finance from ${monthlyEstimate(car.price)}/mo</Text>
             ) : null}

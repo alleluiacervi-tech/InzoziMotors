@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { SITE } from '@/lib/site'
 
-// The card that shows up when someone shares inzozimotors.rw in WhatsApp — by
+// The card that shows up when someone shares sawacars.com in WhatsApp — by
 // far the most common way a Rwandan buyer meets this site for the first time.
 //
 // next/og ships exactly one font (Noto Sans 400), and loading Inter over the

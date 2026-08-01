@@ -1,6 +1,6 @@
 import { STUDIO } from './carImageAssets';
 // Mock rental fleet — separate inventory from sale listings.
-// Every rental car is Inzozi-certified (same 150-point inspection as sale cars).
+// Every rental car is Sawa-certified (same 150-point inspection as sale cars).
 
 export const RENTAL_CARS = [
   {
@@ -30,7 +30,7 @@ export const RENTAL_CARS = [
       STUDIO.paintWhite,
       STUDIO.suvSide04,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
   {
     id: 'r2',
@@ -60,7 +60,7 @@ export const RENTAL_CARS = [
       STUDIO.heroSuv,
       STUDIO.paintGrey,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
   {
     id: 'r3',
@@ -89,7 +89,7 @@ export const RENTAL_CARS = [
       STUDIO.paintBlue,
       STUDIO.paintGlossyGrey,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
   {
     id: 'r4',
@@ -118,7 +118,7 @@ export const RENTAL_CARS = [
     images: [
       STUDIO.paintSkylight,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
   {
     id: 'r5',
@@ -147,7 +147,7 @@ export const RENTAL_CARS = [
     images: [
       STUDIO.suvSideStudio,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
   {
     id: 'r6',
@@ -175,7 +175,7 @@ export const RENTAL_CARS = [
     images: [
       STUDIO.suvSide04,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
   {
     id: 'r7',
@@ -204,7 +204,7 @@ export const RENTAL_CARS = [
     images: [
       STUDIO.heroSuv,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
   {
     id: 'r8',
@@ -232,11 +232,11 @@ export const RENTAL_CARS = [
     images: [
       STUDIO.suvSide07,
     ],
-    seller: 'Inzozi Fleet',
+    seller: 'Sawa Fleet',
   },
 ];
 
-// What every Inzozi rental includes — shown on detail screen
+// What every Sawa rental includes — shown on detail screen
 export const RENTAL_INCLUDES = [
   { icon: 'shield-checkmark-outline', label: 'Comprehensive insurance' },
   { icon: 'construct-outline', label: '24/7 roadside assistance' },
@@ -244,7 +244,7 @@ export const RENTAL_INCLUDES = [
   { icon: 'sparkles-outline', label: 'Cleaned & sanitised' },
 ];
 
-// Pickup locations — the 3 Inzozi centers + airport meet-and-greet
+// Pickup locations — the 3 Sawa centers + airport meet-and-greet
 export const RENTAL_CENTERS = [
   { id: 'c1', name: 'Nyarutarama Center', area: 'Nyarutarama', fee: 0 },
   { id: 'c2', name: 'Kicukiro Center', area: 'Kicukiro', fee: 0 },
@@ -252,7 +252,7 @@ export const RENTAL_CENTERS = [
   { id: 'c4', name: "Kigali Int'l Airport", area: 'Kanombe', fee: 20, airport: true },
 ];
 
-// Each rental car lives at one Inzozi center — pickup happens where the car is.
+// Each rental car lives at one Sawa center — pickup happens where the car is.
 // Airport meet & greet stays available as an optional paid add-on.
 const HOME_CENTER_BY_AREA = {
   Nyarutarama: 'c1', Kiyovu: 'c1', Kimihurura: 'c1',

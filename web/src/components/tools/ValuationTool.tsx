@@ -128,7 +128,7 @@ export function ValuationTool({
           {state.status === 'empty' ? (
             <div className="space-y-5">
               <Alert tone="info" title="Not enough comparable cars yet">
-                {state.message}. We price from cars actually listed or sold on Inzozi, so a make
+                {state.message}. We price from cars actually listed or sold on Sawa, so a make
                 and year we have not handled yet gets no number rather than a guess.
               </Alert>
               <p className="text-caption leading-relaxed text-content-secondary">
@@ -147,7 +147,7 @@ export function ValuationTool({
 
           {state.status === 'idle' || state.status === 'invalid' ? (
             <ResultPlaceholder>
-              Enter a make and year to see what comparable cars on Inzozi are selling for.
+              Enter a make and year to see what comparable cars on Sawa are selling for.
             </ResultPlaceholder>
           ) : null}
         </ResultPanel>
@@ -205,7 +205,7 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
         ) : null}
         <ResultRow
           label="Comparable cars used"
-          hint="Listed or sold on Inzozi"
+          hint="Listed or sold on Sawa"
           value={String(state.comparables)}
         />
       </div>

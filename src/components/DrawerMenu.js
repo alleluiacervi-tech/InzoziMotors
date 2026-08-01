@@ -140,7 +140,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <LogoMark size={34} />
               <View>
-                <Text style={styles.headerBrand}>INZOZI</Text>
+                <Text style={styles.headerBrand}>SAWA</Text>
                 <Text style={styles.headerSub}>Rwanda's Certified Marketplace</Text>
               </View>
             </View>
@@ -230,7 +230,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               <Text style={styles.footerLink}>Settings</Text>
             </Pressable>
           </View>
-          <Text style={styles.version}>Inzozi Motors v1.0 · Kigali, Rwanda</Text>
+          <Text style={styles.version}>Sawa v1.0 · Kigali, Rwanda</Text>
         </ScrollView>
       </Animated.View>
     </View>

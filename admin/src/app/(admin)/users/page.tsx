@@ -25,7 +25,7 @@ export default function UsersPage() {
   // KYC files are admin-gated; append the token so browser navigation can load them
   const docUrl = (url: string) => {
     if (!url) return url
-    const t = typeof window !== 'undefined' ? localStorage.getItem('inzozi_admin_token') : null
+    const t = typeof window !== 'undefined' ? localStorage.getItem('sawa_admin_token') : null
     return t ? `${url}${url.includes('?') ? '&' : '?'}token=${t}` : url
   }
 

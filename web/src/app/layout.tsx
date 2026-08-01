@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   keywords: [
     'cars for sale Rwanda', 'used cars Kigali', 'certified cars Rwanda',
     'buy car Kigali', 'sell car Rwanda', 'car rental Kigali',
-    'inspected used cars', 'Inzozi Motors',
+    'inspected used cars', 'Sawa',
   ],
   authors: [{ name: SITE.name }],
   creator: SITE.name,

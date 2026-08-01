@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Tiny JSON persistence layer — all keys namespaced, all failures silent
 // (storage must never crash the app; worst case we fall back to defaults).
-const PREFIX = '@inzozi/';
+const PREFIX = '@sawa/';
 
 export async function getJSON(key, fallback = null) {
   try {

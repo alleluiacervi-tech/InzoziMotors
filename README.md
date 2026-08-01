@@ -1,7 +1,7 @@
-# Inzozi Motors — Mobile App (Frontend)
+# Sawa — Mobile App (Frontend)
 
 A premium used-car marketplace app built with **React Native + Expo**, implementing the
-visual design from `Inzozi Motors.html`. Buy, sell, and auction inspected vehicles with
+visual design from `Sawa.html`. Buy, sell, and auction inspected vehicles with
 escrow-protected payments and 7-day returns.
 
 > **Frontend only.** All data is mocked (`src/data/cars.js`). No backend, auth, or payments

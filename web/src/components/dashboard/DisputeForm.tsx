@@ -72,7 +72,7 @@ export function DisputeForm({
 
       <div className="mt-4 flex flex-wrap gap-2">
         <SubmitButton size="sm" pendingLabel="Sending…">
-          Send to the Inzozi team
+          Send to the Sawa team
         </SubmitButton>
         <button
           type="button"

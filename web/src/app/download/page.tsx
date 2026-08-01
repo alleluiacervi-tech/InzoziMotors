@@ -11,21 +11,21 @@ import { AppLaunch } from './AppLaunch'
 export const metadata: Metadata = {
   title: 'Get the app',
   description:
-    'The Inzozi Motors app for iPhone and Android. Browse certified cars, read full inspection reports, and get price-drop alerts. Everything except the camera work also runs on the website.',
+    'The Sawa app for iPhone and Android. Browse certified cars, read full inspection reports, and get price-drop alerts. Everything except the camera work also runs on the website.',
   alternates: { canonical: '/download' },
   // The share card has to be named explicitly. Declaring `openGraph` here
   // replaces the root layout's object wholesale, and the root
   // opengraph-image.tsx file convention does not re-merge into it — without
   // this, a /download link shared in WhatsApp arrives with no image at all.
   openGraph: {
-    title: 'Get the Inzozi Motors app',
+    title: 'Get the Sawa app',
     description:
       'Browse certified cars, read full inspection reports, and get price-drop alerts on your phone.',
     url: '/download',
     images: ['/opengraph-image'],
   },
   twitter: {
-    title: 'Get the Inzozi Motors app',
+    title: 'Get the Sawa app',
     description:
       'Browse certified cars, read full inspection reports, and get price-drop alerts on your phone.',
     images: ['/opengraph-image'],
@@ -56,7 +56,7 @@ const APP_ONLY: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'camera',
     title: 'ID verification in one sitting',
-    body: 'Photograph your national ID and take the verification selfie without leaving the screen. That check is what keeps every listing on Inzozi real, and a phone camera is the only sensible way to do it.',
+    body: 'Photograph your national ID and take the verification selfie without leaving the screen. That check is what keeps every listing on Sawa real, and a phone camera is the only sensible way to do it.',
   },
   {
     icon: 'car',
@@ -66,7 +66,7 @@ const APP_ONLY: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'bell',
     title: 'Push notifications',
-    body: 'A price drop on a car you saved, a reply from the Inzozi team, your inspection slot and your handover time — on your lock screen instead of buried in email.',
+    body: 'A price drop on a car you saved, a reply from the Sawa team, your inspection slot and your handover time — on your lock screen instead of buried in email.',
   },
 ]
 
@@ -112,9 +112,9 @@ export default async function DownloadPage({
       <Section tone="surface">
         <Container>
           <div className="max-w-2xl">
-            <Eyebrow>The Inzozi app</Eyebrow>
+            <Eyebrow>The Sawa app</Eyebrow>
             <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
-              Inzozi Motors on your phone
+              Sawa on your phone
             </h1>
             <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
               The same certified marketplace and the same account, with the parts that only make
@@ -190,12 +190,12 @@ export default async function DownloadPage({
             </h2>
             <p className="mt-5 text-title-sm leading-relaxed text-white/70">
               There is no payment feature in the app or on this site, and there is not going to be
-              one. Money changes hands in person at an Inzozi center on the day of handover, with
+              one. Money changes hands in person at an Sawa center on the day of handover, with
               our team checking the documents alongside you. That is exactly what makes the 7-day
               drive-it guarantee something we can honour.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button href="/promise">Read the Inzozi Promise</Button>
+              <Button href="/promise">Read the Sawa Promise</Button>
               <Button href="/how-it-works" variant="inverse" trailingIcon={<Icon name="arrow-right" size={17} />}>
                 How buying works
               </Button>

@@ -26,7 +26,7 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
   },
   {
     icon: 'eye-off',
-    title: 'Only Inzozi publishes',
+    title: 'Only Sawa publishes',
     desc: 'Sellers submit a car — they never post it. A listing goes live only after our team has inspected and photographed it.',
   },
   {
@@ -37,7 +37,7 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: 'cash',
     title: 'No payment in the app',
-    desc: 'Money changes hands in person at an Inzozi center, never through this site. Buyers pay us nothing.',
+    desc: 'Money changes hands in person at an Sawa center, never through this site. Buyers pay us nothing.',
   },
 ]
 
@@ -65,7 +65,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <LogoMark size={48} />
 
           <p className="mt-8 text-eyebrow font-bold uppercase text-brand-light">
-            The Inzozi difference
+            The Sawa difference
           </p>
           <h2 className="mt-3 max-w-sm text-headline font-extrabold">
             Why every listing here is a real car.
@@ -92,7 +92,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               href="/promise"
               className="font-bold text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
             >
-              Read the full Inzozi Promise
+              Read the full Sawa Promise
             </Link>
           </p>
 

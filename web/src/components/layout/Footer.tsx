@@ -91,7 +91,7 @@ export function Footer() {
             © {year} {SITE.name}. Kigali, Rwanda. All rights reserved.
           </p>
           <p className="text-micro text-white/45">
-            Buyers pay nothing. Payment happens in person at an Inzozi center — never online.
+            Buyers pay nothing. Payment happens in person at an Sawa center — never online.
           </p>
         </div>
       </div>

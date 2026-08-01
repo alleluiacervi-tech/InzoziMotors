@@ -1,15 +1,15 @@
-# Inzozi Motors — Full Product Blueprint
+# Sawa — Full Product Blueprint
 
 > Modeled after Encar.com (Korea's #1 used car marketplace).  
-> Inzozi Motors is the trusted middleman: we physically inspect every car, shoot professional photos, and list it ourselves. Sellers cannot post directly.
+> Sawa is the trusted middleman: we physically inspect every car, shoot professional photos, and list it ourselves. Sellers cannot post directly.
 
 ---
 
 ## Core Concept
 
-| | Regular Marketplace | Inzozi Motors |
+| | Regular Marketplace | Sawa |
 |---|---|---|
-| Who lists? | Anyone | Only Inzozi team (after inspection) |
+| Who lists? | Anyone | Only Sawa team (after inspection) |
 | Photos | Seller's phone photos | Our professional photographers |
 | Inspection | None | 150-point certified check |
 | Identity | Optional | Mandatory for sellers |
@@ -45,7 +45,7 @@
 - Receive and reply to buyer messages
 - View listing analytics (views, inquiries, saves)
 
-### Admin (Inzozi team only)
+### Admin (Sawa team only)
 - Full access to everything
 - Review and approve/reject seller ID submissions
 - Schedule and manage inspection appointments
@@ -66,11 +66,11 @@ Admin reviews submission (24h)
         ↓
 Admin schedules inspection appointment
         ↓
-Seller brings car to Inzozi inspection center
+Seller brings car to Sawa inspection center
         ↓
-Inzozi mechanics complete 150-point checklist
+Sawa mechanics complete 150-point checklist
         ↓
-Inzozi photographer shoots 36-angle standardized photos
+Sawa photographer shoots 36-angle standardized photos
         ↓
 Admin creates official listing
         ↓
@@ -228,7 +228,7 @@ rejected     → Red    #DC2626   "Action Required"
 
 ### Badge System
 ```
-"Inzozi Certified"  → Green pill  — passed full 150-pt check
+"Sawa Certified"  → Green pill  — passed full 150-pt check
 "Verified Seller"   → Green pill  — ID confirmed
 "7-Day Return"      → Tag         — return policy applies
 "Below Market"      → Green tag   — priced under market avg
@@ -456,9 +456,9 @@ completely different places:
 ```
 REPO_URL  (one repo)
 ├── src/, App.js   <- Expo / React Native app -> App Store + Play Store (NOT a server)
-├── backend/       <- Node.js + PostgreSQL API -> Ubuntu VPS, https://api.inzozimotors.rw
-├── admin/         <- Next.js team dashboard   -> VPS :3001, https://admin.inzozimotors.rw
-└── web/           <- Next.js public website   -> VPS :3002, https://inzozimotors.rw
+├── backend/       <- Node.js + PostgreSQL API -> Ubuntu VPS, https://api.sawacars.com
+├── admin/         <- Next.js team dashboard   -> VPS :3001, https://admin.sawacars.com
+└── web/           <- Next.js public website   -> VPS :3002, https://sawacars.com
 ```
 
 - **Mobile (repo root)** — Expo, distributed through the App Store and Play Store.
@@ -470,7 +470,7 @@ REPO_URL  (one repo)
 
 ```
  Expo app (phone) ─┐
- Website (browser)─┼─→  https://api.inzozimotors.rw  →  Node.js + PostgreSQL on the VPS
+ Website (browser)─┼─→  https://api.sawacars.com  →  Node.js + PostgreSQL on the VPS
  Admin dashboard  ─┘
 ```
 
@@ -715,10 +715,10 @@ All screens built and wired. See screen table above for full list.
 
 ### 6A. Infrastructure (do when VPS is purchased)
 - [ ] Buy VPS (Ubuntu 24.04 recommended) — get IP address
-- [ ] Buy domain (e.g. api.inzozimotors.rw) — optional for dev, required for HTTPS
+- [ ] Buy domain (e.g. api.sawacars.com) — optional for dev, required for HTTPS
 - [ ] SSH in, create deploy user, configure firewall (ports 22, 80, 443, 3000)
 - [ ] Install Node.js via nvm, install PostgreSQL
-- [ ] Create database: `inzozi_motors`, create user, grant permissions
+- [ ] Create database: `sawa`, create user, grant permissions
 - [ ] Clone repo to VPS, `cd backend`, `npm install`
 - [ ] Copy `.env.example` → `.env`, fill in all values (DB password, JWT secret)
 - [ ] Run `node src/db-init.js` to create all tables
@@ -786,7 +786,7 @@ All screens built and wired. See screen table above for full list.
 - [x] SignIn/SignUp wired to `POST /auth/login` / `/register` (offline demo fallback)
 - [x] Socket.io client wired in AppContext (join_conversation / send_message)
 - [x] Seller inspection booking → `PATCH /submissions/:id/schedule` (new endpoint)
-- [x] Purchase request sends `contact_phone`; slot fields now nullable (Inzozi arranges)
+- [x] Purchase request sends `contact_phone`; slot fields now nullable (Sawa arranges)
 - [x] Car detail exposes `seller_phone` → real WhatsApp contact (falls back to demo numbers)
 - [x] Mobile modules for inspections report / reviews / saved-searches
 - [x] Push notifications — `expo-notifications` + `POST /devices/token`; server pushes
@@ -882,7 +882,7 @@ payments, automated tests, CI.
 - [ ] **Rwanda RRA** — vehicle duty verification stamp (if public API available)
   - Cross-check VIN / chassis number → duty paid status on listing page
 - [ ] **MTN MoMo / Airtel Money** — future payment-request feature (backend-phase only)
-  - Not in app. Backend escrow when Inzozi physically holds the handover payment.
+  - Not in app. Backend escrow when Sawa physically holds the handover payment.
 
 ---
 
@@ -895,9 +895,9 @@ payments, automated tests, CI.
 | Featured listing | Seller | Optional boost to top of feed |
 
 - Buyers pay nothing, ever.
-- The 7-day return guarantee applies only to handovers completed at the Inzozi center.
+- The 7-day return guarantee applies only to handovers completed at the Sawa center.
 - Payment is physical at the center — not in the app, not now, not later.
-- Commission is collectable because the handover (admin confirms) is the sale event — Inzozi processes it, so we always know.
+- Commission is collectable because the handover (admin confirms) is the sale event — Sawa processes it, so we always know.
 
 ---
 

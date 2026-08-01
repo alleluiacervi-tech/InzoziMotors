@@ -42,7 +42,7 @@ router.post('/', requireAuth, async (req, res) => {
       user_id: req.user.id,
       type: 'handover',
       title: 'Dispute received',
-      body: 'We received your dispute. The Inzozi team will review it and contact both parties within 24 hours.',
+      body: 'We received your dispute. The Sawa team will review it and contact both parties within 24 hours.',
       meta: JSON.stringify({ disputeId: rows[0].id }),
     });
     res.status(201).json(rows[0]);
@@ -114,7 +114,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
       user_id: rows[0].raised_by,
       type: 'handover',
       title: `Dispute ${status}`,
-      body: resolution || `Your dispute has been ${status} by the Inzozi team.`,
+      body: resolution || `Your dispute has been ${status} by the Sawa team.`,
       meta: JSON.stringify({ disputeId: rows[0].id }),
     });
     res.json(rows[0]);

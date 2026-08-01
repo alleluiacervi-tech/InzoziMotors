@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useRef, useState } from 'react'
 
 // The card's image area, made flickable — our translation of a colour-swatch
-// carousel. AVATR lets you flick through paint finishes; what makes an Inzozi
+// carousel. AVATR lets you flick through paint finishes; what makes an Sawa
 // listing configurable-feeling is its standardized 36-angle photo set, so the
 // card previews the first few angles on hover (pointer position steps through
 // them) or tap (touch cycles).

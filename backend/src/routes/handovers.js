@@ -7,7 +7,7 @@ const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
-// POST /handovers — buyer requests a car (slot optional; Inzozi arranges)
+// POST /handovers — buyer requests a car (slot optional; Sawa arranges)
 router.post('/', requireAuth, async (req, res) => {
   const { car_id, center, handover_date, handover_time, contact_phone } = req.body;
   if (!car_id) {
@@ -58,7 +58,7 @@ router.post('/', requireAuth, async (req, res) => {
         title: 'A buyer wants your car',
         body: center && handover_date
           ? `A buyer has booked a handover for your ${car.title} at ${center} on ${handover_date} at ${handover_time}. Please attend.`
-          : `A buyer wants your ${car.title}. Inzozi will coordinate the handover with both of you shortly.`,
+          : `A buyer wants your ${car.title}. Sawa will coordinate the handover with both of you shortly.`,
         meta: JSON.stringify({ bookingId: booking_id, carId: car_id }),
       });
 
@@ -263,14 +263,14 @@ router.patch('/:id/complete', requireAdmin, async (req, res) => {
         user_id: h.buyer_id,
         type: 'handover',
         title: 'Handover complete — car is yours!',
-        body: `The ${carTitle} handover is confirmed by Inzozi. Your 7-day return guarantee starts now.`,
+        body: `The ${carTitle} handover is confirmed by Sawa. Your 7-day return guarantee starts now.`,
         meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
       });
       await notifyUser(client, {
         user_id: h.seller_id,
         type: 'handover',
         title: 'Sale complete',
-        body: `The handover for ${carTitle} has been confirmed by the Inzozi team. The listing is now closed.`,
+        body: `The handover for ${carTitle} has been confirmed by the Sawa team. The listing is now closed.`,
         meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
       });
 

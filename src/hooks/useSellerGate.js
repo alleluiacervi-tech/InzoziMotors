@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { showConfirm, showToast } from '../components/Feedback';
 
-// Inzozi's hard rule: identity is mandatory before a car can enter the
+// Sawa's hard rule: identity is mandatory before a car can enter the
 // pipeline. The server enforces it (requireVerified on POST /submissions) —
 // this is the friendly front door so the seller meets the requirement where it
 // makes sense, not as a 403 after filling in a four-step form.
@@ -19,7 +19,7 @@ export function useSellerGate(navigation) {
       if (!isLoggedIn) {
         const ok = await showConfirm({
           title: 'Sign in to sell',
-          message: 'Selling on Inzozi needs an account — we verify every seller before a car goes live.',
+          message: 'Selling on Sawa needs an account — we verify every seller before a car goes live.',
           confirmLabel: 'Sign In',
           cancelLabel: 'Not now',
         });
@@ -43,7 +43,7 @@ export function useSellerGate(navigation) {
         title: rejected ? 'Re-verify your identity' : 'Verify your identity first',
         message: rejected
           ? 'Your last submission was not accepted. Send clearer photos of your ID and we will re-check within 24 hours.'
-          : 'Every Inzozi seller is verified before listing — it takes about two minutes and only has to be done once.',
+          : 'Every Sawa seller is verified before listing — it takes about two minutes and only has to be done once.',
         confirmLabel: rejected ? 'Re-submit Documents' : 'Verify Now',
         cancelLabel: 'Not now',
       });

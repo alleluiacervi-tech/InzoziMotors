@@ -9,7 +9,7 @@ import { getToken } from '@/lib/session'
 //
 // This reserves the car and nothing else. No money moves — there is no payment
 // anywhere in the product — so the action's only job is to create the handover
-// record the Inzozi team works from, and to say honestly what happens next.
+// record the Sawa team works from, and to say honestly what happens next.
 //
 // The token is read from the httpOnly cookie on the server. The browser posts a
 // phone number and a car id; it never holds the JWT.
@@ -63,7 +63,7 @@ export async function requestCarAction(
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.isNetworkError) {
-        return { status: 'error', message: 'We could not reach Inzozi Motors. Please try again.' }
+        return { status: 'error', message: 'We could not reach Sawa. Please try again.' }
       }
       if (err.status === 401) {
         return { status: 'error', message: 'Your session has expired. Sign in again to continue.' }

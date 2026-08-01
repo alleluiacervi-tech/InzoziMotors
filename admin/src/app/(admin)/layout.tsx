@@ -65,8 +65,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [ready, pathname])
 
   function logout() {
-    localStorage.removeItem('inzozi_admin_token')
-    document.cookie = 'inzozi_admin_token=; path=/; max-age=0'
+    localStorage.removeItem('sawa_admin_token')
+    document.cookie = 'sawa_admin_token=; path=/; max-age=0'
     router.replace('/login')
   }
 
@@ -102,7 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <LogoMark size={34} />
             <div>
               <p className="text-sm font-extrabold leading-none tracking-[-0.01em] text-white">
-                Inzozi Motors
+                Sawa
               </p>
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
                 Operations

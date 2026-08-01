@@ -31,7 +31,7 @@ const GROUPS = [
       { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
       { icon: 'help-circle-outline', label: 'Help center', comingSoon: 'The help center is coming soon.' },
       { icon: 'document-text-outline', label: 'Terms & privacy', comingSoon: 'Terms & privacy policy pages are coming soon.' },
-      { icon: 'star-outline', label: 'Rate Inzozi Motors', comingSoon: 'App store rating will be available after launch.' },
+      { icon: 'star-outline', label: 'Rate Sawa', comingSoon: 'App store rating will be available after launch.' },
     ],
   },
 ];
@@ -93,7 +93,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
         ))}
 
-        <Text style={styles.version}>Inzozi Motors v1.0.0</Text>
+        <Text style={styles.version}>Sawa v1.0.0</Text>
       </ScrollView>
     </Screen>
   );

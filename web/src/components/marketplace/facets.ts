@@ -3,13 +3,13 @@ import type { Car } from '@/lib/types'
 // ─────────────────────────────────────────────────────────────────────────────
 // Filter options, derived from the inventory that actually exists.
 //
-// A hardcoded make list would offer buyers thirty brands Inzozi has never
+// A hardcoded make list would offer buyers thirty brands Sawa has never
 // listed, and every one of those clicks lands on an empty page. So the options
 // come from a page of live listings instead: if it is not in the yard, it is
 // not in the dropdown.
 //
 // The trade is that the option list reflects one page (the API clamps a request
-// at 100 rows), not the whole catalogue. At Inzozi's inventory size that is the
+// at 100 rows), not the whole catalogue. At Sawa's inventory size that is the
 // whole catalogue; when it stops being, the backend should expose a facet
 // endpoint and this file becomes a thin call to it.
 // ─────────────────────────────────────────────────────────────────────────────

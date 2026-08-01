@@ -84,9 +84,9 @@ export function LegalPage({
 
             <div>
               <Alert tone="warning" title="Draft — pending legal review">
-                This document describes how Inzozi Motors actually operates today, written in
+                This document describes how Sawa actually operates today, written in
                 plain language. It has not yet been reviewed by a qualified lawyer in Rwanda and
-                is not legal advice. The version handed to you at an Inzozi center governs any
+                is not legal advice. The version handed to you at an Sawa center governs any
                 transaction.
               </Alert>
 

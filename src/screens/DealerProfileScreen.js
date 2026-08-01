@@ -11,7 +11,7 @@ const DEALERS = {
   'Carvana': {
     name: 'Carvana Rwanda',
     tagline: 'Premium certified vehicles · Kigali',
-    description: 'Carvana Rwanda is an authorized dealer and one of Inzozi Motors\' founding partners. Specializing in Japanese imports and certified EVs with a 30-day return guarantee.',
+    description: 'Carvana Rwanda is an authorized dealer and one of Sawa\' founding partners. Specializing in Japanese imports and certified EVs with a 30-day return guarantee.',
     since: '2023',
     responseTime: '< 1 hour',
     rating: 4.8,
@@ -43,9 +43,9 @@ const DEALERS = {
 export const isDealerSeller = (name) => !!DEALERS[name];
 
 const DEFAULT_DEALER = {
-  name: 'Inzozi Partner Dealer',
+  name: 'Sawa Partner Dealer',
   tagline: 'Verified dealer · Kigali',
-  description: 'A trusted Inzozi Motors partner dealer.',
+  description: 'A trusted Sawa partner dealer.',
   since: '2024',
   responseTime: '< 4 hours',
   rating: 4.5,
@@ -103,7 +103,7 @@ export default function DealerProfileScreen({ navigation, route }) {
             </View>
             <View style={[styles.verifiedBadge, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
               <Ionicons name="star" size={12} color={colors.amber} />
-              <Text style={styles.verifiedText}>Inzozi Partner</Text>
+              <Text style={styles.verifiedText}>Sawa Partner</Text>
             </View>
           </View>
           <View style={styles.heroAvatar}>

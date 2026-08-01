@@ -28,7 +28,7 @@ const VARIANTS = {
   cert: { bg: '#FBE4EA', fg: colors.primary },
   inspectedTier: { bg: colors.surfaceAlt, fg: colors.slate600 },
 
-  // Inzozi Specifics
+  // Sawa Specifics
   jeondan: { bg: colors.jeondan, fg: '#FFFFFF' },
   jeondanPlus: { bg: colors.jeondanPlus, fg: '#FFFFFF' },
   jeondanPlusPlus: { bg: colors.jeondanPlusPlus, fg: '#FFFFFF' },

@@ -16,7 +16,7 @@ import type { User } from './types'
 // The backend is unchanged — it still sees `Authorization: Bearer <jwt>`.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const SESSION_COOKIE = 'inzozi_session'
+export const SESSION_COOKIE = 'sawa_session'
 
 /** Mirrors JWT_EXPIRES_IN (30d) in the backend so the cookie and the token
  *  expire together — a cookie that outlives its token produces silent 401s. */

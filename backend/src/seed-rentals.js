@@ -1,4 +1,4 @@
-// Seeds the Inzozi rental fleet for local development.
+// Seeds the Sawa rental fleet for local development.
 // Run: node src/seed-rentals.js — safe to re-run (skips if fleet exists).
 require('dotenv').config();
 const pool = require('./db');
