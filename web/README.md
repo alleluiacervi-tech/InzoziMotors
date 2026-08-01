@@ -71,7 +71,7 @@ found three or more real comparables (`hasRealMarketData()`); "high demand" is a
 true save count; there are no testimonials and no headline statistics. If a
 figure is not in the API, the copy is written so it is not needed.
 
-**Red discipline.** Brand red (`#DB0632`) appears only as a price, a primary
+**Red discipline.** Brand red (`#CC050F`) appears only as a price, a primary
 action, a selected state, the Certified+ badge, an inline action link, or a
 section eyebrow — carried over from the app. Informational icons are
 `content-secondary` / `content-muted`. Colours come from the Tailwind theme in

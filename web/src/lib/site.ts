@@ -10,7 +10,7 @@ export const SITE = {
     'Every car on Sawa is physically inspected on a 150-point check, photographed by our team, and backed by a 7-day drive-it guarantee. Buy, sell or rent with confidence in Kigali.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://sawacars.com',
   locale: 'en_RW',
-  themeColor: '#C63F3D',
+  themeColor: '#CC050F',
 } as const
 
 /** App identifiers — must match app.config.js in the Expo project. */

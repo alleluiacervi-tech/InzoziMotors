@@ -51,7 +51,7 @@ export async function registerForPush() {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Sawa',
         importance: Notifications.AndroidImportance.DEFAULT,
-        lightColor: '#C63F3D',
+        lightColor: '#CC050F',
       });
     }
 

@@ -10,15 +10,15 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#C63F3D',
-          bright: '#D75553',
-          deep: '#9E3230',
+          DEFAULT: '#CC050F',
+          bright: '#DE0714',
+          deep: '#A50410',
           tint: '#F9EDED',
           // Legacy aliases still referenced across older pages:
           // "dark" was the sidebar/login ground (now warm ink),
           // "light" was the hover fill (now the bright red).
           dark: '#17120F',
-          light: '#D75553',
+          light: '#DE0714',
         },
         ink: { 900: '#17120F', 800: '#281F1C', 700: '#3A2D29' },
         success: { DEFAULT: '#16A34A', tint: '#EAF6EE' },

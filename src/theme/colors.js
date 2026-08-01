@@ -8,21 +8,21 @@ export const colors = {
   navyMid: '#281F1C',
   navyLight: '#3A2D29',
 
-  // Brand Red — Sawa brick red #C63F3D (canonical brand primary).
+  // Brand Red — Sawa signal red #CC050F, taken from the master vector assets/sawa.svg.
   // DISCIPLINE: red appears ONLY as (1) a price, (2) a primary action,
   // (3) a selected/active state, (4) the Certified+ tier badge, or
   // (5) an inline action link. Informational icons, section decorations
   // and menu rows are textSecondary — never red.
-  primary: '#C63F3D',
-  primaryBright: '#D75553',
-  blueLight: '#E89290',
+  primary: '#CC050F',
+  primaryBright: '#DE0714',
+  blueLight: '#EE8B90',
   blueTint: '#F3F2F2',
 
   // Badge Colors
-  jeondan: '#C63F3D',
+  jeondan: '#CC050F',
   jeondanPlus: '#1D4ED8',
   jeondanPlusPlus: '#D97706',
-  contract: '#9E3230',
+  contract: '#A50410',
   alert: '#D97706',
 
   // Semantic — true success green (pass / verified / online / savings).

@@ -1,11 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ImageBackground } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Logo from '../components/Logo';
 import { colors, fonts, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
+
+// The brand hero — the lockup, the promise and the Kigali skyline are part of
+// the artwork itself (assets/about.png), so this screen deliberately carries no
+// duplicate logo or headline text.
+const HERO = require('../../assets/about.png');
 
 export default function WelcomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -17,94 +22,84 @@ export default function WelcomeScreen({ navigation }) {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 14 }]}>
+    <ImageBackground source={HERO} resizeMode="cover" style={styles.root}>
       <StatusBar style="dark" />
 
-      {/* Brand */}
-      <View style={styles.topBar}>
-        <Logo size={17} color={colors.textPrimary} />
+      <View style={[styles.topBar, { marginTop: insets.top + 18 }]}>
         <Pressable style={styles.langPill} hitSlop={8}>
           <Text style={styles.langText}>EN</Text>
         </Pressable>
       </View>
 
-      {/* Hero — one clear value prop */}
-      <View style={styles.hero}>
-        <Text style={styles.title}>Rwanda's most trusted car marketplace.</Text>
-        <Text style={styles.subtitle}>Every car professionally inspected before it's listed.</Text>
-      </View>
+      <View style={styles.spacer} />
 
-      {/* Actions */}
-      <View style={styles.actions}>
-        <View style={styles.intentRow}>
-          <Pressable style={({ pressed }) => [styles.intentCard, pressed && styles.pressed]} onPress={() => enterAs('buy')}>
-            <View style={styles.intentIcon}>
-              <Ionicons name="pricetag" size={19} color={colors.primary} />
-            </View>
-            <Text style={styles.intentTitle}>Buy a Car</Text>
-            <Text style={styles.intentSub}>Certified used cars</Text>
-          </Pressable>
+      {/* The sheet lifts the actions off the photograph so both stay readable. */}
+      <LinearGradient
+        colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.82)', colors.surface]}
+        locations={[0, 0.22, 0.46]}
+        style={[styles.sheet, { paddingBottom: insets.bottom + 14 }]}
+      >
+        <View style={styles.actions}>
+          <View style={styles.intentRow}>
+            <Pressable style={({ pressed }) => [styles.intentCard, pressed && styles.pressed]} onPress={() => enterAs('buy')}>
+              <View style={styles.intentIcon}>
+                <Ionicons name="pricetag" size={19} color={colors.primary} />
+              </View>
+              <Text style={styles.intentTitle}>Buy a Car</Text>
+              <Text style={styles.intentSub}>Certified used cars</Text>
+            </Pressable>
 
-          <Pressable style={({ pressed }) => [styles.intentCard, pressed && styles.pressed]} onPress={() => enterAs('rent')}>
-            <View style={styles.intentIcon}>
-              <Ionicons name="key" size={19} color={colors.primary} />
-            </View>
-            <Text style={styles.intentTitle}>Rent a Car</Text>
-            <Text style={styles.intentSub}>From $40 / day</Text>
-          </Pressable>
-        </View>
-
-        {/* Sell — refined secondary path */}
-        <Pressable
-          style={({ pressed }) => [styles.sellRow, pressed && styles.pressed]}
-          onPress={() => { navigation.replace('Main'); navigation.navigate('Sell'); }}
-        >
-          <Ionicons name="car-sport-outline" size={20} color={colors.textPrimary} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sellTitle}>Sell your car</Text>
-            <Text style={styles.sellSub}>We inspect, photograph and list it for you</Text>
+            <Pressable style={({ pressed }) => [styles.intentCard, pressed && styles.pressed]} onPress={() => enterAs('rent')}>
+              <View style={styles.intentIcon}>
+                <Ionicons name="key" size={19} color={colors.primary} />
+              </View>
+              <Text style={styles.intentTitle}>Rent a Car</Text>
+              <Text style={styles.intentSub}>From $40 / day</Text>
+            </Pressable>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-        </Pressable>
 
-        <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.signinWrap} hitSlop={8}>
-          <Text style={styles.signin}>
-            Already have an account? <Text style={styles.signinLink}>Sign in</Text>
+          {/* Sell — refined secondary path */}
+          <Pressable
+            style={({ pressed }) => [styles.sellRow, pressed && styles.pressed]}
+            onPress={() => { navigation.replace('Main'); navigation.navigate('Sell'); }}
+          >
+            <Ionicons name="car-sport-outline" size={20} color={colors.textPrimary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sellTitle}>Sell your car</Text>
+              <Text style={styles.sellSub}>We inspect, photograph and list it for you</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+
+          <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.signinWrap} hitSlop={8}>
+            <Text style={styles.signin}>
+              Already have an account? <Text style={styles.signinLink}>Sign in</Text>
+            </Text>
+          </Pressable>
+
+          <Text style={styles.terms}>
+            By continuing, you agree to our <Text style={styles.termsStrong}>Terms</Text> &{' '}
+            <Text style={styles.termsStrong}>Privacy Policy</Text>.
           </Text>
-        </Pressable>
-
-        <Text style={styles.terms}>
-          By continuing, you agree to our <Text style={styles.termsStrong}>Terms</Text> &{' '}
-          <Text style={styles.termsStrong}>Privacy Policy</Text>.
-        </Text>
-      </View>
-    </View>
+        </View>
+      </LinearGradient>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surface, paddingHorizontal: 24 },
+  root: { flex: 1, backgroundColor: colors.surface },
 
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  spacer: { flex: 1 },
+  sheet: { paddingHorizontal: 24, paddingTop: 96 },
+
+  topBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 24 },
   langPill: {
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1, borderColor: colors.border,
     paddingVertical: 6, paddingHorizontal: 13, borderRadius: 999,
   },
   langText: { fontFamily: fonts.semiBold, color: colors.textSecondary, fontSize: 13 },
-
-  hero: { flex: 1, justifyContent: 'center' },
-  title: {
-    fontFamily: fonts.black,
-    fontSize: 34, lineHeight: 40, letterSpacing: -1,
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    fontFamily: fonts.medium,
-    fontSize: 15, lineHeight: 22,
-    color: colors.textMuted,
-    marginTop: 16,
-  },
 
   actions: { gap: 12 },
   intentRow: { flexDirection: 'row', gap: 12 },

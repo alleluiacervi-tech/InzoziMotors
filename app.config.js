@@ -37,8 +37,10 @@ export default ({ config }) => ({
   },
   android: {
     adaptiveIcon: {
+      // The foreground is the white "S" on transparency; the launcher paints
+      // this colour behind it and applies its own mask.
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#CC050F',
     },
     package: 'com.sawacars.app',
     permissions: ['CAMERA', 'READ_MEDIA_IMAGES'],
@@ -64,7 +66,7 @@ export default ({ config }) => ({
       'expo-notifications',
       {
         icon: './assets/adaptive-icon.png',
-        color: '#DB0632',
+        color: '#CC050F',
       },
     ],
     [
