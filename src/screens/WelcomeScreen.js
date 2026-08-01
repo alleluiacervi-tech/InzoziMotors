@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path } from 'react-native-svg';
@@ -13,7 +13,17 @@ import { useApp } from '../context/AppContext';
 // rather than baked into it, so they stay sharp and translatable.
 // assets/about.png keeps the fully composed poster for marketing and store use.
 const HERO = require('../../assets/welcome-hero.jpg');
-const HERO_RATIO = 853 / 670;
+
+const { height: SCREEN_H } = Dimensions.get('window');
+
+// Nothing scrolls here, so the whole composition has to fit whatever screen it
+// lands on. Two scales rather than one: whitespace gives way readily, type does
+// not. A phone 20% shorter than the reference loses a fifth of its padding but
+// only a tenth of its type, which keeps small labels legible on cheap Androids
+// instead of shrinking everything uniformly into a blur.
+const RATIO = SCREEN_H / 852;
+const sp = (n) => Math.round(n * Math.min(1.10, Math.max(0.62, RATIO)));
+const ft = (n) => Math.round(n * Math.min(1.06, Math.max(0.88, RATIO)) * 10) / 10;
 
 const TRIO = [
   { icon: 'shield-checkmark-outline', title: 'Trusted', sub: 'Every car is\ninspected' },
@@ -39,216 +49,210 @@ export default function WelcomeScreen({ navigation }) {
     <View style={styles.root}>
       <StatusBar style="dark" />
 
-      {/* One continuous page: the whole story reads top to bottom and the
-          sign-in link is reached by scrolling, not by squeezing the layout. */}
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 6 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.topBar}>
-          <Pressable style={styles.langPill} hitSlop={8}>
-            <Text style={styles.langText}>EN</Text>
-            <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
-          </Pressable>
-        </View>
+      <View style={[styles.topBar, { paddingTop: insets.top + sp(4) }]}>
+        <Pressable style={styles.langPill} hitSlop={8}>
+          <Text style={styles.langText}>EN</Text>
+          <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
+        </Pressable>
+      </View>
 
-        <View style={styles.brand}>
-          <LogoStack width={148} />
-        </View>
+      <View style={styles.brand}>
+        <LogoStack width={sp(118)} />
+      </View>
 
-        <View style={styles.copy}>
-          <Text style={styles.title}>
-            Rwanda's most{'\n'}
-            <Text style={styles.titleAccent}>trusted</Text> car{'\n'}
-            marketplace.
-          </Text>
-          <Text style={styles.subtitle}>
-            Quality cars. Fair prices.{'\n'}Total peace of mind.
-          </Text>
-        </View>
+      <View style={styles.copy}>
+        <Text style={styles.title}>
+          Rwanda's most{'\n'}
+          <Text style={styles.titleAccent}>trusted</Text> car{'\n'}
+          marketplace.
+        </Text>
+        <Text style={styles.subtitle}>
+          Quality cars. Fair prices.{'\n'}Total peace of mind.
+        </Text>
+      </View>
 
-        <Image
-          source={HERO}
-          style={styles.photo}
-          resizeMode="cover"
-          // Android cross-fades bundled images by default, which reads as lag.
-          fadeDuration={0}
-        />
+      {/* The one elastic element: it takes whatever the fixed blocks leave, so
+          the page fills the screen exactly on any height without scrolling. */}
+      <Image
+        source={HERO}
+        style={styles.photo}
+        resizeMode="cover"
+        // Android cross-fades bundled images by default, which reads as lag.
+        fadeDuration={0}
+      />
 
-        <View style={styles.sheet}>
-          <View style={styles.trioCard}>
-            {TRIO.map((t, i) => (
-              <React.Fragment key={t.title}>
-                {i > 0 && <View style={styles.divider} />}
-                <View style={styles.trioCol}>
-                  <View style={styles.trioIcon}>
-                    <Ionicons name={t.icon} size={19} color={colors.primary} />
-                  </View>
-                  <Text style={styles.trioTitle} numberOfLines={1}>{t.title}</Text>
-                  <Text style={styles.trioSub}>{t.sub}</Text>
+      <View style={styles.sheet}>
+        <View style={styles.trioCard}>
+          {TRIO.map((t, i) => (
+            <React.Fragment key={t.title}>
+              {i > 0 && <View style={styles.divider} />}
+              <View style={styles.trioCol}>
+                <View style={styles.trioIcon}>
+                  <Ionicons name={t.icon} size={ft(17)} color={colors.primary} />
                 </View>
-              </React.Fragment>
-            ))}
-          </View>
+                <Text style={styles.trioTitle} numberOfLines={1}>{t.title}</Text>
+                <Text style={styles.trioSub}>{t.sub}</Text>
+              </View>
+            </React.Fragment>
+          ))}
+        </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-            onPress={explore}
-          >
-            <Text style={styles.primaryText}>Explore Cars</Text>
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-          </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+          onPress={explore}
+        >
+          <Text style={styles.primaryText}>Explore Cars</Text>
+          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+        </Pressable>
 
-          <Pressable
-            style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
-            onPress={sell}
-          >
-            <Ionicons name="car-sport-outline" size={19} color={colors.primary} />
-            <Text style={styles.secondaryText}>Sell Your Car</Text>
-            <Ionicons name="arrow-forward" size={18} color={colors.primary} />
-          </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
+          onPress={sell}
+        >
+          <Ionicons name="car-sport-outline" size={19} color={colors.primary} />
+          <Text style={styles.secondaryText}>Sell Your Car</Text>
+          <Ionicons name="arrow-forward" size={18} color={colors.primary} />
+        </Pressable>
 
-          <Pressable
-            onPress={() => navigation.navigate('SignIn')}
-            hitSlop={8}
-            style={styles.signinWrap}
-          >
-            <Text style={styles.signin}>
-              Already have an account? <Text style={styles.signinLink}>Sign in</Text>
-            </Text>
-          </Pressable>
-
-          <Text style={styles.terms}>
-            By continuing, you agree to our <Text style={styles.termsStrong}>Terms</Text> &{' '}
-            <Text style={styles.termsStrong}>Privacy Policy</Text>.
+        <Pressable
+          onPress={() => navigation.navigate('SignIn')}
+          hitSlop={8}
+          style={styles.signinWrap}
+        >
+          <Text style={styles.signin}>
+            Already have an account? <Text style={styles.signinLink}>Sign in</Text>
           </Text>
-        </View>
+        </Pressable>
 
-        {/* Closes the page rather than floating over it, so nothing is hidden
-            behind it at the end of the scroll. */}
-        <View style={styles.waveWrap}>
-          <Svg width="100%" height={92} viewBox="0 0 400 92" preserveAspectRatio="none">
-            <Path
-              d="M0 30 C 70 8 140 40 220 30 C 296 21 350 4 400 12 L400 92 L0 92 Z"
-              fill={colors.primary}
-              fillOpacity={0.12}
-            />
-            <Path
-              d="M0 48 C 74 27 138 58 222 48 C 300 39 352 23 400 30 L400 92 L0 92 Z"
-              fill={colors.primary}
-            />
-          </Svg>
-          {/* Carries the red past the curve to the very bottom of the page,
-              including the home-indicator area. */}
-          <View style={[styles.waveFoot, { height: insets.bottom + 30 }]} />
-          <View style={[styles.dotsRow, { bottom: insets.bottom + 10 }]}>
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={[styles.dot, i === 0 && styles.dotActive]} />
-            ))}
-          </View>
+        <Text style={styles.terms}>
+          By continuing, you agree to our <Text style={styles.termsStrong}>Terms</Text> &{' '}
+          <Text style={styles.termsStrong}>Privacy Policy</Text>.
+        </Text>
+      </View>
+
+      <View style={styles.waveWrap}>
+        {/* preserveAspectRatio="none" lets the curve flatten to whatever band
+            height the screen can spare, instead of clipping it. */}
+        <Svg width="100%" height={sp(52)} viewBox="0 0 400 84" preserveAspectRatio="none">
+          <Path
+            d="M0 26 C 70 6 140 36 220 26 C 296 18 350 3 400 10 L400 84 L0 84 Z"
+            fill={colors.primary}
+            fillOpacity={0.12}
+          />
+          <Path
+            d="M0 43 C 74 24 138 52 222 43 C 300 35 352 20 400 27 L400 84 L0 84 Z"
+            fill={colors.primary}
+          />
+        </Svg>
+        {/* Carries the red past the curve to the very bottom, including the
+            home-indicator area. */}
+        <View style={[styles.waveFoot, { height: insets.bottom + sp(14) }]} />
+        <View style={[styles.dotsRow, { bottom: insets.bottom + sp(4) }]}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={[styles.dot, i === 0 && styles.dotActive]} />
+          ))}
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
-  scroll: { backgroundColor: colors.surface },
 
   topBar: { alignItems: 'flex-end', paddingHorizontal: 22 },
   langPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border,
-    paddingVertical: 7, paddingHorizontal: 13, borderRadius: 999,
+    paddingVertical: sp(6), paddingHorizontal: 13, borderRadius: 999,
     ...shadows.card,
   },
   langText: { fontFamily: fonts.semiBold, color: colors.textPrimary, fontSize: 13 },
 
-  brand: { alignItems: 'center', marginTop: 6 },
+  brand: { alignItems: 'center', marginTop: sp(2) },
 
-  copy: { paddingHorizontal: 24, marginTop: 22 },
+  copy: { paddingHorizontal: 24, marginTop: sp(14) },
   title: {
     fontFamily: fonts.black,
-    fontSize: 32, lineHeight: 39, letterSpacing: -0.9,
+    fontSize: ft(29), lineHeight: ft(35), letterSpacing: -0.8,
     color: colors.textPrimary,
   },
   titleAccent: { color: colors.primary },
   subtitle: {
     fontFamily: fonts.regular,
-    fontSize: 15, lineHeight: 22,
+    fontSize: ft(14.5), lineHeight: ft(20),
     color: colors.textMuted,
-    marginTop: 11,
+    marginTop: sp(8),
   },
 
-  // Natural aspect — the photo is never squeezed to make the page fit.
   photo: {
     width: '100%',
-    aspectRatio: HERO_RATIO,
-    marginTop: 18,
+    flex: 1,
+    minHeight: sp(70),
+    marginTop: sp(12),
     backgroundColor: colors.surfaceAlt,
   },
 
   // Lifted over the photograph, as in the reference.
-  sheet: { marginTop: -46, paddingHorizontal: 20 },
+  sheet: { marginTop: sp(-50), paddingHorizontal: 20 },
 
   trioCard: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    paddingVertical: 14, paddingHorizontal: 8,
+    paddingVertical: sp(10), paddingHorizontal: 8,
     ...shadows.card,
     shadowOpacity: 0.1, shadowRadius: 18, elevation: 6,
   },
   trioCol: { flex: 1, alignItems: 'center', paddingHorizontal: 4 },
   divider: { width: 1, backgroundColor: colors.borderSoft, marginVertical: 4 },
   trioIcon: {
-    width: 34, height: 34, borderRadius: 17,
+    width: ft(30), height: ft(30), borderRadius: ft(30) / 2,
     backgroundColor: colors.primaryTint,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: sp(5),
   },
-  trioTitle: { fontFamily: fonts.bold, fontSize: 12.5, color: colors.textPrimary },
+  trioTitle: { fontFamily: fonts.bold, fontSize: ft(12.5), color: colors.textPrimary },
   trioSub: {
-    fontFamily: fonts.regular, fontSize: 11, lineHeight: 14,
-    color: colors.textMuted, textAlign: 'center', marginTop: 3,
+    fontFamily: fonts.regular, fontSize: ft(11), lineHeight: ft(13),
+    color: colors.textMuted, textAlign: 'center', marginTop: 2,
   },
 
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
     backgroundColor: colors.primary,
     borderRadius: radius.lg,
-    paddingVertical: 16,
-    marginTop: 18,
+    paddingVertical: sp(13),
+    marginTop: sp(12),
     ...shadows.card,
     shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 14, elevation: 4,
   },
-  primaryText: { fontFamily: fonts.extraBold, fontSize: 16, color: '#FFFFFF', letterSpacing: -0.2 },
+  primaryText: { fontFamily: fonts.extraBold, fontSize: ft(16), color: '#FFFFFF', letterSpacing: -0.2 },
 
   secondaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
     backgroundColor: colors.surface,
     borderWidth: 1.5, borderColor: colors.primary,
     borderRadius: radius.lg,
-    paddingVertical: 14.5,
-    marginTop: 11,
+    paddingVertical: sp(12),
+    marginTop: sp(8),
   },
-  secondaryText: { fontFamily: fonts.extraBold, fontSize: 16, color: colors.primary, letterSpacing: -0.2 },
+  secondaryText: { fontFamily: fonts.extraBold, fontSize: ft(16), color: colors.primary, letterSpacing: -0.2 },
 
   pressed: { opacity: 0.8 },
 
-  signinWrap: { alignItems: 'center', marginTop: 16 },
-  signin: { fontFamily: fonts.regular, fontSize: 14, color: colors.textSecondary },
+  signinWrap: { alignItems: 'center', marginTop: sp(10) },
+  signin: { fontFamily: fonts.regular, fontSize: ft(14), color: colors.textSecondary },
   signinLink: { fontFamily: fonts.bold, color: colors.primary },
 
   terms: {
-    fontFamily: fonts.regular, fontSize: 12, lineHeight: 18,
-    color: colors.textMuted, textAlign: 'center', marginTop: 8,
+    fontFamily: fonts.regular, fontSize: ft(12), lineHeight: ft(16),
+    color: colors.textMuted, textAlign: 'center', marginTop: sp(4),
   },
   termsStrong: { fontFamily: fonts.semiBold, color: colors.textSecondary },
 
-  waveWrap: { marginTop: 26 },
+  waveWrap: { marginTop: sp(10) },
   // -1 closes the hairline seam antialiasing leaves under the SVG.
   waveFoot: { backgroundColor: colors.primary, marginTop: -1 },
   dotsRow: {
