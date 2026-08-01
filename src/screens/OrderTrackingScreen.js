@@ -337,7 +337,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   hero: { margin: 16, marginBottom: 8, borderRadius: radius.xxl, padding: 18, gap: 14 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  heroLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontFamily: fonts.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: fonts.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
   heroOrderId: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5, marginTop: 3 },
   statusChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   carThumb: { width: 80, height: 60, borderRadius: radius.lg, backgroundColor: colors.border },
   carTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 18 },
   carSeller: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  carPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 4 },
+  carPrice: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 4 },
   viewBtn: {
     paddingHorizontal: 12, paddingVertical: 7,
     backgroundColor: colors.greenTint,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   waitingChip: {
     backgroundColor: colors.amberTint, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  waitingChipText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amber },
+  waitingChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amber },
   stepSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17 },
   stepSubPending: { color: colors.textMuted },
   stepBadge: {
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  stepBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  stepBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
   reviewCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.surface,

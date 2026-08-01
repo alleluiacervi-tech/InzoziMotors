@@ -45,7 +45,7 @@ export const typography = {
   h3: { fontFamily: fonts.bold, fontSize: 22, letterSpacing: -0.4, lineHeight: 26 },
   h4: { fontFamily: fonts.bold, fontSize: 18, letterSpacing: -0.2, lineHeight: 22 },
   title: { fontFamily: fonts.bold, fontSize: 17, letterSpacing: -0.2, lineHeight: 21 },
-  price: { fontFamily: fonts.extraBold, fontSize: 21, letterSpacing: -0.4 },
+  price: { fontVariant: ['tabular-nums'], fontFamily: fonts.extraBold, fontSize: 21, letterSpacing: -0.4 },
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 22 },
   bodyStrong: { fontFamily: fonts.semiBold, fontSize: 15, lineHeight: 22 },
   label: { fontFamily: fonts.semiBold, fontSize: 13 },

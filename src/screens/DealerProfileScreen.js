@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   heroStats: { flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: radius.xl, padding: 14, alignSelf: 'stretch' },
   heroStatItem: { flex: 1, alignItems: 'center' },
   heroStatValue: { fontSize: 16, fontFamily: fonts.extraBold, color: '#fff' },
-  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+  heroStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
   heroDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.15)' },
   infoCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
   },
   listingBody: { padding: 10, gap: 3 },
   listingTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 15 },
-  listingMeta: { fontSize: 10, color: colors.textMuted },
-  listingPrice: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
+  listingMeta: { fontSize: 11, color: colors.textMuted },
+  listingPrice: { fontVariant: ['tabular-nums'], fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
   empty: { alignItems: 'center', paddingVertical: 30 },
   emptyText: { fontSize: 13, color: colors.textMuted },
   stickyContact: {

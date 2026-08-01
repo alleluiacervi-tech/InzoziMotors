@@ -243,9 +243,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  rraLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontFamily: fonts.semiBold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  rraLabel: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontFamily: fonts.semiBold, textTransform: 'uppercase', letterSpacing: 0.5 },
   rraTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: '#fff', marginTop: 2 },
-  rraSub: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
+  rraSub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
   rraStamp: {
     width: 62, height: 62, borderRadius: 31,
     borderWidth: 2.5, borderColor: colors.greenLight,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   rraStampWarn: { borderColor: '#F87171' },
-  rraStampText: { fontSize: 9, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: 0.3 },
+  rraStampText: { fontSize: 10, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: 0.3 },
   disclaimer: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     marginHorizontal: 16, marginTop: 4,

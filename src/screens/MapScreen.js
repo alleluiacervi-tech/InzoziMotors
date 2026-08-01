@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   pinIconSelected: { backgroundColor: 'rgba(255,255,255,0.2)' },
   pinName: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
   pinNameSelected: { color: '#fff' },
-  pinArea: { fontSize: 10, color: colors.textMuted, textAlign: 'center' },
+  pinArea: { fontSize: 11, color: colors.textMuted, textAlign: 'center' },
   pinAreaSelected: { color: 'rgba(255,255,255,0.7)' },
   pinCount: {
     paddingHorizontal: 10, paddingVertical: 3,
@@ -269,9 +269,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: colors.greenTint, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
   },
-  inspChipText: { fontSize: 9, fontFamily: fonts.bold, color: colors.green },
+  inspChipText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
   listingDays: { fontSize: 11, color: colors.textMuted },
-  listingPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary },
+  listingPrice: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary },
   viewAllBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 8, marginTop: 20, paddingVertical: 14,

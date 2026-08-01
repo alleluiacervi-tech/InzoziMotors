@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6, paddingVertical: 2.5,
     borderRadius: 4,
   },
-  certBadgeText: { color: '#fff', fontSize: 8, fontFamily: fonts.extraBold },
+  certBadgeText: { color: '#fff', fontSize: 10, fontFamily: fonts.extraBold },
   body: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 2, justifyContent: 'center' },
   titleRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -119,11 +119,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 6, paddingVertical: 2.5, borderRadius: 4,
   },
-  tagGreenText: { fontSize: 9, fontFamily: fonts.bold, color: colors.primary },
+  tagGreenText: { fontSize: 10, fontFamily: fonts.bold, color: colors.primary },
   tagAmber: {
     backgroundColor: colors.amberTint,
     paddingHorizontal: 6, paddingVertical: 2.5, borderRadius: 4,
   },
-  tagAmberText: { fontSize: 9, fontFamily: fonts.bold, color: colors.amberText },
-  price: { fontFamily: fonts.extraBold, fontSize: 16, color: colors.primary, letterSpacing: -0.3 },
+  tagAmberText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amberText },
+  price: { fontVariant: ['tabular-nums'], fontFamily: fonts.extraBold, fontSize: 16, color: colors.primary, letterSpacing: -0.3 },
 });

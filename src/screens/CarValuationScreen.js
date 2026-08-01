@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xxl, padding: 24,
     alignItems: 'center', marginTop: 4,
   },
-  resultEyebrow: { fontSize: 10, fontFamily: fonts.bold, letterSpacing: 1.4, color: colors.greenLight },
+  resultEyebrow: { fontSize: 11, fontFamily: fonts.bold, letterSpacing: 1.4, color: colors.greenLight },
   resultCar: { fontSize: 16, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.9)', marginTop: 10 },
   rangeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
   rangeValue: { fontSize: 28, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.8 },

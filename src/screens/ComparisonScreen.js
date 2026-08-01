@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  certPillText: { fontSize: 9, fontFamily: fonts.bold, color: colors.green },
+  certPillText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
   removeChip: {
     position: 'absolute', top: 0, right: 0, zIndex: 2,
     width: 22, height: 22, borderRadius: 11,
@@ -294,5 +294,5 @@ const styles = StyleSheet.create({
   },
   suggestThumb: { width: 60, height: 46, borderRadius: radius.md, backgroundColor: colors.border },
   suggestName: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
-  suggestPrice: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.primary, marginTop: 2 },
+  suggestPrice: { fontVariant: ['tabular-nums'], fontSize: 12, fontFamily: fonts.semiBold, color: colors.primary, marginTop: 2 },
 });

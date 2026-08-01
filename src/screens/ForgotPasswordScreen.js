@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, padding: 14, alignItems: 'center', gap: 4,
   },
   devLabel: {
-    fontSize: 10, fontFamily: fonts.bold, color: colors.amberText,
+    fontSize: 11, fontFamily: fonts.bold, color: colors.amberText,
     textTransform: 'uppercase', letterSpacing: 1,
   },
   devCode: { fontSize: 26, fontFamily: fonts.extraBold, color: colors.amberText, letterSpacing: 6 },

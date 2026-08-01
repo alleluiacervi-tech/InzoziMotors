@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: radius.xl,
     padding: 14, alignItems: 'center', alignSelf: 'stretch',
   },
-  codeLabel: { fontSize: 10, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  codeLabel: { fontSize: 11, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
   code: { fontSize: 24, fontFamily: fonts.black, color: '#fff', letterSpacing: 2, marginTop: 4 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     marginLeft: 'auto', backgroundColor: '#059669',
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  comingSoonText: { fontSize: 10, fontFamily: fonts.bold, color: '#fff' },
+  comingSoonText: { fontSize: 11, fontFamily: fonts.bold, color: '#fff' },
   whatsappFeatures: { gap: 8, marginBottom: 14 },
   whatsappFeature: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   whatsappFeatureText: { fontSize: 13, color: '#065F46' },

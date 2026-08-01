@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   heroStats: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   heroStatItem: { flex: 1, alignItems: 'center' },
   heroStatValue: { fontSize: 22, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5 },
-  heroStatLabel: { fontSize: 9, color: 'rgba(255,255,255,0.55)', marginTop: 2, textAlign: 'center' },
+  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2, textAlign: 'center' },
   heroDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.15)' },
   conversionBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   centerFill: { height: '100%', borderRadius: 3 },
   centerMeta: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
   capacityWarn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  capacityWarnText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amber },
+  capacityWarnText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amber },
   activityRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   activityIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   activityText: { flex: 1, fontSize: 13, color: colors.textPrimary, fontFamily: fonts.semiBold },

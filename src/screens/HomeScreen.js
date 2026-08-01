@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   },
   locationContainer: { flex: 1, justifyContent: 'center' },
   locationLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontFamily: fonts.semiBold,
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
   slideTagText: {
     color: colors.white,
     fontFamily: fonts.bold,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.5,
   },
   slideText: {
@@ -827,5 +827,5 @@ const styles = StyleSheet.create({
   },
   footerLinkText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textSecondary },
   footerDivider: { fontSize: 12, color: colors.border },
-  copyrightText: { fontSize: 10, fontFamily: fonts.regular, color: colors.textMuted },
+  copyrightText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
 });

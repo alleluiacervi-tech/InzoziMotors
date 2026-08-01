@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   miniChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill,
   },
-  miniChipText: { fontSize: 10, fontFamily: fonts.bold },
+  miniChipText: { fontSize: 11, fontFamily: fonts.bold },
   catBar: { height: 3, borderRadius: 2, backgroundColor: colors.border, marginTop: 6 },
   catBarFill: { height: 3, borderRadius: 2, backgroundColor: colors.primary },
   catScore: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary },

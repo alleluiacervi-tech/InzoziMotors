@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   heroStats: { flexDirection: 'row', alignItems: 'center' },
   heroStatItem: { flex: 1, alignItems: 'center' },
   heroStatValue: { fontSize: 26, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5 },
-  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  heroStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
   heroStatDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.15)' },
   sectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted, paddingHorizontal: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
   selectorRow: { paddingHorizontal: 16, gap: 8, marginBottom: 12 },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   statIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   statValue: { fontSize: 26, fontFamily: fonts.black, color: colors.textPrimary, letterSpacing: -0.5 },
   statLabel: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted },
-  statSub: { fontSize: 10, color: colors.textMuted },
+  statSub: { fontSize: 11, color: colors.textMuted },
   tomCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, padding: 16, marginHorizontal: 16, marginBottom: 16,

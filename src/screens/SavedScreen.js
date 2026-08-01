@@ -244,17 +244,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: colors.greenTint, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  certText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  certText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
   metaText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
   highDemandChip: { backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  highDemandText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amber },
+  highDemandText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amber },
   rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  rowPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  rowPrice: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   dropBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: colors.greenTint, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  dropText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  dropText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
   removeBtn: { padding: 4 },
 
   // Search row

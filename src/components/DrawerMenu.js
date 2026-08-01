@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fonts.bold,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1,
     color: colors.textMuted,
     paddingHorizontal: 20,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   newBadgeText: {
     fontFamily: fonts.black,
-    fontSize: 9,
+    fontSize: 10,
     color: '#fff',
     letterSpacing: 0.5,
   },

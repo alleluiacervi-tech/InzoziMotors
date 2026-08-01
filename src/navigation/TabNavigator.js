@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.surface,
   },
   badgeWide: { right: -12 },
-  badgeText: { fontSize: 9, fontFamily: fonts.black, color: '#fff' },
+  badgeText: { fontSize: 10, fontFamily: fonts.black, color: '#fff' },
   compareFloat: {
     flexDirection: 'row',
     alignItems: 'center',

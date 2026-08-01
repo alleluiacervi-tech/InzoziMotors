@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7, paddingVertical: 3,
     borderRadius: 5,
   },
-  certBadgeText: { color: '#fff', fontSize: 9, fontFamily: fonts.extraBold },
+  certBadgeText: { color: '#fff', fontSize: 10, fontFamily: fonts.extraBold },
   heart: {
     position: 'absolute', top: 6, right: 6,
     width: 26, height: 26, borderRadius: 13,
@@ -135,8 +135,8 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 10, paddingVertical: 10, flex: 1, gap: 2 },
   title: { fontFamily: fonts.bold, fontSize: 13, color: colors.textPrimary },
   meta: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
-  price: { fontFamily: fonts.extraBold, fontSize: 15, color: colors.primary, marginTop: 4, letterSpacing: -0.3 },
+  price: { fontVariant: ['tabular-nums'], fontFamily: fonts.extraBold, fontSize: 15, color: colors.primary, marginTop: 4, letterSpacing: -0.3 },
   rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
   perDay: { fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted, marginLeft: 2 },
-  monthly: { fontFamily: fonts.semiBold, fontSize: 10, color: colors.textMuted, marginTop: 1 },
+  monthly: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.textMuted, marginTop: 1 },
 });

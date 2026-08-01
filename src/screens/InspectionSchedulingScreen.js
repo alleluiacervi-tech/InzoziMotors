@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   dateDay: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
   dateNum: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
   dateMonth: { fontSize: 11, color: colors.textMuted },
-  dateUnavailableText: { fontSize: 9, color: colors.border, fontFamily: fonts.semiBold, marginTop: 2 },
+  dateUnavailableText: { fontSize: 10, color: colors.border, fontFamily: fonts.semiBold, marginTop: 2 },
   timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   timeSlot: {
     paddingHorizontal: 14, paddingVertical: 10,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   timeSlotUnavailable: { backgroundColor: colors.surfaceAlt, borderColor: colors.borderSoft },
   timeSlotActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   timeLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
-  timeUnavail: { fontSize: 9, color: colors.textMuted, marginTop: 1 },
+  timeUnavail: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
   confirmCard: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,

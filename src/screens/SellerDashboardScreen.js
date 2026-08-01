@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   subThumb: { width: 80, height: 64, borderRadius: radius.lg, backgroundColor: colors.border },
   subTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   subDate: { fontSize: 11, color: colors.textMuted, marginTop: 2, marginBottom: 6 },
-  subPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  subPrice: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     alignSelf: 'flex-start',
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   pipelineDotActive: { backgroundColor: colors.primary },
   pipelineDotUpcoming: { backgroundColor: colors.border },
   pipelineDotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted },
-  pipelineLabel: { fontSize: 9, color: colors.textMuted, textAlign: 'center', maxWidth: 52 },
+  pipelineLabel: { fontSize: 10, color: colors.textMuted, textAlign: 'center', maxWidth: 52 },
   pipelineLine: { flex: 1, height: 2, backgroundColor: colors.border, marginTop: 10, marginHorizontal: 2 },
   pipelineLineDone: { backgroundColor: colors.primary },
   statusDetail: {

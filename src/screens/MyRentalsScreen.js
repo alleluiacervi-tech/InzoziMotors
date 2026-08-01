@@ -129,13 +129,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 4,
     borderRadius: radius.pill, alignSelf: 'flex-start',
   },
-  statusText: { fontSize: 10, fontFamily: fonts.extraBold },
+  statusText: { fontSize: 11, fontFamily: fonts.extraBold },
   cardBottom: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     marginTop: 12, paddingTop: 12,
   },
-  totalLabel: { fontSize: 10, fontFamily: fonts.medium, color: colors.textMuted },
+  totalLabel: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted },
   totalValue: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 1 },
   checkinBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   checkoutBtnText: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.primary },
   completedNote: { flex: 1, fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, textAlign: 'right', marginLeft: 12 },
-  totalRwf: { fontSize: 10, fontFamily: fonts.medium, color: colors.textMuted, marginTop: 1 },
+  totalRwf: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, marginTop: 1 },
   hint: {
     fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted,
     textAlign: 'center', marginTop: 16, lineHeight: 16,

@@ -141,10 +141,12 @@ export function CarCard({
 
         <div className={isRow ? 'mt-auto pt-4' : 'mt-4'}>
           {/* Price is one of the few places brand red is allowed. */}
-          <p className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
+          {/* tabular-nums so prices line up digit-for-digit down a grid of
+              cards — Satoshi defaults to proportional figures. */}
+          <p className="text-[21px] font-extrabold tracking-[-0.02em] text-brand tabular-nums">
             {formatUSD(car.price)}
           </p>
-          <p className="mt-0.5 text-micro text-content-muted">
+          <p className="mt-0.5 text-micro text-content-muted tabular-nums">
             {formatRWF(car.price)} · ~{formatUSD(monthlyEstimate(car.price))}/mo est.
           </p>
 

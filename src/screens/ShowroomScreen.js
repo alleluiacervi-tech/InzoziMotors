@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   caption: { paddingHorizontal: 24, paddingTop: 8 },
   captionTitle: { fontSize: 20, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.4 },
   captionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  captionPrice: { fontSize: 17, fontFamily: fonts.black, color: '#fff' },
+  captionPrice: { fontVariant: ['tabular-nums'], fontSize: 17, fontFamily: fonts.black, color: '#fff' },
   viewBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
     backgroundColor: colors.primary,

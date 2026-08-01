@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   carThumb: { width: 80, height: 60, borderRadius: radius.lg, backgroundColor: colors.border },
   carTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 19 },
   carSeller: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
-  carPrice: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 4 },
+  carPrice: { fontVariant: ['tabular-nums'], fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 4 },
 
   certBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     width: 20, height: 20, borderRadius: 10, backgroundColor: colors.navyDeep,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
   },
-  stepNumText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff' },
+  stepNumText: { fontSize: 11, fontFamily: fonts.extraBold, color: '#fff' },
   stepIcon: {
     width: 34, height: 34, borderRadius: radius.md, backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,

@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, padding: 12, marginTop: 12,
   },
   resolutionLabel: {
-    fontSize: 10.5, fontFamily: fonts.bold, color: colors.textMuted,
+    fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
   resolutionText: { fontSize: 13, color: colors.textPrimary, lineHeight: 19, marginTop: 5 },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill,
   },
-  pillText: { fontSize: 10.5, fontFamily: fonts.bold },
+  pillText: { fontSize: 11, fontFamily: fonts.bold },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34 },
   emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 16 },
   emptySub: { fontSize: 13.5, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, marginTop: 8 },

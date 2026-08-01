@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary + '44',
   },
-  adminBadgeText: { fontSize: 10, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: 0.5 },
+  adminBadgeText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: 0.5 },
   statsHero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
   statsHeroTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   statsHeroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2, marginBottom: 16 },
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amber,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4,
   },
-  tabBadgeText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff' },
+  tabBadgeText: { fontSize: 11, fontFamily: fonts.extraBold, color: '#fff' },
   tabContent: { padding: 16, gap: 10 },
   // Verification cards
   verifyCard: {
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueTint,
     borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3,
   },
-  verifyDocText: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.primary },
+  verifyDocText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.primary },
   verifyActions: { flexDirection: 'row', gap: 8 },
   verifyBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: radius.pill,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  inspBadgeText: { fontSize: 9, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5 },
+  inspBadgeText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5 },
   confirmBtn: {
     backgroundColor: colors.surface,
     borderWidth: 1.5, borderColor: colors.primary,
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   listingTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  listingPrice: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 2 },
+  listingPrice: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 2 },
   listingMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   listingMetaText: { fontSize: 11, color: colors.textMuted },
   listingFilters: { gap: 8, paddingBottom: 4 },

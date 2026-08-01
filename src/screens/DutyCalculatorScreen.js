@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   resultTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: '#fff' },
   resultVehicle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontFamily: fonts.semiBold },
   resultSectionLabel: {
-    fontSize: 10, fontFamily: fonts.bold, color: colors.textMuted,
+    fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted,
     letterSpacing: 0.6, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4,
   },
   dutyRow: {
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   dutyLabelBold: { fontFamily: fonts.bold, color: colors.textPrimary },
   dutyUSD: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   dutyUSDBold: { fontSize: 16, fontFamily: fonts.extraBold },
-  dutyRWF: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
+  dutyRWF: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   resultDivider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
   effectiveRateCard: {
     margin: 16, backgroundColor: '#FEF3C7',

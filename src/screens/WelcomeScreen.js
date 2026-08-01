@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   trioTitle: { fontFamily: fonts.bold, fontSize: 12.5, color: colors.textPrimary },
   trioSub: {
-    fontFamily: fonts.regular, fontSize: 10.5, lineHeight: 14,
+    fontFamily: fonts.regular, fontSize: 11, lineHeight: 14,
     color: colors.textMuted, textAlign: 'center', marginTop: 3,
   },
 

@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  heroBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenLight },
+  heroBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenLight },
   heroBio: { fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
   trustCircleWrap: { alignItems: 'center', gap: 6 },
   trustCircle: {
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   trustScore: { fontSize: 22, fontFamily: fonts.extraBold },
-  trustMax: { fontSize: 9, color: 'rgba(255,255,255,0.5)', marginTop: -3 },
+  trustMax: { fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: -3 },
   gradeChip: {
     paddingHorizontal: 10, paddingVertical: 3,
     borderRadius: radius.pill, borderWidth: 1,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   statValue: { fontSize: 15, fontFamily: fonts.extraBold },
-  statLabel: { fontSize: 10, color: colors.textMuted },
+  statLabel: { fontSize: 11, color: colors.textMuted },
   trustCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.surface,
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   scoreBarTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   scoreBarLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   scoreBarPts: { fontSize: 14, fontFamily: fonts.extraBold },
-  scoreBarMax: { fontSize: 10, color: colors.textMuted, fontFamily: fonts.semiBold },
+  scoreBarMax: { fontSize: 11, color: colors.textMuted, fontFamily: fonts.semiBold },
   barTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border },
   barFill: { height: 4, borderRadius: 2 },
   scoreBarDesc: { fontSize: 11, color: colors.textMuted, marginTop: 5 },
@@ -365,14 +365,14 @@ const styles = StyleSheet.create({
   },
   listingImage: { width: '100%', height: 100 },
   listingTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary, paddingHorizontal: 10, paddingTop: 8 },
-  listingPrice: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, paddingHorizontal: 10, marginTop: 3 },
+  listingPrice: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, paddingHorizontal: 10, marginTop: 3 },
   listingBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     margin: 10, marginTop: 6,
     backgroundColor: colors.greenTint, alignSelf: 'flex-start',
     paddingHorizontal: 7, paddingVertical: 3, borderRadius: radius.pill,
   },
-  listingBadgeText: { fontSize: 9, fontFamily: fonts.bold, color: colors.green },
+  listingBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
   reviews: { gap: 10 },
   reviewCard: {
     backgroundColor: colors.surface,
