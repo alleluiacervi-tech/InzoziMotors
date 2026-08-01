@@ -22,17 +22,22 @@ export const radius = {
   phone: 44,
 };
 
-// Inter font family map — loaded in App.js via @expo-google-fonts/inter
+// Satoshi font family map — bundled files loaded in App.js via expo-font.
+//
+// Satoshi publishes 400/500/700/900 (no 600 or 800), so two of the six slots
+// double up. Each maps DOWN to the nearest real weight rather than up: Satoshi
+// sets optically heavier than Inter at the same nominal weight, so rounding up
+// would make the whole interface read bolder than it was designed to.
 export const fonts = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semiBold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  extraBold: 'Inter_800ExtraBold',
-  black: 'Inter_900Black',
+  regular: 'Satoshi-Regular',   // 400
+  medium: 'Satoshi-Medium',     // 500
+  semiBold: 'Satoshi-Medium',   // 600 → 500
+  bold: 'Satoshi-Bold',         // 700
+  extraBold: 'Satoshi-Bold',    // 800 → 700
+  black: 'Satoshi-Black',       // 900
 };
 
-// Typography presets using Inter
+// Typography presets
 export const typography = {
   display: { fontFamily: fonts.extraBold, fontSize: 42, letterSpacing: -1.2, lineHeight: 46 },
   h1: { fontFamily: fonts.extraBold, fontSize: 30, letterSpacing: -0.9, lineHeight: 34 },

@@ -1,19 +1,28 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { getCurrentUser } from '@/lib/session'
 import { SITE } from '@/lib/site'
 import './globals.css'
 
-// Inter, self-hosted by next/font — the same family the Expo app loads via
-// @expo-google-fonts/inter. `display: swap` keeps text visible during load,
-// which matters far more than a flash of fallback on Rwandan mobile networks.
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
+// Satoshi (Indian Type Foundry), self-hosted by next/font — the same four files
+// the Expo app bundles, so the website and the app set type identically.
+// Satoshi has no 600 or 800, so those weights resolve down to 500 and 700 to
+// match the app's map in src/theme/index.js. `display: swap` keeps text visible
+// during load, which matters far more than a flash of fallback on Rwandan
+// mobile networks.
+const satoshi = localFont({
+  src: [
+    { path: '../fonts/Satoshi-Regular.ttf', weight: '400', style: 'normal' },
+    { path: '../fonts/Satoshi-Medium.ttf', weight: '500', style: 'normal' },
+    { path: '../fonts/Satoshi-Medium.ttf', weight: '600', style: 'normal' },
+    { path: '../fonts/Satoshi-Bold.ttf', weight: '700', style: 'normal' },
+    { path: '../fonts/Satoshi-Bold.ttf', weight: '800', style: 'normal' },
+    { path: '../fonts/Satoshi-Black.ttf', weight: '900', style: 'normal' },
+  ],
+  variable: '--font-satoshi',
   display: 'swap',
-  weight: ['400', '500', '600', '700', '800', '900'],
 })
 
 export const metadata: Metadata = {
@@ -67,7 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = await getCurrentUser()
 
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={satoshi.variable}>
       <body className="flex min-h-screen flex-col">
         <a href="#main" className="skip-link">
           Skip to main content

@@ -66,9 +66,9 @@ const config: Config = {
       },
 
       fontFamily: {
-        // Inter across every platform — the app loads it via
-        // @expo-google-fonts/inter, the web via next/font (see layout.tsx).
-        sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Satoshi across every platform — the app bundles the files via
+        // expo-font, the web via next/font/local (see layout.tsx).
+        sans: ['var(--font-satoshi)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
 
       // Mobile's radius scale, plus web-scale values for full-bleed sections

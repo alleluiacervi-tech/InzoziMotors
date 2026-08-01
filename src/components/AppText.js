@@ -14,8 +14,8 @@ const WEIGHT_MAP = {
 export default function AppText({ style, children, ...props }) {
   const flat = StyleSheet.flatten(style) || {};
   const weight = String(flat.fontWeight || '400');
-  const interFamily = WEIGHT_MAP[weight] || fonts.regular;
-  const finalFamily = flat.fontFamily || interFamily;
+  const mapped = WEIGHT_MAP[weight] || fonts.regular;
+  const finalFamily = flat.fontFamily || mapped;
   return (
     <Text style={[style, { fontFamily: finalFamily }]} {...props}>
       {children}

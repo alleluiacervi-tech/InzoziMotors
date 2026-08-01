@@ -2,15 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import {
-  useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-  Inter_900Black,
-} from '@expo-google-fonts/inter';
+import { useFonts } from 'expo-font';
 import { AppProvider } from './src/context/AppContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AnimatedSplash from './src/components/AnimatedSplash';
@@ -18,13 +10,14 @@ import FeedbackHost from './src/components/Feedback';
 import { getJSON } from './src/storage';
 
 export default function App() {
+  // Satoshi (Indian Type Foundry, Fontshare) — bundled rather than fetched, so
+  // the first frame is never unstyled. It ships 400/500/700/900 only; the
+  // theme's six weight slots collapse onto those four (see src/theme/index.js).
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
-    Inter_900Black,
+    'Satoshi-Regular': require('./assets/fonts/Satoshi-Regular.ttf'),
+    'Satoshi-Medium': require('./assets/fonts/Satoshi-Medium.ttf'),
+    'Satoshi-Bold': require('./assets/fonts/Satoshi-Bold.ttf'),
+    'Satoshi-Black': require('./assets/fonts/Satoshi-Black.ttf'),
   });
   const [splashDone, setSplashDone] = useState(false);
   const [initialRoute, setInitialRoute] = useState(null);

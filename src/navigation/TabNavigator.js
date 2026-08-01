@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius } from '../theme';
+import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
 import HomeScreen from '../screens/HomeScreen';
@@ -86,7 +86,7 @@ function TabBar({ state, descriptors, navigation }) {
                 </View>
               )}
             </View>
-            <Text style={[styles.label, { color, fontWeight: focused ? '700' : '600' }]}>
+            <Text style={[styles.label, { color, fontFamily: focused ? fonts.bold : fonts.medium }]}>
               {LABELS[route.name]}
             </Text>
           </Pressable>
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   iconWrap: { position: 'relative' },
-  label: { fontSize: 11, fontWeight: '600' },
+  label: { fontSize: 11, fontFamily: fonts.medium },
   badge: {
     position: 'absolute', top: -5, right: -8,
     minWidth: 17, height: 17, borderRadius: 9,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.surface,
   },
   badgeWide: { right: -12 },
-  badgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+  badgeText: { fontSize: 9, fontFamily: fonts.black, color: '#fff' },
   compareFloat: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -151,11 +151,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  compareFloatText: { flex: 1, color: '#fff', fontSize: 14, fontWeight: '700' },
+  compareFloatText: { flex: 1, color: '#fff', fontSize: 14, fontFamily: fonts.bold },
   compareFloatDot: {
     width: 22, height: 22, borderRadius: 11,
     backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center', justifyContent: 'center',
   },
-  compareFloatCount: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  compareFloatCount: { color: '#fff', fontSize: 12, fontFamily: fonts.black },
 });
