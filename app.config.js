@@ -23,7 +23,18 @@ export default ({ config }) => ({
     resizeMode: 'contain',
     backgroundColor: '#FFFFFF',
   },
-  assetBundlePatterns: ['**/*'],
+  // Only what the app actually shows. '**/*' also shipped about.png, sawa.png
+  // and refference.png — roughly 4 MB of marketing and design-reference art
+  // that no screen requires — into every download.
+  assetBundlePatterns: [
+    'assets/cars/**',
+    'assets/fonts/**',
+    'assets/welcome-hero.jpg',
+    'assets/icon.png',
+    'assets/adaptive-icon.png',
+    'assets/splash.png',
+    'assets/favicon.png',
+  ],
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.sawacars.app',
