@@ -35,7 +35,11 @@ const ROLE_LABEL: Record<UserRole, string> = {
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
-  if (!user) redirect('/signin?next=/dashboard')
+  // Via /session/expired, not straight to /signin: the cookie is still present
+  // and still fools the middleware, so sending them to /signin here would bounce
+  // them back to /dashboard and loop forever. That route clears the cookie
+  // first. See web/src/app/session/expired/route.ts.
+  if (!user) redirect('/session/expired?next=/dashboard')
 
   const unread = await getUnreadCount()
   const initial = user.name.trim().charAt(0).toUpperCase() || '?'

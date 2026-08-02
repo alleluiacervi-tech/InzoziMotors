@@ -22,11 +22,25 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
   const user = await getCurrentUser()
   if (user) redirect(next)
 
+  // Set by /session/expired after it clears a cookie the backend rejected.
+  // Without this the user is dumped on a sign-in form with no idea why they
+  // were signed out mid-session.
+  const expired = first(params.expired) === '1'
+
   return (
     <>
       <AuthHeading title="Welcome back">
         Sign in to pick up your saved cars, your searches and any request you have open.
       </AuthHeading>
+
+      {expired && (
+        <p
+          role="status"
+          className="mb-6 rounded-xl border border-line bg-surface-alt px-4 py-3 text-caption text-content-secondary"
+        >
+          Your session expired, so we signed you out. Sign in again to pick up where you left off.
+        </p>
+      )}
 
       <SignInForm next={next} defaultEmail={first(params.email)} />
 
