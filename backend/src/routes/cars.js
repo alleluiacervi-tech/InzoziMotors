@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
+const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 
 const router = express.Router();
@@ -260,23 +261,49 @@ ${MARKET_LATERALS}
 });
 
 // POST /cars/save/:id  (toggle save)
+//
+// cars.saves is a cached counter that every read path already ignores in favour
+// of a live COUNT(*) over saved_cars — see saves_count in the queries above, and
+// mapCar in the mobile app. It was maintained by a read, then a write, then a
+// second write, none of them in a transaction: two taps racing produced a count
+// that disagreed with the table, permanently.
+//
+// The whole toggle is now one statement pair inside a transaction, and the
+// counter is DERIVED from the table rather than incremented, so it cannot drift
+// from the thing it is meant to summarise even if a write is lost.
 router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
   const { id: car_id } = req.params;
   const user_id = req.user.id;
   try {
-    const existing = await pool.query(
-      'SELECT 1 FROM saved_cars WHERE user_id = $1 AND car_id = $2',
-      [user_id, car_id]
-    );
-    if (existing.rows.length) {
-      await pool.query('DELETE FROM saved_cars WHERE user_id = $1 AND car_id = $2', [user_id, car_id]);
-      await pool.query('UPDATE cars SET saves = GREATEST(0, saves - 1) WHERE id = $1', [car_id]);
-      return res.json({ saved: false });
-    }
-    await pool.query('INSERT INTO saved_cars (user_id, car_id) VALUES ($1, $2)', [user_id, car_id]);
-    await pool.query('UPDATE cars SET saves = saves + 1 WHERE id = $1', [car_id]);
-    res.json({ saved: true });
+    const result = await withTransaction(async (client) => {
+      // ON CONFLICT DO NOTHING + rowCount tells us whether this was an insert
+      // or an existing row, without a separate SELECT to race against.
+      const ins = await client.query(
+        `INSERT INTO saved_cars (user_id, car_id) VALUES ($1, $2)
+         ON CONFLICT (user_id, car_id) DO NOTHING`,
+        [user_id, car_id]
+      );
+      const saved = ins.rowCount > 0;
+      if (!saved) {
+        await client.query(
+          'DELETE FROM saved_cars WHERE user_id = $1 AND car_id = $2',
+          [user_id, car_id]
+        );
+      }
+      await client.query(
+        `UPDATE cars SET saves = (SELECT COUNT(*) FROM saved_cars WHERE car_id = $1)
+         WHERE id = $1`,
+        [car_id]
+      );
+      return { saved };
+    });
+    res.json(result);
   } catch (err) {
+    // A car_id that does not exist violates the foreign key — a client error.
+    if (err.code === '23503') {
+      return res.status(404).json({ error: 'Car not found' });
+    }
+    console.error('toggle save error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

@@ -325,6 +325,14 @@ CREATE TABLE IF NOT EXISTS platform_fees (
 );
 CREATE INDEX IF NOT EXISTS idx_platform_fees_seller ON platform_fees(seller_id);
 
+-- Certification is billed per SUBMISSION (the car that was inspected), not per
+-- handover — it is earned when the 150-point check completes, whether or not
+-- the car ever sells. The partial unique index makes re-inspection after
+-- remedial work idempotent: one certification fee per car, ever.
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS submission_id UUID REFERENCES submissions(id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_certification
+  ON platform_fees(submission_id) WHERE fee_type = 'certification';
+
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
 
 -- ─── Inspection centers — capacity-aware scheduling ──────────────────────────
