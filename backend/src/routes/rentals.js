@@ -2,7 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
-const { uploadPhotos, publicUploadUrl } = require('../middleware/upload');
+const { uploadPhotos, publicUploadUrl, verifyImageContent } = require('../middleware/upload');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
 
@@ -275,7 +275,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 // POST /rentals/bookings/:bookingId/photos — condition photos at pickup/return
 // (:bookingId param name matters — the upload middleware keys the storage
 // folder on it, landing files in uploads/rentals/<bookingId>)
-router.post('/bookings/:bookingId/photos', requireAuth, requireUuid('bookingId'), uploadPhotos.array('photos', 12), async (req, res) => {
+router.post('/bookings/:bookingId/photos', requireAuth, requireUuid('bookingId'), uploadPhotos.array('photos', 12), verifyImageContent, async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
   const { stage = 'pickup' } = req.body; // pickup | return
   if (!['pickup', 'return'].includes(stage)) {

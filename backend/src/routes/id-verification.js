@@ -5,7 +5,7 @@ const fs = require('fs');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
-const { uploadIdDocs } = require('../middleware/upload');
+const { uploadIdDocs, verifyImageContent } = require('../middleware/upload');
 const { recomputeTrustScore } = require('../lib/trust');
 const { notifyUser } = require('../lib/notify');
 
@@ -39,6 +39,21 @@ function viewUrl(req, storedUrl) {
   const filename = path.basename(String(storedUrl).split('?')[0]);
   const base = `${req.protocol}://${req.get('host')}`;
   return `${base}/id-verification/doc/${encodeURIComponent(filename)}?sig=${signViewToken(filename)}`;
+}
+
+// Erases identity documents from disk. Best-effort by contract: a file that is
+// already gone, or a URL from an older scheme, must never fail the request
+// around it. Only the basename is used, so nothing outside id-docs is reachable.
+function removeIdDocuments(urls) {
+  for (const url of (urls || []).filter(Boolean)) {
+    const filename = path.basename(String(url).split('?')[0]);
+    if (!filename || filename === '.' || filename === '..') continue;
+    fs.unlink(path.join(UPLOAD_DIR, 'id-docs', filename), (err) => {
+      if (err && err.code !== 'ENOENT') {
+        console.error('id document cleanup:', filename, err.message);
+      }
+    });
+  }
 }
 
 // GET /id-verification/doc/:filename
@@ -85,7 +100,7 @@ router.post('/', requireAuth, uploadIdDocs.fields([
   { name: 'id_front', maxCount: 1 },
   { name: 'id_back',  maxCount: 1 },
   { name: 'selfie',   maxCount: 1 },
-]), async (req, res) => {
+]), verifyImageContent, async (req, res) => {
   const files = req.files;
   if (!files?.id_front || !files?.id_back || !files?.selfie) {
     return res.status(400).json({ error: 'id_front, id_back, and selfie are required' });
@@ -94,6 +109,16 @@ router.post('/', requireAuth, uploadIdDocs.fields([
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     // Point at the admin-gated file route, never the public static path
     const url = (f) => `${baseUrl}/id-verification/doc/${f[0].filename}`;
+
+    // Resubmission overwrote the URLs on the row and left the previous scans on
+    // disk forever, unreferenced and unreachable — a growing pile of national ID
+    // photographs nothing could clean up. The privacy policy says we delete
+    // them; this is the first half of making that true (account deletion is the
+    // other half, in routes/auth.js).
+    const prior = await pool.query(
+      'SELECT id_front_url, id_back_url, selfie_url FROM users WHERE id = $1',
+      [req.user.id]
+    );
 
     // Persist onto the user row (single source of truth; resubmission overwrites)
     await pool.query(
@@ -104,6 +129,10 @@ router.post('/', requireAuth, uploadIdDocs.fields([
        WHERE id = $1`,
       [req.user.id, url(files.id_front), url(files.id_back), url(files.selfie)]
     );
+
+    // Only after the row points at the new files, so a failure above can never
+    // leave a user with deleted documents and no replacement.
+    removeIdDocuments(Object.values(prior.rows[0] || {}));
 
     // Informational notification only — no document URLs stored in meta
     await notifyUser(pool, {
