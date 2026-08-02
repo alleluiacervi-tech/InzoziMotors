@@ -79,8 +79,20 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
   const car = detail || listCar;
 
-  // Arriving by link: nothing to draw until the fetch resolves. Previously this
-  // dereferenced car.id immediately and would have crashed.
+  // ── Every hook must run before the early return below ──────────────────────
+  // A deep-linked car starts as null and becomes an object once the fetch
+  // lands. If the "still loading" return sat above these, the hook count would
+  // change between renders and React would throw — so they stay here, above any
+  // conditional exit, and the derived values tolerate a null car.
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [loginVisible, setLoginVisible] = useState(false);
+  const [viewerIdx, setViewerIdx] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null);
+  const { cars, recordCarView } = useApp();
+  React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id, recordCarView]);
+
+  // Arriving by link: nothing to draw until the fetch resolves. Reading car.id
+  // before this point would crash on a link-opened screen.
   if (!car) {
     return (
       <View style={[styles.root, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
@@ -91,7 +103,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
             <Text style={styles.linkStateSub}>
               It may have been sold or taken off the marketplace.
             </Text>
-            <Pressable style={styles.linkStateBtn} onPress={() => navigation.replace('Main')}>
+            <Pressable
+              style={styles.linkStateBtn}
+              onPress={() => navigation.replace('Main')}
+              accessibilityRole="button"
+              accessibilityLabel="Browse cars"
+            >
               <Text style={styles.linkStateBtnText}>Browse cars</Text>
             </Pressable>
           </>
@@ -107,12 +124,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
   const saved = isCarSaved(car.id);
   const isAuction = car.type === 'auction';
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [loginVisible, setLoginVisible] = useState(false);
-  const [viewerIdx, setViewerIdx] = useState(null);
-  const [pendingAction, setPendingAction] = useState(null);
-
-  const { cars } = useApp();
 
   const monthly = car.price ? monthlyEstimate(car.price) : null;
 
@@ -142,9 +153,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
   };
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
-
-  const { recordCarView } = useApp();
-  React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
 
   const contactWhatsApp = () => contactSellerOnWhatsApp(car, formatPrice(price));
 
@@ -187,7 +195,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </ScrollView>
 
           <View style={[styles.galleryBar, { top: insets.top + 8 }]}>
-            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()}>
+            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
               <Ionicons name="chevron-back" size={20} color={colors.slate700} />
             </Pressable>
             <View style={{ flexDirection: 'row', gap: 10 }}>

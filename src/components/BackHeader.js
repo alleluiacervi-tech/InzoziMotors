@@ -11,6 +11,10 @@ export default function BackHeader({ title, onBack, right, tint = colors.slate70
           onPress={onBack}
           style={[styles.iconBtn, !transparent && styles.iconBtnFilled]}
           hitSlop={8}
+          // An icon with no text is silent to VoiceOver and TalkBack — the
+          // control announces as "button" with nothing to say what it does.
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <Ionicons name="chevron-back" size={20} color={tint} />
         </Pressable>

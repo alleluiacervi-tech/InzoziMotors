@@ -121,7 +121,7 @@ export default function SearchResultsScreen({ navigation, route }) {
     <Screen background={colors.bg}>
       {/* Search header */}
       <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
           <Ionicons name="chevron-back" size={20} color={colors.slate700} />
         </Pressable>
         <View style={styles.searchBar}>
@@ -136,7 +136,7 @@ export default function SearchResultsScreen({ navigation, route }) {
             autoCapitalize="none"
           />
           {searchQuery ? (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear search">
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           ) : null}
@@ -190,7 +190,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                 <Pressable style={styles.layoutBtn} onPress={() => setLayout(isGrid ? 'list' : 'grid')} hitSlop={6}>
                   <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
                 </Pressable>
-                <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')}>
+                <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View results on a map">
                   <Ionicons name="map-outline" size={16} color={colors.textSecondary} />
                   <Text style={styles.mapText}>Map</Text>
                 </Pressable>

@@ -144,7 +144,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                 <Text style={styles.headerSub}>Rwanda's Certified Marketplace</Text>
               </View>
             </View>
-            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
+            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close menu">
               <Ionicons name="close" size={20} color="rgba(255,255,255,0.8)" />
             </Pressable>
           </View>

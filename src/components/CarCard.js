@@ -31,7 +31,12 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
   const tier = getCertTier(car);
 
   return (
-    <Pressable style={[styles.card, shadows.card]} onPress={onPress}>
+    <Pressable
+      style={[styles.card, shadows.card]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${car.title}, ${getSawaPrice(car)}`}
+    >
       <View style={styles.imageWrap}>
         <Image source={{ uri: car.image }} style={styles.image} resizeMode="contain" />
 
@@ -46,7 +51,16 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
               <Badge variant="contract" label="In Contract" style={styles.topLeft} />
             ) : null}
 
-            <Pressable style={styles.heart} onPress={() => toggleSaveCar(car.id)} hitSlop={10}>
+            <Pressable
+              style={styles.heart}
+              onPress={() => toggleSaveCar(car.id)}
+              hitSlop={10}
+              accessibilityRole="button"
+              // Names the car, because a list of hearts is otherwise a list of
+              // identical unlabelled buttons.
+              accessibilityLabel={saved ? `Remove ${car.title} from saved` : `Save ${car.title}`}
+              accessibilityState={{ selected: saved }}
+            >
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
                 size={15}

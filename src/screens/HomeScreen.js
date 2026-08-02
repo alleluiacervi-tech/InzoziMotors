@@ -165,7 +165,7 @@ export default function HomeScreen({ navigation }) {
 
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <Pressable style={styles.hamburger} onPress={() => setDrawerOpen(true)} hitSlop={6}>
+        <Pressable style={styles.hamburger} onPress={() => setDrawerOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Open menu">
           <View style={styles.hamburgerLine} />
           <View style={[styles.hamburgerLine, { width: 16 }]} />
           <View style={styles.hamburgerLine} />
@@ -179,10 +179,10 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.topBarRight}>
-          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('MapView')}>
+          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View cars on a map">
             <Ionicons name="map-outline" size={20} color={colors.textSecondary} />
           </Pressable>
-          <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')}>
+          <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel="Notifications">
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             {hasUnread && <View style={styles.bellBadge} />}
           </Pressable>
