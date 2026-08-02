@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
@@ -173,8 +174,25 @@ router.get('/:id/history', async (req, res) => {
   }
 });
 
+// Best-effort identity for otherwise-public routes: sets req.user when a valid
+// token is present, and simply carries on when one is not. Used where the
+// RESPONSE differs for a signed-in caller but the route itself stays public.
+function optionalAuth(req, _res, next) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    try { req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET); } catch { /* anonymous */ }
+  }
+  next();
+}
+
 // GET /cars/:id
-router.get('/:id', async (req, res) => {
+// Public, because the catalogue is the indexable part of the product — but the
+// seller's personal phone number is NOT part of the catalogue. Listing ids are
+// published in the sitemap, so returning it here made every seller's number
+// enumerable by anyone who could count. It is now released only to a signed-in
+// buyer with a live handover on this specific car; everyone else, crawlers
+// included, gets null and the Sawa business line.
+router.get('/:id', optionalAuth, async (req, res) => {
   try {
     // price_history is ordered oldest-first, so element 0 is the original
     // listing price. A car with no recorded changes returns [] — nothing is
@@ -195,10 +213,47 @@ ${MARKET_LATERALS}
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Car not found' });
-    // increment view count (fire-and-forget)
-    pool.query('UPDATE cars SET views = views + 1 WHERE id = $1', [req.params.id]);
-    res.json(rows[0]);
+    const car = rows[0];
+
+    // Statuses a car reaches only by having been published. Anything else
+    // (under_review, scheduled, inspecting, archived) describes a car that was
+    // never on the marketplace, so it is not public — 404, not 403, because the
+    // existence of the row is itself the thing not to confirm.
+    const PUBLICLY_VISIBLE = ['live', 'reserved', 'sold'];
+    const isInsider =
+      req.user && (req.user.role === 'admin' || req.user.id === car.seller_id);
+    if (!PUBLICLY_VISIBLE.includes(car.status) && !isInsider) {
+      return res.status(404).json({ error: 'Car not found' });
+    }
+
+    // Who may see the seller's number: the seller themselves, an admin, or a
+    // buyer who has an open/completed handover on this car (the only point at
+    // which the two parties need to reach each other directly).
+    let maySeeSellerPhone = false;
+    if (req.user) {
+      if (req.user.role === 'admin' || req.user.id === car.seller_id) {
+        maySeeSellerPhone = true;
+      } else {
+        const { rows: h } = await pool.query(
+          `SELECT 1 FROM handovers
+           WHERE car_id = $1 AND buyer_id = $2
+             AND status IN ('pending', 'confirmed', 'complete')
+           LIMIT 1`,
+          [req.params.id, req.user.id]
+        );
+        maySeeSellerPhone = h.length > 0;
+      }
+    }
+    if (!maySeeSellerPhone) car.seller_phone = null;
+
+    // Fire-and-forget, but never unhandled: a DB blip here must not become an
+    // unhandled rejection that takes the process down under --unhandled-rejections.
+    pool.query('UPDATE cars SET views = views + 1 WHERE id = $1', [req.params.id])
+      .catch((err) => console.error('view counter:', err.message));
+
+    res.json(car);
   } catch (err) {
+    console.error('car detail error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
