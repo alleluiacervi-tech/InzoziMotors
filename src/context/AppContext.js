@@ -574,35 +574,61 @@ export function AppProvider({ children }) {
 
   // --- Initial Data Loader ---
 
+  // Each section loads independently and reports its own failure.
+  //
+  // This was one try/catch wrapped around eight sequential awaits: if the first
+  // call threw — a 500 on one malformed id was enough — the remaining seven were
+  // skipped, and the user was shown empty Saved, Messages and Notifications
+  // screens with no indication that anything had gone wrong. It also serialised
+  // six independent round trips that have no reason to wait on each other.
+  const loadSection = useCallback(async (label, run) => {
+    try {
+      await run();
+      return true;
+    } catch (err) {
+      // A section that fails leaves its previous state alone rather than
+      // clearing it — stale data beats a blank screen that implies emptiness.
+      console.warn(`Could not load ${label}:`, err?.message || err);
+      if (err?.isNetworkError) setBackendReachable(false);
+      return false;
+    }
+  }, []);
+
   const loadInitialData = useCallback(async (user) => {
     setCars(await fetchCars());
     setRentalCars(await fetchRentalCars());
-    try {
+    if (!user) return;
 
-      if (user) {
-        try {
-          const myRentals = await rentalsApi.getMyBookings();
-          setRentalBookings(myRentals.map(mapRentalBooking));
-        } catch {}
-      }
-
-
-      if (user) {
+    const sections = [
+      ['your rentals', async () => {
+        const mine = await rentalsApi.getMyBookings();
+        setRentalBookings(mine.map(mapRentalBooking));
+      }],
+      ['saved cars', async () => {
         const wishList = await carsApi.getSavedCars();
         setSavedCarIds(wishList.map((c) => c.id));
-
+      }],
+      // Admins get the whole pipeline instead (added below). Only one of the
+      // two ever runs: with both in a concurrent batch they would race to
+      // setSubmissions and the winner would be whichever request returned
+      // first — the old sequential code got the right answer by accident.
+      ...(user.role === 'admin' ? [] : [['your submissions', async () => {
         const subList = await submissionsApi.getSubmissions();
         setSubmissions(subList.map(mapSubmission));
-
+      }]]),
+      ['your requests', async () => {
         const myHandovers = await handoversApi.getMyHandovers();
         setPurchaseRequests(myHandovers.map(mapHandover));
-
+      }],
+      ['conversations', async () => {
         const convList = await messagesApi.getConversations();
         setConversations(convList.map(mapConversation));
-
+      }],
+      ['notifications', async () => {
         const notifList = await notificationsApi.getNotifications();
         setNotifications(notifList.map(mapNotification));
-
+      }],
+      ['saved searches', async () => {
         const searchList = await carsApi.getSavedSearches();
         setSavedSearches(searchList.map((s) => ({
           id: s.id,
@@ -614,29 +640,34 @@ export function AppProvider({ children }) {
           maxPrice: s.filters?.maxPrice || s.filters?.max_price,
           maxMileage: s.filters?.maxMileage || s.filters?.max_mileage,
         })));
+      }],
+    ];
 
-        if (user.role === 'admin') {
-          // Admins see the whole submission pipeline, not just their own
-          try {
-            const adminSubs = await submissionsApi.getAdminSubmissions();
-            setSubmissions(adminSubs.map(mapSubmission));
-          } catch {}
-
+    if (user.role === 'admin') {
+      sections.push(
+        ['the submission pipeline', async () => {
+          const adminSubs = await submissionsApi.getAdminSubmissions();
+          setSubmissions(adminSubs.map(mapSubmission));
+        }],
+        ['the ID verification queue', async () => {
           const queueList = await api.get('/id-verification/queue');
           setPendingVerifications(queueList.map((v) => ({
             id: v.id,
             name: v.name,
-            initials: v.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
-            submitted: new Date(v.submitted_at).toLocaleDateString('en-US'),
+            initials: String(v.name || '').split(' ').map((w) => w[0]).join('').toUpperCase(),
+            submitted: v.id_submitted_at
+              ? new Date(v.id_submitted_at).toLocaleDateString('en-US')
+              : '—',
             status: v.id_verified,
           })));
-
+        }],
+        ['pending handovers', async () => {
           const adminHandovers = await handoversApi.getAdminHandovers('pending');
           setHandovers(adminHandovers.map((h) => ({
             id: h.id,
             bookingId: h.booking_id,
             buyer: h.buyer_name,
-            buyerInitials: h.buyer_name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+            buyerInitials: String(h.buyer_name || '').split(' ').map((w) => w[0]).join('').toUpperCase(),
             seller: h.seller_name,
             car: h.car_title,
             center: h.center,
@@ -644,12 +675,14 @@ export function AppProvider({ children }) {
             time: h.handover_time,
             status: h.status,
           })));
-        }
-      }
-    } catch (err) {
-      console.warn('Error loading initial data from API:', err);
+        }],
+      );
     }
-  }, [fetchCars, fetchRentalCars, mapRentalBooking, mapSubmission, mapHandover, mapConversation, mapNotification]);
+
+    // Concurrent, and no rejection can escape: loadSection resolves either way.
+    await Promise.all(sections.map(([label, run]) => loadSection(label, run)));
+  }, [fetchCars, fetchRentalCars, loadSection, mapRentalBooking, mapSubmission,
+      mapHandover, mapConversation, mapNotification]);
 
   // Check auth token and trigger load on app startup
   useEffect(() => {
