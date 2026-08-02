@@ -224,7 +224,15 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
+// Only when run directly. Required as a module — which is how the test suite
+// drives it — the app is returned without binding a port, so tests need no
+// free port, no startup race and no teardown of a stray listener.
 const PORT = parseInt(process.env.PORT || '3000');
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Sawa API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
-});
+
+if (require.main === module) {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Sawa API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  });
+}
+
+module.exports = { app, server, io };

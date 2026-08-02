@@ -333,11 +333,19 @@ router.post('/', requireAdmin, async (req, res) => {
   const { seller_id, title, make, model, year, mileage, fuel_type, transmission,
           body_type, color, price, location, drive_side, vin, description, images,
           inspected, inspection_score, submission_id } = req.body;
-  if (!seller_id || !title || !make || !model) {
-    return res.status(400).json({ error: 'seller_id, title, make, and model are required' });
+  // year, mileage and price are NOT NULL in the schema but were not checked
+  // here, so omitting one produced a 500 from the constraint violation rather
+  // than telling the caller which field was missing.
+  const missing = Object.entries({ seller_id, title, make, model, year, mileage, price })
+    .filter(([, v]) => v === undefined || v === null || v === '')
+    .map(([k]) => k);
+  if (missing.length) {
+    return res.status(400).json({ error: `Missing required field(s): ${missing.join(', ')}` });
   }
-  if (price !== undefined && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
-    return res.status(400).json({ error: 'price must be a non-negative number' });
+  for (const [field, value] of [['year', year], ['mileage', mileage], ['price', price]]) {
+    if (!Number.isFinite(Number(value)) || Number(value) < 0) {
+      return res.status(400).json({ error: `${field} must be a non-negative number` });
+    }
   }
   try {
     // ID is checked in person at the inspection center; admin marks the seller
