@@ -351,7 +351,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                         Ask a question on WhatsApp
                       </Button>
                     ) : null}
-                    <OpenInAppButton path={`car/${car.id}`} variant="ghost" fullWidth />
+                    <OpenInAppButton path={`cars/${car.id}`} variant="ghost" fullWidth />
                   </div>
 
                   <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">

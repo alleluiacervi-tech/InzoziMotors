@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { AppProvider } from './src/context/AppContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import linking from './src/navigation/linking';
 import AnimatedSplash from './src/components/AnimatedSplash';
 import FeedbackHost from './src/components/Feedback';
 import { getJSON } from './src/storage';
@@ -36,7 +37,11 @@ export default function App() {
     <AppProvider>
       <SafeAreaProvider>
         {initialRoute && (
-          <NavigationContainer>
+          // `linking` is what makes sawa://cars/<id> and https://sawacars.com/cars/<id>
+          // land on the car rather than the home feed. Without it the website's
+          // "Open in app" buttons and every push-notification tap on a cold
+          // start discarded their path. See src/navigation/linking.js.
+          <NavigationContainer linking={linking}>
             <StatusBar style="dark" />
             <RootNavigator initialRoute={initialRoute} />
           </NavigationContainer>

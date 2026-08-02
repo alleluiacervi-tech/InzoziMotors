@@ -49,8 +49,11 @@ export function storeUrlFor(platform: Platform): string {
  * without which a user who successfully opened the app returns to the browser
  * later and finds the App Store loaded behind it.
  *
- * `path` maps to the app's linking config, e.g. `car/<uuid>` →
- * sawa://car/<uuid>. The scheme is declared in app.config.js.
+ * `path` maps to the app's linking config, e.g. `cars/<uuid>` →
+ * sawa://cars/<uuid>. The scheme is declared in app.config.js, and the paths
+ * are deliberately identical to this site's own URLs so one string serves both
+ * the https universal link and the custom-scheme fallback — see
+ * src/navigation/linking.js in the Expo project.
  */
 export function useOpenInApp() {
   const platform = usePlatform()
