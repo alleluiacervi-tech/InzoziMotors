@@ -116,6 +116,9 @@ export const FOOTER_LINKS = [
       { href: '/legal/terms', label: 'Terms of service' },
       { href: '/legal/privacy', label: 'Privacy policy' },
       { href: '/legal/guarantee', label: '7-day guarantee terms' },
+      // Google Play requires this to be reachable without signing in, so it
+      // belongs in the footer rather than only behind the dashboard.
+      { href: '/account/delete', label: 'Delete your account' },
     ],
   },
 ] as const

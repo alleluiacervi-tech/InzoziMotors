@@ -204,11 +204,22 @@ export const account = {
   updateProfile: (token: string, fields: { name?: string; phone?: string; avatar_url?: string }) =>
     request<User>('/auth/me', { token, method: 'PATCH', body: JSON.stringify(fields) }),
 
+  /** Returns a replacement token: the backend ends every other session on a
+   *  password change, so the caller's cookie must be re-issued or they log
+   *  themselves out by securing their own account. */
   changePassword: (token: string, current_password: string, new_password: string) =>
-    request<{ success: true }>('/auth/change-password', {
+    request<{ success: true; token: string }>('/auth/change-password', {
       token,
       method: 'POST',
       body: JSON.stringify({ current_password, new_password }),
+    }),
+
+  /** Permanent. 401 = wrong password, 409 = an open handover blocks it. */
+  deleteAccount: (token: string, password: string) =>
+    request<{ success: true }>('/auth/me', {
+      token,
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
     }),
 }
 

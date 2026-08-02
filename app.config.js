@@ -93,6 +93,10 @@ export default ({ config }) => ({
     // Set EXPO_PUBLIC_API_URL in eas.json (per profile) or the shell for local
     // device testing against a LAN address. Null means "auto-detect dev host".
     apiUrl: process.env.EXPO_PUBLIC_API_URL || DEV_FALLBACK,
+    // The public website. The app links out to it for the privacy policy and
+    // terms — pages Google Play requires to be reachable from inside the app,
+    // and which have to be one text rather than two copies that drift.
+    siteUrl: process.env.EXPO_PUBLIC_SITE_URL || 'https://sawacars.com',
     eas: {
       // Filled in by `eas init` — required before the first cloud build.
       projectId: process.env.EAS_PROJECT_ID || undefined,

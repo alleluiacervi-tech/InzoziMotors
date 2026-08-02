@@ -44,11 +44,25 @@ export const auth = {
     return await api.patch('/auth/me', fields);
   },
 
+  // The server ends every other session on a password change and returns a
+  // replacement token for THIS device — store it, or the user signs themselves
+  // out by securing their own account.
   changePassword: async (currentPassword, newPassword) => {
-    return await api.post('/auth/change-password', {
+    const data = await api.post('/auth/change-password', {
       current_password: currentPassword,
       new_password: newPassword,
     });
+    if (data.token) await setToken(data.token);
+    return data;
+  },
+
+  // Permanent, and required by both stores to be reachable from inside the app.
+  // The password is re-checked server-side; a 409 means an open handover has to
+  // be resolved first, which the caller should show rather than swallow.
+  deleteAccount: async (password) => {
+    const data = await api.delete('/auth/me', { body: JSON.stringify({ password }) });
+    await removeToken();
+    return data;
   },
 
   // Password reset — the server always 200s so an attacker learns nothing
