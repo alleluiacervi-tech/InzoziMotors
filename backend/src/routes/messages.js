@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
@@ -31,7 +32,7 @@ router.get('/conversations', requireAuth, async (req, res) => {
 });
 
 // GET /messages/conversations/:id — messages in a conversation
-router.get('/conversations/:id', requireAuth, async (req, res) => {
+router.get('/conversations/:id', requireAuth, requireUuid('id'), async (req, res) => {
   try {
     const convRes = await pool.query(
       'SELECT * FROM conversations WHERE id = $1 AND (buyer_id = $2 OR seller_id = $2)',
@@ -122,7 +123,7 @@ router.post('/conversations', requireAuth, async (req, res) => {
 });
 
 // POST /messages/conversations/:id — send a message in existing conversation
-router.post('/conversations/:id', requireAuth, async (req, res) => {
+router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, res) => {
   // accept both `text` and `message` — POST /conversations uses `message`
   const text = req.body.text ?? req.body.message;
   if (!text) return res.status(400).json({ error: 'text is required' });

@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { uploadIdDocs } = require('../middleware/upload');
 const { recomputeTrustScore } = require('../lib/trust');
 const { notifyUser } = require('../lib/notify');
@@ -146,7 +147,7 @@ router.get('/queue', requireAdmin, async (req, res) => {
 });
 
 // PATCH /id-verification/:userId — admin approves or rejects (idempotent)
-router.patch('/:userId', requireAdmin, async (req, res) => {
+router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) => {
   const { decision } = req.body; // 'approved' | 'rejected'
   if (!['approved', 'rejected'].includes(decision)) {
     return res.status(400).json({ error: 'decision must be approved or rejected' });

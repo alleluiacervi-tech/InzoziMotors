@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { recomputeTrustScore } = require('../lib/trust');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
@@ -140,7 +141,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
 // PATCH /handovers/:id/confirm — admin confirms the arrangement (pending → confirmed).
 // Optionally sets/updates the agreed slot at the same time.
-router.patch('/:id/confirm', requireAdmin, async (req, res) => {
+router.patch('/:id/confirm', requireAdmin, requireUuid('id'), async (req, res) => {
   const { center, handover_date, handover_time } = req.body || {};
   try {
     const result = await withTransaction(async (client) => {
@@ -192,7 +193,7 @@ router.patch('/:id/confirm', requireAdmin, async (req, res) => {
 
 // PATCH /handovers/:id/complete — admin marks the sale done (confirmed/pending → complete).
 // Idempotent: re-completing is a 409, so completed_sales can never double-increment.
-router.patch('/:id/complete', requireAdmin, async (req, res) => {
+router.patch('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) => {
   try {
     const result = await withTransaction(async (client) => {
       const hRes = await client.query(
@@ -284,7 +285,7 @@ router.patch('/:id/complete', requireAdmin, async (req, res) => {
 });
 
 // PATCH /handovers/:id/cancel — buyer cancels (pending or confirmed)
-router.patch('/:id/cancel', requireAuth, async (req, res) => {
+router.patch('/:id/cancel', requireAuth, requireUuid('id'), async (req, res) => {
   try {
     const result = await withTransaction(async (client) => {
       const hRes = await client.query(

@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { recomputeTrustScore } = require('../lib/trust');
 
 const router = express.Router();
@@ -52,7 +53,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // GET /reviews/seller/:userId
-router.get('/seller/:userId', async (req, res) => {
+router.get('/seller/:userId', requireUuid('userId'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT r.*, u.name AS reviewer_name, c.title AS car_title
@@ -74,7 +75,7 @@ router.get('/seller/:userId', async (req, res) => {
 });
 
 // GET /reviews/trust-score/:userId
-router.get('/trust-score/:userId', async (req, res) => {
+router.get('/trust-score/:userId', requireUuid('userId'), async (req, res) => {
   try {
     const userRes = await pool.query(
       `SELECT id, name, trust_score, id_verified, completed_sales, response_rate

@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
@@ -96,7 +97,7 @@ router.get('/', requireAdmin, async (req, res) => {
 });
 
 // PATCH /disputes/:id — admin resolves or rejects
-router.patch('/:id', requireAdmin, async (req, res) => {
+router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   const { status, resolution } = req.body;
   if (!['resolved', 'rejected'].includes(status)) {
     return res.status(400).json({ error: 'status must be resolved or rejected' });

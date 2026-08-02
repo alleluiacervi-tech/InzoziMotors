@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { uploadPhotos } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
 const { notifyUser } = require('../lib/notify');
@@ -91,7 +92,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
 // GET /inspections/report/:carId — buyer-facing inspection report
 // Must come before /:id to avoid "report" being treated as an id
-router.get('/report/:carId', async (req, res) => {
+router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT i.checklist_results, i.score, i.notes, i.completed_at,
@@ -113,7 +114,7 @@ router.get('/report/:carId', async (req, res) => {
 
 // POST /inspections/cars/:carId/photos — admin uploads 36-angle photos
 // Must come before /:id
-router.post('/cars/:carId/photos', requireAdmin, uploadPhotos.array('photos', 40), async (req, res) => {
+router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', 40), async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ error: 'No photos uploaded' });
@@ -133,7 +134,7 @@ router.post('/cars/:carId/photos', requireAdmin, uploadPhotos.array('photos', 40
 });
 
 // GET /inspections/:id
-router.get('/:id', requireAdmin, async (req, res) => {
+router.get('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT i.*,
@@ -161,7 +162,7 @@ router.get('/:id', requireAdmin, async (req, res) => {
 // POST /inspections/:id/complete — admin submits 150-pt checklist results
 // Body: { checklist_results: { itemName: 'pass'|'flag'|'fail', ... }, notes }
 // POST /inspections/:id/start — mechanic begins the walkaround
-router.post('/:id/start', requireAdmin, async (req, res) => {
+router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `UPDATE inspections
@@ -183,7 +184,7 @@ router.post('/:id/start', requireAdmin, async (req, res) => {
 });
 
 // POST /inspections/:id/complete — record checklist, weighted score, gated publish
-router.post('/:id/complete', requireAdmin, async (req, res) => {
+router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) => {
   const { checklist_results, notes } = req.body;
   if (!checklist_results || typeof checklist_results !== 'object' || !Object.keys(checklist_results).length) {
     return res.status(400).json({ error: 'checklist_results is required' });

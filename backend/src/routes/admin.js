@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAdmin } = require('../middleware/auth');
+const { requireUuid, paginate } = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -85,8 +86,8 @@ router.get('/analytics', requireAdmin, async (req, res) => {
 const ALLOWED_STATUSES = new Set([
   'under_review', 'scheduled', 'inspecting', 'live', 'reserved', 'sold', 'archived',
 ]);
-router.get('/listings', requireAdmin, async (req, res) => {
-  const { status = 'live', make, limit = 50, offset = 0 } = req.query;
+router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200 }), async (req, res) => {
+  const { status = 'live', make } = req.query;
   if (!ALLOWED_STATUSES.has(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
@@ -95,7 +96,9 @@ router.get('/listings', requireAdmin, async (req, res) => {
 
   if (make) { params.push(make); conditions.push(`c.make ILIKE $${params.length}`); }
 
-  params.push(parseInt(limit), parseInt(offset));
+  // Was parseInt(limit) with no clamp: ?limit=abc reached Postgres as NaN and
+  // came back a 500, and a negative offset was passed through verbatim.
+  params.push(req.pagination.limit, req.pagination.offset);
   try {
     const { rows } = await pool.query(
       `SELECT c.*, u.name AS seller_name
@@ -169,7 +172,7 @@ router.get('/fees', requireAdmin, async (req, res) => {
 });
 
 // PATCH /admin/fees/:id — mark a fee paid (collected at the center) or waived
-router.patch('/fees/:id', requireAdmin, async (req, res) => {
+router.patch('/fees/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   const { status } = req.body;
   if (!['paid', 'waived', 'due'].includes(status)) {
     return res.status(400).json({ error: 'status must be paid, waived, or due' });

@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 
 const router = express.Router();
@@ -123,7 +124,7 @@ ${MARKET_LATERALS}
 // GET /cars/:id/history — vehicle history card (buyers + public).
 // Facts derive from real data where it exists (inspection checklist, price
 // history, verified seller); anything unknown is labelled unknown, not faked.
-router.get('/:id/history', async (req, res) => {
+router.get('/:id/history', requireUuid('id'), async (req, res) => {
   try {
     const carRes = await pool.query(
       `SELECT c.vin, c.make, c.model, c.year, c.mileage, c.drive_side,
@@ -192,7 +193,7 @@ function optionalAuth(req, _res, next) {
 // enumerable by anyone who could count. It is now released only to a signed-in
 // buyer with a live handover on this specific car; everyone else, crawlers
 // included, gets null and the Sawa business line.
-router.get('/:id', optionalAuth, async (req, res) => {
+router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
   try {
     // price_history is ordered oldest-first, so element 0 is the original
     // listing price. A car with no recorded changes returns [] — nothing is
@@ -259,7 +260,7 @@ ${MARKET_LATERALS}
 });
 
 // POST /cars/save/:id  (toggle save)
-router.post('/save/:id', requireAuth, async (req, res) => {
+router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
   const { id: car_id } = req.params;
   const user_id = req.user.id;
   try {
@@ -418,7 +419,7 @@ router.get('/valuation/estimate', async (req, res) => {
 });
 
 // PATCH /cars/:id — admin edits listing fields; price changes are recorded
-router.patch('/:id', requireAdmin, async (req, res) => {
+router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   const EDITABLE = ['title', 'price', 'description', 'location', 'mileage', 'color', 'drive_side', 'images'];
   const updates = [];
   const params = [];
@@ -458,7 +459,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
 
 // PATCH /cars/:id/price — seller changes the price of their own live listing.
 // No status regression; price history + price-drop alerts fire like admin edits.
-router.patch('/:id/price', requireAuth, async (req, res) => {
+router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
   const price = Number(req.body.price);
   if (!Number.isFinite(price) || price <= 0) {
     return res.status(400).json({ error: 'price must be a positive number' });
@@ -493,7 +494,7 @@ router.patch('/:id/price', requireAuth, async (req, res) => {
 
 // PATCH /cars/:id/feature — admin boosts a listing to the top of browse.
 // Records the featured fee ('due' — collected offline like commissions).
-router.patch('/:id/feature', requireAdmin, async (req, res) => {
+router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) => {
   const days = Math.min(Math.max(parseInt(req.body.days) || 7, 1), 30);
   const fee = Math.max(parseInt(req.body.fee) || 0, 0);
   try {
@@ -517,7 +518,7 @@ router.patch('/:id/feature', requireAdmin, async (req, res) => {
   }
 });
 
-router.patch('/:id/status', requireAdmin, async (req, res) => {
+router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) => {
   // 'removed' is the admin-dashboard verb for archiving a listing
   const status = req.body.status === 'removed' ? 'archived' : req.body.status;
   const allowed = ['under_review', 'scheduled', 'inspecting', 'live', 'reserved', 'sold', 'archived'];

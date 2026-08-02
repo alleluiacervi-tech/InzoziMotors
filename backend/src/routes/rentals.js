@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { uploadPhotos, publicUploadUrl } = require('../middleware/upload');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
@@ -87,7 +88,7 @@ router.get('/bookings', requireAdmin, async (req, res) => {
 });
 
 // GET /rentals/:id — car detail with booked ranges
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT rc.*, ${BOOKED_RANGES_SQL}
@@ -102,7 +103,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /rentals/:id/book — renter books; server computes cost + checks overlap
-router.post('/:id/book', requireAuth, async (req, res) => {
+router.post('/:id/book', requireAuth, requireUuid('id'), async (req, res) => {
   const { start_date, days, pickup_window, airport_pickup, center } = req.body;
   const numDays = parseInt(days);
   if (!start_date || !numDays || numDays < 1) {
@@ -174,7 +175,7 @@ router.post('/:id/book', requireAuth, async (req, res) => {
 
 // PATCH /rentals/bookings/:id/status — check-in (active), return (completed), cancel
 // Renter can transition their own booking; center staff (admin) can transition any.
-router.patch('/bookings/:id/status', requireAuth, async (req, res) => {
+router.patch('/bookings/:id/status', requireAuth, requireUuid('id'), async (req, res) => {
   const { status, record } = req.body;
   const ALLOWED = { upcoming: ['active', 'cancelled'], active: ['completed'] };
   if (!status) return res.status(400).json({ error: 'status is required' });
@@ -243,7 +244,7 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 // PATCH /rentals/:id — admin edits fleet car (rates, status active|maintenance|retired)
-router.patch('/:id', requireAdmin, async (req, res) => {
+router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   const EDITABLE = ['title', 'daily_rate', 'weekly_rate', 'deposit', 'min_days',
                     'location', 'images', 'status', 'mileage'];
   const updates = [];
@@ -274,7 +275,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
 // POST /rentals/bookings/:bookingId/photos — condition photos at pickup/return
 // (:bookingId param name matters — the upload middleware keys the storage
 // folder on it, landing files in uploads/rentals/<bookingId>)
-router.post('/bookings/:bookingId/photos', requireAuth, uploadPhotos.array('photos', 12), async (req, res) => {
+router.post('/bookings/:bookingId/photos', requireAuth, requireUuid('bookingId'), uploadPhotos.array('photos', 12), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
   const { stage = 'pickup' } = req.body; // pickup | return
   if (!['pickup', 'return'].includes(stage)) {

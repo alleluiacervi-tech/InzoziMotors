@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // PATCH /notifications/:id/read
-router.patch('/:id/read', requireAuth, async (req, res) => {
+router.patch('/:id/read', requireAuth, requireUuid('id'), async (req, res) => {
   try {
     await pool.query(
       'UPDATE notifications SET read = TRUE WHERE id = $1 AND user_id = $2',
