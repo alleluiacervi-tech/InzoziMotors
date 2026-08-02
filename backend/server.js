@@ -175,9 +175,40 @@ app.use('/disputes',        require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));
 app.use('/admin',           require('./src/routes/admin'));
 
-// Health check — PM2 / load balancer uses this
+// ─── Health ───────────────────────────────────────────────────────────────────
+// Two endpoints, because "is the process up?" and "can it serve a request?" are
+// different questions and were previously answered by the same 200.
+//
+// /health answered OK while Postgres was unreachable, so every uptime monitor
+// and load balancer would report green through a total outage — the one moment
+// the check exists for.
+const pool = require('./src/db');
+
+// Liveness: is this process running? Cheap, no dependencies. Restart on failure.
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });
+});
+
+// Readiness: can it actually do its job? Fails with 503 when the database is
+// unreachable, which is what a monitor should page on.
+app.get('/health/ready', async (req, res) => {
+  const started = Date.now();
+  try {
+    await pool.query('SELECT 1');
+    res.json({
+      status: 'ok',
+      database: 'up',
+      latency_ms: Date.now() - started,
+      ts: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('readiness check failed:', err.message);
+    res.status(503).json({
+      status: 'degraded',
+      database: 'unreachable',
+      ts: new Date().toISOString(),
+    });
+  }
 });
 
 // ─── 404 & error handler ──────────────────────────────────────────────────────
