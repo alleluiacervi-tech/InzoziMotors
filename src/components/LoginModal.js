@@ -2,15 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, fonts } from '../theme';
-import Logo from './Logo';
+import { LogoMark } from './Logo';
 
-export default function LoginModal({ visible, onClose, onLoginSuccess }) {
-  const handleSocialLogin = () => {
-    // Simulate social authentication
-    onLoginSuccess();
-    onClose();
-  };
-
+// There is no social sign-in yet — the old "Continue with Google" here did not
+// talk to Google at all, it just dropped the user into the demo account. Both
+// paths below now say exactly what they do.
+export default function LoginModal({ visible, onClose, onSignIn, onContinueAsGuest }) {
   return (
     <Modal
       visible={visible}
@@ -25,25 +22,21 @@ export default function LoginModal({ visible, onClose, onLoginSuccess }) {
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
 
-          {/* Logo & Header */}
           <View style={styles.logoWrapper}>
-            <Logo size={28} />
+            <LogoMark size={52} />
           </View>
 
-          <Text style={styles.title}>Sawa</Text>
+          <Text style={styles.title}>Sign in to continue</Text>
           <Text style={styles.subtitle}>
-            Log in easily to send real-time{'\n'}inquiries to our dealers.
+            Saving cars and messaging sellers{'\n'}needs an account.
           </Text>
 
-          {/* Google login button */}
-          <Pressable style={styles.googleBtn} onPress={handleSocialLogin}>
-            <Ionicons name="logo-google" size={20} color="#1A1A1A" />
-            <Text style={styles.googleText}>Continue with Google</Text>
+          <Pressable style={styles.signInBtn} onPress={onSignIn}>
+            <Text style={styles.signInText}>Sign in</Text>
           </Pressable>
 
-          {/* Guest login bypass */}
-          <Pressable style={styles.guestBtn} onPress={handleSocialLogin}>
-            <Text style={styles.guestText}>Continue as Guest</Text>
+          <Pressable style={styles.guestBtn} onPress={onContinueAsGuest}>
+            <Text style={styles.guestText}>Browse with a demo account</Text>
           </Pressable>
         </View>
       </View>
@@ -89,23 +82,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 28,
   },
-  googleBtn: {
+  signInBtn: {
     width: '100%',
     height: 48,
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: 'row',
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  googleText: {
-    color: '#1A1A1A',
-    fontSize: 14,
-    fontFamily: fonts.bold,
+  signInText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontFamily: fonts.extraBold,
+    letterSpacing: -0.2,
   },
   guestBtn: {
     paddingVertical: 8,

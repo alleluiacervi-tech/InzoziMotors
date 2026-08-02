@@ -495,7 +495,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
       <LoginModal
         visible={loginVisible}
         onClose={() => setLoginVisible(false)}
-        onLoginSuccess={() => {
+        onSignIn={() => {
+          setLoginVisible(false);
+          navigation.navigate('SignIn');
+        }}
+        onContinueAsGuest={() => {
+          setLoginVisible(false);
           loginAsGuest();
           if (pendingAction) setTimeout(() => pendingAction(), 300);
         }}

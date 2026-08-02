@@ -4,9 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
+import { LogoMark } from '../components/Logo';
 import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
-import { showToast, showConfirm } from '../components/Feedback';
+import { showToast } from '../components/Feedback';
 
 export default function SignInScreen({ navigation, route }) {
   const { loginUser } = useApp();
@@ -34,8 +35,9 @@ export default function SignInScreen({ navigation, route }) {
     <Screen background={colors.surface}>
       <BackHeader onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <LogoMark size={54} />
         <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.sub}>Sign in to continue to Sawa.</Text>
+        <Text style={styles.sub}>Sign in to continue to Sawa Cars.</Text>
 
         <Text style={[styles.label, { marginTop: 26 }]}>Email</Text>
         <TextInput
@@ -84,7 +86,7 @@ export default function SignInScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   body: { paddingHorizontal: 28, paddingBottom: 40 },
-  title: { fontSize: 30, fontFamily: fonts.extraBold, letterSpacing: -0.9, color: colors.textPrimary, marginTop: 14 },
+  title: { fontSize: 30, fontFamily: fonts.extraBold, letterSpacing: -0.9, color: colors.textPrimary, marginTop: 18 },
   sub: { fontSize: 15, color: colors.textSecondary, marginTop: 6 },
   label: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.slate600, marginBottom: 6 },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14, marginBottom: 6 },
