@@ -1,13 +1,14 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-
-function token() {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('sawa_admin_token')
-}
+// Same-origin. Requests go to this Next server, which attaches the JWT from an
+// httpOnly cookie and forwards them (src/app/api/backend/[...path]/route.ts).
+//
+// The token used to live in localStorage and be attached here, in the browser —
+// meaning any injected script could read the most privileged credential in the
+// system. Nothing in this file touches a token now, and every call site below
+// is unchanged, because only the base URL moved.
+const BASE = '/api/backend'
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
-    ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
     ...(opts.headers as Record<string, string> | undefined),
   }
   if (!(opts.body instanceof FormData)) {
@@ -17,22 +18,58 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
     headers,
+    // The cookie is httpOnly but still same-origin; this makes the intent explicit.
+    credentials: 'same-origin',
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || res.statusText)
+    // 401 means the session is gone (expired, revoked, signed out elsewhere).
+    // Surfacing it as a typed error lets the layout bounce to /login rather
+    // than each page inventing its own handling.
+    const error = new Error(err.error || res.statusText) as Error & { status?: number }
+    error.status = res.status
+    throw error
   }
   return res.json()
 }
 
-export const api = {
-  // Auth
-  login: (email: string, password: string) =>
-    request<{ token: string; user: any }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    }),
+/** Sign in. Credentials go to this app's own route handler, never to the
+ *  backend directly, so the resulting token stays server-side. */
+export async function signIn(email: string, password: string): Promise<void> {
+  const res = await fetch('/api/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+    credentials: 'same-origin',
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || 'Sign-in failed')
+  }
+}
 
+/** Adopt a token handed over from the public website's /admin-portal route.
+ *  It is verified against the backend before any cookie is written. */
+export async function adoptToken(token: string): Promise<void> {
+  const res = await fetch('/api/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+    credentials: 'same-origin',
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || 'That sign-in link has expired.')
+  }
+}
+
+export async function signOut(): Promise<void> {
+  await fetch('/api/session', { method: 'DELETE', credentials: 'same-origin' })
+}
+
+export const api = {
+  // Auth — sign-in is NOT here: it goes through signIn() above, which posts to
+  // this app's own /api/session so the token never reaches the browser.
   me: () => request<any>('/auth/me'),
 
   // Dashboard

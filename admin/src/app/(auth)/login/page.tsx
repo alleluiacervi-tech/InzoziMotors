@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { api } from '@/lib/api'
+import { adoptToken, signIn } from '@/lib/api'
 import { LogoMark } from '@/components/Logo'
 
-function storeSession(token: string) {
-  localStorage.setItem('sawa_admin_token', token)
-  // Also set cookie so SSR middleware can read it
-  document.cookie = `sawa_admin_token=${token}; path=/; max-age=604800`
-}
+// No storeSession() here any more. It used to write the admin JWT into
+// localStorage AND a JavaScript-readable cookie with no Secure or SameSite
+// flags. Both are gone: /api/session sets an httpOnly cookie server-side and
+// the token never enters the browser.
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,17 +24,16 @@ export default function LoginPage() {
     const match = window.location.hash.match(/token=([^&]+)/)
     if (!match) return
     const token = decodeURIComponent(match[1])
+    // Strip it from history immediately — a fragment is never sent to a server,
+    // but it would otherwise sit in the address bar and the back stack.
     history.replaceState(null, '', window.location.pathname)
     setLoading(true)
-    localStorage.setItem('sawa_admin_token', token)
-    api.me()
-      .then((user) => {
-        if (user.role !== 'admin') throw new Error('Admin access only.')
-        storeSession(token)
-        router.replace('/dashboard')
-      })
-      .catch((err: any) => {
-        localStorage.removeItem('sawa_admin_token')
+    // The route handler proves the token is an admin's before issuing a cookie,
+    // so the role check happens server-side rather than on a payload the
+    // browser decoded for itself.
+    adoptToken(token)
+      .then(() => router.replace('/dashboard'))
+      .catch((err: Error) => {
         setError(err.message || 'Sign-in link expired — please sign in below.')
         setLoading(false)
       })
@@ -46,13 +44,9 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const { token, user } = await api.login(email, password)
-      if (user.role !== 'admin') {
-        setError('Admin access only.')
-        setLoading(false)
-        return
-      }
-      storeSession(token)
+      // Role enforcement lives in /api/session; a non-admin gets a 403 there
+      // and no cookie is ever written.
+      await signIn(email, password)
       router.replace('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Login failed')

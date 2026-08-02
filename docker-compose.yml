@@ -66,15 +66,16 @@ services:
   admin:
     build:
       context: ./admin
-      args:
-        # This URL must be reachable from the BROWSER, not from within Docker.
-        # On localhost, the API container's port 3000 is exposed to the host.
-        NEXT_PUBLIC_API_URL: http://localhost:3000
     restart: unless-stopped
     depends_on:
       - api
     environment:
       PORT: 3001
+      # Server-side only. The dashboard's browser code now talks to its own
+      # /api/backend proxy, which attaches the JWT from an httpOnly cookie —
+      # so the API address is resolved inside the Docker network and never
+      # needs to be reachable from a browser at all.
+      API_URL: http://api:3000
     ports:
       - "3001:3001"
 

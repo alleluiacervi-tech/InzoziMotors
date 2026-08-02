@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { api } from '@/lib/api'
+import { api, signOut } from '@/lib/api'
 import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
 
@@ -64,9 +64,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => setOpenDisputes(0))
   }, [ready, pathname])
 
-  function logout() {
-    localStorage.removeItem('sawa_admin_token')
-    document.cookie = 'sawa_admin_token=; path=/; max-age=0'
+  // The cookie is httpOnly, so only the server can clear it.
+  async function logout() {
+    await signOut()
     router.replace('/login')
   }
 
