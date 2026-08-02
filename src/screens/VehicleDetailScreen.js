@@ -53,7 +53,7 @@ function Sparkline({ data, width: w = 80, height: h = 30 }) {
 export default function VehicleDetailScreen({ navigation, route }) {
   const listCar = route.params?.car;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, addToComparison, comparisonCars, fetchCarDetail } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail } = useApp();
 
   // The browse payload is deliberately lean. The detail endpoint adds price
   // history, the seller's phone and the full market comparison — and counts the
@@ -499,11 +499,11 @@ export default function VehicleDetailScreen({ navigation, route }) {
           setLoginVisible(false);
           navigation.navigate('SignIn');
         }}
-        onContinueAsGuest={() => {
+        onContinueAsGuest={demoMode ? () => {
           setLoginVisible(false);
           loginAsGuest();
           if (pendingAction) setTimeout(() => pendingAction(), 300);
-        }}
+        } : undefined}
       />
     </View>
   );

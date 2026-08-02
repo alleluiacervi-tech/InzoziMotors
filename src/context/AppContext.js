@@ -17,6 +17,26 @@ import { getJSON, setJSON } from '../storage';
 
 const AppContext = createContext();
 
+// ─── Demo mode ────────────────────────────────────────────────────────────────
+// ONE switch for every fabrication in this file: the bundled catalogue, the
+// offline "login" that accepts any credentials, the local submissions, bookings
+// and auto-replies the server never saw.
+//
+// All of it exists so the app is demoable before the backend is deployed. None
+// of it may ship. A release build that invents 25 certified listings, or signs
+// someone in against credentials nothing checked, is doing the exact thing Sawa
+// exists to stop — and reads to a store reviewer as deceptive behaviour.
+//
+// __DEV__ is true under Metro (Expo Go and the dev client) and compiled to false
+// in every release bundle, which is precisely the line we want.
+const DEMO_MODE = typeof __DEV__ !== 'undefined' && __DEV__;
+
+// Empty rather than absent: screens iterate these, so production gets a real
+// empty state, never a fake-populated one.
+const NONE = [];
+
+const demo = (fixture) => (DEMO_MODE ? fixture : NONE);
+
 // Demo user shown when no backend auth token exists
 const DEFAULT_USER = {
   name: 'Alex Morgan',
@@ -24,6 +44,11 @@ const DEFAULT_USER = {
   initials: 'AM',
   id_verified: 'none', // 'none' so the ID verification flow is demoable
 };
+
+// The signed-out shape in a release build — no borrowed name, no borrowed email.
+const ANONYMOUS_USER = { name: '', email: '', initials: '', id_verified: 'none' };
+
+const SIGNED_OUT_USER = DEMO_MODE ? DEFAULT_USER : ANONYMOUS_USER;
 
 // The API never returns initials — they are a display concern. One helper so
 // every place that adopts a user object renders the avatar the same way.
@@ -117,28 +142,33 @@ const AUTO_REPLIES = [
 ];
 
 export function AppProvider({ children }) {
-  const [cars, setCars] = useState(mockCars);
+  const [cars, setCars] = useState(demo(mockCars));
   const [savedCarIds, setSavedCarIds] = useState([]);
-  const [sellerListings, setSellerListings] = useState(initialSellerListings || []);
-  const [conversations, setConversations] = useState(initialConversations || []);
-  const [chatMessages, setChatMessages] = useState(INITIAL_MESSAGES);
-  const [currentUser, setCurrentUser] = useState(DEFAULT_USER);
+  const [sellerListings, setSellerListings] = useState(demo(initialSellerListings || []));
+  const [conversations, setConversations] = useState(demo(initialConversations || []));
+  const [chatMessages, setChatMessages] = useState(DEMO_MODE ? INITIAL_MESSAGES : {});
+  const [currentUser, setCurrentUser] = useState(SIGNED_OUT_USER);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // True once a catalogue read has failed with a transport error. Screens use it
+  // to say "we couldn't reach Sawa" instead of rendering an empty marketplace
+  // that looks like we simply have no cars.
+  const [backendReachable, setBackendReachable] = useState(true);
+
   // Seller submission pipeline
-  const [submissions, setSubmissions] = useState(INITIAL_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState(demo(INITIAL_SUBMISSIONS));
 
   // ID verification status derived from current user profile
   const idVerificationStatus = currentUser?.id_verified || 'none';
 
   // Admin data
-  const [pendingVerifications, setPendingVerifications] = useState(INITIAL_VERIFICATIONS);
-  const [adminInspections] = useState(INITIAL_INSPECTIONS_ADMIN);
+  const [pendingVerifications, setPendingVerifications] = useState(demo(INITIAL_VERIFICATIONS));
+  const [adminInspections] = useState(demo(INITIAL_INSPECTIONS_ADMIN));
 
   // Notifications
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS || []);
+  const [notifications, setNotifications] = useState(demo(INITIAL_NOTIFICATIONS || []));
 
   // Submitted inspection forms (keyed by inspectionId)
   const [inspectionForms, setInspectionForms] = useState({});
@@ -152,7 +182,7 @@ export function AppProvider({ children }) {
 
   // Rentals — separate fleet from sale inventory (mock, no backend yet)
   const [homeMode, setHomeMode] = useState('buy'); // 'buy' | 'rent'
-  const [rentalCars, setRentalCars] = useState(RENTAL_CARS);
+  const [rentalCars, setRentalCars] = useState(demo(RENTAL_CARS));
   const [rentalBookings, setRentalBookings] = useState([]);
   const bookRental = useCallback(async (booking) => {
     let bookingId;
@@ -168,6 +198,10 @@ export function AppProvider({ children }) {
       const mine = await rentalsApi.getMyBookings();
       setRentalBookings(mine.map(mapRentalBooking));
     } catch (err) {
+      // A booking that only exists on this phone is not a booking — the car is
+      // still free for the next renter, and nobody at the center is expecting
+      // them. Surface the failure instead of inventing a reservation.
+      if (!DEMO_MODE) throw err;
       console.warn('Rental booking API unreachable — booking locally:', err.message);
       const newBooking = {
         id: 'rb' + Date.now(),
@@ -204,7 +238,7 @@ export function AppProvider({ children }) {
   const [pushToken, setPushToken] = useState(null);
 
   // Saved searches
-  const [savedSearches, setSavedSearches] = useState(INITIAL_SAVED_SEARCHES);
+  const [savedSearches, setSavedSearches] = useState(demo(INITIAL_SAVED_SEARCHES));
 
   const addToComparison = useCallback((car) => {
     setComparisonCars((prev) => {
@@ -410,12 +444,25 @@ export function AppProvider({ children }) {
   const fetchCars = useCallback(async () => {
     try {
       const carList = await carsApi.getCars();
+      setBackendReachable(true);
+      // An empty catalogue is a true answer, not a failure. Only DEMO_MODE is
+      // allowed to substitute fixtures for it.
       if (carList && carList.length) return carList.map(mapCar);
-      console.warn('Cars API returned no listings — using bundled demo data');
+      if (DEMO_MODE) {
+        console.warn('Cars API returned no listings — using bundled demo data');
+        return mockCars;
+      }
+      return NONE;
     } catch (err) {
-      console.warn('Cars API unreachable — using bundled demo data:', err.message);
+      if (err?.isNetworkError) setBackendReachable(false);
+      if (DEMO_MODE) {
+        console.warn('Cars API unreachable — using bundled demo data:', err.message);
+        return mockCars;
+      }
+      // Release build: an unreachable marketplace shows as unreachable.
+      console.warn('Cars API unreachable:', err.message);
+      return NONE;
     }
-    return mockCars;
   }, [mapCar]);
 
   // Server-side search. The database does the filtering, sorting and paging;
@@ -517,10 +564,12 @@ export function AppProvider({ children }) {
     try {
       const list = await rentalsApi.getRentalCars();
       if (list && list.length) return list.map(mapRentalCar);
+      return DEMO_MODE ? RENTAL_CARS : NONE;
     } catch (err) {
-      console.warn('Rentals API unreachable — using bundled fleet:', err.message);
+      if (err?.isNetworkError) setBackendReachable(false);
+      console.warn('Rentals API unreachable:', err.message);
+      return DEMO_MODE ? RENTAL_CARS : NONE;
     }
-    return RENTAL_CARS;
   }, [mapRentalCar]);
 
   // --- Initial Data Loader ---
@@ -732,8 +781,11 @@ export function AppProvider({ children }) {
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
-      if (isNetworkError(err)) {
-        // Backend unreachable (Phase 6 not deployed) — demo login
+      // A release build NEVER grants a session the server did not issue. Signing
+      // someone in against credentials nothing verified is an authentication
+      // bypass in everything but name, and it hands them an account-shaped UI
+      // whose every write silently goes nowhere.
+      if (DEMO_MODE && isNetworkError(err)) {
         const name = email.split('@')[0].replace(/[._]/g, ' ') || 'Demo User';
         setCurrentUser({
           ...DEFAULT_USER,
@@ -744,6 +796,13 @@ export function AppProvider({ children }) {
         setIsLoggedIn(true);
         return;
       }
+      if (isNetworkError(err)) {
+        setBackendReachable(false);
+        const offline = new Error("We couldn't reach Sawa. Check your connection and try again.");
+        offline.isNetworkError = true;
+        setError(offline.message);
+        throw offline;
+      }
       setError(err.message);
       throw err;
     } finally {
@@ -751,10 +810,15 @@ export function AppProvider({ children }) {
     }
   }, [loadInitialData]);
 
-  // Local guest session — no API round-trip
+  // Local demo session — no API round-trip, no real account behind it.
+  // DEMO_MODE only: outside it this would present a stranger's name and email
+  // ("Alex Morgan") to the user as their own profile, and mark them signed in
+  // for writes that reach nobody. Callers hide the entry point via `demoMode`.
   const loginAsGuest = useCallback(() => {
+    if (!DEMO_MODE) return false;
     setCurrentUser(DEFAULT_USER);
     setIsLoggedIn(true);
+    return true;
   }, []);
 
   const signUpUser = useCallback(async (name, email, password, role = 'buyer') => {
@@ -770,7 +834,9 @@ export function AppProvider({ children }) {
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
-      if (isNetworkError(err)) {
+      // Same rule as sign-in: no server, no account. Pretending otherwise would
+      // let someone "register" an email that was never reserved for them.
+      if (DEMO_MODE && isNetworkError(err)) {
         setCurrentUser({
           ...DEFAULT_USER,
           name,
@@ -780,6 +846,13 @@ export function AppProvider({ children }) {
         });
         setIsLoggedIn(true);
         return;
+      }
+      if (isNetworkError(err)) {
+        setBackendReachable(false);
+        const offline = new Error("We couldn't reach Sawa. Check your connection and try again.");
+        offline.isNetworkError = true;
+        setError(offline.message);
+        throw offline;
       }
       setError(err.message);
       throw err;
@@ -794,14 +867,45 @@ export function AppProvider({ children }) {
     await unregisterPushToken(pushToken);
     setPushToken(null);
     try { await authApi.logout(); } catch {}
-    setCurrentUser(DEFAULT_USER);
+    setCurrentUser(SIGNED_OUT_USER);
     setIsLoggedIn(false);
     setSavedCarIds([]);
-    setSubmissions(INITIAL_SUBMISSIONS);
+    setSubmissions(demo(INITIAL_SUBMISSIONS));
     setPurchaseRequests([]);
-    setNotifications(INITIAL_NOTIFICATIONS || []);
-    setConversations(initialConversations || []);
-    setSavedSearches(INITIAL_SAVED_SEARCHES);
+    setNotifications(demo(INITIAL_NOTIFICATIONS || []));
+    setConversations(demo(initialConversations || []));
+    setSavedSearches(demo(INITIAL_SAVED_SEARCHES));
+  }, [pushToken]);
+
+  // Permanent account deletion (Apple 5.1.1(v) / Google Play). Errors propagate
+  // so the screen can distinguish "wrong password" (401) and "you have a
+  // handover open" (409) from a genuine failure — each needs different words.
+  // Only on success is local state torn down, and it is torn down completely:
+  // leaving a deleted user's saved cars in AsyncStorage would resurrect them on
+  // the next sign-in on this handset.
+  const deleteAccount = useCallback(async (password) => {
+    await unregisterPushToken(pushToken);
+    await authApi.deleteAccount(password);
+    setPushToken(null);
+    setCurrentUser(SIGNED_OUT_USER);
+    setIsLoggedIn(false);
+    setSavedCarIds([]);
+    setSubmissions(demo(INITIAL_SUBMISSIONS));
+    setPurchaseRequests([]);
+    setHandovers([]);
+    setNotifications(demo(INITIAL_NOTIFICATIONS || []));
+    setConversations(demo(initialConversations || []));
+    setChatMessages(DEMO_MODE ? INITIAL_MESSAGES : {});
+    setSavedSearches(demo(INITIAL_SAVED_SEARCHES));
+    setRentalBookings([]);
+    setRecentlyViewedIds([]);
+    await Promise.all([
+      setJSON('savedCarIds', []),
+      setJSON('savedSearches', []),
+      setJSON('rentalBookings', []),
+      setJSON('purchaseRequests', []),
+      setJSON('recentlyViewedIds', []),
+    ]);
   }, [pushToken]);
 
   // --- Car wishlisting / bookmarking ---
@@ -837,6 +941,9 @@ export function AppProvider({ children }) {
       setCurrentUser(withInitials(me));
     } catch (err) {
       if (!isNetworkError(err)) throw err;
+      // Claiming "under review" for documents that never left the handset would
+      // leave the seller waiting on a queue they are not in.
+      if (!DEMO_MODE) throw err;
       console.warn('ID verification API unreachable — marking pending locally:', err.message);
       setCurrentUser((prev) => (prev ? { ...prev, id_verified: 'pending' } : null));
     } finally {
@@ -882,7 +989,9 @@ export function AppProvider({ children }) {
     } catch (err) {
       // A rejection is an answer, not an outage — an unverified seller must
       // never end up with a phantom local submission the server never accepted.
-      if (!isNetworkError(err)) throw err;
+      // In a release build an outage is not an excuse for one either: the car
+      // would sit in a pipeline no Sawa operator can see.
+      if (!isNetworkError(err) || !DEMO_MODE) throw err;
       console.warn('Submissions API unreachable — saving locally:', err.message);
       // Local fallback so the dashboard reflects what the seller just did
       const localSub = {
@@ -934,6 +1043,9 @@ export function AppProvider({ children }) {
       const list = await submissionsApi.getSubmissions();
       setSubmissions(list.map(mapSubmission));
     } catch (err) {
+      // A slot nobody booked is a seller driving to a center that is not
+      // expecting them — and it silently bypasses the capacity check.
+      if (!DEMO_MODE) throw err;
       console.warn('Schedule API unreachable — updating locally:', err.message);
       setSubmissions((prev) =>
         prev.map((s) => s.id === id
@@ -1104,8 +1216,18 @@ export function AppProvider({ children }) {
 
         try {
           await messagesApi.sendMessage(convId, text);
-        } catch {
-          // Backend unreachable — keep the optimistic message and add an auto-reply for demo
+        } catch (sendErr) {
+          // Backend unreachable. In demo we keep the optimistic bubble and add a
+          // scripted reply; in a release build a scripted reply would be a
+          // message from a seller who never said it, so the bubble is rolled
+          // back and the failure surfaced.
+          if (!DEMO_MODE) {
+            setChatMessages((prev) => ({
+              ...prev,
+              [convId]: (prev[convId] || []).filter((m) => !String(m.id).startsWith('opt_')),
+            }));
+            throw sendErr;
+          }
           setTimeout(() => {
             const reply = AUTO_REPLIES[Math.floor(Date.now() % AUTO_REPLIES.length)];
             const replyTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -1198,7 +1320,9 @@ export function AppProvider({ children }) {
     } catch (err) {
       // Only fabricate a local booking when the backend is unreachable.
       // A 4xx/409 is a real rejection (bad phone, car taken) — surface it.
-      if (!isNetworkError(err)) throw err;
+      // And never in a release build: the car is NOT reserved, so a second buyer
+      // can still take it while this one drives to the center expecting it.
+      if (!isNetworkError(err) || !DEMO_MODE) throw err;
       console.warn('Handover API unreachable — booking locally:', err.message);
       // Local fallback so checkout + order tracking work in the demo
       const localId = 'HB' + String(Date.now()).slice(-6);
@@ -1300,7 +1424,9 @@ export function AppProvider({ children }) {
       })));
       return res.id;
     } catch (err) {
-      // Local fallback
+      // The whole point of a saved search is the alert, and alerts are sent by
+      // the server. A local-only row promises notifications that can never fire.
+      if (!DEMO_MODE) throw err;
       const localSearch = {
         id: 'ss' + Date.now(),
         label,
@@ -1344,7 +1470,10 @@ export function AppProvider({ children }) {
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
     joinConversation, sendTyping, typingConvId,
     // Authentication
-    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, loading, error,
+    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, loading, error,
+    // Connectivity — false once a read failed at the transport layer, so screens
+    // can say "we couldn't reach Sawa" rather than showing an empty marketplace.
+    backendReachable, demoMode: DEMO_MODE,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
