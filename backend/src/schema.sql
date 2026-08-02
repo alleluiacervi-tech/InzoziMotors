@@ -201,6 +201,21 @@ ALTER TABLE users       ADD COLUMN IF NOT EXISTS id_back_url     TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS selfie_url      TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS id_submitted_at TIMESTAMPTZ;
 
+-- Token revocation. JWTs are stateless and long-lived (30d), so without this
+-- there is no way to end a session: changing a password, resetting it, or
+-- deleting the account all left previously-issued tokens working until they
+-- expired on their own. Every token carries the version it was minted at;
+-- requireAuth compares it, and bumping this column invalidates every token
+-- issued before the bump.
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS token_version   INT NOT NULL DEFAULT 0;
+
+-- Account lifecycle (Apple 5.1.1(v) / Google Play deletion requirements).
+-- Soft delete: the row survives so completed handovers, reviews and platform
+-- fees keep their foreign keys, but every piece of personal data on it is
+-- overwritten and the account can never be signed into again.
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS deleted_at      TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(id) WHERE deleted_at IS NULL;
+
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS make            TEXT;
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS model           TEXT;
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS year            INT;
