@@ -1,0 +1,111 @@
+# ─── Sawa — production stack ──────────────────────────────────────────────────
+# The dev compose file is a workshop: published DB port, dev secrets, wildcard
+# CORS, localhost baked into the web bundle. None of that may reach a server.
+#
+# On the VPS:
+#   cp .env.production.template .env     # then fill in every value
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Differences from dev, each deliberate:
+#   • Every service binds 127.0.0.1 — Nginx on the host is the only public door.
+#   • PostgreSQL publishes NO port. Only the API reaches it, on the bridge net.
+#   • All secrets come from .env; nothing is inlined here. The API refuses to
+#     boot with dev-looking values (see assertProductionConfig in server.js),
+#     so a forgotten edit fails loudly instead of serving traffic.
+#   • The web image is built with the real public URLs — NEXT_PUBLIC_* is
+#     inlined at build time, so these are build args, not runtime env.
+#   • Demo inventory does not seed: the seed scripts exit on NODE_ENV=production.
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-sawa}
+      POSTGRES_USER:     ${DB_USER:-sawa}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # No ports: — the database is reachable only from containers on this
+    # network. ops/backup.sh reaches it with `docker exec`, not TCP.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sawa} -d ${DB_NAME:-sawa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV:            production
+      PORT:                3000
+      DB_HOST:             db
+      DB_PORT:             5432
+      DB_NAME:             ${DB_NAME:-sawa}
+      DB_USER:             ${DB_USER:-sawa}
+      DB_PASSWORD:         ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      # Same host, same Docker network — Postgres speaks no TLS here, and
+      # demanding it would mean nothing connects. See backend/src/db.js.
+      # DB_SSL is deliberately unset.
+      JWT_SECRET:          ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRES_IN:      30d
+      CORS_ORIGINS:        ${CORS_ORIGINS:-https://sawacars.com,https://www.sawacars.com,https://admin.sawacars.com}
+      UPLOAD_DIR:          /app/uploads
+      SEED_ADMIN_EMAIL:    ${SEED_ADMIN_EMAIL:-admin@sawacars.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD in .env}
+      CERTIFICATION_FEE:   ${CERTIFICATION_FEE:-0}
+      COMMISSION_RATE:     ${COMMISSION_RATE:-0.05}
+      REFERRAL_DISCOUNT:   ${REFERRAL_DISCOUNT:-0.2}
+      LOG_LEVEL:           info
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - uploads:/app/uploads
+    healthcheck:
+      # Liveness only — readiness (/health/ready) involves the DB, which has
+      # its own healthcheck; coupling them makes restarts cascade.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL:  https://api.sawacars.com
+        NEXT_PUBLIC_SITE_URL: https://sawacars.com
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PORT: 3002
+      # Server Components talk to the API across the bridge network — the
+      # render path never leaves the host.
+      API_URL: http://api:3000
+      NEXT_PUBLIC_SITE_URL: https://sawacars.com
+    ports:
+      - "127.0.0.1:3002:3002"
+
+  admin:
+    build:
+      context: ./admin
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      PORT: 3001
+      # Server-side only: the dashboard's browser code talks to its own
+      # /api/backend proxy, which attaches the JWT from an httpOnly cookie.
+      API_URL: http://api:3000
+    ports:
+      - "127.0.0.1:3001:3001"
+
+volumes:
+  postgres_data:
+  uploads:

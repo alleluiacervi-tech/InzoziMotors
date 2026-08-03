@@ -7,6 +7,15 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const pool = require('./db');
 
+// DEMO DATA — never in production. These are fictional cars with fabricated
+// inspection scores, and a demo seller with a published password. On the live
+// marketplace that is the exact fraud this product exists to eliminate.
+// SEED_DEMO_DATA=true is the explicit escape hatch for a staging host.
+if (process.env.NODE_ENV === 'production' && process.env.SEED_DEMO_DATA !== 'true') {
+  console.log('demo seed skipped: NODE_ENV=production (set SEED_DEMO_DATA=true on a staging host to override)');
+  process.exit(0);
+}
+
 const SELLER_EMAIL    = process.env.SEED_SELLER_EMAIL    || 'seller@sawacars.com';
 const SELLER_PASSWORD = process.env.SEED_SELLER_PASSWORD || 'seller1234';
 const SELLER_NAME     = process.env.SEED_SELLER_NAME     || 'Sawa Demo Seller';
