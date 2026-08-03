@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { notifyUser } = require('../lib/notify');
@@ -24,7 +25,7 @@ router.get('/mine', requireAuth, async (req, res) => {
     );
     res.json({ ...rows[0], redemptions: redRes.rows[0].redemptions });
   } catch (err) {
-    console.error('referral error:', err.message);
+    log.error('referral error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

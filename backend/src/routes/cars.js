@@ -1,8 +1,9 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { requireUuid } = require('../middleware/validate');
+const { requireUuid, paginate } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 
@@ -16,19 +17,23 @@ const router = express.Router();
 // Fewer than 3 comparables is noise, not a market: market_avg stays NULL.
 const MIN_COMPARABLES = 3;
 
+// lower(...) = lower(...) rather than ILIKE. Neither side ever held a wildcard,
+// so this was always case-insensitive equality — but expressed as ILIKE, which
+// no btree index can serve, so every enriched row triggered a sequential scan
+// of the whole cars table. Matches the functional indexes in migration 0003.
 const MARKET_LATERALS = `
        LEFT JOIN LATERAL (
          SELECT AVG(x.price)::int AS avg_price, COUNT(*)::int AS n
          FROM cars x
          WHERE x.id <> c.id AND x.status IN ('live', 'sold') AND x.price > 0
-           AND x.make ILIKE c.make AND x.model ILIKE c.model
+           AND lower(x.make) = lower(c.make) AND lower(x.model) = lower(c.model)
            AND x.year BETWEEN c.year - 2 AND c.year + 2
        ) mk ON TRUE
        LEFT JOIN LATERAL (
          SELECT AVG(x.price)::int AS avg_price, COUNT(*)::int AS n
          FROM cars x
          WHERE x.id <> c.id AND x.status IN ('live', 'sold') AND x.price > 0
-           AND x.make ILIKE c.make AND x.body_type ILIKE c.body_type
+           AND lower(x.make) = lower(c.make) AND lower(x.body_type) = lower(c.body_type)
            AND x.year BETWEEN c.year - 3 AND c.year + 3
        ) bt ON TRUE
        LEFT JOIN LATERAL (
@@ -117,7 +122,7 @@ ${MARKET_LATERALS}
     );
     res.json(rows);
   } catch (err) {
-    console.error('cars list error:', err.message);
+    log.error('cars list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -171,7 +176,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
       accident_history: 'No insurance-partner data yet',
     });
   } catch (err) {
-    console.error('history error:', err.message);
+    log.error('history error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -251,11 +256,11 @@ ${MARKET_LATERALS}
     // Fire-and-forget, but never unhandled: a DB blip here must not become an
     // unhandled rejection that takes the process down under --unhandled-rejections.
     pool.query('UPDATE cars SET views = views + 1 WHERE id = $1', [req.params.id])
-      .catch((err) => console.error('view counter:', err.message));
+      .catch((err) => log.error('view counter', { error: err.message }));
 
     res.json(car);
   } catch (err) {
-    console.error('car detail error:', err.message);
+    log.error('car detail error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -303,13 +308,13 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
     if (err.code === '23503') {
       return res.status(404).json({ error: 'Car not found' });
     }
-    console.error('toggle save error:', err.message);
+    log.error('toggle save error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // GET /cars/saved/list
-router.get('/saved/list', requireAuth, async (req, res) => {
+router.get('/saved/list', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust
@@ -317,8 +322,9 @@ router.get('/saved/list', requireAuth, async (req, res) => {
        JOIN cars c ON c.id = sc.car_id
        JOIN users u ON u.id = c.seller_id
        WHERE sc.user_id = $1
-       ORDER BY sc.saved_at DESC`,
-      [req.user.id]
+       ORDER BY sc.saved_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {
@@ -393,14 +399,14 @@ router.post('/', requireAdmin, async (req, res) => {
 
     res.status(201).json(car);
   } catch (err) {
-    console.error('create car error:', err.message);
+    log.error('create car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // PATCH /cars/:id/status  (admin changes status)
 // GET /cars/seller/mine — seller's own listings with engagement stats
-router.get('/seller/mine', requireAuth, async (req, res) => {
+router.get('/seller/mine', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT c.*,
@@ -408,8 +414,9 @@ router.get('/seller/mine', requireAuth, async (req, res) => {
               (SELECT COUNT(*)::int FROM conversations cv WHERE cv.car_id = c.id) AS inquiries_count
        FROM cars c
        WHERE c.seller_id = $1
-       ORDER BY c.listed_at DESC NULLS LAST`,
-      [req.user.id]
+       ORDER BY c.listed_at DESC NULLS LAST
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {
@@ -448,7 +455,7 @@ router.get('/valuation/estimate', async (req, res) => {
       range_seen: { low: low_seen, high: high_seen },
     });
   } catch (err) {
-    console.error('valuation error:', err.message);
+    log.error('valuation error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -487,7 +494,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     }
     res.json(rows[0]);
   } catch (err) {
-    console.error('edit car error:', err.message);
+    log.error('edit car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -522,7 +529,7 @@ router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
     }
     res.json(rows[0]);
   } catch (err) {
-    console.error('seller price edit error:', err.message);
+    log.error('seller price edit error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -548,7 +555,7 @@ router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) =
     }
     res.json(rows[0]);
   } catch (err) {
-    console.error('feature car error:', err.message);
+    log.error('feature car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

@@ -46,7 +46,7 @@ export default function PhotoViewer({ visible, images = [], initialIndex = 0, on
         <Pressable
           style={[styles.closeBtn, { top: insets.top + 12 }]}
           onPress={onClose}
-          hitSlop={12}
+          hitSlop={12} accessibilityRole="button" accessibilityLabel="Close"
         >
           <Ionicons name="close" size={22} color="#fff" />
         </Pressable>

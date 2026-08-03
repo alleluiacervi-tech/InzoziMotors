@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { log } = require('./log');
 const { pushToUsers } = require('./notify');
 
 // Event-driven alert engine — no cron needed at this scale.
@@ -40,7 +41,7 @@ async function matchSavedSearches(car) {
     });
     return rowCount;
   } catch (err) {
-    console.error('saved-search match error:', err.message);
+    log.error('saved-search match error', { error: err.message });
     return 0;
   }
 }
@@ -71,7 +72,7 @@ async function notifyPriceDrop(carId, oldPrice, newPrice, title = null) {
     });
     return rowCount;
   } catch (err) {
-    console.error('price-drop alert error:', err.message);
+    log.error('price-drop alert error', { error: err.message });
     return 0;
   }
 }

@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
@@ -69,7 +70,7 @@ router.post('/register', async (req, res) => {
     const user = rows[0];
     res.status(201).json({ user, token: makeToken(user) });
   } catch (err) {
-    console.error('register error:', err.message);
+    log.error('register error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -99,7 +100,7 @@ router.post('/login', async (req, res) => {
     const { password_hash, ...safe } = user;
     res.json({ user: safe, token: makeToken(user) });
   } catch (err) {
-    console.error('login error:', err.message);
+    log.error('login error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -156,7 +157,10 @@ router.post('/forgot-password', async (req, res) => {
     // fallback so development needs no provider. The response never reveals
     // whether the send happened — that would leak account existence.
     const delivered = await sendResetCode(addr, code);
-    if (!delivered) console.log(`[password-reset] ${addr} code=${code}`);
+    // Until SMTP is configured this log IS the delivery channel, so the code
+    // has to be readable here. It is the one place a secret is logged on
+    // purpose, and it stops being needed the moment SMTP_HOST is set.
+    if (!delivered) log.warn('password reset code not emailed — no SMTP configured', { email: addr, code });
 
     // Both conditions, so neither a forgotten NODE_ENV nor a stray opt-in on a
     // deployed box is enough on its own to leak the code to the caller.
@@ -165,7 +169,7 @@ router.post('/forgot-password', async (req, res) => {
     }
     res.json({ success: true });
   } catch (err) {
-    console.error('forgot-password error:', err.message);
+    log.error('forgot-password error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -225,7 +229,7 @@ router.post('/reset-password', async (req, res) => {
     });
     res.status(result.status).json(result.body);
   } catch (err) {
-    console.error('reset-password error:', err.message);
+    log.error('reset-password error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -304,7 +308,7 @@ router.post('/change-password', requireAuth, async (req, res) => {
     });
     res.status(result.status).json(result.body);
   } catch (err) {
-    console.error('change-password error:', err.message);
+    log.error('change-password error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -404,7 +408,7 @@ router.delete('/me', requireAuth, async (req, res) => {
 
     res.status(result.status).json(result.body);
   } catch (err) {
-    console.error('delete account error:', err.message);
+    log.error('delete account error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -418,7 +422,7 @@ function removeIdDocuments(urls) {
     if (!filename || filename === '.' || filename === '..') continue;
     fs.unlink(path.join(dir, filename), (err) => {
       if (err && err.code !== 'ENOENT') {
-        console.error('id document cleanup:', filename, err.message);
+        log.warn('id document cleanup failed', { filename, error: err.message });
       }
     });
   }

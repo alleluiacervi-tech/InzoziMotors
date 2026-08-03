@@ -55,11 +55,11 @@ export default function SellScreen({ navigation }) {
     <Screen background={colors.bg}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.head}>
-          <Pressable style={styles.dashBtn} onPress={() => navigation.goBack()}>
+          <Pressable style={styles.dashBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
             <Ionicons name="chevron-back" size={20} color={colors.slate700} />
           </Pressable>
           <Text style={styles.h1}>Sell My Car</Text>
-          <Pressable style={styles.dashBtn} onPress={() => navigation.navigate('SellerDashboard')}>
+          <Pressable style={styles.dashBtn} onPress={() => navigation.navigate('SellerDashboard')} accessibilityRole="button" accessibilityLabel="Grid view">
             <Ionicons name="grid-outline" size={20} color={colors.slate700} />
           </Pressable>
         </View>

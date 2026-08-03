@@ -1,7 +1,8 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { requireUuid } = require('../middleware/validate');
+const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
@@ -48,13 +49,13 @@ router.post('/', requireAuth, async (req, res) => {
     });
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('dispute error:', err.message);
+    log.error('dispute error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // GET /disputes/mine — my raised disputes
-router.get('/mine', requireAuth, async (req, res) => {
+router.get('/mine', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT d.*, h.booking_id, c.title AS car_title
@@ -62,8 +63,9 @@ router.get('/mine', requireAuth, async (req, res) => {
        JOIN handovers h ON h.id = d.handover_id
        JOIN cars c ON c.id = h.car_id
        WHERE d.raised_by = $1
-       ORDER BY d.created_at DESC`,
-      [req.user.id]
+       ORDER BY d.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {

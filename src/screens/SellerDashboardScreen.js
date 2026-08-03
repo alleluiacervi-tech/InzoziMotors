@@ -145,7 +145,7 @@ export default function SellerDashboardScreen({ navigation }) {
         title="My Submissions"
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.addBtn} onPress={() => gate('CarSubmission')}>
+          <Pressable style={styles.addBtn} onPress={() => gate('CarSubmission')} accessibilityRole="button" accessibilityLabel="Add">
             <Ionicons name="add" size={22} color={colors.slate700} />
           </Pressable>
         }

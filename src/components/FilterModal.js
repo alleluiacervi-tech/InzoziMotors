@@ -64,7 +64,7 @@ export default function FilterModal({ visible, type, onClose, onSelect, selected
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Manufacturer</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
+            <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close">
               <Ionicons name="close" size={24} color={colors.textPrimary} />
             </Pressable>
           </View>
@@ -189,7 +189,7 @@ export default function FilterModal({ visible, type, onClose, onSelect, selected
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Vehicle Type</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
+            <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close">
               <Ionicons name="close" size={24} color={colors.textPrimary} />
             </Pressable>
           </View>

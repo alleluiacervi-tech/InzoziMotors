@@ -63,14 +63,14 @@ export default function SearchScreen({ navigation }) {
             autoCapitalize="none"
           />
           {searchQuery ? (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear">
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           ) : null}
         </View>
         <Pressable
           style={styles.filterBtn}
-          onPress={() => navigation.navigate('Filters')}
+          onPress={() => navigation.navigate('Filters')} accessibilityRole="button" accessibilityLabel="Filters"
         >
           <Ionicons name="options-outline" size={20} color="#fff" />
         </Pressable>

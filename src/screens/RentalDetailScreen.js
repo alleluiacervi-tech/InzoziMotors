@@ -54,12 +54,12 @@ export default function RentalDetailScreen({ navigation, route }) {
           </ScrollView>
 
           <View style={[styles.galleryBar, { top: insets.top + 8 }]}>
-            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()}>
+            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
               <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
             </Pressable>
             <Pressable
               style={styles.circleBtn}
-              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa` }).catch(() => {})}
+              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
             >
               <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
             </Pressable>
@@ -226,7 +226,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           onPress={() => openWhatsApp(
             SAWA_WHATSAPP,
             `Hi Sawa, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
-          )}
+          )} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp"
         >
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
         </Pressable>

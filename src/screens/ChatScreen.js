@@ -123,7 +123,7 @@ export default function ChatScreen({ navigation, route }) {
           car ? (
             <Pressable
               style={styles.headerBtn}
-              onPress={() => navigation.navigate('VehicleDetail', { car })}
+              onPress={() => navigation.navigate('VehicleDetail', { car })} accessibilityRole="button" accessibilityLabel="Cars"
             >
               <Ionicons name="car-outline" size={18} color={colors.textSecondary} />
             </Pressable>
@@ -214,7 +214,7 @@ export default function ChatScreen({ navigation, route }) {
           <Pressable
             style={[styles.send, !text.trim() && styles.sendDisabled]}
             onPress={() => send()}
-            disabled={!text.trim()}
+            disabled={!text.trim()} accessibilityRole="button" accessibilityLabel="Back to top"
           >
             <Ionicons name="arrow-up" size={20} color="#fff" />
           </Pressable>

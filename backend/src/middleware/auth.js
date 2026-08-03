@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { log } = require('../lib/log');
 const pool = require('../db');
 
 // A verified signature is necessary but not sufficient. Tokens live 30 days,
@@ -46,7 +47,7 @@ function requireAuth(req, res, next) {
       next();
     })
     .catch((err) => {
-      console.error('session check failed:', err.message);
+      log.error('session check failed', { error: err.message });
       res.status(500).json({ error: 'Server error' });
     });
 }
@@ -88,7 +89,7 @@ function requireVerified(req, res, next) {
       }
       next();
     } catch (err) {
-      console.error('requireVerified error:', err.message);
+      log.error('requireVerified error', { error: err.message });
       res.status(500).json({ error: 'Server error' });
     }
   });

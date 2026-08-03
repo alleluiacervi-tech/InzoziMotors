@@ -72,7 +72,12 @@ export default function SignUpScreen({ navigation }) {
             placeholderTextColor={colors.textMuted}
             secureTextEntry={!show}
           />
-          <Pressable onPress={() => setShow((s) => !s)} hitSlop={8}>
+          <Pressable
+            onPress={() => setShow((s) => !s)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={show ? 'Hide password' : 'Show password'}
+          >
             <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
           </Pressable>
         </View>

@@ -333,6 +333,85 @@ test('inspection scoring is weighted and gates publication', async () => {
     .expect(409);
 });
 
+// ─── Scheduling dates ────────────────────────────────────────────────────────
+
+test('scheduling rejects non-ISO dates and past days', async () => {
+  const seller = await register({ role: 'seller' });
+  await pool.query("UPDATE users SET id_verified = 'approved' WHERE id = $1", [seller.id]);
+  const auth = { Authorization: `Bearer ${seller.token}` };
+
+  const submission = await api().post('/submissions').set(auth)
+    .send({ make: 'Toyota', model: 'Vitz', year: 2018, mileage: 80000, asking_price: 9000 })
+    .expect(201);
+
+  const attempt = (scheduled_date) =>
+    api().patch(`/submissions/${submission.body.id}/schedule`).set(auth)
+      .send({ center: 'Kicukiro Center', scheduled_date, scheduled_time: '10:00 AM' });
+
+  // "Aug 12" is what the app used to send: no year, so it could not be
+  // compared or ordered, and the capacity check silently stopped working.
+  await attempt('Aug 12').expect(400);
+  await attempt('2026-02-30').expect(400);   // not a real day
+  await attempt('12/08/2026').expect(400);   // ambiguous
+  await attempt('2020-01-01').expect(400);   // in the past
+
+  const future = new Date(Date.now() + 5 * 86400_000).toISOString().slice(0, 10);
+  await attempt(future).expect(200);
+
+  // Formatted by Postgres, not by JS. node-postgres hands a DATE back as local
+  // midnight, so .toISOString() on it reports the previous day wherever the
+  // offset is positive — an artifact of the readback, not of what was stored.
+  const { rows } = await pool.query(
+    `SELECT to_char(inspection_on, 'YYYY-MM-DD') AS on FROM submissions WHERE id = $1`,
+    [submission.body.id]
+  );
+  assert.equal(rows[0].on, future);
+});
+
+test('a centre cannot be booked past its daily capacity', async () => {
+  // Kimironko has the smallest capacity (5), so it is quickest to fill.
+  const { rows: centre } = await pool.query(
+    "SELECT daily_capacity FROM inspection_centers WHERE id = 'kimironko'"
+  );
+  const capacity = centre[0].daily_capacity;
+
+  // A day far enough out that nothing else competes for it, cleared first so
+  // the test does not depend on whether it has been run before — the database
+  // is not reset between runs, and a fixed day fills up permanently.
+  const day = new Date(Date.now() + 60 * 86400_000).toISOString().slice(0, 10);
+  await pool.query(
+    `DELETE FROM inspections WHERE lower(center) = 'kimironko center' AND scheduled_on = $1::date`,
+    [day]
+  );
+
+  // Returns the status rather than a supertest Test — this helper is async, so
+  // it resolves to a Response and cannot be chained with .expect().
+  const book = async () => {
+    const seller = await register({ role: 'seller' });
+    await pool.query("UPDATE users SET id_verified = 'approved' WHERE id = $1", [seller.id]);
+    const auth = { Authorization: `Bearer ${seller.token}` };
+    const submission = await api().post('/submissions').set(auth)
+      .send({ make: 'Toyota', model: 'Vitz', year: 2018, mileage: 80000, asking_price: 9000 })
+      .expect(201);
+    const res = await api().patch(`/submissions/${submission.body.id}/schedule`).set(auth)
+      .send({ center: 'Kimironko Center', scheduled_date: day, scheduled_time: '10:00 AM' });
+    return res.status;
+  };
+
+  for (let i = 0; i < capacity; i++) {
+    assert.equal(await book(), 200, `booking ${i + 1} of ${capacity} should fit`);
+  }
+  // One past the cap is refused rather than quietly accepted, which is what
+  // used to happen whenever the two clients disagreed about the date format.
+  assert.equal(await book(), 409, 'the booking past capacity must be refused');
+
+  const { rows } = await pool.query(
+    `SELECT COUNT(*)::int AS n FROM inspections
+     WHERE lower(center) = 'kimironko center' AND scheduled_on = $1::date`, [day]
+  );
+  assert.equal(rows[0].n, capacity);
+});
+
 test('inspection rejects verdicts outside pass/flag/fail', async () => {
   const admin = await makeAdmin(await register());
   await api().post('/inspections/00000000-0000-4000-8000-000000000000/complete')

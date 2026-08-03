@@ -105,7 +105,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
             <Ionicons name="checkmark-circle" size={14} color={colors.green} />
             <Text style={styles.sellerVerifiedText}>ID Verified</Text>
           </View>
-          <Pressable style={styles.waSmallBtn} onPress={askAvailability}>
+          <Pressable style={styles.waSmallBtn} onPress={askAvailability} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
             <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
           </Pressable>
         </View>
@@ -116,7 +116,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
           <Text style={styles.footerLabel}>Asking price</Text>
           <Text style={styles.footerValue}>{formatPrice(price)}</Text>
         </View>
-        <Pressable style={styles.waBtn} onPress={askAvailability}>
+        <Pressable style={styles.waBtn} onPress={askAvailability} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
         </Pressable>
         <Button

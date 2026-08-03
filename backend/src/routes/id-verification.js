@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
@@ -50,7 +51,7 @@ function removeIdDocuments(urls) {
     if (!filename || filename === '.' || filename === '..') continue;
     fs.unlink(path.join(UPLOAD_DIR, 'id-docs', filename), (err) => {
       if (err && err.code !== 'ENOENT') {
-        console.error('id document cleanup:', filename, err.message);
+        log.warn('id document cleanup failed', { filename, error: err.message });
       }
     });
   }
@@ -144,7 +145,7 @@ router.post('/', requireAuth, uploadIdDocs.fields([
 
     res.json({ status: 'pending', message: 'Documents submitted for review' });
   } catch (err) {
-    console.error('id-verification submit error:', err.message);
+    log.error('id-verification submit error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -170,7 +171,7 @@ router.get('/queue', requireAdmin, async (req, res) => {
       selfie_url: viewUrl(req, u.selfie_url),
     })));
   } catch (err) {
-    console.error('id-verification queue error:', err.message);
+    log.error('id-verification queue error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -207,7 +208,7 @@ router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) =
     res.json({ success: true, decision });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('id-verification decision error:', err.message);
+    log.error('id-verification decision error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();

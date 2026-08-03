@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
@@ -43,7 +44,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('rentals list error:', err.message);
+    log.error('rentals list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -168,7 +169,7 @@ router.post('/:id/book', requireAuth, requireUuid('id'), async (req, res) => {
     res.status(201).json(booking);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
-    console.error('rental booking error:', err.message);
+    log.error('rental booking error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -208,7 +209,7 @@ router.patch('/bookings/:id/status', requireAuth, requireUuid('id'), async (req,
 
     res.json(rows[0]);
   } catch (err) {
-    console.error('rental status error:', err.message);
+    log.error('rental status error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -238,7 +239,7 @@ router.post('/', requireAdmin, async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('rental create error:', err.message);
+    log.error('rental create error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -298,7 +299,7 @@ router.post('/bookings/:bookingId/photos', requireAuth, requireUuid('bookingId')
     );
     res.json(rows[0]);
   } catch (err) {
-    console.error('booking photos error:', err.message);
+    log.error('booking photos error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
