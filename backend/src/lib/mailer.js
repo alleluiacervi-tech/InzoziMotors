@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { log } = require('./log');
 
 // ─── Outbound email ───────────────────────────────────────────────────────────
 // Env-gated SMTP. When SMTP_HOST is set, mail really sends; when it isn't,
@@ -46,7 +47,7 @@ async function sendMail({ to, subject, text }) {
     });
     return true;
   } catch (err) {
-    console.error('mail send failed:', err.message);
+    log.error('mail send failed', { error: err.message });
     return false;
   }
 }

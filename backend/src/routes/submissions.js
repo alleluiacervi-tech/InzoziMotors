@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin, requireVerified } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
@@ -56,7 +57,7 @@ router.post('/', requireVerified, async (req, res) => {
 
     res.status(201).json(sub);
   } catch (err) {
-    console.error('submission error:', err.message);
+    log.error('submission error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -212,7 +213,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 
     res.json(sub);
   } catch (err) {
-    console.error('update submission error:', err.message);
+    log.error('update submission error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -266,7 +267,7 @@ router.patch('/:id/schedule', requireAuth, requireUuid('id'), async (req, res) =
 
     res.json(sub);
   } catch (err) {
-    console.error('schedule submission error:', err.message);
+    log.error('schedule submission error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

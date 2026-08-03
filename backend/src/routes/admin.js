@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
@@ -36,7 +37,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
       feesOutstanding:       parseInt(feesRes.rows[0].due),
     });
   } catch (err) {
-    console.error(err.message);
+    log.error(err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -166,7 +167,7 @@ router.get('/fees', requireAdmin, async (req, res) => {
     }, {});
     res.json({ fees: rows, totals });
   } catch (err) {
-    console.error('fees list error:', err.message);
+    log.error('fees list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

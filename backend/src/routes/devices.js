@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
@@ -30,7 +31,7 @@ router.post('/token', requireAuth, async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('register device token error:', err.message);
+    log.error('register device token error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -47,7 +48,7 @@ router.delete('/token', requireAuth, async (req, res) => {
     if (!rowCount) return res.status(404).json({ error: 'Token not found for this account' });
     res.json({ success: true });
   } catch (err) {
-    console.error('delete device token error:', err.message);
+    log.error('delete device token error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

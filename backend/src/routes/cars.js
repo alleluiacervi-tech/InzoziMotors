@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
@@ -121,7 +122,7 @@ ${MARKET_LATERALS}
     );
     res.json(rows);
   } catch (err) {
-    console.error('cars list error:', err.message);
+    log.error('cars list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -175,7 +176,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
       accident_history: 'No insurance-partner data yet',
     });
   } catch (err) {
-    console.error('history error:', err.message);
+    log.error('history error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -255,11 +256,11 @@ ${MARKET_LATERALS}
     // Fire-and-forget, but never unhandled: a DB blip here must not become an
     // unhandled rejection that takes the process down under --unhandled-rejections.
     pool.query('UPDATE cars SET views = views + 1 WHERE id = $1', [req.params.id])
-      .catch((err) => console.error('view counter:', err.message));
+      .catch((err) => log.error('view counter', { error: err.message }));
 
     res.json(car);
   } catch (err) {
-    console.error('car detail error:', err.message);
+    log.error('car detail error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -307,7 +308,7 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
     if (err.code === '23503') {
       return res.status(404).json({ error: 'Car not found' });
     }
-    console.error('toggle save error:', err.message);
+    log.error('toggle save error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -398,7 +399,7 @@ router.post('/', requireAdmin, async (req, res) => {
 
     res.status(201).json(car);
   } catch (err) {
-    console.error('create car error:', err.message);
+    log.error('create car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -454,7 +455,7 @@ router.get('/valuation/estimate', async (req, res) => {
       range_seen: { low: low_seen, high: high_seen },
     });
   } catch (err) {
-    console.error('valuation error:', err.message);
+    log.error('valuation error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -493,7 +494,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     }
     res.json(rows[0]);
   } catch (err) {
-    console.error('edit car error:', err.message);
+    log.error('edit car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -528,7 +529,7 @@ router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
     }
     res.json(rows[0]);
   } catch (err) {
-    console.error('seller price edit error:', err.message);
+    log.error('seller price edit error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -554,7 +555,7 @@ router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) =
     }
     res.json(rows[0]);
   } catch (err) {
-    console.error('feature car error:', err.message);
+    log.error('feature car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

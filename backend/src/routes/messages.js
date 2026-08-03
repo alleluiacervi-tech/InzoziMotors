@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
@@ -118,7 +119,7 @@ router.post('/conversations', requireAuth, async (req, res) => {
 
     res.status(201).json({ conversation: conv, message: msgRes.rows[0] });
   } catch (err) {
-    console.error('start conversation error:', err.message);
+    log.error('start conversation error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

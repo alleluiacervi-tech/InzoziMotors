@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { log } = require('./log');
 
 // Expo push delivery — no third-party SDK, just the public HTTP endpoint.
 // backend/Dockerfile runs node:20-alpine, so global fetch (Node 18+) is available.
@@ -34,7 +35,7 @@ async function sendExpoPush(tokens, { title, body, data } = {}) {
       const json = await resp.json().catch(() => null);
       const tickets = json?.data;
       if (!Array.isArray(tickets)) {
-        console.error('expo push error: unexpected response', resp.status);
+        log.error('expo push: unexpected response', { status: resp.status });
         continue;
       }
       tickets.forEach((ticket, idx) => {
@@ -46,7 +47,7 @@ async function sendExpoPush(tokens, { title, body, data } = {}) {
         }
       });
     } catch (err) {
-      console.error('expo push error:', err.message);
+      log.error('expo push error', { error: err.message });
     }
   }
   return delivered;
@@ -56,7 +57,7 @@ async function pruneToken(token) {
   try {
     await pool.query('DELETE FROM device_tokens WHERE token = $1', [token]);
   } catch (err) {
-    console.error('prune device token error:', err.message);
+    log.error('prune device token error', { error: err.message });
   }
 }
 

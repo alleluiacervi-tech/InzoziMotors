@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
@@ -81,7 +82,7 @@ router.post('/', requireAuth, async (req, res) => {
     });
     res.status(result.status).json(result.body);
   } catch (err) {
-    console.error('book handover error:', err.message);
+    log.error('book handover error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -212,7 +213,7 @@ router.patch('/:id/confirm', requireAdmin, requireUuid('id'), async (req, res) =
     });
     res.status(result.status).json(result.body);
   } catch (err) {
-    console.error('confirm handover error:', err.message);
+    log.error('confirm handover error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -305,7 +306,7 @@ router.patch('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) 
     });
     res.status(result.status).json(result.body);
   } catch (err) {
-    console.error('complete handover error:', err.message);
+    log.error('complete handover error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

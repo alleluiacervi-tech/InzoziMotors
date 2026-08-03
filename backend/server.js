@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const { log, reportError, requestLogger } = require('./src/lib/log');
 
 const app = express();
 const server = http.createServer(app);
@@ -101,6 +102,9 @@ const io = new Server(server, {
 require('./src/socket')(io);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
+// Request logging first, so even a request rejected by the body parser or a
+// rate limiter still produces a line with its id and status.
+app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -219,8 +223,15 @@ app.use((err, req, res, next) => {
   if (err && (err.name === 'MulterError' || /image files/i.test(err.message || ''))) {
     return res.status(400).json({ error: err.message });
   }
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  reportError(err, {
+    requestId: req.id,
+    method: req.method,
+    path: req.originalUrl.split('?')[0],
+    userId: req.user?.id,
+  });
+  // The request id goes back with the error so a support conversation can
+  // start from "here is the exact request" rather than an approximate time.
+  res.status(500).json({ error: 'Internal server error', requestId: req.id });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
@@ -231,8 +242,38 @@ const PORT = parseInt(process.env.PORT || '3000');
 
 if (require.main === module) {
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Sawa API running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+    log.info('Sawa API listening', { port: PORT, env: process.env.NODE_ENV || 'development' });
   });
+
+  // A rejected promise nobody caught used to vanish, or take the process down
+  // with a bare stack trace depending on the Node flags. Either way nothing
+  // recorded it. Both handlers report, and only an uncaught exception — which
+  // leaves the process in an unknown state — exits so the supervisor restarts.
+  process.on('unhandledRejection', (reason) => {
+    reportError(reason instanceof Error ? reason : new Error(String(reason)), {
+      fatal: false,
+      source: 'unhandledRejection',
+    });
+  });
+
+  process.on('uncaughtException', (err) => {
+    reportError(err, { fatal: true, source: 'uncaughtException' });
+    // Stop accepting new work, give in-flight requests a moment, then go.
+    server.close(() => process.exit(1));
+    setTimeout(() => process.exit(1), 5000).unref();
+  });
+
+  // Docker and systemd both send SIGTERM. Draining beats being killed
+  // mid-transaction on every deploy.
+  for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.on(signal, () => {
+      log.info('shutting down', { signal });
+      server.close(() => {
+        pool.end().finally(() => process.exit(0));
+      });
+      setTimeout(() => process.exit(0), 10000).unref();
+    });
+  }
 }
 
 module.exports = { app, server, io };

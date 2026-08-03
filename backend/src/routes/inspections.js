@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
@@ -85,7 +86,7 @@ router.get('/', requireAdmin, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error(err.message);
+    log.error(err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -178,7 +179,7 @@ router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
     );
     res.json(rows[0]);
   } catch (err) {
-    console.error('start inspection error:', err.message);
+    log.error('start inspection error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -295,7 +296,7 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
     res.json({ success: true, score, published: !!(insp.car_id && passed) });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('complete inspection error:', err.message);
+    log.error('complete inspection error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();

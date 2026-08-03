@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
@@ -47,7 +48,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (err.code === '23505') {
       return res.status(409).json({ error: 'You already reviewed this purchase' });
     }
-    console.error(err.message);
+    log.error(err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });

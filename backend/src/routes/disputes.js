@@ -1,4 +1,5 @@
 const express = require('express');
+const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
@@ -48,7 +49,7 @@ router.post('/', requireAuth, async (req, res) => {
     });
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('dispute error:', err.message);
+    log.error('dispute error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
