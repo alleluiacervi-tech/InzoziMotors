@@ -1,7 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin, requireVerified } = require('../middleware/auth');
-const { requireUuid } = require('../middleware/validate');
+const { requireUuid, paginate } = require('../middleware/validate');
 const { parseIsoDate, isNotInPast, toTimestamp, toDisplayDate } = require('../lib/dates');
 const { notifyUser } = require('../lib/notify');
 
@@ -62,15 +62,16 @@ router.post('/', requireVerified, async (req, res) => {
 });
 
 // GET /submissions — seller sees their own submissions
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT s.*, c.title AS car_title, c.images AS car_images, c.status AS listing_status
        FROM submissions s
        LEFT JOIN cars c ON c.id = s.car_id
        WHERE s.seller_id = $1
-       ORDER BY s.submitted_at DESC`,
-      [req.user.id]
+       ORDER BY s.submitted_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {

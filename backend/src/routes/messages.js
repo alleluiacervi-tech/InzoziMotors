@@ -1,13 +1,13 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { requireUuid } = require('../middleware/validate');
+const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
 
 // GET /messages/conversations — user's conversation list
-router.get('/conversations', requireAuth, async (req, res) => {
+router.get('/conversations', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT conv.*,
@@ -22,8 +22,9 @@ router.get('/conversations', requireAuth, async (req, res) => {
        JOIN users buyer ON buyer.id = conv.buyer_id
        JOIN users seller ON seller.id = conv.seller_id
        WHERE conv.buyer_id = $1 OR conv.seller_id = $1
-       ORDER BY conv.last_message_at DESC NULLS LAST`,
-      [req.user.id]
+       ORDER BY conv.last_message_at DESC NULLS LAST
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {

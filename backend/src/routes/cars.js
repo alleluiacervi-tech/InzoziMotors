@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { requireUuid } = require('../middleware/validate');
+const { requireUuid, paginate } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 
@@ -16,19 +16,23 @@ const router = express.Router();
 // Fewer than 3 comparables is noise, not a market: market_avg stays NULL.
 const MIN_COMPARABLES = 3;
 
+// lower(...) = lower(...) rather than ILIKE. Neither side ever held a wildcard,
+// so this was always case-insensitive equality — but expressed as ILIKE, which
+// no btree index can serve, so every enriched row triggered a sequential scan
+// of the whole cars table. Matches the functional indexes in migration 0003.
 const MARKET_LATERALS = `
        LEFT JOIN LATERAL (
          SELECT AVG(x.price)::int AS avg_price, COUNT(*)::int AS n
          FROM cars x
          WHERE x.id <> c.id AND x.status IN ('live', 'sold') AND x.price > 0
-           AND x.make ILIKE c.make AND x.model ILIKE c.model
+           AND lower(x.make) = lower(c.make) AND lower(x.model) = lower(c.model)
            AND x.year BETWEEN c.year - 2 AND c.year + 2
        ) mk ON TRUE
        LEFT JOIN LATERAL (
          SELECT AVG(x.price)::int AS avg_price, COUNT(*)::int AS n
          FROM cars x
          WHERE x.id <> c.id AND x.status IN ('live', 'sold') AND x.price > 0
-           AND x.make ILIKE c.make AND x.body_type ILIKE c.body_type
+           AND lower(x.make) = lower(c.make) AND lower(x.body_type) = lower(c.body_type)
            AND x.year BETWEEN c.year - 3 AND c.year + 3
        ) bt ON TRUE
        LEFT JOIN LATERAL (
@@ -309,7 +313,7 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
 });
 
 // GET /cars/saved/list
-router.get('/saved/list', requireAuth, async (req, res) => {
+router.get('/saved/list', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust
@@ -317,8 +321,9 @@ router.get('/saved/list', requireAuth, async (req, res) => {
        JOIN cars c ON c.id = sc.car_id
        JOIN users u ON u.id = c.seller_id
        WHERE sc.user_id = $1
-       ORDER BY sc.saved_at DESC`,
-      [req.user.id]
+       ORDER BY sc.saved_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {
@@ -400,7 +405,7 @@ router.post('/', requireAdmin, async (req, res) => {
 
 // PATCH /cars/:id/status  (admin changes status)
 // GET /cars/seller/mine — seller's own listings with engagement stats
-router.get('/seller/mine', requireAuth, async (req, res) => {
+router.get('/seller/mine', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT c.*,
@@ -408,8 +413,9 @@ router.get('/seller/mine', requireAuth, async (req, res) => {
               (SELECT COUNT(*)::int FROM conversations cv WHERE cv.car_id = c.id) AS inquiries_count
        FROM cars c
        WHERE c.seller_id = $1
-       ORDER BY c.listed_at DESC NULLS LAST`,
-      [req.user.id]
+       ORDER BY c.listed_at DESC NULLS LAST
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {

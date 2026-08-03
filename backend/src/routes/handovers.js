@@ -1,7 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { requireUuid } = require('../middleware/validate');
+const { requireUuid, paginate } = require('../middleware/validate');
 const { parseIsoDate, isNotInPast, toDisplayDate } = require('../lib/dates');
 const { recomputeTrustScore } = require('../lib/trust');
 const { withTransaction } = require('../lib/tx');
@@ -87,7 +87,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // GET /handovers/my — buyer sees their bookings
-router.get('/my', requireAuth, async (req, res) => {
+router.get('/my', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT h.*,
@@ -97,8 +97,9 @@ router.get('/my', requireAuth, async (req, res) => {
        JOIN cars  c ON c.id = h.car_id
        JOIN users u ON u.id = h.seller_id
        WHERE h.buyer_id = $1
-       ORDER BY h.booked_at DESC`,
-      [req.user.id]
+       ORDER BY h.booked_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {
@@ -107,7 +108,7 @@ router.get('/my', requireAuth, async (req, res) => {
 });
 
 // GET /handovers/selling — seller sees handovers on their listings
-router.get('/selling', requireAuth, async (req, res) => {
+router.get('/selling', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT h.*,
@@ -117,8 +118,9 @@ router.get('/selling', requireAuth, async (req, res) => {
        JOIN cars  c ON c.id = h.car_id
        JOIN users u ON u.id = h.buyer_id
        WHERE h.seller_id = $1
-       ORDER BY h.booked_at DESC`,
-      [req.user.id]
+       ORDER BY h.booked_at DESC
+       LIMIT $2 OFFSET $3`,
+      [req.user.id, req.pagination.limit, req.pagination.offset]
     );
     res.json(rows);
   } catch (err) {
