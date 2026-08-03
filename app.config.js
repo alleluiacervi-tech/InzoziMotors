@@ -38,6 +38,13 @@ export default ({ config }) => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.sawacars.app',
+    // Universal Links. Pairs with web/public/.well-known/apple-app-site-association,
+    // whose appID placeholder must be replaced with the real Team ID before
+    // these verify — until then iOS silently falls back to opening Safari.
+    associatedDomains: [
+      'applinks:sawacars.com',
+      'applinks:www.sawacars.com',
+    ],
     infoPlist: {
       // Seller KYC documents and the 36-angle listing shoot both need the camera
       NSCameraUsageDescription:
@@ -55,6 +62,23 @@ export default ({ config }) => ({
     },
     package: 'com.sawacars.app',
     permissions: ['CAMERA', 'READ_MEDIA_IMAGES'],
+    // App Links. `autoVerify` is what makes Android open these in the app
+    // rather than offering a chooser, and it depends on
+    // web/public/.well-known/assetlinks.json carrying the real Play App
+    // Signing SHA-256 — the placeholder there must be replaced first.
+    intentFilters: [
+      {
+        action: 'VIEW',
+        autoVerify: true,
+        data: [
+          { scheme: 'https', host: 'sawacars.com', pathPrefix: '/cars' },
+          { scheme: 'https', host: 'www.sawacars.com', pathPrefix: '/cars' },
+          { scheme: 'https', host: 'sawacars.com', pathPrefix: '/rentals' },
+          { scheme: 'https', host: 'www.sawacars.com', pathPrefix: '/rentals' },
+        ],
+        category: ['BROWSABLE', 'DEFAULT'],
+      },
+    ],
   },
   web: {
     favicon: './assets/favicon.png',
@@ -93,6 +117,10 @@ export default ({ config }) => ({
     // Set EXPO_PUBLIC_API_URL in eas.json (per profile) or the shell for local
     // device testing against a LAN address. Null means "auto-detect dev host".
     apiUrl: process.env.EXPO_PUBLIC_API_URL || DEV_FALLBACK,
+    // The public website. The app links out to it for the privacy policy and
+    // terms — pages Google Play requires to be reachable from inside the app,
+    // and which have to be one text rather than two copies that drift.
+    siteUrl: process.env.EXPO_PUBLIC_SITE_URL || 'https://sawacars.com',
     eas: {
       // Filled in by `eas init` — required before the first cloud build.
       projectId: process.env.EAS_PROJECT_ID || undefined,

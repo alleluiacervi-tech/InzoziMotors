@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin, requireVerified } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
@@ -122,7 +123,7 @@ async function centerCapacityError(center, date) {
 }
 
 // PATCH /submissions/:id — admin updates status (and optionally schedules inspection)
-router.patch('/:id', requireAdmin, async (req, res) => {
+router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   const { status, admin_notes, center, scheduled_date, scheduled_time } = req.body;
   if (!SUBMISSION_STATUSES.includes(status)) {
     return res.status(400).json({ error: `status must be one of: ${SUBMISSION_STATUSES.join(', ')}` });
@@ -189,7 +190,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
 
 // PATCH /submissions/:id/schedule — seller books their own inspection slot
 // (the app offers this right after submit; approval is implicit in confirming)
-router.patch('/:id/schedule', requireAuth, async (req, res) => {
+router.patch('/:id/schedule', requireAuth, requireUuid('id'), async (req, res) => {
   const { center, scheduled_date, scheduled_time } = req.body;
   if (!center || !scheduled_date || !scheduled_time) {
     return res.status(400).json({ error: 'center, scheduled_date, and scheduled_time are required' });

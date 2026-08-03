@@ -14,8 +14,33 @@ on:
 
 jobs:
   backend:
-    name: Backend — syntax + SQL grammar
+    name: Backend — syntax, SQL grammar, API tests
     runs-on: ubuntu-latest
+
+    # The suite runs against a real PostgreSQL on purpose. What it verifies —
+    # transactions, row locks, unique constraints, cascade behaviour — is
+    # exactly what a mocked pool would paper over.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: sawa_test
+          POSTGRES_USER: sawa
+          POSTGRES_PASSWORD: sawa_test_password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sawa -d sawa_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: sawa_test
+      DB_USER: sawa
+      DB_PASSWORD: sawa_test_password
+      JWT_SECRET: ci_secret_at_least_32_characters_long_x
+      NODE_ENV: test
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +57,12 @@ jobs:
         run: |
           npm install --no-save libpg-query@17
           node .github/scripts/check-sql.js
+      - name: Apply the schema
+        run: node src/db-init.js
+        working-directory: backend
+      - name: API tests
+        run: npm test
+        working-directory: backend
 
   mobile:
     name: Mobile — babel parse + import resolution

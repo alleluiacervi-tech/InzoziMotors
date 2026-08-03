@@ -1,6 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const fs = require('fs');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { sendResetCode } = require('../lib/mailer');
@@ -9,12 +11,32 @@ const { withTransaction } = require('../lib/tx');
 const router = express.Router();
 
 function makeToken(user) {
-  // name is in the payload so socket messages can carry sender_name
+  // name is in the payload so socket messages can carry sender_name.
+  // tv (token version) is what makes a session endable — middleware/auth.js
+  // compares it against users.token_version on every authenticated request, so
+  // bumping that column revokes every token issued before the bump.
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role, name: user.name },
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      tv: user.token_version || 0,
+    },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
   );
+}
+
+// Ends every existing session for a user and returns the new version, so the
+// caller can immediately mint a replacement token for whoever is still on the
+// line (the person who just changed their own password should stay signed in).
+async function revokeSessions(client, userId) {
+  const { rows } = await client.query(
+    'UPDATE users SET token_version = token_version + 1 WHERE id = $1 RETURNING token_version',
+    [userId]
+  );
+  return rows[0]?.token_version ?? 0;
 }
 
 // POST /auth/register
@@ -41,7 +63,7 @@ router.post('/register', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO users (name, email, password_hash, role)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role, id_verified, trust_score, created_at`,
+       RETURNING id, name, email, role, id_verified, trust_score, token_version, created_at`,
       [name, email.toLowerCase(), hash, role]
     );
     const user = rows[0];
@@ -60,7 +82,10 @@ router.post('/login', async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
+      // deleted_at IS NULL: a deleted account must not be signable-into, and the
+      // response must be indistinguishable from "no such account" so deletion
+      // cannot be probed.
+      'SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL',
       [email.toLowerCase()]
     );
     const user = rows[0];
@@ -193,6 +218,9 @@ router.post('/reset-password', async (req, res) => {
         'UPDATE password_resets SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL',
         [userId]
       );
+      // The whole point of a reset is that someone lost control of the account.
+      // Leaving the previous holder's 30-day token working would defeat it.
+      await revokeSessions(client, userId);
       return { status: 200, body: { success: true } };
     });
     res.status(result.status).json(result.body);
@@ -249,18 +277,151 @@ router.post('/change-password', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'current_password and a new_password of 6+ characters are required' });
   }
   try {
-    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
-    if (!rows.length || !rows[0].password_hash) {
-      return res.status(400).json({ error: 'Password login is not enabled for this account' });
-    }
-    const ok = await bcrypt.compare(current_password, rows[0].password_hash);
-    if (!ok) return res.status(401).json({ error: 'Current password is incorrect' });
-    const hash = await bcrypt.hash(new_password, 12);
-    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.user.id]);
-    res.json({ success: true });
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        'SELECT id, name, email, role, password_hash FROM users WHERE id = $1',
+        [req.user.id]
+      );
+      if (!rows.length || !rows[0].password_hash) {
+        return { status: 400, body: { error: 'Password login is not enabled for this account' } };
+      }
+      const user = rows[0];
+      const ok = await bcrypt.compare(current_password, user.password_hash);
+      if (!ok) return { status: 401, body: { error: 'Current password is incorrect' } };
+
+      const hash = await bcrypt.hash(new_password, 12);
+      await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, user.id]);
+
+      // Changing a password is how someone reacts to a device being lost or a
+      // password being shared. It has to end the OTHER sessions — so bump the
+      // version, then hand this caller a token at the new version so the device
+      // they are holding is not signed out by their own security action.
+      const token_version = await revokeSessions(client, user.id);
+      return {
+        status: 200,
+        body: { success: true, token: makeToken({ ...user, token_version }) },
+      };
+    });
+    res.status(result.status).json(result.body);
   } catch (err) {
+    console.error('change-password error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// ─── Account deletion ─────────────────────────────────────────────────────────
+// Required by Apple (Guideline 5.1.1(v)) and Google Play for any app that lets
+// people create an account: deletion must be initiable from inside the app, not
+// only by emailing support.
+//
+// Soft delete, not DELETE FROM users. Completed handovers, the reviews written
+// about them, and the platform_fees ledger all reference this row, and a
+// business record of a car that changed hands is not the user's to erase — nor
+// is the counterparty's review of them. So the row survives with every piece of
+// personal data overwritten, which satisfies the deletion obligation while
+// keeping the transaction history referentially intact.
+//
+// What is actively removed rather than anonymised: identity documents (the most
+// sensitive thing held, and nothing depends on them once the account is gone),
+// push tokens (a deleted account must stop reaching the handset), saved cars,
+// saved searches and device registrations.
+router.delete('/me', requireAuth, async (req, res) => {
+  const { password } = req.body || {};
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        'SELECT id, password_hash, id_front_url, id_back_url, selfie_url FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
+        [req.user.id]
+      );
+      if (!rows.length) return { status: 404, body: { error: 'Account not found' } };
+      const user = rows[0];
+
+      // Re-authenticate. Deletion is irreversible, and a token left open on a
+      // borrowed handset must not be enough to destroy someone's account.
+      if (user.password_hash) {
+        if (!password) {
+          return { status: 400, body: { error: 'Enter your password to confirm deletion' } };
+        }
+        const ok = await bcrypt.compare(String(password), user.password_hash);
+        if (!ok) return { status: 401, body: { error: 'That password is not correct' } };
+      }
+
+      // An open sale is a commitment to a counterparty who is still expecting to
+      // meet at a center. Deleting mid-handover would strand them.
+      const { rows: open } = await client.query(
+        `SELECT COUNT(*)::int AS n FROM handovers
+         WHERE (buyer_id = $1 OR seller_id = $1) AND status IN ('pending', 'confirmed')`,
+        [user.id]
+      );
+      if (open[0].n > 0) {
+        return {
+          status: 409,
+          body: {
+            error: 'You have a handover in progress. Cancel or complete it before deleting your account.',
+            code: 'OPEN_HANDOVER',
+          },
+        };
+      }
+
+      // Any listing still on the marketplace comes down with the account.
+      await client.query(
+        `UPDATE cars SET status = 'archived'
+         WHERE seller_id = $1 AND status IN ('live', 'under_review', 'scheduled', 'inspecting')`,
+        [user.id]
+      );
+
+      await client.query('DELETE FROM saved_cars      WHERE user_id = $1', [user.id]);
+      await client.query('DELETE FROM saved_searches  WHERE user_id = $1', [user.id]);
+      await client.query('DELETE FROM device_tokens   WHERE user_id = $1', [user.id]);
+      await client.query('DELETE FROM password_resets WHERE user_id = $1', [user.id]);
+      await client.query('DELETE FROM notifications   WHERE user_id = $1', [user.id]);
+
+      // The email is released back for reuse but must stay UNIQUE, so it is
+      // replaced with a value derived from the id rather than simply nulled.
+      await client.query(
+        `UPDATE users SET
+           name = 'Deleted user',
+           email = 'deleted+' || id || '@deleted.sawacars.com',
+           phone = NULL,
+           password_hash = NULL,
+           avatar_url = NULL,
+           id_front_url = NULL, id_back_url = NULL, selfie_url = NULL,
+           id_verified = 'none', id_submitted_at = NULL,
+           deleted_at = NOW(),
+           token_version = token_version + 1
+         WHERE id = $1`,
+        [user.id]
+      );
+
+      return { status: 200, body: { success: true }, files: [user.id_front_url, user.id_back_url, user.selfie_url] };
+    });
+
+    // Identity documents are erased from disk after the row is committed. Doing
+    // it inside the transaction would leave files deleted but the account intact
+    // if the commit failed. Failures here are logged, never fatal — the account
+    // is already gone from the user's point of view.
+    if (result.status === 200) removeIdDocuments(result.files);
+
+    res.status(result.status).json(result.body);
+  } catch (err) {
+    console.error('delete account error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// URLs are of the form <base>/id-verification/doc/<filename>; only the basename
+// is used, so nothing outside the id-docs directory can be reached from here.
+function removeIdDocuments(urls) {
+  const dir = path.join(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads'), 'id-docs');
+  for (const url of (urls || []).filter(Boolean)) {
+    const filename = path.basename(String(url).split('?')[0]);
+    if (!filename || filename === '.' || filename === '..') continue;
+    fs.unlink(path.join(dir, filename), (err) => {
+      if (err && err.code !== 'ENOENT') {
+        console.error('id document cleanup:', filename, err.message);
+      }
+    });
+  }
+}
 
 module.exports = router;

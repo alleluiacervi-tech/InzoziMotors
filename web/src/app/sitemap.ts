@@ -36,6 +36,9 @@ const STATIC_ROUTES: { path: string; changeFrequency: Freq; priority: number }[]
   { path: '/signin', changeFrequency: 'yearly', priority: 0.3 },
   { path: '/legal/terms', changeFrequency: 'yearly', priority: 0.2 },
   { path: '/legal/privacy', changeFrequency: 'yearly', priority: 0.2 },
+  // Declared in Google Play's Data Safety form, so it has to be discoverable
+  // and reachable by a signed-out reviewer.
+  { path: '/account/delete', changeFrequency: 'yearly', priority: 0.2 },
 ]
 
 /** GET /cars clamps `limit` at 100, so the catalogue is paged. The page cap is

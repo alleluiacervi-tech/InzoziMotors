@@ -45,7 +45,7 @@ function MenuSection({ title, items, navigation }) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest } = useApp();
+  const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest, demoMode } = useApp();
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
@@ -69,9 +69,11 @@ export default function ProfileScreen({ navigation }) {
           <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
             <Text style={styles.guestBtnText}>Sign In</Text>
           </Pressable>
-          <Pressable onPress={() => loginAsGuest()} style={{ marginTop: 14 }}>
-            <Text style={styles.guestSkip}>Continue with a demo account</Text>
-          </Pressable>
+          {demoMode && (
+            <Pressable onPress={() => loginAsGuest()} style={{ marginTop: 14 }}>
+              <Text style={styles.guestSkip}>Continue with a demo account</Text>
+            </Pressable>
+          )}
         </View>
       </Screen>
     );

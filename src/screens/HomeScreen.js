@@ -51,7 +51,11 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalBookings, recentlyViewedIds, savedCarIds } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalBookings, recentlyViewedIds, savedCarIds, backendReachable } = useApp();
+
+  // Only worth saying when there is nothing to show; a cached catalogue with a
+  // dropped connection does not need a banner over the top of it.
+  const catalogueEmpty = (homeMode === 'rent' ? rentalCars : cars).length === 0;
   const hasUnread = notifications.some((n) => !n.read);
   const upcomingTrip = rentalBookings.find((b) => b.status === 'confirmed' || b.status === 'active');
   const [carouselIndex, setCarouselIndex] = useState(1);
@@ -161,7 +165,7 @@ export default function HomeScreen({ navigation }) {
 
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <Pressable style={styles.hamburger} onPress={() => setDrawerOpen(true)} hitSlop={6}>
+        <Pressable style={styles.hamburger} onPress={() => setDrawerOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Open menu">
           <View style={styles.hamburgerLine} />
           <View style={[styles.hamburgerLine, { width: 16 }]} />
           <View style={styles.hamburgerLine} />
@@ -175,10 +179,10 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.topBarRight}>
-          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('MapView')}>
+          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View cars on a map">
             <Ionicons name="map-outline" size={20} color={colors.textSecondary} />
           </Pressable>
-          <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')}>
+          <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel="Notifications">
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             {hasUnread && <View style={styles.bellBadge} />}
           </Pressable>
@@ -211,6 +215,23 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        {/* Connection notice. The app used to paper over an unreachable API with
+            25 bundled demo cars, which meant an outage looked like inventory.
+            Now the catalogue is genuinely empty and this says why — an honest
+            "we can't reach Sawa" beats a marketplace that appears to have
+            nothing for sale, and beats a fake one by a mile. */}
+        {!backendReachable && catalogueEmpty && (
+          <View style={styles.offlineNotice}>
+            <Ionicons name="cloud-offline-outline" size={20} color={colors.amber} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.offlineTitle}>We couldn&apos;t reach Sawa</Text>
+              <Text style={styles.offlineSub}>
+                Check your connection — listings will appear as soon as we&apos;re back.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Search Bar */}
         <View style={styles.searchWrapper}>
@@ -619,6 +640,20 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: { paddingBottom: 40 },
+  offlineNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 14,
+    borderRadius: radius.lg,
+    backgroundColor: colors.amberTint || '#FEF3C7',
+    borderWidth: 1,
+    borderColor: colors.amber,
+  },
+  offlineTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
+  offlineSub: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
 
   // ── Buy/Rent mode switch ──
   modeSwitchWrap: {

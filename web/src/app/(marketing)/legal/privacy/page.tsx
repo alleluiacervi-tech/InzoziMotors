@@ -199,12 +199,20 @@ const SECTIONS: LegalSection[] = [
           <li>You can view and correct your profile at any time from your account.</li>
           <li>You can switch any alert off without losing the saved car or search behind it.</li>
           <li>
-            You can ask for a copy of what we hold about you, or for your account to be deleted,
-            by writing to <a href={`mailto:${CONTACT.supportEmail}`}>{CONTACT.supportEmail}</a>.
+            You can delete your account yourself, at any time — on this website under{' '}
+            <a href="/dashboard/profile">Profile → Delete account</a>, or in the app under
+            Settings → Danger zone. Full details are on the{' '}
+            <a href="/account/delete">account deletion page</a>.
           </li>
           <li>
-            Deletion removes your profile, saved items and messages. Records of completed vehicle
-            transfers are retained where the law requires.
+            Deletion removes your profile, your contact details, your identity documents, your
+            saved cars and searches, and any listing of yours still on the marketplace. Records of
+            vehicle transfers that already completed are retained where the law requires, with your
+            name and contact details removed from them.
+          </li>
+          <li>
+            You can ask for a copy of what we hold about you by writing to{' '}
+            <a href={`mailto:${CONTACT.supportEmail}`}>{CONTACT.supportEmail}</a>.
           </li>
         </ul>
       </>

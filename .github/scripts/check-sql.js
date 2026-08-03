@@ -14,17 +14,56 @@ function extractQueries(dir, out = []) {
     if (entry.isDirectory()) { extractQueries(p, out); continue; }
     if (!entry.name.endsWith('.js')) continue;
     const src = fs.readFileSync(p, 'utf8');
-    // Template literals passed to .query(
-    const re = /\.query\(\s*`([\s\S]*?)`/g;
-    let m;
-    while ((m = re.exec(src))) out.push({ file: path.relative(BACKEND, p), sql: m[1] });
-    // Single-quoted one-liners
-    const re2 = /\.query\(\s*'([^']+)'/g;
-    while ((m = re2.exec(src))) out.push({ file: path.relative(BACKEND, p), sql: m[1] });
-    const re3 = /\.query\(\s*"([^"]+)"/g;
-    while ((m = re3.exec(src))) out.push({ file: path.relative(BACKEND, p), sql: m[1] });
+    for (const sql of scanQueryLiterals(src)) {
+      out.push({ file: path.relative(BACKEND, p), sql });
+    }
   }
   return out;
+}
+
+// Walks each `.query(` and reads the string literal that follows.
+//
+// Regexes cannot do this correctly and two real call sites proved it: a
+// single-quoted string containing \' ended the match early and produced a
+// truncated statement, and a template literal containing a NESTED template
+// literal (`${cond ? `…` : ''}`) ended at the inner backtick. Both were
+// reported as SQL syntax errors when the SQL was fine — a false alarm in a
+// check whose whole value is that its alarms mean something.
+function scanQueryLiterals(src) {
+  const found = [];
+  const marker = /\.query\(\s*/g;
+  let m;
+  while ((m = marker.exec(src))) {
+    const start = m.index + m[0].length;
+    const quote = src[start];
+    if (quote !== '`' && quote !== "'" && quote !== '"') continue;
+
+    let i = start + 1;
+    let depth = 0; // ${ } nesting, template literals only
+    let literal = '';
+    while (i < src.length) {
+      const ch = src[i];
+      if (ch === '\\') {
+        // Keep the escaped character, drop the backslash: \' is just a quote to
+        // PostgreSQL's parser once JS has finished with the string.
+        literal += src[i + 1] ?? '';
+        i += 2;
+        continue;
+      }
+      if (quote === '`') {
+        if (ch === '$' && src[i + 1] === '{') { depth++; literal += '${'; i += 2; continue; }
+        if (ch === '}' && depth > 0) { depth--; literal += '}'; i++; continue; }
+        // A backtick inside ${…} opens a nested literal, not the end of ours.
+        if (ch === '`' && depth === 0) break;
+      } else if (ch === quote) {
+        break;
+      }
+      literal += ch;
+      i++;
+    }
+    found.push(literal);
+  }
+  return found;
 }
 
 // Interpolated fragments (${MARKET_LATERALS}, ${conditions.join(...)}, ${col})
@@ -46,7 +85,40 @@ function resolve(sql) {
     .replace(/\$\{updates\.join\([^)]*\)\}/g, 'price = $1')
     .replace(/\$\{sets\.join\([^)]*\)\}/g, 'price = $1')
     .replace(/\$\{fields\.join\([^)]*\)\}/g, 'price')
-    .replace(/\$\{[^}]*\}/g, '1');
+    // notifyMany builds one VALUES list per recipient; a single tuple is enough
+    // to prove the statement's shape.
+    .replace(/\$\{tuples\.join\([^)]*\)\}/g, '($1, $2, $3, $4, $5)');
+}
+
+// Anything still interpolated after the named substitutions above. Brace-
+// balanced, because an expression can contain braces of its own —
+// `${col} = COALESCE(${col}, '{}'::jsonb)` broke the old /\$\{[^}]*\}/ badly.
+//
+// A ternary whose alternative is an empty string is resolved AS the empty
+// string: those are optional SQL fragments (`SET a = $1${cond ? ', b = $2' : ''}`),
+// and substituting a value there produces a statement the code can never emit.
+function resolveRemaining(sql) {
+  let out = '';
+  let i = 0;
+  while (i < sql.length) {
+    if (sql[i] === '$' && sql[i + 1] === '{') {
+      let depth = 1;
+      let j = i + 2;
+      while (j < sql.length && depth > 0) {
+        if (sql[j] === '{') depth++;
+        else if (sql[j] === '}') depth--;
+        j++;
+      }
+      const expr = sql.slice(i + 2, j - 1);
+      const optional = /\?[\s\S]*:\s*(''|"")\s*$/.test(expr);
+      out += optional ? '' : '1';
+      i = j;
+      continue;
+    }
+    out += sql[i];
+    i++;
+  }
+  return out;
 }
 
 (async () => {
@@ -57,7 +129,7 @@ function resolve(sql) {
   const failures = [];
 
   for (const q of queries) {
-    const sql = resolve(q.sql).trim();
+    const sql = resolveRemaining(resolve(q.sql)).trim();
     if (!sql || !/^(SELECT|INSERT|UPDATE|DELETE|WITH|CREATE|ALTER|DROP|BEGIN|COMMIT|ROLLBACK)/i.test(sql)) continue;
     try {
       pg.parseSync(sql);

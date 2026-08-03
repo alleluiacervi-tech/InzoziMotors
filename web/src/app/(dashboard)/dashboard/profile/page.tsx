@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { signOutAction } from '@/app/actions/auth'
+import { DeleteAccountForm } from '@/components/dashboard/DeleteAccountForm'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { PasswordForm } from '@/components/dashboard/PasswordForm'
 import { ProfileForm } from '@/components/dashboard/ProfileForm'
@@ -115,6 +116,11 @@ export default async function ProfilePage() {
                 </button>
               </form>
             </Card>
+          </section>
+
+          <section aria-labelledby="delete-account">
+            <PanelHeading id="delete-account" title="Delete account" />
+            <DeleteAccountForm />
           </section>
         </div>
       </div>

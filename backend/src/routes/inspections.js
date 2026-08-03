@@ -1,7 +1,8 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { uploadPhotos } = require('../middleware/upload');
+const { requireUuid } = require('../middleware/validate');
+const { uploadPhotos, verifyImageContent } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
 const { notifyUser } = require('../lib/notify');
 
@@ -91,7 +92,7 @@ router.get('/', requireAdmin, async (req, res) => {
 
 // GET /inspections/report/:carId — buyer-facing inspection report
 // Must come before /:id to avoid "report" being treated as an id
-router.get('/report/:carId', async (req, res) => {
+router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT i.checklist_results, i.score, i.notes, i.completed_at,
@@ -113,7 +114,7 @@ router.get('/report/:carId', async (req, res) => {
 
 // POST /inspections/cars/:carId/photos — admin uploads 36-angle photos
 // Must come before /:id
-router.post('/cars/:carId/photos', requireAdmin, uploadPhotos.array('photos', 40), async (req, res) => {
+router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', 40), verifyImageContent, async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ error: 'No photos uploaded' });
@@ -133,7 +134,7 @@ router.post('/cars/:carId/photos', requireAdmin, uploadPhotos.array('photos', 40
 });
 
 // GET /inspections/:id
-router.get('/:id', requireAdmin, async (req, res) => {
+router.get('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT i.*,
@@ -161,7 +162,7 @@ router.get('/:id', requireAdmin, async (req, res) => {
 // POST /inspections/:id/complete — admin submits 150-pt checklist results
 // Body: { checklist_results: { itemName: 'pass'|'flag'|'fail', ... }, notes }
 // POST /inspections/:id/start — mechanic begins the walkaround
-router.post('/:id/start', requireAdmin, async (req, res) => {
+router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `UPDATE inspections
@@ -183,7 +184,7 @@ router.post('/:id/start', requireAdmin, async (req, res) => {
 });
 
 // POST /inspections/:id/complete — record checklist, weighted score, gated publish
-router.post('/:id/complete', requireAdmin, async (req, res) => {
+router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) => {
   const { checklist_results, notes } = req.body;
   if (!checklist_results || typeof checklist_results !== 'object' || !Object.keys(checklist_results).length) {
     return res.status(400).json({ error: 'checklist_results is required' });
@@ -240,6 +241,31 @@ router.post('/:id/complete', requireAdmin, async (req, res) => {
     );
 
     const subRes = await client.query('SELECT seller_id FROM submissions WHERE id = $1', [insp.submission_id]);
+
+    // ── Certification fee ──────────────────────────────────────────────────
+    // The business model lists three revenue streams; platform_fees has always
+    // permitted fee_type='certification' and nothing ever inserted one, so
+    // /admin/fees under-reported by the entire upfront stream. Commission and
+    // featured were recorded; the fee that pays for the inspection itself was
+    // not.
+    //
+    // This is the moment it is earned: the 150-point check is done and the
+    // report exists, whether or not the car went live. Priced from the
+    // environment because the amount is a business decision — unset means no
+    // row, so nothing is invoiced until someone sets the real number.
+    const certificationFee = Math.max(parseInt(process.env.CERTIFICATION_FEE || '0', 10) || 0, 0);
+    if (certificationFee > 0 && subRes.rows.length) {
+      // ON CONFLICT against the partial unique index on submission_id: one
+      // certification per submission, so a re-inspection after remedial work
+      // cannot bill the seller twice for the same car.
+      await client.query(
+        `INSERT INTO platform_fees (seller_id, submission_id, fee_type, amount, status)
+         VALUES ($1, $2, 'certification', $3, 'due')
+         ON CONFLICT (submission_id) WHERE fee_type = 'certification' DO NOTHING`,
+        [subRes.rows[0].seller_id, insp.submission_id, certificationFee]
+      );
+    }
+
     if (subRes.rows.length) {
       const grade = score >= 128 ? 'A' : score >= 105 ? 'B' : score >= 83 ? 'C' : 'D';
       const body = insp.car_id && passed

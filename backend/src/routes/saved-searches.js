@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -36,7 +37,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // PATCH /saved-searches/:id — toggle notifications
-router.patch('/:id', requireAuth, async (req, res) => {
+router.patch('/:id', requireAuth, requireUuid('id'), async (req, res) => {
   const { notify_enabled } = req.body;
   try {
     const { rows } = await pool.query(
@@ -52,7 +53,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /saved-searches/:id
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requireUuid('id'), async (req, res) => {
   try {
     await pool.query(
       'DELETE FROM saved_searches WHERE id = $1 AND user_id = $2',

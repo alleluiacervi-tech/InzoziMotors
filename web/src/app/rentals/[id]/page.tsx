@@ -222,7 +222,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   >
                     Check these dates
                   </Button>
-                  <OpenInAppButton path={`rental/${car.id}`} label="Book in the app" fullWidth />
+                  <OpenInAppButton path={`rentals/${car.id}`} label="Book in the app" fullWidth />
                 </div>
 
                 <p className="mt-4 text-micro leading-relaxed text-content-muted">

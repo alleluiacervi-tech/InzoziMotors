@@ -1,18 +1,54 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 
+// A verified signature is necessary but not sufficient. Tokens live 30 days,
+// so between minting and expiry the account behind one can have its password
+// changed, its password reset by someone holding the email, or be deleted
+// outright. Each of those bumps users.token_version; a token carrying an older
+// version is refused here, which is what makes "sign out everywhere" and
+// account deletion actually mean something.
+//
+// The cost is one indexed primary-key lookup per authenticated request. That is
+// the right trade for being able to end a session at all.
+async function verifyLiveSession(payload) {
+  const { rows } = await pool.query(
+    'SELECT token_version, deleted_at FROM users WHERE id = $1',
+    [payload.id]
+  );
+  if (!rows.length) return { ok: false, error: 'Account no longer exists' };
+  if (rows[0].deleted_at) return { ok: false, error: 'This account has been deleted' };
+  // Tokens minted before the column existed carry no tv; treat as version 0.
+  if ((payload.tv || 0) !== rows[0].token_version) {
+    return { ok: false, error: 'Session ended. Please sign in again.' };
+  }
+  return { ok: true };
+}
+
 function requireAuth(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'No token provided' });
   }
   const token = header.slice(7);
+  let payload;
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
-    next();
+    payload = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
+
+  verifyLiveSession(payload)
+    .then((result) => {
+      if (!result.ok) {
+        return res.status(401).json({ error: result.error, code: 'SESSION_REVOKED' });
+      }
+      req.user = payload;
+      next();
+    })
+    .catch((err) => {
+      console.error('session check failed:', err.message);
+      res.status(500).json({ error: 'Server error' });
+    });
 }
 
 function requireAdmin(req, res, next) {
@@ -58,4 +94,4 @@ function requireVerified(req, res, next) {
   });
 }
 
-module.exports = { requireAuth, requireAdmin, requireVerified };
+module.exports = { requireAuth, requireAdmin, requireVerified, verifyLiveSession };

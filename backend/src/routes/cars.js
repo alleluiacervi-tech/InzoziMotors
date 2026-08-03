@@ -1,6 +1,9 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireUuid } = require('../middleware/validate');
+const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 
 const router = express.Router();
@@ -122,7 +125,7 @@ ${MARKET_LATERALS}
 // GET /cars/:id/history — vehicle history card (buyers + public).
 // Facts derive from real data where it exists (inspection checklist, price
 // history, verified seller); anything unknown is labelled unknown, not faked.
-router.get('/:id/history', async (req, res) => {
+router.get('/:id/history', requireUuid('id'), async (req, res) => {
   try {
     const carRes = await pool.query(
       `SELECT c.vin, c.make, c.model, c.year, c.mileage, c.drive_side,
@@ -173,8 +176,25 @@ router.get('/:id/history', async (req, res) => {
   }
 });
 
+// Best-effort identity for otherwise-public routes: sets req.user when a valid
+// token is present, and simply carries on when one is not. Used where the
+// RESPONSE differs for a signed-in caller but the route itself stays public.
+function optionalAuth(req, _res, next) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    try { req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET); } catch { /* anonymous */ }
+  }
+  next();
+}
+
 // GET /cars/:id
-router.get('/:id', async (req, res) => {
+// Public, because the catalogue is the indexable part of the product — but the
+// seller's personal phone number is NOT part of the catalogue. Listing ids are
+// published in the sitemap, so returning it here made every seller's number
+// enumerable by anyone who could count. It is now released only to a signed-in
+// buyer with a live handover on this specific car; everyone else, crawlers
+// included, gets null and the Sawa business line.
+router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
   try {
     // price_history is ordered oldest-first, so element 0 is the original
     // listing price. A car with no recorded changes returns [] — nothing is
@@ -195,32 +215,95 @@ ${MARKET_LATERALS}
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Car not found' });
-    // increment view count (fire-and-forget)
-    pool.query('UPDATE cars SET views = views + 1 WHERE id = $1', [req.params.id]);
-    res.json(rows[0]);
+    const car = rows[0];
+
+    // Statuses a car reaches only by having been published. Anything else
+    // (under_review, scheduled, inspecting, archived) describes a car that was
+    // never on the marketplace, so it is not public — 404, not 403, because the
+    // existence of the row is itself the thing not to confirm.
+    const PUBLICLY_VISIBLE = ['live', 'reserved', 'sold'];
+    const isInsider =
+      req.user && (req.user.role === 'admin' || req.user.id === car.seller_id);
+    if (!PUBLICLY_VISIBLE.includes(car.status) && !isInsider) {
+      return res.status(404).json({ error: 'Car not found' });
+    }
+
+    // Who may see the seller's number: the seller themselves, an admin, or a
+    // buyer who has an open/completed handover on this car (the only point at
+    // which the two parties need to reach each other directly).
+    let maySeeSellerPhone = false;
+    if (req.user) {
+      if (req.user.role === 'admin' || req.user.id === car.seller_id) {
+        maySeeSellerPhone = true;
+      } else {
+        const { rows: h } = await pool.query(
+          `SELECT 1 FROM handovers
+           WHERE car_id = $1 AND buyer_id = $2
+             AND status IN ('pending', 'confirmed', 'complete')
+           LIMIT 1`,
+          [req.params.id, req.user.id]
+        );
+        maySeeSellerPhone = h.length > 0;
+      }
+    }
+    if (!maySeeSellerPhone) car.seller_phone = null;
+
+    // Fire-and-forget, but never unhandled: a DB blip here must not become an
+    // unhandled rejection that takes the process down under --unhandled-rejections.
+    pool.query('UPDATE cars SET views = views + 1 WHERE id = $1', [req.params.id])
+      .catch((err) => console.error('view counter:', err.message));
+
+    res.json(car);
   } catch (err) {
+    console.error('car detail error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 // POST /cars/save/:id  (toggle save)
-router.post('/save/:id', requireAuth, async (req, res) => {
+//
+// cars.saves is a cached counter that every read path already ignores in favour
+// of a live COUNT(*) over saved_cars — see saves_count in the queries above, and
+// mapCar in the mobile app. It was maintained by a read, then a write, then a
+// second write, none of them in a transaction: two taps racing produced a count
+// that disagreed with the table, permanently.
+//
+// The whole toggle is now one statement pair inside a transaction, and the
+// counter is DERIVED from the table rather than incremented, so it cannot drift
+// from the thing it is meant to summarise even if a write is lost.
+router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
   const { id: car_id } = req.params;
   const user_id = req.user.id;
   try {
-    const existing = await pool.query(
-      'SELECT 1 FROM saved_cars WHERE user_id = $1 AND car_id = $2',
-      [user_id, car_id]
-    );
-    if (existing.rows.length) {
-      await pool.query('DELETE FROM saved_cars WHERE user_id = $1 AND car_id = $2', [user_id, car_id]);
-      await pool.query('UPDATE cars SET saves = GREATEST(0, saves - 1) WHERE id = $1', [car_id]);
-      return res.json({ saved: false });
-    }
-    await pool.query('INSERT INTO saved_cars (user_id, car_id) VALUES ($1, $2)', [user_id, car_id]);
-    await pool.query('UPDATE cars SET saves = saves + 1 WHERE id = $1', [car_id]);
-    res.json({ saved: true });
+    const result = await withTransaction(async (client) => {
+      // ON CONFLICT DO NOTHING + rowCount tells us whether this was an insert
+      // or an existing row, without a separate SELECT to race against.
+      const ins = await client.query(
+        `INSERT INTO saved_cars (user_id, car_id) VALUES ($1, $2)
+         ON CONFLICT (user_id, car_id) DO NOTHING`,
+        [user_id, car_id]
+      );
+      const saved = ins.rowCount > 0;
+      if (!saved) {
+        await client.query(
+          'DELETE FROM saved_cars WHERE user_id = $1 AND car_id = $2',
+          [user_id, car_id]
+        );
+      }
+      await client.query(
+        `UPDATE cars SET saves = (SELECT COUNT(*) FROM saved_cars WHERE car_id = $1)
+         WHERE id = $1`,
+        [car_id]
+      );
+      return { saved };
+    });
+    res.json(result);
   } catch (err) {
+    // A car_id that does not exist violates the foreign key — a client error.
+    if (err.code === '23503') {
+      return res.status(404).json({ error: 'Car not found' });
+    }
+    console.error('toggle save error:', err.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -250,11 +333,19 @@ router.post('/', requireAdmin, async (req, res) => {
   const { seller_id, title, make, model, year, mileage, fuel_type, transmission,
           body_type, color, price, location, drive_side, vin, description, images,
           inspected, inspection_score, submission_id } = req.body;
-  if (!seller_id || !title || !make || !model) {
-    return res.status(400).json({ error: 'seller_id, title, make, and model are required' });
+  // year, mileage and price are NOT NULL in the schema but were not checked
+  // here, so omitting one produced a 500 from the constraint violation rather
+  // than telling the caller which field was missing.
+  const missing = Object.entries({ seller_id, title, make, model, year, mileage, price })
+    .filter(([, v]) => v === undefined || v === null || v === '')
+    .map(([k]) => k);
+  if (missing.length) {
+    return res.status(400).json({ error: `Missing required field(s): ${missing.join(', ')}` });
   }
-  if (price !== undefined && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
-    return res.status(400).json({ error: 'price must be a non-negative number' });
+  for (const [field, value] of [['year', year], ['mileage', mileage], ['price', price]]) {
+    if (!Number.isFinite(Number(value)) || Number(value) < 0) {
+      return res.status(400).json({ error: `${field} must be a non-negative number` });
+    }
   }
   try {
     // ID is checked in person at the inspection center; admin marks the seller
@@ -363,7 +454,7 @@ router.get('/valuation/estimate', async (req, res) => {
 });
 
 // PATCH /cars/:id — admin edits listing fields; price changes are recorded
-router.patch('/:id', requireAdmin, async (req, res) => {
+router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   const EDITABLE = ['title', 'price', 'description', 'location', 'mileage', 'color', 'drive_side', 'images'];
   const updates = [];
   const params = [];
@@ -403,7 +494,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
 
 // PATCH /cars/:id/price — seller changes the price of their own live listing.
 // No status regression; price history + price-drop alerts fire like admin edits.
-router.patch('/:id/price', requireAuth, async (req, res) => {
+router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
   const price = Number(req.body.price);
   if (!Number.isFinite(price) || price <= 0) {
     return res.status(400).json({ error: 'price must be a positive number' });
@@ -438,7 +529,7 @@ router.patch('/:id/price', requireAuth, async (req, res) => {
 
 // PATCH /cars/:id/feature — admin boosts a listing to the top of browse.
 // Records the featured fee ('due' — collected offline like commissions).
-router.patch('/:id/feature', requireAdmin, async (req, res) => {
+router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) => {
   const days = Math.min(Math.max(parseInt(req.body.days) || 7, 1), 30);
   const fee = Math.max(parseInt(req.body.fee) || 0, 0);
   try {
@@ -462,7 +553,7 @@ router.patch('/:id/feature', requireAdmin, async (req, res) => {
   }
 });
 
-router.patch('/:id/status', requireAdmin, async (req, res) => {
+router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) => {
   // 'removed' is the admin-dashboard verb for archiving a listing
   const status = req.body.status === 'removed' ? 'archived' : req.body.status;
   const allowed = ['under_review', 'scheduled', 'inspecting', 'live', 'reserved', 'sold', 'archived'];

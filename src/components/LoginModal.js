@@ -35,9 +35,14 @@ export default function LoginModal({ visible, onClose, onSignIn, onContinueAsGue
             <Text style={styles.signInText}>Sign in</Text>
           </Pressable>
 
-          <Pressable style={styles.guestBtn} onPress={onContinueAsGuest}>
-            <Text style={styles.guestText}>Browse with a demo account</Text>
-          </Pressable>
+          {/* The demo account only exists in development builds — see DEMO_MODE
+              in AppContext. Rendering it in a release build would offer a door
+              that leads nowhere. */}
+          {onContinueAsGuest && (
+            <Pressable style={styles.guestBtn} onPress={onContinueAsGuest}>
+              <Text style={styles.guestText}>Browse with a demo account</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </Modal>

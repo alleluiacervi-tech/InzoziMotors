@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -52,32 +52,78 @@ function Sparkline({ data, width: w = 80, height: h = 30 }) {
 
 export default function VehicleDetailScreen({ navigation, route }) {
   const listCar = route.params?.car;
+  // A deep link (sawa://cars/<id>, or a push notification tap) carries only an
+  // id — there is no car object to render from until the fetch lands.
+  const carId = route.params?.carId || listCar?.id;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, addToComparison, comparisonCars, fetchCarDetail } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail } = useApp();
 
   // The browse payload is deliberately lean. The detail endpoint adds price
   // history, the seller's phone and the full market comparison — and counts the
   // view. Render the list version immediately, then upgrade in place.
   const [detail, setDetail] = useState(null);
+  const [notFound, setNotFound] = useState(false);
   React.useEffect(() => {
     let alive = true;
-    if (listCar?.id) {
-      fetchCarDetail(listCar.id).then((full) => {
-        if (alive && full) setDetail(full);
+    if (carId) {
+      fetchCarDetail(carId).then((full) => {
+        if (!alive) return;
+        if (full) setDetail(full);
+        // Only a link-opened car can be missing entirely; one reached from a
+        // list already has something to show.
+        else if (!listCar) setNotFound(true);
       });
     }
     return () => { alive = false; };
-  }, [listCar?.id, fetchCarDetail]);
+  }, [carId, listCar, fetchCarDetail]);
 
   const car = detail || listCar;
-  const saved = isCarSaved(car.id);
-  const isAuction = car.type === 'auction';
+
+  // ── Every hook must run before the early return below ──────────────────────
+  // A deep-linked car starts as null and becomes an object once the fetch
+  // lands. If the "still loading" return sat above these, the hook count would
+  // change between renders and React would throw — so they stay here, above any
+  // conditional exit, and the derived values tolerate a null car.
   const [activeIdx, setActiveIdx] = useState(0);
   const [loginVisible, setLoginVisible] = useState(false);
   const [viewerIdx, setViewerIdx] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
+  const { cars, recordCarView } = useApp();
+  React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id, recordCarView]);
 
-  const { cars } = useApp();
+  // Arriving by link: nothing to draw until the fetch resolves. Reading car.id
+  // before this point would crash on a link-opened screen.
+  if (!car) {
+    return (
+      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
+        {notFound ? (
+          <>
+            <Ionicons name="car-outline" size={40} color={colors.textMuted} />
+            <Text style={styles.linkStateTitle}>This car isn&apos;t available</Text>
+            <Text style={styles.linkStateSub}>
+              It may have been sold or taken off the marketplace.
+            </Text>
+            <Pressable
+              style={styles.linkStateBtn}
+              onPress={() => navigation.replace('Main')}
+              accessibilityRole="button"
+              accessibilityLabel="Browse cars"
+            >
+              <Text style={styles.linkStateBtnText}>Browse cars</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={styles.linkStateSub}>Loading this car…</Text>
+          </>
+        )}
+      </View>
+    );
+  }
+
+  const saved = isCarSaved(car.id);
+  const isAuction = car.type === 'auction';
 
   const monthly = car.price ? monthlyEstimate(car.price) : null;
 
@@ -107,9 +153,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
   };
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
-
-  const { recordCarView } = useApp();
-  React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
 
   const contactWhatsApp = () => contactSellerOnWhatsApp(car, formatPrice(price));
 
@@ -152,7 +195,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </ScrollView>
 
           <View style={[styles.galleryBar, { top: insets.top + 8 }]}>
-            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()}>
+            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
               <Ionicons name="chevron-back" size={20} color={colors.slate700} />
             </Pressable>
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -499,11 +542,11 @@ export default function VehicleDetailScreen({ navigation, route }) {
           setLoginVisible(false);
           navigation.navigate('SignIn');
         }}
-        onContinueAsGuest={() => {
+        onContinueAsGuest={demoMode ? () => {
           setLoginVisible(false);
           loginAsGuest();
           if (pendingAction) setTimeout(() => pendingAction(), 300);
-        }}
+        } : undefined}
       />
     </View>
   );
@@ -511,6 +554,13 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  linkStateTitle: { marginTop: 14, fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, textAlign: 'center' },
+  linkStateSub: { marginTop: 8, fontSize: 14, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  linkStateBtn: {
+    marginTop: 20, height: 48, paddingHorizontal: 26, borderRadius: radius.lg,
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  linkStateBtnText: { fontSize: 15, fontFamily: fonts.extraBold, color: '#FFFFFF' },
   gallery: { height: 320, backgroundColor: colors.border },
   heroImage: { width, height: 320 },
   galleryBar: {

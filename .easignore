@@ -1,0 +1,54 @@
+# What NOT to upload to EAS Build.
+#
+# The Expo app lives at the repo root, but three unrelated deployables sit
+# beneath it — backend/, web/ and admin/, each with its own node_modules. EAS
+# tars the project directory and uploads it, so without this file every cloud
+# build ships a Node API, two Next.js apps and their dependency trees to a
+# machine that will never run them. That is slow, expensive, and puts server
+# code (including .env files, if one were ever committed) into a build context
+# that has no use for it.
+#
+# .easignore REPLACES .gitignore for upload purposes when present, so the
+# node_modules/build-output rules from .gitignore have to be restated here.
+
+# ── Other deployables — never part of the mobile build ──
+backend/
+web/
+admin/
+
+# ── Dependencies and build output ──
+node_modules/
+.expo/
+dist/
+web-build/
+.next/
+
+# ── Local infrastructure ──
+docker-compose.yml
+Makefile
+start-all.sh
+start-all.cmd
+stop-all.sh
+stop-all.cmd
+.logs/
+.github/
+
+# ── Docs ──
+docs/
+*.md
+
+# ── Design and marketing art that no screen requires ──
+# assetBundlePatterns already keeps these out of the app bundle; this keeps them
+# out of the upload too (about.png and sawa.png are ~2 MB each).
+assets/about.png
+assets/sawa.png
+assets/sawa-icon.png
+assets/refference.png
+
+# ── Secrets and signing material — belt and braces ──
+.env
+.env.*
+*.p8
+*.p12
+*.keystore
+*-service-account.json
