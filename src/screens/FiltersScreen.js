@@ -53,7 +53,7 @@ export default function FiltersScreen({ navigation, route }) {
     <Screen background={colors.surface}>
       <View style={styles.head}>
         <Text style={styles.h1}>Filters</Text>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close">
           <Ionicons name="close" size={26} color={colors.slate700} />
         </Pressable>
       </View>

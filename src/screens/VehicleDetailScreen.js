@@ -201,7 +201,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Pressable
                 style={[styles.circleBtn, isInComparison && styles.circleBtnActive]}
-                onPress={() => addToComparison(car)}
+                onPress={() => addToComparison(car)} accessibilityRole="button" accessibilityLabel="Compare"
               >
                 <Ionicons name="git-compare-outline" size={18} color={isInComparison ? colors.primary : colors.slate700} />
               </Pressable>
@@ -209,11 +209,17 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 style={styles.circleBtn}
                 onPress={() => Share.share({
                   message: `${car.title} — ${formatPrice(price)} on Sawa. Every car 150-point inspected.`,
-                }).catch(() => {})}
+                }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
               >
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
               </Pressable>
-              <Pressable style={styles.circleBtn} onPress={() => toggleSaveCar(car.id)}>
+              <Pressable
+                style={styles.circleBtn}
+                onPress={() => toggleSaveCar(car.id)}
+                accessibilityRole="button"
+                accessibilityLabel={saved ? 'Remove from saved' : 'Save this car'}
+                accessibilityState={{ selected: saved }}
+              >
                 <Ionicons name={saved ? 'heart' : 'heart-outline'} size={19} color={saved ? '#EF4444' : colors.slate700} />
               </Pressable>
             </View>
@@ -384,12 +390,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 </Text>
               </View>
             </View>
-            <Pressable style={styles.waSmallBtn} onPress={contactWhatsApp}>
+            <Pressable style={styles.waSmallBtn} onPress={contactWhatsApp} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
               <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
             </Pressable>
             <Pressable
               style={styles.msgBtn}
-              onPress={() => executeWithAuth(() => navigation.navigate('Chat', { name: car.seller, car }))}
+              onPress={() => executeWithAuth(() => navigation.navigate('Chat', { name: car.seller, car }))} accessibilityRole="button" accessibilityLabel="Messages"
             >
               <Ionicons name="chatbubble-outline" size={18} color={colors.primary} />
             </Pressable>
@@ -518,7 +524,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.ctaPriceValue}>{formatPrice(price)}</Text>
           <Text style={styles.ctaPriceRwf}>{formatRWF(price)}</Text>
         </View>
-        <Pressable style={styles.waBtn} onPress={contactWhatsApp}>
+        <Pressable style={styles.waBtn} onPress={contactWhatsApp} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
         </Pressable>
         <Button

@@ -173,7 +173,7 @@ export default function IDVerificationScreen({ navigation, route }) {
                     </Text>
                   </View>
                   {asset ? (
-                    <Pressable onPress={() => handleRemove(step)} hitSlop={10}>
+                    <Pressable onPress={() => handleRemove(step)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear">
                       <Ionicons name="close-circle" size={22} color={colors.textMuted} />
                     </Pressable>
                   ) : (

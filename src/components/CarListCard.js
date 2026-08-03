@@ -40,7 +40,13 @@ export default function CarListCard({ car, onPress }) {
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>{car.title}</Text>
-          <Pressable onPress={() => toggleSaveCar(car.id)} hitSlop={10}>
+          <Pressable
+            onPress={() => toggleSaveCar(car.id)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={saved ? `Remove ${car.title} from saved` : `Save ${car.title}`}
+            accessibilityState={{ selected: saved }}
+          >
             <Ionicons
               name={saved ? 'heart' : 'heart-outline'}
               size={17}

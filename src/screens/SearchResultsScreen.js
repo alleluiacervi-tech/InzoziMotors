@@ -143,7 +143,7 @@ export default function SearchResultsScreen({ navigation, route }) {
         </View>
         <Pressable
           style={styles.filterBtn}
-          onPress={() => navigation.navigate('Filters', { filters: activeFilters })}
+          onPress={() => navigation.navigate('Filters', { filters: activeFilters })} accessibilityRole="button" accessibilityLabel="Filters"
         >
           <Ionicons name="options-outline" size={20} color="#fff" />
         </Pressable>
@@ -182,7 +182,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                       const label = parts.join(' · ') || 'All cars';
                       await createSavedSearch(label, { ...activeFilters, query: searchQuery.trim() });
                       showToast("Search saved — we'll notify you when new matching cars are listed.", 'success');
-                    }}
+                    }} accessibilityRole="button" accessibilityLabel="Save"
                   >
                     <Ionicons name="bookmark-outline" size={16} color={colors.textSecondary} />
                   </Pressable>

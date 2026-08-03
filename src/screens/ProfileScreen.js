@@ -124,7 +124,7 @@ export default function ProfileScreen({ navigation }) {
               )}
             </View>
           </View>
-          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')}>
+          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel="Edit">
             <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>

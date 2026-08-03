@@ -34,7 +34,7 @@ function getWinnerIndex(row, cars) {
 function CarColumn({ car, onRemove, style }) {
   return (
     <View style={[styles.carCol, style]}>
-      <Pressable style={styles.removeChip} onPress={onRemove}>
+      <Pressable style={styles.removeChip} onPress={onRemove} accessibilityRole="button" accessibilityLabel="Close">
         <Ionicons name="close" size={14} color={colors.textMuted} />
       </Pressable>
       <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="contain" />

@@ -18,7 +18,7 @@ export default function LoginModal({ visible, onClose, onSignIn, onContinueAsGue
       <View style={styles.backdrop}>
         <View style={[styles.container, shadows.card]}>
           {/* Close button */}
-          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
+          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close">
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
 

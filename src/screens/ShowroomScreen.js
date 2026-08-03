@@ -28,7 +28,7 @@ export default function ShowroomScreen({ navigation, route }) {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10} accessibilityRole="button" accessibilityLabel="Go back">
           <Ionicons name="chevron-back" size={20} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>

@@ -48,7 +48,7 @@ function SavedCarRow({ car, onPress, onRemove }) {
           )}
         </View>
       </View>
-      <Pressable style={styles.removeBtn} onPress={onRemove} hitSlop={10}>
+      <Pressable style={styles.removeBtn} onPress={onRemove} hitSlop={10} accessibilityRole="button" accessibilityLabel="Remove from saved">
         <Ionicons name="heart" size={22} color="#EF4444" />
       </Pressable>
     </Pressable>
@@ -76,7 +76,7 @@ function SavedSearchRow({ search, onToggleNotify, onDelete }) {
         thumbColor="#fff"
         style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
       />
-      <Pressable style={styles.deleteBtn} onPress={() => onDelete(search.id)} hitSlop={8}>
+      <Pressable style={styles.deleteBtn} onPress={() => onDelete(search.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Delete">
         <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
       </Pressable>
     </View>

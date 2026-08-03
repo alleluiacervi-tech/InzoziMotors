@@ -92,7 +92,7 @@ export default function DealerProfileScreen({ navigation, route }) {
         {/* Hero */}
         <LinearGradient colors={[colors.navyDeep, colors.navyMid, colors.primary]} style={styles.hero}>
           <View style={[styles.backBtn, { top: insets.top + 8 }]}>
-            <Pressable style={styles.backCircle} onPress={() => navigation.goBack()}>
+            <Pressable style={styles.backCircle} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
               <Ionicons name="chevron-back" size={20} color={colors.slate700} />
             </Pressable>
           </View>

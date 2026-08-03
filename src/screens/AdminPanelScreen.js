@@ -447,7 +447,7 @@ export default function AdminPanelScreen({ navigation }) {
         title="Admin Panel"
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.analyticsLink} onPress={() => navigation.navigate('AdminAnalytics')}>
+          <Pressable style={styles.analyticsLink} onPress={() => navigation.navigate('AdminAnalytics')} accessibilityRole="button" accessibilityLabel="Analytics">
             <Ionicons name="stats-chart-outline" size={17} color={colors.textSecondary} />
           </Pressable>
         }
