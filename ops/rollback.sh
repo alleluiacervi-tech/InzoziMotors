@@ -71,7 +71,7 @@ $COMPOSE up -d api web admin || die "restart failed — the host needs manual at
 
 log "waiting for readiness"
 for i in $(seq 1 30); do
-  if curl -fsS -m 3 http://127.0.0.1:3000/health/ready >/dev/null 2>&1; then
+  if curl -fsS -m 3 http://127.0.0.1:4000/health/ready >/dev/null 2>&1; then
     log "healthy — rolled back to $(git rev-parse --short HEAD)"
     # Consumed, so a second rollback does not silently repeat the first.
     mv "$POINTER" "$POINTER.used-$(date -u +%Y%m%dT%H%M%SZ)"

@@ -7,7 +7,9 @@
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
 # Differences from dev, each deliberate:
-#   • Every service binds 127.0.0.1 — Nginx on the host is the only public door.
+#   • Every service binds 127.0.0.1 — Caddy on the host is the only public door.
+#   • Host ports are 4000–4002 (container ports unchanged): this VPS is shared
+#     with another project that owns 127.0.0.1:3000.
 #   • PostgreSQL publishes NO port. Only the API reaches it, on the bridge net.
 #   • All secrets come from .env; nothing is inlined here. The API refuses to
 #     boot with dev-looking values (see assertProductionConfig in server.js),
@@ -63,7 +65,7 @@ services:
       REFERRAL_DISCOUNT:   ${REFERRAL_DISCOUNT:-0.2}
       LOG_LEVEL:           info
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:4000:3000"
     volumes:
       - uploads:/app/uploads
     healthcheck:
@@ -90,7 +92,7 @@ services:
       API_URL: http://api:3000
       NEXT_PUBLIC_SITE_URL: https://sawacars.com
     ports:
-      - "127.0.0.1:3002:3002"
+      - "127.0.0.1:4002:3002"
 
   admin:
     build:
@@ -104,7 +106,7 @@ services:
       # /api/backend proxy, which attaches the JWT from an httpOnly cookie.
       API_URL: http://api:3000
     ports:
-      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:4001:3001"
 
 volumes:
   postgres_data:
