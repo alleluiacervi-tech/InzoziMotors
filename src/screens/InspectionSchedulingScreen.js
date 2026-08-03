@@ -46,12 +46,17 @@ const getDates = () => {
     d.setDate(today.getDate() + i);
     const dow = d.getDay();
     const available = dow !== 0; // No Sundays
+    const pad = (n) => String(n).padStart(2, '0');
     dates.push({
       label: days[dow],
       date: d.getDate(),
       month: months[d.getMonth()],
       available,
-      key: `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`,
+      // Zero-padded ISO. The server parses this as a real date — the old
+      // unpadded `2026-8-5` and the `"Aug 12"` string that used to be sent
+      // instead were neither sortable nor comparable, which is how the
+      // centre capacity check silently stopped working.
+      key: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
     });
   }
   return dates;
@@ -88,7 +93,9 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
     if (submissionId) {
       scheduleInspection(submissionId, {
         center: center.name,
-        date: `${date.month} ${date.date}`,
+        // ISO, not "Aug 12" — the server stores the real date and derives the
+        // display string, so a booking can never be ambiguous about its year.
+        date: date.key,
         time: selectedTime,
       });
     }

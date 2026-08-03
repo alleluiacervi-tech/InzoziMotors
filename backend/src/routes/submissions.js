@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin, requireVerified } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
+const { parseIsoDate, isNotInPast, toTimestamp, toDisplayDate } = require('../lib/dates');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
@@ -104,7 +105,12 @@ const SUBMISSION_STATUSES = ['under_review', 'approved', 'scheduled', 'inspectin
 
 // Capacity check against inspection_centers (free-text centers pass through).
 // Returns an error string when the center's daily capacity is exhausted.
-async function centerCapacityError(center, date) {
+//
+// Counts on scheduled_on (DATE), not the old scheduled_date text column. That
+// column held "2026-08-12" from the admin dashboard and "Aug 12" from the app,
+// compared as strings — so two bookings for the same day never matched each
+// other and daily_capacity did not hold at all. See migrations/0002.
+async function centerCapacityError(center, isoDate) {
   const centerRes = await pool.query(
     'SELECT id, daily_capacity FROM inspection_centers WHERE active = TRUE AND name ILIKE $1',
     [center]
@@ -113,13 +119,31 @@ async function centerCapacityError(center, date) {
   const cap = centerRes.rows[0].daily_capacity;
   const cntRes = await pool.query(
     `SELECT COUNT(*) FROM inspections
-     WHERE center ILIKE $1 AND scheduled_date = $2 AND status IN ('scheduled', 'in_progress')`,
-    [center, date]
+     WHERE lower(center) = lower($1) AND scheduled_on = $2::date
+       AND status IN ('scheduled', 'in_progress')`,
+    [center, isoDate]
   );
   if (Number(cntRes.rows[0].count) >= cap) {
-    return `${center} is fully booked on ${date} — choose another day or center`;
+    return `${center} is fully booked on ${toDisplayDate(isoDate)} — choose another day or center`;
   }
   return null;
+}
+
+// One validation path for both scheduling routes. Returns { isoDate, display,
+// at } or an { error } the caller turns into a 400.
+function readSlot({ scheduled_date, scheduled_time }) {
+  const isoDate = parseIsoDate(scheduled_date);
+  if (!isoDate) {
+    return { error: 'scheduled_date must be an ISO date, for example 2026-08-12' };
+  }
+  if (!isNotInPast(isoDate)) {
+    return { error: 'That date has already passed — choose an upcoming day' };
+  }
+  const at = toTimestamp(isoDate, scheduled_time);
+  if (!at) {
+    return { error: 'scheduled_time must look like "10:00 AM"' };
+  }
+  return { isoDate, display: toDisplayDate(isoDate), at };
 }
 
 // PATCH /submissions/:id — admin updates status (and optionally schedules inspection)
@@ -131,9 +155,14 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   if (status === 'scheduled' && (!center || !scheduled_date || !scheduled_time)) {
     return res.status(400).json({ error: 'Scheduling requires center, scheduled_date, and scheduled_time' });
   }
+  let slot = null;
+  if (status === 'scheduled') {
+    slot = readSlot({ scheduled_date, scheduled_time });
+    if (slot.error) return res.status(400).json({ error: slot.error });
+  }
   try {
     if (status === 'scheduled') {
-      const capErr = await centerCapacityError(center, scheduled_date);
+      const capErr = await centerCapacityError(center, slot.isoDate);
       if (capErr) return res.status(409).json({ error: capErr });
     }
     const { rows } = await pool.query(
@@ -147,27 +176,26 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Submission not found' });
     const sub = rows[0];
 
-    // Create inspection record when scheduling
+    // Create inspection record when scheduling. scheduled_on is what the
+    // capacity check and every ordering read; scheduled_date is kept as the
+    // display string the app still renders.
     if (status === 'scheduled' && center) {
-      const scheduledAt = scheduled_date && scheduled_time
-        ? new Date(`${scheduled_date} ${scheduled_time}`)
-        : null;
-
       await pool.query(
         `INSERT INTO inspections
-           (submission_id, car_id, center, scheduled_date, scheduled_time, scheduled_at, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'scheduled')
+           (submission_id, car_id, center, scheduled_on, scheduled_date, scheduled_time, scheduled_at, status)
+         VALUES ($1, $2, $3, $4::date, $5, $6, $7, 'scheduled')
          ON CONFLICT (submission_id) DO UPDATE
-           SET center = EXCLUDED.center, scheduled_date = EXCLUDED.scheduled_date,
+           SET center = EXCLUDED.center, scheduled_on = EXCLUDED.scheduled_on,
+               scheduled_date = EXCLUDED.scheduled_date,
                scheduled_time = EXCLUDED.scheduled_time, scheduled_at = EXCLUDED.scheduled_at,
                status = 'scheduled'`,
-        [sub.id, sub.car_id, center, scheduled_date, scheduled_time, scheduledAt]
+        [sub.id, sub.car_id, center, slot.isoDate, slot.display, scheduled_time, slot.at]
       );
     }
 
     // Notify seller
     const messages = {
-      scheduled: `Your inspection is booked at ${center || 'our center'} on ${scheduled_date || 'a date TBC'} at ${scheduled_time || ''}.`,
+      scheduled: `Your inspection is booked at ${center || 'our center'} on ${slot?.display || 'a date TBC'} at ${scheduled_time || ''}.`,
       rejected: `Your submission was not accepted. Reason: ${admin_notes || 'Contact us for details.'}`,
       live: 'Your car is now live on the marketplace!',
     };
@@ -195,41 +223,43 @@ router.patch('/:id/schedule', requireAuth, requireUuid('id'), async (req, res) =
   if (!center || !scheduled_date || !scheduled_time) {
     return res.status(400).json({ error: 'center, scheduled_date, and scheduled_time are required' });
   }
+  const slot = readSlot({ scheduled_date, scheduled_time });
+  if (slot.error) return res.status(400).json({ error: slot.error });
+
   try {
-    const capErr = await centerCapacityError(center, scheduled_date);
+    const capErr = await centerCapacityError(center, slot.isoDate);
     if (capErr) return res.status(409).json({ error: capErr });
 
     const { rows } = await pool.query(
       `UPDATE submissions
        SET status = 'scheduled',
-           inspection_center = $1, inspection_date = $2, inspection_time = $3
-       WHERE id = $4 AND seller_id = $5 AND status IN ('under_review', 'approved', 'scheduled')
+           inspection_center = $1, inspection_on = $2::date,
+           inspection_date = $3, inspection_time = $4
+       WHERE id = $5 AND seller_id = $6 AND status IN ('under_review', 'approved', 'scheduled')
        RETURNING *`,
-      [center, scheduled_date, scheduled_time, req.params.id, req.user.id]
+      [center, slot.isoDate, slot.display, scheduled_time, req.params.id, req.user.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Submission not found or not schedulable' });
     const sub = rows[0];
 
-    const parsed = new Date(`${scheduled_date} ${scheduled_time}`);
-    const scheduledAt = isNaN(parsed.getTime()) ? null : parsed;
-
     // Rescheduling updates the existing inspection instead of duplicating it
     await pool.query(
       `INSERT INTO inspections
-         (submission_id, car_id, center, scheduled_date, scheduled_time, scheduled_at, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'scheduled')
+         (submission_id, car_id, center, scheduled_on, scheduled_date, scheduled_time, scheduled_at, status)
+       VALUES ($1, $2, $3, $4::date, $5, $6, $7, 'scheduled')
        ON CONFLICT (submission_id) DO UPDATE
-         SET center = EXCLUDED.center, scheduled_date = EXCLUDED.scheduled_date,
+         SET center = EXCLUDED.center, scheduled_on = EXCLUDED.scheduled_on,
+             scheduled_date = EXCLUDED.scheduled_date,
              scheduled_time = EXCLUDED.scheduled_time, scheduled_at = EXCLUDED.scheduled_at,
              status = 'scheduled'`,
-      [sub.id, sub.car_id, center, scheduled_date, scheduled_time, scheduledAt]
+      [sub.id, sub.car_id, center, slot.isoDate, slot.display, scheduled_time, slot.at]
     );
 
     await notifyUser(pool, {
       user_id: req.user.id,
       type: 'listing_update',
       title: 'Inspection booked',
-      body: `Your inspection is booked at ${center} on ${scheduled_date} at ${scheduled_time}. Bring the car, your ID and any service records.`,
+      body: `Your inspection is booked at ${center} on ${slot.display} at ${scheduled_time}. Bring the car, your ID and any service records.`,
       meta: JSON.stringify({ submissionId: sub.id }),
     });
 

@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
+const { parseIsoDate, isNotInPast, toDisplayDate } = require('../lib/dates');
 const { recomputeTrustScore } = require('../lib/trust');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
@@ -16,6 +17,19 @@ router.post('/', requireAuth, async (req, res) => {
   }
   if (contact_phone && !/^\+?[0-9 ]{9,16}$/.test(contact_phone)) {
     return res.status(400).json({ error: 'contact_phone is not a valid phone number' });
+  }
+  // The slot is optional here — Sawa usually arranges it afterwards. When one
+  // IS supplied it must be a real ISO date, so handover_on can be relied on for
+  // ordering and day-based queries. handover_date stays as the display string.
+  let slotDate = null;
+  if (handover_date) {
+    slotDate = parseIsoDate(handover_date);
+    if (!slotDate) {
+      return res.status(400).json({ error: 'handover_date must be an ISO date, for example 2026-08-12' });
+    }
+    if (!isNotInPast(slotDate)) {
+      return res.status(400).json({ error: 'That date has already passed — choose an upcoming day' });
+    }
   }
   try {
     const result = await withTransaction(async (client) => {
@@ -34,12 +48,12 @@ router.post('/', requireAuth, async (req, res) => {
       const { rows } = await client.query(
         `INSERT INTO handovers
            (booking_id, car_id, buyer_id, seller_id, center,
-            handover_date, handover_time, contact_phone, agreed_price, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending')
+            handover_on, handover_date, handover_time, contact_phone, agreed_price, status)
+         VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8, $9, $10, 'pending')
          RETURNING *`,
         [booking_id, car_id, req.user.id, car.seller_id,
-         center || null, handover_date || null, handover_time || null,
-         contact_phone || null, car.price]
+         center || null, slotDate, slotDate ? toDisplayDate(slotDate) : null,
+         handover_time || null, contact_phone || null, car.price]
       );
 
       await client.query("UPDATE cars SET status = 'reserved' WHERE id = $1", [car_id]);
@@ -48,8 +62,8 @@ router.post('/', requireAuth, async (req, res) => {
         user_id: req.user.id,
         type: 'handover',
         title: 'Request received',
-        body: center && handover_date
-          ? `Your slot for the ${car.title} is confirmed at ${center} on ${handover_date} at ${handover_time}. The car is now reserved for you.`
+        body: center && slotDate
+          ? `Your slot for the ${car.title} is confirmed at ${center} on ${toDisplayDate(slotDate)} at ${handover_time}. The car is now reserved for you.`
           : `Your request for the ${car.title} is in — the car is reserved for you. We'll contact you shortly to arrange the handover.`,
         meta: JSON.stringify({ bookingId: booking_id, carId: car_id }),
       });
@@ -57,8 +71,8 @@ router.post('/', requireAuth, async (req, res) => {
         user_id: car.seller_id,
         type: 'handover',
         title: 'A buyer wants your car',
-        body: center && handover_date
-          ? `A buyer has booked a handover for your ${car.title} at ${center} on ${handover_date} at ${handover_time}. Please attend.`
+        body: center && slotDate
+          ? `A buyer has booked a handover for your ${car.title} at ${center} on ${toDisplayDate(slotDate)} at ${handover_time}. Please attend.`
           : `A buyer wants your ${car.title}. Sawa will coordinate the handover with both of you shortly.`,
         meta: JSON.stringify({ bookingId: booking_id, carId: car_id }),
       });
@@ -143,6 +157,15 @@ router.get('/', requireAdmin, async (req, res) => {
 // Optionally sets/updates the agreed slot at the same time.
 router.patch('/:id/confirm', requireAdmin, requireUuid('id'), async (req, res) => {
   const { center, handover_date, handover_time } = req.body || {};
+  // Admin can set or correct the slot here; same ISO rule as booking, so
+  // handover_on stays trustworthy whichever route wrote it.
+  let slotDate = null;
+  if (handover_date) {
+    slotDate = parseIsoDate(handover_date);
+    if (!slotDate) {
+      return res.status(400).json({ error: 'handover_date must be an ISO date, for example 2026-08-12' });
+    }
+  }
   try {
     const result = await withTransaction(async (client) => {
       const hRes = await client.query(
@@ -158,11 +181,12 @@ router.patch('/:id/confirm', requireAdmin, requireUuid('id'), async (req, res) =
         `UPDATE handovers
          SET status = 'confirmed',
              center = COALESCE($1, center),
-             handover_date = COALESCE($2, handover_date),
-             handover_time = COALESCE($3, handover_time)
-         WHERE id = $4
+             handover_on = COALESCE($2::date, handover_on),
+             handover_date = COALESCE($3, handover_date),
+             handover_time = COALESCE($4, handover_time)
+         WHERE id = $5
          RETURNING *`,
-        [center || null, handover_date || null, handover_time || null, h.id]
+        [center || null, slotDate, slotDate ? toDisplayDate(slotDate) : null, handover_time || null, h.id]
       );
       const updated = rows[0];
 
