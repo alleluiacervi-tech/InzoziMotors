@@ -1,0 +1,96 @@
+# Sawa — Caddy site blocks for the shared VPS (152.239.122.192).
+#
+# This host's Caddy also serves another project; its blocks live in the main
+# /etc/caddy/Caddyfile and are NOT touched. Install this file as:
+#
+#     /etc/caddy/sites/sawacars.Caddyfile
+#
+# and add ONE line near the top of /etc/caddy/Caddyfile:
+#
+#     import sites/*
+#
+# Then, always in this order (a bad reload takes every site on the box down):
+#     caddy validate --config /etc/caddy/Caddyfile
+#     systemctl reload caddy
+#
+# TLS is automatic (ACME) — no certbot. Certificates are only issued once DNS
+# for these names resolves to this server, so point the A records first; Caddy
+# retries until issuance succeeds.
+#
+# Backends (host side — containers bind 127.0.0.1, ports 4000-4002 because the
+# other project owns 3000):
+#     api.sawacars.com    → 127.0.0.1:4000
+#     admin.sawacars.com  → 127.0.0.1:4001
+#     sawacars.com        → 127.0.0.1:4002
+
+www.sawacars.com {
+	# One canonical origin: metadataBase, the sitemap and every OG card are
+	# built from https://sawacars.com — a second live hostname splits ranking.
+	redir https://sawacars.com{uri} permanent
+}
+
+sawacars.com {
+	encode zstd gzip
+
+	# Only Caddy's forwarding headers may reach the app, never the client's.
+	request_header -X-Forwarded-For
+	request_header -X-Real-IP
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:4002 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
+
+api.sawacars.com {
+	encode zstd gzip
+
+	# The API's express-rate-limit trusts exactly one proxy hop. Caddy appends
+	# the true client IP to the RIGHT of X-Forwarded-For, and stripping the
+	# inbound header makes that the only entry — so a spoofed XFF can never
+	# become the address a rate-limit bucket is keyed on.
+	request_header -X-Forwarded-For
+	request_header -X-Real-IP
+
+	# 36-angle photo batches; multer's own limits (10 MB/file × 40) are the
+	# real ceiling — this just has to sit above them.
+	request_body {
+		max_size 100MB
+	}
+
+	# Websocket upgrade for Socket.io chat is automatic in reverse_proxy.
+	reverse_proxy 127.0.0.1:4000 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
+
+admin.sawacars.com {
+	encode zstd gzip
+
+	request_header -X-Forwarded-For
+	request_header -X-Real-IP
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Operations tool — stays out of every index regardless of app config.
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	# KYC documents and photo uploads pass through the dashboard's own proxy.
+	request_body {
+		max_size 100MB
+	}
+
+	reverse_proxy 127.0.0.1:4001 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	# Optional hardening once the team has fixed egress IPs:
+	# @outside not remote_ip 203.0.113.7
+	# respond @outside 403
+}

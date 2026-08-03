@@ -78,7 +78,7 @@ $COMPOSE up -d api web admin || die "restart failed — run ops/rollback.sh"
 # ─── Confirm it actually works ──────────────────────────────────────────────
 log "waiting for readiness"
 for i in $(seq 1 30); do
-  if curl -fsS -m 3 http://127.0.0.1:3000/health/ready >/dev/null 2>&1; then
+  if curl -fsS -m 3 http://127.0.0.1:4000/health/ready >/dev/null 2>&1; then
     log "healthy — deployed $(git rev-parse --short HEAD) ($(git log -1 --format=%s))"
     exit 0
   fi

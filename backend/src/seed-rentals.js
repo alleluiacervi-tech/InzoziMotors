@@ -3,6 +3,15 @@
 require('dotenv').config();
 const pool = require('./db');
 
+// DEMO DATA — never in production. These are fictional cars with fabricated
+// inspection scores, and a demo seller with a published password. On the live
+// marketplace that is the exact fraud this product exists to eliminate.
+// SEED_DEMO_DATA=true is the explicit escape hatch for a staging host.
+if (process.env.NODE_ENV === 'production' && process.env.SEED_DEMO_DATA !== 'true') {
+  console.log('demo seed skipped: NODE_ENV=production (set SEED_DEMO_DATA=true on a staging host to override)');
+  process.exit(0);
+}
+
 const FLEET = [
   [
     "Toyota RAV4 Hybrid",
