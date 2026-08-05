@@ -34,11 +34,11 @@ function getProjectId() {
 // denied, no EAS project). Never throws — push is a nice-to-have.
 export async function registerForPush() {
   try {
-    if (!Constants.isDevice && Platform.OS !== 'web') {
-      // Simulators cannot receive push; skip quietly rather than erroring.
-      return null;
-    }
-
+    // No device check here on purpose. `Constants.isDevice` was removed from
+    // expo-constants, so the old guard read `undefined` → falsy → returned
+    // null on EVERY device: push never registered anywhere. Simulators are
+    // instead handled by the catch below — getExpoPushTokenAsync throws there,
+    // which is exactly the quiet skip the guard was trying to be.
     const existing = await Notifications.getPermissionsAsync();
     let status = existing.status;
     if (status !== 'granted') {

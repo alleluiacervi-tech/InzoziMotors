@@ -62,6 +62,12 @@ export default ({ config }) => ({
     },
     package: 'com.sawacars.app',
     permissions: ['CAMERA', 'READ_MEDIA_IMAGES'],
+    // expo-image-picker injects RECORD_AUDIO for video capture. Every picker
+    // call in src/utils/media.js is mediaTypes: ['images'] — the app never
+    // records audio, and a microphone permission with no visible microphone
+    // feature is exactly what Play's policy review flags. Blocking it here
+    // strips it from the merged manifest.
+    blockedPermissions: ['android.permission.RECORD_AUDIO'],
     // App Links. `autoVerify` is what makes Android open these in the app
     // rather than offering a chooser, and it depends on
     // web/public/.well-known/assetlinks.json carrying the real Play App
