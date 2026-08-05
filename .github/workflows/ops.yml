@@ -1,0 +1,104 @@
+name: Ops
+
+# ─────────────────────────────────────────────────────────────────────────────
+# A hand-operated lever for the production stack, reachable when nobody's
+# laptop can be. SSH access from a workstation can vanish exactly when it is
+# needed — a banned IP, a lost key, a laptop in another timezone — and the
+# answer to that must not be "wait".
+#
+# Every action here is a fixed, named command. There is deliberately no
+# free-text command input: a workflow that runs arbitrary strings on the
+# production host as root is a remote shell with an audit log, and anyone who
+# can open a pull request eventually finds it.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'What to do on the production host'
+        required: true
+        type: choice
+        options:
+          - status          # what is running, and is the database answering
+          - start-stack     # bring the production stack up (db included)
+          - restart-api     # restart just the API
+          - rollback        # ops/rollback.sh — back to the previous revision
+
+concurrency:
+  group: deploy-production   # never race a deploy
+  cancel-in-progress: false
+
+jobs:
+  ops:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://sawacars.com
+
+    steps:
+      - name: Load the deploy key
+        env:
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "${{ secrets.VPS_HOST_KEY }}" ]; then
+            printf '%s\n' "${{ secrets.VPS_HOST_KEY }}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Run
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+              "$USER@$HOST" \
+              "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") bash -s" <<'REMOTE'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-}"
+          if [ -z "$APP_DIR" ]; then
+            for c in /srv/sawa /opt/sawa /root/sawa /var/www/sawa; do
+              [ -x "$c/ops/deploy.sh" ] && APP_DIR="$c" && break
+            done
+          fi
+          [ -n "$APP_DIR" ] || { echo "could not locate the checkout"; exit 1; }
+          cd "$APP_DIR"
+
+          # Production runs from docker-compose.prod.yml. The default compose
+          # file is the development one, which publishes the database port and
+          # therefore collides with the running stack.
+          COMPOSE="docker compose -f docker-compose.prod.yml"
+
+          case "$ACTION" in
+            status)
+              docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+              echo
+              echo "--- revision ---"; git log -1 --format='%h %s'
+              echo "--- api readiness ---"
+              curl -fsS -m 5 http://127.0.0.1:4000/health/ready && echo || echo "NOT READY"
+              ;;
+            start-stack)
+              $COMPOSE up -d
+              sleep 5
+              docker ps --format 'table {{.Names}}\t{{.Status}}'
+              ;;
+            restart-api)
+              $COMPOSE restart api
+              ;;
+            rollback)
+              ops/rollback.sh
+              ;;
+            *)
+              echo "unknown action: $ACTION"; exit 1 ;;
+          esac
+          REMOTE
