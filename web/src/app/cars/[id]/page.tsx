@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ApiError, cars as carsApi } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
 import { BUYING_STEPS, CONTACT, SITE } from '@/lib/site'
+import { breadcrumbNode, graph, offerAvailability, organizationNode, ORG_ID } from '@/lib/seo'
 import {
   CAR_STATUS_LABEL,
   FINANCE_TERMS,
@@ -61,7 +62,11 @@ async function loadCar(id: string): Promise<Car | null> {
   try {
     return await withTimeout(carsApi.get(id))
   } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return null
+    // 404 (no such car) and 400 (not even a valid id) both mean "nothing here"
+    // — they must reach notFound(), not the error boundary, or the response is
+    // a 500. The page body and generateMetadata run in parallel, so this has to
+    // agree with the check up there; a mismatch means one of them wins a race.
+    if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null
     throw err
   }
 }
@@ -72,11 +77,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let car: Car | null = null
   try {
     car = await carsApi.get(id)
-  } catch {
+  } catch (err) {
+    // A car that genuinely does not exist has to answer 404, not 200.
+    // loading.tsx makes this route stream, so by the time the page body runs,
+    // the response headers are already gone and a notFound() there renders the
+    // right page under a 200 — a soft 404. Metadata resolves BEFORE the first
+    // byte is flushed, so this is the only place the status can still be set.
+    //
+    // Only a real 404 counts. A timeout or a 5xx during an API blip must not
+    // start telling Google that live inventory has been deleted.
+    // 400 too: the API rejects a non-UUID path param, and "/cars/garbage" is
+    // not a server fault — answering 5xx there teaches crawlers the whole site
+    // is unhealthy and they slow down on every URL.
+    if (err instanceof ApiError && (err.status === 404 || err.status === 400)) notFound()
     car = null
   }
   if (!car) {
-    return { title: 'Car not found', robots: { index: false, follow: true } }
+    return { title: 'Car unavailable', robots: { index: false, follow: true } }
   }
 
   const facts = [String(car.year), formatKm(car.mileage), car.fuel_type, car.transmission]
@@ -563,16 +580,9 @@ function SellerCard({ car }: { car: Car }) {
 // guessed — a rich result built on invented fields is a penalty waiting to land.
 
 function JsonLd({ car, images }: { car: Car; images: string[] }) {
-  const availability =
-    car.status === 'live'
-      ? 'https://schema.org/InStock'
-      : car.status === 'reserved'
-      ? 'https://schema.org/LimitedAvailability'
-      : 'https://schema.org/SoldOut'
-
   const data: Record<string, unknown> = {
-    '@context': 'https://schema.org',
     '@type': 'Car',
+    '@id': `${SITE.url}/cars/${car.id}#vehicle`,
     name: car.title,
     brand: { '@type': 'Brand', name: car.make },
     model: car.model,
@@ -582,10 +592,12 @@ function JsonLd({ car, images }: { car: Car; images: string[] }) {
       '@type': 'Offer',
       price: car.price,
       priceCurrency: 'USD',
-      availability,
+      // A sold car keeps its URL — it has inbound links and search equity —
+      // but must stop advertising itself as available.
+      availability: offerAvailability(car.status),
       itemCondition: 'https://schema.org/UsedCondition',
       url: `${SITE.url}/cars/${car.id}`,
-      seller: { '@type': 'Organization', name: SITE.name },
+      seller: { '@id': ORG_ID },
     },
   }
 
@@ -603,12 +615,22 @@ function JsonLd({ car, images }: { car: Car; images: string[] }) {
         : 'https://schema.org/LeftHandDriving'
   }
 
+  // Breadcrumbs replace the raw UUID in the search result with a readable
+  // path, and tie the listing back to the catalogue it belongs to.
+  const trail = breadcrumbNode([
+    { name: 'Home', path: '/' },
+    { name: 'Cars for sale', path: '/cars' },
+    { name: car.title, path: `/cars/${car.id}` },
+  ])
+
   return (
     <script
       type="application/ld+json"
       // JSON.stringify does not escape `<`, so a description containing "</script>"
       // would break out of the tag. This is the standard guard.
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }}
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(graph(data, trail, organizationNode())).replace(/</g, '\\u003c'),
+      }}
     />
   )
 }

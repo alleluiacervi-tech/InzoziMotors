@@ -236,3 +236,39 @@ export function browseHeading(filters: Filters): string {
   if (onlyKeyword) return `Cars matching “${filters.q}” in Kigali`
   return `${describeFilters(filters)} for sale in Kigali`
 }
+
+// ─── Indexing policy for faceted browse ──────────────────────────────────────
+// Eleven filter fields combine into effectively unlimited URLs, and every one
+// of them currently told Google "index me, I am canonical". That is textbook
+// faceted-navigation index bloat: crawl budget burns on near-duplicates while
+// the actual car pages wait.
+//
+// The rule below is deliberately conservative, and it never points a canonical
+// at a DIFFERENT page — a filtered view is not a duplicate of the unfiltered
+// one, it is a narrower page, so the honest signal is "don't index me" rather
+// than "I am really that other URL". (Cross-canonical + noindex is also the one
+// combination Google warns can leak the noindex onto the target.)
+//
+// Indexable: the bare catalogue, and a single facet that matches how people
+// actually search — "Toyota", "SUV", "diesel". Everything else — keyword
+// searches, price and year ranges, facet stacks, non-default sorts, page 2+ —
+// is crawlable and followable, but not indexed.
+
+const INDEXABLE_FACETS: readonly FilterField[] = ['make', 'body_type', 'fuel_type']
+
+export function browseIndexPolicy(
+  filters: Filters,
+  sort: SortValue,
+  offset: number
+): { canonical: string; index: boolean } {
+  const active = FILTER_FIELDS.filter((field) => !!filters[field])
+  const canonical = buildBrowseHref(filters, { sort, offset })
+
+  const indexable =
+    offset === 0 &&
+    sort === DEFAULT_SORT &&
+    (active.length === 0 ||
+      (active.length === 1 && INDEXABLE_FACETS.includes(active[0])))
+
+  return { canonical, index: indexable }
+}

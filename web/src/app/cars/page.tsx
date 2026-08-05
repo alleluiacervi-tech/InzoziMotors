@@ -4,6 +4,8 @@ import { cars as carsApi } from '@/lib/api'
 import type { Car } from '@/lib/types'
 import { Button, Container, EmptyState, Icon } from '@/components/ui'
 import { CarCard, CarCardSkeleton } from '@/components/marketplace/CarCard'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbNode, graph, itemListNode } from '@/lib/seo'
 import { ActiveFilters } from '@/components/marketplace/ActiveFilters'
 import { FilterPanel } from '@/components/marketplace/FilterPanel'
 import { FilterSheet } from '@/components/marketplace/FilterSheet'
@@ -20,6 +22,7 @@ import {
   readSort,
   toCarQuery,
   buildBrowseHref,
+  browseIndexPolicy,
   type SearchParams,
   type Filters,
   type SortValue,
@@ -43,19 +46,22 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const offset = readOffset(params)
   const description = describeFilters(filters)
 
+  // Which filtered views earn a place in the index — see browseIndexPolicy.
+  const { canonical, index } = browseIndexPolicy(filters, sort, offset)
+
   return {
     title: `${browseHeading(filters)}`,
     description:
       `${description} listed by Sawa in Kigali. Every car is physically ` +
       'inspected on our 150-point check, photographed by our team and covered by ' +
       'the 7-day drive-it guarantee. Buyers pay no fees.',
-    alternates: { canonical: buildBrowseHref(filters, { sort }) },
-    // Page 2 onwards is the same inventory in a different slice — one canonical
-    // entry point is enough for a catalogue this size.
-    robots: offset > 0 ? { index: false, follow: true } : undefined,
+    // Always self-canonical: a filtered view is a narrower page, not a
+    // duplicate of the unfiltered one.
+    alternates: { canonical },
+    robots: index ? undefined : { index: false, follow: true },
     openGraph: {
       title: browseHeading(filters),
-      url: buildBrowseHref(filters, { sort }),
+      url: canonical,
       images: ['/opengraph-image'],
     },
   }
@@ -143,6 +149,17 @@ async function BrowseResults({
           />
         ) : results.length ? (
           <>
+            {/* The catalogue's contents, in the order shown. Gives Google the
+                list structure it needs to understand this as a product listing
+                page rather than a wall of links. */}
+            <JsonLd
+              data={graph(
+                itemListNode(
+                  results.map((car) => ({ path: `/cars/${car.id}`, name: car.title })),
+                  browseHeading(filters)
+                )
+              )}
+            />
             <ul className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, index) => (
                 <li key={car.id}>
@@ -207,6 +224,17 @@ export default async function CarsPage({ searchParams }: PageProps) {
 
   return (
     <>
+      {/* Breadcrumbs render outside the data boundary too — a crawler that
+          times out on the grid still learns where this page sits. */}
+      <JsonLd
+        data={graph(
+          breadcrumbNode([
+            { name: 'Home', path: '/' },
+            { name: 'Cars for sale', path: '/cars' },
+          ])
+        )}
+      />
+
       {/* Outside the data boundary — the headline never waits on the API. */}
       <PageIntro
         eyebrow="The marketplace"

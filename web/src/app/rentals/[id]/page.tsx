@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ApiError, rentals as rentalsApi } from '@/lib/api'
 import { CENTERS, CONTACT, SITE } from '@/lib/site'
+import { breadcrumbNode, graph, organizationNode, ORG_ID } from '@/lib/seo'
 import { formatKm, formatRWF, formatUSD, getCertTier } from '@/lib/business'
 import type { RentalCar } from '@/lib/types'
 import { Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
@@ -29,7 +30,9 @@ async function loadCar(id: string): Promise<RentalCar | null> {
   try {
     return await rentalsApi.get(id)
   } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return null
+    // Must agree with generateMetadata above — both run, and a mismatch means
+    // one path 404s while the other 500s depending on which finishes first.
+    if (err instanceof ApiError && (err.status === 404 || err.status === 400)) return null
     throw err
   }
 }
@@ -40,10 +43,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let car: RentalCar | null = null
   try {
     car = await rentalsApi.get(id)
-  } catch {
+  } catch (err) {
+    // Same reason as the car page: this route streams, so 404 can only be set
+    // here, before the first byte. A transient failure must not 404 a real car.
+    if (err instanceof ApiError && (err.status === 404 || err.status === 400)) notFound()
     car = null
   }
-  if (!car) return { title: 'Rental not found', robots: { index: false, follow: true } }
+  if (!car) return { title: 'Rental unavailable', robots: { index: false, follow: true } }
 
   const description =
     `Rent the ${car.title} in Kigali from ${formatUSD(car.daily_rate)} a day. ` +
@@ -364,18 +370,20 @@ export default async function RentalDetailPage({ params }: PageProps) {
 // Real values only — the daily rate, in dollars, for the car we actually hold.
 function JsonLd({ car, images }: { car: RentalCar; images: string[] }) {
   const data: Record<string, unknown> = {
-    '@context': 'https://schema.org',
     '@type': 'Product',
+    '@id': `${SITE.url}/rentals/${car.id}#rental`,
     name: car.title,
     category: 'Car rental',
     offers: {
       '@type': 'Offer',
       price: car.daily_rate,
       priceCurrency: 'USD',
+      // Priced per day — saying so stops Google reading $80 as the car's value.
+      unitCode: 'DAY',
       availability:
         car.status === 'active' ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       url: `${SITE.url}/rentals/${car.id}`,
-      seller: { '@type': 'Organization', name: SITE.name },
+      seller: { '@id': ORG_ID },
     },
   }
 
@@ -383,10 +391,18 @@ function JsonLd({ car, images }: { car: RentalCar; images: string[] }) {
   if (car.make) data.brand = { '@type': 'Brand', name: car.make }
   if (car.model) data.model = car.model
 
+  const trail = breadcrumbNode([
+    { name: 'Home', path: '/' },
+    { name: 'Car rentals', path: '/rentals' },
+    { name: car.title, path: `/rentals/${car.id}` },
+  ])
+
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }}
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(graph(data, trail, organizationNode())).replace(/</g, '\\u003c'),
+      }}
     />
   )
 }
