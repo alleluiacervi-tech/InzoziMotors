@@ -77,8 +77,16 @@ log "rollback pointer written to $STATE_DIR/rollback"
 log "checking out $TARGET"
 git checkout --quiet "$NEXT" || die "checkout failed"
 
-log "building"
-$COMPOSE build api web admin || die "build failed — still running the old containers"
+# SKIP_BUILD=1 means the images were built elsewhere (CI builds them on the
+# runner and docker-loads them here first). Building two Next.js apps on the
+# box that is also serving production has twice wedged a deploy — the VPS
+# should never compile anything again.
+if [ "${SKIP_BUILD:-}" = "1" ]; then
+  log "using pre-built images (SKIP_BUILD=1)"
+else
+  log "building"
+  $COMPOSE build api web admin || die "build failed — still running the old containers"
+fi
 
 log "applying migrations"
 $COMPOSE run --rm api node src/migrate.js || die "migrations failed — old containers still serving"

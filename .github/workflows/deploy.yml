@@ -1,24 +1,22 @@
 name: Deploy
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Continuous delivery to the VPS.
+# Continuous delivery to the VPS — with the builds where they belong.
 #
-# Deploying from a laptop has two problems this removes. The obvious one is
-# that it needs someone's laptop. The quieter one is that a laptop's IP gets
-# banned by the server's own brute-force protection after a few failed logins,
-# and then the only person who can deploy is locked out — which is exactly the
-# moment you need to. A runner authenticates once with the right key and never
-# guesses.
+# The first version of this workflow ran ops/deploy.sh and let the SERVER
+# build the Docker images. Twice in one evening that wedged: two Next.js
+# compiles on a small box that is simultaneously serving production ground
+# past 20–40 minutes with no way to see inside. So the runner now builds the
+# exact images (same compose file, same build args), ships them over SSH with
+# docker save/load, and the server's only jobs are: load, migrate, restart,
+# health-check. A deploy costs the VPS seconds of CPU, not half an hour.
 #
-# The deploy itself is NOT reimplemented here. ops/deploy.sh already records
-# the outgoing revision, backs the database up when migrations are present,
-# writes a rollback pointer and health-checks the result. This workflow's job
-# is only to reach the server and run it — one implementation of "deploy",
-# usable by hand or by CI.
+# ops/deploy.sh still owns the deploy semantics — dirty-tree refusal, rollback
+# pointer, DB backup when migrations are present, readiness poll — invoked
+# with SKIP_BUILD=1. One implementation of "deploy", by hand or by CI.
 #
-# Runs only after CI is green on main (see the `workflow_run` trigger), or on
-# demand. `environment: production` means you can require an approval later
-# without touching this file.
+# Runs after CI is green on main, or on demand. environment: production means
+# an approval gate can be added in repo settings without touching this file.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -29,23 +27,19 @@ on:
   workflow_dispatch:
     inputs:
       revision:
-        description: 'Tag, branch or SHA to deploy (default: origin/main)'
+        description: 'Tag, branch or SHA to deploy (default: the triggering commit)'
         required: false
-        default: 'origin/main'
+        default: ''
 
-# Two deploys at once would race over the same working tree and rollback
-# pointer. Queue them instead, and never cancel one midway — a half-applied
-# deploy is worse than a late one.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy to production
+    name: Build on runner, ship to production
     runs-on: ubuntu-latest
-    # A red CI must never reach production. workflow_run fires on completion
-    # regardless of outcome, so the conclusion is checked explicitly.
+    timeout-minutes: 30
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
@@ -55,8 +49,6 @@ jobs:
 
     steps:
       - name: Check required secrets are present
-        # Failing here with a readable message beats an SSH timeout that looks
-        # like a network fault.
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
@@ -71,6 +63,36 @@ jobs:
             exit 1
           fi
 
+      # Deploy the exact commit CI validated (workflow_run), or what was asked
+      # for (dispatch input), or the current main as a last resort. The runner
+      # BUILDS this same ref, and the server CHECKS OUT this same ref — the
+      # two must never drift apart.
+      - name: Resolve the revision
+        id: rev
+        env:
+          INPUT_REV: ${{ inputs.revision }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          REV="${INPUT_REV:-${HEAD_SHA:-${GITHUB_SHA}}}"
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          echo "Deploying revision: $REV"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.rev.outputs.rev }}
+
+      - name: Build the production images
+        run: |
+          set -euo pipefail
+          # Parse-only placeholders: docker-compose.prod.yml uses ${VAR:?}
+          # required-variable syntax for runtime secrets. `compose build` never
+          # uses their values, but compose interpolates the whole file before
+          # doing anything, so it needs SOMETHING to parse. These never leave
+          # the runner and never enter an image.
+          export DB_PASSWORD=parse-only JWT_SECRET=parse-only-not-a-real-secret \
+                 SEED_ADMIN_PASSWORD=parse-only
+          docker compose -f docker-compose.prod.yml build api web admin
+
       - name: Load the deploy key
         env:
           KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -79,9 +101,6 @@ jobs:
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Pin the host key so a hijacked DNS record cannot collect our key.
-          # VPS_HOST_KEY is optional: without it we trust-on-first-use, which
-          # is weaker but still refuses a CHANGED key later.
           if [ -n "${{ secrets.VPS_HOST_KEY }}" ]; then
             printf '%s\n' "${{ secrets.VPS_HOST_KEY }}" > ~/.ssh/known_hosts
           else
@@ -89,60 +108,61 @@ jobs:
           fi
           chmod 600 ~/.ssh/known_hosts
 
+      - name: Ship the images
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          echo "Saving images…"
+          docker save sawa-api:latest sawa-web:latest sawa-admin:latest | gzip -1 > /tmp/sawa-images.tgz
+          ls -lh /tmp/sawa-images.tgz
+          echo "Uploading…"
+          scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+              /tmp/sawa-images.tgz "$USER@$HOST:/tmp/sawa-images.tgz"
+          echo "Loading on the server…"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+              "$USER@$HOST" 'gunzip -c /tmp/sawa-images.tgz | docker load && rm -f /tmp/sawa-images.tgz'
+
       - name: Deploy
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
-          REVISION: ${{ inputs.revision || 'origin/main' }}
+          REVISION: ${{ steps.rev.outputs.rev }}
         run: |
           set -euo pipefail
-          # ssh joins its command arguments into ONE string that the remote
-          # shell word-splits again, so an empty positional argument simply
-          # disappears and every later argument shifts down a slot. Passing the
-          # values as environment variables — quoted with printf %q — survives
-          # that second parse intact, empty or not.
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
               "$USER@$HOST" \
               "APP_DIR=$(printf %q "$APP_DIR") REVISION=$(printf %q "$REVISION") bash -s" <<'REMOTE'
           set -euo pipefail
           APP_DIR="${APP_DIR:-}"
           REVISION="${REVISION:-origin/main}"
-
-          # Find the checkout if it was not configured. A deploy that guesses
-          # wrong must fail loudly rather than run in someone's home directory.
           if [ -z "$APP_DIR" ]; then
-            for candidate in /opt/sawa /srv/sawa /root/sawa /var/www/sawa /opt/sawacars /root/InzoziMotors; do
+            for candidate in /srv/sawa /opt/sawa /root/sawa /var/www/sawa; do
               [ -x "$candidate/ops/deploy.sh" ] && APP_DIR="$candidate" && break
             done
           fi
           [ -n "$APP_DIR" ] || { echo "::error::Could not locate the checkout — set the VPS_APP_DIR secret"; exit 1; }
-          [ -x "$APP_DIR/ops/deploy.sh" ] || { echo "::error::$APP_DIR/ops/deploy.sh is missing or not executable"; exit 1; }
-
           cd "$APP_DIR"
 
-          # ops/deploy.sh defaults COMPOSE to plain `docker compose`, which
-          # picks up docker-compose.yml — the DEVELOPMENT file. That one
-          # publishes Postgres on 5432, so a deploy against it tries to
-          # recreate the database container with a published port, collides
-          # with the running stack ("address already in use") and leaves the
-          # database down. Production is docker-compose.prod.yml, which
-          # publishes no database port at all. Naming the file explicitly is
-          # the difference between a deploy and an outage.
           [ -f docker-compose.prod.yml ] || { echo "::error::docker-compose.prod.yml not found in $APP_DIR"; exit 1; }
           export COMPOSE="docker compose -f docker-compose.prod.yml"
+          export SKIP_BUILD=1
 
-          echo "Deploying $REVISION in $APP_DIR with: $COMPOSE"
+          echo "Deploying $REVISION in $APP_DIR (pre-built images)"
           ops/deploy.sh "$REVISION"
+
+          # The save/load cycle strands the previous images as dangling layers;
+          # left alone they eat the disk one deploy at a time.
+          docker image prune -f >/dev/null || true
           REMOTE
 
       - name: Verify the public surfaces answer
-        # deploy.sh already polls readiness inside the host. This checks the
-        # same thing a visitor would: through DNS, TLS and the reverse proxy.
         run: |
           set -euo pipefail
           fail=0
-          for url in https://sawacars.com https://api.sawacars.com/health https://admin.sawacars.com; do
+          for url in https://sawacars.com https://api.sawacars.com/health/ready https://admin.sawacars.com; do
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -L "$url" || echo 000)
             case "$code" in
               200|301|302|307|308) echo "ok   $url -> $code" ;;
@@ -166,7 +186,7 @@ jobs:
               <<'REMOTE' >> "$GITHUB_STEP_SUMMARY" || true
           APP_DIR="${APP_DIR:-}"
           if [ -z "$APP_DIR" ]; then
-            for c in /opt/sawa /srv/sawa /root/sawa /var/www/sawa /opt/sawacars /root/InzoziMotors; do
+            for c in /srv/sawa /opt/sawa /root/sawa /var/www/sawa; do
               [ -d "$c/.git" ] && APP_DIR="$c" && break
             done
           fi

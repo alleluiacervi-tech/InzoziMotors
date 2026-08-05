@@ -38,6 +38,9 @@ services:
       retries: 10
 
   api:
+    # Explicit tag: CI builds this image on the runner and ships it with
+    # docker save/load, so the name must not depend on the compose project dir.
+    image: sawa-api:latest
     build: ./backend
     restart: unless-stopped
     depends_on:
@@ -77,6 +80,7 @@ services:
       retries: 3
 
   web:
+    image: sawa-web:latest
     build:
       context: ./web
       args:
@@ -99,6 +103,7 @@ services:
       - "127.0.0.1:4002:3002"
 
   admin:
+    image: sawa-admin:latest
     build:
       context: ./admin
     restart: unless-stopped

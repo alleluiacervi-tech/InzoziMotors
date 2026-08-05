@@ -24,6 +24,7 @@ on:
           - start-stack     # bring the production stack up (db included)
           - restart-api     # restart just the API
           - rollback        # ops/rollback.sh — back to the previous revision
+          - prune-builders  # clear wedged/leftover BuildKit state and cache
 
 concurrency:
   group: deploy-production   # never race a deploy
@@ -97,6 +98,14 @@ jobs:
               ;;
             rollback)
               ops/rollback.sh
+              ;;
+            prune-builders)
+              # A cancelled remote build can leave BuildKit jobs and locks
+              # behind; they sit on CPU and disk until cleared. Running
+              # containers and tagged images are untouched by either command.
+              docker builder prune -af || true
+              docker image prune -f || true
+              df -h / | tail -1
               ;;
             *)
               echo "unknown action: $ACTION"; exit 1 ;;
