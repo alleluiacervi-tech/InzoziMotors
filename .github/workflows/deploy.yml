@@ -130,10 +130,10 @@ jobs:
             return 1
           }
           echo "Uploading…"
-          try_net scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+          try_net scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               /tmp/sawa-images.tgz "$USER@$HOST:/tmp/sawa-images.tgz"
           echo "Loading on the server…"
-          try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+          try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" 'gunzip -c /tmp/sawa-images.tgz | docker load && rm -f /tmp/sawa-images.tgz'
 
       - name: Deploy
@@ -146,13 +146,13 @@ jobs:
           set -euo pipefail
           # Same patience as the ship step — probe until the connection holds.
           for attempt in 1 2 3 4 5; do
-            if ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 "$USER@$HOST" true; then
+            if ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 "$USER@$HOST" true; then
               break
             fi
             if [ "$attempt" = 5 ]; then echo "::error::server unreachable over SSH"; exit 1; fi
             echo "connect attempt $attempt failed — waiting 30s"; sleep 30
           done
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" \
               "APP_DIR=$(printf %q "$APP_DIR") REVISION=$(printf %q "$REVISION") bash -s" <<'REMOTE'
           set -euo pipefail
@@ -201,7 +201,7 @@ jobs:
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" "APP_DIR=$(printf %q "$APP_DIR") bash -s" \
               <<'REMOTE' >> "$GITHUB_STEP_SUMMARY" || true
           APP_DIR="${APP_DIR:-}"

@@ -62,7 +62,7 @@ jobs:
           ACTION: ${{ inputs.action }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" \
               "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") bash -s" <<'REMOTE'
           set -euo pipefail
