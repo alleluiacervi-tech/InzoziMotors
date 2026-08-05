@@ -97,11 +97,17 @@ jobs:
           REVISION: ${{ inputs.revision || 'origin/main' }}
         run: |
           set -euo pipefail
+          # ssh joins its command arguments into ONE string that the remote
+          # shell word-splits again, so an empty positional argument simply
+          # disappears and every later argument shifts down a slot. Passing the
+          # values as environment variables — quoted with printf %q — survives
+          # that second parse intact, empty or not.
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
-              "$USER@$HOST" bash -s -- "$APP_DIR" "$REVISION" <<'REMOTE'
+              "$USER@$HOST" \
+              "APP_DIR=$(printf %q "$APP_DIR") REVISION=$(printf %q "$REVISION") bash -s" <<'REMOTE'
           set -euo pipefail
-          APP_DIR="${1:-}"
-          REVISION="${2:-origin/main}"
+          APP_DIR="${APP_DIR:-}"
+          REVISION="${REVISION:-origin/main}"
 
           # Find the checkout if it was not configured. A deploy that guesses
           # wrong must fail loudly rather than run in someone's home directory.
@@ -144,8 +150,9 @@ jobs:
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
         run: |
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
-              "$USER@$HOST" bash -s -- "$APP_DIR" <<'REMOTE' >> "$GITHUB_STEP_SUMMARY" || true
-          APP_DIR="${1:-}"
+              "$USER@$HOST" "APP_DIR=$(printf %q "$APP_DIR") bash -s" \
+              <<'REMOTE' >> "$GITHUB_STEP_SUMMARY" || true
+          APP_DIR="${APP_DIR:-}"
           if [ -z "$APP_DIR" ]; then
             for c in /opt/sawa /srv/sawa /root/sawa /var/www/sawa /opt/sawacars /root/InzoziMotors; do
               [ -d "$c/.git" ] && APP_DIR="$c" && break
