@@ -23,7 +23,18 @@
 set -euo pipefail
 
 STATE_DIR="${STATE_DIR:-/var/lib/sawa}"
-COMPOSE="${COMPOSE:-docker compose}"
+# Which compose file? Plain `docker compose` picks docker-compose.yml — the
+# DEVELOPMENT file, which publishes Postgres on 5432. Running that against a
+# live host recreates the database container with a published port, collides
+# with the running stack ("address already in use") and leaves the database
+# down while the site still serves — an outage that looks like a healthy deploy
+# until someone opens the marketplace and finds no cars.
+#
+# So: if a production compose file is present, that is the default. Override
+# with COMPOSE=... for anything unusual.
+DEFAULT_COMPOSE="docker compose"
+[ -f docker-compose.prod.yml ] && DEFAULT_COMPOSE="docker compose -f docker-compose.prod.yml"
+COMPOSE="${COMPOSE:-$DEFAULT_COMPOSE}"
 POINTER="$STATE_DIR/rollback"
 
 log() { printf '\n▸ %s\n' "$*"; }

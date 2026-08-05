@@ -120,7 +120,19 @@ jobs:
           [ -x "$APP_DIR/ops/deploy.sh" ] || { echo "::error::$APP_DIR/ops/deploy.sh is missing or not executable"; exit 1; }
 
           cd "$APP_DIR"
-          echo "Deploying $REVISION in $APP_DIR"
+
+          # ops/deploy.sh defaults COMPOSE to plain `docker compose`, which
+          # picks up docker-compose.yml — the DEVELOPMENT file. That one
+          # publishes Postgres on 5432, so a deploy against it tries to
+          # recreate the database container with a published port, collides
+          # with the running stack ("address already in use") and leaves the
+          # database down. Production is docker-compose.prod.yml, which
+          # publishes no database port at all. Naming the file explicitly is
+          # the difference between a deploy and an outage.
+          [ -f docker-compose.prod.yml ] || { echo "::error::docker-compose.prod.yml not found in $APP_DIR"; exit 1; }
+          export COMPOSE="docker compose -f docker-compose.prod.yml"
+
+          echo "Deploying $REVISION in $APP_DIR with: $COMPOSE"
           ops/deploy.sh "$REVISION"
           REMOTE
 
