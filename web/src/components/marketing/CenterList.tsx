@@ -1,13 +1,23 @@
 import { Icon } from '@/components/ui'
 import { CENTERS } from '@/lib/site'
+import { JsonLd } from '@/components/JsonLd'
+import { autoDealerNodes, graph } from '@/lib/seo'
 
 // The three centers, from the same constant the booking flow reads. Every
 // inspection, every handover and every return happens at one of these — which is
 // why they appear on the About page and the Contact page rather than only in a
 // footer.
+//
+// The AutoDealer markup lives here rather than on the pages, so the addresses
+// and hours a crawler is told are, by construction, the same strings a visitor
+// reads a few pixels away. A physical business that never declares itself as
+// one cannot appear in local results — "car dealer Kigali" is the search that
+// matters most and the site was invisible to it.
 
 export function CenterList({ className = '' }: { className?: string }) {
   return (
+    <>
+    <JsonLd data={graph(...autoDealerNodes())} />
     <ul className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
       {CENTERS.map((center) => (
         <li
@@ -32,6 +42,7 @@ export function CenterList({ className = '' }: { className?: string }) {
         </li>
       ))}
     </ul>
+    </>
   )
 }
 

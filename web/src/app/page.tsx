@@ -12,6 +12,7 @@ import { FinalCta } from '@/components/home/FinalCta'
 import { FaqAccordion } from '@/components/marketing/FaqAccordion'
 import { cars } from '@/lib/api'
 import { FAQS, SITE } from '@/lib/site'
+import { graph, organizationNode, websiteNode } from '@/lib/seo'
 import type { Car } from '@/lib/types'
 
 // The homepage is a Server Component so the live inventory below the fold is in
@@ -43,35 +44,10 @@ async function getFeatured(): Promise<Car[]> {
 export default async function HomePage() {
   const featured = await getFeatured()
 
-  const organizationLd = {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'Organization',
-        '@id': `${SITE.url}/#organization`,
-        name: SITE.name,
-        url: SITE.url,
-        description: SITE.description,
-        areaServed: { '@type': 'City', name: 'Kigali', addressCountry: 'RW' },
-      },
-      {
-        '@type': 'WebSite',
-        '@id': `${SITE.url}/#website`,
-        url: SITE.url,
-        name: SITE.name,
-        publisher: { '@id': `${SITE.url}/#organization` },
-        inLanguage: 'en',
-        potentialAction: {
-          '@type': 'SearchAction',
-          target: {
-            '@type': 'EntryPoint',
-            urlTemplate: `${SITE.url}/cars?q={search_term_string}`,
-          },
-          'query-input': 'required name=search_term_string',
-        },
-      },
-    ],
-  }
+  // Built from lib/seo so the homepage, every car page and every rental page
+  // describe the same organisation with the same @id — one entity in Google's
+  // graph rather than three that merely share a name.
+  const organizationLd = graph(organizationNode(), websiteNode())
 
   return (
     <>

@@ -6,6 +6,8 @@ import { Button, Card, Container, EmptyState, Icon, Section } from '@/components
 import { ChipLink } from '@/components/ui/Chip'
 import { PageIntro } from '@/components/marketplace/PageIntro'
 import { RentalCard } from '@/components/marketplace/RentalCard'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbNode, graph, itemListNode } from '@/lib/seo'
 import { CarCardSkeleton } from '@/components/marketplace/CarCard'
 import { RENTAL_INCLUDES } from '@/components/marketplace/rental-copy'
 
@@ -94,13 +96,27 @@ async function FleetResults({
       ) : null}
 
       {visible.length ? (
-        <ul className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {visible.map((car, index) => (
-            <li key={car.id}>
-              <RentalCard car={car} priority={index < 3} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <JsonLd
+            data={graph(
+              itemListNode(
+                visible.map((car) => ({ path: `/rentals/${car.id}`, name: car.title })),
+                'Cars for rent in Kigali'
+              ),
+              breadcrumbNode([
+                { name: 'Home', path: '/' },
+                { name: 'Car rentals', path: '/rentals' },
+              ])
+            )}
+          />
+          <ul className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {visible.map((car, index) => (
+              <li key={car.id}>
+                <RentalCard car={car} priority={index < 3} />
+              </li>
+            ))}
+          </ul>
+        </>
       ) : (
         <EmptyState
           icon="key"
