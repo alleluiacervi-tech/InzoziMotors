@@ -117,11 +117,23 @@ jobs:
           echo "Saving images…"
           docker save sawa-api:latest sawa-web:latest sawa-admin:latest | gzip -1 > /tmp/sawa-images.tgz
           ls -lh /tmp/sawa-images.tgz
+          # The host's intrusion protection has been observed dropping SOME
+          # runner IPs (connection timeout) while accepting others minutes
+          # apart. A timeout here is worth patient retries before it is worth
+          # a failed deploy.
+          try_net() {
+            for attempt in 1 2 3 4 5; do
+              "$@" && return 0
+              echo "attempt $attempt failed — waiting 30s"
+              sleep 30
+            done
+            return 1
+          }
           echo "Uploading…"
-          scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+          try_net scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
               /tmp/sawa-images.tgz "$USER@$HOST:/tmp/sawa-images.tgz"
           echo "Loading on the server…"
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+          try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
               "$USER@$HOST" 'gunzip -c /tmp/sawa-images.tgz | docker load && rm -f /tmp/sawa-images.tgz'
 
       - name: Deploy
@@ -132,6 +144,14 @@ jobs:
           REVISION: ${{ steps.rev.outputs.rev }}
         run: |
           set -euo pipefail
+          # Same patience as the ship step — probe until the connection holds.
+          for attempt in 1 2 3 4 5; do
+            if ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 "$USER@$HOST" true; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then echo "::error::server unreachable over SSH"; exit 1; fi
+            echo "connect attempt $attempt failed — waiting 30s"; sleep 30
+          done
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
               "$USER@$HOST" \
               "APP_DIR=$(printf %q "$APP_DIR") REVISION=$(printf %q "$REVISION") bash -s" <<'REMOTE'
