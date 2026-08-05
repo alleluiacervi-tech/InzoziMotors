@@ -20,8 +20,13 @@ COPY . .
 # runtime instead, in docker-compose.yml.
 ARG NEXT_PUBLIC_API_URL=http://localhost:3000
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3002
+# Search Console ownership token — rendered as a <meta> tag by the root layout.
+# Empty means the tag is simply omitted; it is public information once set, so
+# it travels as a plain build arg, not a secret.
+ARG NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=$NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Pages that read the catalogue are prerendered here. The API is usually not

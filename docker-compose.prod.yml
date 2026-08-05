@@ -82,6 +82,10 @@ services:
       args:
         NEXT_PUBLIC_API_URL:  https://api.sawacars.com
         NEXT_PUBLIC_SITE_URL: https://sawacars.com
+        # Search Console ownership token (public once serving — committed, not
+        # a secret). Paste the content="..." value from the HTML-tag method
+        # here and redeploy; empty omits the tag.
+        NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ''
     restart: unless-stopped
     depends_on:
       - api
