@@ -1,0 +1,160 @@
+name: Deploy
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Continuous delivery to the VPS.
+#
+# Deploying from a laptop has two problems this removes. The obvious one is
+# that it needs someone's laptop. The quieter one is that a laptop's IP gets
+# banned by the server's own brute-force protection after a few failed logins,
+# and then the only person who can deploy is locked out — which is exactly the
+# moment you need to. A runner authenticates once with the right key and never
+# guesses.
+#
+# The deploy itself is NOT reimplemented here. ops/deploy.sh already records
+# the outgoing revision, backs the database up when migrations are present,
+# writes a rollback pointer and health-checks the result. This workflow's job
+# is only to reach the server and run it — one implementation of "deploy",
+# usable by hand or by CI.
+#
+# Runs only after CI is green on main (see the `workflow_run` trigger), or on
+# demand. `environment: production` means you can require an approval later
+# without touching this file.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Tag, branch or SHA to deploy (default: origin/main)'
+        required: false
+        default: 'origin/main'
+
+# Two deploys at once would race over the same working tree and rollback
+# pointer. Queue them instead, and never cancel one midway — a half-applied
+# deploy is worse than a late one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    # A red CI must never reach production. workflow_run fires on completion
+    # regardless of outcome, so the conclusion is checked explicitly.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    environment:
+      name: production
+      url: https://sawacars.com
+
+    steps:
+      - name: Check required secrets are present
+        # Failing here with a readable message beats an SSH timeout that looks
+        # like a network fault.
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          missing=
+          [ -n "$HOST" ] || missing="$missing VPS_HOST"
+          [ -n "$USER" ] || missing="$missing VPS_USER"
+          [ -n "$KEY" ]  || missing="$missing VPS_SSH_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing"
+            exit 1
+          fi
+
+      - name: Load the deploy key
+        env:
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pin the host key so a hijacked DNS record cannot collect our key.
+          # VPS_HOST_KEY is optional: without it we trust-on-first-use, which
+          # is weaker but still refuses a CHANGED key later.
+          if [ -n "${{ secrets.VPS_HOST_KEY }}" ]; then
+            printf '%s\n' "${{ secrets.VPS_HOST_KEY }}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          REVISION: ${{ inputs.revision || 'origin/main' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+              "$USER@$HOST" bash -s -- "$APP_DIR" "$REVISION" <<'REMOTE'
+          set -euo pipefail
+          APP_DIR="${1:-}"
+          REVISION="${2:-origin/main}"
+
+          # Find the checkout if it was not configured. A deploy that guesses
+          # wrong must fail loudly rather than run in someone's home directory.
+          if [ -z "$APP_DIR" ]; then
+            for candidate in /opt/sawa /srv/sawa /root/sawa /var/www/sawa /opt/sawacars /root/InzoziMotors; do
+              [ -x "$candidate/ops/deploy.sh" ] && APP_DIR="$candidate" && break
+            done
+          fi
+          [ -n "$APP_DIR" ] || { echo "::error::Could not locate the checkout — set the VPS_APP_DIR secret"; exit 1; }
+          [ -x "$APP_DIR/ops/deploy.sh" ] || { echo "::error::$APP_DIR/ops/deploy.sh is missing or not executable"; exit 1; }
+
+          cd "$APP_DIR"
+          echo "Deploying $REVISION in $APP_DIR"
+          ops/deploy.sh "$REVISION"
+          REMOTE
+
+      - name: Verify the public surfaces answer
+        # deploy.sh already polls readiness inside the host. This checks the
+        # same thing a visitor would: through DNS, TLS and the reverse proxy.
+        run: |
+          set -euo pipefail
+          fail=0
+          for url in https://sawacars.com https://api.sawacars.com/health https://admin.sawacars.com; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -L "$url" || echo 000)
+            case "$code" in
+              200|301|302|307|308) echo "ok   $url -> $code" ;;
+              *) echo "FAIL $url -> $code"; fail=1 ;;
+            esac
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::A public surface did not answer after deploy — consider ops/rollback.sh"
+            exit 1
+          fi
+
+      - name: Report what is running
+        if: always()
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ secrets.VPS_APP_DIR }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+              "$USER@$HOST" bash -s -- "$APP_DIR" <<'REMOTE' >> "$GITHUB_STEP_SUMMARY" || true
+          APP_DIR="${1:-}"
+          if [ -z "$APP_DIR" ]; then
+            for c in /opt/sawa /srv/sawa /root/sawa /var/www/sawa /opt/sawacars /root/InzoziMotors; do
+              [ -d "$c/.git" ] && APP_DIR="$c" && break
+            done
+          fi
+          cd "$APP_DIR" 2>/dev/null || exit 0
+          echo "### Deployed revision"
+          echo ''
+          echo '```'
+          git log -1 --format='%h  %s  (%an, %ar)' 2>/dev/null || true
+          echo '```'
+          REMOTE
