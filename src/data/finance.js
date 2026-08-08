@@ -13,10 +13,13 @@ export function monthlyEstimate(price) {
   return Math.round(pmt);
 }
 
-// Instant valuation range from comparable cars in inventory
+// Instant valuation range from comparable cars in inventory.
+// Returns null when there is nothing to compare against (offline / empty
+// catalogue) — the caller must say "not enough data", not render "$NaN".
 export function estimateValuation({ make, year, mileage }, cars) {
-  const sameMake = cars.filter((c) => c.make === make && c.price);
-  const pool = sameMake.length >= 2 ? sameMake : cars.filter((c) => c.price);
+  const sameMake = (cars || []).filter((c) => c.make === make && c.price);
+  const pool = sameMake.length >= 2 ? sameMake : (cars || []).filter((c) => c.price);
+  if (!pool.length) return null;
   const base = pool.reduce((sum, c) => sum + c.price, 0) / pool.length;
 
   const age = Math.max(0, 2026 - year);

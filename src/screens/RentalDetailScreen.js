@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, Share, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -9,7 +9,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
 import { useApp } from '../context/AppContext';
-import { openWhatsApp, SAWA_WHATSAPP } from '../utils/whatsapp';
+import { openWhatsApp, SAWA_WHATSAPP, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
 const { width } = Dimensions.get('window');
 
@@ -21,14 +21,53 @@ const SPEC_ITEMS = [
 ];
 
 export default function RentalDetailScreen({ navigation, route }) {
-  const car = route.params?.car;
+  // A deep link (sawa://rentals/<id>) carries only an id — resolve it against
+  // the rental catalogue instead of reading fields off an absent car object,
+  // which used to crash every link-opened rental.
+  const paramCar = route.params?.car;
+  const rentalId = route.params?.rentalId || paramCar?.id;
   const insets = useSafeAreaInsets();
   const [activeIdx, setActiveIdx] = useState(0);
   const [viewerIdx, setViewerIdx] = useState(null);
-  const { recordCarView } = useApp();
+  const { recordCarView, rentalCars } = useApp();
+  const car =
+    paramCar ||
+    (rentalCars || []).find((c) => String(c.id) === String(rentalId)) ||
+    null;
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
 
+  if (!car) {
+    // Catalogue still loading → spinner; loaded but id unknown → honest miss.
+    const notFound = (rentalCars || []).length > 0 || !rentalId;
+    return (
+      <View style={[styles.root, styles.linkState]}>
+        <StatusBar style="dark" />
+        {notFound ? (
+          <>
+            <Ionicons name="key-outline" size={40} color={colors.textMuted} />
+            <Text style={styles.linkStateTitle}>This rental isn&apos;t available</Text>
+            <Text style={styles.linkStateSub}>It may have been booked or removed from the fleet.</Text>
+            <Pressable
+              style={styles.linkStateBtn}
+              onPress={() => navigation.goBack()}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <Text style={styles.linkStateBtnText}>Go back</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={styles.linkStateSub}>Loading this rental…</Text>
+          </>
+        )}
+      </View>
+    );
+  }
+
   const dates = getRentalDates(14);
+  const unavailableDays = car.unavailableDays || [];
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
   return (
@@ -115,7 +154,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>Availability</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
             {dates.map((d) => {
-              const blocked = car.unavailableDays.includes(d.index);
+              const blocked = unavailableDays.includes(d.index);
               return (
                 <View key={d.index} style={[styles.dateChip, blocked && styles.dateChipBlocked]}>
                   <Text style={[styles.dateDay, blocked && styles.dateTextBlocked]}>{d.day}</Text>
@@ -221,15 +260,19 @@ export default function RentalDetailScreen({ navigation, route }) {
           </View>
           <Text style={styles.ctaDeposit}>+${car.deposit} deposit</Text>
         </View>
-        <Pressable
-          style={styles.waBtn}
-          onPress={() => openWhatsApp(
-            SAWA_WHATSAPP,
-            `Hi Sawa, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
-          )} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp"
-        >
-          <Ionicons name="logo-whatsapp" size={24} color="#fff" />
-        </Pressable>
+        {/* Honesty gate: no WhatsApp surface until the business line is real —
+            an unverified number opens a chat nobody answers. */}
+        {WHATSAPP_VERIFIED && (
+          <Pressable
+            style={styles.waBtn}
+            onPress={() => openWhatsApp(
+              SAWA_WHATSAPP,
+              `Hi Sawa, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
+            )} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp"
+          >
+            <Ionicons name="logo-whatsapp" size={24} color="#fff" />
+          </Pressable>
+        )}
         <Button
           title="Book This Car"
           style={{ flex: 1 }}
@@ -249,6 +292,14 @@ export default function RentalDetailScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  linkState: { justifyContent: 'center', alignItems: 'center', padding: 32, gap: 10 },
+  linkStateTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  linkStateSub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' },
+  linkStateBtn: {
+    marginTop: 10, backgroundColor: colors.primary,
+    paddingHorizontal: 22, paddingVertical: 11, borderRadius: radius.lg,
+  },
+  linkStateBtnText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
   gallery: { height: 300, backgroundColor: colors.border },
   heroImage: { width, height: 300 },
   galleryBar: {

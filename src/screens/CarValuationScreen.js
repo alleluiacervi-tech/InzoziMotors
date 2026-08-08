@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
+import { showToast } from '../components/Feedback';
 import carsApi from '../api/cars';
 
 const MAKES = ['Toyota', 'Honda', 'Subaru', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Mazda', 'Nissan', 'Volkswagen'];
@@ -35,12 +36,23 @@ export default function CarValuationScreen({ navigation }) {
         return;
       }
       // Not enough server-side data → local estimator over bundled inventory
-      setResult(estimateValuation({ make, year, mileage: km }, cars));
+      setResult(localEstimate(km));
     } catch {
-      setResult(estimateValuation({ make, year, mileage: km }, cars));
+      setResult(localEstimate(km));
     } finally {
       setEstimating(false);
     }
+  };
+
+  // estimateValuation returns null with an empty catalogue (offline) — say so
+  // instead of rendering a "$NaN — $NaN" range.
+  const localEstimate = (km) => {
+    const est = estimateValuation({ make, year, mileage: km }, cars);
+    if (!est) {
+      showToast("We couldn't estimate right now — not enough market data. Check your connection and try again.", 'error');
+      return null;
+    }
+    return est;
   };
 
   // ── Result state ──

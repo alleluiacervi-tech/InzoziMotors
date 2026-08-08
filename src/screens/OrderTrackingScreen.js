@@ -100,8 +100,12 @@ function StepRow({ step, state, isLast }) {
 }
 
 export default function OrderTrackingScreen({ navigation, route }) {
-  const { orderId, car: routeCar } = route.params || {};
-  const { purchaseRequests, cancelHandover } = useApp();
+  // Deep links (sawa://orders/:bookingId, see navigation/linking.js) send
+  // `bookingId`; in-app navigation sends `orderId`. Accept both — the mismatch
+  // used to make every order deep link land on an empty $0 "reserved" screen.
+  const { orderId: orderIdParam, bookingId, car: routeCar } = route.params || {};
+  const orderId = orderIdParam || bookingId;
+  const { purchaseRequests, cancelHandover, demoMode } = useApp();
   // orderId may be the UUID (API) or a local/display ref — match either
   const found = purchaseRequests.find((r) => r.id === orderId || r.bookingRef === orderId);
   const cancelId = found?.id || orderId;
@@ -148,10 +152,13 @@ export default function OrderTrackingScreen({ navigation, route }) {
       if ((err?.message || '').toLowerCase().includes('already reviewed')) {
         setReviewDone(true);
         showToast('You already reviewed this purchase', 'info');
-      } else {
-        // API unreachable — demo mode
+      } else if (demoMode) {
+        // Demo bookings have no backend to save to — pretend locally only in dev
         setReviewDone(true);
         showToast('Thanks — your review helps other buyers', 'success');
+      } else {
+        // The review was NOT saved — thanking the user here would be a lie.
+        showToast("Your review didn't send. Check your connection and try again.", 'error');
       }
     } finally {
       setReviewSubmitting(false);

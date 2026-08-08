@@ -7,11 +7,15 @@ import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
 
+// Fictional storefronts for the two dealers in the bundled demo catalogue.
+// Dev builds only — a release build never renders these (see the demoMode
+// gate below), because the ratings, sales counts and phone numbers here are
+// scripted, and a real seller must never inherit them.
 const DEALERS = {
-  'Carvana': {
-    name: 'Carvana Rwanda',
+  'Kigali Prime Motors': {
+    name: 'Kigali Prime Motors',
     tagline: 'Premium certified vehicles · Kigali',
-    description: 'Carvana Rwanda is an authorized dealer and one of Sawa\' founding partners. Specializing in Japanese imports and certified EVs with a 30-day return guarantee.',
+    description: 'Kigali Prime Motors is an authorized Sawa partner dealer. Specializing in Japanese imports and certified EVs — every car covered by the Sawa 7-day return guarantee.',
     since: '2023',
     responseTime: '< 1 hour',
     rating: 4.8,
@@ -20,12 +24,12 @@ const DEALERS = {
     categories: ['SUV', 'EV', 'Sedan'],
     location: 'Nyarutarama, Kigali',
     phone: '+250 788 123 456',
-    initials: 'CR',
+    initials: 'KP',
   },
-  'Bay Auto Group': {
-    name: 'Bay Auto Group',
+  'Akagera Auto Group': {
+    name: 'Akagera Auto Group',
     tagline: 'Trusted dealer since 2019 · Remera',
-    description: 'Bay Auto Group has been serving Kigali\'s growing auto market for over 5 years. Specializing in performance vehicles and luxury sedans sourced directly from Japan and Europe.',
+    description: 'Akagera Auto Group has been serving Kigali\'s growing auto market for over 5 years. Specializing in performance vehicles and luxury sedans sourced directly from Japan and Europe.',
     since: '2019',
     responseTime: '< 3 hours',
     rating: 4.6,
@@ -34,28 +38,15 @@ const DEALERS = {
     categories: ['Sedan', 'Coupe', 'SUV'],
     location: 'Remera, Kigali',
     phone: '+250 788 654 321',
-    initials: 'BA',
+    initials: 'AA',
   },
 };
 
 // Which sellers get the branded dealer storefront rather than an individual's
 // trust profile. Exported so the car detail page can route to the right one.
+// Only the demo dealers qualify — real sellers always get the trust profile,
+// which is built from live API data.
 export const isDealerSeller = (name) => !!DEALERS[name];
-
-const DEFAULT_DEALER = {
-  name: 'Sawa Partner Dealer',
-  tagline: 'Verified dealer · Kigali',
-  description: 'A trusted Sawa partner dealer.',
-  since: '2024',
-  responseTime: '< 4 hours',
-  rating: 4.5,
-  reviews: 12,
-  totalSales: 25,
-  categories: ['SUV', 'Sedan'],
-  location: 'Kigali, Rwanda',
-  phone: '+250 788 000 000',
-  initials: 'ID',
-};
 
 function ListingCard({ car, onPress }) {
   return (
@@ -76,15 +67,41 @@ function ListingCard({ car, onPress }) {
 }
 
 export default function DealerProfileScreen({ navigation, route }) {
-  const dealerName = route.params?.dealerName || 'Carvana';
-  const dealer = DEALERS[dealerName] || DEFAULT_DEALER;
-  const { cars } = useApp();
+  const dealerName = route.params?.dealerName || '';
+  const { cars, demoMode } = useApp();
   const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState('All');
 
   const dealerCars = cars.filter((c) => c.seller === dealerName);
+
+  // Scripted storefronts are demo-only. For anyone else (which in release is
+  // everyone), show only what we actually know: their name and live listings —
+  // no invented ratings, sales totals, response times or phone numbers.
+  const dealer = (demoMode && DEALERS[dealerName]) || {
+    name: dealerName || 'Dealer',
+    tagline: 'Sawa partner dealer · Kigali',
+    description: null,
+    since: null,
+    responseTime: null,
+    rating: null,
+    reviews: null,
+    totalSales: null,
+    categories: [...new Set(dealerCars.map((c) => c.category).filter(Boolean))],
+    location: null,
+    phone: null,
+    initials: (dealerName || 'D').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase(),
+  };
+
   const filteredCars = activeCategory === 'All' ? dealerCars : dealerCars.filter((c) => c.category === activeCategory);
   const categories = ['All', ...dealer.categories];
+
+  const heroStats = [
+    dealer.totalSales != null && { label: 'Sales', value: dealer.totalSales },
+    dealer.rating != null && { label: 'Rating', value: `⭐ ${dealer.rating}` },
+    dealer.reviews != null && { label: 'Reviews', value: dealer.reviews },
+    dealer.since != null && { label: 'Since', value: dealer.since },
+    { label: 'Listings', value: dealerCars.length },
+  ].filter(Boolean);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -112,12 +129,7 @@ export default function DealerProfileScreen({ navigation, route }) {
           <Text style={styles.heroName}>{dealer.name}</Text>
           <Text style={styles.heroTagline}>{dealer.tagline}</Text>
           <View style={styles.heroStats}>
-            {[
-              { label: 'Sales', value: dealer.totalSales },
-              { label: 'Rating', value: `⭐ ${dealer.rating}` },
-              { label: 'Reviews', value: dealer.reviews },
-              { label: 'Since', value: dealer.since },
-            ].map((s, i) => (
+            {heroStats.map((s, i) => (
               <React.Fragment key={s.label}>
                 {i > 0 && <View style={styles.heroDivider} />}
                 <View style={styles.heroStatItem}>
@@ -129,24 +141,32 @@ export default function DealerProfileScreen({ navigation, route }) {
           </View>
         </LinearGradient>
 
-        {/* Info card */}
-        <View style={styles.infoCard}>
-          <Text style={styles.infoDesc}>{dealer.description}</Text>
-          <View style={styles.infoRows}>
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={15} color={colors.textMuted} />
-              <Text style={styles.infoText}>{dealer.location}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={15} color={colors.textMuted} />
-              <Text style={styles.infoText}>Responds {dealer.responseTime}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="call-outline" size={15} color={colors.textMuted} />
-              <Text style={styles.infoText}>{dealer.phone}</Text>
+        {/* Info card — only rows we actually have facts for */}
+        {(dealer.description || dealer.location || dealer.responseTime || dealer.phone) && (
+          <View style={styles.infoCard}>
+            {dealer.description ? <Text style={styles.infoDesc}>{dealer.description}</Text> : null}
+            <View style={styles.infoRows}>
+              {dealer.location ? (
+                <View style={styles.infoRow}>
+                  <Ionicons name="location-outline" size={15} color={colors.textMuted} />
+                  <Text style={styles.infoText}>{dealer.location}</Text>
+                </View>
+              ) : null}
+              {dealer.responseTime ? (
+                <View style={styles.infoRow}>
+                  <Ionicons name="time-outline" size={15} color={colors.textMuted} />
+                  <Text style={styles.infoText}>Responds {dealer.responseTime}</Text>
+                </View>
+              ) : null}
+              {dealer.phone ? (
+                <View style={styles.infoRow}>
+                  <Ionicons name="call-outline" size={15} color={colors.textMuted} />
+                  <Text style={styles.infoText}>{dealer.phone}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
-        </View>
+        )}
 
         {/* Category filter */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>

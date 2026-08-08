@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Dimensions, Linking } from 'react-native';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path } from 'react-native-svg';
@@ -15,6 +16,10 @@ import { useApp } from '../context/AppContext';
 const HERO = require('../../assets/welcome-hero.jpg');
 
 const { height: SCREEN_H } = Dimensions.get('window');
+
+// Reviewers tap these. Same single-source legal pages Settings links to.
+const SITE_URL = (Constants.expoConfig?.extra?.siteUrl || 'https://sawacars.com').replace(/\/+$/, '');
+const openLegal = (path) => Linking.openURL(`${SITE_URL}${path}`).catch(() => {});
 
 // Nothing scrolls here, so the whole composition has to fit whatever screen it
 // lands on. Two scales rather than one: whitespace gives way readily, type does
@@ -125,8 +130,25 @@ export default function WelcomeScreen({ navigation }) {
         </Pressable>
 
         <Text style={styles.terms}>
-          By continuing, you agree to our <Text style={styles.termsStrong}>Terms</Text> &{' '}
-          <Text style={styles.termsStrong}>Privacy Policy</Text>.
+          By continuing, you agree to our{' '}
+          <Text
+            style={styles.termsStrong}
+            onPress={() => openLegal('/legal/terms')}
+            suppressHighlighting
+            accessibilityRole="link"
+          >
+            Terms
+          </Text>
+          {' '}&{' '}
+          <Text
+            style={styles.termsStrong}
+            onPress={() => openLegal('/legal/privacy')}
+            suppressHighlighting
+            accessibilityRole="link"
+          >
+            Privacy Policy
+          </Text>
+          .
         </Text>
       </View>
 

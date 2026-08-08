@@ -33,6 +33,19 @@ const getBaseUrl = () => {
 
 export const BASE_URL = getBaseUrl();
 
+// A store build must never ship pointed at a dev host. Without extra.apiUrl a
+// standalone build has no Metro hostUri and lands on the loopback fallback —
+// an app that installs, opens, and shows an empty marketplace forever. Failing
+// the boot makes the misconfiguration impossible to miss before submission.
+// (Expo web is exempt: the production website is the separate web/ app.)
+const IS_DEV = typeof __DEV__ !== 'undefined' && __DEV__;
+if (!IS_DEV && Platform.OS !== 'web' && !/^https:\/\//.test(BASE_URL)) {
+  throw new Error(
+    `Refusing to start a release build against a non-HTTPS API (“${BASE_URL}”). ` +
+    'Set EXPO_PUBLIC_API_URL in the EAS build profile.'
+  );
+}
+
 // SecureStore is not available on web — use localStorage as fallback
 export async function getToken() {
   if (Platform.OS === 'web') {
@@ -116,6 +129,20 @@ async function request(endpoint, options = {}) {
       error.status = response.status;
       error.code = data.code;
       error.data = data;
+
+      // A dead session must not haunt the keychain: JWTs live 30 days, and
+      // without this the expired token rides every request forever while the
+      // user is silently signed out. Only token-death codes qualify — a plain
+      // credential 401 (wrong password on login/change-password/delete-account)
+      // must never sign out the session that made it.
+      if (
+        response.status === 401 &&
+        token &&
+        (data.code === 'SESSION_EXPIRED' || data.code === 'SESSION_REVOKED')
+      ) {
+        error.sessionExpired = true;
+        await removeToken().catch(() => {});
+      }
       throw error;
     }
 
@@ -130,7 +157,7 @@ async function request(endpoint, options = {}) {
     // Only a transport failure means "backend unreachable"; a 4xx is a real answer.
     if (error.status === undefined) {
       error.isNetworkError = true;
-      console.warn(`API unreachable [${config.method || 'GET'} ${endpoint}] — demo data will be used:`, error.message);
+      console.warn(`API unreachable [${config.method || 'GET'} ${endpoint}]:`, error.message);
     }
     throw error;
   } finally {

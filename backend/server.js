@@ -100,6 +100,9 @@ const io = new Server(server, {
   },
 });
 require('./src/socket')(io);
+// Routes broadcast through the same io instance (REST is the single write
+// path for chat; the socket layer is delivery only — see routes/messages.js).
+app.set('io', io);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 // Request logging first, so even a request rejected by the body parser or a

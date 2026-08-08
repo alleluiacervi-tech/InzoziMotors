@@ -156,12 +156,16 @@ export default function ProfileScreen({ navigation }) {
         <MenuSection title="My Listings" items={MENU_SELLER} navigation={navigation} />
         <MenuSection title="Account" items={MENU_ACCOUNT} navigation={navigation} />
 
-        {/* Team Portal */}
-        <Pressable style={styles.adminAccess} onPress={() => navigation.navigate('AdminPanel')}>
-          <Ionicons name="grid-outline" size={16} color={colors.textMuted} />
-          <Text style={styles.adminAccessText}>Team Portal</Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
-        </Pressable>
+        {/* Team Portal — Sawa staff only. Visible in dev builds for testing;
+            in release only an admin account ever sees the entry point (and
+            AdminPanelScreen re-checks the role itself). */}
+        {(demoMode || currentUser?.role === 'admin') && (
+          <Pressable style={styles.adminAccess} onPress={() => navigation.navigate('AdminPanel')}>
+            <Ionicons name="grid-outline" size={16} color={colors.textMuted} />
+            <Text style={styles.adminAccessText}>Team Portal</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </Pressable>
+        )}
 
         {/* Logout */}
         <Pressable

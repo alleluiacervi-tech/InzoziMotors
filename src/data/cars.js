@@ -17,7 +17,7 @@ const rawCars = [
     fuel: 'Electric',
     transmission: 'Automatic',
     category: 'EV',
-    seller: 'Carvana',
+    seller: 'Kigali Prime Motors',
     rating: 4.8,
     distance: 2.4,
     inspected: true,
@@ -39,7 +39,7 @@ const rawCars = [
     fuel: 'Gasoline',
     transmission: 'Automatic',
     category: 'Sedan',
-    seller: 'Bay Auto Group',
+    seller: 'Akagera Auto Group',
     rating: 4.6,
     distance: 5.1,
     inspected: true,
@@ -717,7 +717,7 @@ export const sellerListings = [
 export const conversations = [
   {
     id: 'c1',
-    name: 'Bay Auto Group',
+    name: 'Akagera Auto Group',
     last: 'The car is still available. When would you like to schedule a test drive?',
     time: '11:30 AM',
     unread: 2,
@@ -726,7 +726,7 @@ export const conversations = [
   },
   {
     id: 'c2',
-    name: 'Carvana Support',
+    name: 'Sawa Support',
     last: 'Your purchase request has been confirmed ✓',
     time: 'Yesterday',
     unread: 0,

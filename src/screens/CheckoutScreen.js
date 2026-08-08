@@ -203,13 +203,32 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function CheckoutScreen({ navigation, route }) {
   const car = route.params?.car;
-  const price = car.type === 'auction' ? car.currentBid : car.price;
+  const price = car ? (car.type === 'auction' ? car.currentBid : car.price) : 0;
   const { bookHandover } = useApp();
 
   const [phase, setPhase] = useState('request');
   const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
   const [bookingId, setBookingId] = useState(null);
+
+  // Entered without a car (restored nav state, a push tap) — there is nothing
+  // to request, and reading car.type below would crash the purchase flow.
+  if (!car) {
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title="Request This Car" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 }}>
+          <Ionicons name="car-outline" size={40} color={colors.textMuted} />
+          <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
+            This listing isn&apos;t available
+          </Text>
+          <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
+            Pick a car from the marketplace to send a purchase request.
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
 
   const handleSend = async () => {
     if (sending) return;

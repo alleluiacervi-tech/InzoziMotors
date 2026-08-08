@@ -6,11 +6,13 @@ import Svg, { Rect, Text as SvgText, G } from 'react-native-svg';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import adminApi from '../api/admin';
+import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Shown until /admin/analytics answers, and when the backend is unreachable.
+// Scripted figures for dev builds only — a release build shows real analytics
+// or an honest empty chart, never invented business numbers.
 const DEMO_FUNNEL = [
   { label: 'Submitted', value: 48, icon: 'document-outline' },
   { label: 'Scheduled', value: 41, icon: 'calendar-outline' },
@@ -120,6 +122,7 @@ const money = (n) =>
   n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${Number(n || 0).toLocaleString()}`;
 
 export default function AdminAnalyticsScreen({ navigation }) {
+  const { demoMode } = useApp();
   const [data, setData] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -138,17 +141,18 @@ export default function AdminAnalyticsScreen({ navigation }) {
     return () => { alive = false; };
   }, []);
 
-  const funnel = buildFunnel(data?.pipelineFunnel) || DEMO_FUNNEL;
+  const funnel = buildFunnel(data?.pipelineFunnel)
+    || (demoMode ? DEMO_FUNNEL : FUNNEL_ORDER.map((s) => ({ label: s.label, icon: s.icon, value: 0 })));
   const topMakes = data?.topMakes?.length
     ? data.topMakes.slice(0, 5).map((m) => ({ make: m.make, count: parseInt(m.count, 10) || 0 }))
-    : DEMO_TOP_MAKES;
+    : (demoMode ? DEMO_TOP_MAKES : []);
   const centers = data?.centers?.length
     ? data.centers.map((c) => ({
         name: c.center,
         scheduled: parseInt(c.scheduled, 10) || 0,
         capacity: CENTER_CAPACITY[c.center] || 10,
       }))
-    : DEMO_CENTERS;
+    : (demoMode ? DEMO_CENTERS : []);
 
   const submitted = funnel[0]?.value || 0;
   const sold = funnel[funnel.length - 1]?.value || 0;
@@ -229,7 +233,11 @@ export default function AdminAnalyticsScreen({ navigation }) {
           <Text style={styles.cardTitle}>Top Makes</Text>
           <Text style={styles.cardSub}>Cars submitted this month</Text>
           <View style={{ marginTop: 12 }}>
-            <MakeBarChart data={topMakes} />
+            {topMakes.length > 0 ? (
+              <MakeBarChart data={topMakes} />
+            ) : (
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>No submissions recorded yet.</Text>
+            )}
           </View>
         </View>
 
@@ -238,6 +246,9 @@ export default function AdminAnalyticsScreen({ navigation }) {
           <Text style={styles.cardTitle}>Inspection Center Utilization</Text>
           <Text style={styles.cardSub}>Appointments booked vs capacity</Text>
           <View style={styles.centersGrid}>
+            {centers.length === 0 && (
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>No appointments booked yet.</Text>
+            )}
             {centers.map((center) => {
               const pct = Math.round((center.scheduled / center.capacity) * 100);
               return (

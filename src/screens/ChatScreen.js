@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
+import { showToast } from '../components/Feedback';
 import { colors, radius, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 
@@ -50,7 +51,7 @@ function PinnedCarCard({ car, onViewListing }) {
 }
 
 export default function ChatScreen({ navigation, route }) {
-  const name = route.params?.name || 'Bay Auto Group';
+  const name = route.params?.name || 'Akagera Auto Group';
   const convId = route.params?.convId || 'c1';
   const car = route.params?.car || null;
   const { getMessages, sendMessage, loadConversationMessages, getOrCreateConversation, sendTyping, typingConvId } = useApp();
@@ -98,12 +99,20 @@ export default function ChatScreen({ navigation, route }) {
     const toSend = msg || text.trim();
     if (!toSend) return;
     const sendId = activeConvId || 'c1';
-    const newId = await sendMessage(sendId, toSend, car?.id);
-    if (sendId.startsWith('new_') && newId) {
-      setActiveConvId(newId);
+    try {
+      const newId = await sendMessage(sendId, toSend, car?.id);
+      if (sendId.startsWith('new_') && newId) {
+        setActiveConvId(newId);
+      }
+      setText('');
+      setShowQuickReplies(false);
+    } catch (err) {
+      // The optimistic bubble has already been rolled back by sendMessage —
+      // without this the message just vanished with no explanation. Keep the
+      // draft in the input so the user can retry.
+      showToast("Message didn't send. Check your connection and try again.", 'error');
+      if (!msg) setText(toSend);
     }
-    setText('');
-    setShowQuickReplies(false);
   };
 
   const handleQuickReply = (reply) => {

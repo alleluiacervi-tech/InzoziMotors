@@ -23,7 +23,7 @@ function calcMonthlyPayment(principal, annualRate, months) {
   return (principal * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
 }
 
-function BankCard({ bank, monthly, totalInterest, isSelected, onSelect }) {
+function BankCard({ bank, monthly, totalInterest, termMonths, isSelected, onSelect }) {
   return (
     <Pressable style={[styles.bankCard, isSelected && styles.bankCardActive]} onPress={onSelect}>
       <View style={styles.bankHeader}>
@@ -53,7 +53,10 @@ function BankCard({ bank, monthly, totalInterest, isSelected, onSelect }) {
           </View>
           <View>
             <Text style={styles.bankMonthlyLabel}>Total cost</Text>
-            <Text style={styles.bankTotal}>${Math.round(monthly * (TERMS[0]) + totalInterest).toLocaleString()}</Text>
+            {/* Total repaid over the SELECTED term. monthly × term already
+                includes the interest — the old `× 12 + interest` was wrong
+                for every term except coincidence. */}
+            <Text style={styles.bankTotal}>${Math.round(monthly * termMonths).toLocaleString()}</Text>
           </View>
         </View>
       )}
@@ -167,6 +170,7 @@ export default function FinancingScreen({ navigation, route }) {
                 bank={bank}
                 monthly={monthly}
                 totalInterest={totalInterest}
+                termMonths={termMonths}
                 isSelected={selectedBank === bank.id}
                 onSelect={() => setSelectedBank(bank.id)}
               />

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import Screen from '../components/Screen';
@@ -7,6 +7,7 @@ import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 import reviewsApi from '../api/reviews';
+import { useApp } from '../context/AppContext';
 
 const SCORE_COMPONENTS = [
   {
@@ -144,18 +145,26 @@ function ComponentRow({ comp, profile, expanded, onToggle }) {
 
 export default function TrustScoreScreen({ navigation, route }) {
   const sellerName = route.params?.sellerName;
-  // Real user id (UUID) when navigated from an API-backed context; absent in demo mode
-  const userId = route.params?.userId || route.params?.sellerId || null;
-  const mockProfile = SELLER_PROFILES[sellerName] || DEFAULT_SELLER_PROFILE;
+  const { currentUser, isLoggedIn, demoMode } = useApp();
+  // Real user id (UUID) when navigated from an API-backed context. The drawer
+  // opens this screen with no params at all — that means "my own score", so
+  // fall back to the signed-in user rather than to a canned 72/100 profile.
+  const ownId = currentUser?.id && String(currentUser.id).includes('-') ? currentUser.id : null;
+  const userId = route.params?.userId || route.params?.sellerId || ownId;
+  // Canned profiles serve the bundled demo catalogue in dev builds only.
+  const mockProfile = demoMode ? (SELLER_PROFILES[sellerName] || DEFAULT_SELLER_PROFILE) : null;
   const [expandedId, setExpandedId] = useState(null);
   const [apiScore, setApiScore] = useState(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!userId) return undefined;
     let cancelled = false;
+    setFailed(false);
     reviewsApi.getTrustScore(userId)
       .then((data) => {
-        if (cancelled || !data || !data.breakdown) return;
+        if (cancelled) return;
+        if (!data || !data.breakdown) { setFailed(true); return; }
         const b = data.breakdown;
         setApiScore({
           totalScore: Number(data.total_score) || 0,
@@ -168,13 +177,44 @@ export default function TrustScoreScreen({ navigation, route }) {
           },
         });
       })
-      .catch(() => {
-        // API unreachable — keep mock profile (demo mode)
-      });
+      .catch(() => { if (!cancelled) setFailed(true); });
     return () => { cancelled = true; };
   }, [userId]);
 
   const profile = apiScore ? apiScore.profile : mockProfile;
+
+  // No real score and no demo fixtures to show — explain instead of inventing.
+  if (!profile) {
+    const loading = Boolean(userId) && !failed;
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title="Trust Score" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
+          {loading ? (
+            <>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary }}>
+                Loading trust score…
+              </Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="ribbon-outline" size={40} color={colors.textMuted} />
+              <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
+                {isLoggedIn ? 'Trust score not available' : 'Sign in to see your trust score'}
+              </Text>
+              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
+                {isLoggedIn
+                  ? "We couldn't load this trust score. Check your connection and try again."
+                  : 'Your score builds from ID verification, completed sales, response rate and buyer reviews.'}
+              </Text>
+            </>
+          )}
+        </View>
+      </Screen>
+    );
+  }
+
   const score = apiScore
     ? apiScore.totalScore
     : SCORE_COMPONENTS.reduce((sum, c) => sum + c.getPts(profile), 0);

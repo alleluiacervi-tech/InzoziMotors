@@ -94,7 +94,7 @@ const daysSince = (iso) => {
 };
 
 export default function SellerAnalyticsScreen({ navigation, route }) {
-  const { submissions, isLoggedIn } = useApp();
+  const { submissions, isLoggedIn, demoMode } = useApp();
   const liveSubmissions = submissions.filter((s) => s.status === 'live' || s.status === 'sold');
   const [selectedId, setSelectedId] = useState(
     route?.params?.subId || liveSubmissions[0]?.id || 'sub1'
@@ -133,13 +133,16 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
         });
         setLiveAnalytics(bySubmission);
       })
-      .catch((err) => console.warn('Seller analytics unreachable — showing demo figures:', err.message));
+      .catch((err) => console.warn('Seller analytics unreachable:', err.message));
     return () => { alive = false; };
   }, [isLoggedIn, submissions]);
 
+  // Real counters when we have them; the scripted demo figures serve the
+  // bundled demo submissions in dev builds ONLY. A production seller whose
+  // analytics can't load sees zeros — never 47 invented views.
   const source = liveAnalytics && Object.keys(liveAnalytics).length
     ? liveAnalytics
-    : DEMO_LISTING_ANALYTICS;
+    : (demoMode ? DEMO_LISTING_ANALYTICS : {});
 
   const analytics = source[selectedId] || ZERO_ANALYTICS;
   const selectedSub = liveSubmissions.find((s) => s.id === selectedId) || liveSubmissions[0];
@@ -225,7 +228,16 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
                   />
                 </View>
               </View>
-              <BarChart data={VIEWS_DATA} />
+              {/* The per-day series only exists for demo submissions — the API
+                  has no daily breakdown yet, and a hardcoded Mon–Sun chart
+                  under a real listing is fabricated traffic. */}
+              {demoMode && analytics.viewsThisWeek !== null ? (
+                <BarChart data={VIEWS_DATA} />
+              ) : (
+                <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: fonts.regular }}>
+                  Daily view tracking is coming soon.
+                </Text>
+              )}
             </View>
 
             {/* Metrics grid */}
