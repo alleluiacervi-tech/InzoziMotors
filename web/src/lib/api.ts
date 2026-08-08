@@ -102,7 +102,7 @@ async function request<T>(
     const message =
       (err as Error)?.name === 'AbortError'
         ? 'The request timed out.'
-        : 'Could not reach Sawa. Please try again.'
+        : 'Could not reach Sawa Cars. Please try again.'
     throw new ApiError(message, 0)
   } finally {
     clearTimeout(timer)

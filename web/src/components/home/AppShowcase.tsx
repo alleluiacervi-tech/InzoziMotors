@@ -22,7 +22,7 @@ function PhoneMock() {
 
           <div className="mt-4 flex items-center gap-2">
             <LogoMark size={22} />
-            <span className="text-micro font-extrabold text-content">Sawa</span>
+            <span className="text-micro font-extrabold text-content">Sawa Cars</span>
             <span className="ml-auto text-content-muted">
               <Icon name="bell" size={15} />
             </span>

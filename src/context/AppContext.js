@@ -891,7 +891,7 @@ export function AppProvider({ children }) {
       }
       if (isNetworkError(err)) {
         setBackendReachable(false);
-        const offline = new Error("We couldn't reach Sawa. Check your connection and try again.");
+        const offline = new Error("We couldn't reach Sawa Cars. Check your connection and try again.");
         offline.isNetworkError = true;
         setError(offline.message);
         throw offline;
@@ -942,7 +942,7 @@ export function AppProvider({ children }) {
       }
       if (isNetworkError(err)) {
         setBackendReachable(false);
-        const offline = new Error("We couldn't reach Sawa. Check your connection and try again.");
+        const offline = new Error("We couldn't reach Sawa Cars. Check your connection and try again.");
         offline.isNetworkError = true;
         setError(offline.message);
         throw offline;

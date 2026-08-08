@@ -5,7 +5,7 @@ import { CONTACT, SITE } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Privacy policy',
   description:
-    'What Sawa collects, why, who can see it, and how identity documents are handled. One account across the app and the website.',
+    'What Sawa Cars collects, why, who can see it, and how identity documents are handled. One account across the app and the website.',
   alternates: { canonical: '/legal/privacy' },
 }
 
@@ -32,7 +32,7 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li>Your name, email address and phone number.</li>
           <li>
-            Your password, stored only as a cryptographic hash. Nobody at Sawa can read it,
+            Your password, stored only as a cryptographic hash. Nobody at Sawa Cars can read it,
             including us.
           </li>
         </ul>
@@ -223,7 +223,7 @@ const SECTIONS: LegalSection[] = [
     heading: 'Children',
     body: (
       <p>
-        Sawa accounts are for adults. We do not knowingly collect information from anyone under
+        Sawa Cars accounts are for adults. We do not knowingly collect information from anyone under
         18, and we delete it if we discover we have.
       </p>
     ),

@@ -74,7 +74,7 @@ router.post('/', requireAuth, async (req, res) => {
         title: 'A buyer wants your car',
         body: center && slotDate
           ? `A buyer has booked a handover for your ${car.title} at ${center} on ${toDisplayDate(slotDate)} at ${handover_time}. Please attend.`
-          : `A buyer wants your ${car.title}. Sawa will coordinate the handover with both of you shortly.`,
+          : `A buyer wants your ${car.title}. Sawa Cars will coordinate the handover with both of you shortly.`,
         meta: JSON.stringify({ bookingId: booking_id, carId: car_id }),
       });
 
@@ -291,7 +291,7 @@ router.patch('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) 
         user_id: h.buyer_id,
         type: 'handover',
         title: 'Handover complete — car is yours!',
-        body: `The ${carTitle} handover is confirmed by Sawa. Your 7-day return guarantee starts now.`,
+        body: `The ${carTitle} handover is confirmed by Sawa Cars. Your 7-day return guarantee starts now.`,
         meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
       });
       await notifyUser(client, {

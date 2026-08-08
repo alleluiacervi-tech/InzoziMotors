@@ -77,7 +77,7 @@ export async function changePasswordAction(
 
   return {
     ok: true,
-    message: 'Your password is changed. Any other device signed in to Sawa has been signed out.',
+    message: 'Your password is changed. Any other device signed in to Sawa Cars has been signed out.',
   }
 }
 

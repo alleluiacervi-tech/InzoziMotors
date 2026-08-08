@@ -49,7 +49,7 @@ function StatusScreen({ status }) {
       <Text style={styles.statusTitle}>{isApproved ? 'Identity Verified' : 'Under Review'}</Text>
       <Text style={styles.statusSub}>
         {isApproved
-          ? 'Your identity has been confirmed by our team. You can now submit cars for listing on Sawa.'
+          ? 'Your identity has been confirmed by our team. You can now submit cars for listing on Sawa Cars.'
           : 'Our team is reviewing your documents. This usually takes less than 24 hours. You\'ll be notified once approved.'}
       </Text>
       <View style={styles.docList}>

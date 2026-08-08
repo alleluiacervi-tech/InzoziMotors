@@ -301,7 +301,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
               { icon: 'chatbubble-outline', text: 'Message the seller — make sure they know your booked date, time, and center.' },
               { icon: 'document-text-outline', text: 'Re-read the 150-point inspection report. Bring any questions to the center.' },
               { icon: 'people-outline', text: 'Come to the Sawa center on the day. Our team verifies payment and transfers ownership.' },
-              { icon: 'shield-checkmark-outline', text: 'Once Sawa confirms, your 7-day return guarantee starts immediately.' },
+              { icon: 'shield-checkmark-outline', text: 'Once Sawa Cars confirms, your 7-day return guarantee starts immediately.' },
             ].map((item, i) => (
               <View key={i} style={styles.nextRow}>
                 <View style={styles.nextIcon}>

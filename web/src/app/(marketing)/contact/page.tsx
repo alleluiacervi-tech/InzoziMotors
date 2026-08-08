@@ -124,7 +124,7 @@ export default function ContactPage() {
                     name={CONTACT.whatsappVerified ? 'text' : 'body'}
                     required
                     maxLength={900}
-                    placeholder="Hello Sawa — I would like to ask about…"
+                    placeholder="Hello Sawa Cars — I would like to ask about…"
                   />
                 </Field>
 

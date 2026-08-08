@@ -90,7 +90,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
     .map((days) => tripCost(car, days))
 
   const whatsappHref = `https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
-    `Hi Sawa, I would like to rent the ${car.title} (${formatUSD(car.daily_rate)}/day). My dates are:`
+    `Hi Sawa Cars, I would like to rent the ${car.title} (${formatUSD(car.daily_rate)}/day). My dates are:`
   )}`
 
   const specs: Spec[] = [

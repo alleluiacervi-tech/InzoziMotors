@@ -56,7 +56,7 @@ const APP_ONLY: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'camera',
     title: 'ID verification in one sitting',
-    body: 'Photograph your national ID and take the verification selfie without leaving the screen. That check is what keeps every listing on Sawa real, and a phone camera is the only sensible way to do it.',
+    body: 'Photograph your national ID and take the verification selfie without leaving the screen. That check is what keeps every listing on Sawa Cars real, and a phone camera is the only sensible way to do it.',
   },
   {
     icon: 'car',
@@ -114,7 +114,7 @@ export default async function DownloadPage({
           <div className="max-w-2xl">
             <Eyebrow>The Sawa Cars app</Eyebrow>
             <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
-              Sawa on your phone
+              Sawa Cars on your phone
             </h1>
             <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
               The same certified marketplace and the same account, with the parts that only make

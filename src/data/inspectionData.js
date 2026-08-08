@@ -340,7 +340,7 @@ export const DEFAULT_SELLER_PROFILE = {
   initials: 'VS',
   memberSince: 'Feb 2025',
   location: 'Kigali, Rwanda',
-  bio: 'Verified Sawa seller. All vehicles fully inspected before listing.',
+  bio: 'Verified Sawa Cars seller. All vehicles fully inspected before listing.',
   trustScore: 72,
   idVerified: true,
   completedSales: 3,

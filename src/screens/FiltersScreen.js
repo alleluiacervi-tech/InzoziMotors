@@ -87,7 +87,7 @@ export default function FiltersScreen({ navigation, route }) {
           {FUEL.map((f) => <Chip key={f} label={f} active={selected.fuel === f} onPress={() => toggle('fuel', f)} />)}
         </View>
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Sawa guarantees</Text>
+        <Text style={[styles.label, { marginTop: 22 }]}>Sawa Cars guarantees</Text>
         <Pressable style={styles.toggleRow} onPress={() => setInspectedOnly((v) => !v)}>
           <Text style={styles.toggleLabel}>150-point inspected only</Text>
           <View style={[styles.switchTrack, inspectedOnly && styles.switchTrackOn]}>

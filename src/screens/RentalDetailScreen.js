@@ -90,7 +90,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             </Pressable>
             <Pressable
               style={styles.circleBtn}
-              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
+              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa Cars` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
             >
               <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
             </Pressable>
@@ -194,7 +194,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           </View>
 
           {/* What's included */}
-          <Text style={styles.sectionTitle}>Every Sawa rental includes</Text>
+          <Text style={styles.sectionTitle}>Every Sawa Cars rental includes</Text>
           <View style={styles.includesGrid}>
             {RENTAL_INCLUDES.map((item) => (
               <View key={item.label} style={styles.includeCard}>
@@ -259,7 +259,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             style={styles.waBtn}
             onPress={() => openWhatsApp(
               SAWA_WHATSAPP,
-              `Hi Sawa, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
+              `Hi Sawa Cars, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
             )} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp"
           >
             <Ionicons name="logo-whatsapp" size={24} color="#fff" />

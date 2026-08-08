@@ -256,7 +256,7 @@ export default function SearchResultsScreen({ navigation, route }) {
           loadingMore ? (
             <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 20 }} />
           ) : serverBacked && exhausted && filteredCars.length > 0 ? (
-            <Text style={styles.endOfList}>That's every match on Sawa right now.</Text>
+            <Text style={styles.endOfList}>That's every match on Sawa Cars right now.</Text>
           ) : null
         }
         ListEmptyComponent={

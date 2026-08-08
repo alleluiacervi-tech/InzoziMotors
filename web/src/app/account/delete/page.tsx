@@ -22,7 +22,7 @@ import { Button, Container, Section } from '@/components/ui'
 export const metadata = buildMetadata({
   title: 'Delete your account',
   description:
-    'How to permanently delete your Sawa account and what happens to your data, including identity documents and records of completed sales.',
+    'How to permanently delete your Sawa Cars account and what happens to your data, including identity documents and records of completed sales.',
   path: '/account/delete',
 })
 
@@ -36,7 +36,7 @@ const REMOVED = [
 ]
 
 const KEPT = [
-  'Records of cars that have already changed hands through Sawa, which we are required to keep',
+  'Records of cars that have already changed hands through Sawa Cars, which we are required to keep',
   'Reviews written about a completed sale — these belong to the person who wrote them',
   'Fee records for sales that already completed',
 ]
@@ -53,7 +53,7 @@ export default async function DeleteAccountPage() {
       <Container>
         <div className="mx-auto max-w-2xl">
         <h1 className="text-display font-extrabold tracking-tight text-content">
-          Delete your Sawa account
+          Delete your Sawa Cars account
         </h1>
         <p className="mt-4 text-body leading-relaxed text-content-secondary">
           You can delete your account at any time, from the app or from this website. Deletion is
@@ -71,7 +71,7 @@ export default async function DeleteAccountPage() {
               .
             </li>
             <li>
-              <strong className="text-content">In the Sawa app:</strong> open Settings, scroll to
+              <strong className="text-content">In the Sawa Cars app:</strong> open Settings, scroll to
               &ldquo;Danger zone&rdquo; and tap <em>Delete my account</em>.
             </li>
           </ol>

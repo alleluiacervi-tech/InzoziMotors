@@ -52,7 +52,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   return {
     title: `${browseHeading(filters)}`,
     description:
-      `${description} listed by Sawa in Kigali. Every car is physically ` +
+      `${description} listed by Sawa Cars in Kigali. Every car is physically ` +
       'inspected on our 150-point check, photographed by our team and covered by ' +
       'the 7-day drive-it guarantee. Buyers pay no fees.',
     // Always self-canonical: a filtered view is a narrower page, not a

@@ -30,7 +30,7 @@ const SCORE_COMPONENTS = [
     color: colors.primary,
     bg: colors.greenTint,
     calcPts: (p) => p.idVerified ? 30 : 0,
-    desc: (p) => p.idVerified ? 'National ID confirmed by Sawa' : 'ID not yet verified',
+    desc: (p) => p.idVerified ? 'National ID confirmed by Sawa Cars' : 'ID not yet verified',
   },
   {
     key: 'completedSales',

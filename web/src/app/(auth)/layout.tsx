@@ -26,7 +26,7 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
   },
   {
     icon: 'eye-off',
-    title: 'Only Sawa publishes',
+    title: 'Only Sawa Cars publishes',
     desc: 'Sellers submit a car — they never post it. A listing goes live only after our team has inspected and photographed it.',
   },
   {
@@ -65,7 +65,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <LogoMark size={48} />
 
           <p className="mt-8 text-eyebrow font-bold uppercase text-brand-light">
-            The Sawa difference
+            The Sawa Cars difference
           </p>
           <h2 className="mt-3 max-w-sm text-headline font-extrabold">
             Why every listing here is a real car.

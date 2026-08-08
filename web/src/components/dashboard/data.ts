@@ -44,7 +44,7 @@ export function describeError(
   fallback = 'Something went wrong. Please try again.'
 ): string {
   if (err instanceof ApiError) {
-    if (err.isNetworkError) return 'We could not reach Sawa. Please try again.'
+    if (err.isNetworkError) return 'We could not reach Sawa Cars. Please try again.'
     return err.message
   }
   return fallback

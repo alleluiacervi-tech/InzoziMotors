@@ -119,7 +119,7 @@ export default async function DashboardOverviewPage() {
     <>
       <PageHeader
         title={`Hello, ${firstName}`}
-        description="Everything you have running with Sawa — your saved cars, your requests and where each car you sell has reached."
+        description="Everything you have running with Sawa Cars — your saved cars, your requests and where each car you sell has reached."
       />
 
       {somethingFailed ? (
@@ -134,7 +134,7 @@ export default async function DashboardOverviewPage() {
           <EmptyState
             icon="car"
             title="Your account is ready"
-            description="Every car on Sawa passes a 150-point inspection before it is listed, and every purchase carries a 7-day guarantee. Start with the cars available now — saving one takes a tap, and costs nothing."
+            description="Every car on Sawa Cars passes a 150-point inspection before it is listed, and every purchase carries a 7-day guarantee. Start with the cars available now — saving one takes a tap, and costs nothing."
             action={
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button href="/cars">Browse certified cars</Button>

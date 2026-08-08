@@ -278,7 +278,7 @@ export default function SellerDashboardScreen({ navigation }) {
 
         {/* How it works */}
         <View style={styles.howItWorks}>
-          <Text style={styles.howTitle}>How Sawa Works for Sellers</Text>
+          <Text style={styles.howTitle}>How Sawa Cars Works for Sellers</Text>
           {[
             { icon: 'shield-checkmark-outline', text: 'Submit your car — takes 5 minutes' },
             { icon: 'time-outline', text: 'Our team reviews in under 24 hours' },

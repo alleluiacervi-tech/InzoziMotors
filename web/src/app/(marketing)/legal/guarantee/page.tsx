@@ -19,7 +19,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Every car bought through Sawa and handed over at a Sawa center comes with{' '}
+          Every car bought through Sawa Cars and handed over at a Sawa center comes with{' '}
           {RETURN_WINDOW_DAYS} days to change your mind. The window opens on the day of the
           handover and closes {RETURN_WINDOW_DAYS} days later.
         </p>

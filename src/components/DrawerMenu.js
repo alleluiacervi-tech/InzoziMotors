@@ -235,7 +235,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               <Text style={styles.footerLink}>Settings</Text>
             </Pressable>
           </View>
-          <Text style={styles.version}>Sawa v1.0 · Kigali, Rwanda</Text>
+          <Text style={styles.version}>Sawa Cars v1.0 · Kigali, Rwanda</Text>
         </ScrollView>
       </Animated.View>
     </View>

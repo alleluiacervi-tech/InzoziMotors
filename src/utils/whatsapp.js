@@ -54,7 +54,7 @@ export function contactSellerOnWhatsApp(car, price) {
   const number = car.sellerPhone || SAWA_WHATSAPP;
   const viaSawa = !car.sellerPhone;
   const msg = viaSawa
-    ? `Hi Sawa, I'm interested in the ${car.title} (${price}) listed by ${car.seller}. Is it still available?`
-    : `Hi ${car.seller}, I found your ${car.title} (${price}) on Sawa. Is it still available?`;
+    ? `Hi Sawa Cars, I'm interested in the ${car.title} (${price}) listed by ${car.seller}. Is it still available?`
+    : `Hi ${car.seller}, I found your ${car.title} (${price}) on Sawa Cars. Is it still available?`;
   return openWhatsApp(number, msg);
 }

@@ -18,7 +18,7 @@ import { useApp } from '../context/AppContext';
 const HOW_IT_WORKS = [
   { icon: 'paper-plane-outline', title: 'Send your request', sub: 'One tap — no payment, no commitment yet.' },
   { icon: 'lock-closed-outline', title: 'We reserve the car', sub: 'Held for you while we confirm with the seller.' },
-  { icon: 'call-outline', title: 'We arrange the handover', sub: 'Sawa contacts you on WhatsApp to set a time that suits you.' },
+  { icon: 'call-outline', title: 'We arrange the handover', sub: 'Sawa Cars contacts you on WhatsApp to set a time that suits you.' },
   { icon: 'shield-checkmark-outline', title: 'Meet at the Sawa center', sub: 'Payment, documents, transfer — then drive it for 7 days before the sale is final.' },
 ];
 
@@ -154,7 +154,7 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
             { icon: 'bookmark-outline', label: 'Request ID', value: bookingId },
             { icon: 'car-outline', label: 'Vehicle', value: car.title },
             { icon: 'call-outline', label: 'Contact', value: phone ? `+250 ${phone}` : 'Via your account' },
-            { icon: 'time-outline', label: 'Next step', value: 'Sawa confirms within 24h' },
+            { icon: 'time-outline', label: 'Next step', value: 'Sawa Cars confirms within 24h' },
           ].map((row) => (
             <View key={row.label} style={styles.bookingRow}>
               <Ionicons name={row.icon} size={15} color={colors.textMuted} />

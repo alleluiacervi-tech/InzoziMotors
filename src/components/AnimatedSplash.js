@@ -39,7 +39,7 @@ export default function AnimatedSplash({ onFinish }) {
       <View style={styles.center}>
         <Animated.View style={{ opacity: fade, transform: [{ scale }], alignItems: 'center' }}>
           <LogoMark size={148} />
-          <Text style={styles.word}>Sawa</Text>
+          <Text style={styles.word}>Sawa Cars</Text>
           <Text style={styles.tag}>Certified · Inspected · Trusted</Text>
         </Animated.View>
       </View>

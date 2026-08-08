@@ -205,7 +205,7 @@ export default function DisputesScreen({ navigation, route }) {
               <Text style={styles.disputeReason}>{d.reason}</Text>
               {d.resolution ? (
                 <View style={styles.resolutionBox}>
-                  <Text style={styles.resolutionLabel}>Sawa's response</Text>
+                  <Text style={styles.resolutionLabel}>Sawa Cars' response</Text>
                   <Text style={styles.resolutionText}>{d.resolution}</Text>
                 </View>
               ) : null}

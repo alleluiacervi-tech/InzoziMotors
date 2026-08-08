@@ -72,7 +72,7 @@ export default function CarValuationScreen({ navigation }) {
             </View>
             <Text style={styles.resultBasis}>
               {result.comparables >= 2
-                ? `Based on ${result.comparables} similar ${make} cars on Sawa`
+                ? `Based on ${result.comparables} similar ${make} cars on Sawa Cars`
                 : 'Based on current Kigali market data'}
             </Text>
           </View>

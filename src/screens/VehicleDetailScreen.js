@@ -208,7 +208,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Pressable
                 style={styles.circleBtn}
                 onPress={() => Share.share({
-                  message: `${car.title} — ${formatPrice(price)} on Sawa. Every car 150-point inspected.`,
+                  message: `${car.title} — ${formatPrice(price)} on Sawa Cars. Every car 150-point inspected.`,
                 }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
               >
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
@@ -530,7 +530,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
         </Pressable>
         <Button
-          title={isAuction ? 'Place a Bid' : 'Request via Sawa'}
+          title={isAuction ? 'Place a Bid' : 'Request via Sawa Cars'}
           style={{ flex: 1 }}
           onPress={() => navigation.navigate('Checkout', { car })}
         />

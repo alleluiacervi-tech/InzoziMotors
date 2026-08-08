@@ -40,7 +40,7 @@ async function sendMail({ to, subject, text }) {
   if (!t) return false;
   try {
     await t.sendMail({
-      from: process.env.MAIL_FROM || 'Sawa <no-reply@sawacars.com>',
+      from: process.env.MAIL_FROM || 'Sawa Cars <no-reply@sawacars.com>',
       to,
       subject,
       text,
@@ -57,11 +57,11 @@ async function sendMail({ to, subject, text }) {
 async function sendResetCode(email, code) {
   return sendMail({
     to: email,
-    subject: `${code} is your Sawa reset code`,
+    subject: `${code} is your Sawa Cars reset code`,
     text:
       `Your password reset code is: ${code}\n\n` +
       `It expires in 30 minutes. If you didn't request this, you can ignore ` +
-      `this email — your password stays unchanged.\n\n— Sawa`,
+      `this email — your password stays unchanged.\n\n— Sawa Cars`,
   });
 }
 
