@@ -99,6 +99,12 @@ const PILL_TONES: Record<string, string> = {
   under_review: 'bg-warning-tint text-warning-text', pending: 'bg-warning-tint text-warning-text',
   open: 'bg-warning-tint text-warning-text', due: 'bg-warning-tint text-warning-text',
   reserved: 'bg-[#F5F3FF] text-[#7C3AED]',
+  // Contract lifecycle. 'signed' is the terminal good state (a paper copy exists),
+  // 'draft' means a number is held but no PDF was written, and superseded/void
+  // numbers stay in the register greyed out — they are history, not failures.
+  signed: 'bg-success-tint text-success', issued: 'bg-info-tint text-info',
+  draft: 'bg-warning-tint text-warning-text',
+  superseded: 'bg-surface-alt text-content-muted', void: 'bg-surface-alt text-content-muted',
   sold: 'bg-surface-alt text-content-muted', archived: 'bg-surface-alt text-content-muted',
   cancelled: 'bg-surface-alt text-content-muted', waived: 'bg-surface-alt text-content-muted',
   retired: 'bg-surface-alt text-content-muted', maintenance: 'bg-warning-tint text-warning-text',

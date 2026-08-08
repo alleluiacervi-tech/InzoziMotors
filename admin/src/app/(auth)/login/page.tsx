@@ -62,7 +62,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-4">
             <LogoMark size={40} />
           </div>
-          <h1 className="text-2xl font-bold text-white">Sawa</h1>
+          <h1 className="text-2xl font-bold text-white">Sawa Cars</h1>
           <p className="text-white/60 text-sm mt-1">Admin Dashboard</p>
         </div>
 
