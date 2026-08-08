@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react'
 import { raiseDisputeAction } from '@/app/(dashboard)/dashboard/disputes/actions'
 import { SubmitButton } from '@/components/dashboard/SubmitButton'
-import { Alert, Field, LiveRegion, Textarea } from '@/components/ui'
+import { Alert, Button, Field, LiveRegion, Textarea } from '@/components/ui'
 
 // One form per eligible handover, so there is no car-picker to get wrong. The
 // form only appears where the guarantee still applies.
@@ -31,14 +31,10 @@ export function DisputeForm({
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
-      >
+      <Button type="button" variant="outline" size="compact" onClick={() => setOpen(true)}>
         Raise a dispute
         <span className="sr-only"> for the {carTitle}</span>
-      </button>
+      </Button>
     )
   }
 
@@ -74,13 +70,9 @@ export function DisputeForm({
         <SubmitButton size="sm" pendingLabel="Sending…">
           Send to the Sawa team
         </SubmitButton>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="inline-flex h-10 items-center rounded-lg px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content"
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
           Cancel
-        </button>
+        </Button>
       </div>
 
       <LiveRegion>{state?.error ?? ''}</LiveRegion>

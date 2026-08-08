@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: colors.textPrimary,
+    fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary,
   },
   inputMulti: { height: 84, paddingTop: 12 },
   photoGrid: { flexDirection: 'row', gap: 10 },

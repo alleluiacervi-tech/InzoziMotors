@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 46,
   },
-  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary, padding: 0 },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: fonts.medium, color: colors.textPrimary, padding: 0 },
   filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   resultCount: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },

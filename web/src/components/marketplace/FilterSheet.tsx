@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Icon } from '@/components/ui'
+import { Button, Icon } from '@/components/ui'
 import { FilterPanel } from './FilterPanel'
 import type { Facets } from './facets'
 import { activeFilterCount, type Filters, type SortValue } from './query'
@@ -72,13 +72,15 @@ export function FilterSheet({
 
   return (
     <>
-      <button
+      <Button
         ref={triggerRef}
         type="button"
+        variant="outline"
+        size="compact"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-caption font-bold text-content transition-colors hover:border-content-muted lg:hidden"
+        className="lg:hidden"
       >
         <Icon name="filter" size={17} className="text-content-secondary" />
         Filters
@@ -87,7 +89,7 @@ export function FilterSheet({
             {count}
           </span>
         ) : null}
-      </button>
+      </Button>
 
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">

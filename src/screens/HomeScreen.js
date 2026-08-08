@@ -861,6 +861,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   footerLinkText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textSecondary },
-  footerDivider: { fontSize: 12, color: colors.border },
+  footerDivider: { fontSize: 12, color: colors.textDisabled },
   copyrightText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
 });

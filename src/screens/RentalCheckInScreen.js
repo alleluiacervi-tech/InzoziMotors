@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -164,17 +164,12 @@ export default function RentalCheckInScreen({ navigation, route }) {
         )}
 
         <Button
-          title={
-            saving
-              ? 'Saving…'
-              : isReturn ? 'I Agree — Complete Return' : 'I Agree — Start My Trip'
-          }
+          title={isReturn ? 'I Agree — Complete Return' : 'I Agree — Start My Trip'}
           icon="checkmark-circle-outline"
           onPress={handleAgree}
-          disabled={saving}
+          loading={saving}
           style={{ marginTop: 24 }}
         />
-        {saving && <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 10 }} />}
 
         <View style={styles.privacyRow}>
           <Ionicons name="lock-closed-outline" size={12} color={colors.textMuted} />

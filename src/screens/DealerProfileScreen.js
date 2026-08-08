@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../context/AppContext';
@@ -105,6 +106,7 @@ export default function DealerProfileScreen({ navigation, route }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <StatusBar style="light" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Hero */}
         <LinearGradient colors={[colors.navyDeep, colors.navyMid, colors.primary]} style={styles.hero}>

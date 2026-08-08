@@ -110,7 +110,7 @@ export function RequestCard({ handover }: { handover: Handover }) {
           {price != null ? (
             <p className="mt-3">
               {/* Price is one of the few places brand red is allowed. */}
-              <span className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
+              <span className="text-price font-extrabold tracking-[-0.02em] text-brand">
                 {formatUSD(price)}
               </span>
               <span className="ml-2 text-caption text-content-muted">{formatRWF(price)}</span>

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { buildMetadata } from '@/lib/metadata'
 import { getCurrentUser } from '@/lib/session'
 import { CONTACT } from '@/lib/site'
-import { Container, Section } from '@/components/ui'
+import { Button, Container, Section } from '@/components/ui'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The public account-deletion page.
@@ -47,8 +47,12 @@ export default async function DeleteAccountPage() {
 
   return (
     <Section>
-      <Container className="max-w-2xl py-12 sm:py-16">
-        <h1 className="text-display-sm font-extrabold tracking-tight text-content">
+      {/* The measure lives on an inner wrapper: max-w-* on Container itself
+          loses to Container's own max-w-content at equal specificity, which
+          used to stretch this copy across the full 1400px frame. */}
+      <Container>
+        <div className="mx-auto max-w-2xl">
+        <h1 className="text-display font-extrabold tracking-tight text-content">
           Delete your Sawa account
         </h1>
         <p className="mt-4 text-body leading-relaxed text-content-secondary">
@@ -74,12 +78,9 @@ export default async function DeleteAccountPage() {
           <p className="mt-4 text-caption leading-relaxed text-content-secondary">
             Either way you will be asked for your password to confirm it is really you.
           </p>
-          <Link
-            href="/signin?next=/dashboard/profile"
-            className="mt-6 inline-flex h-12 items-center rounded-xl bg-content px-6 text-caption font-bold text-surface transition-opacity hover:opacity-90"
-          >
+          <Button href="/signin?next=/dashboard/profile" variant="dark" size="md" className="mt-6">
             Sign in to delete my account
-          </Link>
+          </Button>
         </div>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
@@ -134,6 +135,7 @@ export default async function DeleteAccountPage() {
           </Link>{' '}
           for what we hold and why.
         </p>
+        </div>
       </Container>
     </Section>
   )

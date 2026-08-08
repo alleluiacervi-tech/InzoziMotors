@@ -190,7 +190,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
           <aside className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="p-5 sm:p-6">
-                <p className="text-[32px] font-extrabold leading-none tracking-[-0.03em] text-brand">
+                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.daily_rate)}
                   <span className="text-base font-bold text-content-muted"> / day</span>
                 </p>

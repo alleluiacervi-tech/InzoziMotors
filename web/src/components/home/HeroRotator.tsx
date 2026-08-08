@@ -110,7 +110,10 @@ export function HeroRotator({ slides }: { slides: HeroSlide[] }) {
             >
               <Icon name="chevron-right" size={18} />
             </button>
-            <div className="ml-2 flex items-center gap-2" role="tablist" aria-label="Slides">
+            {/* Each visible dot stays 6px tall; the 44px-tall padded button
+                around it is what fingers actually hit (the bare dots were
+                ~6×16px — nearly untappable on a phone). */}
+            <div className="ml-2 flex items-center" role="tablist" aria-label="Slides">
               {slides.map((s, i) => (
                 <button
                   key={s.headline}
@@ -119,10 +122,14 @@ export function HeroRotator({ slides }: { slides: HeroSlide[] }) {
                   aria-selected={i === index}
                   aria-label={`Slide ${i + 1}`}
                   onClick={() => go(i)}
-                  className={`h-1.5 rounded-pill transition-all duration-300 ${
-                    i === index ? 'w-8 bg-white' : 'w-4 bg-white/35 hover:bg-white/60'
-                  }`}
-                />
+                  className="-my-3 flex h-11 items-center px-1.5"
+                >
+                  <span
+                    className={`h-1.5 rounded-pill transition-all duration-300 ${
+                      i === index ? 'w-8 bg-white' : 'w-4 bg-white/35 hover:bg-white/60'
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           </div>

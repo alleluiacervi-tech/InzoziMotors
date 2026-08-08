@@ -281,7 +281,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <Card className="p-5 sm:p-6">
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
-                <p className="text-[32px] font-extrabold leading-none tracking-[-0.03em] text-brand">
+                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.price)}
                 </p>
                 <p className="mt-2 text-caption text-content-secondary">
@@ -373,7 +373,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
                   <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">
                     <Icon name="shield" size={14} className="mt-px shrink-0" />
-                    The Sawa 7-Day Guarantee · Handover at an Sawa center
+                    The Sawa 7-Day Guarantee · Handover at a Sawa center
                   </p>
                 </div>
 
@@ -415,7 +415,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
               <p className="mt-4 flex items-start gap-2 px-1 text-micro leading-relaxed text-content-muted">
                 <Icon name="location" size={14} className="mt-0.5" />
-                Handovers happen at an Sawa center in Kigali, with our team
+                Handovers happen at a Sawa center in Kigali, with our team
                 present for the documents and the RRA transfer.
               </p>
             </div>

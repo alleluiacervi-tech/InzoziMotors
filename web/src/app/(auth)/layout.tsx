@@ -37,7 +37,7 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
   {
     icon: 'cash',
     title: 'No payment in the app',
-    desc: 'Money changes hands in person at an Sawa center, never through this site. Buyers pay us nothing.',
+    desc: 'Money changes hands in person at a Sawa center, never through this site. Buyers pay us nothing.',
   },
 ]
 

@@ -190,7 +190,7 @@ export default async function DownloadPage({
             </h2>
             <p className="mt-5 text-title-sm leading-relaxed text-white/70">
               There is no payment feature in the app or on this site, and there is not going to be
-              one. Money changes hands in person at an Sawa center on the day of handover, with
+              one. Money changes hands in person at a Sawa center on the day of handover, with
               our team checking the documents alongside you. That is exactly what makes the 7-day
               drive-it guarantee something we can honour.
             </p>

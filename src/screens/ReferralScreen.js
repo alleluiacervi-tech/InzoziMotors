@@ -110,12 +110,12 @@ export default function ReferralScreen({ navigation }) {
           </View>
           <View style={styles.trackerDivider} />
           <View style={styles.trackerItem}>
-            <Text style={[styles.trackerValue, { color: colors.green }]}>{referral?.uses ?? 0}</Text>
+            <Text style={[styles.trackerValue, { color: colors.greenText }]}>{referral?.uses ?? 0}</Text>
             <Text style={styles.trackerLabel}>Times used</Text>
           </View>
           <View style={styles.trackerDivider} />
           <View style={styles.trackerItem}>
-            <Text style={[styles.trackerValue, { color: colors.amber }]}>{referred > 0 ? '10%' : '—'}</Text>
+            <Text style={[styles.trackerValue, { color: colors.amberText }]}>{referred > 0 ? '10%' : '—'}</Text>
             <Text style={styles.trackerLabel}>Next discount</Text>
           </View>
         </View>

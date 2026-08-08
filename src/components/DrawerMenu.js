@@ -425,11 +425,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
   },
-  footerDot: { color: colors.border, fontSize: 14 },
+  footerDot: { color: colors.textDisabled, fontSize: 14 },
   version: {
     fontFamily: fonts.regular,
     fontSize: 11,
-    color: colors.border,
+    color: colors.textDisabled,
     paddingHorizontal: 20,
   },
 });

@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   dateNum: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   dateMonth: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted },
   dateTextOn: { color: colors.primary },
-  dateTextBlocked: { color: colors.border },
+  dateTextBlocked: { color: colors.textDisabled },
   durationRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   rangeWarning: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 6,
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 8,
     borderRadius: radius.md,
   },
-  noPayText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.green },
+  noPayText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.greenText },
   // Confirmation state
   confirmWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 24, paddingTop: 48 },
   confirmIcon: {

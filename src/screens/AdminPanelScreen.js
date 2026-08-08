@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
+import { ErrorState } from '../components/StateViews';
 import adminApi from '../api/admin';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
@@ -12,8 +13,8 @@ import { useApp } from '../context/AppContext';
 const TABS = ['Submissions', 'IDs', 'Inspections', 'Handovers', 'Listings'];
 
 const STAT_CARDS = ({ pendingCount, reviewCount, todayInspections, activeListings }) => [
-  { label: 'To Review', value: String(reviewCount), icon: 'file-tray-full-outline', color: colors.amber, bg: colors.amberTint },
-  { label: 'Pending IDs', value: String(pendingCount), icon: 'person-outline', color: colors.amber, bg: colors.amberTint },
+  { label: 'To Review', value: String(reviewCount), icon: 'file-tray-full-outline', color: colors.amberText, bg: colors.amberTint },
+  { label: 'Pending IDs', value: String(pendingCount), icon: 'person-outline', color: colors.amberText, bg: colors.amberTint },
   { label: "Today's Inspections", value: String(todayInspections), icon: 'scan-outline', color: colors.statusScheduled, bg: colors.statusScheduledBg },
   { label: 'Active Listings', value: String(activeListings), icon: 'car-outline', color: colors.primary, bg: colors.greenTint },
 ];
@@ -451,15 +452,11 @@ export default function AdminPanelScreen({ navigation }) {
     return (
       <Screen background={colors.bg}>
         <BackHeader title="Team Portal" onBack={() => navigation.goBack()} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
-          <Ionicons name="lock-closed-outline" size={40} color={colors.textMuted} />
-          <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
-            Sawa team access only
-          </Text>
-          <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
-            This area is for Sawa staff. If you&apos;re on the team, sign in with your staff account.
-          </Text>
-        </View>
+        <ErrorState
+          icon="lock-closed-outline"
+          title="Sawa team access only"
+          sub="This area is for Sawa staff. If you're on the team, sign in with your staff account."
+        />
       </Screen>
     );
   }

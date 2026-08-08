@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react'
 import { updatePriceAction } from '@/app/(dashboard)/dashboard/selling/actions'
 import { SubmitButton } from '@/components/dashboard/SubmitButton'
-import { Alert, Field, Input, LiveRegion } from '@/components/ui'
+import { Alert, Button, Field, Input, LiveRegion } from '@/components/ui'
 import { formatRWF, formatUSD } from '@/lib/business'
 
 // Sellers keep control of their price. The consequence of lowering it is
@@ -30,14 +30,10 @@ export function PriceEditor({
   if (!open) {
     return (
       <div>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
-        >
+        <Button type="button" variant="outline" size="compact" onClick={() => setOpen(true)}>
           Change price
           <span className="sr-only"> for {title}</span>
-        </button>
+        </Button>
         <LiveRegion>{state?.ok ? state.message : ''}</LiveRegion>
         {state?.ok ? (
           <p className="mt-2 text-caption font-semibold text-success">{state.message}</p>
@@ -92,16 +88,17 @@ export function PriceEditor({
         <SubmitButton size="sm" pendingLabel="Saving…">
           Save new price
         </SubmitButton>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => {
             setValue(String(currentPrice))
             setOpen(false)
           }}
-          className="inline-flex h-10 items-center rounded-lg px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface hover:text-content"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )

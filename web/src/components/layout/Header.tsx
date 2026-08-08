@@ -36,6 +36,17 @@ export function Header({ user }: { user: User | null }) {
     return () => { document.body.style.overflow = '' }
   }, [open])
 
+  // Escape closes the drawer — keyboard users had no way out of it short of
+  // tabbing to the X button.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href))
 

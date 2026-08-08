@@ -38,7 +38,7 @@ export function AvailabilityStrip({
                     : 'border-line-soft bg-surface-alt text-content-muted line-through'
                 }`}
               >
-                <span className="text-[10px] font-bold uppercase tracking-wide">
+                <span className="text-micro font-bold uppercase tracking-wide">
                   {day.date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
                 </span>
                 <span className="text-body font-extrabold">

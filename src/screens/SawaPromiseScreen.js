@@ -93,7 +93,7 @@ export default function SawaPromiseScreen({ navigation }) {
 
         {/* Fine print */}
         <Text style={styles.finePrint}>
-          The 7-day return guarantee applies to purchases handed over at an Sawa center.
+          The 7-day return guarantee applies to purchases handed over at a Sawa center.
           Deposit refunds follow the documented return check. Full terms available at any center.
         </Text>
 

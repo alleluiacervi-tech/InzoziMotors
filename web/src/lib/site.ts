@@ -165,7 +165,7 @@ export const BUYING_STEPS = [
   },
   {
     title: 'Handover at the center',
-    desc: 'Meet at an Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.',
+    desc: 'Meet at a Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.',
   },
   {
     title: 'Ownership transfer',
@@ -194,7 +194,7 @@ export const SELLING_STEPS = [
 export const FAQS = [
   {
     q: 'Do I pay anything through the app or website?',
-    a: 'Never. There is no payment feature at all. Payment happens physically at an Sawa center at handover — that is what protects both you and the seller.',
+    a: 'Never. There is no payment feature at all. Payment happens physically at a Sawa center at handover — that is what protects both you and the seller.',
   },
   {
     q: 'What does the 150-point inspection actually cover?',

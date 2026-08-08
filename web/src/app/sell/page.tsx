@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Sell your car in Kigali',
   description:
-    'Bring your car to an Sawa center once. We run the 150-point inspection, shoot the 36 standard photos, publish the listing, verify the buyer and process the RRA transfer. Free valuation, no account needed.',
+    'Bring your car to a Sawa center once. We run the 150-point inspection, shoot the 36 standard photos, publish the listing, verify the buyer and process the RRA transfer. Free valuation, no account needed.',
   alternates: { canonical: '/sell' },
   openGraph: {
     title: `Sell your car with ${SITE.name}`,
@@ -215,7 +215,7 @@ export default async function SellPage() {
               <Badge tone="success">Only when it sells</Badge>
               <h3 className="mt-4 text-title-sm font-extrabold text-content">Success commission</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                A small share of the sale price, charged when the handover completes at an Sawa
+                A small share of the sale price, charged when the handover completes at a Sawa
                 center. It is quoted with your certification fee, before inspection. If the car
                 does not sell, there is nothing to pay.
               </p>

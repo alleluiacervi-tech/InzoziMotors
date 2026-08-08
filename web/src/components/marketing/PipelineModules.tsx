@@ -46,10 +46,18 @@ export function PipelineModules({ steps }: { steps: PipelineStep[] }) {
       />
       {steps.map((step, i) => (
         <li key={step.title} className="relative pl-8 lg:pl-0">
+          {/* The mobile node marker lives OUTSIDE Reveal on purpose: Reveal's
+              ever-present transform makes it the containing block, which used
+              to yank this absolute circle off the connector and on top of the
+              step number. Anchored to the li, it stays on the line. */}
+          <span
+            className="absolute -left-0.5 top-0.5 h-4 w-4 rounded-full border-2 border-line bg-surface-page lg:hidden"
+            aria-hidden="true"
+          />
           <Reveal delay={i * 90}>
             <p className="text-eyebrow font-bold text-content-muted">
               <span
-                className="absolute -left-0.5 top-0.5 inline-block h-4 w-4 rounded-full border-2 border-line bg-surface-page lg:static lg:mr-2 lg:inline-block lg:align-[-2px]"
+                className="hidden lg:mr-2 lg:inline-block lg:h-4 lg:w-4 lg:rounded-full lg:border-2 lg:border-line lg:bg-surface-page lg:align-[-2px]"
                 aria-hidden="true"
               />
               {String(i + 1).padStart(2, '0')}

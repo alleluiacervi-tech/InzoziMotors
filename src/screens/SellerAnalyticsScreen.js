@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   tomLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   tomLabel: { fontSize: 11, color: colors.textMuted },
   tomHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
-  tomHintText: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold },
+  tomHintText: { fontSize: 12, color: colors.greenText, fontFamily: fonts.semiBold },
   empty: { alignItems: 'center', paddingVertical: 50, gap: 10 },
   emptyTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   emptySub: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 40 },

@@ -107,13 +107,10 @@ export default async function ProfilePage() {
                 alerts stay exactly as they are.
               </p>
               <form action={signOutAction} className="mt-4">
-                <button
-                  type="submit"
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
-                >
+                <Button type="submit" variant="outline" size="compact">
                   <Icon name="logout" size={16} />
                   Sign out
-                </button>
+                </Button>
               </form>
             </Card>
           </section>

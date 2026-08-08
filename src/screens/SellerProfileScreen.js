@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, Pressable, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
+import StickyFooter from '../components/StickyFooter';
+import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 import reviewsApi from '../api/reviews';
@@ -45,7 +47,7 @@ const SCORE_COMPONENTS = [
     label: 'Response Rate',
     icon: 'chatbubble-outline',
     max: 20,
-    color: colors.amber,
+    color: colors.amberText,
     bg: colors.amberTint,
     calcPts: (p) => Math.round((p.responseRate / 100) * 20),
     desc: (p) => `${p.responseRate}% messages replied within 24h`,
@@ -55,7 +57,7 @@ const SCORE_COMPONENTS = [
     label: 'Buyer Reviews',
     icon: 'star-outline',
     max: 20,
-    color: '#F59E0B',
+    color: colors.amberText,
     bg: '#FFFBEB',
     calcPts: (p) => Math.round((p.avgRating / 5) * 20),
     desc: (p) => `${p.avgRating}★ avg from ${p.totalReviews} review${p.totalReviews !== 1 ? 's' : ''}`,
@@ -108,7 +110,7 @@ function StarRating({ value, size = 14 }) {
           key={i}
           name={i <= value ? 'star' : 'star-outline'}
           size={size}
-          color={i <= value ? '#F59E0B' : colors.border}
+          color={i <= value ? colors.amber : colors.textDisabled}
         />
       ))}
     </View>
@@ -179,26 +181,15 @@ export default function SellerProfileScreen({ navigation, route }) {
     return (
       <Screen background={colors.bg}>
         <BackHeader title="Seller Profile" onBack={() => navigation.goBack()} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
-          {loading ? (
-            <>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary }}>
-                Loading seller profile…
-              </Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="person-circle-outline" size={40} color={colors.textMuted} />
-              <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
-                Profile not available
-              </Text>
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
-                We couldn&apos;t load this seller&apos;s profile. Check your connection and try again.
-              </Text>
-            </>
-          )}
-        </View>
+        {loading ? (
+          <LoadingState label="Loading seller profile…" />
+        ) : (
+          <ErrorState
+            icon="person-circle-outline"
+            title="Profile not available"
+            sub="We couldn't load this seller's profile. Check your connection and try again."
+          />
+        )}
       </Screen>
     );
   }
@@ -255,8 +246,8 @@ export default function SellerProfileScreen({ navigation, route }) {
           {[
             { label: 'Sales', value: String(profile.completedSales), icon: 'bag-check-outline', color: colors.primary },
             { label: 'Response', value: `${profile.responseRate}%`, icon: 'chatbubble-outline', color: colors.primary },
-            { label: 'Rating', value: `${profile.avgRating}★`, icon: 'star', color: '#F59E0B' },
-            { label: 'Reviews', value: String(profile.totalReviews), icon: 'people-outline', color: colors.amber },
+            { label: 'Rating', value: `${profile.avgRating}★`, icon: 'star', color: colors.amberText },
+            { label: 'Reviews', value: String(profile.totalReviews), icon: 'people-outline', color: colors.amberText },
           ].map((s) => (
             <View key={s.label} style={styles.statCard}>
               <Ionicons name={s.icon} size={18} color={s.color} />
@@ -340,9 +331,9 @@ export default function SellerProfileScreen({ navigation, route }) {
       </ScrollView>
 
       {/* Sticky contact CTA */}
-      <View style={styles.cta}>
+      <StickyFooter style={styles.cta}>
         <Button title={`Contact ${profile.name.split(' ')[0]}`} icon="chatbubble-outline" onPress={handleContact} />
-      </View>
+      </StickyFooter>
     </Screen>
   );
 }
@@ -436,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, alignSelf: 'flex-start',
     paddingHorizontal: 7, paddingVertical: 3, borderRadius: radius.pill,
   },
-  listingBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  listingBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
   reviews: { gap: 10 },
   reviewCard: {
     backgroundColor: colors.surface,
@@ -456,7 +447,7 @@ const styles = StyleSheet.create({
   reviewText: { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 16, paddingBottom: 28,
+    padding: 16,
     backgroundColor: colors.surface,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     ...shadows.floating,

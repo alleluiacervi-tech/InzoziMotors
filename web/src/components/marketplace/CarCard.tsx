@@ -51,14 +51,14 @@ export function CarCard({
         {(car.images?.length ?? 0) >= 2 ? (
           <CardPhotoFlick
             images={car.images!}
-            alt={`${car.title} — photographed at an Sawa inspection center`}
+            alt={`${car.title} — photographed at a Sawa inspection center`}
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
             priority={priority}
           />
         ) : (
           <Image
             src={image}
-            alt={`${car.title} — photographed at an Sawa inspection center`}
+            alt={`${car.title} — photographed at a Sawa inspection center`}
             fill
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
             className="object-contain p-2 transition-transform duration-500 ease-brand group-hover:scale-[1.03]"
@@ -143,7 +143,7 @@ export function CarCard({
           {/* Price is one of the few places brand red is allowed. */}
           {/* tabular-nums so prices line up digit-for-digit down a grid of
               cards — Satoshi defaults to proportional figures. */}
-          <p className="text-[21px] font-extrabold tracking-[-0.02em] text-brand tabular-nums">
+          <p className="text-price font-extrabold tracking-[-0.02em] text-brand tabular-nums">
             {formatUSD(car.price)}
           </p>
           <p className="mt-0.5 text-micro text-content-muted tabular-nums">

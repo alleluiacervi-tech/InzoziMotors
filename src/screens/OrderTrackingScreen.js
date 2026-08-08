@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
+import StickyFooter from '../components/StickyFooter';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
@@ -195,8 +196,16 @@ export default function OrderTrackingScreen({ navigation, route }) {
               currentStatus === 'booked' && styles.statusChipConfirmed,
               currentStatus === 'complete' && styles.statusChipComplete,
             ]}>
-              <View style={[styles.statusDot, { backgroundColor: currentStatus === 'complete' ? colors.green : colors.amber }]} />
-              <Text style={styles.statusChipText}>
+              <View style={[styles.statusDot, {
+                backgroundColor: currentStatus === 'complete' ? colors.statusLive
+                  : currentStatus === 'booked' ? colors.statusScheduled
+                  : colors.amber,
+              }]} />
+              <Text style={[
+                styles.statusChipText,
+                currentStatus === 'booked' && { color: colors.statusScheduled },
+                currentStatus === 'complete' && { color: colors.statusLive },
+              ]}>
                 {currentStatus === 'reserved' ? 'Car reserved'
                   : currentStatus === 'booked' ? 'Slot booked'
                   : currentStatus === 'handover' ? 'At the center'
@@ -262,7 +271,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
                   <Ionicons
                     name={i <= reviewRating ? 'star' : 'star-outline'}
                     size={30}
-                    color={i <= reviewRating ? '#F59E0B' : colors.border}
+                    color={i <= reviewRating ? colors.amber : colors.textDisabled}
                   />
                 </Pressable>
               ))}
@@ -321,7 +330,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
       </ScrollView>
 
       {/* Sticky CTAs */}
-      <View style={styles.cta}>
+      <StickyFooter style={styles.cta}>
         <Button
           title="Message Seller"
           icon="chatbubble-outline"
@@ -336,7 +345,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
             style={{ marginTop: 10 }}
           />
         )}
-      </View>
+      </StickyFooter>
     </Screen>
   );
 }
@@ -351,8 +360,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amberTint + 'DD',
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill,
   },
-  statusChipConfirmed: { backgroundColor: colors.greenTint + 'DD' },
-  statusChipComplete: { backgroundColor: colors.greenTint + 'DD' },
+  statusChipConfirmed: { backgroundColor: colors.statusScheduledBg },
+  statusChipComplete: { backgroundColor: colors.statusLiveBg },
   statusDot: { width: 7, height: 7, borderRadius: 3.5 },
   statusChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary },
   confirmAlert: {
@@ -400,14 +409,14 @@ const styles = StyleSheet.create({
   stepContent: { flex: 1, paddingTop: 6 },
   stepTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   stepTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, flex: 1 },
-  stepTitleDone: { color: colors.green },
-  stepTitleActive: { color: colors.amber },
+  stepTitleDone: { color: colors.greenText },
+  stepTitleActive: { color: colors.amberText },
   stepTitlePending: { color: colors.textMuted },
   stepTimestamp: { fontSize: 11, color: colors.textMuted },
   waitingChip: {
     backgroundColor: colors.amberTint, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  waitingChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amber },
+  waitingChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amberText },
   stepSub: { fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 17 },
   stepSubPending: { color: colors.textMuted },
   stepBadge: {
@@ -416,7 +425,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
   },
-  stepBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
+  stepBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   reviewCard: {
     marginHorizontal: 16, marginBottom: 8,
     backgroundColor: colors.surface,
@@ -431,7 +440,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg,
     backgroundColor: colors.surfaceAlt,
     padding: 12, minHeight: 72, textAlignVertical: 'top',
-    fontSize: 13, color: colors.textPrimary,
+    fontSize: 13, fontFamily: fonts.medium, color: colors.textPrimary,
   },
   nextStepsCard: {
     marginHorizontal: 16, marginBottom: 8,
@@ -459,7 +468,7 @@ const styles = StyleSheet.create({
   cancelText: { fontSize: 13, color: colors.statusRejected, fontFamily: fonts.semiBold },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 16, paddingBottom: 28,
+    padding: 16,
     backgroundColor: colors.surface,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     ...shadows.floating,

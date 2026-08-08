@@ -6,8 +6,8 @@ import type { ComponentProps, ReactNode } from 'react'
 // and a <button> otherwise — never a div, so keyboard and screen-reader
 // behaviour is correct without extra ARIA.
 
-type Variant = 'primary' | 'secondary' | 'outline' | 'dark' | 'ghost' | 'inverse'
-type Size = 'sm' | 'md' | 'lg'
+type Variant = 'primary' | 'secondary' | 'outline' | 'dark' | 'ghost' | 'inverse' | 'danger'
+type Size = 'sm' | 'md' | 'lg' | 'compact'
 
 const VARIANTS: Record<Variant, string> = {
   primary:
@@ -23,10 +23,17 @@ const VARIANTS: Record<Variant, string> = {
   // Secondary action on ink bands — replaces three per-page white-border hacks
   inverse:
     'border border-white/25 bg-transparent text-white hover:border-white/50 hover:bg-white/10 active:scale-[0.99]',
+  // Destructive-but-not-primary: outline form so "Delete" never shouts louder
+  // than the page's real CTA. Replaces two divergent hand-rolled versions.
+  danger:
+    'bg-surface text-danger border border-danger/40 hover:border-danger hover:bg-danger-tint active:scale-[0.99]',
 }
 
 const SIZES: Record<Size, string> = {
   sm: 'h-10 px-4 text-caption gap-1.5 rounded-lg',
+  // The de-facto size for dashboard rows and toolbars — existed as 21
+  // hand-rolled `h-11` copies before it was given a name here.
+  compact: 'h-11 px-4 text-caption gap-1.5 rounded-xl',
   md: 'h-12 px-6 text-body gap-2 rounded-xl',
   lg: 'h-14 px-8 text-base gap-2.5 rounded-xl',
 }

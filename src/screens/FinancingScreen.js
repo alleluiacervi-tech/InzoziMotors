@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image,
+  View, Text, StyleSheet, ScrollView, TextInput, Pressable, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -105,6 +105,10 @@ export default function FinancingScreen({ navigation, route }) {
     <Screen background={colors.bg}>
       <BackHeader title="Financing Calculator" onBack={() => navigation.goBack()} />
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
 
         {/* Intro */}
@@ -233,6 +237,7 @@ export default function FinancingScreen({ navigation, route }) {
           </Text>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
@@ -318,7 +323,7 @@ const styles = StyleSheet.create({
   bankMonthlyLabel: { fontSize: 10.5, fontFamily: fonts.semiBold, color: colors.textMuted, marginBottom: 2 },
   bankMonthlyValue: { fontVariant: ['tabular-nums'], fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   bankRwf: { fontVariant: ['tabular-nums'], fontSize: 10, color: colors.textMuted, marginTop: 1 },
-  bankInterest: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.bold, color: colors.amber },
+  bankInterest: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.bold, color: colors.amberText },
   bankTotal: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   summaryCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,

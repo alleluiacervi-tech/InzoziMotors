@@ -87,7 +87,7 @@ export default async function ReferralsPage() {
                 <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
                   People who redeemed it
                 </p>
-                <p className="mt-2 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
+                <p className="mt-2 text-stat font-extrabold leading-none tracking-[-0.02em] text-content">
                   {referral.redemptions}
                 </p>
                 <p className="mt-2 text-caption leading-relaxed text-content-muted">
@@ -98,7 +98,7 @@ export default async function ReferralsPage() {
                 <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
                   Times used
                 </p>
-                <p className="mt-2 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
+                <p className="mt-2 text-stat font-extrabold leading-none tracking-[-0.02em] text-content">
                   {referral.uses}
                 </p>
                 <p className="mt-2 text-caption leading-relaxed text-content-muted">

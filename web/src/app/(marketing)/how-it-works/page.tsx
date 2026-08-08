@@ -94,7 +94,7 @@ export default function HowItWorksPage() {
 
             <div>
               <Alert tone="info" title="The window starts at handover">
-                Seven days, counted from the day the car is handed to you at an Sawa center —
+                Seven days, counted from the day the car is handed to you at a Sawa center —
                 not from the day you requested it.
               </Alert>
               <p className="mt-6 text-body leading-relaxed text-content-secondary">

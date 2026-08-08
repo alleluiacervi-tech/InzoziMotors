@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
+import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { VEHICLE_HISTORY } from '../data/inspectionData';
 import inspectionsApi from '../api/inspections';
@@ -17,7 +18,7 @@ function HistoryCard({ icon, iconBg, iconColor, title, value, sub, verified, war
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={[styles.cardValue, warn && { color: colors.amber }, verified && { color: colors.green }]}>
+        <Text style={[styles.cardValue, warn && { color: colors.amberText }, verified && { color: colors.greenText }]}>
           {value}
         </Text>
         {sub ? <Text style={styles.cardSub}>{sub}</Text> : null}
@@ -111,26 +112,15 @@ export default function VehicleHistoryScreen({ navigation, route }) {
     return (
       <Screen background={colors.bg}>
         <BackHeader title="Vehicle History" onBack={() => navigation.goBack()} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
-          {failed || !isApiCar ? (
-            <>
-              <Ionicons name="document-text-outline" size={40} color={colors.textMuted} />
-              <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
-                History not available
-              </Text>
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
-                We couldn&apos;t load the history report for this car. Check your connection and try again.
-              </Text>
-            </>
-          ) : (
-            <>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary }}>
-                Loading vehicle history…
-              </Text>
-            </>
-          )}
-        </View>
+        {failed || !isApiCar ? (
+          <ErrorState
+            icon="document-text-outline"
+            title="History not available"
+            sub="We couldn't load the history report for this car. Check your connection and try again."
+          />
+        ) : (
+          <LoadingState label="Loading vehicle history…" />
+        )}
       </Screen>
     );
   }

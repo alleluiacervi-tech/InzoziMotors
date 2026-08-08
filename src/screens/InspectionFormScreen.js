@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, TextInput,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
+import StickyFooter from '../components/StickyFooter';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { INSPECTION_CATEGORIES } from '../data/inspectionData';
 import { useApp } from '../context/AppContext';
 
 const RESULT_OPTIONS = [
-  { value: 'pass', label: 'Pass', icon: 'checkmark', color: colors.green, bg: colors.greenTint },
-  { value: 'flag', label: 'Flag', icon: 'alert', color: colors.amber, bg: colors.amberTint },
+  { value: 'pass', label: 'Pass', icon: 'checkmark', color: colors.greenText, bg: colors.greenTint },
+  { value: 'flag', label: 'Flag', icon: 'alert', color: colors.amberText, bg: colors.amberTint },
   { value: 'fail', label: 'Fail', icon: 'close', color: colors.statusRejected, bg: colors.statusRejectedBg },
 ];
 
@@ -93,7 +94,7 @@ function CategoryAccordion({ category, results, onResult, expanded, onToggle }) 
             <Text style={styles.catProgress}>{done}/{total} items</Text>
             {flagCount > 0 && (
               <View style={[styles.miniChip, { backgroundColor: colors.amberTint }]}>
-                <Text style={[styles.miniChipText, { color: colors.amber }]}>{flagCount} flagged</Text>
+                <Text style={[styles.miniChipText, { color: colors.amberText }]}>{flagCount} flagged</Text>
               </View>
             )}
             {failCount > 0 && (
@@ -182,6 +183,10 @@ export default function InspectionFormScreen({ navigation, route }) {
         }
       />
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Car + Inspector info card */}
         <View style={styles.infoCard}>
@@ -260,9 +265,10 @@ export default function InspectionFormScreen({ navigation, route }) {
           />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Sticky CTA */}
-      <View style={styles.cta}>
+      <StickyFooter style={styles.cta}>
         <Button
           title="Generate Report & Upload Photos"
           icon="document-text-outline"
@@ -271,7 +277,7 @@ export default function InspectionFormScreen({ navigation, route }) {
         <Text style={styles.ctaSub}>
           Score: {totalScore}/150 · {pct}% · {totalScore >= 132 ? 'Eligible for Sawa Certified badge' : 'Below certified threshold (88%)'}
         </Text>
-      </View>
+      </StickyFooter>
     </Screen>
   );
 }
@@ -360,7 +366,7 @@ const styles = StyleSheet.create({
   notesInput: {
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.lg, padding: 12,
-    fontSize: 13, color: colors.textPrimary,
+    fontSize: 13, fontFamily: fonts.medium, color: colors.textPrimary,
     lineHeight: 20, minHeight: 100,
     backgroundColor: colors.surfaceAlt,
   },
@@ -373,7 +379,7 @@ const styles = StyleSheet.create({
   scorePillText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 16, paddingBottom: 28,
+    padding: 16,
     backgroundColor: colors.surface,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     ...shadows.floating,

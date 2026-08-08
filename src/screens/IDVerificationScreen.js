@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
+import StickyFooter from '../components/StickyFooter';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { captureImage } from '../utils/media';
@@ -42,7 +43,7 @@ function StatusScreen({ status }) {
         <Ionicons
           name={isApproved ? 'checkmark-circle' : 'time-outline'}
           size={52}
-          color={isApproved ? colors.primary : colors.amber}
+          color={isApproved ? colors.green : colors.amber}
         />
       </View>
       <Text style={styles.statusTitle}>{isApproved ? 'Identity Verified' : 'Under Review'}</Text>
@@ -54,7 +55,7 @@ function StatusScreen({ status }) {
       <View style={styles.docList}>
         {UPLOAD_STEPS.map((s) => (
           <View key={s.key} style={styles.docRow}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+            <Ionicons name="checkmark-circle" size={18} color={colors.green} />
             <Text style={styles.docText}>{s.label}</Text>
           </View>
         ))}
@@ -119,13 +120,13 @@ export default function IDVerificationScreen({ navigation, route }) {
         <BackHeader title="ID Verification" onBack={() => navigation.goBack()} />
         <StatusScreen status={idVerificationStatus} />
         {idVerificationStatus === 'approved' && (
-          <View style={styles.approvedFooter}>
+          <StickyFooter style={styles.approvedFooter}>
             <Button
               title="Submit a Car for Sale"
               icon="car-outline"
               onPress={() => navigation.replace(returnTo || 'CarSubmission', returnParams)}
             />
-          </View>
+          </StickyFooter>
         )}
       </Screen>
     );
@@ -198,14 +199,13 @@ export default function IDVerificationScreen({ navigation, route }) {
 
         <View style={styles.submitWrap}>
           <Button
-            title={submitting ? 'Submitting…' : 'Submit for Verification'}
+            title="Submit for Verification"
             onPress={handleSubmit}
-            disabled={!allUploaded || submitting}
-            style={{ opacity: allUploaded && !submitting ? 1 : 0.45 }}
+            loading={submitting}
+            disabled={!allUploaded}
+            style={{ opacity: allUploaded ? 1 : 0.45 }}
           />
-          {submitting ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : !allUploaded ? (
+          {!allUploaded ? (
             <Text style={styles.uploadReminder}>
               Add all 3 photos to continue
             </Text>
@@ -353,5 +353,5 @@ const styles = StyleSheet.create({
   },
   docRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   docText: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
-  approvedFooter: { paddingHorizontal: 20, paddingBottom: 32 },
+  approvedFooter: { paddingHorizontal: 20 },
 });

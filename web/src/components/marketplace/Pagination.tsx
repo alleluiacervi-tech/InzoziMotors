@@ -1,5 +1,4 @@
-import Link from 'next/link'
-import { Icon } from '@/components/ui'
+import { Button, Icon } from '@/components/ui'
 import { buildBrowseHref, PAGE_SIZE, type Filters, type SortValue } from './query'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,35 +44,37 @@ export function Pagination({
 
       <div className="flex items-center gap-2">
         {hasPrevious ? (
-          <Link
+          <Button
             href={buildBrowseHref(filters, { sort, offset: Math.max(0, offset - PAGE_SIZE) })}
             rel="prev"
-            className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-line bg-surface px-4 text-caption font-bold text-content transition-colors hover:border-content-muted hover:bg-surface-alt"
+            variant="outline"
+            size="compact"
           >
             <Icon name="chevron-left" size={16} className="text-content-secondary" />
             Previous
-          </Link>
+          </Button>
         ) : (
-          <span className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-line-soft px-4 text-caption font-bold text-content-muted">
+          <Button variant="outline" size="compact" disabled>
             <Icon name="chevron-left" size={16} />
             Previous
-          </span>
+          </Button>
         )}
 
         {hasNext ? (
-          <Link
+          <Button
             href={buildBrowseHref(filters, { sort, offset: offset + PAGE_SIZE })}
             rel="next"
-            className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-line bg-surface px-4 text-caption font-bold text-content transition-colors hover:border-content-muted hover:bg-surface-alt"
+            variant="outline"
+            size="compact"
           >
             Next
             <Icon name="chevron-right" size={16} className="text-content-secondary" />
-          </Link>
+          </Button>
         ) : (
-          <span className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-line-soft px-4 text-caption font-bold text-content-muted">
+          <Button variant="outline" size="compact" disabled>
             Next
             <Icon name="chevron-right" size={16} />
-          </span>
+          </Button>
         )}
       </div>
     </nav>

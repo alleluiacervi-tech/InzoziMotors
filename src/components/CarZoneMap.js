@@ -107,8 +107,8 @@ export default function CarZoneMap({ categories, selected, onSelect }) {
       {/* Legend */}
       <View style={styles.legend}>
         {[
-          { label: 'Passed', color: colors.green },
-          { label: 'Minor flags', color: colors.amber },
+          { label: 'Passed', color: colors.greenText },
+          { label: 'Minor flags', color: colors.amberText },
           { label: 'Attention', color: colors.statusRejected },
         ].map((l) => (
           <View key={l.label} style={styles.legendItem}>

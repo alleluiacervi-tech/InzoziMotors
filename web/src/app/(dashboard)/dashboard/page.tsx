@@ -273,7 +273,7 @@ export default async function DashboardOverviewPage() {
                   <EmptyState
                     icon="key"
                     title="No requests yet"
-                    description="Requesting a car reserves it for you and costs nothing. Payment only ever happens in person at an Sawa center."
+                    description="Requesting a car reserves it for you and costs nothing. Payment only ever happens in person at a Sawa center."
                     className="py-10"
                     action={<Button href="/cars" size="sm" variant="outline">Browse cars</Button>}
                   />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, Pressable, StyleSheet, View } from 'react-native';
+import { Text, Pressable, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, fonts } from '../theme';
 
@@ -12,6 +12,7 @@ export default function Button({
   textStyle,
   onDark = false,
   disabled = false,
+  loading = false,
 }) {
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
@@ -32,16 +33,22 @@ export default function Button({
     ? colors.white
     : colors.textPrimary;
 
+  const blocked = disabled || loading;
+
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
-      style={({ pressed }) => [containerStyle, pressed && !disabled && styles.pressed]}
+      onPress={blocked ? undefined : onPress}
+      disabled={blocked}
+      style={({ pressed }) => [containerStyle, pressed && !blocked && styles.pressed]}
     >
-      <View style={styles.content}>
-        {icon ? <Ionicons name={icon} size={18} color={color} /> : null}
-        <Text style={[styles.text, { color }, textStyle]}>{title}</Text>
-      </View>
+      {loading ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : (
+        <View style={styles.content}>
+          {icon ? <Ionicons name={icon} size={18} color={color} /> : null}
+          <Text style={[styles.text, { color }, textStyle]}>{title}</Text>
+        </View>
+      )}
     </Pressable>
   );
 }

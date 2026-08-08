@@ -68,7 +68,7 @@ function PipelineDiagram({ currentStatus }) {
                 styles.pipelineLabel,
                 active && { color: colors.primary, fontFamily: fonts.bold },
                 done && { color: colors.primary },
-                upcoming && { color: colors.border },
+                upcoming && { color: colors.textDisabled },
               ]}>{stage.label}</Text>
             </View>
             {idx < PIPELINE_STAGES.length - 1 && (
@@ -391,14 +391,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 10,
   },
-  relistBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.amber },
+  relistBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.amberText },
   relistExpanded: { padding: 12, gap: 8 },
   relistInput: {
     backgroundColor: colors.surface,
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.lg,
     paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 15, color: colors.textPrimary,
+    fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary,
   },
   relistBtns: { flexDirection: 'row', gap: 8 },
   relistCancel: {

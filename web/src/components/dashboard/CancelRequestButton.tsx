@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { cancelHandoverAction } from '@/app/(dashboard)/dashboard/requests/actions'
 import { SubmitButton } from '@/components/dashboard/SubmitButton'
+import { Button } from '@/components/ui'
 
 // Cancelling releases the car back to the marketplace, where someone else can
 // request it immediately. That is not undoable, so it takes two deliberate
@@ -23,13 +24,9 @@ export function CancelRequestButton({ id, carTitle }: { id: string; carTitle: st
   if (!confirming) {
     return (
       <div>
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted hover:bg-surface-alt hover:text-content"
-        >
+        <Button type="button" variant="outline" size="compact" onClick={() => setConfirming(true)}>
           Cancel this request
-        </button>
+        </Button>
         {state?.error ? (
           <p role="alert" className="mt-2 text-micro font-semibold text-danger">
             {state.error}
@@ -51,13 +48,9 @@ export function CancelRequestButton({ id, carTitle }: { id: string; carTitle: st
         <SubmitButton variant="dark" size="sm" pendingLabel="Cancelling…">
           Yes, cancel it
         </SubmitButton>
-        <button
-          type="button"
-          onClick={() => setConfirming(false)}
-          className="inline-flex h-10 items-center rounded-lg px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface hover:text-content"
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>
           Keep my request
-        </button>
+        </Button>
       </form>
       {state?.error ? (
         <p role="alert" className="mt-2 text-micro font-semibold text-danger">

@@ -26,7 +26,7 @@ export function StatTile({
         <Icon name={icon} size={16} />
         <span className="text-caption font-bold uppercase tracking-wide">{label}</span>
       </span>
-      <span className="mt-3 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
+      <span className="mt-3 text-stat font-extrabold leading-none tracking-[-0.02em] text-content">
         {value}
       </span>
       {/* Reserved height, so a tile without a hint stays level with its row. */}

@@ -86,7 +86,7 @@ const SECTIONS: LegalSection[] = [
           any time before the handover at no charge.
         </p>
         <ul>
-          <li>Payment happens in person at an Sawa center. Never through the app or this site.</li>
+          <li>Payment happens in person at a Sawa center. Never through the app or this site.</li>
           <li>
             We check both parties’ documents at the handover and process the RRA ownership
             transfer with you. Registration documents typically complete within 2–3 working days.
