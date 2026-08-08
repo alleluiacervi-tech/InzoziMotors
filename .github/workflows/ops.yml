@@ -34,9 +34,17 @@ jobs:
   ops:
     name: ${{ inputs.action }}
     runs-on: ubuntu-latest
-    # No lever here should be able to run to a 6-hour default timeout. Rollback
-    # is the slowest (pull + restart + readiness) and fits well inside this.
-    timeout-minutes: 20
+    # No lever that mutates production should be able to run to the 6-hour
+    # default: a wedged one holds the deploy-production concurrency group, so it
+    # blocks every deploy behind it for the rest of the day.
+    #
+    # Sized for the slowest action, which is rollback, and sized ABOVE it rather
+    # than under: ops/rollback.sh still REBUILDS both Next.js apps on the host
+    # (20-40 minutes on this box). A cap that fires mid-build would kill it
+    # after the previous revision has been checked out and before anything is
+    # restarted — old code on disk, bad containers still serving, and the
+    # pointer not consumed. Job = sum of the step caps (2 + 50) plus slack.
+    timeout-minutes: 55
     environment:
       name: production
       url: https://sawacars.com
@@ -59,15 +67,17 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Run
-        timeout-minutes: 15
+        # Long enough for a rollback's on-host rebuild to finish (see the job
+        # comment). Every other action is seconds.
+        timeout-minutes: 50
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
           ACTION: ${{ inputs.action }}
           # ops/rollback.sh stops for confirmation when the deploy it is undoing
-          # carried migrations. There is no terminal here, so the decision has to
-          # be made in advance: rolling back CODE only is the documented safe
+          # carried migrations. There is no terminal here, so the decision has
+          # to be made in advance: rolling back CODE only is the documented safe
           # case for additive migrations. A destructive migration needs
           # ops/restore.sh by hand, which this lever deliberately cannot do.
           CONFIRM: continue
@@ -91,21 +101,15 @@ jobs:
           # therefore collides with the running stack.
           COMPOSE="docker compose -f docker-compose.prod.yml"
 
+          # Consumed by ops/rollback.sh, which cannot ask an interactive
+          # question down an SSH heredoc.
           export CONFIRM="${CONFIRM:-}"
-
-          # Compose interpolates ${IMAGE_TAG} into every image reference. Left
-          # unset it defaults to :latest, which is not necessarily what THIS
-          # host is running — a restart would then quietly change the version.
-          # ops/deploy.sh records the deployed tag; use it.
-          export IMAGE_TAG="$(cat /var/lib/sawa/image-tag 2>/dev/null || echo latest)"
 
           case "$ACTION" in
             status)
               docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
               echo
               echo "--- revision ---"; git log -1 --format='%h %s'
-              echo "--- image tag ---"; echo "$IMAGE_TAG"
-              echo "--- disk ---"; df -h /var/lib/docker 2>/dev/null | tail -1 || df -h / | tail -1
               echo "--- api readiness ---"
               curl -fsS -m 5 http://127.0.0.1:4000/health/ready && echo || echo "NOT READY"
               ;;
