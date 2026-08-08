@@ -36,6 +36,17 @@ DEFAULT_COMPOSE="docker compose"
 [ -f docker-compose.prod.yml ] && DEFAULT_COMPOSE="docker compose -f docker-compose.prod.yml"
 COMPOSE="${COMPOSE:-$DEFAULT_COMPOSE}"
 POINTER="$STATE_DIR/rollback"
+SERVICES="${SERVICES:-api web admin}"
+READY_URL="${READY_URL:-http://127.0.0.1:4000/health/ready}"
+
+run_bounded() {
+  local secs="$1"; shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout --foreground "$secs" "$@"
+  else
+    "$@"
+  fi
+}
 
 log() { printf '\n▸ %s\n' "$*"; }
 die() { printf '\nROLLBACK FAILED: %s\n' "$*" >&2; exit 1; }
@@ -67,23 +78,45 @@ if [ "${HAD_MIGRATIONS:-0}" -gt 0 ]; then
           ops/restore.sh <the dump deploy.sh took>
 
 WARNING
-  read -r -p "  Type 'continue' to roll back code only: " CONFIRM
+  # Ask a human when there is one. There often is not: this script is also
+  # reachable from the Ops workflow, where stdin is the heredoc carrying the
+  # script itself — a bare `read` there consumes the next LINE OF THIS FILE as
+  # if it were an answer. Read from the terminal explicitly, and when there is
+  # no terminal require the decision to have been made up front.
+  if [ -r /dev/tty ] && [ -t 1 ]; then
+    read -r -p "  Type 'continue' to roll back code only: " CONFIRM < /dev/tty
+  else
+    CONFIRM="${CONFIRM:-}"
+    [ -n "$CONFIRM" ] || die "migrations were applied and there is no terminal to ask — re-run with CONFIRM=continue once you have decided (see above)"
+  fi
   [ "$CONFIRM" = "continue" ] || die "stopped — nothing changed"
 fi
 
 log "checking out previous revision"
 git checkout --quiet "$PREVIOUS_REVISION" || die "checkout failed"
 
-log "rebuilding"
-$COMPOSE build api web admin || die "build failed"
+# Rolling back used to mean REBUILDING on the production host — the same two
+# Next.js compiles that wedge this box for 20-40 minutes, now on the critical
+# path of an incident. Images are tagged per commit in the registry, so the way
+# back is to pull the tag that was running before. Building stays as a fallback
+# for a host with no registry access.
+export IMAGE_TAG="${PREVIOUS_IMAGE_TAG:-latest}"
+log "restoring image tag $IMAGE_TAG"
+if run_bounded 600 $COMPOSE pull $SERVICES; then
+  log "pulled the previous images"
+else
+  log "pull failed — falling back to building here (slow)"
+  run_bounded 2400 $COMPOSE build $SERVICES || die "build failed"
+fi
 
 log "restarting"
-$COMPOSE up -d api web admin || die "restart failed — the host needs manual attention"
+run_bounded 300 $COMPOSE up -d --no-deps $SERVICES || die "restart failed — the host needs manual attention"
 
 log "waiting for readiness"
 for i in $(seq 1 30); do
-  if curl -fsS -m 3 http://127.0.0.1:4000/health/ready >/dev/null 2>&1; then
+  if curl -fsS -m 3 "$READY_URL" >/dev/null 2>&1; then
     log "healthy — rolled back to $(git rev-parse --short HEAD)"
+    echo "$IMAGE_TAG" > "$STATE_DIR/image-tag" 2>/dev/null || true
     # Consumed, so a second rollback does not silently repeat the first.
     mv "$POINTER" "$POINTER.used-$(date -u +%Y%m%dT%H%M%SZ)"
     exit 0

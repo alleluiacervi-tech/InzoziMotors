@@ -1,8 +1,12 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+# Manifests first: this layer is keyed on the dependency set, so a code-only
+# change reuses the cached install instead of resolving the tree again. devDeps
+# are needed here — `next build` runs in this stage — but they never reach the
+# runtime stage below, which copies only the standalone output.
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 

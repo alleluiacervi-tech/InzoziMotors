@@ -1,22 +1,34 @@
 name: Deploy
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Continuous delivery to the VPS — with the builds where they belong.
+# Continuous delivery to the VPS.
 #
-# The first version of this workflow ran ops/deploy.sh and let the SERVER
-# build the Docker images. Twice in one evening that wedged: two Next.js
-# compiles on a small box that is simultaneously serving production ground
-# past 20–40 minutes with no way to see inside. So the runner now builds the
-# exact images (same compose file, same build args), ships them over SSH with
-# docker save/load, and the server's only jobs are: load, migrate, restart,
-# health-check. A deploy costs the VPS seconds of CPU, not half an hour.
+# How this arrived at its current shape, because each stage fixed a real
+# 30-minute failure and the reasons are not obvious from the result:
+#
+#   1. The server built its own images. Two Next.js compiles on a small box
+#      that is simultaneously serving production ran 20-40 minutes.
+#   2. So the runner built them and shipped them with `docker save | ssh
+#      docker load`. Faster (~3 min) but it copies EVERY byte of all three
+#      images on EVERY deploy and strands the previous ones as dangling
+#      layers — steadily slower, steadily less disk.
+#   3. Deploys still died at exactly 30 minutes. Not the network, not the
+#      disk: `docker compose run --rm api node src/migrate.js` never
+#      returned, because the image's entrypoint ignored the command it was
+#      given and started the API server in the foreground instead. The step
+#      ran to the job timeout, and the `up -d` that follows it never ran —
+#      so images were shipped and NEVER PUT INTO SERVICE. Fixed in
+#      backend/entrypoint.sh (honours "$@") and in ops/deploy.sh (names
+#      --entrypoint explicitly, and bounds every step with `timeout`).
+#
+# What it does now: build once on a runner with a layer cache, push to GHCR,
+# and have the server `docker compose pull` — which moves only the layers that
+# actually changed. Only services whose files changed are built or restarted,
+# so a backend commit never recompiles both Next apps.
 #
 # ops/deploy.sh still owns the deploy semantics — dirty-tree refusal, rollback
-# pointer, DB backup when migrations are present, readiness poll — invoked
-# with SKIP_BUILD=1. One implementation of "deploy", by hand or by CI.
-#
-# Runs after CI is green on main, or on demand. environment: production means
-# an approval gate can be added in repo settings without touching this file.
+# pointer, DB backup when migrations are present, readiness poll. One
+# implementation of "deploy", by hand or by CI.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -30,25 +42,45 @@ on:
         description: 'Tag, branch or SHA to deploy (default: the triggering commit)'
         required: false
         default: ''
+      services:
+        description: 'Force specific services (space separated, e.g. "api web"). Empty = detect from changed files.'
+        required: false
+        default: ''
 
 concurrency:
+  # Never let two deploys touch the host at once. Deliberately NOT
+  # cancel-in-progress: interrupting a deploy between "migrate" and "restart"
+  # is a worse outcome than waiting, and a deploy is now ~4 minutes, so the
+  # queue is cheap. (CI cancels superseded runs; that is where it is safe.)
   group: deploy-production
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  packages: write        # push images to GHCR with the built-in GITHUB_TOKEN
+
 jobs:
-  deploy:
-    name: Build on runner, ship to production
+  # ───────────────────────────────────────────────────────────────────────────
+  # Everything that can fail cheaply, fails here — in about a minute, with a
+  # message that names the problem. The old workflow discovered a full disk or
+  # an unreachable host 25 minutes in.
+  # ───────────────────────────────────────────────────────────────────────────
+  plan:
+    name: Plan
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 8
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
-    environment:
-      name: production
-      url: https://sawacars.com
-
+    outputs:
+      rev: ${{ steps.rev.outputs.rev }}
+      tag: ${{ steps.rev.outputs.tag }}
+      prefix: ${{ steps.rev.outputs.prefix }}
+      services: ${{ steps.changes.outputs.services }}
+      targets: ${{ steps.changes.outputs.targets }}
     steps:
       - name: Check required secrets are present
+        timeout-minutes: 2
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
@@ -69,92 +101,374 @@ jobs:
       # two must never drift apart.
       - name: Resolve the revision
         id: rev
+        timeout-minutes: 2
         env:
           INPUT_REV: ${{ inputs.revision }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
+          set -euo pipefail
           REV="${INPUT_REV:-${HEAD_SHA:-${GITHUB_SHA}}}"
           echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          # Image tags are the immutable identity of a build: the deployed tag
+          # is what rollback re-pulls, so it must be the commit, not "latest".
+          echo "tag=${REV}" >> "$GITHUB_OUTPUT"
+          # GHCR rejects uppercase in repository names; this org/repo has it.
+          echo "prefix=$(echo "ghcr.io/${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
           echo "Deploying revision: $REV"
 
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.rev.outputs.rev }}
-
-      - name: Build the production images
-        run: |
-          set -euo pipefail
-          # Parse-only placeholders: docker-compose.prod.yml uses ${VAR:?}
-          # required-variable syntax for runtime secrets. `compose build` never
-          # uses their values, but compose interpolates the whole file before
-          # doing anything, so it needs SOMETHING to parse. These never leave
-          # the runner and never enter an image.
-          export DB_PASSWORD=parse-only JWT_SECRET=parse-only-not-a-real-secret \
-                 SEED_ADMIN_PASSWORD=parse-only
-          docker compose -f docker-compose.prod.yml build api web admin
+          # The changed-service diff needs history back to what the server runs.
+          fetch-depth: 0
 
       - name: Load the deploy key
+        timeout-minutes: 2
         env:
           KEY: ${{ secrets.VPS_SSH_KEY }}
           HOST: ${{ secrets.VPS_HOST }}
+          HOST_KEY: ${{ secrets.VPS_HOST_KEY }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          if [ -n "${{ secrets.VPS_HOST_KEY }}" ]; then
-            printf '%s\n' "${{ secrets.VPS_HOST_KEY }}" > ~/.ssh/known_hosts
+          if [ -n "$HOST_KEY" ]; then
+            printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
           else
             ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
           fi
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Ship the images
-        env:
-          HOST: ${{ secrets.VPS_HOST }}
-          USER: ${{ secrets.VPS_USER }}
-        run: |
-          set -euo pipefail
-          echo "Saving images…"
-          docker save sawa-api:latest sawa-web:latest sawa-admin:latest | gzip -1 > /tmp/sawa-images.tgz
-          ls -lh /tmp/sawa-images.tgz
-          # The host's intrusion protection has been observed dropping SOME
-          # runner IPs (connection timeout) while accepting others minutes
-          # apart. A timeout here is worth patient retries before it is worth
-          # a failed deploy.
-          try_net() {
-            for attempt in 1 2 3 4 5; do
-              "$@" && return 0
-              echo "attempt $attempt failed — waiting 30s"
-              sleep 30
-            done
-            return 1
-          }
-          echo "Uploading…"
-          try_net scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
-              /tmp/sawa-images.tgz "$USER@$HOST:/tmp/sawa-images.tgz"
-          echo "Loading on the server…"
-          try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
-              "$USER@$HOST" 'gunzip -c /tmp/sawa-images.tgz | docker load && rm -f /tmp/sawa-images.tgz'
-
-      - name: Deploy
+      # Disk, reachability, and what the host currently runs — the three things
+      # that decide whether this deploy can possibly work.
+      - name: Preflight the server
+        id: pre
+        timeout-minutes: 5
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
-          REVISION: ${{ steps.rev.outputs.rev }}
         run: |
           set -euo pipefail
-          # Same patience as the ship step — probe until the connection holds.
-          for attempt in 1 2 3 4 5; do
-            if ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 "$USER@$HOST" true; then
+          # The remote script goes to a FILE, not down a pipe. A retry loop and
+          # a heredoc on stdin do not mix: the first attempt drains stdin and
+          # every retry then sends an empty script to a shell that happily
+          # succeeds having done nothing.
+          cat > /tmp/preflight.sh <<'REMOTE'
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-}"
+          if [ -z "$APP_DIR" ]; then
+            for c in /srv/sawa /opt/sawa /root/sawa /var/www/sawa; do
+              [ -x "$c/ops/deploy.sh" ] && APP_DIR="$c" && break
+            done
+          fi
+          [ -n "$APP_DIR" ] || { echo "ERROR::could not locate the checkout — set the VPS_APP_DIR secret"; exit 1; }
+          cd "$APP_DIR"
+          echo "app_dir=$APP_DIR"
+          echo "deployed_sha=$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+          # Available space where Docker actually stores layers.
+          DOCKER_ROOT=$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /var/lib/docker)
+          AVAIL_MB=$(df -Pm "$DOCKER_ROOT" 2>/dev/null | awk 'NR==2{print $4}')
+          echo "avail_mb=${AVAIL_MB:-0}"
+          echo "df=$(df -h "$DOCKER_ROOT" | awk 'NR==2{print $3" used, "$4" free ("$5" full)"}')"
+          # Reap the one-off containers the hung `compose run` left behind. Each
+          # cancelled deploy stranded one, and while stranded it holds a second
+          # API process against the same database. Never part of the serving
+          # stack (compose names them <project>-<service>-run-<hash>).
+          STRANDED=$(docker ps -a --filter 'name=-run-' --format '{{.Names}}' | wc -l)
+          if [ "$STRANDED" -gt 0 ]; then
+            docker ps -a --filter 'name=-run-' -q | xargs -r docker rm -f >/dev/null 2>&1 || true
+            echo "reaped_run_containers=$STRANDED"
+          fi
+          REMOTE
+
+          # 3 attempts, 10s apart. The host's intrusion protection has been
+          # observed dropping some runner IPs; a few probes cover that without
+          # turning a dead host into a five-minute wait.
+          OUT=
+          for attempt in 1 2 3; do
+            if OUT=$(ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=15 \
+                         -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+                         "$USER@$HOST" "APP_DIR=$(printf %q "$APP_DIR") bash -s" \
+                         < /tmp/preflight.sh); then
               break
             fi
-            if [ "$attempt" = 5 ]; then echo "::error::server unreachable over SSH"; exit 1; fi
-            echo "connect attempt $attempt failed — waiting 30s"; sleep 30
+            if [ "$attempt" = 3 ]; then
+              echo "::error::server preflight failed — host unreachable, or the checkout is missing (set VPS_APP_DIR)"
+              exit 1
+            fi
+            echo "attempt $attempt failed — retrying in 10s"; sleep 10
           done
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+
+          echo "$OUT"
+          if echo "$OUT" | grep -q '^ERROR::'; then
+            echo "::error::$(echo "$OUT" | sed -n 's/^ERROR:://p')"
+            exit 1
+          fi
+          # Re-export for later steps. A miss here is not fatal: the next step
+          # treats an unknown server revision as "deploy everything".
+          echo "$OUT" | grep -E '^(app_dir|deployed_sha|avail_mb)=' >> "$GITHUB_OUTPUT" || true
+
+          REAPED=$(echo "$OUT" | sed -n 's/^reaped_run_containers=//p')
+          [ -n "$REAPED" ] && echo "::warning::Reaped $REAPED stranded one-off container(s) from previously hung deploys"
+
+          AVAIL_MB=$(echo "$OUT" | sed -n 's/^avail_mb=//p')
+          echo "Docker filesystem: $(echo "$OUT" | sed -n 's/^df=//p')"
+          # Fail now, clearly, rather than after a long pull. Three image pulls
+          # plus a migration need headroom; 3 GB is the floor, 6 GB is comfort.
+          if [ "${AVAIL_MB:-0}" -lt 3072 ]; then
+            echo "::error::Only ${AVAIL_MB}MB free where Docker stores images — refusing to deploy. Reclaim space: run the Ops workflow with action=prune-builders, or on the host: docker image prune -af && docker builder prune -af"
+            exit 1
+          fi
+          if [ "${AVAIL_MB:-0}" -lt 6144 ]; then
+            echo "::warning::Only ${AVAIL_MB}MB free where Docker stores images — deploying, but reclaim space soon (Ops workflow, action=prune-builders)"
+          fi
+
+      # A backend commit must not recompile two Next.js apps, and a mobile-only
+      # commit must not touch the server at all.
+      - name: Decide which services this deploy affects
+        id: changes
+        timeout-minutes: 3
+        env:
+          FORCED: ${{ inputs.services }}
+          REV: ${{ steps.rev.outputs.rev }}
+          DEPLOYED: ${{ steps.pre.outputs.deployed_sha }}
+        run: |
+          set -euo pipefail
+          pick() {
+            # Emit both a shell list (for ops/deploy.sh) and a JSON array.
+            local list="$1"
+            local json="[]"
+            [ -n "$list" ] && json="[$(printf '"%s",' $list | sed 's/,$//')]"
+            echo "services=$list" >> "$GITHUB_OUTPUT"
+            echo "targets=$json" >> "$GITHUB_OUTPUT"
+            echo "Services to build and deploy: ${list:-<none>}"
+          }
+
+          if [ -n "$FORCED" ]; then
+            echo "Forced by workflow input."
+            pick "$FORCED"; exit 0
+          fi
+
+          # No idea what the server runs, or it predates this history — rebuild
+          # everything rather than guess wrong.
+          if [ -z "$DEPLOYED" ] || [ "$DEPLOYED" = unknown ] \
+             || ! git cat-file -e "${DEPLOYED}^{commit}" 2>/dev/null; then
+            echo "Server revision unknown or not in this history — deploying everything."
+            pick "api web admin"; exit 0
+          fi
+
+          if [ "$DEPLOYED" = "$REV" ]; then
+            # The server already has this commit checked out. That happened a
+            # lot while deploys were dying after `git checkout` but before the
+            # restart, so this is NOT proof the containers match: converge.
+            echo "Server is already at $REV — redeploying all services to converge the running containers."
+            pick "api web admin"; exit 0
+          fi
+
+          CHANGED="$(git diff --name-only "$DEPLOYED" "$REV" || true)"
+          echo "Changed files since $DEPLOYED:"; echo "$CHANGED" | sed 's/^/  /'
+
+          SERVICES=
+          # Compose, deploy scripts and this workflow define how ALL services
+          # run — treat a change there as touching all of them.
+          if echo "$CHANGED" | grep -qE '^(docker-compose\.prod\.yml|ops/|\.github/workflows/deploy\.yml)'; then
+            SERVICES="api web admin"
+          else
+            echo "$CHANGED" | grep -q '^backend/' && SERVICES="$SERVICES api"
+            echo "$CHANGED" | grep -q '^web/'     && SERVICES="$SERVICES web"
+            echo "$CHANGED" | grep -q '^admin/'   && SERVICES="$SERVICES admin"
+          fi
+          pick "$(echo $SERVICES | xargs -r echo)"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Build on the runner, push to GHCR. The layer cache is what makes this fast:
+  # node_modules is keyed on package*.json, so a code-only change reuses the
+  # install layer instead of resolving the dependency tree again.
+  #
+  # `buildx bake` reads docker-compose.prod.yml, so build args (the NEXT_PUBLIC_*
+  # values inlined into the web bundle) have exactly one definition, shared with
+  # what runs on the server.
+  # ───────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build and push
+    needs: plan
+    if: needs.plan.outputs.services != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.rev }}
+
+      - uses: docker/setup-buildx-action@v3
+        timeout-minutes: 5
+
+      - uses: docker/login-action@v3
+        timeout-minutes: 3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Every service must exist at this revision's tag ──────────────────────
+      # The compose file interpolates ONE IMAGE_TAG into all three image
+      # references, which is what makes a deploy (and a rollback) atomic. But
+      # only the changed services get built — so an unchanged service would be
+      # asked for a tag that was never pushed, and the deploy would fail
+      # looking for it.
+      #
+      # Aliasing fixes that without a rebuild: `imagetools create` points a new
+      # tag at the EXISTING manifest, server-side. No layers move, no compile
+      # happens, and because the digest is unchanged, `compose up` later sees
+      # no reason to recreate that container.
+      - name: Tag unchanged services at this revision
+        id: alias
+        timeout-minutes: 6
+        env:
+          REGISTRY: ${{ needs.plan.outputs.prefix }}
+          IMAGE_TAG: ${{ needs.plan.outputs.tag }}
+          SERVICES: ${{ needs.plan.outputs.services }}
+        run: |
+          set -euo pipefail
+          EXTRA=
+          for s in api web admin; do
+            case " $SERVICES " in *" $s "*) continue ;; esac
+            echo "aliasing $s:latest -> $s:$IMAGE_TAG"
+            if ! docker buildx imagetools create \
+                   --tag "${REGISTRY}/${s}:${IMAGE_TAG}" "${REGISTRY}/${s}:latest"; then
+              # Nothing to alias — this service has never been pushed (first
+              # run against a fresh registry). Build it instead of failing.
+              echo "::warning::no existing ${s}:latest to alias — building ${s} from source"
+              EXTRA="$EXTRA $s"
+            fi
+          done
+          echo "extra=$(echo $EXTRA | xargs -r echo)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push the changed images
+        timeout-minutes: 20
+        env:
+          REGISTRY: ${{ needs.plan.outputs.prefix }}
+          IMAGE_TAG: ${{ needs.plan.outputs.tag }}
+          SERVICES: ${{ needs.plan.outputs.services }} ${{ steps.alias.outputs.extra }}
+        run: |
+          set -euo pipefail
+          SERVICES="$(echo $SERVICES | xargs -r echo)"   # collapse whitespace
+          # Parse-only placeholders: docker-compose.prod.yml uses ${VAR:?}
+          # required-variable syntax for RUNTIME secrets. Building never reads
+          # their values, but compose interpolates the whole file before doing
+          # anything, so it needs SOMETHING to parse. These never leave the
+          # runner and never enter an image.
+          export DB_PASSWORD=parse-only JWT_SECRET=parse-only-not-a-real-secret \
+                 SEED_ADMIN_PASSWORD=parse-only
+
+          # Per-target cache scopes — one shared scope would have three builds
+          # overwriting each other's manifest and nothing would ever hit.
+          # mode=max caches intermediate layers too, which is where the
+          # dependency-install layer lives.
+          SET_ARGS=()
+          for s in $SERVICES; do
+            SET_ARGS+=( --set "${s}.cache-from=type=gha,scope=${s}" )
+            SET_ARGS+=( --set "${s}.cache-to=type=gha,scope=${s},mode=max" )
+            # Immutable per-commit tag (what rollback re-pulls) plus a moving
+            # :latest so a hand-run `docker compose pull` does something sane.
+            # One --set PER TAG: a comma-separated list is taken literally and
+            # becomes a single invalid tag with a comma in it (verified with
+            # `bake --print`), not two tags.
+            SET_ARGS+=( --set "${s}.tags=${REGISTRY}/${s}:${IMAGE_TAG}" )
+            SET_ARGS+=( --set "${s}.tags=${REGISTRY}/${s}:latest" )
+          done
+
+          docker buildx bake -f docker-compose.prod.yml \
+            "${SET_ARGS[@]}" --push $SERVICES
+
+      - name: Summarise
+        if: always()
+        env:
+          BUILT: ${{ needs.plan.outputs.services }} ${{ steps.alias.outputs.extra }}
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          BUILT="$(echo $BUILT | xargs -r echo)"
+          {
+            echo "### Images at \`${TAG}\`"
+            echo ''
+            for s in api web admin; do
+              case " $BUILT " in
+                *" $s "*) echo "- \`${s}\` — rebuilt and pushed" ;;
+                *)        echo "- \`${s}\` — unchanged, tag aliased (no rebuild, no transfer)" ;;
+              esac
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # The server's whole job: pull the changed layers, migrate, restart what
+  # changed, prove it answers. Seconds of CPU, not half an hour.
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to production
+    needs: [plan, build]
+    if: needs.plan.outputs.services != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://sawacars.com
+    steps:
+      - name: Load the deploy key
+        timeout-minutes: 2
+        env:
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+          HOST: ${{ secrets.VPS_HOST }}
+          HOST_KEY: ${{ secrets.VPS_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$HOST_KEY" ]; then
+            printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      # The token is short-lived and job-scoped, arrives over the encrypted
+      # channel on stdin (never in argv, where `ps` would show it), and the
+      # login is dropped again in the cleanup step below. No new secret needed.
+      - name: Authenticate the server to GHCR
+        timeout-minutes: 3
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy_key -o BatchMode=yes \
+            -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            "$USER@$HOST" \
+            "docker login ghcr.io -u $(printf %q "${GITHUB_ACTOR}") --password-stdin"
+
+      - name: Deploy
+        timeout-minutes: 10
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          REVISION: ${{ needs.plan.outputs.rev }}
+          IMAGE_TAG: ${{ needs.plan.outputs.tag }}
+          REGISTRY: ${{ needs.plan.outputs.prefix }}
+          SERVICES: ${{ needs.plan.outputs.services }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=15 \
+              -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" \
-              "APP_DIR=$(printf %q "$APP_DIR") REVISION=$(printf %q "$REVISION") bash -s" <<'REMOTE'
+              "APP_DIR=$(printf %q "$APP_DIR") \
+               REVISION=$(printf %q "$REVISION") \
+               IMAGE_TAG=$(printf %q "$IMAGE_TAG") \
+               REGISTRY=$(printf %q "$REGISTRY") \
+               SERVICES=$(printf %q "$SERVICES") bash -s" <<'REMOTE'
           set -euo pipefail
           APP_DIR="${APP_DIR:-}"
           REVISION="${REVISION:-origin/main}"
@@ -167,41 +481,52 @@ jobs:
           cd "$APP_DIR"
 
           [ -f docker-compose.prod.yml ] || { echo "::error::docker-compose.prod.yml not found in $APP_DIR"; exit 1; }
+
           export COMPOSE="docker compose -f docker-compose.prod.yml"
-          export SKIP_BUILD=1
+          export PULL_IMAGES=1          # pull the tag; never build here
+          export IMAGE_TAG REGISTRY SERVICES
 
-          echo "Deploying $REVISION in $APP_DIR (pre-built images)"
+          echo "Deploying $REVISION (tag $IMAGE_TAG, services: $SERVICES) in $APP_DIR"
           ops/deploy.sh "$REVISION"
-
-          # The save/load cycle strands the previous images as dangling layers;
-          # left alone they eat the disk one deploy at a time.
-          docker image prune -f >/dev/null || true
           REMOTE
 
+      # Containers were replaced seconds ago; give the reverse proxy a moment
+      # to notice before calling the deploy bad.
       - name: Verify the public surfaces answer
+        timeout-minutes: 4
         run: |
           set -euo pipefail
+          check() {
+            local url="$1" code
+            for attempt in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 -L "$url" || echo 000)
+              case "$code" in
+                200|301|302|307|308) echo "ok   $url -> $code"; return 0 ;;
+              esac
+              sleep 5
+            done
+            echo "FAIL $url -> $code"
+            return 1
+          }
           fail=0
           for url in https://sawacars.com https://api.sawacars.com/health/ready https://admin.sawacars.com; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -L "$url" || echo 000)
-            case "$code" in
-              200|301|302|307|308) echo "ok   $url -> $code" ;;
-              *) echo "FAIL $url -> $code"; fail=1 ;;
-            esac
+            check "$url" || fail=1
           done
           if [ "$fail" -ne 0 ]; then
-            echo "::error::A public surface did not answer after deploy — consider ops/rollback.sh"
+            echo "::error::A public surface did not answer after deploy — consider the Ops workflow with action=rollback"
             exit 1
           fi
 
-      - name: Report what is running
+      - name: Report what is running, and drop the registry login
         if: always()
+        timeout-minutes: 4
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=15 \
+              -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" "APP_DIR=$(printf %q "$APP_DIR") bash -s" \
               <<'REMOTE' >> "$GITHUB_STEP_SUMMARY" || true
           APP_DIR="${APP_DIR:-}"
@@ -210,10 +535,33 @@ jobs:
               [ -d "$c/.git" ] && APP_DIR="$c" && break
             done
           fi
+          # The credential must not outlive the deploy that needed it.
+          docker logout ghcr.io >/dev/null 2>&1 || true
           cd "$APP_DIR" 2>/dev/null || exit 0
           echo "### Deployed revision"
           echo ''
           echo '```'
           git log -1 --format='%h  %s  (%an, %ar)' 2>/dev/null || true
+          docker compose -f docker-compose.prod.yml ps --format 'table {{.Service}}\t{{.Status}}' 2>/dev/null || true
+          df -h /var/lib/docker 2>/dev/null | awk 'NR==2{print "disk: "$3" used, "$4" free ("$5" full)"}' \
+            || df -h / | awk 'NR==2{print "disk: "$3" used, "$4" free ("$5" full)"}'
           echo '```'
           REMOTE
+
+  # A commit that only touches the Expo app has nothing to do with the VPS.
+  # Saying so explicitly beats a skipped job nobody can interpret.
+  nothing-to-do:
+    name: Nothing to deploy
+    needs: plan
+    if: needs.plan.outputs.services == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          {
+            echo "### Nothing to deploy"
+            echo ''
+            echo "No files under \`backend/\`, \`web/\`, \`admin/\`, \`ops/\` or the production"
+            echo "compose file changed since the revision the server is running, so the"
+            echo "production stack was left untouched."
+          } >> "$GITHUB_STEP_SUMMARY"

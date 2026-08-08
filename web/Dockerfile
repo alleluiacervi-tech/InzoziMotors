@@ -6,11 +6,15 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# web/ has no committed lockfile yet, so `npm ci` cannot be assumed. Prefer it
-# when the lockfile is there (reproducible), fall back when it is not.
-# TODO(web): commit package-lock.json and reduce this to `npm ci`.
-COPY package.json package-lock.json* ./
-RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+# Only the manifests, so this layer — the expensive one — is keyed on the
+# dependency set alone. Editing a page does not reinstall node_modules; the
+# registry is only contacted when package.json or the lockfile actually moves.
+#
+# `npm ci` (not `install`): it installs the lockfile exactly and fails loudly
+# when the two disagree, instead of quietly resolving something new inside a
+# production image. The lockfile is committed and CI already builds from it.
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 

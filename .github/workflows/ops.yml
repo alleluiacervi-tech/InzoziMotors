@@ -34,12 +34,16 @@ jobs:
   ops:
     name: ${{ inputs.action }}
     runs-on: ubuntu-latest
+    # No lever here should be able to run to a 6-hour default timeout. Rollback
+    # is the slowest (pull + restart + readiness) and fits well inside this.
+    timeout-minutes: 20
     environment:
       name: production
       url: https://sawacars.com
 
     steps:
       - name: Load the deploy key
+        timeout-minutes: 2
         env:
           KEY: ${{ secrets.VPS_SSH_KEY }}
           HOST: ${{ secrets.VPS_HOST }}
@@ -55,16 +59,23 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Run
+        timeout-minutes: 15
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
           ACTION: ${{ inputs.action }}
+          # ops/rollback.sh stops for confirmation when the deploy it is undoing
+          # carried migrations. There is no terminal here, so the decision has to
+          # be made in advance: rolling back CODE only is the documented safe
+          # case for additive migrations. A destructive migration needs
+          # ops/restore.sh by hand, which this lever deliberately cannot do.
+          CONFIRM: continue
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" \
-              "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") bash -s" <<'REMOTE'
+              "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") CONFIRM=$(printf %q "$CONFIRM") bash -s" <<'REMOTE'
           set -euo pipefail
           APP_DIR="${APP_DIR:-}"
           if [ -z "$APP_DIR" ]; then
@@ -80,11 +91,21 @@ jobs:
           # therefore collides with the running stack.
           COMPOSE="docker compose -f docker-compose.prod.yml"
 
+          export CONFIRM="${CONFIRM:-}"
+
+          # Compose interpolates ${IMAGE_TAG} into every image reference. Left
+          # unset it defaults to :latest, which is not necessarily what THIS
+          # host is running — a restart would then quietly change the version.
+          # ops/deploy.sh records the deployed tag; use it.
+          export IMAGE_TAG="$(cat /var/lib/sawa/image-tag 2>/dev/null || echo latest)"
+
           case "$ACTION" in
             status)
               docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
               echo
               echo "--- revision ---"; git log -1 --format='%h %s'
+              echo "--- image tag ---"; echo "$IMAGE_TAG"
+              echo "--- disk ---"; df -h /var/lib/docker 2>/dev/null | tail -1 || df -h / | tail -1
               echo "--- api readiness ---"
               curl -fsS -m 5 http://127.0.0.1:4000/health/ready && echo || echo "NOT READY"
               ;;

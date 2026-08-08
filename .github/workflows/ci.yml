@@ -12,10 +12,18 @@ on:
   pull_request:
     branches: [main]
 
+# Pushing twice in a minute used to run two full sets of four jobs, and the
+# deploy that follows queued behind the stale one. Superseded runs of the same
+# ref are cancelled — safe here, because CI only reads.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend — syntax, SQL grammar, API tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     # The suite runs against a real PostgreSQL on purpose. What it verifies —
     # transactions, row locks, unique constraints, cascade behaviour — is
@@ -67,6 +75,7 @@ jobs:
   mobile:
     name: Mobile — babel parse + import resolution
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -92,6 +101,7 @@ jobs:
   web:
     name: Website — typecheck + production build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -108,6 +118,7 @@ jobs:
   admin:
     name: Admin — typecheck + production build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

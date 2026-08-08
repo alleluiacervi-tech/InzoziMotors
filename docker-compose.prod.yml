@@ -4,7 +4,16 @@
 #
 # On the VPS:
 #   cp .env.production.template .env     # then fill in every value
-#   docker compose -f docker-compose.prod.yml up -d --build
+#
+#   Normal operation — images are built by CI and pulled by tag. The server
+#   does not compile anything:
+#     docker login ghcr.io                 # once, unless the packages are public
+#     IMAGE_TAG=<sha> docker compose -f docker-compose.prod.yml pull
+#     IMAGE_TAG=<sha> docker compose -f docker-compose.prod.yml up -d
+#   (ops/deploy.sh does all of this, plus backup/rollback bookkeeping.)
+#
+#   First-time bootstrap with no registry access — builds locally, slow:
+#     docker compose -f docker-compose.prod.yml up -d --build
 #
 # Differences from dev, each deliberate:
 #   • Every service binds 127.0.0.1 — Caddy on the host is the only public door.
@@ -38,9 +47,19 @@ services:
       retries: 10
 
   api:
-    # Explicit tag: CI builds this image on the runner and ships it with
-    # docker save/load, so the name must not depend on the compose project dir.
-    image: sawa-api:latest
+    # ── Where the image comes from ────────────────────────────────────────────
+    # CI builds this on a runner and PUSHES it to the registry; the VPS runs
+    # `docker compose pull`, which transfers only the layers that actually
+    # changed. A code-only change moves a few MB, not a whole image.
+    #
+    # This replaced `docker save | ssh docker load`, which shipped every byte
+    # of all three images on every deploy and left the previous ones behind as
+    # dangling layers — the deploy got slower and the disk smaller each time.
+    #
+    # IMAGE_TAG pins the exact commit (CI sets it to the deployed SHA), so a
+    # rollback is a re-pull of an older tag rather than a rebuild. Defaults keep
+    # `docker compose -f docker-compose.prod.yml build` working locally.
+    image: ${REGISTRY:-ghcr.io/alleluiacervi-tech/inzozimotors}/api:${IMAGE_TAG:-latest}
     build: ./backend
     restart: unless-stopped
     depends_on:
@@ -80,7 +99,7 @@ services:
       retries: 3
 
   web:
-    image: sawa-web:latest
+    image: ${REGISTRY:-ghcr.io/alleluiacervi-tech/inzozimotors}/web:${IMAGE_TAG:-latest}
     build:
       context: ./web
       args:
@@ -103,7 +122,7 @@ services:
       - "127.0.0.1:4002:3002"
 
   admin:
-    image: sawa-admin:latest
+    image: ${REGISTRY:-ghcr.io/alleluiacervi-tech/inzozimotors}/admin:${IMAGE_TAG:-latest}
     build:
       context: ./admin
     restart: unless-stopped
