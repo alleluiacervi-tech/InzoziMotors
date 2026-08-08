@@ -290,8 +290,8 @@ export const VEHICLE_HISTORY = {
 
 // ─── Seller Profiles Mock Data ────────────────────────────────────────────────
 export const SELLER_PROFILES = {
-  'Carvana': {
-    name: 'Carvana',
+  'Kigali Prime Motors': {
+    name: 'Kigali Prime Motors',
     initials: 'CA',
     memberSince: 'Jan 2024',
     location: 'Nyarutarama, Kigali',
@@ -312,8 +312,8 @@ export const SELLER_PROFILES = {
       { id: 'r3', buyer: 'Diane M.', rating: 4, text: 'Good car, honest about condition. Would buy again.', date: 'Apr 10, 2026' },
     ],
   },
-  'Bay Auto Group': {
-    name: 'Bay Auto Group',
+  'Akagera Auto Group': {
+    name: 'Akagera Auto Group',
     initials: 'BA',
     memberSince: 'Mar 2024',
     location: 'Kicukiro, Kigali',
@@ -364,7 +364,7 @@ export const INITIAL_NOTIFICATIONS = [
   },
   {
     id: 'n2', type: 'new_message', read: false,
-    title: 'New message from Bay Auto Group',
+    title: 'New message from Akagera Auto Group',
     body: 'Thanks for your interest! The BMW is still available for viewing.',
     time: '5 hours ago', date: 'Today',
   },
@@ -395,7 +395,7 @@ export const INITIAL_NOTIFICATIONS = [
   },
   {
     id: 'n7', type: 'new_message', read: true,
-    title: 'New message from Carvana',
+    title: 'New message from Kigali Prime Motors',
     body: 'Saturday at 11:30 AM works. I\'ll send the inspection center address.',
     time: 'Jun 26 · 11:30 AM', date: 'Jun 26',
   },

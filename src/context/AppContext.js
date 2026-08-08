@@ -309,6 +309,9 @@ export function AppProvider({ children }) {
       id: c.id,
       title: c.title,
       sellerPhone: c.seller_phone || null,
+      // The seller's user id — what SellerProfile/TrustScore need to fetch the
+      // real trust breakdown instead of falling back to a canned profile.
+      sellerId: c.seller_id || null,
       make: c.make,
       model: c.model,
       year: c.year,
@@ -715,21 +718,57 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!isLoggedIn) return;
     let alive = true;
-    syncPushToken().then((token) => { if (alive && token) setPushToken(token); });
+    // Respect the Settings toggle: a user who turned push off must stay off
+    // across restarts — a control that silently re-enables itself is exactly
+    // the kind of thing a Play data-safety complaint is made of.
+    getJSON('pushEnabled', true).then((enabled) => {
+      if (!alive || !enabled) return;
+      syncPushToken().then((token) => { if (alive && token) setPushToken(token); });
+    });
     return () => { alive = false; };
   }, [isLoggedIn]);
 
-  // Connect Socket.io client on login
-  useEffect(() => {
-    if (isLoggedIn && currentUser) {
-      getToken().then((token) => {
-        if (!token) return;
-        const newSocket = io(BASE_URL, {
-          auth: { token },
-        });
+  // The Settings screen's push toggle. Off = the server forgets this device
+  // immediately; on = re-register (which may re-prompt for OS permission).
+  const setPushEnabled = useCallback(async (enabled) => {
+    await setJSON('pushEnabled', enabled);
+    if (enabled) {
+      const token = await syncPushToken();
+      setPushToken(token);
+      return !!token;
+    }
+    await unregisterPushToken(pushToken);
+    setPushToken(null);
+    return true;
+  }, [pushToken]);
 
-        newSocket.on('connect', () => {
-          console.log('Socket.io connected to server');
+  // Connect Socket.io client on login.
+  // The teardown MUST be returned from the effect itself, not from inside the
+  // getToken().then() — a cleanup returned to a Promise is invisible to React,
+  // which is how re-logins used to stack a second live socket on the first.
+  useEffect(() => {
+    if (!isLoggedIn || !currentUser) {
+      setSocket((prev) => {
+        if (prev) prev.disconnect();
+        return null;
+      });
+      return undefined;
+    }
+
+    let cancelled = false;
+    let liveSocket = null;
+
+    getToken().then((token) => {
+      if (!token || cancelled) return;
+      const newSocket = io(BASE_URL, {
+        auth: { token },
+      });
+      liveSocket = newSocket;
+
+        // A rejected handshake (expired JWT, server down) is otherwise
+        // invisible — chat just silently stops being realtime.
+        newSocket.on('connect_error', (err) => {
+          console.warn('Socket connection failed:', err?.message);
         });
 
         newSocket.on('new_message', (message) => {
@@ -779,17 +818,13 @@ export function AppProvider({ children }) {
         });
 
         setSocket(newSocket);
-
-        return () => {
-          newSocket.disconnect();
-        };
       });
-    } else {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-      }
-    }
+
+    return () => {
+      cancelled = true;
+      if (liveSocket) liveSocket.disconnect();
+      setSocket((prev) => (prev === liveSocket ? null : prev));
+    };
   }, [isLoggedIn, currentUser?.id]);
 
   // --- Auth operations ---
@@ -1241,14 +1276,27 @@ export function AppProvider({ children }) {
         return newConvId;
       } else {
         const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        const optimisticId = 'opt_' + Date.now();
         // Optimistic local add first so UI feels instant
         setChatMessages((prev) => {
           const thread = prev[convId] || [];
-          return { ...prev, [convId]: [...thread, { id: 'opt_' + Date.now(), me: true, text, time: timeStr, sender_name: currentUser?.name || 'Me' }] };
+          return { ...prev, [convId]: [...thread, { id: optimisticId, me: true, text, time: timeStr, sender_name: currentUser?.name || 'Me' }] };
         });
 
         try {
-          await messagesApi.sendMessage(convId, text);
+          const saved = await messagesApi.sendMessage(convId, text);
+          // Swap the optimistic id for the server row's id, so when the
+          // server's socket broadcast echoes this message back, the dedupe
+          // in the new_message handler recognises it instead of appending
+          // a second bubble.
+          if (saved?.id) {
+            setChatMessages((prev) => ({
+              ...prev,
+              [convId]: (prev[convId] || []).map((m) =>
+                m.id === optimisticId ? { ...m, id: saved.id } : m
+              ),
+            }));
+          }
         } catch (sendErr) {
           // Backend unreachable. In demo we keep the optimistic bubble and add a
           // scripted reply; in a release build a scripted reply would be a
@@ -1271,14 +1319,18 @@ export function AppProvider({ children }) {
           }, 1200);
         }
 
-        // Emit via Socket.io if connected
-        if (socket) {
-          socket.emit('send_message', { conversationId: convId, text });
-        }
+        // NOTE: no socket emit here. REST is the single write path — the
+        // server's send_message handler also inserts a row, so emitting after
+        // the POST used to persist every message twice (two rows, two pushes).
+        // Realtime delivery to the other party is the server's job: the POST
+        // route broadcasts to the conversation room.
         return convId;
       }
     } catch (err) {
+      // Rethrow so the screen can tell the user — swallowing this here is how
+      // failed sends used to vanish without a trace.
       console.warn('Error sending message:', err);
+      throw err;
     }
   }, [socket, currentUser?.name, mapConversation, loadConversationMessages]);
 
@@ -1504,6 +1556,8 @@ export function AppProvider({ children }) {
     joinConversation, sendTyping, typingConvId,
     // Authentication
     currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, loading, error,
+    // Push preference (Settings toggle)
+    setPushEnabled,
     // Connectivity — false once a read failed at the transport layer, so screens
     // can say "we couldn't reach Sawa" rather than showing an empty marketplace.
     backendReachable, demoMode: DEMO_MODE,

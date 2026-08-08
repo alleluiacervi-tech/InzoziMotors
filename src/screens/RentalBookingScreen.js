@@ -8,11 +8,14 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { DURATION_PRESETS, getRentalDates, calcTripCost, getPickupCenter, AIRPORT_PICKUP, PICKUP_WINDOWS } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
-import { openWhatsApp, SAWA_WHATSAPP } from '../utils/whatsapp';
+import { openWhatsApp, SAWA_WHATSAPP, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
 
 export default function RentalBookingScreen({ navigation, route }) {
-  const car = route.params?.car;
+  // Only reachable from RentalDetail, which guarantees a car — but a restored
+  // navigation state or future deep link must not crash the booking flow.
+  const car = route.params?.car || {};
+  const unavailableDays = car.unavailableDays || [];
   const { bookRental } = useApp();
 
   const dates = getRentalDates(14);
@@ -22,13 +25,13 @@ export default function RentalBookingScreen({ navigation, route }) {
   // 14-day window are assumed free (they can't appear in unavailableDays).
   const rangeIsFree = (start, numDays) => {
     for (let i = start; i < start + numDays; i++) {
-      if (car.unavailableDays.includes(i)) return false;
+      if (unavailableDays.includes(i)) return false;
     }
     return true;
   };
 
   const [startIdx, setStartIdx] = useState(() => {
-    const first = dates.find((d) => !car.unavailableDays.includes(d.index));
+    const first = dates.find((d) => !unavailableDays.includes(d.index));
     return first ? first.index : null;
   });
   const [days, setDays] = useState(durations[0]);
@@ -96,16 +99,20 @@ export default function RentalBookingScreen({ navigation, route }) {
           </View>
 
           <Button title="View My Rentals" onPress={() => navigation.navigate('MyRentals')} style={{ alignSelf: 'stretch' }} />
-          <Pressable
-            style={styles.waRow}
-            onPress={() => openWhatsApp(
-              SAWA_WHATSAPP,
-              `Hi, I just booked the ${car.title} for ${startDate.full} (${time}) at ${center.name}. Booking question:`
-            )}
-          >
-            <Ionicons name="logo-whatsapp" size={17} color="#25D366" />
-            <Text style={styles.waRowText}>Questions? WhatsApp the center</Text>
-          </Pressable>
+          {/* Honesty gate: hidden until the business line is real — this used
+              to open a chat to the placeholder number. */}
+          {WHATSAPP_VERIFIED && (
+            <Pressable
+              style={styles.waRow}
+              onPress={() => openWhatsApp(
+                SAWA_WHATSAPP,
+                `Hi, I just booked the ${car.title} for ${startDate.full} (${time}) at ${center.name}. Booking question:`
+              )}
+            >
+              <Ionicons name="logo-whatsapp" size={17} color="#25D366" />
+              <Text style={styles.waRowText}>Questions? WhatsApp the center</Text>
+            </Pressable>
+          )}
           <Pressable onPress={() => navigation.navigate('Main')} style={{ marginTop: 14 }}>
             <Text style={styles.viewRentals}>Back to Home</Text>
           </Pressable>

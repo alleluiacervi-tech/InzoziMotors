@@ -10,6 +10,7 @@ import BackHeader from '../components/BackHeader';
 import { colors, radius, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
+import { getJSON } from '../storage';
 
 // The legal texts live on the website so there is one wording, not two that
 // drift. Play Store policy requires the privacy policy to be reachable from
@@ -30,22 +31,23 @@ async function openLink(url) {
   }
 }
 
-const GROUPS = [
+// Rows that promise nothing they can't deliver: the dead "Email alerts" and
+// "Dark mode (preview)" toggles are gone (they flipped local state and did
+// nothing — a control that lies is a policy complaint waiting to happen), and
+// coming-soon rows carry no chevron so they don't read as navigation.
+const buildGroups = (verificationValue) => [
   {
     title: 'Account',
     items: [
       { icon: 'person-outline', label: 'Edit profile', comingSoon: 'Profile editing is coming in a future update.' },
-      { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: 'Verified', comingSoon: 'Your ID is checked in person at the inspection center — nothing to upload.' },
+      { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: verificationValue, screen: 'IDVerification' },
       { icon: 'notifications-outline', label: 'Saved searches', screen: 'Saved' },
-      { icon: 'location-outline', label: 'Addresses', comingSoon: 'Saved addresses are coming in a future update.' },
     ],
   },
   {
     title: 'Preferences',
     items: [
       { icon: 'notifications-outline', label: 'Push notifications', toggle: true },
-      { icon: 'mail-outline', label: 'Email alerts', toggle: true },
-      { icon: 'moon-outline', label: 'Dark mode (preview)', toggle: false },
       { icon: 'globe-outline', label: 'Language', value: 'English', comingSoon: 'Kinyarwanda support is coming soon.' },
     ],
   },
@@ -53,7 +55,6 @@ const GROUPS = [
     title: 'Support',
     items: [
       { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
-      { icon: 'help-circle-outline', label: 'Help center', comingSoon: 'The help center is coming soon.' },
       { icon: 'star-outline', label: 'Rate Sawa', comingSoon: 'App store rating will be available after launch.' },
     ],
   },
@@ -76,8 +77,33 @@ function Toggle({ on }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const [toggles, setToggles] = useState({ 'Push notifications': true, 'Email alerts': true, 'Dark mode (preview)': false });
-  const { isLoggedIn, deleteAccount } = useApp();
+  const { isLoggedIn, deleteAccount, setPushEnabled, idVerificationStatus } = useApp();
+
+  // Persisted, and actually wired: off tells the server to forget this device.
+  const [pushOn, setPushOn] = useState(true);
+  React.useEffect(() => {
+    let alive = true;
+    getJSON('pushEnabled', true).then((v) => { if (alive) setPushOn(v !== false); });
+    return () => { alive = false; };
+  }, []);
+
+  const handlePushToggle = async () => {
+    const next = !pushOn;
+    setPushOn(next);
+    const ok = await setPushEnabled(next).catch(() => false);
+    if (next && !ok) {
+      // Permission denied or registration failed — reflect reality, not the tap.
+      setPushOn(false);
+      showToast('Push could not be enabled. Check notification permissions in your phone settings.', 'error');
+    }
+  };
+
+  const VERIFICATION_LABELS = {
+    approved: 'Verified',
+    pending: 'Under review',
+    rejected: 'Action needed',
+  };
+  const groups = buildGroups(VERIFICATION_LABELS[idVerificationStatus] || 'Not verified');
 
   // Deletion state. A dedicated modal rather than showConfirm(), because this
   // needs a password field and needs to show the server's specific refusals —
@@ -146,32 +172,31 @@ export default function SettingsScreen({ navigation }) {
     <Screen background={colors.bg}>
       <BackHeader title="Settings" onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 30 }}>
-        {GROUPS.map((g) => (
+        {groups.map((g) => (
           <View key={g.title} style={{ marginBottom: 22 }}>
             <Text style={styles.groupTitle}>{g.title}</Text>
             <View style={styles.group}>
               {g.items.map((item, i) => {
                 const isToggle = 'toggle' in item;
-                const on = toggles[item.label];
+                const navigates = Boolean(item.screen || item.link);
                 return (
                   <Pressable
                     key={item.label}
                     style={[styles.item, i < g.items.length - 1 && styles.itemBorder]}
-                    onPress={() => (isToggle ? setToggles((t) => ({ ...t, [item.label]: !t[item.label] })) : handleItemPress(item))}
+                    onPress={() => (isToggle ? handlePushToggle() : handleItemPress(item))}
                   >
                     <View style={styles.itemIcon}>
                       <Ionicons name={item.icon} size={20} color={colors.slate700} />
                     </View>
                     <Text style={styles.itemLabel}>{item.label}</Text>
                     {isToggle ? (
-                      <Toggle on={on} />
-                    ) : item.value ? (
-                      <View style={styles.itemRight}>
-                        <Text style={styles.itemValue}>{item.value}</Text>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-                      </View>
+                      <Toggle on={pushOn} />
                     ) : (
-                      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                      <View style={styles.itemRight}>
+                        {item.value ? <Text style={styles.itemValue}>{item.value}</Text> : null}
+                        {/* A chevron promises navigation — coming-soon rows don't get one */}
+                        {navigates && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+                      </View>
                     )}
                   </Pressable>
                 );

@@ -374,7 +374,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
             onPress={() =>
               navigation.navigate(
                 isDealer ? 'DealerProfile' : 'SellerProfile',
-                isDealer ? { dealerName: car.seller } : { sellerName: car.seller }
+                isDealer
+                  ? { dealerName: car.seller, sellerId: car.sellerId }
+                  : { sellerName: car.seller, sellerId: car.sellerId }
               )
             }
           >

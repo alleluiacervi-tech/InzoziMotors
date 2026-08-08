@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
@@ -8,6 +8,7 @@ import CarZoneMap from '../components/CarZoneMap';
 import { colors, radius, shadows, fonts } from '../theme';
 import { MOCK_INSPECTION_RESULT, buildReportFromApi } from '../data/inspectionData';
 import inspectionsApi from '../api/inspections';
+import { useApp } from '../context/AppContext';
 
 const CATEGORY_ICONS = {
   engine:      'cog-outline',
@@ -85,21 +86,63 @@ function CategoryRow({ cat, defaultExpanded }) {
 
 export default function InspectionReportScreen({ navigation, route }) {
   const car = route.params?.car;
-  const [data, setData] = useState(MOCK_INSPECTION_RESULT);
+  // Deep links (sawa://cars/<id>/inspection) carry carId, not a car object.
+  const carId = String(route.params?.carId || car?.id || '');
+  const { demoMode } = useApp();
+  const isApiCar = carId.includes('-'); // UUID = real listing; '1'…'25' = bundled demo
 
-  // Real report for API-backed cars (UUID ids); mock ids ('1'…'25') keep the demo report
+  // The mock report exists for the demo catalogue in dev builds ONLY. A real
+  // car whose report can't be fetched must say so — showing a fabricated
+  // 143/150 "certified" result for a car nobody inspected is the one thing
+  // this product can never do.
+  const [data, setData] = useState(() => (!isApiCar && demoMode ? MOCK_INSPECTION_RESULT : null));
+  const [failed, setFailed] = useState(false);
+  const [selectedZoneRaw, setSelectedZone] = useState(null);
+
   useEffect(() => {
-    const id = car?.id ? String(car.id) : '';
-    if (!id.includes('-')) return;
+    if (!isApiCar) return;
     let alive = true;
-    inspectionsApi.getReport(id)
+    setFailed(false);
+    inspectionsApi.getReport(carId)
       .then((report) => {
+        if (!alive) return;
         const mapped = buildReportFromApi(report);
-        if (alive && mapped) setData(mapped);
+        if (mapped) setData(mapped);
+        else setFailed(true);
       })
-      .catch(() => {}); // unreachable/404 → keep the demo report
+      .catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [car?.id]);
+  }, [carId, isApiCar]);
+
+  // No report to draw — loading spinner while the fetch is in flight, an
+  // honest unavailable state on 404/outage. All hooks stay above this return.
+  if (!data) {
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title="Inspection Report" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
+          {failed || !isApiCar ? (
+            <>
+              <Ionicons name="document-text-outline" size={40} color={colors.textMuted} />
+              <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
+                Report not available
+              </Text>
+              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
+                We couldn&apos;t load the inspection report for this car. Check your connection and try again.
+              </Text>
+            </>
+          ) : (
+            <>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary }}>
+                Loading inspection report…
+              </Text>
+            </>
+          )}
+        </View>
+      </Screen>
+    );
+  }
 
   const pct = data.score / data.maxScore;
   const certified = pct >= 0.88;
@@ -108,8 +151,8 @@ export default function InspectionReportScreen({ navigation, route }) {
   // Zone map: pre-select the first flagged category so the detail card
   // demonstrates itself the moment the screen opens
   const firstFlagged = data.categories.find((c) => c.flags.length > 0);
-  const [selectedZone, setSelectedZone] = useState(firstFlagged ? firstFlagged.id : 'engine');
-  const zoneCat = data.categories.find((c) => c.id === selectedZone);
+  const selectedZone = selectedZoneRaw || (firstFlagged ? firstFlagged.id : 'engine');
+  const zoneCat = data.categories.find((c) => c.id === selectedZone) || data.categories[0];
   const zonePct = zoneCat.maxPts > 0 ? zoneCat.earned / zoneCat.maxPts : 0;
   const zoneStatus = zonePct >= 1 ? 'pass' : zonePct >= 0.85 ? 'minor' : 'warn';
   const zoneColor = zoneStatus === 'pass' ? colors.green : zoneStatus === 'minor' ? colors.amber : colors.statusRejected;

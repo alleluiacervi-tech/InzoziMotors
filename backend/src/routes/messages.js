@@ -148,6 +148,17 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
       [text, conv.id]
     );
 
+    // Realtime fan-out for the single REST write. Clients no longer emit
+    // send_message after POSTing (that used to insert every message twice) —
+    // this broadcast is what keeps the other party's open thread live.
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`conv:${conv.id}`).emit('new_message', {
+        ...rows[0],
+        sender_name: req.user.name || req.user.email,
+      });
+    }
+
     const otherId = req.user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id;
     await notifyUser(pool, {
       user_id: otherId,

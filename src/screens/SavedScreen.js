@@ -174,7 +174,10 @@ export default function SavedScreen({ navigation }) {
               sub="Tap the heart on any listing to save it. We'll notify you the moment the price drops."
               features={SAVED_FEATURES}
               btnLabel="Browse cars"
-              onPress={() => navigation.navigate('Home')}
+              // 'Main' resolves from both mounts of this screen (tab bar AND
+              // the root-stack instance the drawer opens); 'Home' only existed
+              // inside the tab navigator, so the drawer path was a dead button.
+              onPress={() => navigation.navigate('Main', { screen: 'Home' })}
             />
           }
         />

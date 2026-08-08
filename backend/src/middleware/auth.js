@@ -28,14 +28,17 @@ async function verifyLiveSession(payload) {
 function requireAuth(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
+    return res.status(401).json({ error: 'No token provided', code: 'AUTH_REQUIRED' });
   }
   const token = header.slice(7);
   let payload;
   try {
     payload = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    // The code lets clients tell "your session is dead — drop the stored token"
+    // apart from credential 401s (wrong password on login/change-password/delete),
+    // where purging the token would sign out a perfectly valid session.
+    return res.status(401).json({ error: 'Invalid or expired token', code: 'SESSION_EXPIRED' });
   }
 
   verifyLiveSession(payload)
@@ -78,7 +81,7 @@ function requireVerified(req, res, next) {
     if (req.user.role === 'admin') return next();
     try {
       const { rows } = await pool.query('SELECT id_verified FROM users WHERE id = $1', [req.user.id]);
-      if (!rows.length) return res.status(401).json({ error: 'User not found' });
+      if (!rows.length) return res.status(401).json({ error: 'User not found', code: 'SESSION_REVOKED' });
       const state = rows[0].id_verified || 'none';
       if (state !== 'approved') {
         return res.status(403).json({

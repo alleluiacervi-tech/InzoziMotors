@@ -5,11 +5,15 @@
       {
         "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.sawacars.app",
         "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.com.sawacars.app"],
-        "paths": ["/cars/*", "/download"],
+        "paths": ["/cars/*", "/rentals/*", "/download"],
         "components": [
           {
             "/": "/cars/*",
             "comment": "Certified listing detail — opens the car screen in the app."
+          },
+          {
+            "/": "/rentals/*",
+            "comment": "Rental fleet detail — matches the app's rentals intent filter."
           },
           {
             "/": "/download",

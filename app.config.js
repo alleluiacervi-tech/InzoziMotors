@@ -51,6 +51,9 @@ export default ({ config }) => ({
         'Sawa uses the camera to photograph your ID for seller verification and to capture vehicle photos.',
       NSPhotoLibraryUsageDescription:
         'Sawa needs access to your photos so you can attach existing vehicle or ID images.',
+      // Only standard HTTPS/ATS encryption — answering here skips the export-
+      // compliance question that otherwise stalls every App Store submission.
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {

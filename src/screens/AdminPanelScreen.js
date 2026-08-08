@@ -389,8 +389,14 @@ export default function AdminPanelScreen({ navigation }) {
   const {
     pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification,
     handovers, confirmHandover, submissions, updateSubmissionStatus, cars,
+    currentUser, demoMode,
   } = useApp();
   const [activeTab, setActiveTab] = useState(0);
+
+  // Defence in depth: the entry points are role-gated, every admin API is
+  // server-gated, and this screen refuses to render for non-staff too. Without
+  // this, anyone who reached the route saw what looked like a live KYC queue.
+  const isAdmin = demoMode || currentUser?.role === 'admin';
 
   const pendingCount = pendingVerifications.filter((v) => v.status === 'pending').length;
   const pendingHandovers = handovers.filter((h) => h.status === 'pending').length;
@@ -440,6 +446,23 @@ export default function AdminPanelScreen({ navigation }) {
       confirmLabel: 'Confirm & Mark Sold',
     }).then((ok) => { if (ok) confirmHandover(handoverId); });
   };
+
+  if (!isAdmin) {
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title="Team Portal" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
+          <Ionicons name="lock-closed-outline" size={40} color={colors.textMuted} />
+          <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
+            Sawa team access only
+          </Text>
+          <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
+            This area is for Sawa staff. If you&apos;re on the team, sign in with your staff account.
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen background={colors.bg}>

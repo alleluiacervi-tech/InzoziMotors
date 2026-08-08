@@ -1,4 +1,19 @@
+# Keep the build context small and keep secrets out of the image. The
+# Dockerfile does `COPY . .` — anything not listed here is baked into the
+# published image forever.
 node_modules/
+.git
+.gitignore
 .env
+.env.*
+!.env.example
 uploads/
 *.log
+npm-debug.log*
+.DS_Store
+Dockerfile
+.dockerignore
+*.pem
+*.p12
+*.jks
+*-service-account.json

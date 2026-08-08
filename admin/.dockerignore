@@ -1,5 +1,15 @@
+# Keep the build context small and keep secrets out of the image — the image
+# would otherwise carry .env.* files and the full git history.
 node_modules/
 .next/
+.git
+.gitignore
 .env
-.env.local
+.env.*
+!.env.example
 *.log
+npm-debug.log*
+.DS_Store
+Dockerfile
+.dockerignore
+tsconfig.tsbuildinfo

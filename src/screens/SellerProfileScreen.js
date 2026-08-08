@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image,
+  View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,7 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 import reviewsApi from '../api/reviews';
+import { useApp } from '../context/AppContext';
 
 function formatReviewDate(iso) {
   if (!iso) return '';
@@ -118,35 +119,89 @@ export default function SellerProfileScreen({ navigation, route }) {
   const sellerName = route.params?.sellerName || '';
   // Real seller id (UUID) when navigated from an API-backed listing; absent in demo mode
   const sellerId = route.params?.sellerId || route.params?.userId || null;
-  const baseProfile = SELLER_PROFILES[sellerName] || { ...DEFAULT_SELLER_PROFILE, name: sellerName || 'Seller' };
+  const { demoMode } = useApp();
 
-  const [apiReviews, setApiReviews] = useState(null);
+  // The canned SELLER_PROFILES / DEFAULT_SELLER_PROFILE fixtures exist for the
+  // bundled demo catalogue in dev builds ONLY. A real seller's profile is built
+  // entirely from the trust-score and reviews APIs — a fabricated "72/100,
+  // review from Happy Buyer" default must never be presented as a real person.
+  const demoProfile = demoMode
+    ? (SELLER_PROFILES[sellerName] || { ...DEFAULT_SELLER_PROFILE, name: sellerName || 'Seller' })
+    : null;
+
+  const [apiProfile, setApiProfile] = useState(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!sellerId) return undefined;
     let cancelled = false;
-    reviewsApi.getSellerReviews(sellerId)
-      .then((data) => {
-        if (cancelled || !data || !Array.isArray(data.reviews)) return;
-        setApiReviews({
-          reviews: data.reviews.map((r) => ({
+    Promise.all([
+      reviewsApi.getTrustScore(sellerId).catch(() => null),
+      reviewsApi.getSellerReviews(sellerId).catch(() => null),
+    ]).then(([trust, revData]) => {
+      if (cancelled) return;
+      if (!trust && !revData) { setFailed(true); return; }
+      const b = trust?.breakdown || {};
+      const reviews = Array.isArray(revData?.reviews)
+        ? revData.reviews.map((r) => ({
             id: r.id,
             buyer: r.reviewer_name || 'Buyer',
             rating: r.rating,
             text: r.comment || (r.car_title ? `Purchased: ${r.car_title}` : ''),
             date: formatReviewDate(r.created_at),
-          })),
-          avgRating: data.average_rating != null ? Number(data.average_rating) : 0,
-          totalReviews: data.total != null ? Number(data.total) : data.reviews.length,
-        });
-      })
-      .catch(() => {
-        // API unreachable — keep mock reviews (demo mode)
+          }))
+        : [];
+      const avg = revData?.average_rating != null
+        ? Number(revData.average_rating)
+        : Number(b.reviews?.avg || 0);
+      setApiProfile({
+        name: sellerName || 'Seller',
+        initials: (sellerName || 'S').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase(),
+        memberSince: null, // not exposed by the API yet — hidden, not invented
+        location: null,
+        bio: null,
+        idVerified: (b.id_verified?.points || 0) > 0,
+        completedSales: b.completed_sales?.count ?? 0,
+        responseRate: b.response_rate?.rate ?? 0,
+        avgRating: Number.isFinite(avg) ? avg : 0,
+        totalReviews: revData?.total != null ? Number(revData.total) : Number(b.reviews?.count || 0),
+        activeListings: [],
+        reviews,
       });
+    });
     return () => { cancelled = true; };
-  }, [sellerId]);
+  }, [sellerId, sellerName]);
 
-  const profile = apiReviews ? { ...baseProfile, ...apiReviews } : baseProfile;
+  const profile = apiProfile || demoProfile;
+
+  if (!profile) {
+    const loading = Boolean(sellerId) && !failed;
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title="Seller Profile" onBack={() => navigation.goBack()} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
+          {loading ? (
+            <>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary }}>
+                Loading seller profile…
+              </Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="person-circle-outline" size={40} color={colors.textMuted} />
+              <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
+                Profile not available
+              </Text>
+              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
+                We couldn&apos;t load this seller&apos;s profile. Check your connection and try again.
+              </Text>
+            </>
+          )}
+        </View>
+      </Screen>
+    );
+  }
 
   const totalScore = SCORE_COMPONENTS.reduce((s, c) => s + c.calcPts(profile), 0);
 
@@ -167,14 +222,18 @@ export default function SellerProfileScreen({ navigation, route }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.heroName}>{profile.name}</Text>
-              <View style={styles.heroMeta}>
-                <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.heroMetaText}>{profile.location}</Text>
-              </View>
-              <View style={styles.heroMeta}>
-                <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.6)" />
-                <Text style={styles.heroMetaText}>Member since {profile.memberSince}</Text>
-              </View>
+              {profile.location ? (
+                <View style={styles.heroMeta}>
+                  <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.heroMetaText}>{profile.location}</Text>
+                </View>
+              ) : null}
+              {profile.memberSince ? (
+                <View style={styles.heroMeta}>
+                  <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.heroMetaText}>Member since {profile.memberSince}</Text>
+                </View>
+              ) : null}
               <View style={styles.heroBadges}>
                 {profile.idVerified && (
                   <View style={styles.heroBadge}>
@@ -256,6 +315,11 @@ export default function SellerProfileScreen({ navigation, route }) {
             </View>
           </View>
           <View style={styles.reviews}>
+            {profile.reviews.length === 0 && (
+              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted }}>
+                No reviews yet — reviews appear after completed handovers.
+              </Text>
+            )}
             {profile.reviews.map((review) => (
               <View key={review.id} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>

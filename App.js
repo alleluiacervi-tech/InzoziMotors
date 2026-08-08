@@ -14,7 +14,7 @@ export default function App() {
   // Satoshi (Indian Type Foundry, Fontshare) — bundled rather than fetched, so
   // the first frame is never unstyled. It ships 400/500/700/900 only; the
   // theme's six weight slots collapse onto those four (see src/theme/index.js).
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     'Satoshi-Regular': require('./assets/fonts/Satoshi-Regular.ttf'),
     'Satoshi-Medium': require('./assets/fonts/Satoshi-Medium.ttf'),
     'Satoshi-Bold': require('./assets/fonts/Satoshi-Bold.ttf'),
@@ -31,7 +31,10 @@ export default function App() {
 
   // Fonts gate everything (the splash itself uses them); the storage read only
   // gates the navigator — the splash shows immediately and covers the wait.
-  if (!fontsLoaded) return null;
+  // If loading *fails*, fontsLoaded stays false forever — proceeding with the
+  // system typeface beats a permanent white screen (unknown fontFamily names
+  // fall back natively on both platforms).
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <AppProvider>

@@ -60,7 +60,7 @@ const MENU_SECTIONS = [
 
 export default function DrawerMenu({ visible, onClose, navigation }) {
   const insets = useSafeAreaInsets();
-  const { currentUser, isLoggedIn, logoutUser, setHomeMode } = useApp();
+  const { currentUser, isLoggedIn, logoutUser, setHomeMode, demoMode } = useApp();
   const gate = useSellerGate(navigation);
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -220,12 +220,17 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
             </View>
           ))}
 
-          {/* Footer links */}
+          {/* Footer links — Team Portal is Sawa staff only (dev builds keep it
+              visible for testing; AdminPanelScreen re-checks the role) */}
           <View style={styles.footerLinks}>
-            <Pressable onPress={() => navigate('AdminPanel')}>
-              <Text style={styles.footerLink}>Team Portal</Text>
-            </Pressable>
-            <Text style={styles.footerDot}>·</Text>
+            {(demoMode || currentUser?.role === 'admin') && (
+              <>
+                <Pressable onPress={() => navigate('AdminPanel')}>
+                  <Text style={styles.footerLink}>Team Portal</Text>
+                </Pressable>
+                <Text style={styles.footerDot}>·</Text>
+              </>
+            )}
             <Pressable onPress={() => navigate('Settings')}>
               <Text style={styles.footerLink}>Settings</Text>
             </Pressable>

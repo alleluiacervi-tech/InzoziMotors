@@ -5,17 +5,25 @@ web-build/
 *.log
 .DS_Store
 *.orig.*
+# Every .env variant is a secrets file. The launch docs tell operators to
+# create .env.prod / .env.production — those MUST be uncommittable too, not
+# just .env and *.local. Templates are explicitly re-allowed below.
 .env
+.env.*
 .env*.local
+!.env.example
+!.env.production.template
 npm-debug.*
 yarn-error.*
 
-# Store signing credentials — never commit these
+# Store signing credentials & private keys — never commit these
 play-service-account.json
 *-service-account.json
 *.p8
 *.p12
 *.keystore
+*.jks
+*.pem
 backend/uploads/*
 !backend/uploads/seed/
 .logs/
