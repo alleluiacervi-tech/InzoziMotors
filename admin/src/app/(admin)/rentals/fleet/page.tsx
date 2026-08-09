@@ -190,7 +190,7 @@ export default function RentalFleetPage() {
   async function save() {
     if (!form.title.trim()) { setFormError('Title is required.'); return }
     const daily = int(form.daily_rate)
-    if (!daily || daily <= 0) { setFormError('Daily rate must be a whole number of USD above 0.'); return }
+    if (!daily || daily <= 0) { setFormError('Daily rate must be a whole number above 0.'); return }
 
     // Taking a car off the fleet pulls it out of every public list — say so before
     // doing it, since the way back runs through this page only.
@@ -407,7 +407,7 @@ export default function RentalFleetPage() {
                 <input type="number" step={1} value={form.weekly_rate} onChange={(e) => set('weekly_rate', e.target.value)} placeholder="blank = 6× daily" className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Deposit (USD)</label>
+                <label className={labelCls}>Deposit</label>
                 <input type="number" step={1} value={form.deposit} onChange={(e) => set('deposit', e.target.value)} placeholder="e.g. 300" className={inputCls} />
               </div>
               <div>
@@ -490,9 +490,9 @@ export default function RentalFleetPage() {
               <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
                 <th className="px-4 py-3 font-medium">Car</th>
                 <th className="px-4 py-3 font-medium">Location</th>
-                <th className="px-4 py-3 font-medium text-right">Daily (USD)</th>
-                <th className="px-4 py-3 font-medium text-right">Weekly (USD)</th>
-                <th className="px-4 py-3 font-medium text-right">Deposit (USD)</th>
+                <th className="px-4 py-3 font-medium text-right">Daily rate</th>
+                <th className="px-4 py-3 font-medium text-right">Weekly rate</th>
+                <th className="px-4 py-3 font-medium text-right">Deposit</th>
                 <th className="px-4 py-3 font-medium text-right">Min days</th>
                 <th className="px-4 py-3 font-medium">Safari</th>
                 <th className="px-4 py-3 font-medium">Status</th>
