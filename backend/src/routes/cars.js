@@ -61,8 +61,10 @@ router.get('/', async (req, res) => {
           fuel_type, transmission, body_type, drive_side, status,
           sort = 'listed_at', order = 'desc', limit = 20, offset = 0 } = req.query;
 
-  // Restrict public browse to live listings; status param is only honoured for admins
-  const conditions = [`status = '${['live'].includes(status) ? status : 'live'}'`];
+  // Public browse is live listings only. No caller — admin included — can
+  // widen it through this route (the admin dashboard has /admin/listings for
+  // that), so the status param is deliberately ignored rather than whitelisted.
+  const conditions = [`status = 'live'`];
   const params = [];
 
   if (make)          { params.push(make);          conditions.push(`make ILIKE $${params.length}`); }

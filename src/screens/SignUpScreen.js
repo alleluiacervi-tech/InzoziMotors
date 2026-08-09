@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -8,6 +9,9 @@ import { LogoMark } from '../components/Logo';
 import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
 import { showToast } from '../components/Feedback';
+
+const SITE_URL = (Constants.expoConfig?.extra?.siteUrl || 'https://sawacars.com').replace(/\/+$/, '');
+const openLegal = (path) => Linking.openURL(`${SITE_URL}${path}`).catch(() => {});
 
 export default function SignUpScreen({ navigation }) {
   const { signUpUser } = useApp();
@@ -92,6 +96,33 @@ export default function SignUpScreen({ navigation }) {
           style={{ marginTop: 28 }}
           onPress={handleSignUp}
         />
+
+        {/* The EULA moment. Welcome has the same line, but two entry points
+            (drawer "Register", SignIn's footer) reach this screen without ever
+            passing Welcome — for a UGC app the agreement must sit at the point
+            of account creation, not one screen upstream of it. */}
+        <Text style={styles.terms}>
+          By creating an account you agree to our{' '}
+          <Text
+            style={styles.termsLink}
+            onPress={() => openLegal('/legal/terms')}
+            suppressHighlighting
+            accessibilityRole="link"
+          >
+            Terms
+          </Text>
+          {' '}and{' '}
+          <Text
+            style={styles.termsLink}
+            onPress={() => openLegal('/legal/privacy')}
+            suppressHighlighting
+            accessibilityRole="link"
+          >
+            Privacy Policy
+          </Text>
+          .
+        </Text>
+
         <Pressable onPress={() => navigation.navigate('SignIn')} style={{ marginTop: 16 }}>
           <Text style={styles.footer}>
             Already have an account? <Text style={styles.link}>Sign in</Text>
@@ -134,4 +165,9 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 12.5, color: colors.textSecondary, marginTop: 5, marginLeft: 4, lineHeight: 17 },
   footer: { textAlign: 'center', fontSize: 14, color: colors.textSecondary },
   link: { color: colors.primary, fontFamily: fonts.bold },
+  terms: {
+    marginTop: 14, textAlign: 'center',
+    fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted,
+  },
+  termsLink: { fontFamily: fonts.semiBold, color: colors.textSecondary },
 });

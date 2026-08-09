@@ -32,7 +32,13 @@ function getProjectId() {
 
 // Returns the Expo push token, or null when unavailable (simulator, permission
 // denied, no EAS project). Never throws — push is a nice-to-have.
-export async function registerForPush() {
+//
+// `prompt: false` never shows the OS dialog — it registers only if permission
+// is ALREADY granted. The dialog is a one-shot resource (decline it once and
+// iOS never shows it again), so it must be spent at a moment the user can
+// connect to a benefit — saving a car, sending a message, flipping the
+// Settings toggle — never as a reflex on sign-in.
+export async function registerForPush({ prompt = true } = {}) {
   try {
     // No device check here on purpose. `Constants.isDevice` was removed from
     // expo-constants, so the old guard read `undefined` → falsy → returned
@@ -42,6 +48,7 @@ export async function registerForPush() {
     const existing = await Notifications.getPermissionsAsync();
     let status = existing.status;
     if (status !== 'granted') {
+      if (!prompt) return null;
       const asked = await Notifications.requestPermissionsAsync();
       status = asked.status;
     }
@@ -68,8 +75,8 @@ export async function registerForPush() {
 
 // Hand the token to the backend so it can address this device. Best-effort:
 // a failure here must never block sign-in.
-export async function syncPushToken() {
-  const token = await registerForPush();
+export async function syncPushToken(options) {
+  const token = await registerForPush(options);
   if (!token) return null;
   try {
     await api.post('/devices/token', { token, platform: Platform.OS });

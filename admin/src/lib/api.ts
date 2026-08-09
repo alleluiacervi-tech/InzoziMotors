@@ -130,6 +130,21 @@ export type MessageReport = {
   reporter_has_blocked: boolean
 }
 
+export type ReviewReport = {
+  id: string
+  review_id: string
+  reason: string
+  status: 'open' | 'resolved' | 'dismissed'
+  created_at: string
+  rating: number
+  comment: string | null
+  removed_at: string | null
+  seller_id: string
+  reporter_name: string
+  author_name: string
+  seller_name: string
+}
+
 export type ReportThreadMessage = {
   id: string
   sender_id: string
@@ -369,6 +384,19 @@ export const api = {
     request<{ conversation_id: string; reported_message_id: string | null; messages: ReportThreadMessage[] }>(
       `/messages/admin/reports/${id}/thread`
     ),
+  reviewReports: (status: 'open' | 'resolved' | 'dismissed' | 'all' = 'open') =>
+    request<ReviewReport[]>(`/reviews/admin/reports?status=${status}`),
+  closeReviewReport: (id: string, status: 'resolved' | 'dismissed') =>
+    request<ReviewReport>(`/reviews/admin/reports/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  /** Admin takedown — soft-hides the review and resolves its open reports. */
+  removeReview: (id: string, reason: string) =>
+    request<{ success: boolean }>(`/reviews/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
+    }),
   closeReport: (id: string, status: 'resolved' | 'dismissed') =>
     request<MessageReport>(`/messages/admin/reports/${id}`, {
       method: 'PATCH', body: JSON.stringify({ status }),

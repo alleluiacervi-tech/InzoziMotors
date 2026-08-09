@@ -26,7 +26,7 @@ const router = express.Router();
 // a human answering mail does not send 30 replies a minute.
 const replyLimiter = rateLimit({
   windowMs: 60_000,
-  max: 12,
+  limit: 12,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many replies sent. Wait a minute.', code: 'MAIL_RATE_LIMITED' },

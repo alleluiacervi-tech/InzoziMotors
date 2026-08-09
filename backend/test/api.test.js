@@ -419,3 +419,74 @@ test('inspection rejects verdicts outside pass/flag/fail', async () => {
     .send({ checklist_results: { 'Battery health': 'excellent' } })
     .expect(400);
 });
+
+// ─── Review moderation: the second UGC surface ───────────────────────────────
+
+test('a review can be reported and taken down, and stops counting', async () => {
+  const seller = await register({ role: 'seller' });
+  await pool.query("UPDATE users SET id_verified = 'approved' WHERE id = $1", [seller.id]);
+  const admin = await makeAdmin(await register());
+  const buyer = await register();
+
+  const car = await api().post('/cars').set('Authorization', `Bearer ${admin}`)
+    .send({ seller_id: seller.id, title: 'Reviewable', make: 'Honda', model: 'CR-V', year: 2019, mileage: 41000, price: 15000 })
+    .expect(201);
+  const booking = await api().post('/handovers')
+    .set('Authorization', `Bearer ${buyer.token}`)
+    .send({ car_id: car.body.id }).expect(201);
+  await api().patch(`/handovers/${booking.body.id}/confirm`)
+    .set('Authorization', `Bearer ${admin}`).send({}).expect(200);
+  await api().patch(`/handovers/${booking.body.id}/complete`)
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+
+  // Free text is capped server-side — an unbounded comment is a storage and
+  // moderation problem at once.
+  const review = await api().post('/reviews')
+    .set('Authorization', `Bearer ${buyer.token}`)
+    .send({ handover_id: booking.body.id, rating: 1, comment: 'x'.repeat(5000) })
+    .expect(201);
+  assert.equal(review.body.comment.length, 1000, 'comment capped at 1000 chars');
+
+  const pub = await api().get(`/reviews/seller/${seller.id}`).expect(200);
+  assert.equal(pub.body.total, 1);
+
+  // Anyone signed in can report; repeats from the same person do not stack.
+  const rando = await register();
+  await api().post(`/reviews/${review.body.id}/report`)
+    .set('Authorization', `Bearer ${rando.token}`)
+    .send({ reason: 'Harassment or abuse' }).expect(201);
+  await api().post(`/reviews/${review.body.id}/report`)
+    .set('Authorization', `Bearer ${rando.token}`)
+    .send({ reason: 'Harassment or abuse' }).expect(201);
+  const { rows: reportRows } = await pool.query(
+    'SELECT id, status FROM review_reports WHERE review_id = $1', [review.body.id]
+  );
+  assert.equal(reportRows.length, 1, 'duplicate report did not stack');
+
+  // The queue is admin-only.
+  await api().get('/reviews/admin/reports')
+    .set('Authorization', `Bearer ${rando.token}`).expect(403);
+  const queue = await api().get('/reviews/admin/reports')
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+  assert.ok(queue.body.some((r) => r.review_id === review.body.id), 'report reached the queue');
+
+  // Takedown: soft-removed, gone from the public read, reports resolved.
+  await api().delete(`/reviews/${review.body.id}`)
+    .set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'abusive content' }).expect(200);
+
+  const after = await api().get(`/reviews/seller/${seller.id}`).expect(200);
+  assert.equal(after.body.total, 0, 'removed review left the public profile');
+  const { rows: closed } = await pool.query(
+    'SELECT status FROM review_reports WHERE review_id = $1', [review.body.id]
+  );
+  assert.equal(closed[0].status, 'resolved');
+  const { rows: kept } = await pool.query(
+    'SELECT removed_at, removed_reason FROM reviews WHERE id = $1', [review.body.id]
+  );
+  assert.ok(kept[0].removed_at, 'row kept as evidence, not deleted');
+
+  // A second takedown of the same review is a 404, not a silent success.
+  await api().delete(`/reviews/${review.body.id}`)
+    .set('Authorization', `Bearer ${admin}`).send({}).expect(404);
+});

@@ -10,6 +10,7 @@ import Button from '../components/Button';
 import StickyFooter from '../components/StickyFooter';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import { EmptyState } from '../components/StateViews';
 import { useApp } from '../context/AppContext';
 import { formatPrice } from '../data/cars';
 import reviewsApi from '../api/reviews';
@@ -131,6 +132,26 @@ export default function OrderTrackingScreen({ navigation, route }) {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewDone, setReviewDone] = useState(false);
 
+  // Nothing to track: reachable from a handover push that carries no booking
+  // id, or a stale deep link after the order was cancelled. Say so. The old
+  // fallback invented an "ORD-DEMO" order at $0 here — the one screen a store
+  // reviewer must never meet. (Kept below the hooks: `purchaseRequests` loads
+  // asynchronously, so this branch can flip between renders.)
+  if (!request && !routeCar) {
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title="Order Tracking" onBack={() => navigation.goBack()} />
+        <EmptyState
+          icon="receipt-outline"
+          title="We couldn't find this order"
+          sub="It may have completed or been cancelled, or the link is out of date. Your requests are in your profile."
+          actionLabel="Go back"
+          onAction={() => navigation.goBack()}
+        />
+      </Screen>
+    );
+  }
+
   const handleSubmitReview = async () => {
     if (reviewRating === 0 || reviewSubmitting) return;
     // API handovers have UUID ids; local demo bookings look like 'HB123456'
@@ -189,7 +210,7 @@ export default function OrderTrackingScreen({ navigation, route }) {
           <View style={styles.heroTop}>
             <View>
               <Text style={styles.heroLabel}>Order ID</Text>
-              <Text style={styles.heroOrderId}>{displayRef || 'ORD-DEMO'}</Text>
+              <Text style={styles.heroOrderId}>{displayRef || '—'}</Text>
             </View>
             <View style={[
               styles.statusChip,

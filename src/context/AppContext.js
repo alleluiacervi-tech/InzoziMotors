@@ -717,10 +717,7 @@ export function AppProvider({ children }) {
         const token = await getToken();
         if (token) {
           const me = await authApi.getMe();
-          setCurrentUser({
-            ...me,
-            initials: me.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
-          });
+          setCurrentUser(withInitials(me));
           setIsLoggedIn(true);
           await loadInitialData(me);
         } else {
@@ -738,6 +735,13 @@ export function AppProvider({ children }) {
 
   // Register this device for push once we know who is signed in. The server
   // keys tokens to the user, so this has to run after auth, not at boot.
+  //
+  // prompt: false — this effect fired the OS permission dialog the instant
+  // "Create account" succeeded, before the user had a message, a saved car or
+  // any reason to say yes. That dialog is one-shot (a decline is near-permanent
+  // on iOS), so sign-in only SYNCS a permission that already exists; the ASK
+  // happens at the first moment notifications have visible value — saving a
+  // car (maybeAskForPush) or the Settings toggle.
   useEffect(() => {
     if (!isLoggedIn) return;
     let alive = true;
@@ -746,9 +750,27 @@ export function AppProvider({ children }) {
     // the kind of thing a Play data-safety complaint is made of.
     getJSON('pushEnabled', true).then((enabled) => {
       if (!alive || !enabled) return;
-      syncPushToken().then((token) => { if (alive && token) setPushToken(token); });
+      syncPushToken({ prompt: false }).then((token) => { if (alive && token) setPushToken(token); });
     });
     return () => { alive = false; };
+  }, [isLoggedIn]);
+
+  // The one-time contextual ask. Called from the first user action that push
+  // notifications visibly serve (saving a car — "we'll tell you when the price
+  // drops"). Asks once ever; after that the Settings toggle owns the choice.
+  const maybeAskForPush = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const asked = await getJSON('pushAsked', false);
+      if (asked) return;
+      await setJSON('pushAsked', true);
+      const enabled = await getJSON('pushEnabled', true);
+      if (!enabled) return;
+      const token = await syncPushToken();
+      if (token) setPushToken(token);
+    } catch (err) {
+      console.warn('Push ask skipped:', err?.message);
+    }
   }, [isLoggedIn]);
 
   // The Settings screen's push toggle. Off = the server forgets this device
@@ -881,10 +903,9 @@ export function AppProvider({ children }) {
     try {
       const data = await authApi.login(email, password);
       const user = data.user;
-      setCurrentUser({
-        ...user,
-        initials: user.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
-      });
+      // withInitials, not a bare .split: a server response without a name
+      // must not crash the sign-in it just succeeded at.
+      setCurrentUser(withInitials(user));
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
@@ -934,10 +955,7 @@ export function AppProvider({ children }) {
     try {
       const data = await authApi.register(name, email, password, role);
       const user = data.user;
-      setCurrentUser({
-        ...user,
-        initials: user.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
-      });
+      setCurrentUser(withInitials(user));
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
@@ -1019,13 +1037,17 @@ export function AppProvider({ children }) {
 
   const toggleSaveCar = useCallback((id) => {
     // Local-first so the heart always responds; sync to API in the background when possible
+    const saving = !savedCarIds.includes(id);
     setSavedCarIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
     if (isLoggedIn) {
       carsApi.saveCar(id).catch(() => {}); // backend optional in demo
     }
-  }, [isLoggedIn]);
+    // Saving is the moment push has an obvious payoff (price-drop alerts on
+    // this exact car) — the right moment to ask, once.
+    if (saving) maybeAskForPush();
+  }, [isLoggedIn, savedCarIds, maybeAskForPush]);
 
   const isCarSaved = useCallback((id) => savedCarIds.includes(id), [savedCarIds]);
   const getSavedCars = useCallback(
@@ -1279,6 +1301,26 @@ export function AppProvider({ children }) {
     activeConvRef.current = convId && !String(convId).startsWith('new_') ? convId : null;
   }, []);
 
+  // Resolve one conversation's metadata (the other party's id, above all)
+  // straight from the server. A chat opened from a push or deep link renders
+  // before the conversations list has loaded, and Block cannot wait for a
+  // list refresh that may never come — safety actions must work on the first
+  // attempt, not the second visit.
+  const getConversationMeta = useCallback(async (convId) => {
+    if (!convId || String(convId).startsWith('new_')) return null;
+    try {
+      const list = await messagesApi.getConversations();
+      if (Array.isArray(list)) {
+        setConversations(list.map(mapConversation));
+        const conv = list.find((c) => c.id === convId);
+        return conv ? mapConversation(conv) : null;
+      }
+    } catch (err) {
+      console.warn('Could not resolve conversation meta:', err?.message);
+    }
+    return null;
+  }, [mapConversation]);
+
   // Block / report — the Apple-required safety actions on the chat surface.
   const blockUser = useCallback(async (userId) => {
     await messagesApi.blockUser(userId);
@@ -1433,7 +1475,7 @@ export function AppProvider({ children }) {
               setPendingVerifications(queueList.map((v) => ({
                 id: v.id,
                 name: v.name,
-                initials: v.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+                initials: withInitials({ name: v.name }).initials,
                 submitted: new Date(v.submitted_at).toLocaleDateString('en-US'),
                 status: v.id_verified,
               })));
@@ -1618,7 +1660,7 @@ export function AppProvider({ children }) {
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
     joinConversation, sendTyping, typingConvId, setActiveConversation,
     // Chat safety
-    blockUser, reportConversation,
+    blockUser, reportConversation, getConversationMeta,
     // Authentication
     currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, loading, error,
     // Push preference (Settings toggle)

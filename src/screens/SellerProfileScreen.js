@@ -12,6 +12,15 @@ import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 import reviewsApi from '../api/reviews';
+import { showToast, showActionSheet } from '../components/Feedback';
+
+// Same vocabulary as the chat's report sheet — one reporting language app-wide.
+const REPORT_REASONS = [
+  { label: 'Scam or fraud', icon: 'warning-outline' },
+  { label: 'Harassment or abuse', icon: 'sad-outline' },
+  { label: 'Spam', icon: 'megaphone-outline' },
+  { label: 'Something else', icon: 'chatbox-ellipses-outline' },
+];
 import { useApp } from '../context/AppContext';
 
 function formatReviewDate(iso) {
@@ -200,6 +209,21 @@ export default function SellerProfileScreen({ navigation, route }) {
     navigation.navigate('Chat', { name: profile.name });
   };
 
+  const handleReportReview = async (review) => {
+    const reasonIdx = await showActionSheet({
+      title: 'Report this review',
+      message: 'Our team reviews every report. The author is not told.',
+      options: REPORT_REASONS,
+    });
+    if (reasonIdx === -1) return;
+    try {
+      await reviewsApi.reportReview(review.id, REPORT_REASONS[reasonIdx].label);
+      showToast('Thanks — our team will take a look.', 'success');
+    } catch (err) {
+      showToast(err?.message || "The report didn't send. Check your connection and try again.", 'error');
+    }
+  };
+
   return (
     <Screen background={colors.bg}>
       <BackHeader title="Seller Profile" onBack={() => navigation.goBack()} />
@@ -322,6 +346,20 @@ export default function SellerProfileScreen({ navigation, route }) {
                     <Text style={styles.reviewDate}>{review.date}</Text>
                   </View>
                   <StarRating value={review.rating} size={13} />
+                  {/* Reviews are UGC, so they carry the same report path as
+                      chat. Only API reviews (UUID ids) can reach the queue —
+                      dev-build fixtures have nothing server-side to report. */}
+                  {String(review.id).includes('-') ? (
+                    <Pressable
+                      onPress={() => handleReportReview(review)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Report review by ${review.buyer}`}
+                      style={styles.reviewFlag}
+                    >
+                      <Ionicons name="flag-outline" size={14} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
                 </View>
                 <Text style={styles.reviewText}>{review.text}</Text>
               </View>
@@ -436,6 +474,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  reviewFlag: { padding: 4, marginLeft: 2 },
   reviewAvatar: {
     width: 34, height: 34, borderRadius: 17,
     backgroundColor: colors.navyMid,

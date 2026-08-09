@@ -38,7 +38,7 @@ async function recomputeTrustScore(userId, client = pool) {
   const responseRate = Number(total) > 0 ? Math.round((Number(replied) / Number(total)) * 100) : 100;
 
   const reviewRes = await client.query(
-    'SELECT AVG(rating)::numeric(3,1) AS avg_rating FROM reviews WHERE seller_id = $1',
+    'SELECT AVG(rating)::numeric(3,1) AS avg_rating FROM reviews WHERE seller_id = $1 AND removed_at IS NULL',
     [userId]
   );
   const avgRating = reviewRes.rows[0].avg_rating ? parseFloat(reviewRes.rows[0].avg_rating) : null;

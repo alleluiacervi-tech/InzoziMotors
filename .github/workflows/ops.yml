@@ -27,6 +27,8 @@ on:
           - prune-builders  # clear wedged/leftover BuildKit state and cache
           - list-stale      # what abandoned one-off containers are lying around
           - cleanup-stale   # remove them (and reclaim the images they pinned)
+          - convert-rwf-dry     # restate USD money in RWF — DRY RUN, rolls back
+          - convert-rwf-commit  # the real thing: writes, audited in fx_conversions
 
 concurrency:
   group: deploy-production   # never race a deploy
@@ -264,6 +266,23 @@ jobs:
               df -h "$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /)" | tail -1
               echo "--- api readiness ---"
               curl -fsS -m 5 http://127.0.0.1:4000/health/ready && echo || echo "NOT READY"
+              ;;
+            convert-rwf-dry|convert-rwf-commit)
+              # scripts/convert-to-rwf.js restates every USD-labelled amount in
+              # RWF. It runs INSIDE the api image (same code, same DB env as the
+              # live service) at the platform's live FX rate, and refuses a
+              # stale rate on its own. The dry action shows exactly what would
+              # change and rolls back; the commit action is the one decision
+              # this lever cannot make for you — it writes every change to
+              # fx_conversions first, so any restated amount can be explained
+              # and reversed. Idempotent either way: only rows still marked USD
+              # are touched, so a re-run cannot double-convert.
+              ARGS="--rate=live"
+              if [ "$ACTION" = "convert-rwf-commit" ]; then
+                ARGS="$ARGS --commit --note=ops-lever-$(date -u +%Y%m%dT%H%MZ)"
+              fi
+              # shellcheck disable=SC2086
+              $COMPOSE run --rm -T --entrypoint node api scripts/convert-to-rwf.js $ARGS
               ;;
             *)
               echo "unknown action: $ACTION"; exit 1 ;;

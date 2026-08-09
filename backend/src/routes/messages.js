@@ -59,6 +59,16 @@ router.get('/conversations/:id', requireAuth, requireUuid('id'), async (req, res
     );
     if (!convRes.rows.length) return res.status(404).json({ error: 'Conversation not found' });
 
+    // A block hides the thread from the list and refuses both write paths —
+    // but a retained conversation id could still read the history through
+    // here. Same 404 as the list's silence: the thread is gone, not "gone
+    // unless you kept the link".
+    const conv = convRes.rows[0];
+    const otherParty = conv.buyer_id === req.user.id ? conv.seller_id : conv.buyer_id;
+    if (await isBlockedBetween(req.user.id, otherParty)) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
     const { rows } = await pool.query(
       `SELECT m.*, u.name AS sender_name
        FROM messages m

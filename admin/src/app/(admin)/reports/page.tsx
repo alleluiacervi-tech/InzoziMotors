@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  api, type ApiError, type MessageReport, type ReportThreadMessage,
+  api, type ApiError, type MessageReport, type ReportThreadMessage, type ReviewReport,
 } from '@/lib/api'
 import {
   Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill,
 } from '@/components/ui'
+import { useConfirm, useToast } from '@/components/feedback'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reported messages.
@@ -40,8 +41,12 @@ function ago(iso: string): string {
 }
 
 export default function ReportsPage() {
+  const [surface, setSurface] = useState<'chats' | 'reviews'>('chats')
   const [tab, setTab] = useState<'open' | 'resolved' | 'dismissed' | 'all'>('open')
   const [rows, setRows] = useState<MessageReport[]>([])
+  const [reviewRows, setReviewRows] = useState<ReviewReport[]>([])
+  const ask = useConfirm()
+  const toast = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<ApiError | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
@@ -51,11 +56,12 @@ export default function ReportsPage() {
   const [thread, setThread] = useState<ReportThreadMessage[]>([])
   const [threadLoading, setThreadLoading] = useState(false)
 
-  const load = useCallback(async (t: typeof tab) => {
+  const load = useCallback(async (t: typeof tab, s: typeof surface) => {
     setLoading(true)
     setError(null)
     try {
-      setRows(await api.reports(t))
+      if (s === 'chats') setRows(await api.reports(t))
+      else setReviewRows(await api.reviewReports(t))
     } catch (e) {
       setError(e as ApiError)
     } finally {
@@ -63,7 +69,7 @@ export default function ReportsPage() {
     }
   }, [])
 
-  useEffect(() => { load(tab) }, [load, tab])
+  useEffect(() => { load(tab, surface) }, [load, tab, surface])
 
   async function showThread(id: string) {
     if (openThread === id) { setOpenThread(null); return }
@@ -85,9 +91,41 @@ export default function ReportsPage() {
     setProblem(null)
     try {
       await api.closeReport(id, status)
-      load(tab)
+      load(tab, surface)
     } catch (e) {
       setProblem(e instanceof Error ? e.message : 'Could not update that report.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function closeReviewReport(id: string, status: 'resolved' | 'dismissed') {
+    setBusy(id)
+    try {
+      await api.closeReviewReport(id, status)
+      load(tab, surface)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not update that report.', 'error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function removeReview(r: ReviewReport) {
+    const ok = await ask({
+      title: 'Take this review down?',
+      message: `It disappears from ${r.seller_name}'s public profile and stops counting toward their trust score. The row is kept as evidence and every open report on it resolves.`,
+      confirmLabel: 'Remove review',
+      tone: 'danger',
+    })
+    if (!ok) return
+    setBusy(r.id)
+    try {
+      await api.removeReview(r.review_id, `moderation: ${r.reason}`)
+      toast('Review removed — reports resolved.', 'success')
+      load(tab, surface)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not remove that review.', 'error')
     } finally {
       setBusy(null)
     }
@@ -96,9 +134,26 @@ export default function ReportsPage() {
   return (
     <>
       <PageHeader
-        title="Reported messages"
-        description="Chat reports from buyers and sellers. Resolved means you acted; dismissed means it was not abuse — both are kept, so a repeat offender is visible."
+        title="Reported content"
+        description="Reports from buyers and sellers, across chats and reviews. Resolved means you acted; dismissed means it was not abuse — both are kept, so a repeat offender is visible."
       />
+
+      <div className="mb-3 flex gap-2">
+        {(['chats', 'reviews'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setSurface(s)}
+            className={`inline-flex h-9 items-center rounded-xl px-4 text-label font-bold capitalize transition-colors ${
+              surface === s
+                ? 'bg-brand text-white'
+                : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -127,17 +182,74 @@ export default function ReportsPage() {
       {loading ? (
         <LoadingState rows={4} />
       ) : error ? (
-        <ErrorState error={error} onRetry={() => load(tab)} />
-      ) : rows.length === 0 ? (
+        <ErrorState error={error} onRetry={() => load(tab, surface)} />
+      ) : (surface === 'chats' ? rows : reviewRows).length === 0 ? (
         <EmptyState
           icon="shield-check"
           title={tab === 'open' ? 'Nothing reported' : `No ${tab} reports`}
           description={
             tab === 'open'
-              ? 'Reports raised from a chat in the app appear here.'
+              ? `Reports raised from ${surface === 'chats' ? 'a chat' : 'a review'} in the app appear here.`
               : 'Nothing has been closed with this outcome yet.'
           }
         />
+      ) : surface === 'reviews' ? (
+        <div className="space-y-3">
+          {reviewRows.map((r) => (
+            <Card key={r.id} className="p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-section font-extrabold text-content">{r.reason}</h2>
+                    <Pill status={r.status === 'open' ? 'open' : r.status === 'resolved' ? 'resolved' : 'cancelled'} label={r.status} />
+                    {r.removed_at ? (
+                      <span className="inline-flex items-center gap-1 rounded-pill bg-surface-alt px-2 py-0.5 text-caption font-semibold text-content-secondary">
+                        <Icon name="check" size={11} />
+                        Review removed
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1.5 text-caption text-content-muted">
+                    {ago(r.created_at)} · reported by {r.reporter_name}
+                  </p>
+                </div>
+                {r.status === 'open' ? (
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    {!r.removed_at ? (
+                      <button
+                        type="button"
+                        disabled={busy === r.id}
+                        onClick={() => removeReview(r)}
+                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-danger-strong px-4 text-label font-bold text-white hover:bg-danger-strong/90 disabled:opacity-50"
+                      >
+                        <Icon name="close" size={15} />
+                        Remove review
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={busy === r.id}
+                      onClick={() => closeReviewReport(r.id, 'dismissed')}
+                      className="inline-flex h-10 items-center rounded-xl border border-line px-4 text-label font-semibold text-content-secondary hover:bg-surface-alt disabled:opacity-50"
+                    >
+                      Not abuse
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+
+              <blockquote className="mt-4 rounded-xl border-l-4 border-danger-strong bg-surface-alt py-3 pl-4 pr-3">
+                <p className="text-label leading-relaxed text-content">
+                  {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                  {r.comment ? ` — ${r.comment}` : ' (no comment)'}
+                </p>
+                <p className="mt-1.5 text-caption text-content-muted">
+                  written by {r.author_name} about {r.seller_name}
+                </p>
+              </blockquote>
+            </Card>
+          ))}
+        </div>
       ) : (
         <div className="space-y-3">
           {rows.map((r) => (
