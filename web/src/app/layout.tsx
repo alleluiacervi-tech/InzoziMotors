@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
+import { BrandSplash } from '@/components/layout/BrandSplash'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { getCurrentUser } from '@/lib/session'
@@ -102,6 +103,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={satoshi.variable}>
       <body className="flex min-h-screen flex-col">
+        {/* Runs before first paint: a repeat visit this session gets the
+            splash-done class on <html>, and CSS hides the splash overlay with
+            zero flash. The splash itself is server-rendered so it covers the
+            very first frame of a fresh visit. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(sessionStorage.getItem('sawa-splash'))document.documentElement.classList.add('splash-done')}catch(e){}",
+          }}
+        />
+        <BrandSplash />
         <a href="#main" className="skip-link">
           Skip to main content
         </a>
