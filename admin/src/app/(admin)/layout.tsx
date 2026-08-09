@@ -13,6 +13,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     title: 'Operations',
     items: [
       { href: '/dashboard', icon: 'gauge', label: 'Dashboard' },
+      { href: '/inbox', icon: 'mail', label: 'Inbox' },
       { href: '/submissions', icon: 'document', label: 'Submissions' },
       { href: '/inspections', icon: 'settings', label: 'Inspections' },
       { href: '/handovers', icon: 'key', label: 'Handovers' },
@@ -84,6 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [openDisputes, setOpenDisputes] = useState(0)
+  const [unreadMail, setUnreadMail] = useState(0)
 
   useEffect(() => {
     api.me()
@@ -103,6 +105,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => setOpenDisputes(0))
   }, [ready, pathname])
 
+  // Unread mail, same treatment: a customer waiting on a reply is as urgent as a
+  // dispute. Silent on failure — the badge is not the place to report that the
+  // mail host is down (the Inbox page says so properly), and a mailbox that is
+  // not configured at all must not put a permanent 0 or an error in the nav.
+  useEffect(() => {
+    if (!ready) return
+    let cancelled = false
+    const poll = () => {
+      api.mailUnread()
+        .then((r) => { if (!cancelled) setUnreadMail(r.unread || 0) })
+        .catch(() => { if (!cancelled) setUnreadMail(0) })
+    }
+    poll()
+    // Mail arrives without us asking, unlike everything else in this dashboard,
+    // so this is the one thing worth polling. Two minutes is often enough to
+    // notice and rare enough to be free.
+    const id = window.setInterval(poll, 120_000)
+    return () => { cancelled = true; window.clearInterval(id) }
+  }, [ready, pathname])
+
   // The cookie is httpOnly, so only the server can clear it.
   async function logout() {
     await signOut()
@@ -119,6 +141,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     )
   }
+
+  const badgeFor = (href: string) =>
+    href === '/disputes' ? openDisputes : href === '/inbox' ? unreadMail : 0
 
   const current = ALL_ITEMS.find(
     (n) => pathname === n.href || (n.href !== '/dashboard' && pathname.startsWith(n.href)),
@@ -177,9 +202,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <Icon name={icon} size={17} />
                       </span>
                       {label}
-                      {href === '/disputes' && openDisputes > 0 && (
+                      {badgeFor(href) > 0 && (
                         <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-white">
-                          {openDisputes}
+                          {badgeFor(href)}
                         </span>
                       )}
                     </Link>

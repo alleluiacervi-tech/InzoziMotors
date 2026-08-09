@@ -86,6 +86,61 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
+// ─── Mailbox shapes ──────────────────────────────────────────────────────────
+
+export type MailAddress = { name: string; address: string }
+
+export type MailEnvelope = {
+  uid: number
+  subject: string
+  from: MailAddress
+  to: MailAddress[]
+  date: string | null
+  unread: boolean
+  answered: boolean
+  flagged: boolean
+  size: number
+  sizeLabel: string
+  attachmentCount: number
+  messageId: string | null
+}
+
+export type MailList = {
+  messages: MailEnvelope[]
+  total: number
+  unread: number
+  limit: number
+  offset: number
+  mailbox: string
+  search?: string
+}
+
+export type MailAttachment = {
+  index: number
+  filename: string
+  contentType: string
+  size: number
+  sizeLabel: string
+  cid: string | null
+  inline: boolean
+}
+
+export type MailMessage = {
+  uid: number
+  subject: string
+  from: MailAddress
+  to: MailAddress[]
+  cc: MailAddress[]
+  date: string | null
+  messageId: string | null
+  /** Already sanitised server-side. Still rendered in a sandboxed iframe — see
+   *  MessageBody.tsx for why one layer is not enough. */
+  bodyHtml: string
+  blockedImages: number
+  hasHtml: boolean
+  attachments: MailAttachment[]
+}
+
 /** What a failed request() throws. `status` is always set; the rest only when
  *  the backend sent a structured refusal. */
 export type ApiError = Error & {
@@ -240,6 +295,39 @@ export const api = {
   // Featured listings
   featureCar: (id: string, days = 7) =>
     request<any>(`/cars/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ days }) }),
+
+  // ── The contact@ mailbox ───────────────────────────────────────────────────
+  // Read over IMAP on the server; the browser never touches the mail host and
+  // never sees the mailbox password. Attachments are NOT here: request() parses
+  // every response as JSON, and an attachment is a binary stream — it is fetched
+  // as a plain link to /api/backend/mail/... which the same httpOnly cookie
+  // authenticates, exactly like the contract PDF.
+  mail: (params?: { limit?: number; offset?: number; q?: string }) => {
+    const q = new URLSearchParams()
+    if (params?.limit) q.set('limit', String(params.limit))
+    if (params?.offset) q.set('offset', String(params.offset))
+    if (params?.q) q.set('q', params.q)
+    const qs = q.toString()
+    return request<MailList>(`/mail/messages${qs ? `?${qs}` : ''}`)
+  },
+  mailUnread: () => request<{ unread: number; total: number }>('/mail/unread'),
+  /** `images` opts in to loading remote images — off by default because a remote
+   *  image in mail is a tracking pixel that confirms a human opened it. */
+  mailMessage: (uid: number, opts?: { images?: boolean; peek?: boolean }) => {
+    const q = new URLSearchParams()
+    if (opts?.images) q.set('images', '1')
+    if (opts?.peek) q.set('peek', '1')
+    const qs = q.toString()
+    return request<MailMessage>(`/mail/messages/${uid}${qs ? `?${qs}` : ''}`)
+  },
+  mailFlag: (uid: number, flag: 'seen' | 'flagged', value: boolean) =>
+    request<{ ok: true }>(`/mail/messages/${uid}/flags`, {
+      method: 'PATCH', body: JSON.stringify({ flag, value }),
+    }),
+  mailReply: (uid: number, text: string) =>
+    request<{ messageId?: string; to: string; subject: string }>(
+      `/mail/messages/${uid}/reply`, { method: 'POST', body: JSON.stringify({ text }) }
+    ),
 
   // Rental fleet (rental_cars) — money fields are USD integers
   rentalCars:    () => request<any[]>('/rentals'),
