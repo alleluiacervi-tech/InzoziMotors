@@ -139,7 +139,9 @@ export default function NotificationCenterScreen({ navigation }) {
     }
 
     if (meta.bookingId || notification.type === 'handover') {
-      navigation.navigate('OrderTracking');
+      // Pass the booking through — without it OrderTracking can only render
+      // its not-found state, and this notification KNOWS which order it means.
+      navigation.navigate('OrderTracking', meta.bookingId ? { bookingId: meta.bookingId } : undefined);
       return;
     }
 
