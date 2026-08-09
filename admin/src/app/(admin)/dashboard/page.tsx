@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import {
   Card, StatCard, PageHeader, EmptyState, BarChart, Icon,
-  fmtUSD, fmtRWF, type IconName,
+  fmtMoney, fmtMoneyShort, type IconName,
 } from '@/components/ui'
 
 interface Stats {
@@ -17,10 +17,15 @@ interface Stats {
   totalGMV: number
   totalRevenue: number
   feesOutstanding: number
+  // Named by the API rather than assumed: /admin/stats groups by currency and
+  // reports the dominant one, because a database mid-conversion holds both.
+  gmvCurrency: string
+  feeCurrency: string
 }
 
 interface Analytics {
   monthlySales: { month: string; total_sold: string | number; total_value: string | number }[]
+  salesCurrency?: string
   pipelineFunnel: { status: string; count: string | number }[]
   topMakes: { make: string; count: string | number }[]
 }
@@ -39,10 +44,14 @@ const FUNNEL_LABELS: Record<string, string> = {
 }
 
 function RevenueCard({
-  label, usd, sub, tone, href,
+  label, amount, currency, sub, tone, href,
 }: {
   label: string
-  usd: number
+  amount: number
+  /** The currency the figure is stored in. Never converted for display — the
+   *  old version printed "≈ RWF x" underneath using a hardcoded 1300 rate,
+   *  which set an estimate in the same type as a fact. */
+  currency: string
   sub: string
   tone: 'brand' | 'neutral' | 'warning'
   href?: string
@@ -51,10 +60,10 @@ function RevenueCard({
     <div className="p-6">
       <p className="text-[13px] font-semibold text-content-muted">{label}</p>
       <p className={`mt-2 text-[32px] font-extrabold leading-none tracking-[-0.02em] ${tone === 'brand' ? 'text-brand' : 'text-content'}`}>
-        {fmtUSD(usd)}
+        {fmtMoney(amount, currency)}
       </p>
       <p className="mt-2 text-xs text-content-muted">
-        ≈ {fmtRWF(usd)} · {sub}
+        {sub}
       </p>
     </div>
   )
@@ -94,6 +103,7 @@ export default function DashboardPage() {
   }
 
   const s = stats
+  const salesCurrency: string = analytics?.salesCurrency || 'RWF'
   const monthly = (analytics?.monthlySales ?? []).map((m) => ({
     label: monthLabel(m.month),
     value: Number(m.total_value) || 0,
@@ -126,20 +136,23 @@ export default function DashboardPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <RevenueCard
           label="Fee revenue (earned)"
-          usd={s.totalRevenue}
+          amount={s.totalRevenue}
+          currency={s.feeCurrency}
           sub="certification + commission"
           tone="brand"
           href="/fees"
         />
         <RevenueCard
           label="Marketplace volume (GMV)"
-          usd={s.totalGMV}
+          amount={s.totalGMV}
+          currency={s.gmvCurrency}
           sub={`${s.totalSold} car${s.totalSold === 1 ? '' : 's'} sold`}
           tone="neutral"
         />
         <RevenueCard
           label="Fees outstanding"
-          usd={s.feesOutstanding}
+          amount={s.feesOutstanding}
+          currency={s.feeCurrency}
           sub="due, not yet collected"
           tone={s.feesOutstanding > 0 ? 'warning' : 'neutral'}
           href="/fees"
@@ -159,12 +172,12 @@ export default function DashboardPage() {
         <Card className="p-5">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="text-sm font-bold text-content">Monthly sales value</h2>
-            <span className="text-xs text-content-muted">last 6 months, USD</span>
+            <span className="text-caption text-content-muted">last 6 months, {salesCurrency}</span>
           </div>
           <BarChart
             data={monthly}
             height={160}
-            formatValue={(v) => fmtUSD(v)}
+            formatValue={(v) => fmtMoneyShort(v, salesCurrency)}
             emptyLabel="No completed sales yet"
           />
           {monthly.length > 0 && (

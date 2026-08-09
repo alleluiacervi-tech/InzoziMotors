@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { EmptyState, ErrorState, LoadingState, fmtRWF, fmtUSD } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
 
 // Secondary action grammar on this page — the tabs already use it.
 const secondaryBtn =
@@ -121,7 +121,7 @@ export default function HandoversPage() {
                     <p><strong>{h.center || 'Slot not arranged yet'}</strong></p>
                     <p>{h.handover_date ? `${h.handover_date}${h.handover_time ? ` at ${h.handover_time}` : ''}` : 'Coordinate via buyer phone below'}</p>
                     {h.contact_phone && <p>Contact: {h.contact_phone}</p>}
-                    <p className="mt-1 font-medium text-brand">{fmtUSD(h.agreed_price || 0)} <span className="font-normal text-gray-400">≈ {fmtRWF(h.agreed_price || 0)}</span></p>
+                    <p className="mt-1 font-medium text-brand">{fmtMoney(h.agreed_price || 0, h.currency)}</p>
                   </div>
                 </div>
               </div>

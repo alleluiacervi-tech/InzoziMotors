@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { EmptyState, ErrorState, LoadingState, fmtUSD } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
 
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
@@ -99,7 +99,7 @@ export default function SubmissionsPage() {
                   <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {new Date(sub.submitted_at).toLocaleDateString()}</p>
                   {sub.asking_price && (
                     <p className="text-sm font-medium text-brand mt-1">
-                      {fmtUSD(sub.asking_price)}
+                      {fmtMoney(sub.asking_price, sub.currency)}
                     </p>
                   )}
                   {sub.admin_notes && (

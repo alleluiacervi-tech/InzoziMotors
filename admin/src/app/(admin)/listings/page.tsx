@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { EmptyState, ErrorState, Icon, LoadingState, fmtUSD } from '@/components/ui'
+import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/components/ui'
 
 const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
@@ -124,7 +124,7 @@ export default function ListingsPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">{car.mileage?.toLocaleString()} km · {car.location}</p>
-                <p className="text-sm font-bold text-brand mt-1">{fmtUSD(car.price)}</p>
+                <p className="text-sm font-bold text-brand mt-1">{fmtMoney(car.price, car.currency)}</p>
                 <p className="text-xs text-gray-400">{car.views || 0} views</p>
 
                 {/* Actions */}

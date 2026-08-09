@@ -153,5 +153,32 @@ function resolveRemaining(sql) {
     process.exitCode = 1;
   }
 
+  // ── migrations/ ────────────────────────────────────────────────────────────
+  // These were not covered, which is backwards: schema.sql is applied to a fresh
+  // test database in CI, so a syntax error there fails the build anyway. A
+  // migration is applied automatically by ops/deploy.sh against PRODUCTION, so a
+  // syntax error in one is discovered at the worst possible moment — mid-deploy,
+  // on the live database, with the new code already checked out.
+  //
+  // Parsing them here costs milliseconds. They are also the only SQL in the repo
+  // that can never be edited after the fact: migrate.js checksum-locks an
+  // applied file, so "fix it and re-run" is not available.
+  const MIGRATIONS = path.join(process.cwd(), 'backend/migrations');
+  if (fs.existsSync(MIGRATIONS)) {
+    const files = fs.readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort();
+    let bad = 0;
+    for (const name of files) {
+      const sql = fs.readFileSync(path.join(MIGRATIONS, name), 'utf8');
+      try {
+        pg.parseSync(sql);
+      } catch (err) {
+        bad += 1;
+        console.log(`\nmigrations/${name} FAILED: ${err.message}`);
+      }
+    }
+    if (bad) process.exitCode = 1;
+    else console.log(`${files.length} migration(s) parse cleanly`);
+  }
+
   if (failures.length) process.exitCode = 1;
 })();

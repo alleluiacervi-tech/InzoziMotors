@@ -5,19 +5,57 @@ import { Icon, type IconName } from './Icon'
 // pill, one page header, so twelve pages read as one professional tool.
 
 // ─── Money ───────────────────────────────────────────────────────────────────
-// Backend amounts are USD integers (cars.price, platform_fees.amount).
-// The previous dashboard labelled them RWF — a 1300× misstatement.
-export const RWF_RATE = 1300
+// Amounts arrive as integers in the currency named by the row's `currency`
+// column (migration 0006). RWF is the default for anything new; rows written
+// before the conversion are still marked USD until scripts/convert-to-rwf.js has
+// been run with an agreed rate.
+//
+// There used to be a hardcoded `RWF_RATE = 1300` here and another copy in
+// src/data/marketData.js, and fmtRWF multiplied by it at render time. Three
+// things were wrong with that: the two copies could disagree, the figure drifted
+// from reality as the rate moved with nothing to signal it, and — worst — it
+// presented a converted estimate in the same typography as a real amount, so an
+// operator could not tell a fact from an approximation. No rate is applied
+// anywhere in this file now. An amount is rendered in the currency it is stored
+// in, or not at all.
+export type Currency = 'RWF' | 'USD'
 
-export function fmtUSD(n?: number | null): string {
-  if (n == null || !Number.isFinite(Number(n))) return '—'
-  return `$${Math.round(Number(n)).toLocaleString('en-US')}`
+/** Normalise whatever the API sent. Unknown or missing is treated as RWF —
+ *  the column is NOT NULL with a RWF default, so a missing value means the
+ *  caller forgot to select it, not that the currency is unknown. */
+export function asCurrency(v?: string | null): Currency {
+  return v === 'USD' ? 'USD' : 'RWF'
 }
 
-export function fmtRWF(usd?: number | null): string {
-  if (usd == null || !Number.isFinite(Number(usd))) return '—'
-  const rwf = Math.round(Number(usd) * RWF_RATE)
-  return rwf >= 1_000_000 ? `RWF ${(rwf / 1_000_000).toFixed(1)}M` : `RWF ${rwf.toLocaleString('en-US')}`
+/**
+ * Format an amount in its own currency.
+ *
+ * `currency` is REQUIRED and deliberately has no default: a default is exactly
+ * how every legacy USD row would have been silently relabelled as francs. Making
+ * it required means the compiler lists every call site that has not been told
+ * which currency it is printing.
+ *
+ * RWF has no minor unit in circulation, so there are no decimals to show.
+ */
+export function fmtMoney(n: number | null | undefined, currency: Currency | string): string {
+  if (n == null || !Number.isFinite(Number(n))) return '—'
+  const amount = Math.round(Number(n))
+  const cur = asCurrency(typeof currency === 'string' ? currency : currency)
+  if (cur === 'USD') return `$${amount.toLocaleString('en-US')}`
+  return `RWF ${amount.toLocaleString('en-US')}`
+}
+
+/** Compact form for stat tiles, where "RWF 41,000,000" will not fit. Only ever
+ *  abbreviates — never converts. */
+export function fmtMoneyShort(n: number | null | undefined, currency: Currency | string): string {
+  if (n == null || !Number.isFinite(Number(n))) return '—'
+  const amount = Math.round(Number(n))
+  const cur = asCurrency(typeof currency === 'string' ? currency : currency)
+  const sym = cur === 'USD' ? '$' : 'RWF '
+  const abs = Math.abs(amount)
+  if (abs >= 1_000_000) return `${sym}${(amount / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`
+  if (abs >= 10_000) return `${sym}${Math.round(amount / 1000)}k`
+  return `${sym}${amount.toLocaleString('en-US')}`
 }
 
 // ─── Layout ──────────────────────────────────────────────────────────────────

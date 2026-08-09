@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { Card, PageHeader, EmptyState, BarChart, fmtUSD } from '@/components/ui'
+import { Card, PageHeader, EmptyState, BarChart, fmtMoneyShort } from '@/components/ui'
 
 // Same funnel order + labels as the dashboard — a funnel reads in pipeline
 // order (top of funnel first), never sorted by count.
@@ -72,6 +72,9 @@ export default function AnalyticsPage() {
   const makesMax = Math.max(...makes.map((m: { value: number }) => m.value), 1)
 
   const monthlyCount = monthlySales.map((m: any) => ({ label: monthLabel(m.month), value: Number(m.total_sold) || 0 }))
+  // Named by the API — /admin/analytics groups by currency and returns the
+  // dominant one, so the chart never plots francs added to dollars.
+  const salesCurrency: string = data?.salesCurrency || 'RWF'
   const monthlyValue = monthlySales.map((m: any) => ({ label: monthLabel(m.month), value: Number(m.total_value) || 0 }))
 
   return (
@@ -97,7 +100,7 @@ export default function AnalyticsPage() {
             <h2 className="text-sm font-bold text-content">Sales value per month</h2>
             <span className="text-xs text-content-muted">USD</span>
           </div>
-          <BarChart data={monthlyValue} height={150} formatValue={(v) => fmtUSD(v)} emptyLabel="No completed sales yet" />
+          <BarChart data={monthlyValue} height={150} formatValue={(v) => fmtMoneyShort(v, salesCurrency)} emptyLabel="No completed sales yet" />
         </Card>
 
         {/* Pipeline funnel */}

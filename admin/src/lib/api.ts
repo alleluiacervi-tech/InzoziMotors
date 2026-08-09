@@ -223,10 +223,17 @@ export const api = {
     request<any>(`/inspections/cars/${carId}/photos`, { method: 'POST', body: formData }),
 
   // Fees / revenue
+  // `totals` is expressed in ONE currency — the dominant one, named in
+  // `currencies`. totalsByCurrency carries every currency present, because a
+  // database part-way through the RWF conversion holds both and a single
+  // summed figure would be money in neither.
   getFees: (status?: string) =>
-    request<{ fees: any[]; totals: Record<string, number> }>(
-      `/admin/fees${status ? `?status=${status}` : ''}`
-    ),
+    request<{
+      fees: any[]
+      totals: Record<string, number>
+      totalsByCurrency?: Record<string, Record<string, number>>
+      currencies?: string[]
+    }>(`/admin/fees${status ? `?status=${status}` : ''}`),
   updateFee: (id: string, status: 'paid' | 'waived' | 'due') =>
     request<any>(`/admin/fees/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 

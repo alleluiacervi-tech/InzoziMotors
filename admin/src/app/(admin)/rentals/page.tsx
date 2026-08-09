@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { EmptyState, ErrorState, LoadingState, fmtUSD } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
   upcoming:  'bg-info-tint text-info',
@@ -21,6 +21,7 @@ interface RentalBooking {
   days: number
   center: string | null
   total: number
+  currency: string
   status: 'upcoming' | 'active' | 'completed' | 'cancelled'
   pickup_record: any
   return_record: any
@@ -115,7 +116,7 @@ export default function RentalsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600">{b.center || '—'}</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">
-                    {fmtUSD(b.total)}
+                    {fmtMoney(b.total, b.currency)}
                   </td>
                   {(tab === 'upcoming' || tab === 'active') && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">

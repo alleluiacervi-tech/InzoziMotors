@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { api, type ApiError } from '@/lib/api'
-import { Card, PageHeader, Pill, fmtUSD } from '@/components/ui'
+import { Card, PageHeader, Pill, fmtMoney } from '@/components/ui'
 
 // The contract generator. The admin stands at the handover desk with two
 // physical ID documents and a logbook in hand and transcribes them here; what
@@ -880,7 +880,7 @@ export default function ContractPage() {
               {data.terms.legacy_usd_price_hint != null && (
                 <p className="mt-3 text-xs text-content-muted">
                   Hint only: the listing price recorded at booking was
-                  {' '}<span className="font-semibold">{fmtUSD(data.terms.legacy_usd_price_hint)}</span>{' '}
+                  {' '}<span className="font-semibold">{fmtMoney(data.terms.legacy_usd_price_hint, 'USD')}</span>{' '}
                   (a legacy USD figure carried over from the listing). It is shown for reference and is
                   deliberately not converted — enter the amount the parties actually agreed.
                 </p>
