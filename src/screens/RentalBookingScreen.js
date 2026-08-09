@@ -6,6 +6,7 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
+import { showToast } from '../components/Feedback';
 import { DURATION_PRESETS, getRentalDates, calcTripCost, getPickupCenter, AIRPORT_PICKUP, PICKUP_WINDOWS } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
 import { openWhatsApp, SAWA_WHATSAPP, WHATSAPP_VERIFIED } from '../utils/whatsapp';
@@ -38,6 +39,7 @@ export default function RentalBookingScreen({ navigation, route }) {
   const [time, setTime] = useState(PICKUP_WINDOWS[0]);
   const [airportPickup, setAirportPickup] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [booking, setBooking] = useState(false);
 
   const cost = calcTripCost(car, days);
   const rangeFree = startIdx !== null && days ? rangeIsFree(startIdx, days) : true;
@@ -48,26 +50,41 @@ export default function RentalBookingScreen({ navigation, route }) {
   const pickupFee = airportPickup ? AIRPORT_PICKUP.fee : 0;
   const totalDue = cost.total + pickupFee;
 
-  const handleConfirm = () => {
-    if (!canBook) return;
+  const handleConfirm = async () => {
+    if (!canBook || booking) return;
+    setBooking(true);
     const iso = new Date();
     iso.setDate(iso.getDate() + startIdx);
-    bookRental({
-      carId: car.id,
-      carTitle: car.title,
-      carImage: car.image,
-      startDate: `${startDate.full}`,
-      startDateISO: iso.toISOString().slice(0, 10),
-      airportPickup,
-      time,
-      days,
-      center: center.name,
-      subtotal: cost.subtotal,
-      deposit: cost.deposit,
-      pickupFee,
-      total: totalDue,
-    });
-    setConfirmed(true);
+    try {
+      // Awaited, with the failure surfaced. This used to fire-and-forget and
+      // show "Booking confirmed!" while the API was rejecting — a phantom
+      // reservation nobody at the center was expecting.
+      await bookRental({
+        carId: car.id,
+        carTitle: car.title,
+        carImage: car.image,
+        startDate: `${startDate.full}`,
+        startDateISO: iso.toISOString().slice(0, 10),
+        airportPickup,
+        time,
+        days,
+        center: center.name,
+        subtotal: cost.subtotal,
+        deposit: cost.deposit,
+        pickupFee,
+        total: totalDue,
+      });
+      setConfirmed(true);
+    } catch (err) {
+      showToast(
+        err?.status === 409
+          ? 'Those dates were just taken — pick different ones.'
+          : "The booking didn't go through. Check your connection and try again.",
+        'error'
+      );
+    } finally {
+      setBooking(false);
+    }
   };
 
   // ── Confirmation state ──
@@ -262,10 +279,10 @@ export default function RentalBookingScreen({ navigation, route }) {
         </View>
 
         <Button
-          title={canBook ? 'Confirm Booking' : rangeFree ? 'Select a pickup date' : 'Selected dates unavailable'}
+          title={booking ? 'Booking…' : canBook ? 'Confirm Booking' : rangeFree ? 'Select a pickup date' : 'Selected dates unavailable'}
           onPress={handleConfirm}
-          style={{ marginTop: 20, opacity: canBook ? 1 : 0.5 }}
-          disabled={!canBook}
+          style={{ marginTop: 20, opacity: canBook && !booking ? 1 : 0.5 }}
+          disabled={!canBook || booking}
         />
       </ScrollView>
     </Screen>
