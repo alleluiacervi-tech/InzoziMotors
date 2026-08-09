@@ -107,9 +107,18 @@ function render({ title, preheader, lines, cta }) {
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${GROUND}" style="background:${GROUND}">` +
     `<tr><td align="center" style="padding:32px 16px">` +
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">` +
-    // Wordmark: typography, not an image, so it renders before "load images".
-    `<tr><td style="padding:0 4px 18px;font-family:${FONT};font-size:19px;font-weight:800;` +
-    `letter-spacing:-0.01em;color:${BRAND}">Sawa <span style="color:${INK}">Cars</span></td></tr>` +
+    // The real logo, served from our own domain. Gmail and Apple Mail load
+    // images by default for SPF/DKIM-authenticated senders, which we are; for
+    // the clients that don't (Outlook desktop's first open), the styled alt
+    // text renders the wordmark in brand red in the same spot — the header
+    // never looks broken, with or without images.
+    `<tr><td style="padding:0 4px 18px">` +
+    `<table role="presentation" cellpadding="0" cellspacing="0"><tr>` +
+    `<td style="vertical-align:middle"><img src="${SITE}/brand/email-logo.png" width="40" height="40" ` +
+    `alt="Sawa" style="display:block;border:0;font-family:${FONT};font-size:19px;font-weight:800;color:${BRAND}"></td>` +
+    `<td style="vertical-align:middle;padding-left:10px;font-family:${FONT};font-size:19px;font-weight:800;` +
+    `letter-spacing:-0.01em;color:${BRAND}">Sawa <span style="color:${INK}">Cars</span></td>` +
+    `</tr></table></td></tr>` +
     // The card.
     `<tr><td bgcolor="${PAPER}" style="background:${PAPER};border-radius:14px;padding:32px 28px">` +
     `<h1 style="margin:0 0 18px;font-family:${FONT};font-size:21px;line-height:1.35;font-weight:800;color:${INK}">${esc(title)}</h1>` +
