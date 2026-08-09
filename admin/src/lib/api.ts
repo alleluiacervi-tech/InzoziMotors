@@ -173,6 +173,9 @@ export type MailEnvelope = {
   messageId: string | null
 }
 
+export type MailFolderKey = 'inbox' | 'sent' | 'drafts' | 'junk' | 'trash'
+export type MailFolder = { key: MailFolderKey; total: number; unread: number }
+
 export type MailList = {
   messages: MailEnvelope[]
   total: number
@@ -408,32 +411,52 @@ export const api = {
   // every response as JSON, and an attachment is a binary stream — it is fetched
   // as a plain link to /api/backend/mail/... which the same httpOnly cookie
   // authenticates, exactly like the contract PDF.
-  mail: (params?: { limit?: number; offset?: number; q?: string }) => {
+  mail: (params?: {
+    limit?: number; offset?: number; q?: string
+    folder?: MailFolderKey; starred?: boolean
+  }) => {
     const q = new URLSearchParams()
     if (params?.limit) q.set('limit', String(params.limit))
     if (params?.offset) q.set('offset', String(params.offset))
     if (params?.q) q.set('q', params.q)
+    if (params?.folder && params.folder !== 'inbox') q.set('folder', params.folder)
+    if (params?.starred) q.set('starred', '1')
     const qs = q.toString()
     return request<MailList>(`/mail/messages${qs ? `?${qs}` : ''}`)
   },
   mailUnread: () => request<{ unread: number; total: number }>('/mail/unread'),
+  /** The folder rail — which standard folders this account has, with counts. */
+  mailFolders: () => request<{ folders: MailFolder[] }>('/mail/folders'),
   /** `images` opts in to loading remote images — off by default because a remote
-   *  image in mail is a tracking pixel that confirms a human opened it. */
-  mailMessage: (uid: number, opts?: { images?: boolean; peek?: boolean }) => {
+   *  image in mail is a tracking pixel that confirms a human opened it.
+   *  IMAP uids are per-folder, so the folder always travels with the uid. */
+  mailMessage: (uid: number, opts?: { images?: boolean; peek?: boolean; folder?: MailFolderKey }) => {
     const q = new URLSearchParams()
     if (opts?.images) q.set('images', '1')
     if (opts?.peek) q.set('peek', '1')
+    if (opts?.folder && opts.folder !== 'inbox') q.set('folder', opts.folder)
     const qs = q.toString()
     return request<MailMessage>(`/mail/messages/${uid}${qs ? `?${qs}` : ''}`)
   },
-  mailFlag: (uid: number, flag: 'seen' | 'flagged', value: boolean) =>
+  mailFlag: (uid: number, flag: 'seen' | 'flagged', value: boolean, folder: MailFolderKey = 'inbox') =>
     request<{ ok: true }>(`/mail/messages/${uid}/flags`, {
-      method: 'PATCH', body: JSON.stringify({ flag, value }),
+      method: 'PATCH', body: JSON.stringify({ flag, value, folder }),
     }),
-  mailReply: (uid: number, text: string) =>
-    request<{ messageId?: string; to: string; subject: string }>(
-      `/mail/messages/${uid}/reply`, { method: 'POST', body: JSON.stringify({ text }) }
-    ),
+  /** Reply with optional attachments. FormData when files ride along —
+   *  request() already skips the JSON content-type for FormData bodies. */
+  mailReply: (uid: number, text: string, files: File[] = []) => {
+    if (!files.length) {
+      return request<{ messageId?: string; to: string; subject: string }>(
+        `/mail/messages/${uid}/reply`, { method: 'POST', body: JSON.stringify({ text }) }
+      )
+    }
+    const form = new FormData()
+    form.set('text', text)
+    for (const f of files) form.append('attachments', f, f.name)
+    return request<{ messageId?: string; to: string; subject: string }>(
+      `/mail/messages/${uid}/reply`, { method: 'POST', body: form }
+    )
+  },
 
   // Rental fleet (rental_cars) — money fields are USD integers
   rentalCars:    () => request<any[]>('/rentals'),

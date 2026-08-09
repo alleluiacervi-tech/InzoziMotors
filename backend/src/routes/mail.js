@@ -1,13 +1,23 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
 const { requireAdmin } = require('../middleware/auth');
 const { log } = require('../lib/log');
 const {
   MailError, mailboxConfigured, MAIL_NOT_CONFIGURED,
 } = require('../lib/mail/connection');
 const {
-  listMessages, getMessage, getAttachment, setFlag, sendReply, unreadCount,
+  listFolders, resolveFolder, listMessages, getMessage, getAttachment,
+  setFlag, sendReply, unreadCount,
 } = require('../lib/mail/mailbox');
+
+// Reply attachments ride in memory to nodemailer — never the disk, so nothing
+// to clean up and nothing an upload can overwrite. Per-file cap here; the
+// 15 MB total is enforced in sendReply where the whole message is assembled.
+const replyUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { files: 5, fileSize: 8 * 1024 * 1024 },
+});
 
 const router = express.Router();
 
@@ -98,13 +108,35 @@ const parseIndex = (v) => {
   return n;
 };
 
-// GET /mail/messages — envelope list, newest first
+/** Folder KEYS are the whole client vocabulary — raw IMAP paths never cross
+ *  this boundary in either direction. */
+const FOLDER_KEYS = ['inbox', 'sent', 'drafts', 'junk', 'trash'];
+const parseFolder = (v) => {
+  const key = String(v || 'inbox').toLowerCase();
+  return FOLDER_KEYS.includes(key) ? key : null;
+};
+
+// GET /mail/folders — the rail: which standard folders exist, with counts
+router.get('/folders', requireAdmin, requireMailbox, async (req, res) => {
+  try {
+    res.json(await listFolders());
+  } catch (err) {
+    fail(res, err, 'folders');
+  }
+});
+
+// GET /mail/messages — envelope list, newest first.
+// ?folder=inbox|sent|drafts|junk|trash, ?starred=1 for the flagged view.
 router.get('/messages', requireAdmin, requireMailbox, async (req, res) => {
   const limit = clampInt(req.query.limit, 25, 1, 100);
   const offset = clampInt(req.query.offset, 0, 0, 100_000);
   const search = String(req.query.q || '').trim().slice(0, 200);
+  const folder = parseFolder(req.query.folder);
+  if (folder === null) return res.status(400).json({ error: 'Unknown folder' });
+  const flagged = req.query.starred === '1';
   try {
-    res.json(await listMessages({ limit, offset, search }));
+    const mailbox = await resolveFolder(folder);
+    res.json({ ...(await listMessages({ mailbox, limit, offset, search, flagged })), folder });
   } catch (err) {
     fail(res, err, 'list');
   }
@@ -119,15 +151,19 @@ router.get('/unread', requireAdmin, requireMailbox, async (req, res) => {
   }
 });
 
-// GET /mail/messages/:uid — one message, sanitised, marked read
+// GET /mail/messages/:uid — one message, sanitised, marked read.
+// UIDs are PER-FOLDER in IMAP, so the folder must travel with the uid.
 router.get('/messages/:uid', requireAdmin, requireMailbox, async (req, res) => {
   const uid = parseUid(req.params.uid);
   if (uid === null) return res.status(400).json({ error: 'Invalid message id' });
+  const folder = parseFolder(req.query.folder);
+  if (folder === null) return res.status(400).json({ error: 'Unknown folder' });
   // Opt-in only: remote images are tracking pixels until the admin says otherwise.
   const loadRemoteImages = req.query.images === '1';
   const markSeen = req.query.peek !== '1';
   try {
-    res.json(await getMessage(uid, { markSeen, loadRemoteImages }));
+    const mailbox = await resolveFolder(folder);
+    res.json(await getMessage(uid, { mailbox, markSeen, loadRemoteImages }));
   } catch (err) {
     fail(res, err, 'get');
   }
@@ -140,8 +176,10 @@ router.get('/messages/:uid/attachments/:index', requireAdmin, requireMailbox, as
   if (uid === null || index === null) {
     return res.status(400).json({ error: 'Invalid attachment reference' });
   }
+  const folder = parseFolder(req.query.folder);
+  if (folder === null) return res.status(400).json({ error: 'Unknown folder' });
   try {
-    const att = await getAttachment(uid, index);
+    const att = await getAttachment(uid, index, { mailbox: await resolveFolder(folder) });
     // ALWAYS an attachment, never inline. An HTML or SVG attachment rendered
     // inline would execute in the dashboard's origin — the sanitiser only
     // protects the message body, not a file the admin opens.
@@ -166,26 +204,50 @@ router.patch('/messages/:uid/flags', requireAdmin, requireMailbox, async (req, r
   if (!['seen', 'flagged'].includes(flag)) {
     return res.status(400).json({ error: 'flag must be seen or flagged' });
   }
+  const folder = parseFolder(req.body?.folder);
+  if (folder === null) return res.status(400).json({ error: 'Unknown folder' });
   try {
-    await setFlag(uid, flag, Boolean(value));
+    await setFlag(uid, flag, Boolean(value), { mailbox: await resolveFolder(folder) });
     res.json({ ok: true, flag, value: Boolean(value) });
   } catch (err) {
     fail(res, err, 'flag');
   }
 });
 
-// POST /mail/messages/:uid/reply — reply in-thread to the sender
-router.post('/messages/:uid/reply', requireAdmin, requireMailbox, replyLimiter, async (req, res) => {
-  const uid = parseUid(req.params.uid);
-  if (uid === null) return res.status(400).json({ error: 'Invalid message id' });
-  const { text } = req.body || {};
-  try {
-    const sent = await sendReply(uid, text);
-    log.info('mail reply sent', { uid, to: sent.to });
-    res.status(201).json(sent);
-  } catch (err) {
-    fail(res, err, 'reply');
+// POST /mail/messages/:uid/reply — reply in-thread to the sender, with
+// optional attachments (multipart; ≤5 files, ≤8 MB each, ≤15 MB together).
+//
+// INBOX only, structurally: in Sent the "sender" is contact@ itself and in
+// Drafts there may be no recipient at all — replying only means anything to a
+// message someone sent US.
+router.post(
+  '/messages/:uid/reply',
+  requireAdmin,
+  requireMailbox,
+  replyLimiter,
+  (req, res, next) => replyUpload.array('attachments', 5)(req, res, (err) => {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'Each attachment must be 8 MB or smaller.'
+        : 'Attachments could not be read.';
+      return res.status(400).json({ error: msg, code: 'MAIL_BAD_ATTACHMENT' });
+    }
+    next();
+  }),
+  async (req, res) => {
+    const uid = parseUid(req.params.uid);
+    if (uid === null) return res.status(400).json({ error: 'Invalid message id' });
+    const { text } = req.body || {};
+    try {
+      const sent = await sendReply(uid, text, { attachments: req.files || [] });
+      log.info('mail reply sent', {
+        uid, to: sent.to, attachments: (req.files || []).length,
+      });
+      res.status(201).json(sent);
+    } catch (err) {
+      fail(res, err, 'reply');
+    }
   }
-});
+);
 
 module.exports = router;
