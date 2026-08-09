@@ -37,7 +37,10 @@ export default ({ config }) => ({
     'assets/favicon.png',
   ],
   ios: {
-    supportsTablet: true,
+    // Phone-first for v1: the app is portrait-locked and untested on iPad, and
+    // supportsTablet commits the submission to iPad screenshots and makes any
+    // iPad layout bug a rejection basis. Opt in deliberately later, not by default.
+    supportsTablet: false,
     bundleIdentifier: 'com.sawacars.app',
     // Universal Links. Pairs with web/public/.well-known/apple-app-site-association,
     // whose appID placeholder must be replaced with the real Team ID before
@@ -65,13 +68,23 @@ export default ({ config }) => ({
       backgroundColor: '#CC050F',
     },
     package: 'com.sawacars.app',
-    permissions: ['CAMERA', 'READ_MEDIA_IMAGES'],
-    // expo-image-picker injects RECORD_AUDIO for video capture. Every picker
-    // call in src/utils/media.js is mediaTypes: ['images'] — the app never
-    // records audio, and a microphone permission with no visible microphone
-    // feature is exactly what Play's policy review flags. Blocking it here
-    // strips it from the merged manifest.
-    blockedPermissions: ['android.permission.RECORD_AUDIO'],
+    permissions: ['CAMERA'],
+    // The merged manifest must match what the app actually does:
+    //  · RECORD_AUDIO — injected by expo-image-picker for video capture, but
+    //    every picker call in src/utils/media.js is mediaTypes: ['images'].
+    //  · READ_MEDIA_IMAGES — requested by NO code path on ANY OS version:
+    //    on Android 13+ the picker resolves to the system photo picker (no
+    //    permission), on ≤12 it uses READ_EXTERNAL_STORAGE. Declaring it only
+    //    dragged the app into Play's Photo & Video Permissions review.
+    //  · READ/WRITE_EXTERNAL_STORAGE stay UNBLOCKED on purpose: the picker's
+    //    runtime still requests them on devices running Android ≤12 — a real
+    //    share of phones here — and a manifest block would auto-deny those
+    //    requests and silently break "choose from library" on exactly those
+    //    devices.
+    blockedPermissions: [
+      'android.permission.RECORD_AUDIO',
+      'android.permission.READ_MEDIA_IMAGES',
+    ],
     // App Links. `autoVerify` is what makes Android open these in the app
     // rather than offering a chooser, and it depends on
     // web/public/.well-known/assetlinks.json carrying the real Play App
@@ -105,6 +118,11 @@ export default ({ config }) => ({
           'Sawa needs access to your photos so you can attach existing vehicle or ID images.',
         cameraPermission:
           'Sawa uses the camera to photograph your ID for seller verification and to capture vehicle photos.',
+        // Exactly false, not omitted: the config plugin only DELETES
+        // NSMicrophoneUsageDescription for === false — anything else ships
+        // Expo's generic boilerplate for a microphone the app never uses,
+        // which surfaces in the App Store privacy disclosure.
+        microphonePermission: false,
       },
     ],
     [
