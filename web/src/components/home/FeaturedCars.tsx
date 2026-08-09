@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button, Card, Container, EmptyState, Icon, Section, SectionHeading } from '@/components/ui'
 import { CarCard } from '@/components/marketplace/CarCard'
+import { Reveal } from '@/components/ui/Reveal'
 import type { Car } from '@/lib/types'
 
 // Real inventory or a designed explanation — never placeholder cars, and never
@@ -30,8 +31,12 @@ export function FeaturedCars({ cars }: { cars: Car[] }) {
         {cars.length ? (
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {cars.map((car, i) => (
-              // The first row is the LCP candidate on most viewports.
-              <CarCard key={car.id} car={car} priority={i < 3} />
+              // The first row is the LCP candidate on most viewports; Reveal
+              // renders visible before hydration, so LCP is never delayed —
+              // the cascade only exists for the rows entering from below.
+              <Reveal key={car.id} delay={(i % 3) * 90}>
+                <CarCard car={car} priority={i < 3} />
+              </Reveal>
             ))}
           </div>
         ) : (
