@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { Icon } from '@/components/ui'
+import { useToast } from '@/components/feedback'
 
 // Pre-defined Encar photography slots (26 required shots)
 const PHOTO_GUIDE_SLOTS = [
@@ -54,13 +55,14 @@ export default function CarPhotosPage() {
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
+  const toast = useToast()
 
   async function loadCar() {
     try {
       const data = await api.getCar(id)
       setCar(data)
     } catch (e: any) {
-      alert('Failed to load listing: ' + e.message)
+      toast('Failed to load listing: ' + e.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -86,7 +88,7 @@ export default function CarPhotosPage() {
       setTimeout(() => setUploadProgress(''), 3000)
       loadCar()
     } catch (e: any) {
-      alert('Upload failed: ' + e.message)
+      toast('Upload failed: ' + e.message, 'error')
       setUploadProgress('')
     } finally {
       setUploading(false)

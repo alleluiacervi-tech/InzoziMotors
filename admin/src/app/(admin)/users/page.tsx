@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
+import { useConfirm, useToast } from '@/components/feedback'
 
 export default function UsersPage() {
   const [items, setItems]     = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
+  const ask = useConfirm()
+  const toast = useToast()
 
   async function load() {
     setLoading(true)
@@ -32,13 +35,22 @@ export default function UsersPage() {
   // reloading the queue mints fresh ones.
 
   async function decide(userId: string, decision: 'approved' | 'rejected') {
-    if (!window.confirm(`${decision === 'approved' ? 'Approve' : 'Reject'} this ID verification?`)) return
+    const approving = decision === 'approved'
+    const ok = await ask({
+      title: approving ? 'Approve this ID verification?' : 'Reject this ID verification?',
+      message: approving
+        ? 'The seller is verified, gains 30 trust-score points, and can submit cars for inspection.'
+        : 'The seller is notified and must re-submit their documents before they can list a car.',
+      confirmLabel: approving ? 'Approve seller' : 'Reject documents',
+      tone: approving ? 'primary' : 'danger',
+    })
+    if (!ok) return
     setActionId(userId)
     try {
       await api.decideVerification(userId, decision)
       load()
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
     }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
+import { useConfirm, useToast } from '@/components/feedback'
 
 const STATUS_COLORS: Record<string, string> = {
   upcoming:  'bg-info-tint text-info',
@@ -33,6 +34,8 @@ export default function RentalsPage() {
   const [loading, setLoading]   = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
+  const ask = useConfirm()
+  const toast = useToast()
 
   async function load(s: string) {
     setLoading(true)
@@ -49,14 +52,18 @@ export default function RentalsPage() {
 
   useEffect(() => { load(tab) }, [tab])
 
-  async function transition(id: string, status: 'active' | 'completed' | 'cancelled', confirmMsg: string) {
-    if (!window.confirm(confirmMsg)) return
+  async function transition(
+    id: string,
+    status: 'active' | 'completed' | 'cancelled',
+    prompt: { title: string; message: string; confirmLabel: string; tone?: 'primary' | 'danger' },
+  ) {
+    if (!(await ask(prompt))) return
     setActionId(id)
     try {
       await api.updateRentalBookingStatus(id, status)
       load(tab)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
     }
@@ -124,14 +131,14 @@ export default function RentalsPage() {
                         {b.status === 'upcoming' && (
                           <>
                             <button
-                              onClick={() => transition(b.id, 'active', 'Check the renter in? The booking becomes ACTIVE.')}
+                              onClick={() => transition(b.id, 'active', { title: 'Check the renter in?', message: 'The booking becomes active and the car is out with the renter.', confirmLabel: 'Check in' })}
                               disabled={actionId === b.id}
                               className="px-2 py-1 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                             >
                               Check In
                             </button>
                             <button
-                              onClick={() => transition(b.id, 'cancelled', 'Cancel this booking?')}
+                              onClick={() => transition(b.id, 'cancelled', { title: 'Cancel this booking?', message: 'The dates free up for other renters. The booking stays in the cancelled tab.', confirmLabel: 'Cancel booking', tone: 'danger' })}
                               disabled={actionId === b.id}
                               className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
                             >
@@ -141,7 +148,7 @@ export default function RentalsPage() {
                         )}
                         {b.status === 'active' && (
                           <button
-                            onClick={() => transition(b.id, 'completed', 'Check the car back in? The booking becomes COMPLETED.')}
+                            onClick={() => transition(b.id, 'completed', { title: 'Check the car back in?', message: 'The booking becomes completed and the car returns to the available fleet.', confirmLabel: 'Check back in' })}
                             disabled={actionId === b.id}
                             className="px-2 py-1 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                           >

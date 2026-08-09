@@ -149,7 +149,7 @@ export default function DutyCalculatorScreen({ navigation }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.rwfTitle}>Grand total in Rwandan Francs</Text>
                 <Text style={styles.rwfValue}>{formatRWF(duty.grandTotal)}</Text>
-                <Text style={styles.rwfNote}>At 1 USD ≈ {RWF_RATE} RWF (2026 rate)</Text>
+                <Text style={styles.rwfNote}>At 1 USD ≈ {Math.round(RWF_RATE)} RWF (today's rate)</Text>
               </View>
             </View>
 

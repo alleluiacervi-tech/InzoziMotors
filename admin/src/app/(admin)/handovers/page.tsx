@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
+import { useConfirm, useToast } from '@/components/feedback'
 
 // Secondary action grammar on this page — the tabs already use it.
 const secondaryBtn =
@@ -26,6 +27,8 @@ export default function HandoversPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
+  const ask = useConfirm()
+  const toast = useToast()
 
   async function load(s: string) {
     setLoading(true)
@@ -43,26 +46,38 @@ export default function HandoversPage() {
   useEffect(() => { load(tab) }, [tab])
 
   async function complete(id: string) {
-    if (!window.confirm('Mark this handover COMPLETE? The car will be marked as SOLD and both parties notified.')) return
+    const ok = await ask({
+      title: 'Mark this handover complete?',
+      message: 'The car is marked as sold, the sale becomes final, and both parties are notified. This is the platform\'s sale event — it cannot be undone from here.',
+      confirmLabel: 'Mark sold',
+    })
+    if (!ok) return
     setActionId(id)
     try {
       await api.completeHandover(id)
+      toast('Handover complete — car marked as sold.', 'success')
       load(tab)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
     }
   }
 
   async function confirm(id: string) {
-    if (!window.confirm('Confirm this handover arrangement? Both parties will be notified.')) return
+    const ok = await ask({
+      title: 'Confirm this handover arrangement?',
+      message: 'Both the buyer and the seller are notified of the agreed slot.',
+      confirmLabel: 'Confirm arrangement',
+    })
+    if (!ok) return
     setActionId(id)
     try {
       await api.confirmHandover(id)
+      toast('Arrangement confirmed — both parties notified.', 'success')
       load(tab)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
     }

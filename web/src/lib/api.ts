@@ -127,6 +127,19 @@ function qs(params: Record<string, unknown>): string {
 
 const CATALOGUE_REVALIDATE = 60
 
+/** The platform USD⇄RWF rate, served by our own API (backend/src/lib/fx.js).
+ *  Never throws: a page must not fail because a display hint is unavailable —
+ *  the fallback mirrors the backend's floor and is flagged stale. */
+export const fx = {
+  get: async (): Promise<{ rate: number; source: string; fetched_at: string | null; stale: boolean }> => {
+    try {
+      return await request('/fx', { revalidate: 3600, cache: undefined, timeoutMs: 4000 })
+    } catch {
+      return { rate: 1470, source: 'client-fallback', fetched_at: null, stale: true }
+    }
+  },
+}
+
 export const cars = {
   list: (query: CarQuery = {}) =>
     request<Car[]>(`/cars${qs(query as Record<string, unknown>)}`, {

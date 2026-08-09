@@ -3,11 +3,13 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useToast } from '@/components/feedback'
 
 function ListingCreatorForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
+  const toast = useToast()
   const submissionId = searchParams.get('submissionId') || ''
   const inspectionId = searchParams.get('inspectionId') || ''
 
@@ -61,7 +63,7 @@ function ListingCreatorForm() {
           const generatedTitle = `${data.sub_year || ''} ${data.sub_make || ''} ${data.sub_model || ''}`.trim()
           setTitle(generatedTitle)
         })
-        .catch((e) => alert('Failed to load inspection details: ' + e.message))
+        .catch((e) => toast('Failed to load inspection details: ' + e.message, 'error'))
         .finally(() => setLoading(false))
     }
   }, [inspectionId])
@@ -90,7 +92,7 @@ function ListingCreatorForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!sellerId || !make || !model || !year || !mileage || !price || !title) {
-      alert('Please fill in all required fields.')
+      toast('Fill in all required fields first.', 'error')
       return
     }
     setSubmitting(true)
@@ -117,10 +119,10 @@ function ListingCreatorForm() {
         images: [], // photographer will upload in the next step
       })
       
-      alert('Listing created successfully! Proceeding to photo upload.')
+      toast('Listing created — next, the 36-angle photo shoot.', 'success')
       router.push(`/listings/${car.id}/photos`)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setSubmitting(false)
     }

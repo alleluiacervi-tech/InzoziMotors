@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { ChipLink } from '@/components/ui/Chip'
 import { Reveal } from '@/components/ui/Reveal'
-import { RWF_RATE, isDemoListing } from '@/lib/business'
+import { getRwfRate, isDemoListing } from '@/lib/business'
 import { BODY_TYPE_IMAGES } from '@/lib/imagery'
 import type { Car } from '@/lib/types'
 
@@ -20,14 +20,18 @@ import type { Car } from '@/lib/types'
 
 const FAMILIES = ['SUV', 'Sedan', 'Hatchback', 'Pickup'] as const
 
-const usd = (rwfMillions: number) => Math.round((rwfMillions * 1_000_000) / RWF_RATE)
-
-const BUDGETS = [
-  { label: 'Under 10M RWF', href: `/cars?max_price=${usd(10)}` },
-  { label: '10 – 20M RWF', href: `/cars?min_price=${usd(10)}&max_price=${usd(20)}` },
-  { label: '20 – 35M RWF', href: `/cars?min_price=${usd(20)}&max_price=${usd(35)}` },
-  { label: '35M+ RWF', href: `/cars?min_price=${usd(35)}` },
-] as const
+// Computed per render, not at import: at import time the live rate has not
+// been fetched yet, and budget chips built on a stale rate would filter to the
+// wrong price band (~12% off, at the drift the old constant had accumulated).
+const budgets = () => {
+  const usd = (rwfMillions: number) => Math.round((rwfMillions * 1_000_000) / getRwfRate())
+  return [
+    { label: 'Under 10M RWF', href: `/cars?max_price=${usd(10)}` },
+    { label: '10 – 20M RWF', href: `/cars?min_price=${usd(10)}&max_price=${usd(20)}` },
+    { label: '20 – 35M RWF', href: `/cars?min_price=${usd(20)}&max_price=${usd(35)}` },
+    { label: '35M+ RWF', href: `/cars?min_price=${usd(35)}` },
+  ]
+}
 
 export function BrowseEntry({ cars }: { cars: Car[] }) {
   const familyImage = (family: string) => {
@@ -92,7 +96,7 @@ export function BrowseEntry({ cars }: { cars: Car[] }) {
 
         {/* Budgets stay — quiet, one row, under the photography */}
         <div className="mt-6 flex flex-wrap gap-2.5">
-          {BUDGETS.map((b) => (
+          {budgets().map((b) => (
             <ChipLink key={b.label} href={b.href}>
               {b.label}
             </ChipLink>

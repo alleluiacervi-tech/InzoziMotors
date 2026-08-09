@@ -19,11 +19,17 @@ export function CardPhotoFlick({
   alt,
   sizes,
   priority = false,
+  fit = 'contain',
 }: {
   images: string[]
   alt: string
   sizes: string
   priority?: boolean
+  /** 'cover' for real inventory (shot 4:3 by our 36-angle flow, crops
+   *  full-bleed like Encar); 'contain' for seeded press renders, whose 2.7:1
+   *  side profiles crop into a door, not a car. The caller decides via
+   *  isDemoListing — the same honesty gate as the badges. */
+  fit?: 'cover' | 'contain'
 }) {
   const preview = images.slice(0, MAX_PREVIEW)
   const [index, setIndex] = useState(0)
@@ -63,10 +69,10 @@ export function CardPhotoFlick({
           sizes={sizes}
           priority={priority && i === 0}
           // Only the first frame loads eagerly; the rest arrive lazily and sit
-          // stacked, so flicking is instant once they're in. Contain, not
-          // cover: studio photography shows the whole car on its background —
-          // cropping a 2.7:1 side profile into 4:3 showed a door, not a car.
-          className={`object-contain p-2 transition-opacity duration-200 ${
+          // stacked, so flicking is instant once they're in.
+          className={`${
+            fit === 'cover' ? 'object-cover' : 'object-contain p-2'
+          } transition-opacity duration-200 ${
             i === index ? 'opacity-100' : 'opacity-0'
           }`}
         />

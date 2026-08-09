@@ -188,6 +188,9 @@ app.use('/admin',           require('./src/routes/admin'));
 // Inspection centers. Admin-only CRUD over the table submissions.js already
 // enforces booking capacity against — see the header of routes/centers.js.
 app.use('/centers',         require('./src/routes/centers'));
+// The platform USD/RWF rate — public display data, cached and provenance-
+// stamped. See src/lib/fx.js for the provider chain.
+app.use('/fx',              require('./src/routes/fx'));
 // The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
 // see src/lib/mail/ for why it is a live read rather than a synced copy.
 app.use('/mail',            require('./src/routes/mail'));

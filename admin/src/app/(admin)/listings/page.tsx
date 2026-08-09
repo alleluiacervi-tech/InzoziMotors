@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/components/ui'
+import { useConfirm, useToast } from '@/components/feedback'
 
 const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
@@ -21,6 +22,8 @@ export default function ListingsPage() {
   const [loading, setLoading]           = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId]         = useState<string | null>(null)
+  const ask = useConfirm()
+  const toast = useToast()
 
   async function load(s: string) {
     setLoading(true)
@@ -43,20 +46,25 @@ export default function ListingsPage() {
       await api.updateCarStatus(id, status)
       load(statusFilter)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
     }
   }
 
   async function feature(id: string) {
-    if (!window.confirm('Feature this listing for 7 days? It will be boosted to the top of the feed.')) return
+    const ok = await ask({
+      title: 'Feature this listing for 7 days?',
+      message: 'It is boosted to the top of the public feed for a week, then drops back automatically.',
+      confirmLabel: 'Feature for 7 days',
+    })
+    if (!ok) return
     setActionId(id)
     try {
       await api.featureCar(id, 7)
       load(statusFilter)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
     }
@@ -174,8 +182,14 @@ export default function ListingsPage() {
                   )}
                   {(car.status === 'live' || car.status === 'reserved' || car.status === 'under_review') && (
                     <button
-                      onClick={() => {
-                        if (window.confirm('Remove this listing?')) updateStatus(car.id, 'removed')
+                      onClick={async () => {
+                        const ok = await ask({
+                          title: 'Remove this listing?',
+                          message: 'It disappears from the public marketplace. The car and its history stay in the system.',
+                          confirmLabel: 'Remove listing',
+                          tone: 'danger',
+                        })
+                        if (ok) updateStatus(car.id, 'removed')
                       }}
                       disabled={actionId === car.id}
                       className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"

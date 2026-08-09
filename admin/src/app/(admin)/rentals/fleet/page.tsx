@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { useConfirm } from '@/components/feedback'
 
 const STATUS_COLORS: Record<string, string> = {
   active:      'bg-success-tint text-success',
@@ -88,6 +89,7 @@ export default function RentalFleetPage() {
   const [form, setForm]         = useState<FleetForm>(BLANK_FORM)
   const [formError, setFormError] = useState('')
   const [saving, setSaving]     = useState(false)
+  const ask = useConfirm()
 
   const [restoreId, setRestoreId] = useState('')
   const [restoring, setRestoring] = useState(false)
@@ -193,10 +195,12 @@ export default function RentalFleetPage() {
     // Taking a car off the fleet pulls it out of every public list — say so before
     // doing it, since the way back runs through this page only.
     if (editing && editing.status === 'active' && form.status !== 'active') {
-      const ok = window.confirm(
-        `Set "${editing.title}" to ${form.status}? Renters can no longer see or book it. ` +
-        `It stays in this table so you can put it back on the fleet.`
-      )
+      const ok = await ask({
+        title: `Take “${editing.title}” off the fleet?`,
+        message: `Setting it to ${form.status} means renters can no longer see or book it. It stays in this table so you can put it back on the fleet.`,
+        confirmLabel: `Set to ${form.status}`,
+        tone: 'danger',
+      })
       if (!ok) return
     }
 

@@ -69,8 +69,29 @@ export function inspectionGrade(score: number): 'A' | 'B' | 'C' | 'D' {
   return 'D'
 }
 
-// ─── Currency ── mirrors RWF_RATE in src/data/marketData.js ──────────────────
-export const RWF_RATE = 1300 // 1 USD ≈ 1,300 RWF (2026)
+// ─── Currency ─────────────────────────────────────────────────────────────────
+// The rate is LIVE, served by our API (GET /fx: two providers, DB-cached,
+// provenance-stamped) and pushed in here once per request by the root layout —
+// server side via getFx(), client side via <FxSync/>. It used to be a hardcoded
+// 1300 copied into three clients; by the time anyone checked, the real rate was
+// ~1473 and every converted figure on the site was ~12% wrong, silently.
+//
+// A module variable rather than a parameter because the rate is global truth,
+// not per-request data, and threading it through every formatRWF call site
+// would put plumbing above readability. The initial value only ever renders if
+// formatting happens before the layout has fetched — and it matches the
+// backend's own floor.
+let rwfRate = 1470
+
+/** Called by the root layout (server) and FxSync (client). Ignores nonsense so
+ *  a malformed API response can never zero out every price hint. */
+export function setRwfRate(rate: number): void {
+  if (Number.isFinite(rate) && rate > 100 && rate < 10000) rwfRate = rate
+}
+
+export function getRwfRate(): number {
+  return rwfRate
+}
 
 export function formatUSD(amount?: number | null): string {
   if (amount == null || !Number.isFinite(amount)) return '—'
@@ -79,7 +100,7 @@ export function formatUSD(amount?: number | null): string {
 
 export function formatRWF(usdAmount?: number | null): string {
   if (usdAmount == null || !Number.isFinite(usdAmount)) return '—'
-  const rwf = Math.round(usdAmount * RWF_RATE)
+  const rwf = Math.round(usdAmount * rwfRate)
   if (rwf >= 1_000_000) return `RWF ${(rwf / 1_000_000).toFixed(1)}M`
   return `RWF ${rwf.toLocaleString('en-US')}`
 }
