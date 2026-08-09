@@ -7,7 +7,7 @@ import {
   deleteSearchAction,
   toggleSearchNotifyAction,
 } from '@/app/(dashboard)/dashboard/saved/actions'
-import { Icon } from '@/components/ui'
+import { Button, Icon } from '@/components/ui'
 import { formatKm, formatUSD } from '@/lib/business'
 import type { SavedSearch } from '@/lib/types'
 
@@ -42,12 +42,13 @@ function summarise(filters: SavedSearch['filters']): string[] {
 function ToggleButton({ enabled }: { enabled: boolean }) {
   const { pending } = useFormStatus()
   return (
-    <button
+    <Button
       type="submit"
+      variant="ghost"
+      size="compact"
       disabled={pending}
       aria-pressed={enabled}
       aria-busy={pending || undefined}
-      className="inline-flex h-11 items-center gap-2 rounded-xl px-3 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content disabled:opacity-50"
     >
       <span
         aria-hidden="true"
@@ -62,7 +63,7 @@ function ToggleButton({ enabled }: { enabled: boolean }) {
         />
       </span>
       {enabled ? 'Alerts on' : 'Alerts off'}
-    </button>
+    </Button>
   )
 }
 
@@ -70,22 +71,18 @@ function DeleteButtons({ onCancel }: { onCancel: () => void }) {
   const { pending } = useFormStatus()
   return (
     <>
-      <button
+      <Button
         type="submit"
+        variant="danger"
+        size="compact"
         disabled={pending}
         aria-busy={pending || undefined}
-        className="inline-flex h-11 items-center rounded-xl border border-danger/30 px-3 text-caption font-bold text-danger transition-colors hover:bg-danger-tint disabled:opacity-50"
       >
         {pending ? 'Deleting…' : 'Yes, delete'}
-      </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        disabled={pending}
-        className="inline-flex h-11 items-center rounded-xl px-3 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content"
-      >
+      </Button>
+      <Button type="button" variant="ghost" size="compact" onClick={onCancel} disabled={pending}>
         Keep it
-      </button>
+      </Button>
     </>
   )
 }

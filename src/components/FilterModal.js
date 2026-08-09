@@ -360,6 +360,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 14,
+    fontFamily: fonts.medium,
     color: colors.textPrimary,
   },
   yearRangeDivider: {

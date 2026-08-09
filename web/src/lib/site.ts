@@ -95,7 +95,7 @@ export const FOOTER_LINKS = [
   {
     heading: 'Company',
     links: [
-      { href: '/about', label: 'About Sawa' },
+      { href: '/about', label: 'About Sawa Cars' },
       { href: '/promise', label: 'The Sawa Promise' },
       { href: '/how-it-works', label: 'How buying works' },
       { href: '/contact', label: 'Contact & centers' },
@@ -129,7 +129,7 @@ export const PROMISES = [
   {
     icon: 'shield',
     title: '150-Point Certification',
-    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa. No exceptions, no seller shortcuts.',
+    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa Cars. No exceptions, no seller shortcuts.',
   },
   {
     icon: 'refresh',
@@ -161,11 +161,11 @@ export const BUYING_STEPS = [
   },
   {
     title: 'We arrange everything',
-    desc: 'Sawa contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.',
+    desc: 'Sawa Cars contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.',
   },
   {
     title: 'Handover at the center',
-    desc: 'Meet at an Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.',
+    desc: 'Meet at a Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.',
   },
   {
     title: 'Ownership transfer',
@@ -183,7 +183,7 @@ export const BUYING_STEPS = [
 
 /** Seller journey — mirrors the pipeline in CLAUDE.md and SellerDashboardScreen. */
 export const SELLING_STEPS = [
-  { title: 'Verify your identity', desc: 'A one-time ID check. It is what keeps every Sawa listing real — and it takes about two minutes.' },
+  { title: 'Verify your identity', desc: 'A one-time ID check. It is what keeps every Sawa Cars listing real — and it takes about two minutes.' },
   { title: 'Submit your car', desc: 'Tell us the make, model, mileage and your asking price. We suggest a range from real comparable sales.' },
   { title: 'Book your inspection', desc: 'Pick a center and a slot. Bring the car and your service records.' },
   { title: 'We inspect and photograph', desc: 'Our mechanics run the 150-point check; our photographers shoot the standard 36 angles.' },
@@ -194,7 +194,7 @@ export const SELLING_STEPS = [
 export const FAQS = [
   {
     q: 'Do I pay anything through the app or website?',
-    a: 'Never. There is no payment feature at all. Payment happens physically at an Sawa center at handover — that is what protects both you and the seller.',
+    a: 'Never. There is no payment feature at all. Payment happens physically at a Sawa center at handover — that is what protects both you and the seller.',
   },
   {
     q: 'What does the 150-point inspection actually cover?',

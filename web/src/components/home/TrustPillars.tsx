@@ -63,7 +63,7 @@ export function TrustPillars() {
                 <div className="rounded-xl bg-surface p-4 shadow-card ring-1 ring-inset ring-line">
                   <p className="flex items-center gap-1.5 text-micro font-bold uppercase tracking-[0.1em] text-content">
                     <Icon name="check" size={12} className="text-success" />
-                    On Sawa
+                    On Sawa Cars
                   </p>
                   <p className="mt-2 text-body font-medium leading-relaxed text-content">
                     {row.sawa}

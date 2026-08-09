@@ -9,7 +9,7 @@ import { SignUpForm } from './SignUpForm'
 export const metadata: Metadata = {
   title: 'Create an account',
   description:
-    'Create a free Sawa account to save certified cars, set search alerts and request a car. Buyers pay nothing, ever.',
+    'Create a free Sawa Cars account to save certified cars, set search alerts and request a car. Buyers pay nothing, ever.',
   alternates: { canonical: '/signup' },
 }
 
@@ -24,7 +24,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Searc
     <>
       <AuthHeading title="Create your account">
         Saving cars, setting alerts and requesting a car all need an account. It is free, and
-        buyers never pay Sawa anything.
+        buyers never pay Sawa Cars anything.
       </AuthHeading>
 
       <SignUpForm next={next} />

@@ -101,7 +101,7 @@ export function LogoStack({
   return (
     <span
       className="inline-flex flex-col items-center gap-3.5"
-      aria-label="Sawa — Driven by Trust"
+      aria-label="Sawa Cars — Driven by Trust"
     >
       <LogoMark size={width * 0.42} id={id} />
       <WordMark height={width * 0.155} color={tone === 'light' ? '#FFFFFF' : BRAND} tagline />

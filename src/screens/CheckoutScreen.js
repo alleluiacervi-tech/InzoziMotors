@@ -7,6 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
+import StickyFooter from '../components/StickyFooter';
+import { ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { contactSellerOnWhatsApp } from '../utils/whatsapp';
@@ -16,7 +18,7 @@ import { useApp } from '../context/AppContext';
 const HOW_IT_WORKS = [
   { icon: 'paper-plane-outline', title: 'Send your request', sub: 'One tap — no payment, no commitment yet.' },
   { icon: 'lock-closed-outline', title: 'We reserve the car', sub: 'Held for you while we confirm with the seller.' },
-  { icon: 'call-outline', title: 'We arrange the handover', sub: 'Sawa contacts you on WhatsApp to set a time that suits you.' },
+  { icon: 'call-outline', title: 'We arrange the handover', sub: 'Sawa Cars contacts you on WhatsApp to set a time that suits you.' },
   { icon: 'shield-checkmark-outline', title: 'Meet at the Sawa center', sub: 'Payment, documents, transfer — then drive it for 7 days before the sale is final.' },
 ];
 
@@ -111,7 +113,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <StickyFooter style={styles.footer}>
         <View>
           <Text style={styles.footerLabel}>Asking price</Text>
           <Text style={styles.footerValue}>{formatPrice(price)}</Text>
@@ -126,7 +128,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
           disabled={sending}
           style={{ flex: 1 }}
         />
-      </View>
+      </StickyFooter>
     </>
   );
 }
@@ -152,7 +154,7 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
             { icon: 'bookmark-outline', label: 'Request ID', value: bookingId },
             { icon: 'car-outline', label: 'Vehicle', value: car.title },
             { icon: 'call-outline', label: 'Contact', value: phone ? `+250 ${phone}` : 'Via your account' },
-            { icon: 'time-outline', label: 'Next step', value: 'Sawa confirms within 24h' },
+            { icon: 'time-outline', label: 'Next step', value: 'Sawa Cars confirms within 24h' },
           ].map((row) => (
             <View key={row.label} style={styles.bookingRow}>
               <Ionicons name={row.icon} size={15} color={colors.textMuted} />
@@ -184,7 +186,7 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <StickyFooter style={styles.footer}>
         <View style={{ flex: 1 }}>
           <Button title="Track Request" icon="navigate-outline" onPress={onTrack} />
           <Button
@@ -195,7 +197,7 @@ function ConfirmedState({ car, bookingId, phone, onTrack, onMessage }) {
             style={{ marginTop: 10 }}
           />
         </View>
-      </View>
+      </StickyFooter>
     </>
   );
 }
@@ -217,15 +219,11 @@ export default function CheckoutScreen({ navigation, route }) {
     return (
       <Screen background={colors.bg}>
         <BackHeader title="Request This Car" onBack={() => navigation.goBack()} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 }}>
-          <Ionicons name="car-outline" size={40} color={colors.textMuted} />
-          <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
-            This listing isn&apos;t available
-          </Text>
-          <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
-            Pick a car from the marketplace to send a purchase request.
-          </Text>
-        </View>
+        <ErrorState
+          icon="car-outline"
+          title="This listing isn't available"
+          sub="Pick a car from the marketplace to send a purchase request."
+        />
       </Screen>
     );
   }
@@ -350,7 +348,7 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: colors.surface,
     borderWidth: 1.5, borderColor: colors.border, borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: colors.textPrimary,
+    fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary,
   },
   phoneHint: { fontSize: 12, color: colors.textMuted, lineHeight: 17, marginBottom: 16 },
 
@@ -371,7 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: colors.greenTint, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.pill,
   },
-  sellerVerifiedText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
+  sellerVerifiedText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
 
   // Confirmed phase
   successHero: { margin: 16, marginBottom: 10, borderRadius: radius.xxl, padding: 28, alignItems: 'center', gap: 10 },
@@ -424,7 +422,7 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28,
+    paddingHorizontal: 20, paddingTop: 12,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     backgroundColor: colors.surface, ...shadows.floating,
   },

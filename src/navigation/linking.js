@@ -32,6 +32,10 @@ export const linking = {
       RentalDetail: 'rentals/:rentalId',
       InspectionReport: 'cars/:carId/inspection',
       OrderTracking: 'orders/:bookingId',
+      // Push-notification taps land here (see src/utils/pushNavigation.js) —
+      // a "New message" push carries conversationId in its data payload.
+      Chat: 'chat/:convId',
+      Messages: 'messages',
       Disputes: 'disputes',
       NotificationCenter: 'notifications',
       SellerDashboard: 'selling',

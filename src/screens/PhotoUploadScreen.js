@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, Pressable, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
+import StickyFooter from '../components/StickyFooter';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { captureImage } from '../utils/media';
@@ -172,7 +173,7 @@ export default function PhotoUploadScreen({ navigation, route }) {
         {/* Photo groups */}
         {PHOTO_GROUPS.map((group) => {
           const isOptional = group.group === 'Defects (if any)';
-          const groupUploaded = group.slots.filter((s) => uploaded[s.id]).length;
+          const groupUploaded = group.slots.filter((s) => shots[s.id]).length;
           return (
             <View key={group.group} style={styles.group}>
               <View style={styles.groupHeader}>
@@ -215,29 +216,26 @@ export default function PhotoUploadScreen({ navigation, route }) {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={styles.cta}>
+      <StickyFooter style={styles.cta}>
         <Button
           title={
-            uploading
-              ? `Uploading ${uploadedCount} photos…`
-              : requiredUploaded >= TOTAL_REQUIRED
+            requiredUploaded >= TOTAL_REQUIRED
               ? 'Upload to Listing'
               : `Shoot ${TOTAL_REQUIRED - requiredUploaded} More Required`
           }
           icon={requiredUploaded >= TOTAL_REQUIRED ? 'cloud-upload-outline' : 'camera-outline'}
           onPress={handleSubmit}
-          disabled={uploading || uploadedCount === 0}
+          loading={uploading}
+          disabled={uploadedCount === 0}
         />
-        {uploading ? (
-          <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 8 }} />
-        ) : (
-          <Text style={styles.ctaSub}>
-            {requiredUploaded >= TOTAL_REQUIRED
-              ? 'All required angles captured · Uploads in slot order'
-              : `${TOTAL_REQUIRED} required · Defect shots optional`}
-          </Text>
-        )}
-      </View>
+        <Text style={styles.ctaSub}>
+          {uploading
+            ? `Uploading ${uploadedCount} photos…`
+            : requiredUploaded >= TOTAL_REQUIRED
+            ? 'All required angles captured · Uploads in slot order'
+            : `${TOTAL_REQUIRED} required · Defect shots optional`}
+        </Text>
+      </StickyFooter>
     </Screen>
   );
 }
@@ -338,7 +336,7 @@ const styles = StyleSheet.create({
   tipText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 16, paddingBottom: 28,
+    padding: 16,
     backgroundColor: colors.surface,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     ...shadows.floating,

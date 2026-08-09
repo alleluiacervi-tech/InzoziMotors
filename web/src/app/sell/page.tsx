@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Sell your car in Kigali',
   description:
-    'Bring your car to an Sawa center once. We run the 150-point inspection, shoot the 36 standard photos, publish the listing, verify the buyer and process the RRA transfer. Free valuation, no account needed.',
+    'Bring your car to a Sawa center once. We run the 150-point inspection, shoot the 36 standard photos, publish the listing, verify the buyer and process the RRA transfer. Free valuation, no account needed.',
   alternates: { canonical: '/sell' },
   openGraph: {
     title: `Sell your car with ${SITE.name}`,
@@ -53,12 +53,12 @@ const WHAT_WE_DO: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'chart',
     title: 'We price it on evidence',
-    body: 'We show you what comparable cars are listed and sold for on Sawa, then you set the asking price. You can change it at any time while the car is live.',
+    body: 'We show you what comparable cars are listed and sold for on Sawa Cars, then you set the asking price. You can change it at any time while the car is live.',
   },
   {
     icon: 'user',
     title: 'We verify the buyer',
-    body: 'Buyers request through Sawa, not through your phone number. Your car is reserved for one buyer at a time, and we confirm who they are before a handover is scheduled.',
+    body: 'Buyers request through Sawa Cars, not through your phone number. Your car is reserved for one buyer at a time, and we confirm who they are before a handover is scheduled.',
   },
   {
     icon: 'document',
@@ -114,7 +114,7 @@ export default async function SellPage() {
                 What&apos;s your car worth in Kigali?
               </h1>
               <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-content-secondary">
-                Priced from cars actually listed and sold on Sawa — never a lookup table. If the
+                Priced from cars actually listed and sold on Sawa Cars — never a lookup table. If the
                 number works, we inspect it on 150 points, photograph it to one standard, publish
                 the listing, verify the buyer and process the RRA transfer with you at the center.
               </p>
@@ -215,7 +215,7 @@ export default async function SellPage() {
               <Badge tone="success">Only when it sells</Badge>
               <h3 className="mt-4 text-title-sm font-extrabold text-content">Success commission</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                A small share of the sale price, charged when the handover completes at an Sawa
+                A small share of the sale price, charged when the handover completes at a Sawa
                 center. It is quoted with your certification fee, before inspection. If the car
                 does not sell, there is nothing to pay.
               </p>
@@ -258,7 +258,7 @@ export default async function SellPage() {
                 two minutes, and you never do it again.
               </p>
               <p className="mt-4 text-body leading-relaxed text-content-secondary">
-                It is also the reason there are no fake listings on Sawa. Every seller on this
+                It is also the reason there are no fake listings on Sawa Cars. Every seller on this
                 marketplace is a verified person, checked by our team.
               </p>
             </div>

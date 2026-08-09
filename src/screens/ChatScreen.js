@@ -7,9 +7,16 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
-import { showToast } from '../components/Feedback';
+import { showToast, showConfirm, showActionSheet } from '../components/Feedback';
 import { colors, radius, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
+
+const REPORT_REASONS = [
+  { label: 'Scam or fraud', icon: 'warning-outline' },
+  { label: 'Harassment or abuse', icon: 'sad-outline' },
+  { label: 'Spam', icon: 'megaphone-outline' },
+  { label: 'Something else', icon: 'chatbox-ellipses-outline' },
+];
 
 const QUICK_REPLIES = [
   "Is this still available?",
@@ -51,11 +58,18 @@ function PinnedCarCard({ car, onViewListing }) {
 }
 
 export default function ChatScreen({ navigation, route }) {
-  const name = route.params?.name || 'Akagera Auto Group';
   const convId = route.params?.convId || 'c1';
   const car = route.params?.car || null;
-  const { getMessages, sendMessage, loadConversationMessages, getOrCreateConversation, sendTyping, typingConvId } = useApp();
+  const {
+    getMessages, sendMessage, loadConversationMessages, getOrCreateConversation,
+    sendTyping, typingConvId, setActiveConversation, conversations,
+    blockUser, reportConversation,
+  } = useApp();
   const [activeConvId, setActiveConvId] = useState(route.params?.convId);
+  // A push tap or deep link carries only convId — resolve the display name
+  // from the conversation list rather than a hardcoded demo dealer.
+  const conversation = conversations.find((c) => c.id === (activeConvId || convId));
+  const name = route.params?.name || conversation?.name || 'Chat';
   const messages = getMessages(activeConvId || convId);
   const [text, setText] = useState('');
   const scrollRef = useRef(null);
@@ -83,11 +97,20 @@ export default function ChatScreen({ navigation, route }) {
 
   useEffect(() => {
     if (activeConvId && loadConversationMessages) {
+      // Tell the context which thread is on screen: its incoming messages
+      // stop bumping the unread badge, and the socket re-joins this room
+      // after a reconnect.
+      setActiveConversation(activeConvId);
       loadConversationMessages(activeConvId);
-      const timer = setInterval(() => loadConversationMessages(activeConvId), 5000);
-      return () => clearInterval(timer);
+      // Delivery is realtime via the user room now — the poll is only a
+      // safety net for a dead socket, so it can be slow.
+      const timer = setInterval(() => loadConversationMessages(activeConvId), 30000);
+      return () => {
+        clearInterval(timer);
+        setActiveConversation(null);
+      };
     }
-  }, [activeConvId, loadConversationMessages]);
+  }, [activeConvId, loadConversationMessages, setActiveConversation]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -106,6 +129,10 @@ export default function ChatScreen({ navigation, route }) {
       }
       setText('');
       setShowQuickReplies(false);
+      // Otherwise the other side keeps seeing "typing…" for another 1.5s
+      // after the message has already landed.
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      sendTyping(sendId, false);
     } catch (err) {
       // The optimistic bubble has already been rolled back by sendMessage —
       // without this the message just vanished with no explanation. Keep the
@@ -119,6 +146,53 @@ export default function ChatScreen({ navigation, route }) {
     send(reply);
   };
 
+  // Report / block — the safety actions Apple requires on any UGC surface.
+  const handleSafetyMenu = async () => {
+    const choice = await showActionSheet({
+      title: name,
+      options: [
+        { label: 'Report this conversation', icon: 'flag-outline' },
+        { label: `Block ${name}`, icon: 'hand-left-outline' },
+      ],
+    });
+
+    if (choice === 0) {
+      const reasonIdx = await showActionSheet({
+        title: 'What’s wrong?',
+        message: 'Our team reviews every report. The other person is not told.',
+        options: REPORT_REASONS,
+      });
+      if (reasonIdx === -1) return;
+      try {
+        await reportConversation(activeConvId || convId, REPORT_REASONS[reasonIdx].label);
+        showToast('Thanks — our team will take a look.', 'success');
+      } catch (err) {
+        showToast(err?.message || "The report didn't send. Check your connection and try again.", 'error');
+      }
+    }
+
+    if (choice === 1) {
+      if (!conversation?.otherId) {
+        showToast('Blocking is available once the conversation is live on the server.', 'info');
+        return;
+      }
+      const ok = await showConfirm({
+        title: `Block ${name}?`,
+        message: 'They won’t be able to message you, and this conversation disappears from your list. You can unblock later from support.',
+        confirmLabel: 'Block',
+        destructive: true,
+      });
+      if (!ok) return;
+      try {
+        await blockUser(conversation.otherId);
+        showToast(`${name} is blocked.`, 'success');
+        navigation.goBack();
+      } catch (err) {
+        showToast(err?.message || "Couldn't block right now. Try again.", 'error');
+      }
+    }
+  };
+
   const handleArrangeViewing = () => {
     send("I'd like to arrange a viewing. What times work for you this week?");
   };
@@ -129,14 +203,24 @@ export default function ChatScreen({ navigation, route }) {
         title={name}
         onBack={() => navigation.goBack()}
         right={
-          car ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {car ? (
+              <Pressable
+                style={styles.headerBtn}
+                onPress={() => navigation.navigate('VehicleDetail', { car })} accessibilityRole="button" accessibilityLabel="View listing"
+              >
+                <Ionicons name="car-outline" size={18} color={colors.textSecondary} />
+              </Pressable>
+            ) : null}
             <Pressable
               style={styles.headerBtn}
-              onPress={() => navigation.navigate('VehicleDetail', { car })} accessibilityRole="button" accessibilityLabel="Cars"
+              onPress={handleSafetyMenu}
+              accessibilityRole="button"
+              accessibilityLabel="Report or block"
             >
-              <Ionicons name="car-outline" size={18} color={colors.textSecondary} />
+              <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
             </Pressable>
-          ) : null
+          </View>
         }
       />
 
@@ -252,7 +336,7 @@ const styles = StyleSheet.create({
   pinnedTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   pinnedPrice: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 2 },
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-  pinnedBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  pinnedBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
   viewListingBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: colors.greenTint,

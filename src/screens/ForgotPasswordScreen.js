@@ -93,7 +93,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
           <Text style={styles.sub}>
             {step === 0
               ? 'Tell us the email on your account and we will send a 6-digit reset code.'
-              : `If ${email} has an Sawa account, a 6-digit code is on its way. It expires in 30 minutes.`}
+              : `If ${email} has a Sawa Cars account, a 6-digit code is on its way. It expires in 30 minutes.`}
           </Text>
 
           {step === 0 ? (
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 13,
-    fontSize: 15, color: colors.textPrimary,
+    fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary,
   },
   codeInput: { fontSize: 22, fontFamily: fonts.extraBold, letterSpacing: 8, textAlign: 'center' },
   inputError: { borderColor: colors.danger },

@@ -19,7 +19,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Every car bought through Sawa and handed over at an Sawa center comes with{' '}
+          Every car bought through Sawa Cars and handed over at a Sawa center comes with{' '}
           {RETURN_WINDOW_DAYS} days to change your mind. The window opens on the day of the
           handover and closes {RETURN_WINDOW_DAYS} days later.
         </p>
@@ -115,7 +115,7 @@ const SECTIONS: LegalSection[] = [
             warranty claim, if one applies, goes through Support.
           </li>
           <li>
-            Vehicles not handed over at an Sawa center. If a buyer and seller arrange something
+            Vehicles not handed over at a Sawa center. If a buyer and seller arrange something
             privately, we are not in the middle of it and the guarantee does not attach.
           </li>
           <li>Modifications made to the car after you took it.</li>

@@ -6,6 +6,7 @@ import { useFonts } from 'expo-font';
 import { AppProvider } from './src/context/AppContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import linking from './src/navigation/linking';
+import { navigationRef, initPushNavigation, flushPendingPushNavigation } from './src/utils/pushNavigation';
 import AnimatedSplash from './src/components/AnimatedSplash';
 import FeedbackHost from './src/components/Feedback';
 import { getJSON } from './src/storage';
@@ -29,6 +30,9 @@ export default function App() {
       .catch(() => setInitialRoute('Welcome'));
   }, []);
 
+  // Route push-notification taps to their subject (chat thread, car, order).
+  useEffect(() => initPushNavigation(), []);
+
   // Fonts gate everything (the splash itself uses them); the storage read only
   // gates the navigator — the splash shows immediately and covers the wait.
   // If loading *fails*, fontsLoaded stays false forever — proceeding with the
@@ -44,7 +48,11 @@ export default function App() {
           // land on the car rather than the home feed. Without it the website's
           // "Open in app" buttons and every push-notification tap on a cold
           // start discarded their path. See src/navigation/linking.js.
-          <NavigationContainer linking={linking}>
+          <NavigationContainer
+            ref={navigationRef}
+            linking={linking}
+            onReady={flushPendingPushNavigation}
+          >
             <StatusBar style="dark" />
             <RootNavigator initialRoute={initialRoute} />
           </NavigationContainer>

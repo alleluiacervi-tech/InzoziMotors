@@ -43,7 +43,7 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
     if (err instanceof ApiError) {
       // 401 is deliberately vague — never confirm which half was wrong.
       if (err.status === 401) return { error: 'That email and password do not match.' }
-      if (err.isNetworkError) return { error: 'We could not reach Sawa. Please try again.' }
+      if (err.isNetworkError) return { error: 'We could not reach Sawa Cars. Please try again.' }
       return { error: err.message }
     }
     return { error: 'Something went wrong. Please try again.' }
@@ -74,7 +74,7 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
       if (err.status === 409) {
         return { fieldErrors: { email: 'That email already has an account. Sign in instead.' } }
       }
-      if (err.isNetworkError) return { error: 'We could not reach Sawa. Please try again.' }
+      if (err.isNetworkError) return { error: 'We could not reach Sawa Cars. Please try again.' }
       return { error: err.message }
     }
     return { error: 'Something went wrong. Please try again.' }

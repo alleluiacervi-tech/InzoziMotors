@@ -4,7 +4,6 @@
 
 @layer base {
   :root {
-    --font-inter: ui-sans-serif, system-ui, sans-serif;
     /* Header height, so anchor links and sticky offsets agree everywhere */
     --header-h: 68px;
   }
@@ -33,7 +32,10 @@
 
   body {
     @apply bg-surface-page text-content antialiased;
-    font-family: var(--font-inter);
+    /* No font-family here on purpose. Tailwind's preflight already sets
+       var(--font-satoshi) on <html> (see layout.tsx) — a leftover
+       `var(--font-inter)` override on body meant the four Satoshi files were
+       downloaded on every page and never painted a single glyph. */
     text-rendering: optimizeLegibility;
   }
 

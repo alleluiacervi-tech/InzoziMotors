@@ -168,17 +168,17 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
               >
                 <Text style={[
                   styles.dateDay,
-                  !d.available && { color: colors.border },
+                  !d.available && { color: colors.textDisabled },
                   selectedDate === d.key && { color: '#fff' },
                 ]}>{d.label}</Text>
                 <Text style={[
                   styles.dateNum,
-                  !d.available && { color: colors.border },
+                  !d.available && { color: colors.textDisabled },
                   selectedDate === d.key && { color: '#fff' },
                 ]}>{d.date}</Text>
                 <Text style={[
                   styles.dateMonth,
-                  !d.available && { color: colors.border },
+                  !d.available && { color: colors.textDisabled },
                   selectedDate === d.key && { color: 'rgba(255,255,255,0.8)' },
                 ]}>{d.month}</Text>
                 {!d.available && <Text style={styles.dateUnavailableText}>Closed</Text>}
@@ -205,7 +205,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
                 >
                   <Text style={[
                     styles.timeLabel,
-                    !t.available && { color: colors.border },
+                    !t.available && { color: colors.textDisabled },
                     selectedTime === t.label && { color: '#fff' },
                   ]}>{t.label}</Text>
                   {!t.available && <Text style={styles.timeUnavail}>Booked</Text>}
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   dateDay: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
   dateNum: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
   dateMonth: { fontSize: 11, color: colors.textMuted },
-  dateUnavailableText: { fontSize: 10, color: colors.border, fontFamily: fonts.semiBold, marginTop: 2 },
+  dateUnavailableText: { fontSize: 10, color: colors.textDisabled, fontFamily: fonts.semiBold, marginTop: 2 },
   timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   timeSlot: {
     paddingHorizontal: 14, paddingVertical: 10,

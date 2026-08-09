@@ -45,7 +45,7 @@ export default function PromisePage() {
       <PageHeader
         eyebrow="The Sawa Promise"
         title="Our promise to every customer"
-        lede="Buying or renting a car is one of the biggest decisions you will make. These five guarantees apply to every single vehicle on Sawa — for sale or for rent, first listing or fiftieth."
+        lede="Buying or renting a car is one of the biggest decisions you will make. These five guarantees apply to every single vehicle on Sawa Cars — for sale or for rent, first listing or fiftieth."
         actions={
           <>
             <Button href="/cars" trailingIcon={<Icon name="arrow-right" size={18} />}>

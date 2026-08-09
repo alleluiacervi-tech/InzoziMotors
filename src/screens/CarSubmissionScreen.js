@@ -278,7 +278,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
                   </Text>
                   <Text style={styles.aiSuggestSub}>
                     {comparablesCount
-                      ? `Based on ${comparablesCount} similar ${form.make} cars on Sawa`
+                      ? `Based on ${comparablesCount} similar ${form.make} cars on Sawa Cars`
                       : 'Based on current Kigali market data'}
                   </Text>
                   {form.askingPrice > 0 && (
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: colors.textPrimary,
+    fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary,
   },
   inputMulti: { height: 84, paddingTop: 12 },
   photoGrid: { flexDirection: 'row', gap: 10 },

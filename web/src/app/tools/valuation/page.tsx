@@ -12,10 +12,10 @@ import { cars } from '@/lib/api'
 export const metadata: Metadata = {
   title: 'Free car valuation',
   description:
-    'What is your car worth in Kigali today? A free market valuation priced from cars actually listed and sold on Sawa — never a lookup table. No account needed.',
+    'What is your car worth in Kigali today? A free market valuation priced from cars actually listed and sold on Sawa Cars — never a lookup table. No account needed.',
   alternates: { canonical: '/tools/valuation' },
   openGraph: {
-    title: 'Free car valuation — Sawa',
+    title: 'Free car valuation — Sawa Cars',
     url: '/tools/valuation',
     images: ['/opengraph-image'],
   },
@@ -40,7 +40,7 @@ export default async function ValuationPage() {
       <PageHeader
         eyebrow="Free tool"
         title="What is your car worth today?"
-        lede="Priced from cars actually listed and sold on Sawa — never a lookup table. Where we do not have enough comparable cars to be sure, we say so instead of inventing a figure."
+        lede="Priced from cars actually listed and sold on Sawa Cars — never a lookup table. Where we do not have enough comparable cars to be sure, we say so instead of inventing a figure."
       />
       <Section tone="page">
         <Container>

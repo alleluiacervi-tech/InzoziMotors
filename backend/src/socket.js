@@ -16,6 +16,12 @@ module.exports = function attachSocket(io) {
   });
 
   io.on('connection', (socket) => {
+    // Every device sits in its user's room from the moment it connects —
+    // message delivery fans out to user rooms (routes/messages.js), so the
+    // conversation list stays live even when no thread is open. Conversation
+    // rooms below now exist only for typing indicators.
+    socket.join(`user:${socket.user.id}`);
+
     // Join a conversation room — only participants may join (no eavesdropping)
     socket.on('join_conversation', async (conversationId) => {
       try {

@@ -1,8 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { api } from '@/lib/api'
 import { fmtUSD, fmtRWF } from '@/components/ui'
+
+// Secondary action grammar on this page — the tabs already use it.
+const secondaryBtn =
+  'px-4 py-2.5 text-sm font-semibold text-center whitespace-nowrap bg-white text-gray-600 border border-gray-200 rounded-xl hover:border-brand transition-colors'
 
 const STATUS_COLORS: Record<string, string> = {
   pending:   'bg-warning-tint text-warning-text',
@@ -138,20 +143,31 @@ export default function HandoversPage() {
                 </div>
               )}
               {tab === 'confirmed' && (
-                <button
-                  onClick={() => complete(h.id)}
-                  disabled={actionId === h.id}
-                  className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-50"
-                >
-                  {actionId === h.id ? 'Working…' : 'Handover Done — Mark Sold'}
-                </button>
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={() => complete(h.id)}
+                    disabled={actionId === h.id}
+                    className="flex-1 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    {actionId === h.id ? 'Working…' : 'Handover Done — Mark Sold'}
+                  </button>
+                  {/* The deal is agreed, so the sale agreement can be issued */}
+                  <Link href={`/handovers/${h.id}/contract`} className={secondaryBtn}>
+                    Contract
+                  </Link>
+                </div>
               )}
               {tab === 'complete' && (
-                <div className="mt-4 flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-                  <span>Completed — car sold{h.booking_id ? ` · Ref ${h.booking_id}` : ''}</span>
-                  {h.confirmed_at && (
-                    <span>Confirmed {new Date(h.confirmed_at).toLocaleDateString()}</span>
-                  )}
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <div className="flex flex-1 items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+                    <span>Completed — car sold{h.booking_id ? ` · Ref ${h.booking_id}` : ''}</span>
+                    {h.confirmed_at && (
+                      <span>Confirmed {new Date(h.confirmed_at).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                  <Link href={`/handovers/${h.id}/contract`} className={secondaryBtn}>
+                    Contract
+                  </Link>
                 </div>
               )}
             </div>

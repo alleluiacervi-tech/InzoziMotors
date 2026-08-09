@@ -235,7 +235,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               <Text style={styles.footerLink}>Settings</Text>
             </Pressable>
           </View>
-          <Text style={styles.version}>Sawa v1.0 · Kigali, Rwanda</Text>
+          <Text style={styles.version}>Sawa Cars v1.0 · Kigali, Rwanda</Text>
         </ScrollView>
       </Animated.View>
     </View>
@@ -425,11 +425,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
   },
-  footerDot: { color: colors.border, fontSize: 14 },
+  footerDot: { color: colors.textDisabled, fontSize: 14 },
   version: {
     fontFamily: fonts.regular,
     fontSize: 11,
-    color: colors.border,
+    color: colors.textDisabled,
     paddingHorizontal: 20,
   },
 });

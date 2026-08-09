@@ -55,7 +55,7 @@ const buildGroups = (verificationValue) => [
     title: 'Support',
     items: [
       { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
-      { icon: 'star-outline', label: 'Rate Sawa', comingSoon: 'App store rating will be available after launch.' },
+      { icon: 'star-outline', label: 'Rate Sawa Cars', comingSoon: 'App store rating will be available after launch.' },
     ],
   },
   {
@@ -159,7 +159,7 @@ export default function SettingsScreen({ navigation }) {
       } else if (err?.status === 401) {
         setDeleteError('That password is not correct.');
       } else if (err?.isNetworkError) {
-        setDeleteError("We couldn't reach Sawa. Check your connection and try again.");
+        setDeleteError("We couldn't reach Sawa Cars. Check your connection and try again.");
       } else {
         setDeleteError(err?.message || 'Something went wrong. Please try again.');
       }
@@ -226,7 +226,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
         )}
 
-        <Text style={styles.version}>Sawa v1.0.0</Text>
+        <Text style={styles.version}>Sawa Cars v1.0.0</Text>
       </ScrollView>
 
       <Modal visible={deleteOpen} transparent animationType="fade" onRequestClose={() => setDeleteOpen(false)}>
@@ -237,7 +237,7 @@ export default function SettingsScreen({ navigation }) {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Confirm deletion</Text>
             <Text style={styles.modalBody}>
-              Enter your password to permanently delete your Sawa account.
+              Enter your password to permanently delete your Sawa Cars account.
             </Text>
 
             <TextInput

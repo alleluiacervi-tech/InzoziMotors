@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import CarZoneMap from '../components/CarZoneMap';
+import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { MOCK_INSPECTION_RESULT, buildReportFromApi } from '../data/inspectionData';
 import inspectionsApi from '../api/inspections';
@@ -120,26 +121,15 @@ export default function InspectionReportScreen({ navigation, route }) {
     return (
       <Screen background={colors.bg}>
         <BackHeader title="Inspection Report" onBack={() => navigation.goBack()} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
-          {failed || !isApiCar ? (
-            <>
-              <Ionicons name="document-text-outline" size={40} color={colors.textMuted} />
-              <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
-                Report not available
-              </Text>
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
-                We couldn&apos;t load the inspection report for this car. Check your connection and try again.
-              </Text>
-            </>
-          ) : (
-            <>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary }}>
-                Loading inspection report…
-              </Text>
-            </>
-          )}
-        </View>
+        {failed || !isApiCar ? (
+          <ErrorState
+            icon="document-text-outline"
+            title="Report not available"
+            sub="We couldn't load the inspection report for this car. Check your connection and try again."
+          />
+        ) : (
+          <LoadingState label="Loading inspection report…" />
+        )}
       </Screen>
     );
   }
@@ -237,7 +227,7 @@ export default function InspectionReportScreen({ navigation, route }) {
             ) : (
               <View style={styles.zoneFlagRow}>
                 <Ionicons name="checkmark-circle" size={13} color={colors.green} />
-                <Text style={[styles.zoneFlagText, { color: colors.green }]}>
+                <Text style={[styles.zoneFlagText, { color: colors.greenText }]}>
                   All items passed — no issues found in this zone
                 </Text>
               </View>
@@ -423,14 +413,14 @@ const styles = StyleSheet.create({
   catName: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 6 },
   barTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border },
   barFill: { height: 4, borderRadius: 2 },
-  flagHint: { fontSize: 11, color: colors.amber, marginTop: 4 },
+  flagHint: { fontSize: 11, color: colors.amberText, marginTop: 4 },
   catScore: { fontSize: 15, fontFamily: fonts.extraBold },
   catMax: { fontSize: 11, color: colors.textMuted, fontFamily: fonts.semiBold },
   flagsSection: { marginTop: 12, gap: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   flagRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   flagText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },
   allPassRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
-  allPassText: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold },
+  allPassText: { fontSize: 12, color: colors.greenText, fontFamily: fonts.semiBold },
   explainer: {
     marginHorizontal: 16, marginBottom: 12,
     backgroundColor: colors.surface,
@@ -450,6 +440,6 @@ const styles = StyleSheet.create({
   },
   footerCertified: { borderColor: colors.green + '55', backgroundColor: colors.greenTint },
   footerTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  footerTitleCertified: { color: colors.green },
+  footerTitleCertified: { color: colors.greenText },
   footerSub: { fontSize: 11, color: colors.textSecondary, marginTop: 3, lineHeight: 16 },
 });

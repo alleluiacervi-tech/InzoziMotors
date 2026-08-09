@@ -208,7 +208,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Pressable
                 style={styles.circleBtn}
                 onPress={() => Share.share({
-                  message: `${car.title} — ${formatPrice(price)} on Sawa. Every car 150-point inspected.`,
+                  message: `${car.title} — ${formatPrice(price)} on Sawa Cars. Every car 150-point inspected.`,
                 }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
               >
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
@@ -523,14 +523,14 @@ export default function VehicleDetailScreen({ navigation, route }) {
       <View style={[styles.cta, { paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.ctaPrice}>
           <Text style={styles.ctaPriceLabel}>{isAuction ? 'Current bid' : 'Price'}</Text>
-          <Text style={styles.ctaPriceValue}>{formatPrice(price)}</Text>
-          <Text style={styles.ctaPriceRwf}>{formatRWF(price)}</Text>
+          <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>{formatPrice(price)}</Text>
+          <Text style={styles.ctaPriceRwf} numberOfLines={1}>{formatRWF(price)}</Text>
         </View>
         <Pressable style={styles.waBtn} onPress={contactWhatsApp} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
         </Pressable>
         <Button
-          title={isAuction ? 'Place a Bid' : 'Request via Sawa'}
+          title={isAuction ? 'Place a Bid' : 'Request via Sawa Cars'}
           style={{ flex: 1 }}
           onPress={() => navigation.navigate('Checkout', { car })}
         />
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
   linkStateBtnText: { fontSize: 15, fontFamily: fonts.extraBold, color: '#FFFFFF' },
-  gallery: { height: 320, backgroundColor: colors.border },
+  gallery: { height: 320, backgroundColor: colors.navyDeep },
   heroImage: { width, height: 320 },
   galleryBar: {
     position: 'absolute', left: 16, right: 16,
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   highDemandBadge: {
     backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5,
   },
-  highDemandText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.amber },
+  highDemandText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.amberText },
   sparklineCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   sparklineLeft: { flex: 1, gap: 3 },
   sparklineTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary },
   priceDropRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  priceDropText: { fontVariant: ['tabular-nums'], fontSize: 11, fontFamily: fonts.bold, color: colors.green },
+  priceDropText: { fontVariant: ['tabular-nums'], fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   sparklineStable: { fontSize: 11, color: colors.textMuted },
   marketAvgText: { fontSize: 11, color: colors.textMuted },
   sparklineRight: { alignItems: 'flex-end', gap: 2 },
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center',
   },
   inspectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  inspectionSub: { fontSize: 12, color: colors.green, fontFamily: fonts.semiBold, marginTop: 2 },
+  inspectionSub: { fontSize: 12, color: colors.greenText, fontFamily: fonts.semiBold, marginTop: 2 },
   trustChips: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap' },
   promiseLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 12 },
   promiseLinkText: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.primary },
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   similarTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 15 },
   similarPrice: { fontVariant: ['tabular-nums'], fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
   similarCert: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  similarCertText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  similarCertText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
   dutyLink: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.borderSoft,
     paddingHorizontal: 20, paddingTop: 12, ...shadows.floating,
   },
-  ctaPrice: { minWidth: 90 },
+  ctaPrice: {},
   ctaPriceLabel: { fontSize: 12, color: colors.textSecondary },
   ctaPriceValue: { fontVariant: ['tabular-nums'], fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
   ctaPriceRwf: { fontSize: 11, color: colors.textMuted, marginTop: 1 },

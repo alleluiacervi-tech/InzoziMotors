@@ -36,6 +36,17 @@ export function Header({ user }: { user: User | null }) {
     return () => { document.body.style.overflow = '' }
   }, [open])
 
+  // Escape closes the drawer — keyboard users had no way out of it short of
+  // tabbing to the X button.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href))
 
@@ -48,7 +59,7 @@ export function Header({ user }: { user: User | null }) {
       }`}
     >
       <div className="mx-auto flex h-full max-w-content items-center gap-4 px-5 sm:px-8 lg:px-12">
-        <Link href="/" aria-label="Sawa — home" className="shrink-0">
+        <Link href="/" aria-label="Sawa Cars — home" className="shrink-0">
           <Logo size={17} />
         </Link>
 

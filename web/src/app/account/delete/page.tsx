@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { buildMetadata } from '@/lib/metadata'
 import { getCurrentUser } from '@/lib/session'
 import { CONTACT } from '@/lib/site'
-import { Container, Section } from '@/components/ui'
+import { Button, Container, Section } from '@/components/ui'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The public account-deletion page.
@@ -22,7 +22,7 @@ import { Container, Section } from '@/components/ui'
 export const metadata = buildMetadata({
   title: 'Delete your account',
   description:
-    'How to permanently delete your Sawa account and what happens to your data, including identity documents and records of completed sales.',
+    'How to permanently delete your Sawa Cars account and what happens to your data, including identity documents and records of completed sales.',
   path: '/account/delete',
 })
 
@@ -36,7 +36,7 @@ const REMOVED = [
 ]
 
 const KEPT = [
-  'Records of cars that have already changed hands through Sawa, which we are required to keep',
+  'Records of cars that have already changed hands through Sawa Cars, which we are required to keep',
   'Reviews written about a completed sale — these belong to the person who wrote them',
   'Fee records for sales that already completed',
 ]
@@ -47,9 +47,13 @@ export default async function DeleteAccountPage() {
 
   return (
     <Section>
-      <Container className="max-w-2xl py-12 sm:py-16">
-        <h1 className="text-display-sm font-extrabold tracking-tight text-content">
-          Delete your Sawa account
+      {/* The measure lives on an inner wrapper: max-w-* on Container itself
+          loses to Container's own max-w-content at equal specificity, which
+          used to stretch this copy across the full 1400px frame. */}
+      <Container>
+        <div className="mx-auto max-w-2xl">
+        <h1 className="text-display font-extrabold tracking-tight text-content">
+          Delete your Sawa Cars account
         </h1>
         <p className="mt-4 text-body leading-relaxed text-content-secondary">
           You can delete your account at any time, from the app or from this website. Deletion is
@@ -67,19 +71,16 @@ export default async function DeleteAccountPage() {
               .
             </li>
             <li>
-              <strong className="text-content">In the Sawa app:</strong> open Settings, scroll to
+              <strong className="text-content">In the Sawa Cars app:</strong> open Settings, scroll to
               &ldquo;Danger zone&rdquo; and tap <em>Delete my account</em>.
             </li>
           </ol>
           <p className="mt-4 text-caption leading-relaxed text-content-secondary">
             Either way you will be asked for your password to confirm it is really you.
           </p>
-          <Link
-            href="/signin?next=/dashboard/profile"
-            className="mt-6 inline-flex h-12 items-center rounded-xl bg-content px-6 text-caption font-bold text-surface transition-opacity hover:opacity-90"
-          >
+          <Button href="/signin?next=/dashboard/profile" variant="dark" size="md" className="mt-6">
             Sign in to delete my account
-          </Link>
+          </Button>
         </div>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
@@ -134,6 +135,7 @@ export default async function DeleteAccountPage() {
           </Link>{' '}
           for what we hold and why.
         </p>
+        </div>
       </Container>
     </Section>
   )

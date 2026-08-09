@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import Button from '../components/Button';
+import StickyFooter from '../components/StickyFooter';
 import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
 
@@ -86,7 +87,7 @@ export default function FiltersScreen({ navigation, route }) {
           {FUEL.map((f) => <Chip key={f} label={f} active={selected.fuel === f} onPress={() => toggle('fuel', f)} />)}
         </View>
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Sawa guarantees</Text>
+        <Text style={[styles.label, { marginTop: 22 }]}>Sawa Cars guarantees</Text>
         <Pressable style={styles.toggleRow} onPress={() => setInspectedOnly((v) => !v)}>
           <Text style={styles.toggleLabel}>150-point inspected only</Text>
           <View style={[styles.switchTrack, inspectedOnly && styles.switchTrackOn]}>
@@ -102,7 +103,7 @@ export default function FiltersScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <StickyFooter style={styles.footer}>
         <Pressable style={styles.reset} onPress={() => setSelected({ make: null, body: null, fuel: null, maxPrice: null })}>
           <Text style={styles.resetText}>Reset</Text>
         </Pressable>
@@ -113,7 +114,7 @@ export default function FiltersScreen({ navigation, route }) {
             navigation.navigate('SearchResults', { filters: selected });
           }}
         />
-      </View>
+      </StickyFooter>
     </Screen>
   );
 }
@@ -136,8 +137,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, paddingHorizontal: 10, paddingVertical: 5,
     borderRadius: radius.pill,
   },
-  includedChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  includedChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   reset: { paddingHorizontal: 22, paddingVertical: 16, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border },
   resetText: { fontSize: 15, fontFamily: fonts.bold, color: colors.slate700 },
 });

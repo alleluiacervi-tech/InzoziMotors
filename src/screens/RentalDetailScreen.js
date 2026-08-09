@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, Share, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import Button from '../components/Button';
 import PhotoViewer from '../components/PhotoViewer';
+import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
@@ -40,27 +41,18 @@ export default function RentalDetailScreen({ navigation, route }) {
     // Catalogue still loading → spinner; loaded but id unknown → honest miss.
     const notFound = (rentalCars || []).length > 0 || !rentalId;
     return (
-      <View style={[styles.root, styles.linkState]}>
+      <View style={styles.root}>
         <StatusBar style="dark" />
         {notFound ? (
-          <>
-            <Ionicons name="key-outline" size={40} color={colors.textMuted} />
-            <Text style={styles.linkStateTitle}>This rental isn&apos;t available</Text>
-            <Text style={styles.linkStateSub}>It may have been booked or removed from the fleet.</Text>
-            <Pressable
-              style={styles.linkStateBtn}
-              onPress={() => navigation.goBack()}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <Text style={styles.linkStateBtnText}>Go back</Text>
-            </Pressable>
-          </>
+          <ErrorState
+            icon="key-outline"
+            title="This rental isn't available"
+            sub="It may have been booked or removed from the fleet."
+            actionLabel="Go back"
+            onAction={() => navigation.goBack()}
+          />
         ) : (
-          <>
-            <ActivityIndicator color={colors.primary} />
-            <Text style={styles.linkStateSub}>Loading this rental…</Text>
-          </>
+          <LoadingState label="Loading this rental…" />
         )}
       </View>
     );
@@ -98,7 +90,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             </Pressable>
             <Pressable
               style={styles.circleBtn}
-              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
+              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa Cars` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
             >
               <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
             </Pressable>
@@ -202,7 +194,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           </View>
 
           {/* What's included */}
-          <Text style={styles.sectionTitle}>Every Sawa rental includes</Text>
+          <Text style={styles.sectionTitle}>Every Sawa Cars rental includes</Text>
           <View style={styles.includesGrid}>
             {RENTAL_INCLUDES.map((item) => (
               <View key={item.label} style={styles.includeCard}>
@@ -237,7 +229,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>How renting works</Text>
           {[
             { n: '1', t: 'Book your dates', d: 'Choose pickup date and duration — instant confirmation.' },
-            { n: '2', t: 'Pick up at an Sawa center', d: 'Bring your driving licence and ID. Pay at pickup.' },
+            { n: '2', t: 'Pick up at a Sawa center', d: 'Bring your driving licence and ID. Pay at pickup.' },
             { n: '3', t: 'Drive & return', d: 'Return to the same center. Deposit refunded after a quick check.' },
           ].map((step) => (
             <View key={step.n} style={styles.stepRow}>
@@ -267,7 +259,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             style={styles.waBtn}
             onPress={() => openWhatsApp(
               SAWA_WHATSAPP,
-              `Hi Sawa, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
+              `Hi Sawa Cars, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
             )} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp"
           >
             <Ionicons name="logo-whatsapp" size={24} color="#fff" />
@@ -292,14 +284,6 @@ export default function RentalDetailScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  linkState: { justifyContent: 'center', alignItems: 'center', padding: 32, gap: 10 },
-  linkStateTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  linkStateSub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' },
-  linkStateBtn: {
-    marginTop: 10, backgroundColor: colors.primary,
-    paddingHorizontal: 22, paddingVertical: 11, borderRadius: radius.lg,
-  },
-  linkStateBtnText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
   gallery: { height: 300, backgroundColor: colors.border },
   heroImage: { width, height: 300 },
   galleryBar: {
@@ -364,7 +348,7 @@ const styles = StyleSheet.create({
   dateDay: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
   dateNum: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   dateMonth: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted },
-  dateTextBlocked: { color: colors.border },
+  dateTextBlocked: { color: colors.textDisabled },
   blockedLine: {
     position: 'absolute', top: '50%', left: 6, right: 6, height: 1.5,
     backgroundColor: colors.border, transform: [{ rotate: '-18deg' }],
@@ -384,7 +368,7 @@ const styles = StyleSheet.create({
   priceRowLast: { borderBottomWidth: 0 },
   priceLabel: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.medium, color: colors.textSecondary },
   priceValue: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  priceSave: { fontVariant: ['tabular-nums'], fontSize: 11, fontFamily: fonts.semiBold, color: colors.green, marginTop: 2 },
+  priceSave: { fontVariant: ['tabular-nums'], fontSize: 11, fontFamily: fonts.semiBold, color: colors.greenText, marginTop: 2 },
   priceRwf: { fontVariant: ['tabular-nums'], fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, marginTop: 2 },
   priceSub: { fontVariant: ['tabular-nums'], fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
   minDaysNote: {
@@ -414,7 +398,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, alignItems: 'center', justifyContent: 'center',
   },
   inspectionTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  inspectionSub: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.green, marginTop: 2 },
+  inspectionSub: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.greenText, marginTop: 2 },
   stepRow: { flexDirection: 'row', gap: 12, marginBottom: 14 },
   stepNum: {
     width: 26, height: 26, borderRadius: 13,

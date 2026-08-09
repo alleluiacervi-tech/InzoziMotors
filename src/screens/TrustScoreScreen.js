@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
+import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 import reviewsApi from '../api/reviews';
@@ -35,7 +36,7 @@ const SCORE_COMPONENTS = [
     label: 'Response Rate',
     maxPts: 20,
     icon: 'chatbubble-outline',
-    color: colors.amber,
+    color: colors.amberText,
     getPts: (p) => Math.round(((p.responseRate || 0) / 100) * 20),
     description: 'Messages replied to within 24 hours',
     improve: 'Reply to every buyer inquiry within 24h. Consistent response earns full 20 pts.',
@@ -45,7 +46,7 @@ const SCORE_COMPONENTS = [
     label: 'Buyer Reviews',
     maxPts: 20,
     icon: 'star-outline',
-    color: '#F59E0B',
+    color: colors.amberText,
     getPts: (p) => Math.round(((p.avgRating || 0) / 5) * 20),
     description: 'Average star rating × 4',
     improve: 'Ask satisfied buyers to leave a review after handover. 5-star average = 20 pts.',
@@ -53,9 +54,9 @@ const SCORE_COMPONENTS = [
 ];
 
 function getGrade(score) {
-  if (score >= 85) return { letter: 'A', label: 'Excellent', color: colors.green };
+  if (score >= 85) return { letter: 'A', label: 'Excellent', color: colors.greenText };
   if (score >= 70) return { letter: 'B', label: 'Good', color: colors.statusScheduled };
-  if (score >= 55) return { letter: 'C', label: 'Fair', color: colors.amber };
+  if (score >= 55) return { letter: 'C', label: 'Fair', color: colors.amberText };
   return { letter: 'D', label: 'Needs work', color: colors.alertRed };
 }
 
@@ -134,7 +135,7 @@ function ComponentRow({ comp, profile, expanded, onToggle }) {
           {pts === comp.maxPts && (
             <View style={[styles.improveCard, { backgroundColor: colors.greenTint }]}>
               <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-              <Text style={[styles.improveText, { color: colors.green }]}>Maximum score reached!</Text>
+              <Text style={[styles.improveText, { color: colors.greenText }]}>Maximum score reached!</Text>
             </View>
           )}
         </View>
@@ -189,28 +190,17 @@ export default function TrustScoreScreen({ navigation, route }) {
     return (
       <Screen background={colors.bg}>
         <BackHeader title="Trust Score" onBack={() => navigation.goBack()} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
-          {loading ? (
-            <>
-              <ActivityIndicator color={colors.primary} />
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary }}>
-                Loading trust score…
-              </Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="ribbon-outline" size={40} color={colors.textMuted} />
-              <Text style={{ fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }}>
-                {isLoggedIn ? 'Trust score not available' : 'Sign in to see your trust score'}
-              </Text>
-              <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' }}>
-                {isLoggedIn
-                  ? "We couldn't load this trust score. Check your connection and try again."
-                  : 'Your score builds from ID verification, completed sales, response rate and buyer reviews.'}
-              </Text>
-            </>
-          )}
-        </View>
+        {loading ? (
+          <LoadingState label="Loading trust score…" />
+        ) : (
+          <ErrorState
+            icon="ribbon-outline"
+            title={isLoggedIn ? 'Trust score not available' : 'Sign in to see your trust score'}
+            sub={isLoggedIn
+              ? "We couldn't load this trust score. Check your connection and try again."
+              : 'Your score builds from ID verification, completed sales, response rate and buyer reviews.'}
+          />
+        )}
       </Screen>
     );
   }
@@ -252,8 +242,8 @@ export default function TrustScoreScreen({ navigation, route }) {
         <View style={styles.quickStats}>
           {[
             { icon: 'car-outline', label: 'Sales', value: profile.completedSales || 0, color: colors.primary },
-            { icon: 'chatbubble-outline', label: 'Response', value: `${profile.responseRate || 0}%`, color: colors.amber },
-            { icon: 'star', label: 'Rating', value: `${(profile.avgRating || 0).toFixed(1)} ⭐`, color: '#F59E0B' },
+            { icon: 'chatbubble-outline', label: 'Response', value: `${profile.responseRate || 0}%`, color: colors.amberText },
+            { icon: 'star', label: 'Rating', value: `${(profile.avgRating || 0).toFixed(1)} ⭐`, color: colors.amberText },
             { icon: 'chatbox-outline', label: 'Reviews', value: profile.totalReviews || profile.reviewCount || 0, color: colors.primary },
           ].map((s, i) => (
             <View key={s.label} style={[styles.quickStat, i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.borderSoft }]}>
@@ -318,7 +308,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill,
   },
-  verifiedText: { fontSize: 12, fontFamily: fonts.bold, color: colors.green },
+  verifiedText: { fontSize: 12, fontFamily: fonts.bold, color: colors.greenText },
   quickStats: {
     flexDirection: 'row', backgroundColor: colors.surface,
     borderBottomWidth: 1, borderBottomColor: colors.borderSoft,

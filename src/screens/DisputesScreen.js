@@ -114,7 +114,7 @@ export default function DisputesScreen({ navigation, route }) {
         <View style={styles.guaranteeCard}>
           <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
           <Text style={styles.guaranteeText}>
-            Every car handed over at an Sawa center carries a 7-day drive-it guarantee. If something
+            Every car handed over at a Sawa center carries a 7-day drive-it guarantee. If something
             is wrong, raise it here and our team mediates directly.
           </Text>
         </View>
@@ -205,7 +205,7 @@ export default function DisputesScreen({ navigation, route }) {
               <Text style={styles.disputeReason}>{d.reason}</Text>
               {d.resolution ? (
                 <View style={styles.resolutionBox}>
-                  <Text style={styles.resolutionLabel}>Sawa's response</Text>
+                  <Text style={styles.resolutionLabel}>Sawa Cars' response</Text>
                   <Text style={styles.resolutionText}>{d.resolution}</Text>
                 </View>
               ) : null}

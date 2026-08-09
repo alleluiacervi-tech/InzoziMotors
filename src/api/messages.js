@@ -20,6 +20,20 @@ export const messages = {
   sendMessage: async (id, text) => {
     return await api.post(`/messages/conversations/${id}`, { text });
   },
+
+  // Chat safety — report a conversation to the Sawa team
+  reportConversation: async (id, reason, messageId = null) => {
+    return await api.post(`/messages/conversations/${id}/report`, { reason, message_id: messageId });
+  },
+
+  // Stop all messaging with a user (their threads disappear from your list)
+  blockUser: async (userId) => {
+    return await api.post(`/messages/users/${userId}/block`, {});
+  },
+
+  unblockUser: async (userId) => {
+    return await api.delete(`/messages/users/${userId}/block`);
+  },
 };
 
 export default messages;

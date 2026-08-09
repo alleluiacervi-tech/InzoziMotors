@@ -19,7 +19,7 @@ export function useSellerGate(navigation) {
       if (!isLoggedIn) {
         const ok = await showConfirm({
           title: 'Sign in to sell',
-          message: 'Selling on Sawa needs an account — we verify every seller before a car goes live.',
+          message: 'Selling on Sawa Cars needs an account — we verify every seller before a car goes live.',
           confirmLabel: 'Sign In',
           cancelLabel: 'Not now',
         });
@@ -43,7 +43,7 @@ export function useSellerGate(navigation) {
         title: rejected ? 'Re-verify your identity' : 'Verify your identity first',
         message: rejected
           ? 'Your last submission was not accepted. Send clearer photos of your ID and we will re-check within 24 hours.'
-          : 'Every Sawa seller is verified before listing — it takes about two minutes and only has to be done once.',
+          : 'Every Sawa Cars seller is verified before listing — it takes about two minutes and only has to be done once.',
         confirmLabel: rejected ? 'Re-submit Documents' : 'Verify Now',
         cancelLabel: 'Not now',
       });

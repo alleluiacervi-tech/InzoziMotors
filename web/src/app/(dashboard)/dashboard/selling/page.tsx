@@ -243,7 +243,7 @@ export default async function SellingPage() {
                       </div>
 
                       <p className="mt-2">
-                        <span className="text-[21px] font-extrabold tracking-[-0.02em] text-brand">
+                        <span className="text-price font-extrabold tracking-[-0.02em] text-brand">
                           {formatUSD(car.price)}
                         </span>
                         <span className="ml-2 text-caption text-content-muted">

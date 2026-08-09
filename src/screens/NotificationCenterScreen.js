@@ -23,7 +23,7 @@ const TYPE_CONFIG = {
   },
   listing_update: {
     icon: 'megaphone-outline',
-    color: colors.amber,
+    color: colors.amberText,
     bg: colors.amberTint,
     label: 'Update',
   },
@@ -70,7 +70,7 @@ function NotificationRow({ notification, onPress, onMarkRead }) {
         </Text>
         <Text style={styles.notifBody} numberOfLines={2}>{notification.body}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={14} color={colors.border} />
+      <Ionicons name="chevron-forward" size={14} color={colors.textDisabled} />
     </Pressable>
   );
 }
@@ -282,6 +282,6 @@ const styles = StyleSheet.create({
   notifTitleUnread: { fontFamily: fonts.extraBold },
   notifBody: { fontSize: 12, color: colors.textSecondary, lineHeight: 17 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
-  emptyTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },
-  emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32, lineHeight: 19 },
 });

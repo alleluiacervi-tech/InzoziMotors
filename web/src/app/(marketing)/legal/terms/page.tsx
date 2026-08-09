@@ -7,7 +7,7 @@ import { RETURN_WINDOW_DAYS } from '@/lib/business'
 export const metadata: Metadata = {
   title: 'Terms of service',
   description:
-    'The terms covering accounts, buying, selling, fees and liability on Sawa. A plain-language draft describing how the platform actually operates.',
+    'The terms covering accounts, buying, selling, fees and liability on Sawa Cars. A plain-language draft describing how the platform actually operates.',
   alternates: { canonical: '/legal/terms' },
 }
 
@@ -19,8 +19,8 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>
           {SITE.name} operates a certified used-car marketplace in Kigali, Rwanda, consisting of
-          this website, the Sawa mobile applications for Android and iOS, and the
-          inspection and handover centers where our team works. “Sawa”, “we” and “us” mean that
+          this website, the Sawa Cars mobile applications for Android and iOS, and the
+          inspection and handover centers where our team works. “Sawa Cars”, “we” and “us” mean that
           business. “You” means anyone using any of those.
         </p>
         <p>
@@ -86,7 +86,7 @@ const SECTIONS: LegalSection[] = [
           any time before the handover at no charge.
         </p>
         <ul>
-          <li>Payment happens in person at an Sawa center. Never through the app or this site.</li>
+          <li>Payment happens in person at a Sawa center. Never through the app or this site.</li>
           <li>
             We check both parties’ documents at the handover and process the RRA ownership
             transfer with you. Registration documents typically complete within 2–3 working days.
@@ -263,7 +263,7 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>
           We will update this page when the platform changes, and we will notify account holders
-          of material changes through the app and by email. Continuing to use Sawa after a
+          of material changes through the app and by email. Continuing to use Sawa Cars after a
           change means you accept the updated terms. A transaction is governed by the terms in
           force on the day it was agreed.
         </p>
@@ -276,7 +276,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of service"
-      lede="How accounts, buying, selling, fees and liability work on Sawa — written the way the platform actually behaves."
+      lede="How accounts, buying, selling, fees and liability work on Sawa Cars — written the way the platform actually behaves."
       sections={SECTIONS}
     />
   )

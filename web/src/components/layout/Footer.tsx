@@ -53,12 +53,15 @@ export function Footer() {
                 <h2 className="mb-4 text-eyebrow font-bold uppercase text-white/40">
                   {group.heading}
                 </h2>
-                <ul className="space-y-2.5">
+                {/* -my-2 cancels the added tap padding at the group edges so
+                    the rhythm reads the same while each link gets a ~36px
+                    target instead of bare 15px text. */}
+                <ul className="-my-2">
                   {group.links.map((link) => (
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-caption text-white/65 transition-colors hover:text-white"
+                        className="inline-flex py-2 text-caption text-white/65 transition-colors hover:text-white"
                       >
                         {link.label}
                       </Link>
@@ -91,7 +94,7 @@ export function Footer() {
             © {year} {SITE.name}. Kigali, Rwanda. All rights reserved.
           </p>
           <p className="text-micro text-white/45">
-            Buyers pay nothing. Payment happens in person at an Sawa center — never online.
+            Buyers pay nothing. Payment happens in person at a Sawa center — never online.
           </p>
         </div>
       </div>

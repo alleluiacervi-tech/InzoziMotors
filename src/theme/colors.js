@@ -18,7 +18,10 @@ export const colors = {
   // Soft wash of the brand red — icon chips and other quiet brand surfaces.
   primaryTint: '#FDEBEC',
   blueLight: '#EE8B90',
-  blueTint: '#F3F2F2',
+  // Cool wash for informational chips (message, map, scheduled). Was #F3F2F2 —
+  // the same gray as greenTint, so "blue" and "green" surfaces rendered
+  // identically and both read as disabled.
+  blueTint: '#EFF6FF',
 
   // Badge Colors
   jeondan: '#CC050F',
@@ -29,23 +32,31 @@ export const colors = {
 
   // Semantic — true success green (pass / verified / online / savings).
   // Brand red is reserved for prices, CTAs and active states only.
+  // `green`/`amber` are ICON/GRAPHIC colours (≥3:1 on white is enough for
+  // glyphs); TEXT must use `greenText`/`amberText`, which clear 4.5:1 on
+  // white AND on their tint washes.
   green: '#16A34A',
+  greenText: '#166534',
   greenLight: '#4ADE80',
-  greenTint: '#F3F2F2',
+  // A real green wash at last. This was #F3F2F2 — plain gray — which made
+  // every "Certified"/"ID Verified" chip in the app look disabled and the
+  // comparison table's "green highlight" literally not green.
+  greenTint: '#EAF6EE',
   amber: '#D97706',
   amberTint: '#FEF3C7',
   amberText: '#B45309',
 
-  // Submission Pipeline Status Colors
-  statusPending: '#D97706',
+  // Submission Pipeline Status Colors — every fg/bg pair clears 4.5:1,
+  // because these render as 10-12px pill text throughout the app.
+  statusPending: '#B45309',
   statusPendingBg: '#FEF3C7',
   statusScheduled: '#1D4ED8',
   statusScheduledBg: '#EFF6FF',
-  statusLive: '#16A34A',
+  statusLive: '#166534',
   statusLiveBg: '#EAF6EE',
   statusReserved: '#7C3AED',
   statusReservedBg: '#F5F3FF',
-  statusSold: '#6B7280',
+  statusSold: '#57606C',
   statusSoldBg: '#F5F5F5',
   statusRejected: '#B91C1C',
   statusRejectedBg: '#FEF2F2',
@@ -68,6 +79,10 @@ export const colors = {
   textPrimary: '#1B1313',
   textSecondary: '#423737',
   textMuted: '#7A6E6E',
+  // For genuinely de-emphasised text (closed dates, booked slots, disabled
+  // steps). Screens used to reach for `border` (#E8E3E3, 1.3:1 — invisible);
+  // this stays clearly quieter than textMuted while remaining legible.
+  textDisabled: '#A39797',
   textOnDark: '#FFFFFF',
   slate700: '#1B1313',
   slate600: '#423737',

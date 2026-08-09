@@ -9,8 +9,8 @@ import { colors, radius, shadows, fonts } from '../theme';
 // conditions + FAQ, so buyers know every step before they commit.
 const STEPS = [
   { icon: 'paper-plane-outline', title: 'Request the car', desc: 'One tap, no payment. The car is reserved for you while we confirm with the seller. Cancelling before handover is always free.' },
-  { icon: 'call-outline', title: 'We arrange everything', desc: 'Sawa contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.' },
-  { icon: 'shield-checkmark-outline', title: 'Handover at the center', desc: 'Meet at an Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.' },
+  { icon: 'call-outline', title: 'We arrange everything', desc: 'Sawa Cars contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.' },
+  { icon: 'shield-checkmark-outline', title: 'Handover at the center', desc: 'Meet at a Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.' },
   { icon: 'document-text-outline', title: 'Ownership transfer', desc: 'We process the RRA transfer with you at the center. New registration documents typically complete within 2–3 working days.' },
   { icon: 'car-outline', title: 'Insure before you drive', desc: "Third-party insurance is required before the car leaves the center. Bring a policy, or our team helps you arrange one on the spot." },
   { icon: 'time-outline', title: 'Drive it for 7 days', desc: "Your guarantee window. If the car doesn't match its inspection report, bring it back — see the conditions below." },

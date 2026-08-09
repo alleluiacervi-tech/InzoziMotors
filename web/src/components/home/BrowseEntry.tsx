@@ -35,7 +35,7 @@ export function BrowseEntry({ cars }: { cars: Car[] }) {
       (car) => car.body_type?.toLowerCase() === family.toLowerCase() && car.images?.[0]
     )
     if (live) {
-      return { image: live.images![0], alt: `${live.title} — photographed at an Sawa center` }
+      return { image: live.images![0], alt: `${live.title} — photographed at a Sawa center` }
     }
     return BODY_TYPE_IMAGES[family]
   }

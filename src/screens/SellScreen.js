@@ -26,7 +26,7 @@ const VERIFY_BANNER = {
   none: {
     icon: 'shield-outline',
     title: 'Verify your identity to sell',
-    body: 'One two-minute check, done once. It is what keeps every Sawa listing real.',
+    body: 'One two-minute check, done once. It is what keeps every Sawa Cars listing real.',
     cta: 'Start verification',
   },
   pending: {

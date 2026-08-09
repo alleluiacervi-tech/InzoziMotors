@@ -17,7 +17,7 @@ const LEDGER: { claim: string; proof: string; featured?: boolean }[] = [
   },
   {
     claim: 'Drive It for 7 Days',
-    proof: 'Every purchase handed over at an Sawa center carries the Sawa 7-Day Guarantee, in writing.',
+    proof: 'Every purchase handed over at a Sawa center carries the Sawa 7-Day Guarantee, in writing.',
   },
   {
     claim: 'Verified History',

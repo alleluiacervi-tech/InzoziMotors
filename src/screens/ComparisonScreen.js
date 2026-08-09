@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  certPillText: { fontSize: 10, fontFamily: fonts.bold, color: colors.green },
+  certPillText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
   removeChip: {
     position: 'absolute', top: 0, right: 0, zIndex: 2,
     width: 22, height: 22, borderRadius: 11,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
   },
   legendDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.green },
-  legendText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.green },
+  legendText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.greenText },
   table: {
     backgroundColor: colors.surface,
     marginHorizontal: 16, marginTop: 16,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   specCellWinner: { backgroundColor: colors.greenTint },
   specCellEmpty: { backgroundColor: colors.surfaceAlt },
   specValue: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textPrimary, textAlign: 'center' },
-  specValueWinner: { fontFamily: fonts.extraBold, color: colors.green },
+  specValueWinner: { fontFamily: fonts.extraBold, color: colors.greenText },
   winnerDot: {
     position: 'absolute', top: 6, right: 6,
     width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green,

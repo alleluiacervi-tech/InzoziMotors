@@ -37,7 +37,7 @@ export default async function ReferralsPage() {
   }
 
   const shareText = referral
-    ? `I sell and buy cars on Sawa — every car passes a 150-point inspection before it is listed. Use my code ${referral.code} when you sell yours and you get a discount on the seller commission. ${SITE.url}`
+    ? `I sell and buy cars on Sawa Cars — every car passes a 150-point inspection before it is listed. Use my code ${referral.code} when you sell yours and you get a discount on the seller commission. ${SITE.url}`
     : ''
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(shareText)}`
 
@@ -45,7 +45,7 @@ export default async function ReferralsPage() {
     <>
       <PageHeader
         title="Referrals"
-        description="Share Sawa with someone selling a car. When they redeem your code, they get a discount on the commission for their first completed sale."
+        description="Share Sawa Cars with someone selling a car. When they redeem your code, they get a discount on the commission for their first completed sale."
       />
 
       {error ? (
@@ -62,7 +62,7 @@ export default async function ReferralsPage() {
               <ReferralCode code={referral.code} />
 
               <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-secondary">
-                Your code is issued by Sawa and never changes. It works for anyone with an
+                Your code is issued by Sawa Cars and never changes. It works for anyone with an
                 account — the discount is applied automatically when their sale completes at a
                 center.
               </p>
@@ -87,7 +87,7 @@ export default async function ReferralsPage() {
                 <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
                   People who redeemed it
                 </p>
-                <p className="mt-2 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
+                <p className="mt-2 text-stat font-extrabold leading-none tracking-[-0.02em] text-content">
                   {referral.redemptions}
                 </p>
                 <p className="mt-2 text-caption leading-relaxed text-content-muted">
@@ -98,7 +98,7 @@ export default async function ReferralsPage() {
                 <p className="text-caption font-bold uppercase tracking-wide text-content-muted">
                   Times used
                 </p>
-                <p className="mt-2 text-[28px] font-extrabold leading-none tracking-[-0.02em] text-content">
+                <p className="mt-2 text-stat font-extrabold leading-none tracking-[-0.02em] text-content">
                   {referral.uses}
                 </p>
                 <p className="mt-2 text-caption leading-relaxed text-content-muted">

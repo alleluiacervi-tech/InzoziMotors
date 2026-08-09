@@ -49,7 +49,7 @@ export async function registerForPush() {
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'Sawa',
+        name: 'Sawa Cars',
         importance: Notifications.AndroidImportance.DEFAULT,
         lightColor: '#CC050F',
       });

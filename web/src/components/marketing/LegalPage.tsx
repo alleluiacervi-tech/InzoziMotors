@@ -54,9 +54,12 @@ export function LegalPage({
       <Section tone="page">
         <Container>
           <div className="grid gap-12 lg:grid-cols-[220px_1fr] lg:gap-16">
+            {/* min-w-0: a grid child's default min-width is `auto`, so the
+                chip rail's content width would otherwise become the DOCUMENT
+                width — every legal page scrolled sideways ~2000px on phones. */}
             <nav
               aria-label="On this page"
-              className="lg:sticky lg:top-[calc(var(--header-h)+24px)] lg:self-start"
+              className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+24px)] lg:self-start"
             >
               <h2 className="mb-4 text-eyebrow font-bold uppercase text-content-muted">
                 On this page
@@ -82,11 +85,11 @@ export function LegalPage({
               </ol>
             </nav>
 
-            <div>
+            <div className="min-w-0">
               <Alert tone="warning" title="Draft — pending legal review">
-                This document describes how Sawa actually operates today, written in
+                This document describes how Sawa Cars actually operates today, written in
                 plain language. It has not yet been reviewed by a qualified lawyer in Rwanda and
-                is not legal advice. The version handed to you at an Sawa center governs any
+                is not legal advice. The version handed to you at a Sawa center governs any
                 transaction.
               </Alert>
 

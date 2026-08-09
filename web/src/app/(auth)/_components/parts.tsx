@@ -9,7 +9,7 @@ import { Icon } from '@/components/ui'
 export function AuthHeading({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="mb-8">
-      <h1 className="text-[28px] font-extrabold leading-[1.12] tracking-[-0.03em] text-content sm:text-[32px]">
+      <h1 className="text-stat font-extrabold leading-[1.12] tracking-[-0.03em] text-content sm:text-price-lg">
         {title}
       </h1>
       {children ? (

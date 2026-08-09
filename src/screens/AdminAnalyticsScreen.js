@@ -277,11 +277,11 @@ export default function AdminAnalyticsScreen({ navigation }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Recent Activity</Text>
           {[
-            { icon: 'car-outline', text: 'Toyota RAV4 went live', time: '2h ago', color: colors.green },
+            { icon: 'car-outline', text: 'Toyota RAV4 went live', time: '2h ago', color: colors.greenText },
             { icon: 'person-outline', text: 'New seller: Jean Pierre H.', time: '4h ago', color: colors.statusScheduled },
             { icon: 'scan-outline', text: 'Honda CR-V inspection completed', time: '6h ago', color: colors.primary },
             { icon: 'checkmark-done-outline', text: 'BMW 3 Series marked sold', time: 'Yesterday', color: colors.textMuted },
-            { icon: 'alert-circle-outline', text: 'Subaru Forester — needs re-submit', time: 'Yesterday', color: colors.amber },
+            { icon: 'alert-circle-outline', text: 'Subaru Forester — needs re-submit', time: 'Yesterday', color: colors.amberText },
           ].map((item, i) => (
             <View key={i} style={[styles.activityRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: 10, marginTop: 10 }]}>
               <View style={[styles.activityIcon, { backgroundColor: item.color + '18' }]}>
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   funnelMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   funnelLabel: { fontSize: 12, fontFamily: fonts.bold, color: colors.textPrimary },
   funnelValue: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
-  funnelDrop: { fontSize: 11, color: colors.amber, fontFamily: fonts.semiBold },
+  funnelDrop: { fontSize: 11, color: colors.amberText, fontFamily: fonts.semiBold },
   centersGrid: { gap: 10, marginTop: 10 },
   centerCard: {
     backgroundColor: colors.surfaceAlt, borderRadius: radius.lg, padding: 12,
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   centerFill: { height: '100%', borderRadius: 3 },
   centerMeta: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
   capacityWarn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  capacityWarnText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amber },
+  capacityWarnText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amberText },
   activityRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   activityIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   activityText: { flex: 1, fontSize: 13, color: colors.textPrimary, fontFamily: fonts.semiBold },

@@ -111,10 +111,13 @@ app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded car photos publicly; KYC identity docs are NEVER served here —
-// they go through the admin-gated GET /id-verification/doc/:filename route.
+// Serve uploaded car photos publicly; KYC identity docs and sale contracts are
+// NEVER served here — they go through admin-gated routes
+// (GET /id-verification/doc/:filename and GET /contracts/:id/file).
+// Both 403s are mounted BEFORE the static handler so they win.
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 app.use('/uploads/id-docs', (req, res) => res.status(403).json({ error: 'Forbidden' }));
+app.use('/uploads/contracts', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads', express.static(uploadDir));
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
@@ -170,6 +173,7 @@ app.use('/auth',            require('./src/routes/auth'));
 app.use('/cars',            require('./src/routes/cars'));
 app.use('/submissions',     require('./src/routes/submissions'));
 app.use('/handovers',       require('./src/routes/handovers'));
+app.use('/contracts',       require('./src/routes/contracts'));
 app.use('/messages',        require('./src/routes/messages'));
 app.use('/notifications',   require('./src/routes/notifications'));
 app.use('/inspections',     require('./src/routes/inspections'));

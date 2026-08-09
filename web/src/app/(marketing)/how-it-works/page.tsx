@@ -10,7 +10,7 @@ import { BUYING_STEPS, SELLING_STEPS } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'How it works',
   description:
-    'Buying on Sawa in six steps, the refund conditions in full, what to bring to a handover, and how selling a car through our inspection centers works.',
+    'Buying on Sawa Cars in six steps, the refund conditions in full, what to bring to a handover, and how selling a car through our inspection centers works.',
   alternates: { canonical: '/how-it-works' },
 }
 
@@ -46,7 +46,7 @@ export default function HowItWorksPage() {
       <PageHeader
         eyebrow="How it works"
         title="Six steps to buy. Six steps to sell. No payment on either side of the screen."
-        lede="Sawa sits between the two of you for the whole transaction: we inspect the car, we publish the listing, we arrange the handover, and we process the ownership transfer with you at the center."
+        lede="Sawa Cars sits between the two of you for the whole transaction: we inspect the car, we publish the listing, we arrange the handover, and we process the ownership transfer with you at the center."
         actions={
           <>
             <Button href="/cars" trailingIcon={<Icon name="arrow-right" size={18} />}>
@@ -94,7 +94,7 @@ export default function HowItWorksPage() {
 
             <div>
               <Alert tone="info" title="The window starts at handover">
-                Seven days, counted from the day the car is handed to you at an Sawa center —
+                Seven days, counted from the day the car is handed to you at a Sawa center —
                 not from the day you requested it.
               </Alert>
               <p className="mt-6 text-body leading-relaxed text-content-secondary">

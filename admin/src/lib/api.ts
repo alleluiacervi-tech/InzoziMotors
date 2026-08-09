@@ -26,11 +26,29 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
     // 401 means the session is gone (expired, revoked, signed out elsewhere).
     // Surfacing it as a typed error lets the layout bounce to /login rather
     // than each page inventing its own handling.
-    const error = new Error(err.error || res.statusText) as Error & { status?: number }
+    const error = new Error(err.error || res.statusText) as ApiError
     error.status = res.status
+    // Structured refusals carry more than a sentence: the contract endpoints
+    // return a machine-readable `code`, a per-field `errors` list (422), and the
+    // conflicting row (409 CONTRACT_EXISTS). A form that maps those onto its own
+    // inputs needs them here — dropping them would cost a second round trip.
+    if (err.code) error.code = err.code
+    if (err.errors) error.errors = err.errors
+    if (err.contract) error.contract = err.contract
+    if (err.contract_number) error.contract_number = err.contract_number
     throw error
   }
   return res.json()
+}
+
+/** What a failed request() throws. `status` is always set; the rest only when
+ *  the backend sent a structured refusal. */
+export type ApiError = Error & {
+  status?: number
+  code?: string
+  errors?: { field: string; label: string; problem: string }[]
+  contract?: any
+  contract_number?: string
 }
 
 /** Sign in. Credentials go to this app's own route handler, never to the
@@ -100,6 +118,31 @@ export const api = {
     request<any>(`/handovers/${id}/complete`, { method: 'PATCH' }),
   updateCar: (id: string, data: any) =>
     request<any>(`/cars/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Contracts — the sale agreement. Every route is admin-only.
+  //
+  // The PDF itself is deliberately absent from this object: request() always
+  // parses the response as JSON, and a contract file is a binary stream. It is
+  // opened as a plain link to /api/backend/contracts/<id>/file (add ?download=1
+  // to force a save-as), which the same httpOnly cookie authenticates.
+  contractPrefill: (handoverId: string) =>
+    request<any>(`/contracts/handover/${handoverId}/prefill`),
+  generateContract: (handoverId: string, payload: any) =>
+    request<any>(`/contracts/handover/${handoverId}`, {
+      method: 'POST', body: JSON.stringify(payload),
+    }),
+  handoverContract: (handoverId: string) =>
+    request<any>(`/contracts/handover/${handoverId}`),
+  markContractSigned: (id: string) =>
+    request<any>(`/contracts/${id}/signed`, { method: 'PATCH' }),
+  supersedeContract: (id: string, reason: string) =>
+    request<any>(`/contracts/${id}/supersede`, {
+      method: 'POST', body: JSON.stringify({ reason }),
+    }),
+  contracts: (params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : ''
+    return request<any[]>(`/contracts${q}`)
+  },
 
   // Disputes — the 7-day return guarantee queue
   disputes: (status?: string) =>

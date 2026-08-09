@@ -11,7 +11,7 @@ import { Icon } from '@/components/ui'
 // so the first photo — the page's LCP element — ships in the HTML with its
 // preload hint rather than waiting for hydration.
 //
-// Photos are ours: every listing is shot by an Sawa photographer to the same
+// Photos are ours: every listing is shot by a Sawa photographer to the same
 // 36-angle standard, which is why the frames are consistent enough to put in a
 // fixed-ratio frame without letterboxing.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
         <Image
           key={images[active]}
           src={images[active]}
-          alt={`${title} — photo ${active + 1} of ${count}, shot at an Sawa inspection center`}
+          alt={`${title} — photo ${active + 1} of ${count}, shot at a Sawa inspection center`}
           fill
           sizes="(max-width: 1024px) 100vw, 780px"
           className="object-contain p-3"

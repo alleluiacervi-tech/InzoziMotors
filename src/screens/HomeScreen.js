@@ -225,7 +225,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.offlineNotice}>
             <Ionicons name="cloud-offline-outline" size={20} color={colors.amber} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.offlineTitle}>We couldn&apos;t reach Sawa</Text>
+              <Text style={styles.offlineTitle}>We couldn&apos;t reach Sawa Cars</Text>
               <Text style={styles.offlineSub}>
                 Check your connection — listings will appear as soon as we&apos;re back.
               </Text>
@@ -579,7 +579,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.footerLinkText}>Settings</Text>
             </Pressable>
           </View>
-          <Text style={styles.copyrightText}>© 2026 Sawa. All rights reserved.</Text>
+          <Text style={styles.copyrightText}>© 2026 Sawa Cars. All rights reserved.</Text>
         </View>
 
       </ScrollView>
@@ -861,6 +861,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   footerLinkText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textSecondary },
-  footerDivider: { fontSize: 12, color: colors.border },
+  footerDivider: { fontSize: 12, color: colors.textDisabled },
   copyrightText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
 });

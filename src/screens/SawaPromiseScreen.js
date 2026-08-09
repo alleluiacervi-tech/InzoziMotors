@@ -11,7 +11,7 @@ const PROMISES = [
   {
     icon: 'shield-checkmark',
     title: '150-Point Certification',
-    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa. No exceptions, no seller shortcuts.',
+    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa Cars. No exceptions, no seller shortcuts.',
   },
   {
     icon: 'refresh',
@@ -47,7 +47,7 @@ export default function SawaPromiseScreen({ navigation }) {
           <Text style={styles.heroTitle}>Our promise to every customer</Text>
           <Text style={styles.heroSub}>
             Buying or renting a car is one of the biggest decisions you'll make.
-            These five guarantees apply to every single vehicle on Sawa.
+            These five guarantees apply to every single vehicle on Sawa Cars.
           </Text>
         </View>
 
@@ -93,7 +93,7 @@ export default function SawaPromiseScreen({ navigation }) {
 
         {/* Fine print */}
         <Text style={styles.finePrint}>
-          The 7-day return guarantee applies to purchases handed over at an Sawa center.
+          The 7-day return guarantee applies to purchases handed over at a Sawa center.
           Deposit refunds follow the documented return check. Full terms available at any center.
         </Text>
 

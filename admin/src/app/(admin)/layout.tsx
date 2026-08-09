@@ -16,6 +16,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/submissions', icon: 'document', label: 'Submissions' },
       { href: '/inspections', icon: 'settings', label: 'Inspections' },
       { href: '/handovers', icon: 'key', label: 'Handovers' },
+      { href: '/contracts', icon: 'document', label: 'Contracts' },
       { href: '/disputes', icon: 'shield', label: 'Disputes' },
     ],
   },
@@ -102,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <LogoMark size={34} />
             <div>
               <p className="text-sm font-extrabold leading-none tracking-[-0.01em] text-white">
-                Sawa
+                Sawa Cars
               </p>
               <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
                 Operations

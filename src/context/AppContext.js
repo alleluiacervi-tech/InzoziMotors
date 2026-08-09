@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { DEFAULT_CAR_IMAGE, DEFAULT_CAR_IMAGES, STUDIO } from '../data/carImageAssets';
 import { categories, formatPrice, formatMiles, cars as mockCars, conversations as initialConversations, sellerListings as initialSellerListings } from '../data/cars';
 import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
@@ -232,6 +232,9 @@ export function AppProvider({ children }) {
 
   // Socket state
   const [socket, setSocket] = useState(null);
+  // The conversation currently open in ChatScreen (null when none). Drives
+  // "don't count unread while I'm reading it" and room re-join on reconnect.
+  const activeConvRef = useRef(null);
   const [typingConvId, setTypingConvId] = useState(null);
 
   // Expo push token for this device, held so logout can unregister it
@@ -435,9 +438,15 @@ export function AppProvider({ children }) {
       time: timeStr,
       unread: parseInt(conv.unread_count || 0),
       avatar: (otherName || 'I')[0].toUpperCase(),
-      online: true,
+      // The other participant's user id — what Block needs.
+      otherId: isBuyer ? conv.seller_id : conv.buyer_id,
+      // No presence system exists yet — a hardcoded green "online" dot on
+      // every user was a small lie a trust-first brand can't afford.
+      online: false,
       carId: conv.car_id,
-      carTitle: conv.car_title,
+      // LEFT JOIN server-side: a removed car no longer erases the thread,
+      // it just loses its title.
+      carTitle: conv.car_title || (conv.car_id ? conv.car_title : 'Listing removed'),
       carImage: conv.car_images?.[0] || null,
     };
   }, [currentUser?.id]);
@@ -771,6 +780,15 @@ export function AppProvider({ children }) {
           console.warn('Socket connection failed:', err?.message);
         });
 
+        // Socket.io reconnects by itself, but server-side room membership is
+        // lost with the old connection — re-join the thread that's open so
+        // typing indicators survive a reconnect.
+        newSocket.on('connect', () => {
+          if (activeConvRef.current) {
+            newSocket.emit('join_conversation', activeConvRef.current);
+          }
+        });
+
         newSocket.on('new_message', (message) => {
           setChatMessages((prev) => {
             const thread = prev[message.conversation_id] || [];
@@ -794,7 +812,11 @@ export function AppProvider({ children }) {
             };
           });
 
-          // Refresh conversations summaries
+          // Refresh conversations summaries. The unread count only grows for
+          // messages from the OTHER party in a thread that is NOT currently
+          // open — before this check the badge over-counted while you were
+          // literally reading the conversation.
+          const isOpenThread = activeConvRef.current === message.conversation_id;
           setConversations((prev) =>
             prev.map((c) =>
               c.id === message.conversation_id
@@ -802,7 +824,10 @@ export function AppProvider({ children }) {
                     ...c,
                     last: message.text,
                     time: new Date(message.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-                    unread: message.sender_id !== currentUser.id ? (c.unread || 0) + 1 : c.unread,
+                    unread:
+                      message.sender_id !== currentUser.id && !isOpenThread
+                        ? (c.unread || 0) + 1
+                        : c.unread,
                   }
                 : c
             )
@@ -866,7 +891,7 @@ export function AppProvider({ children }) {
       }
       if (isNetworkError(err)) {
         setBackendReachable(false);
-        const offline = new Error("We couldn't reach Sawa. Check your connection and try again.");
+        const offline = new Error("We couldn't reach Sawa Cars. Check your connection and try again.");
         offline.isNetworkError = true;
         setError(offline.message);
         throw offline;
@@ -917,7 +942,7 @@ export function AppProvider({ children }) {
       }
       if (isNetworkError(err)) {
         setBackendReachable(false);
-        const offline = new Error("We couldn't reach Sawa. Check your connection and try again.");
+        const offline = new Error("We couldn't reach Sawa Cars. Check your connection and try again.");
         offline.isNetworkError = true;
         setError(offline.message);
         throw offline;
@@ -1234,6 +1259,24 @@ export function AppProvider({ children }) {
     }
   }, [socket]);
 
+  // ChatScreen declares which thread is on screen (null on unmount). While a
+  // thread is active its incoming messages never bump the unread badge.
+  const setActiveConversation = useCallback((convId) => {
+    activeConvRef.current = convId && !String(convId).startsWith('new_') ? convId : null;
+  }, []);
+
+  // Block / report — the Apple-required safety actions on the chat surface.
+  const blockUser = useCallback(async (userId) => {
+    await messagesApi.blockUser(userId);
+    // The server hides the thread from the next fetch; drop it locally now.
+    const convList = await messagesApi.getConversations().catch(() => null);
+    if (convList) setConversations(convList.map(mapConversation));
+  }, [mapConversation]);
+
+  const reportConversation = useCallback(async (convId, reason) => {
+    await messagesApi.reportConversation(convId, reason);
+  }, []);
+
   const loadConversationMessages = useCallback(async (convId) => {
     if (convId.startsWith('new_')) return;
     joinConversation(convId);
@@ -1251,6 +1294,12 @@ export function AppProvider({ children }) {
         };
       });
       setChatMessages((prev) => ({ ...prev, [convId]: mapped }));
+      // The GET marked everything from the other party read server-side —
+      // mirror that locally so the badge drops the moment the thread opens
+      // instead of at the next full refetch.
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId && c.unread ? { ...c, unread: 0 } : c))
+      );
     } catch (err) {
       console.warn('Error fetching message history:', err);
     }
@@ -1553,7 +1602,9 @@ export function AppProvider({ children }) {
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
     // Chat messages
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
-    joinConversation, sendTyping, typingConvId,
+    joinConversation, sendTyping, typingConvId, setActiveConversation,
+    // Chat safety
+    blockUser, reportConversation,
     // Authentication
     currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, loading, error,
     // Push preference (Settings toggle)

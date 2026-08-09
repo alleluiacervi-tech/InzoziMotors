@@ -20,7 +20,9 @@ const config: Config = {
           bright: '#DE0714',
           deep: '#A50410',
           light: '#EE8B90',
-          tint: '#F3F2F2',
+          // The app's primaryTint — a soft red wash. This was #F3F2F2, which
+          // was actually mobile's (gray) blueTint pasted into the brand slot.
+          tint: '#FDEBEC',
         },
         // Dark surfaces — premium warm charcoal, red stays the accent
         ink: {
@@ -29,7 +31,9 @@ const config: Config = {
           700: '#3A2D29',
         },
         // Semantic — true success green. Never used for brand moments.
-        success: { DEFAULT: '#16A34A', light: '#4ADE80', tint: '#EAF6EE' },
+        // `text` variants clear 4.5:1 on white and on their tints — use them
+        // for copy; DEFAULT is for icons/graphics.
+        success: { DEFAULT: '#16A34A', light: '#4ADE80', tint: '#EAF6EE', text: '#166534' },
         warning: { DEFAULT: '#D97706', tint: '#FEF3C7', text: '#B45309' },
         danger: { DEFAULT: '#B4233A', tint: '#FBECEF', strong: '#B91C1C' },
         info: { DEFAULT: '#1D4ED8', tint: '#EFF6FF' },
@@ -37,15 +41,15 @@ const config: Config = {
         // Pipeline status tokens — identical keys to colors.js so a status
         // string coming off the API renders the same on web and mobile.
         status: {
-          pending: '#D97706',
+          pending: '#B45309',
           pendingBg: '#FEF3C7',
           scheduled: '#1D4ED8',
           scheduledBg: '#EFF6FF',
-          live: '#16A34A',
+          live: '#166534',
           liveBg: '#EAF6EE',
           reserved: '#7C3AED',
           reservedBg: '#F5F3FF',
-          sold: '#6B7280',
+          sold: '#57606C',
           soldBg: '#F5F5F5',
           rejected: '#B91C1C',
           rejectedBg: '#FEF2F2',
@@ -104,6 +108,12 @@ const config: Config = {
         // site-wide — every size below `title` is one of these four, and
         // nothing on the site renders under 12px.
         'title-sm': ['1.0625rem', { lineHeight: '1.35', letterSpacing: '-0.01em' }], // 17px — card/panel titles
+        // Money and stat tiers — ports of typography.price from the app's
+        // src/theme/index.js. These are what the seventeen text-[Npx] hacks
+        // were reaching for.
+        'price': ['1.3125rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }], //     21px — card prices
+        'price-lg': ['2rem', { lineHeight: '1.15', letterSpacing: '-0.03em' }], //      32px — detail-page price
+        'stat': ['1.75rem', { lineHeight: '1.15', letterSpacing: '-0.02em' }], //       28px — stat tiles
         'body': ['0.9375rem', { lineHeight: '1.6' }], //                                15px — default copy
         'caption': ['0.8125rem', { lineHeight: '1.5' }], //                             13px — spec strips, meta
         'micro': ['0.75rem', { lineHeight: '1.4' }], //                                 12px — footnotes, logistics

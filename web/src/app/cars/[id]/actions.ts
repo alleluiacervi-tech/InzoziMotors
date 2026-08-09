@@ -63,7 +63,7 @@ export async function requestCarAction(
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.isNetworkError) {
-        return { status: 'error', message: 'We could not reach Sawa. Please try again.' }
+        return { status: 'error', message: 'We could not reach Sawa Cars. Please try again.' }
       }
       if (err.status === 401) {
         return { status: 'error', message: 'Your session has expired. Sign in again to continue.' }

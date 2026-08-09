@@ -34,12 +34,24 @@ jobs:
   ops:
     name: ${{ inputs.action }}
     runs-on: ubuntu-latest
+    # No lever that mutates production should be able to run to the 6-hour
+    # default: a wedged one holds the deploy-production concurrency group, so it
+    # blocks every deploy behind it for the rest of the day.
+    #
+    # Sized for the slowest action, which is rollback, and sized ABOVE it rather
+    # than under: ops/rollback.sh still REBUILDS both Next.js apps on the host
+    # (20-40 minutes on this box). A cap that fires mid-build would kill it
+    # after the previous revision has been checked out and before anything is
+    # restarted — old code on disk, bad containers still serving, and the
+    # pointer not consumed. Job = sum of the step caps (2 + 50) plus slack.
+    timeout-minutes: 55
     environment:
       name: production
       url: https://sawacars.com
 
     steps:
       - name: Load the deploy key
+        timeout-minutes: 2
         env:
           KEY: ${{ secrets.VPS_SSH_KEY }}
           HOST: ${{ secrets.VPS_HOST }}
@@ -55,16 +67,25 @@ jobs:
           chmod 600 ~/.ssh/known_hosts
 
       - name: Run
+        # Long enough for a rollback's on-host rebuild to finish (see the job
+        # comment). Every other action is seconds.
+        timeout-minutes: 50
         env:
           HOST: ${{ secrets.VPS_HOST }}
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
           ACTION: ${{ inputs.action }}
+          # ops/rollback.sh stops for confirmation when the deploy it is undoing
+          # carried migrations. There is no terminal here, so the decision has
+          # to be made in advance: rolling back CODE only is the documented safe
+          # case for additive migrations. A destructive migration needs
+          # ops/restore.sh by hand, which this lever deliberately cannot do.
+          CONFIRM: continue
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" \
-              "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") bash -s" <<'REMOTE'
+              "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") CONFIRM=$(printf %q "$CONFIRM") bash -s" <<'REMOTE'
           set -euo pipefail
           APP_DIR="${APP_DIR:-}"
           if [ -z "$APP_DIR" ]; then
@@ -79,6 +100,10 @@ jobs:
           # file is the development one, which publishes the database port and
           # therefore collides with the running stack.
           COMPOSE="docker compose -f docker-compose.prod.yml"
+
+          # Consumed by ops/rollback.sh, which cannot ask an interactive
+          # question down an SSH heredoc.
+          export CONFIRM="${CONFIRM:-}"
 
           case "$ACTION" in
             status)

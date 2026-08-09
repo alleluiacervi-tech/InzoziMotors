@@ -55,7 +55,7 @@ export default function NotFound() {
           </h1>
           <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
             The car may have been sold and taken off the marketplace, or the link may be out of
-            date. Nothing on Sawa disappears without a reason — every listing is published and
+            date. Nothing on Sawa Cars disappears without a reason — every listing is published and
             removed by our team.
           </p>
 

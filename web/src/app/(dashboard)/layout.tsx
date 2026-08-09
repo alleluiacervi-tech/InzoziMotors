@@ -4,7 +4,7 @@ import { signOutAction } from '@/app/actions/auth'
 import { DashboardNav } from '@/components/dashboard/DashboardNav'
 import { VerificationNotice } from '@/components/dashboard/VerificationNotice'
 import { getUnreadCount } from '@/components/dashboard/data'
-import { Container, Icon } from '@/components/ui'
+import { Button, Container, Icon } from '@/components/ui'
 import { getCurrentUser } from '@/lib/session'
 import type { UserRole } from '@/lib/types'
 
@@ -64,13 +64,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
 
               <form action={signOutAction} className="ml-auto lg:ml-0">
-                <button
-                  type="submit"
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 text-caption font-bold text-content-secondary transition-colors hover:bg-surface-alt hover:text-content lg:w-full"
-                >
+                <Button type="submit" variant="outline" size="compact" className="lg:w-full">
                   <Icon name="logout" size={16} />
                   Sign out
-                </button>
+                </Button>
               </form>
             </div>
 

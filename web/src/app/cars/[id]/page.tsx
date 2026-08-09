@@ -102,7 +102,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const description = car.inspected
     ? `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali. Passed the Sawa 150-point inspection, photographed by our team, covered by the 7-day drive-it guarantee.`
-    : `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali, listed by Sawa.`
+    : `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali, listed by Sawa Cars.`
 
   const image = car.images?.[0]
 
@@ -151,7 +151,7 @@ export default async function CarDetailPage({ params }: PageProps) {
   // a seller's number to a signed-in buyer; a public page cannot, because it is
   // crawled — and because Sawa Cars is the middleman, so the conversation belongs
   // with us anyway.
-  const contactMessage = `Hi Sawa, I'm interested in the ${car.title} (${formatUSD(car.price)}) on your website. Is it still available?`
+  const contactMessage = `Hi Sawa Cars, I'm interested in the ${car.title} (${formatUSD(car.price)}) on your website. Is it still available?`
   const whatsappHref = `https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(contactMessage)}`
 
   const specs: Spec[] = [
@@ -281,7 +281,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <Card className="p-5 sm:p-6">
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
-                <p className="text-[32px] font-extrabold leading-none tracking-[-0.03em] text-brand">
+                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.price)}
                 </p>
                 <p className="mt-2 text-caption text-content-secondary">
@@ -373,7 +373,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
                   <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">
                     <Icon name="shield" size={14} className="mt-px shrink-0" />
-                    The Sawa 7-Day Guarantee · Handover at an Sawa center
+                    The Sawa 7-Day Guarantee · Handover at a Sawa center
                   </p>
                 </div>
 
@@ -415,7 +415,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
               <p className="mt-4 flex items-start gap-2 px-1 text-micro leading-relaxed text-content-muted">
                 <Icon name="location" size={14} className="mt-0.5" />
-                Handovers happen at an Sawa center in Kigali, with our team
+                Handovers happen at a Sawa center in Kigali, with our team
                 present for the documents and the RRA transfer.
               </p>
             </div>
@@ -443,7 +443,7 @@ export default async function CarDetailPage({ params }: PageProps) {
             {/* The provenance claim, stated exactly once on this page — three
                 facts above the report they produced. */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-line-soft bg-surface-alt px-5 py-4">
-              {['Inspected by our mechanics', 'Photographed at our center', 'Published by Sawa'].map(
+              {['Inspected by our mechanics', 'Photographed at our center', 'Published by Sawa Cars'].map(
                 (fact) => (
                   <p key={fact} className="flex items-center gap-1.5 text-caption font-semibold text-content-secondary">
                     <Icon name="check-circle" size={15} className="text-success" />
@@ -514,7 +514,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <div>
                 <p className="text-eyebrow font-bold uppercase text-brand">Similar cars</p>
                 <h2 className="mt-2 text-headline font-extrabold text-content">
-                  More {car.make} on Sawa
+                  More {car.make} on Sawa Cars
                 </h2>
               </div>
               <Button href={`/cars?make=${encodeURIComponent(car.make)}`} variant="outline" size="sm">
@@ -553,7 +553,7 @@ function SellerCard({ car }: { car: Car }) {
           <div>
             <p className="text-body font-bold text-content">{car.seller_name}</p>
             <p className="text-caption text-content-muted">
-              {verified ? 'Identity verified by Sawa' : 'Identity not yet verified'}
+              {verified ? 'Identity verified by Sawa Cars' : 'Identity not yet verified'}
             </p>
           </div>
         </div>
@@ -563,13 +563,13 @@ function SellerCard({ car }: { car: Car }) {
         {typeof car.seller_sales === 'number' && car.seller_sales > 0 ? (
           <p className="text-caption text-content-secondary">
             <span className="font-bold text-content">{car.seller_sales}</span> completed{' '}
-            {car.seller_sales === 1 ? 'sale' : 'sales'} through Sawa
+            {car.seller_sales === 1 ? 'sale' : 'sales'} through Sawa Cars
           </p>
         ) : null}
       </div>
 
       <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-muted">
-        You deal with Sawa, not the seller — the handover happens at our center.
+        You deal with Sawa Cars, not the seller — the handover happens at our center.
       </p>
     </Card>
   )

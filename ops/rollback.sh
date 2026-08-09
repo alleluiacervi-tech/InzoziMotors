@@ -19,6 +19,16 @@
 #                                        is why migrations should be additive.
 #   Destructive (dropped/renamed)      — restore from the backup deploy.sh
 #                                        took, with ops/restore.sh.
+#
+# KNOWN COST: this still REBUILDS on the production host — the same two Next.js
+# compiles that take 20-40 minutes on this box, now on the critical path of an
+# incident. It is that way because there is nowhere else to get the previous
+# images from: nothing tags or keeps them. Making the way back a pull of an
+# immutable per-commit tag is Phase 2 work (docs/DEPLOY-PHASE-2.md); doing it
+# needs a registry credential that outlives the deploy and a recorded previous
+# tag that is never "latest", or the rollback lever quietly becomes a no-op
+# that reports success. Until then, budget for the build: the Ops workflow's
+# step timeout is sized to let it finish.
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -67,7 +77,18 @@ if [ "${HAD_MIGRATIONS:-0}" -gt 0 ]; then
           ops/restore.sh <the dump deploy.sh took>
 
 WARNING
-  read -r -p "  Type 'continue' to roll back code only: " CONFIRM
+  # Ask a human when there is one. There often is not: this script is also
+  # reachable from the Ops workflow, where stdin is the heredoc carrying the
+  # script itself — a bare `read` there consumes the next LINE OF THIS FILE as
+  # if it were an answer, and then "rolls back" or refuses based on whatever
+  # that line happened to say. Read from the terminal explicitly, and when
+  # there is no terminal require the decision to have been made up front.
+  if [ -r /dev/tty ] && [ -t 1 ]; then
+    read -r -p "  Type 'continue' to roll back code only: " CONFIRM < /dev/tty
+  else
+    CONFIRM="${CONFIRM:-}"
+    [ -n "$CONFIRM" ] || die "migrations were applied and there is no terminal to ask — re-run with CONFIRM=continue once you have decided (see above)"
+  fi
   [ "$CONFIRM" = "continue" ] || die "stopped — nothing changed"
 fi
 

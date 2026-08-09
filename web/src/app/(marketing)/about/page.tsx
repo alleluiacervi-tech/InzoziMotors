@@ -5,7 +5,7 @@ import { CenterList } from '@/components/marketing/CenterList'
 import { CENTERS } from '@/lib/site'
 
 export const metadata: Metadata = {
-  title: 'About Sawa',
+  title: 'About Sawa Cars',
   description:
     'Sawa Cars is the middleman in Rwanda’s used-car market: we inspect every car on a 150-point check, photograph it ourselves and publish the listing under our own name. Three inspection centers in Kigali.',
   alternates: { canonical: '/about' },
@@ -48,7 +48,7 @@ export default function AboutPage() {
       <PageHeader
         eyebrow="About"
         title="The middleman, on purpose."
-        lede="Buying a used car in Kigali usually means trusting a stranger about a vehicle that arrived from another continent with a history nobody can check. Sawa exists to be the party in the middle who has actually seen the car."
+        lede="Buying a used car in Kigali usually means trusting a stranger about a vehicle that arrived from another continent with a history nobody can check. Sawa Cars exists to be the party in the middle who has actually seen the car."
         actions={
           <>
             <Button href="/cars" trailingIcon={<Icon name="arrow-right" size={18} />}>
@@ -84,7 +84,7 @@ export default function AboutPage() {
                 the only person who has ever looked under the bonnet.
               </p>
               <p>
-                So Sawa took the opposite position. We take the car in, run a 150-point check
+                So Sawa Cars took the opposite position. We take the car in, run a 150-point check
                 across its mechanics, body, electronics and documents, photograph it in a fixed
                 set of 36 angles, and publish the listing ourselves with the report attached. The
                 seller keeps control of the price. We keep control of the truth.

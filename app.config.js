@@ -28,6 +28,7 @@ export default ({ config }) => ({
   // that no screen requires — into every download.
   assetBundlePatterns: [
     'assets/cars/**',
+    'assets/banks/**',
     'assets/fonts/**',
     'assets/welcome-hero.jpg',
     'assets/icon.png',

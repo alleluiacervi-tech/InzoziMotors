@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -35,6 +35,10 @@ export default function SignUpScreen({ navigation }) {
   return (
     <Screen background={colors.surface}>
       <BackHeader onBack={() => navigation.goBack()} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <LogoMark size={54} />
         <Text style={styles.title}>Create account</Text>
@@ -94,6 +98,7 @@ export default function SignUpScreen({ navigation }) {
           </Text>
         </Pressable>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
@@ -111,6 +116,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     paddingHorizontal: 14,
     fontSize: 15,
+    fontFamily: fonts.medium,
     color: colors.textPrimary,
   },
   inputError: { borderColor: colors.danger, backgroundColor: colors.dangerTint },
@@ -124,7 +130,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  passwordInput: { flex: 1, fontSize: 15, color: colors.textPrimary },
+  passwordInput: { flex: 1, fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary },
   errorText: { fontSize: 12.5, color: colors.textSecondary, marginTop: 5, marginLeft: 4, lineHeight: 17 },
   footer: { textAlign: 'center', fontSize: 14, color: colors.textSecondary },
   link: { color: colors.primary, fontFamily: fonts.bold },

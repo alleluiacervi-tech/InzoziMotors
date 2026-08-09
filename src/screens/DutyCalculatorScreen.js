@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TextInput, Pressable,
+  View, Text, StyleSheet, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -47,6 +47,10 @@ export default function DutyCalculatorScreen({ navigation }) {
     <Screen background={colors.bg}>
       <BackHeader title="Import Duty Calculator" onBack={() => navigation.goBack()} />
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         {/* Intro */}
         <View style={styles.introCard}>
@@ -159,6 +163,7 @@ export default function DutyCalculatorScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
@@ -237,8 +242,8 @@ const styles = StyleSheet.create({
     margin: 16, backgroundColor: '#FEF3C7',
     borderRadius: radius.xl, padding: 16, alignItems: 'center', gap: 4,
   },
-  effectiveRateTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.amber, textTransform: 'uppercase', letterSpacing: 0.4 },
-  effectiveRateValue: { fontSize: 36, fontFamily: fonts.black, color: colors.amber },
+  effectiveRateTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.amberText, textTransform: 'uppercase', letterSpacing: 0.4 },
+  effectiveRateValue: { fontSize: 36, fontFamily: fonts.black, color: colors.amberText },
   effectiveRateDesc: { fontSize: 12, color: '#92400E', textAlign: 'center', lineHeight: 18 },
   rwfCard: {
     flexDirection: 'row', gap: 12, alignItems: 'flex-start',
