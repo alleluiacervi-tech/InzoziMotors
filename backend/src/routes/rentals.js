@@ -7,6 +7,8 @@ const { uploadPhotos, publicUploadUrl, verifyImageContent } = require('../middle
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
 
+const { sendRentalBooked } = require('../lib/mailer');
+
 const router = express.Router();
 
 // One definition of "booked ranges" — used by list, detail, and (as the
@@ -163,8 +165,17 @@ router.post('/:id/book', requireAuth, requireUuid('id'), async (req, res) => {
         meta: JSON.stringify({ bookingRef, rentalCarId: car.id }),
       });
 
-      return rows[0];
+      // car_title rides along for the confirmation email — RETURNING * only
+      // covers the bookings row, and "your rental car" is a poor receipt.
+      return { ...rows[0], car_title: car.title };
     });
+
+    pool.query('SELECT email, name FROM users WHERE id = $1', [req.user.id])
+      .then(({ rows: u }) => u[0] && sendRentalBooked(
+        u[0].email, u[0].name, booking.car_title || 'your rental car',
+        booking.start_date, booking.days, booking.booking_ref
+      ))
+      .catch(() => {});
 
     res.status(201).json(booking);
   } catch (err) {

@@ -8,6 +8,22 @@ const { recomputeTrustScore } = require('../lib/trust');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
 
+const {
+  sendPurchaseRequested, sendHandoverConfirmed, sendHandoverComplete,
+} = require('../lib/mailer');
+
+// Both parties' addresses in one query — the email senders are fire-and-forget
+// and run AFTER the transaction commits, so a mail outage can never roll back
+// a sale.
+async function contactsOf(client, ids) {
+  const { rows } = await client.query(
+    'SELECT id, email, name FROM users WHERE id = ANY($1)', [ids]
+  );
+  const map = {};
+  for (const r of rows) map[r.id] = r;
+  return map;
+}
+
 const router = express.Router();
 
 // POST /handovers — buyer requests a car (slot optional; Sawa arranges)
@@ -78,8 +94,16 @@ router.post('/', requireAuth, async (req, res) => {
         meta: JSON.stringify({ bookingId: booking_id, carId: car_id }),
       });
 
-      return { status: 201, body: rows[0] };
+      const who = await contactsOf(client, [req.user.id]);
+      return {
+        status: 201,
+        body: rows[0],
+        mail: { buyer: who[req.user.id], carTitle: carRes.rows[0].title },
+      };
     });
+    if (result.mail?.buyer) {
+      sendPurchaseRequested(result.mail.buyer.email, result.mail.buyer.name, result.mail.carTitle);
+    }
     res.status(result.status).json(result.body);
   } catch (err) {
     log.error('book handover error', { error: err.message });
@@ -209,8 +233,21 @@ router.patch('/:id/confirm', requireAdmin, requireUuid('id'), async (req, res) =
         });
       }
 
-      return { status: 200, body: updated };
+      const who = await contactsOf(client, [h.buyer_id, h.seller_id]);
+      const when = updated.center && updated.handover_date
+        ? `${updated.handover_date}${updated.handover_time ? ` at ${updated.handover_time}` : ''} — ${updated.center}`
+        : null;
+      return {
+        status: 200,
+        body: updated,
+        mail: { parties: [who[h.buyer_id], who[h.seller_id]], carTitle, when },
+      };
     });
+    if (result.mail) {
+      for (const p of result.mail.parties) {
+        if (p) sendHandoverConfirmed(p.email, p.name, result.mail.carTitle, result.mail.when);
+      }
+    }
     res.status(result.status).json(result.body);
   } catch (err) {
     log.error('confirm handover error', { error: err.message });
@@ -302,8 +339,18 @@ router.patch('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) 
         meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
       });
 
-      return { status: 200, body: { success: true } };
+      const who = await contactsOf(client, [h.buyer_id, h.seller_id]);
+      return {
+        status: 200,
+        body: { success: true },
+        mail: { buyer: who[h.buyer_id], seller: who[h.seller_id], carTitle },
+      };
     });
+    if (result.mail) {
+      const { buyer, seller, carTitle } = result.mail;
+      if (buyer) sendHandoverComplete(buyer.email, buyer.name, carTitle, true);
+      if (seller) sendHandoverComplete(seller.email, seller.name, carTitle, false);
+    }
     res.status(result.status).json(result.body);
   } catch (err) {
     log.error('complete handover error', { error: err.message });

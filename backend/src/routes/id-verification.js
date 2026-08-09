@@ -1,5 +1,6 @@
 const express = require('express');
 const { log } = require('../lib/log');
+const { sendIdDecision } = require('../lib/mailer');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
@@ -205,6 +206,11 @@ router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) =
     });
 
     await client.query('COMMIT');
+    // After the commit, fire-and-forget: the decision email is the one sellers
+    // actually wait on, but it must never be able to roll the decision back.
+    pool.query('SELECT email, name FROM users WHERE id = $1', [req.params.userId])
+      .then(({ rows: u }) => u[0] && sendIdDecision(u[0].email, u[0].name, decision === 'approved'))
+      .catch(() => {});
     res.json({ success: true, decision });
   } catch (err) {
     await client.query('ROLLBACK');
