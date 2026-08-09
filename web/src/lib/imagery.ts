@@ -83,8 +83,11 @@ export const BODY_TYPE_IMAGES: Record<string, { image: MarketingImage; alt: stri
     alt: 'Sedan in a violet studio',
   },
   Hatchback: {
-    image: unsplash('photo-1590362891991-f776e747a588', 1000),
-    alt: 'Compact hatchback parked on a city street',
+    // Verified by eye: a VW Golf, an actual hatchback. The previous id
+    // (photo-1590362891991) renders a Mercedes GLE — an SUV in a neon garage —
+    // so the tile contradicted its own label, which is worse than no image.
+    image: unsplash('photo-1471444928139-48c5bf5173f8', 1000),
+    alt: 'Black Volkswagen Golf hatchback parked by the sea',
   },
   Pickup: {
     image: unsplash('photo-1559416523-140ddc3d238c', 1000),

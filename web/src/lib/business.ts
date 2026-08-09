@@ -22,11 +22,38 @@ export type CertTier = {
 }
 
 /**
+ * Is this one of the seeded demo listings?
+ *
+ * The seed data ships with manufacturer press renders under /uploads/seed/, and
+ * those photos contradict their own titles — a "Kia Telluride" shown as a white
+ * fastback sedan, a "Defender 110" as a sleek GT. Under the site's core promise
+ * ("we inspect every car and photograph it ourselves") presenting those rows as
+ * certified inventory is the single worst trust signal on the site.
+ *
+ * Keyed off the image path because it is self-healing: a real listing's photos
+ * are uploaded through the 36-angle admin flow and never live under /seed/, so
+ * the moment real inventory exists this predicate stops matching, with no flag
+ * to remember to flip. Any real photo in the set makes the listing real.
+ */
+export function isDemoListing(car: Pick<Car, 'images'>): boolean {
+  const images = car?.images ?? []
+  if (!images.length) return false
+  return images.every((src) => typeof src === 'string' && src.includes('/uploads/seed/'))
+}
+
+/**
  * Encar-style graded trust rather than a binary badge, derived from the
  * 150-point inspection score.
+ *
+ * Never for a demo listing: the tier is a claim that OUR mechanics graded THIS
+ * car, and no seeded row has been near an inspection bay. A certification badge
+ * on a press render is exactly the kind of small lie the whole product exists
+ * to kill.
  */
-export function getCertTier(car: Pick<Car, 'inspected' | 'inspection_score'>): CertTier | null {
-  if (!car?.inspected) return null
+export function getCertTier(
+  car: Pick<Car, 'inspected' | 'inspection_score' | 'images'>
+): CertTier | null {
+  if (!car?.inspected || isDemoListing(car)) return null
   const score = car.inspection_score || 0
   if (score >= 140) return { key: 'plus', label: 'Certified+', short: 'Certified+' }
   if (score >= 120) return { key: 'certified', label: 'Sawa Certified', short: 'Certified' }

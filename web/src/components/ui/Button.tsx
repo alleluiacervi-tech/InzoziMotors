@@ -1,17 +1,21 @@
 import Link from 'next/link'
 import type { ComponentProps, ReactNode } from 'react'
 
-// Mirrors src/components/Button.js: the same four variants, the same brand glow
-// on primary, the same disabled treatment. Renders an <a> when `href` is given
-// and a <button> otherwise — never a div, so keyboard and screen-reader
-// behaviour is correct without extra ARIA.
+// Mirrors src/components/Button.js: the same variants, the same disabled
+// treatment. Renders an <a> when `href` is given and a <button> otherwise —
+// never a div, so keyboard and screen-reader behaviour is correct without
+// extra ARIA.
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'dark' | 'ghost' | 'inverse' | 'danger'
 type Size = 'sm' | 'md' | 'lg' | 'compact'
 
 const VARIANTS: Record<Variant, string> = {
+  // No brand glow. The red drop shadow under every primary button was the most
+  // dated element on the site — a colored halo reads as 2012 skeuomorphism, and
+  // it made every red button shout over the content. A saturated red fill on a
+  // warm-neutral page needs no help being seen; the confident version is flat.
   primary:
-    'bg-brand text-white shadow-brand hover:bg-brand-bright hover:shadow-brand-lg active:scale-[0.99]',
+    'bg-brand text-white hover:bg-brand-bright active:scale-[0.99]',
   secondary:
     'bg-surface-alt text-content hover:bg-line-soft active:scale-[0.99]',
   outline:

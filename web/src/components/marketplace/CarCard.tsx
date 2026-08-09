@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
 import {
-  formatKm, formatRWF, formatUSD, getCertTier, isHighDemand, isNewListing,
-  listedAgo, marketPosition, monthlyEstimate, priceDrop,
+  formatKm, formatRWF, formatUSD, getCertTier, isDemoListing, isHighDemand,
+  isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop,
 } from '@/lib/business'
 import type { Car } from '@/lib/types'
 
@@ -28,6 +28,12 @@ export function CarCard({
   layout?: 'grid' | 'row'
 }) {
   const tier = getCertTier(car)
+  const demo = isDemoListing(car)
+  // The alt text is a claim. For a seeded listing, "photographed at a Sawa
+  // inspection center" would be false in markup.
+  const photoAlt = demo
+    ? `${car.title} — preview listing with manufacturer imagery`
+    : `${car.title} — photographed at a Sawa inspection center`
   const market = marketPosition(car)
   const drop = priceDrop(car)
   const image = car.images?.[0] || FALLBACK_IMAGE
@@ -51,14 +57,14 @@ export function CarCard({
         {(car.images?.length ?? 0) >= 2 ? (
           <CardPhotoFlick
             images={car.images!}
-            alt={`${car.title} — photographed at a Sawa inspection center`}
+            alt={photoAlt}
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
             priority={priority}
           />
         ) : (
           <Image
             src={image}
-            alt={`${car.title} — photographed at a Sawa inspection center`}
+            alt={photoAlt}
             fill
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
             className="object-contain p-2 transition-transform duration-500 ease-brand group-hover:scale-[1.03]"
@@ -69,7 +75,9 @@ export function CarCard({
         {/* Trust badges sit top-left; urgency signals top-right, so the two
             never compete for the same corner. */}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-          {tier ? (
+          {demo ? (
+            <Badge tone="neutral">Preview listing</Badge>
+          ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check">
               {tier.short}
             </Badge>
@@ -77,7 +85,7 @@ export function CarCard({
         </div>
         <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1.5">
           {drop > 0 ? <Badge tone="warning" icon="trending-down">Price drop</Badge> : null}
-          {isNewListing(car) && drop === 0 ? <Badge tone="info">New</Badge> : null}
+          {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">New</Badge> : null}
           {isHighDemand(car) ? <Badge tone="danger">High demand</Badge> : null}
         </div>
 
@@ -143,7 +151,7 @@ export function CarCard({
           {/* Price is one of the few places brand red is allowed. */}
           {/* tabular-nums so prices line up digit-for-digit down a grid of
               cards — Satoshi defaults to proportional figures. */}
-          <p className="text-price font-extrabold tracking-[-0.02em] text-brand tabular-nums">
+          <p className="text-price font-extrabold tracking-[-0.02em] text-content tabular-nums">
             {formatUSD(car.price)}
           </p>
           <p className="mt-0.5 text-micro text-content-muted tabular-nums">

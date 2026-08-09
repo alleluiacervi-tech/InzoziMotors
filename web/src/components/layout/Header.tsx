@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
 import { Button, Icon } from '@/components/ui'
-import { CONTACT, NAV_LINKS } from '@/lib/site'
+import { APP, CONTACT, NAV_LINKS } from '@/lib/site'
 import type { User } from '@/lib/types'
 
 /**
@@ -129,9 +129,28 @@ export function Header({ user }: { user: User | null }) {
             </Button>
           )}
 
-          <Button href="/download" size="sm" className="hidden sm:inline-flex">
-            Get the app
-          </Button>
+          {APP.storesLive ? (
+            <>
+              <Button href="/cars" variant="ghost" size="sm" className="hidden lg:inline-flex">
+                Browse cars
+              </Button>
+              <Button href="/download" size="sm" className="hidden sm:inline-flex">
+                Get the app
+              </Button>
+            </>
+          ) : (
+            <>
+              {/* One primary action, and it is the product. The app link stays
+                  reachable but stops outshouting a marketplace that is live
+                  today with an app that is not. */}
+              <Button href="/download" variant="outline" size="sm" className="hidden lg:inline-flex">
+                Get the app
+              </Button>
+              <Button href="/cars" size="sm" className="hidden sm:inline-flex">
+                Browse cars
+              </Button>
+            </>
+          )}
 
           <button
             type="button"
@@ -195,7 +214,14 @@ export function Header({ user }: { user: User | null }) {
                   <Button href="/signup" variant="secondary" fullWidth>Create account</Button>
                 </>
               )}
-              <Button href="/download" fullWidth>Get the app</Button>
+              {APP.storesLive ? (
+                <Button href="/download" fullWidth>Get the app</Button>
+              ) : (
+                <>
+                  <Button href="/cars" fullWidth>Browse certified cars</Button>
+                  <Button href="/download" variant="ghost" fullWidth>Get the app</Button>
+                </>
+              )}
             </div>
           </nav>
         </div>

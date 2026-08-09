@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { ChipLink } from '@/components/ui/Chip'
 import { Reveal } from '@/components/ui/Reveal'
-import { RWF_RATE } from '@/lib/business'
+import { RWF_RATE, isDemoListing } from '@/lib/business'
 import { BODY_TYPE_IMAGES } from '@/lib/imagery'
 import type { Car } from '@/lib/types'
 
@@ -31,8 +31,16 @@ const BUDGETS = [
 
 export function BrowseEntry({ cars }: { cars: Car[] }) {
   const familyImage = (family: string) => {
+    // Inventory-first, but never demo-first: the seeded listings carry press
+    // renders that contradict their own body types (the "SUV" that put a white
+    // sedan on the SUVs tile was a seeded Telluride). Only a real, photographed
+    // listing may represent a family; otherwise the curated image, which at
+    // least matches its label.
     const live = cars.find(
-      (car) => car.body_type?.toLowerCase() === family.toLowerCase() && car.images?.[0]
+      (car) =>
+        car.body_type?.toLowerCase() === family.toLowerCase() &&
+        car.images?.[0] &&
+        !isDemoListing(car)
     )
     if (live) {
       return { image: live.images![0], alt: `${live.title} — photographed at a Sawa center` }
