@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Linking, AppState } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -7,9 +7,16 @@ import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { showToast } from '../components/Feedback';
+import { rentals as rentalsApi } from '../api/rentals';
 import { DURATION_PRESETS, getRentalDates, calcTripCost, getPickupCenter, AIRPORT_PICKUP, PICKUP_WINDOWS } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
 import { openWhatsApp, SAWA_WHATSAPP, WHATSAPP_VERIFIED } from '../utils/whatsapp';
+
+// Payment amounts arrive from the server already in the booking's own
+// currency — unlike the screen's local estimates, they must never be
+// re-converted, only formatted.
+const fmtAmount = (amount, currency) =>
+  currency === 'RWF' ? `RWF ${Number(amount).toLocaleString()}` : `$${amount}`;
 
 
 export default function RentalBookingScreen({ navigation, route }) {
@@ -17,7 +24,7 @@ export default function RentalBookingScreen({ navigation, route }) {
   // navigation state or future deep link must not crash the booking flow.
   const car = route.params?.car || {};
   const unavailableDays = car.unavailableDays || [];
-  const { bookRental } = useApp();
+  const { bookRental, updateRentalBookingStatus } = useApp();
 
   const dates = getRentalDates(14);
   const durations = DURATION_PRESETS.filter((d) => d >= (car.minDays || 1));
@@ -40,6 +47,13 @@ export default function RentalBookingScreen({ navigation, route }) {
   const [airportPickup, setAirportPickup] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [booking, setBooking] = useState(false);
+  // Online payment — opt-in per booking. `payment` holds the gateway leg
+  // ({ merchant_ref, amount, currency, redirect_url, bookingId }) while the
+  // renter is out on the hosted checkout page.
+  const [payOnline, setPayOnline] = useState(false);
+  const [payment, setPayment] = useState(null);
+  const [payStatus, setPayStatus] = useState('pending'); // pending | failed
+  const [checking, setChecking] = useState(false);
 
   const cost = calcTripCost(car, days);
   const rangeFree = startIdx !== null && days ? rangeIsFree(startIdx, days) : true;
@@ -59,7 +73,7 @@ export default function RentalBookingScreen({ navigation, route }) {
       // Awaited, with the failure surfaced. This used to fire-and-forget and
       // show "Booking confirmed!" while the API was rejecting — a phantom
       // reservation nobody at the center was expecting.
-      await bookRental({
+      const result = await bookRental({
         carId: car.id,
         carTitle: car.title,
         carImage: car.image,
@@ -73,29 +87,94 @@ export default function RentalBookingScreen({ navigation, route }) {
         deposit: cost.deposit,
         pickupFee,
         total: totalDue,
+        payOnline,
       });
-      setConfirmed(true);
+      if (payOnline && result?.payment?.redirect_url) {
+        setPayStatus('pending');
+        setPayment({ ...result.payment, bookingId: result.bookingId });
+      } else {
+        if (payOnline) {
+          // Demo fallback or a server that quietly ignored the flag — the
+          // booking exists as pay-at-center, so say so rather than pretend.
+          showToast('Online payment is not available right now — pay at the center at pickup.', 'info');
+        }
+        setConfirmed(true);
+      }
     } catch (err) {
-      showToast(
-        err?.status === 409
-          ? 'Those dates were just taken — pick different ones.'
-          : "The booking didn't go through. Check your connection and try again.",
-        'error'
-      );
+      const msg =
+        err?.code === 'PAYMENTS_NOT_CONFIGURED'
+          ? 'Online payment is not available yet — choose "Pay at the center" instead.'
+          : err?.code === 'PAYMENT_CURRENCY'
+            ? 'This car cannot be paid online yet — choose "Pay at the center" instead.'
+            : err?.status === 409
+              ? 'Those dates were just taken — pick different ones.'
+              : err?.status === 502 || err?.status === 503
+                ? 'The payment service is unreachable. Nothing was charged — try again, or pay at the center.'
+                : "The booking didn't go through. Check your connection and try again.";
+      showToast(msg, 'error');
     } finally {
       setBooking(false);
     }
   };
 
+  // While the renter is on the hosted checkout page, keep asking the server
+  // whether money arrived: every few seconds, plus immediately whenever the
+  // app returns to the foreground (the moment they come back from the
+  // browser). The server verifies against the gateway itself — this poll is
+  // also the safety net for a missed payment callback.
+  useEffect(() => {
+    if (!payment || confirmed || payStatus === 'failed') return undefined;
+    let live = true;
+    const check = async () => {
+      try {
+        const s = await rentalsApi.getPaymentStatus(payment.merchant_ref);
+        if (!live) return;
+        if (s.status === 'completed') setConfirmed(true);
+        else if (['failed', 'expired', 'reversed'].includes(s.status)) setPayStatus('failed');
+      } catch {
+        // Transient — the next tick retries.
+      }
+    };
+    const interval = setInterval(check, 5000);
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') check(); });
+    return () => { live = false; clearInterval(interval); sub.remove(); };
+  }, [payment, confirmed, payStatus]);
+
+  const checkNow = async () => {
+    if (!payment || checking) return;
+    setChecking(true);
+    try {
+      const s = await rentalsApi.getPaymentStatus(payment.merchant_ref);
+      if (s.status === 'completed') setConfirmed(true);
+      else if (['failed', 'expired', 'reversed'].includes(s.status)) setPayStatus('failed');
+      else showToast('Not confirmed yet — finish the payment in the browser, then check again.', 'info');
+    } catch {
+      showToast('Could not reach the server — check your connection.', 'error');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // Walk away from an unpaid hold: release the dates, land back on the form.
+  const abandonPayment = async () => {
+    const id = payment?.bookingId;
+    setPayment(null);
+    setPayStatus('pending');
+    if (id) {
+      try { await updateRentalBookingStatus(id, 'cancelled'); } catch { /* hold ages out on its own */ }
+    }
+  };
+
   // ── Confirmation state ──
   if (confirmed) {
+    const paidOnline = Boolean(payment);
     return (
       <Screen background={colors.bg}>
         <View style={styles.confirmWrap}>
           <View style={styles.confirmIcon}>
             <Ionicons name="checkmark" size={44} color="#fff" />
           </View>
-          <Text style={styles.confirmTitle}>Booking confirmed!</Text>
+          <Text style={styles.confirmTitle}>{paidOnline ? 'Paid & confirmed!' : 'Booking confirmed!'}</Text>
           <Text style={styles.confirmSub}>
             {car.title} is reserved for you from {startDate.full}.
           </Text>
@@ -105,13 +184,22 @@ export default function RentalBookingScreen({ navigation, route }) {
             <ConfirmRow icon="calendar-outline" label="Pickup" value={`${startDate.full} · ${time}`} />
             <ConfirmRow icon="time-outline" label="Duration" value={`${days} day${days > 1 ? 's' : ''}`} />
             <ConfirmRow icon="location-outline" label="Center" value={center.name} />
-            <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${totalDue} (incl. $${cost.deposit} deposit)`} last />
+            {paidOnline ? (
+              <>
+                <ConfirmRow icon="card-outline" label="Paid online" value={fmtAmount(payment.amount, payment.currency)} />
+                <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${cost.deposit} refundable deposit`} last />
+              </>
+            ) : (
+              <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${totalDue} (incl. $${cost.deposit} deposit)`} last />
+            )}
           </View>
 
           <View style={styles.confirmNote}>
             <Ionicons name="document-text-outline" size={16} color={colors.amber} />
             <Text style={styles.confirmNoteText}>
-              Bring your driving licence and national ID. Payment is at the center — nothing is charged now.
+              {paidOnline
+                ? 'Rental paid — a receipt is on its way to your email. Bring your driving licence and national ID; only the refundable deposit is handled at the center.'
+                : 'Bring your driving licence and national ID. Payment is at the center — nothing is charged now.'}
             </Text>
           </View>
 
@@ -133,6 +221,59 @@ export default function RentalBookingScreen({ navigation, route }) {
           <Pressable onPress={() => navigation.navigate('Main')} style={{ marginTop: 14 }}>
             <Text style={styles.viewRentals}>Back to Home</Text>
           </Pressable>
+        </View>
+      </Screen>
+    );
+  }
+
+  // ── Payment state — the renter is out on the hosted checkout page ──
+  if (payment) {
+    const failed = payStatus === 'failed';
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title={failed ? 'Payment failed' : 'Complete payment'} onBack={abandonPayment} />
+        <View style={styles.confirmWrap}>
+          <View style={[styles.confirmIcon, { backgroundColor: failed ? colors.alertRed : colors.amber }]}>
+            <Ionicons name={failed ? 'close' : 'card-outline'} size={40} color="#fff" />
+          </View>
+          <Text style={styles.confirmTitle}>{failed ? "Payment didn't go through" : 'Complete your payment'}</Text>
+          <Text style={styles.confirmSub}>
+            {failed
+              ? 'Nothing was charged. You can book again and retry, or book and pay at the center instead.'
+              : `${car.title} is held for you for 35 minutes. Pay securely with a card, MTN MoMo or Airtel Money — the refundable deposit is not charged now.`}
+          </Text>
+
+          <View style={styles.confirmCard}>
+            <ConfirmRow icon="car-outline" label="Vehicle" value={car.title} />
+            <ConfirmRow icon="calendar-outline" label="Pickup" value={`${startDate.full} · ${time}`} />
+            <ConfirmRow icon="card-outline" label="Pay now" value={fmtAmount(payment.amount, payment.currency)} />
+            <ConfirmRow icon="cash-outline" label="At the center" value={`$${cost.deposit} refundable deposit`} last />
+          </View>
+
+          {failed ? (
+            <Button
+              title="Back to booking"
+              onPress={abandonPayment}
+              style={{ alignSelf: 'stretch', marginTop: 20 }}
+            />
+          ) : (
+            <>
+              <Button
+                title="Pay securely"
+                onPress={() => Linking.openURL(payment.redirect_url).catch(() =>
+                  showToast('Could not open the payment page — try again.', 'error')
+                )}
+                style={{ alignSelf: 'stretch', marginTop: 20 }}
+              />
+              <Pressable style={styles.checkStatusBtn} onPress={checkNow} disabled={checking}>
+                <Ionicons name="refresh-outline" size={16} color={colors.primary} />
+                <Text style={styles.checkStatusText}>{checking ? 'Checking…' : "I've paid — check status"}</Text>
+              </Pressable>
+              <Pressable onPress={abandonPayment} style={{ marginTop: 18 }}>
+                <Text style={styles.abandonText}>Cancel — I'll pay at the center instead</Text>
+              </Pressable>
+            </>
+          )}
         </View>
       </Screen>
     );
@@ -272,14 +413,44 @@ export default function RentalBookingScreen({ navigation, route }) {
             <Text style={styles.costTotalValue}>${totalDue}</Text>
           </View>
           <Text style={styles.costRwf}>≈ {formatRWF(totalDue)}</Text>
-          <View style={styles.noPayChip}>
-            <Ionicons name="shield-checkmark-outline" size={13} color={colors.green} />
-            <Text style={styles.noPayText}>No payment now — pay at the Sawa center</Text>
+        </View>
+
+        {/* How you'll pay — the deposit is NEVER part of the online charge */}
+        <Text style={styles.sectionTitle}>How you'll pay</Text>
+        <Pressable style={[styles.payOption, !payOnline && styles.payOptionOn]} onPress={() => setPayOnline(false)}>
+          <View style={[styles.payRadio, !payOnline && styles.payRadioOn]}>
+            {!payOnline && <View style={styles.payRadioDot} />}
           </View>
+          <Ionicons name="storefront-outline" size={18} color={!payOnline ? colors.primary : colors.textSecondary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.payOptionTitle}>Pay at the center</Text>
+            <Text style={styles.payOptionSub}>Cash or mobile money when you collect the car</Text>
+          </View>
+        </Pressable>
+        <Pressable style={[styles.payOption, payOnline && styles.payOptionOn]} onPress={() => setPayOnline(true)}>
+          <View style={[styles.payRadio, payOnline && styles.payRadioOn]}>
+            {payOnline && <View style={styles.payRadioDot} />}
+          </View>
+          <Ionicons name="card-outline" size={18} color={payOnline ? colors.primary : colors.textSecondary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.payOptionTitle}>Pay online now</Text>
+            <Text style={styles.payOptionSub}>Card · MTN MoMo · Airtel Money — secure checkout</Text>
+          </View>
+        </Pressable>
+        <View style={styles.depositChip}>
+          <Ionicons name="shield-checkmark-outline" size={13} color={colors.green} />
+          <Text style={styles.depositChipText}>
+            {payOnline
+              ? `Online you pay the rental only — the $${cost.deposit} refundable deposit stays at the center`
+              : 'No payment now — everything is handled at the Sawa center'}
+          </Text>
         </View>
 
         <Button
-          title={booking ? 'Booking…' : canBook ? 'Confirm Booking' : rangeFree ? 'Select a pickup date' : 'Selected dates unavailable'}
+          title={booking
+            ? (payOnline ? 'Starting payment…' : 'Booking…')
+            : canBook ? (payOnline ? 'Book & Pay Online' : 'Confirm Booking')
+              : rangeFree ? 'Select a pickup date' : 'Selected dates unavailable'}
           onPress={handleConfirm}
           style={{ marginTop: 20, opacity: canBook && !booking ? 1 : 0.5 }}
           disabled={!canBook || booking}
@@ -388,13 +559,40 @@ const styles = StyleSheet.create({
   costTotalLabel: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   costTotalValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: -0.4 },
   costRwf: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, textAlign: 'right', marginTop: -8, marginBottom: 12 },
-  noPayChip: {
+  // Payment method
+  payOption: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: radius.xl, padding: 14, marginBottom: 8,
+  },
+  payOptionOn: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
+  payRadio: {
+    width: 20, height: 20, borderRadius: 10,
+    borderWidth: 2, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  payRadioOn: { borderColor: colors.primary },
+  payRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  payOptionTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
+  payOptionSub: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 1 },
+  depositChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: colors.greenTint,
     paddingHorizontal: 10, paddingVertical: 8,
-    borderRadius: radius.md,
+    borderRadius: radius.md, marginTop: 2,
   },
-  noPayText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.greenText },
+  depositChipText: { flex: 1, fontSize: 11, fontFamily: fonts.semiBold, color: colors.greenText },
+  // Payment pending / failed state
+  checkStatusBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    alignSelf: 'stretch', paddingVertical: 13, marginTop: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: colors.primary,
+    borderRadius: radius.xl,
+  },
+  checkStatusText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
+  abandonText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textMuted, textAlign: 'center' },
   // Confirmation state
   confirmWrap: { flex: 1, alignItems: 'center', paddingHorizontal: 24, paddingTop: 48 },
   confirmIcon: {
