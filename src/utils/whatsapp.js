@@ -1,18 +1,20 @@
 import { Linking } from 'react-native';
 import { showToast } from '../components/Feedback';
 
-// Sawa business line for rentals & support.
+// Sawa Cars' business line — calls and WhatsApp on the same handset.
 //
-// HONESTY GATE, mirroring CONTACT.whatsappVerified in web/src/lib/site.ts. The
-// number below is a placeholder, and the website already refuses to render any
-// WhatsApp surface while it is unverified — the app did not, so it would have
-// opened a chat to a number nobody answers. For a product whose whole promise
+// Mirrors CONTACT in web/src/lib/site.ts. Change both together, or the app and
+// the website will advertise different numbers.
+//
+// HONESTY GATE, now satisfied. While the number was a placeholder this was
+// false, and the website refused to render any WhatsApp surface rather than
+// opening a chat to a number nobody answers. For a product whose whole promise
 // is "if it looks real, it is", a dead contact button is exactly the wrong
-// first impression.
-//
-// Flip WHATSAPP_VERIFIED to true in the same commit that sets the real number.
-export const SAWA_WHATSAPP = '250788000000';
-export const WHATSAPP_VERIFIED = false;
+// first impression. Set it back to false if the line is ever disconnected.
+export const SAWA_WHATSAPP = '250788308611';
+export const SAWA_PHONE_DISPLAY = '+250 788 308 611';
+export const SAWA_EMAIL = 'contact@sawacars.com';
+export const WHATSAPP_VERIFIED = true;
 
 /** True when there is a number worth offering: the seller's own, or a verified
  *  Sawa business line. Callers hide the button when this is false. */

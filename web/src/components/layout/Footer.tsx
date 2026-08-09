@@ -24,18 +24,29 @@ export function Footer() {
             </div>
 
             <div className="mt-8 space-y-2.5 text-body">
-              {/* Honesty gate: the WhatsApp line renders only once the real
-                  business number is verified — never the placeholder. */}
+              {/* Honesty gate: the line renders only while the real business
+                  number is verified — never a placeholder. The number is shown
+                  once, on the tel: row; WhatsApp gets its own labelled row
+                  rather than repeating the digits, since it is the same handset. */}
               {CONTACT.whatsappVerified ? (
-                <a
-                  href={`https://wa.me/${CONTACT.whatsapp}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 text-white/60 transition-colors hover:text-white"
-                >
-                  <Icon name="whatsapp" size={17} />
-                  {CONTACT.whatsappDisplay}
-                </a>
+                <>
+                  <a
+                    href={`tel:+${CONTACT.phone}`}
+                    className="flex items-center gap-2.5 text-white/60 transition-colors hover:text-white"
+                  >
+                    <Icon name="phone" size={17} />
+                    {CONTACT.phoneDisplay}
+                  </a>
+                  <a
+                    href={`https://wa.me/${CONTACT.whatsapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 text-white/60 transition-colors hover:text-white"
+                  >
+                    <Icon name="whatsapp" size={17} />
+                    Message us on WhatsApp
+                  </a>
+                </>
               ) : null}
               <a
                 href={`mailto:${CONTACT.email}`}

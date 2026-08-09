@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
+import { showToast } from '../components/Feedback';
+import { SAWA_WHATSAPP, SAWA_EMAIL, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
 const MENU_SELLER = [
   { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
@@ -18,7 +20,21 @@ const MENU_ACCOUNT = [
   { icon: 'shield-checkmark-outline', label: 'The Sawa Promise', screen: 'SawaPromise' },
   { icon: 'book-outline', label: 'How Buying Works', screen: 'BuyingGuide' },
   { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
-  { icon: 'help-circle-outline', label: 'Help & Support', screen: null },
+  // This row was `screen: null` — it rendered a chevron and did nothing at all.
+  // It now opens the business line, which is the whole point of a Help row.
+  // Gated like every other contact surface: if the line is ever unverified, the
+  // row falls back to the mailbox rather than going dead again.
+  WHATSAPP_VERIFIED
+    ? {
+        icon: 'logo-whatsapp',
+        label: 'Help & Support',
+        link: `https://wa.me/${SAWA_WHATSAPP}`,
+      }
+    : {
+        icon: 'help-circle-outline',
+        label: 'Help & Support',
+        link: `mailto:${SAWA_EMAIL}`,
+      },
 ];
 
 function MenuSection({ title, items, navigation }) {
@@ -30,7 +46,14 @@ function MenuSection({ title, items, navigation }) {
           <Pressable
             key={m.label}
             style={[styles.menuItem, i < items.length - 1 && styles.menuBorder]}
-            onPress={() => m.screen && navigation.navigate(m.screen)}
+            onPress={() => {
+              if (m.screen) navigation.navigate(m.screen);
+              else if (m.link) {
+                Linking.openURL(m.link).catch(() =>
+                  showToast('Could not open that. Please try again.', 'error'),
+                );
+              }
+            }}
           >
             <View style={styles.menuIcon}>
               <Ionicons name={m.icon} size={20} color={colors.textSecondary} />
