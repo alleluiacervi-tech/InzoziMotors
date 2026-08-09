@@ -1,13 +1,10 @@
 import type { Metadata } from 'next'
 import { Container, Section, SectionHeading } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
-import { StatBand } from '@/components/home/StatBand'
 import { BrowseEntry } from '@/components/home/BrowseEntry'
-import { TrustPillars } from '@/components/home/TrustPillars'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { HowItWorks } from '@/components/home/HowItWorks'
-import { PromiseGrid } from '@/components/home/PromiseGrid'
-import { AppShowcase } from '@/components/home/AppShowcase'
+import { TrustBand } from '@/components/home/TrustBand'
 import { FinalCta } from '@/components/home/FinalCta'
 import { FaqAccordion } from '@/components/marketing/FaqAccordion'
 import { cars } from '@/lib/api'
@@ -51,16 +48,15 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* The newest live listing doubles as the hero image — a marketplace
-          opens with a car, not an illustration. */}
+      {/* Inventory-first: search on the hero stage, then two routes into the
+          marketplace (browse, live listings), then how it works, then ONE
+          trust section. Ten sections used to live here; a landing page that
+          says everything twice persuades half as well. */}
       <Hero />
-      <StatBand />
       <BrowseEntry cars={featured} />
       <FeaturedCars cars={featured} />
       <HowItWorks />
-      <TrustPillars />
-      <PromiseGrid />
-      <AppShowcase />
+      <TrustBand />
 
       <Section tone="page">
         <Container>

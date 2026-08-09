@@ -54,12 +54,16 @@ export function CarCard({
       >
         {/* Multi-photo listings preview their angles on hover/tap — the
             36-angle standard, felt on the card itself. */}
+        {/* Full-bleed crops for real inventory — our photographers shoot the
+            36 angles for exactly this frame. Seeded press renders keep
+            object-contain: their 2.7:1 side profiles crop into a door. */}
         {(car.images?.length ?? 0) >= 2 ? (
           <CardPhotoFlick
             images={car.images!}
             alt={photoAlt}
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
             priority={priority}
+            fit={demo ? 'contain' : 'cover'}
           />
         ) : (
           <Image
@@ -67,7 +71,9 @@ export function CarCard({
             alt={photoAlt}
             fill
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
-            className="object-contain p-2 transition-transform duration-500 ease-brand group-hover:scale-[1.03]"
+            className={`${
+              demo ? 'object-contain p-2' : 'object-cover'
+            } transition-transform duration-500 ease-brand group-hover:scale-[1.03]`}
             priority={priority}
           />
         )}
