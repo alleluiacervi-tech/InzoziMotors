@@ -27,10 +27,68 @@ const { sanitizeEmailHtml, textToHtml } = require('./sanitize');
 
 const INBOX = 'INBOX';
 
-// Hostinger and most IMAP hosts expose Sent under one of these. Resolved once
-// per process by asking the server what actually exists, because APPENDing to a
-// folder that is not there silently loses the operator's own reply.
-const SENT_CANDIDATES = ['Sent', 'INBOX.Sent', 'Sent Items', 'Sent Messages'];
+// The standard mailboxes, resolved against what the server actually has.
+// Special-use flags (RFC 6154) are authoritative and survive localisation;
+// the name candidates are the fallback for servers that don't advertise them.
+// Hostinger nests everything under INBOX. — hence the INBOX.* entries.
+const SPECIAL_FOLDERS = {
+  sent:   { flag: '\\Sent',   names: ['Sent', 'INBOX.Sent', 'Sent Items', 'Sent Messages'] },
+  drafts: { flag: '\\Drafts', names: ['Drafts', 'INBOX.Drafts'] },
+  junk:   { flag: '\\Junk',   names: ['Junk', 'INBOX.Junk', 'Spam', 'INBOX.Spam'] },
+  trash:  { flag: '\\Trash',  names: ['Trash', 'INBOX.Trash', 'Deleted Items', 'Deleted Messages'] },
+};
+
+// Folder KEYS are the API surface; IMAP paths never travel to or from the
+// client. A client-supplied path would let any admin session open arbitrary
+// mailboxes by name — harmless on this single-account server, but the habit
+// of validating identifiers at the edge is what keeps it harmless.
+let specialPathsCache;
+async function resolveSpecialPaths() {
+  if (specialPathsCache !== undefined) return specialPathsCache;
+  const paths = { inbox: INBOX, sent: null, drafts: null, junk: null, trash: null };
+  try {
+    const client = await getClient();
+    const list = await client.list();
+    const hasFlag = (b, f) => b.flags && (b.flags.has ? b.flags.has(f) : b.flags.includes(f));
+    for (const [key, spec] of Object.entries(SPECIAL_FOLDERS)) {
+      const flagged = list.find((b) => hasFlag(b, spec.flag));
+      const byName = flagged || list.find((b) => spec.names.includes(b.path));
+      paths[key] = byName ? byName.path : null;
+    }
+  } catch (err) {
+    log.error('could not list mailboxes', { error: err.message });
+    specialPathsCache = undefined; // retry on the next call rather than caching a failure
+    return paths;
+  }
+  specialPathsCache = paths;
+  return paths;
+}
+
+/** Folder key → real IMAP path, or a 404 the client can show. */
+async function resolveFolder(key = 'inbox') {
+  const paths = await resolveSpecialPaths();
+  if (!(key in paths)) throw new MailError('MAIL_NO_FOLDER', 'Unknown folder.', 404);
+  const path = paths[key];
+  if (!path) throw new MailError('MAIL_NO_FOLDER', 'This mailbox has no such folder.', 404);
+  return path;
+}
+
+/** The folder rail: which standard folders exist, with message counts. */
+async function listFolders() {
+  const paths = await resolveSpecialPaths();
+  const client = await getClient();
+  const folders = [];
+  for (const [key, path] of Object.entries(paths)) {
+    if (!path) continue;
+    try {
+      const status = await client.status(path, { messages: true, unseen: true });
+      folders.push({ key, total: status.messages || 0, unread: status.unseen || 0 });
+    } catch (err) {
+      log.error('folder status failed', { folder: key, error: err.message });
+    }
+  }
+  return { folders };
+}
 
 // ── Envelope cache ───────────────────────────────────────────────────────────
 // A short TTL, keyed by mailbox+page. Switching tabs in the dashboard should not
@@ -71,8 +129,8 @@ function addressList(addr) {
  * Envelopes only — no bodies. Fetching bodies for a 25-message page is what makes
  * a naive IMAP inbox feel broken; a body is fetched when a message is opened.
  */
-async function listMessages({ mailbox = INBOX, limit = 25, offset = 0, search = '' } = {}) {
-  const key = cacheKey(mailbox, limit, offset, search);
+async function listMessages({ mailbox = INBOX, limit = 25, offset = 0, search = '', flagged = false } = {}) {
+  const key = cacheKey(mailbox, limit, offset, `${search}|${flagged ? 1 : 0}`);
   const hit = listCache.get(key);
   if (hit && Date.now() - hit.at < LIST_TTL_MS) return hit.value;
 
@@ -88,12 +146,13 @@ async function listMessages({ mailbox = INBOX, limit = 25, offset = 0, search = 
     // Search narrows the set server-side; otherwise page by sequence number from
     // the end, which is the cheapest way to get "newest first" out of IMAP.
     let uids = null;
-    if (search) {
-      // OR across the fields an operator would actually search. IMAP SEARCH is
-      // server-side, so this does not pull the mailbox down to filter locally.
-      uids = await client.search({
-        or: [{ from: search }, { subject: search }, { body: search }],
-      });
+    if (search || flagged) {
+      // Server-side SEARCH: OR across the fields an operator would actually
+      // search, AND the \\Flagged criterion when the starred view asks for it.
+      const criteria = {};
+      if (flagged) criteria.flagged = true;
+      if (search) criteria.or = [{ from: search }, { subject: search }, { body: search }];
+      uids = await client.search(criteria);
       if (!uids || !uids.length) {
         return { messages: [], total: 0, unread, limit, offset, mailbox, search };
       }
@@ -301,24 +360,10 @@ function getTransport() {
   return transport;
 }
 
-/** Where does this account keep sent mail? Asked once, then remembered. */
-let sentPathCache;
+/** Where does this account keep sent mail? Same resolver as the folder rail. */
 async function resolveSentPath() {
-  if (sentPathCache !== undefined) return sentPathCache;
-  try {
-    const client = await getClient();
-    const list = await client.list();
-    // Prefer the folder the server itself flags as \Sent — that is authoritative
-    // and survives localisation, where a name match would not.
-    const flagged = list.find((b) => (b.flags && (b.flags.has ? b.flags.has('\\Sent') : b.flags.includes('\\Sent'))));
-    if (flagged) { sentPathCache = flagged.path; return sentPathCache; }
-    const byName = list.find((b) => SENT_CANDIDATES.includes(b.path));
-    sentPathCache = byName ? byName.path : null;
-  } catch (err) {
-    log.error('could not list mailboxes to find Sent', { error: err.message });
-    sentPathCache = null;
-  }
-  return sentPathCache;
+  const paths = await resolveSpecialPaths();
+  return paths.sent;
 }
 
 /**
@@ -333,12 +378,33 @@ async function resolveSentPath() {
  * Threading matters for the customer, not for us: without In-Reply-To and
  * References their client shows the reply as a new unrelated message.
  */
-async function sendReply(uid, text, { mailbox = INBOX } = {}) {
+async function sendReply(uid, text, { mailbox = INBOX, attachments = [] } = {}) {
   const body = String(text || '').trim();
   if (!body) throw new MailError('MAIL_EMPTY_REPLY', 'A reply needs a message.', 400);
   if (body.length > 25_000) {
     throw new MailError('MAIL_REPLY_TOO_LONG', 'That reply is too long to send.', 400);
   }
+
+  // Attachment discipline. Per-file size is enforced by multer at the route;
+  // the TOTAL is enforced here because most receiving servers cap a whole
+  // message around 25 MB and a bounce reads as "Sawa never answered".
+  if (attachments.length > 5) {
+    throw new MailError('MAIL_TOO_MANY_ATTACHMENTS', 'At most 5 attachments per reply.', 400);
+  }
+  const totalBytes = attachments.reduce((n, a) => n + (a.size || 0), 0);
+  if (totalBytes > 15 * 1024 * 1024) {
+    throw new MailError('MAIL_ATTACHMENTS_TOO_LARGE', 'Attachments exceed 15 MB in total.', 400);
+  }
+  const mailAttachments = attachments.map((a, i) => ({
+    // Same sanitisation as the download path: the filename travels in a MIME
+    // header, and headers do not take newlines or quotes kindly.
+    filename: String(a.originalname || `attachment-${i + 1}`)
+      .replace(/[\\/]/g, '_')
+      .replace(/[\r\n"]/g, '')
+      .slice(0, 200),
+    content: a.buffer,
+    contentType: a.mimetype || 'application/octet-stream',
+  }));
 
   const cfg = mailConfig();
   // Read the original WITHOUT marking it seen: replying already implies read,
@@ -360,6 +426,7 @@ async function sendReply(uid, text, { mailbox = INBOX } = {}) {
     to: recipient,
     subject,
     text: body,
+    ...(mailAttachments.length ? { attachments: mailAttachments } : {}),
     ...(original.messageId ? { inReplyTo: original.messageId } : {}),
     ...(references.length ? { references } : {}),
   };
@@ -411,6 +478,8 @@ async function unreadCount({ mailbox = INBOX } = {}) {
 
 module.exports = {
   INBOX,
+  listFolders,
+  resolveFolder,
   listMessages,
   getMessage,
   getAttachment,

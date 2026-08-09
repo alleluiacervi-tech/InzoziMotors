@@ -1,7 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { api, type ApiError, type MailEnvelope, type MailMessage } from '@/lib/api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  api, type ApiError, type MailEnvelope, type MailFolder, type MailFolderKey, type MailMessage,
+} from '@/lib/api'
 import {
   Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill,
 } from '@/components/ui'
@@ -20,6 +22,17 @@ import { MessageBody } from './MessageBody'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PAGE = 25
+
+// The rail. Starred is a VIEW over the inbox (IMAP \Flagged), not a folder —
+// which is exactly how every mail client models it.
+const FOLDER_TABS: { key: MailFolderKey | 'starred'; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
+  { key: 'inbox', label: 'Inbox', icon: 'mail' },
+  { key: 'starred', label: 'Starred', icon: 'star' },
+  { key: 'sent', label: 'Sent', icon: 'arrow-right' },
+  { key: 'drafts', label: 'Drafts', icon: 'document' },
+  { key: 'junk', label: 'Junk', icon: 'alert' },
+  { key: 'trash', label: 'Trash', icon: 'close' },
+]
 
 /** A mail failure is never rendered as an empty inbox. MAIL_NOT_CONFIGURED in
  *  particular means "nobody set the mailbox up", which is a completely different
@@ -59,6 +72,8 @@ function when(date: string | null): string {
 }
 
 export default function InboxPage() {
+  const [view, setView] = useState<MailFolderKey | 'starred'>('inbox')
+  const [folders, setFolders] = useState<MailFolder[]>([])
   const [list, setList] = useState<MailEnvelope[]>([])
   const [total, setTotal] = useState(0)
   const [unread, setUnread] = useState(0)
@@ -75,15 +90,23 @@ export default function InboxPage() {
   const [showImages, setShowImages] = useState(false)
 
   const [reply, setReply] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const fileInput = useRef<HTMLInputElement>(null)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState<string | null>(null)
   const [replyError, setReplyError] = useState<string | null>(null)
+
+  // Starred is the inbox filtered to \Flagged; everything else is a folder.
+  const folder: MailFolderKey = view === 'starred' ? 'inbox' : view
+  const starred = view === 'starred'
 
   const loadList = useCallback(async (nextOffset: number, q: string) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.mail({ limit: PAGE, offset: nextOffset, q: q || undefined })
+      const data = await api.mail({
+        limit: PAGE, offset: nextOffset, q: q || undefined, folder, starred: starred || undefined,
+      })
       setList(data.messages)
       setTotal(data.total)
       setUnread(data.unread)
@@ -92,9 +115,25 @@ export default function InboxPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [folder, starred])
 
   useEffect(() => { loadList(offset, search) }, [loadList, offset, search])
+
+  // Folder counts for the rail — refreshed alongside the list, silent on
+  // failure (the list's own error state is the loud one).
+  useEffect(() => {
+    api.mailFolders().then((r) => setFolders(r.folders)).catch(() => {})
+  }, [loading])
+
+  function switchView(next: MailFolderKey | 'starred') {
+    if (next === view) return
+    setView(next)
+    setOffset(0)
+    setOpenUid(null)
+    setMessage(null)
+    setSent(null)
+    setFiles([])
+  }
 
   // Debounced search, so typing does not open an IMAP SEARCH per keystroke.
   useEffect(() => {
@@ -114,7 +153,7 @@ export default function InboxPage() {
     setReplyError(null)
     if (!images) setShowImages(false)
     try {
-      const m = await api.mailMessage(uid, { images })
+      const m = await api.mailMessage(uid, { images, folder })
       setMessage(m)
       // Opening marks it read server-side; reflect that here without refetching
       // the whole list.
@@ -128,16 +167,17 @@ export default function InboxPage() {
     } finally {
       setMsgLoading(false)
     }
-  }, [list])
+  }, [list, folder])
 
   async function sendReply() {
     if (!message || !reply.trim()) return
     setSending(true)
     setReplyError(null)
     try {
-      const res = await api.mailReply(message.uid, reply)
+      const res = await api.mailReply(message.uid, reply, files)
       setSent(res.to)
       setReply('')
+      setFiles([])
       setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, answered: true } : e)))
     } catch (e) {
       const err = e as ApiError
@@ -151,6 +191,23 @@ export default function InboxPage() {
     }
   }
 
+  // 5 files, 8 MB each, 15 MB together — same numbers the server enforces, so
+  // the picker refuses what the send would bounce.
+  function addFiles(picked: FileList | null) {
+    if (!picked) return
+    const next = [...files]
+    for (const f of Array.from(picked)) {
+      if (next.length >= 5) { setReplyError('At most 5 attachments per reply.'); break }
+      if (f.size > 8 * 1024 * 1024) { setReplyError(`“${f.name}” is over 8 MB.`); continue }
+      if (next.reduce((n, x) => n + x.size, 0) + f.size > 15 * 1024 * 1024) {
+        setReplyError('Attachments exceed 15 MB in total.'); break
+      }
+      next.push(f)
+    }
+    setFiles(next)
+    if (fileInput.current) fileInput.current.value = ''
+  }
+
   async function toggleFlag() {
     if (!message) return
     const env = list.find((e) => e.uid === message.uid)
@@ -158,7 +215,7 @@ export default function InboxPage() {
     // Optimistic: a star that waits for a round trip feels broken.
     setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, flagged: next } : e)))
     try {
-      await api.mailFlag(message.uid, 'flagged', next)
+      await api.mailFlag(message.uid, 'flagged', next, folder)
     } catch {
       setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, flagged: !next } : e)))
     }
@@ -171,7 +228,7 @@ export default function InboxPage() {
   return (
     <>
       <PageHeader
-        title="Inbox"
+        title={FOLDER_TABS.find((t) => t.key === view)?.label || 'Inbox'}
         description={
           error
             ? 'contact@sawacars.com'
@@ -188,6 +245,39 @@ export default function InboxPage() {
           </button>
         }
       />
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {FOLDER_TABS.map((t) => {
+          const info = t.key === 'starred' ? null : folders.find((f) => f.key === t.key)
+          // Sent/Drafts/Junk/Trash tabs only render if the account has the
+          // folder — Hostinger has all of them, but the rail must not offer
+          // a folder the server would 404.
+          if (t.key !== 'inbox' && t.key !== 'starred' && !info) return null
+          const active = view === t.key
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => switchView(t.key)}
+              className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-label font-semibold transition-colors ${
+                active
+                  ? 'bg-ink-900 text-white'
+                  : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'
+              }`}
+            >
+              <Icon name={t.icon} size={15} />
+              {t.label}
+              {t.key === 'inbox' && info && info.unread > 0 ? (
+                <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-micro font-bold ${
+                  active ? 'bg-white/20 text-white' : 'bg-brand text-white'
+                }`}>
+                  {info.unread}
+                </span>
+              ) : null}
+            </button>
+          )
+        })}
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
         {/* ── List ─────────────────────────────────────────────────────────── */}
@@ -214,11 +304,15 @@ export default function InboxPage() {
           ) : list.length === 0 ? (
             <EmptyState
               icon="mail"
-              title={search ? 'Nothing matches that' : 'No mail yet'}
+              title={search ? 'Nothing matches that' : view === 'inbox' ? 'No mail yet' : `Nothing in ${view}`}
               description={
                 search
                   ? 'Try a different sender, subject or phrase.'
-                  : 'Messages sent to contact@sawacars.com appear here.'
+                  : view === 'inbox'
+                    ? 'Messages sent to contact@sawacars.com appear here.'
+                    : view === 'starred'
+                      ? 'Star a message and it collects here.'
+                      : undefined
               }
             />
           ) : (
@@ -373,7 +467,7 @@ export default function InboxPage() {
                               server forces Content-Disposition: attachment, so an
                               HTML attachment can never execute in this origin. */}
                           <a
-                            href={`/api/backend/mail/messages/${message.uid}/attachments/${a.index}`}
+                            href={`/api/backend/mail/messages/${message.uid}/attachments/${a.index}${folder !== 'inbox' ? `?folder=${folder}` : ''}`}
                             className="flex items-center gap-3 rounded-xl border border-line-soft bg-surface p-3 transition-colors hover:bg-surface-alt"
                           >
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt text-content-secondary">
@@ -399,10 +493,12 @@ export default function InboxPage() {
               </div>
 
               {/* ── Reply ──────────────────────────────────────────────────
-                  Reply-only, to the sender of this message. There is no To:
-                  field on purpose: a free recipient would turn this into a
+                  Reply-only, to the sender of this message, and only in the
+                  inbox — in Sent the "sender" is contact@ itself. There is no
+                  To: field on purpose: a free recipient would turn this into a
                   send-anything-from-contact@ console, and abuse of the company's
                   real address gets the domain blacklisted. */}
+              {view !== 'inbox' && view !== 'starred' ? null : (
               <div className="border-t border-line-soft bg-surface-alt p-4">
                 {sent ? (
                   <div className="flex items-center gap-2 rounded-xl border border-success/30 bg-success-tint px-3 py-2 text-label font-semibold text-success-text">
@@ -424,10 +520,40 @@ export default function InboxPage() {
                         className="w-full resize-y rounded-xl border border-line bg-surface p-3 text-label leading-relaxed text-content placeholder:text-content-muted focus:border-content-muted focus:outline-none"
                       />
                     </label>
+                    {files.length > 0 ? (
+                      <ul className="mt-2 flex flex-wrap gap-2">
+                        {files.map((f, i) => (
+                          <li
+                            key={`${f.name}-${i}`}
+                            className="inline-flex items-center gap-2 rounded-pill border border-line bg-surface px-3 py-1.5 text-caption font-semibold text-content"
+                          >
+                            <Icon name="document" size={12} />
+                            <span className="max-w-[180px] truncate">{f.name}</span>
+                            <span className="text-content-muted">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                            <button
+                              type="button"
+                              onClick={() => setFiles(files.filter((_, x) => x !== i))}
+                              aria-label={`Remove ${f.name}`}
+                              className="text-content-muted hover:text-content"
+                            >
+                              <Icon name="close" size={12} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     {replyError ? (
                       <p className="mt-2 text-caption font-semibold text-danger-strong">{replyError}</p>
                     ) : null}
                     <div className="mt-3 flex items-center gap-3">
+                      <input
+                        ref={fileInput}
+                        type="file"
+                        multiple
+                        onChange={(e) => { setReplyError(null); addFiles(e.target.files) }}
+                        className="hidden"
+                        aria-hidden
+                      />
                       <button
                         type="button"
                         disabled={sending || !reply.trim()}
@@ -437,13 +563,24 @@ export default function InboxPage() {
                         <Icon name="mail" size={16} />
                         {sending ? 'Sending…' : 'Send reply'}
                       </button>
+                      <button
+                        type="button"
+                        disabled={sending || files.length >= 5}
+                        onClick={() => fileInput.current?.click()}
+                        className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-label font-semibold text-content-secondary transition-colors hover:bg-surface-alt disabled:opacity-50"
+                      >
+                        <Icon name="document" size={15} />
+                        Attach
+                      </button>
                       <span className="text-caption text-content-muted">
                         Sends from contact@sawacars.com and threads onto this message.
+                        {files.length ? ` ${files.length}/5 attachments.` : ''}
                       </span>
                     </div>
                   </>
                 )}
               </div>
+              )}
             </div>
           ) : null}
         </Card>

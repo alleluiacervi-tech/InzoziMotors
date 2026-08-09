@@ -55,6 +55,7 @@ after(async () => {
 
 const ADMIN_ROUTES = [
   ['get', '/mail/messages'],
+  ['get', '/mail/folders'],
   ['get', '/mail/unread'],
   ['get', '/mail/messages/12'],
   ['get', '/mail/messages/12/attachments/0'],
