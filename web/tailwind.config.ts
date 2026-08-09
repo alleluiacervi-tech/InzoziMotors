@@ -137,6 +137,10 @@ const config: Config = {
       },
 
       keyframes: {
+        kenburns: {
+          from: { transform: 'scale(1.08)' },
+          to: { transform: 'scale(1)' },
+        },
         'fade-up': {
           from: { opacity: '0', transform: 'translateY(14px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
@@ -151,6 +155,9 @@ const config: Config = {
       },
       animation: {
         'fade-up': 'fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
+        // The hero's almost-imperceptible push-in: 22s, ends and stays. Slow
+        // enough that nobody can point at it; the page just feels alive.
+        'kenburns': 'kenburns 22s cubic-bezier(0.25, 0.1, 0.25, 1) both',
         'fade-in': 'fade-in 0.5s ease both',
         shimmer: 'shimmer 1.6s infinite',
       },

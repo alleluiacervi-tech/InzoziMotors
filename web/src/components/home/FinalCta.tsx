@@ -7,6 +7,9 @@ import { InkClose } from '@/components/layout/InkClose'
 export function FinalCta() {
   return (
     <InkClose
+      // A real lot, not a render — the one place the homepage shows inventory
+      // as a PLACE. The gradient in InkClose keeps the words on solid ink.
+      image={{ src: '/img/lot.jpg', alt: 'A row of inspected cars at a Sawa lot' }}
       headline="Every car here passed the same 150-point inspection. There is no uninspected tier."
       actions={
         <>

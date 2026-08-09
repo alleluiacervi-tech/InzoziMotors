@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
+import { CountUp } from '@/components/ui/CountUp'
 
 // The homepage's single trust section. There used to be three — a stat band,
 // an "elsewhere vs Sawa" comparison, and a five-promise ledger — saying the
@@ -13,10 +14,10 @@ import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 // the comparison and the sample report, lives on /promise and /how-it-works.
 
 const FACTS = [
-  { value: '150', label: 'point inspection, published in full' },
-  { value: '36', label: 'standard photo angles, shot by us' },
-  { value: '7', label: 'day drive-it guarantee' },
-  { value: '3', label: 'Kigali inspection centers' },
+  { value: 150, label: 'point inspection, published in full' },
+  { value: 36, label: 'standard photo angles, shot by us' },
+  { value: 7, label: 'day drive-it guarantee' },
+  { value: 3, label: 'Kigali inspection centers' },
 ] as const
 
 const LEDGER: { claim: string; proof: string }[] = [
@@ -61,9 +62,12 @@ export function TrustBand() {
                 <div key={fact.value}>
                   <dt className="sr-only">{fact.label}</dt>
                   <dd>
-                    <span className="block text-display font-extrabold tracking-[-0.03em] text-content">
-                      {fact.value}
-                    </span>
+                    {/* Counts up as it enters the viewport — the numbers are
+                        the section's whole argument, so they get the moment. */}
+                    <CountUp
+                      value={fact.value}
+                      className="block text-display font-extrabold tracking-[-0.03em] text-content"
+                    />
                     <span className="mt-1 block text-caption text-content-secondary">
                       {fact.label}
                     </span>

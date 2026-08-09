@@ -42,7 +42,10 @@ export function Hero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          // The 22s push-in: starts a breath wider and settles home. Nobody
+          // can point at it; the opening just feels alive. The reduced-motion
+          // kill-switch in globals.css collapses it to a static frame.
+          className="animate-kenburns object-cover"
           {...(typeof STAGE.image !== 'string' ? { placeholder: 'blur' as const } : {})}
         />
       ) : null}
@@ -54,11 +57,19 @@ export function Hero() {
 
       <div className="relative mx-auto w-full max-w-content px-5 pb-14 pt-32 sm:px-8 sm:pb-16 lg:px-12">
         <div className="max-w-2xl text-white">
-          <p className="mb-3 text-eyebrow font-bold uppercase text-white/85">
+          <p
+            className="mb-3 animate-fade-up text-eyebrow font-bold uppercase text-white/85"
+            style={{ animationDelay: '80ms' }}
+          >
             Rwanda&rsquo;s certified marketplace
           </p>
-          <h1 className="text-display-xl font-extrabold">{STAGE.headline}</h1>
-          <p className="mt-4 max-w-xl text-title-sm leading-relaxed text-white/80">
+          <h1 className="animate-fade-up text-display-xl font-extrabold" style={{ animationDelay: '160ms' }}>
+            {STAGE.headline}
+          </h1>
+          <p
+            className="mt-4 max-w-xl animate-fade-up text-title-sm leading-relaxed text-white/80"
+            style={{ animationDelay: '260ms' }}
+          >
             {STAGE.caption}
           </p>
 
@@ -66,7 +77,8 @@ export function Hero() {
             action="/cars"
             method="get"
             role="search"
-            className="mt-8 flex w-full max-w-xl items-center gap-2 rounded-2xl bg-white p-2 shadow-float"
+            className="mt-8 flex w-full max-w-xl animate-fade-up items-center gap-2 rounded-2xl bg-white p-2 shadow-float"
+            style={{ animationDelay: '380ms' }}
           >
             <label htmlFor="hero-search" className="sr-only">
               Search certified cars
@@ -87,14 +99,17 @@ export function Hero() {
             </Button>
           </form>
 
-          <p className="mt-4 text-caption text-white/80">
+          <p className="mt-4 animate-fade-up text-caption text-white/80" style={{ animationDelay: '470ms' }}>
             Selling?{' '}
             <Link href="/sell" className="font-bold text-white underline underline-offset-4 hover:text-white/90">
               Get a certified valuation
             </Link>
           </p>
 
-          <ul className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-3">
+          <ul
+            className="mt-8 flex animate-fade-up flex-wrap items-center gap-x-7 gap-y-3"
+            style={{ animationDelay: '560ms' }}
+          >
             {TRUST_STRIP.map((item) => (
               <li
                 key={item.label}
