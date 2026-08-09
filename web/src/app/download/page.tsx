@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button, Card, Container, Eyebrow, Icon, Section, SectionHeading, type IconName } from '@/components/ui'
 import { AppLaunch } from './AppLaunch'
@@ -113,13 +114,55 @@ export default async function DownloadPage({
         <Container>
           <div className="max-w-2xl">
             <Eyebrow>The Sawa Cars app</Eyebrow>
-            <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
-              Sawa Cars on your phone
-            </h1>
-            <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
+
+            {/* The store-listing lockup — the exact grammar the App Store and
+                Play Store use for a product header (icon tile, name, developer,
+                factual meta), so the app reads as a real shipped product. Every
+                line is a fact: no invented star ratings, no fake review counts.
+                The icon is the REAL app icon, CSS-masked to the same ~22%
+                superellipse radius iOS applies. */}
+            <div className="mt-6 flex items-start gap-5 sm:gap-7">
+              <Image
+                src="/brand/app-icon.png"
+                alt="Sawa Cars app icon"
+                width={128}
+                height={128}
+                priority
+                className="h-24 w-24 shrink-0 rounded-[22.5%] shadow-float ring-1 ring-black/5 sm:h-32 sm:w-32"
+              />
+              <div className="min-w-0 pt-1">
+                <h1 className="text-title font-extrabold tracking-[-0.02em] text-content sm:text-display">
+                  Sawa Cars
+                </h1>
+                <p className="mt-1 text-body text-content-secondary">
+                  Certified used cars in Rwanda
+                </p>
+                <p className="mt-0.5 text-caption text-content-muted">Sawa Cars Ltd</p>
+
+                <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+                  {[
+                    { label: 'Price', value: 'Free' },
+                    { label: 'Category', value: 'Vehicles' },
+                    { label: 'Works with', value: 'iPhone & Android' },
+                  ].map((m, i) => (
+                    <li key={m.label} className="flex items-center gap-5">
+                      {i > 0 ? <span aria-hidden className="h-7 w-px bg-line" /> : null}
+                      <span>
+                        <span className="block text-micro font-bold uppercase tracking-[0.08em] text-content-muted">
+                          {m.label}
+                        </span>
+                        <span className="block text-label font-bold text-content">{m.value}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <p className="mt-7 text-body leading-relaxed text-content-secondary">
               The same certified marketplace and the same account, with the parts that only make
               sense on a phone: the camera work for verification, and alerts the moment a price
-              moves. Free, on iPhone and Android.
+              moves.
             </p>
 
             <AppLaunch to={to} webFallback={webFallback} />

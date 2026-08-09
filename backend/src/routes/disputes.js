@@ -5,6 +5,8 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
+const { sendDisputeUpdate } = require('../lib/mailer');
+
 const router = express.Router();
 
 // POST /disputes — buyer raises a dispute within the 7-day return window
@@ -40,6 +42,9 @@ router.post('/', requireAuth, async (req, res) => {
        VALUES ($1, $2, $3) RETURNING *`,
       [handover_id, req.user.id, reason.trim()]
     );
+    pool.query('SELECT email, name FROM users WHERE id = $1', [req.user.id])
+      .then(({ rows: u }) => u[0] && sendDisputeUpdate(u[0].email, u[0].name, true))
+      .catch(() => {});
     await notifyUser(pool, {
       user_id: req.user.id,
       type: 'handover',
@@ -120,6 +125,12 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       body: resolution || `Your dispute has been ${status} by the Sawa team.`,
       meta: JSON.stringify({ disputeId: rows[0].id }),
     });
+    pool.query('SELECT email, name FROM users WHERE id = $1', [rows[0].raised_by])
+      .then(({ rows: u }) => u[0] && sendDisputeUpdate(
+        u[0].email, u[0].name, false,
+        resolution || `Outcome: ${status}.`
+      ))
+      .catch(() => {});
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

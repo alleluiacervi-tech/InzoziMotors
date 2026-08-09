@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { sendResetCode } = require('../lib/mailer');
+const { sendResetCode, sendWelcome, sendPasswordChanged, sendAccountDeleted } = require('../lib/mailer');
 const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
@@ -68,6 +68,9 @@ router.post('/register', async (req, res) => {
       [name, email.toLowerCase(), hash, role]
     );
     const user = rows[0];
+    // Fire-and-forget: a slow mail server must never slow a signup down, and
+    // the welcome mail doubles as the soft check that the address is real.
+    sendWelcome(user.email, user.name);
     res.status(201).json({ user, token: makeToken(user) });
   } catch (err) {
     log.error('register error', { error: err.message });
@@ -227,6 +230,12 @@ router.post('/reset-password', async (req, res) => {
       await revokeSessions(client, userId);
       return { status: 200, body: { success: true } };
     });
+    if (result.status === 200) {
+      // If the reset was NOT the owner, this notice is how they find out.
+      pool.query('SELECT name FROM users WHERE email = $1', [String(email).toLowerCase()])
+        .then(({ rows: r }) => sendPasswordChanged(String(email).toLowerCase(), r[0]?.name))
+        .catch(() => {});
+    }
     res.status(result.status).json(result.body);
   } catch (err) {
     log.error('reset-password error', { error: err.message });
@@ -304,8 +313,10 @@ router.post('/change-password', requireAuth, async (req, res) => {
       return {
         status: 200,
         body: { success: true, token: makeToken({ ...user, token_version }) },
+        notify: { email: user.email, name: user.name },
       };
     });
+    if (result.notify) sendPasswordChanged(result.notify.email, result.notify.name);
     res.status(result.status).json(result.body);
   } catch (err) {
     log.error('change-password error', { error: err.message });
@@ -397,14 +408,25 @@ router.delete('/me', requireAuth, async (req, res) => {
         [user.id]
       );
 
-      return { status: 200, body: { success: true }, files: [user.id_front_url, user.id_back_url, user.selfie_url] };
+      return {
+        status: 200,
+        body: { success: true },
+        files: [user.id_front_url, user.id_back_url, user.selfie_url],
+        // The row's email is already overwritten — this copy, captured before,
+        // is the only way the confirmation can still reach them.
+        notify: { email: user.email, name: user.name },
+      };
     });
 
     // Identity documents are erased from disk after the row is committed. Doing
     // it inside the transaction would leave files deleted but the account intact
     // if the commit failed. Failures here are logged, never fatal — the account
     // is already gone from the user's point of view.
-    if (result.status === 200) removeIdDocuments(result.files);
+    if (result.status === 200) {
+      removeIdDocuments(result.files);
+      // The written record of what was deleted and what the law keeps.
+      if (result.notify) sendAccountDeleted(result.notify.email, result.notify.name);
+    }
 
     res.status(result.status).json(result.body);
   } catch (err) {
