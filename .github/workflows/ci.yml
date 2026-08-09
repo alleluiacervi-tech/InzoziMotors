@@ -129,3 +129,82 @@ jobs:
         working-directory: admin
       - run: npm run build
         working-directory: admin
+
+  ops:
+    name: Ops scripts — syntax + reaper tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # A syntax error in ops/ is invisible until a deploy runs it on the
+      # production host, which is the worst possible place to find out. Two
+      # deploys have already been wedged by this file family.
+      - name: Syntax
+        run: |
+          fail=0
+          for f in ops/*.sh ops/test/*.sh; do
+            bash -n "$f" || { echo "SYNTAX FAIL $f"; fail=1; }
+          done
+          exit $fail
+
+      # ops/reap-oneoffs.sh removes running containers on a host shared with
+      # another project. Its safety properties are asserted against a stubbed
+      # docker; see the header of the test for why that is the only honest way
+      # to check them.
+      - name: Reaper safety tests
+        run: ops/test/reap-oneoffs.test.sh
+
+      # The deploy and ops workflows run shell that lives inside YAML, and the
+      # ops one additionally sends a script down an SSH heredoc. Neither the YAML
+      # parser nor `bash -n ops/*.sh` looks at any of that, so a typo in the
+      # remote half ships silently and fails on the production host.
+      - name: Embedded remote scripts
+        run: |
+          python3 - <<'PY'
+          import subprocess, sys, yaml
+
+          def check(label, src):
+              r = subprocess.run(['bash', '-n'], input=src, text=True, capture_output=True)
+              if r.returncode:
+                  print('SYNTAX FAIL', label)
+                  print(r.stderr.strip()[:400])
+                  return 1
+              print('ok', label)
+              return 0
+
+          def heredocs(body):
+              """Bodies of quoted heredocs (<<'WORD'), which bash -n on the outer
+              script treats as opaque text rather than parsing."""
+              out, lines = [], body.split('\n')
+              i = 0
+              while i < len(lines):
+                  stripped = lines[i].rstrip()
+                  if "<<'" in stripped and stripped.endswith("'"):
+                      word = stripped.rsplit("<<'", 1)[1][:-1]
+                      for j in range(i + 1, len(lines)):
+                          if lines[j].strip() == word:
+                              out.append(('<<' + word, '\n'.join(lines[i + 1:j])))
+                              i = j
+                              break
+                  i += 1
+              return out
+
+          bad = 0
+          for wf in ('.github/workflows/deploy.yml', '.github/workflows/ops.yml',
+                     '.github/workflows/ci.yml'):
+              doc = yaml.safe_load(open(wf))
+              for job_id, job in doc['jobs'].items():
+                  for n, step in enumerate(job.get('steps', [])):
+                      body = step.get('run')
+                      if not body:
+                          continue
+                      label = f"{wf} {job_id}/{step.get('name', n)}"
+                      bad |= check(label, body)
+                      for word, inner in heredocs(body):
+                          # Only shell heredocs; PY blocks are python.
+                          if word in ('<<PY', '<<JS', '<<SQL', '<<EOSQL'):
+                              continue
+                          bad |= check(f"{label} {word}", inner)
+          sys.exit(bad)
+          PY
