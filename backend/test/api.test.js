@@ -355,7 +355,14 @@ test('scheduling rejects non-ISO dates and past days', async () => {
   await attempt('12/08/2026').expect(400);   // ambiguous
   await attempt('2020-01-01').expect(400);   // in the past
 
+  // Cleared first for the same reason as the capacity test below: the database
+  // is not reset between runs, and each run books this same day at Kicukiro —
+  // enough runs and the valid attempt starts failing on capacity, not format.
   const future = new Date(Date.now() + 5 * 86400_000).toISOString().slice(0, 10);
+  await pool.query(
+    `DELETE FROM inspections WHERE lower(center) = 'kicukiro center' AND scheduled_on = $1::date`,
+    [future]
+  );
   await attempt(future).expect(200);
 
   // Formatted by Postgres, not by JS. node-postgres hands a DATE back as local
