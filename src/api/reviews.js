@@ -15,6 +15,12 @@ export const reviews = {
   postReview: async (data) => {
     return await api.post('/reviews', data);
   },
+
+  // Flag a review for the moderation queue. Idempotent server-side —
+  // repeat reports from the same person do not stack.
+  reportReview: async (reviewId, reason) => {
+    return await api.post(`/reviews/${reviewId}/report`, { reason });
+  },
 };
 
 export default reviews;
