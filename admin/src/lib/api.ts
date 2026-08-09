@@ -86,6 +86,59 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
+// ─── Inspection centers ──────────────────────────────────────────────────────
+
+export type CenterRow = {
+  id: string
+  name: string
+  area: string | null
+  address: string | null
+  daily_capacity: number
+  active: boolean
+  /** Live bookings today, counted the same way the scheduler counts them — so
+   *  this is the number that will actually gate the next booking. */
+  booked_today: number
+  upcoming: number
+  all_time: number
+}
+
+// ─── Reported messages ───────────────────────────────────────────────────────
+
+export type MessageReport = {
+  id: string
+  reason: string
+  status: 'open' | 'resolved' | 'dismissed'
+  created_at: string
+  conversation_id: string
+  message_id: string | null
+  buyer_id: string
+  seller_id: string
+  reporter_id: string
+  reporter_name: string
+  reporter_email: string
+  /** Who the report is ABOUT — the message author, or the other party in the
+   *  thread when no specific message was named. */
+  accused_id: string
+  message_sender_name: string | null
+  message_text: string | null
+  message_sent_at: string | null
+  buyer_name: string | null
+  seller_name: string | null
+  car_title: string | null
+  car_id: string | null
+  /** True when the reporter already blocked them, so the urgent part is handled. */
+  reporter_has_blocked: boolean
+}
+
+export type ReportThreadMessage = {
+  id: string
+  sender_id: string
+  sender_name: string
+  text: string
+  created_at: string
+  is_reported: boolean
+}
+
 // ─── Mailbox shapes ──────────────────────────────────────────────────────────
 
 export type MailAddress = { name: string; address: string }
@@ -295,6 +348,31 @@ export const api = {
   // Featured listings
   featureCar: (id: string, days = 7) =>
     request<any>(`/cars/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ days }) }),
+
+  // ── Inspection centers ─────────────────────────────────────────────────────
+  // Booking capacity is enforced against daily_capacity on every scheduling
+  // request, so this is the difference between changing a centre's capacity in a
+  // form and doing it with a hand-written UPDATE on production.
+  centers: () => request<CenterRow[]>('/centers'),
+  createCenter: (data: Partial<CenterRow>) =>
+    request<CenterRow>('/centers', { method: 'POST', body: JSON.stringify(data) }),
+  updateCenter: (id: string, data: Partial<CenterRow>) =>
+    request<CenterRow>(`/centers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  /** Deactivates rather than deletes — see routes/centers.js. */
+  deactivateCenter: (id: string) =>
+    request<CenterRow & { pending_inspections: number }>(`/centers/${id}`, { method: 'DELETE' }),
+
+  // ── Reported messages ──────────────────────────────────────────────────────
+  reports: (status: 'open' | 'resolved' | 'dismissed' | 'all' = 'open') =>
+    request<MessageReport[]>(`/messages/admin/reports?status=${status}`),
+  reportThread: (id: string) =>
+    request<{ conversation_id: string; reported_message_id: string | null; messages: ReportThreadMessage[] }>(
+      `/messages/admin/reports/${id}/thread`
+    ),
+  closeReport: (id: string, status: 'resolved' | 'dismissed') =>
+    request<MessageReport>(`/messages/admin/reports/${id}`, {
+      method: 'PATCH', body: JSON.stringify({ status }),
+    }),
 
   // ── The contact@ mailbox ───────────────────────────────────────────────────
   // Read over IMAP on the server; the browser never touches the mail host and
