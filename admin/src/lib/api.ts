@@ -7,6 +7,37 @@
 // is unchanged, because only the base URL moved.
 const BASE = '/api/backend'
 
+// ─── Is the API actually answering? ──────────────────────────────────────────
+// The header used to render a green dot and the words "Connected to live API"
+// as static markup. It said connected while every request on the page was
+// failing, which is the worst kind of status indicator: one that can only ever
+// report good news.
+//
+// Every request updates this, so the claim is derived from real outcomes. A 4xx
+// counts as CONNECTED — the API answered, it just refused — while a network
+// throw or a 502/504 from the proxy (which returns exactly that when it cannot
+// reach the backend) counts as unreachable.
+export type ApiStatus = 'unknown' | 'ok' | 'unreachable'
+
+let apiStatus: ApiStatus = 'unknown'
+const statusListeners = new Set<(s: ApiStatus) => void>()
+
+function setApiStatus(next: ApiStatus) {
+  if (next === apiStatus) return
+  apiStatus = next
+  statusListeners.forEach((l) => l(next))
+}
+
+export function getApiStatus(): ApiStatus {
+  return apiStatus
+}
+
+/** Subscribe to API reachability. Returns an unsubscribe function. */
+export function onApiStatus(cb: (s: ApiStatus) => void): () => void {
+  statusListeners.add(cb)
+  return () => statusListeners.delete(cb)
+}
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     ...(opts.headers as Record<string, string> | undefined),
@@ -15,12 +46,26 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
     headers['Content-Type'] = 'application/json'
   }
 
-  const res = await fetch(`${BASE}${path}`, {
-    ...opts,
-    headers,
-    // The cookie is httpOnly but still same-origin; this makes the intent explicit.
-    credentials: 'same-origin',
-  })
+  let res: Response
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...opts,
+      headers,
+      // The cookie is httpOnly but still same-origin; this makes the intent explicit.
+      credentials: 'same-origin',
+    })
+  } catch (e) {
+    // fetch only rejects on a genuine network failure — no response at all.
+    setApiStatus('unreachable')
+    const error = new Error('Could not reach the dashboard server.') as ApiError
+    error.status = 0
+    error.code = 'NETWORK'
+    throw error
+  }
+
+  // 502/504 is this app's own proxy reporting it could not reach the backend.
+  setApiStatus(res.status === 502 || res.status === 504 ? 'unreachable' : 'ok')
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
     // 401 means the session is gone (expired, revoked, signed out elsewhere).

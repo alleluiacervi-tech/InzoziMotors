@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { fmtUSD } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtUSD } from '@/components/ui'
 
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
@@ -18,6 +18,7 @@ export default function SubmissionsPage() {
   const [tab, setTab]               = useState('under_review')
   const [items, setItems]           = useState<any[]>([])
   const [loading, setLoading]       = useState(true)
+  const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId]     = useState<string | null>(null)
   const [notes, setNotes]           = useState('')
   const [showNotesFor, setShowNotesFor] = useState<string | null>(null)
@@ -28,11 +29,12 @@ export default function SubmissionsPage() {
 
   async function load(status: string) {
     setLoading(true)
+    setError(null)
     try {
       const data = await api.submissions(status === 'all' ? undefined : status)
       setItems(data)
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -73,12 +75,12 @@ export default function SubmissionsPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load(tab)} />
+      ) : loading ? (
+        <LoadingState />
       ) : items.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No submissions in this category.
-        </div>
+        <EmptyState icon="document" title="Nothing in this queue" description="No submissions are sitting at this stage." />
       ) : (
         <div className="space-y-4">
           {items.map((sub) => (

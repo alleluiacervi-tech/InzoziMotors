@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { fmtUSD } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtUSD } from '@/components/ui'
 
 const STATUS_COLORS: Record<string, string> = {
   upcoming:  'bg-info-tint text-info',
@@ -30,15 +30,17 @@ export default function RentalsPage() {
   const [tab, setTab]           = useState<'upcoming' | 'active' | 'completed' | 'cancelled'>('upcoming')
   const [items, setItems]       = useState<RentalBooking[]>([])
   const [loading, setLoading]   = useState(true)
+  const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
 
   async function load(s: string) {
     setLoading(true)
+    setError(null)
     try {
       const data = await api.getRentalBookings(s)
       setItems(data)
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -76,12 +78,12 @@ export default function RentalsPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load(tab)} />
+      ) : loading ? (
+        <LoadingState />
       ) : items.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No {tab} rental bookings.
-        </div>
+        <EmptyState icon="calendar" title="No bookings" description={`No ${tab} rental bookings.`} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
           <table className="w-full text-sm">

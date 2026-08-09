@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { api, signOut } from '@/lib/api'
+import { api, signOut, getApiStatus, onApiStatus, type ApiStatus } from '@/lib/api'
 import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
 
@@ -38,6 +38,44 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
 ]
 
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items)
+
+/**
+ * Reachability, derived from real request outcomes rather than asserted.
+ *
+ * The previous version of this was static markup — a green dot and the words
+ * "Connected to live API" — which reported success even while every request on
+ * the page was failing. An indicator that can only say one thing is worse than
+ * no indicator, because it actively argues against what the operator is seeing.
+ *
+ * Silent until the first request resolves, so it never claims a state it has
+ * not observed.
+ */
+function ApiStatusBadge() {
+  const [status, setStatus] = useState<ApiStatus>(getApiStatus)
+
+  useEffect(() => {
+    setStatus(getApiStatus())
+    return onApiStatus(setStatus)
+  }, [])
+
+  if (status === 'unknown') return null
+
+  const ok = status === 'ok'
+  return (
+    <span
+      className={`ml-auto hidden items-center gap-2 text-caption sm:flex ${
+        ok ? 'text-content-muted' : 'font-semibold text-danger-strong'
+      }`}
+      role="status"
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${ok ? 'bg-success' : 'bg-danger-strong'}`}
+        aria-hidden
+      />
+      {ok ? 'Connected to live API' : 'API unreachable — data may be stale'}
+    </span>
+  )
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -102,10 +140,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setSidebarOpen(false)}>
             <LogoMark size={34} />
             <div>
-              <p className="text-sm font-extrabold leading-none tracking-[-0.01em] text-white">
+              <p className="text-body font-extrabold leading-none tracking-[-0.01em] text-white">
                 Sawa Cars
               </p>
-              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+              <p className="mt-1 text-micro font-semibold uppercase tracking-[0.14em] text-white/60">
                 Operations
               </p>
             </div>
@@ -116,7 +154,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           {NAV_GROUPS.map((group) => (
             <div key={group.title} className="mb-5">
-              <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">
+              {/* text-white/30 measured 2.68:1 on ink-900 — below even the 3:1
+                  floor for large text, on the labels that carry the whole
+                  information architecture. /60 is 6.9:1. */}
+              <p className="mb-1.5 px-3 text-micro font-bold uppercase tracking-[0.16em] text-white/60">
                 {group.title}
               </p>
               <div className="space-y-0.5">
@@ -128,16 +169,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       href={href}
                       onClick={() => setSidebarOpen(false)}
                       className={`
-                        group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors
+                        group flex items-center gap-3 rounded-lg px-3 py-2 text-label font-semibold transition-colors
                         ${active ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/5 hover:text-white'}
                       `}
                     >
-                      <span className={active ? 'text-brand-bright' : 'text-white/40 group-hover:text-white/70'}>
+                      <span className={active ? 'text-brand-bright' : 'text-white/60 group-hover:text-white/80'}>
                         <Icon name={icon} size={17} />
                       </span>
                       {label}
                       {href === '/disputes' && openDisputes > 0 && (
-                        <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-[11px] font-bold text-white">
+                        <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-white">
                           {openDisputes}
                         </span>
                       )}
@@ -152,17 +193,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* User footer */}
         <div className="border-t border-white/10 px-4 py-4">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-label font-bold text-white">
               {(user?.name || 'A')[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-white">{user?.name || 'Admin'}</p>
-              <p className="truncate text-[11px] text-white/40">{user?.email}</p>
+              <p className="truncate text-label font-semibold text-white">{user?.name || 'Admin'}</p>
+              <p className="truncate text-micro text-white/60">{user?.email}</p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-white/50 transition-colors hover:bg-white/5 hover:text-white"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
           >
             <Icon name="logout" size={15} />
             Sign out
@@ -186,11 +227,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Icon name="menu" size={20} />
           </button>
-          <span className="text-sm font-bold text-content">{current?.label ?? ''}</span>
-          <span className="ml-auto hidden items-center gap-2 text-xs text-content-muted sm:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
-            Connected to live API
-          </span>
+          <span className="text-section font-bold text-content">{current?.label ?? ''}</span>
+          <ApiStatusBadge />
         </header>
 
         {/* Page content */}

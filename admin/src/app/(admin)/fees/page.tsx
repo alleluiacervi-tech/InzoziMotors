@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { fmtUSD, fmtRWF } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtRWF, fmtUSD } from '@/components/ui'
 
 // Fee types are categories, not statuses — they don't earn a hue each.
 const TYPE_COLORS: Record<string, string> = {
@@ -27,16 +27,18 @@ export default function FeesPage() {
   const [fees, setFees]         = useState<Fee[]>([])
   const [totals, setTotals]     = useState<Record<string, number>>({})
   const [loading, setLoading]   = useState(true)
+  const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
 
   async function load(s: string) {
     setLoading(true)
+    setError(null)
     try {
       const data = await api.getFees(s)
       setFees(data.fees)
       setTotals(data.totals || {})
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -78,12 +80,12 @@ export default function FeesPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load(tab)} />
+      ) : loading ? (
+        <LoadingState />
       ) : fees.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No {tab} fees.
-        </div>
+        <EmptyState icon="cash" title="Nothing to show" description={`No ${tab} fees have been recorded.`} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
           <table className="w-full text-sm">

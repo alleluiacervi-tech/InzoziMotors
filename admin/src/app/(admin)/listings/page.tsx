@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { fmtUSD, Icon } from '@/components/ui'
+import { EmptyState, ErrorState, Icon, LoadingState, fmtUSD } from '@/components/ui'
 
 const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
@@ -19,15 +19,17 @@ export default function ListingsPage() {
   const [statusFilter, setStatusFilter] = useState('live')
   const [items, setItems]               = useState<any[]>([])
   const [loading, setLoading]           = useState(true)
+  const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId]         = useState<string | null>(null)
 
   async function load(s: string) {
     setLoading(true)
+    setError(null)
     try {
       const data = await api.cars({ status: s })
       setItems(data)
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -90,12 +92,12 @@ export default function ListingsPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load(statusFilter)} />
+      ) : loading ? (
+        <LoadingState />
       ) : items.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No listings with status "{statusFilter}".
-        </div>
+        <EmptyState icon="car" title="No listings here" description={`Nothing on the floor with status “${statusFilter}”.`} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((car) => (
