@@ -191,11 +191,17 @@ router.get('/fees', requireAdmin, async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      `SELECT f.*, u.name AS seller_name, h.booking_id, c.title AS car_title
+      `SELECT f.*,
+              -- LEFT: a rental fee has no seller (the fleet is the house's
+              -- own) and must not vanish from the money book because of it.
+              COALESCE(u.name, CASE WHEN f.fee_type = 'rental' THEN 'Sawa fleet' END) AS seller_name,
+              h.booking_id, c.title AS car_title,
+              rb.booking_ref AS rental_ref
        FROM platform_fees f
-       JOIN users u ON u.id = f.seller_id
+       LEFT JOIN users u ON u.id = f.seller_id
        LEFT JOIN handovers h ON h.id = f.handover_id
        LEFT JOIN cars c ON c.id = h.car_id
+       LEFT JOIN rental_bookings rb ON rb.id = f.booking_id
        ${where}
        ORDER BY f.created_at DESC`,
       params
