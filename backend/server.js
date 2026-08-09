@@ -161,12 +161,29 @@ const globalLimiter = rateLimit({
   message: { error: 'Too many requests. Please slow down.' },
 });
 
+// UGC and upload writes: fast enough for any human, slow enough that one
+// account cannot flood chats, reviews, the moderation queue, or the KYC
+// upload directory before the global backstop notices. GETs are unaffected.
+const writeLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' },
+});
+const postOnly = (limiter) => (req, res, next) =>
+  (req.method === 'POST' ? limiter(req, res, next) : next());
+
 app.use(globalLimiter);
 app.use('/auth/login', authLimiter);
 app.use('/auth/register', authLimiter);
 app.use('/auth/change-password', authLimiter);
 app.use('/auth/forgot-password', resetLimiter);
 app.use('/auth/reset-password', resetLimiter);
+app.use('/messages', postOnly(writeLimiter));
+app.use('/reviews', postOnly(writeLimiter));
+app.use('/disputes', postOnly(writeLimiter));
+app.use('/id-verification', postOnly(writeLimiter));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/auth',            require('./src/routes/auth'));
@@ -206,7 +223,9 @@ const pool = require('./src/db');
 
 // Liveness: is this process running? Cheap, no dependencies. Restart on failure.
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });
+  // No env echo: which mode the server runs in is fingerprinting data, and
+  // nothing that monitors this endpoint ever needed it.
+  res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
 // Readiness: can it actually do its job? Fails with 503 when the database is
