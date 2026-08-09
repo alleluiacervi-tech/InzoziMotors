@@ -73,7 +73,7 @@ run_pg pg_restore -U "$DB_USER" -d "$RESTORE_DB" --clean --if-exists --no-owner 
   --exit-on-error < "$DUMP" || die "pg_restore failed — previous state is at $SAFETY"
 
 log "verifying"
-for table in users cars handovers platform_fees; do
+for table in users cars handovers platform_fees rental_bookings payments; do
   COUNT="$(run_pg psql -U "$DB_USER" -d "$RESTORE_DB" -t -A -c "SELECT COUNT(*) FROM $table" 2>/dev/null || echo 'ERROR')"
   [ "$COUNT" = "ERROR" ] && die "table '$table' missing after restore"
   log "  $table: $COUNT rows"
