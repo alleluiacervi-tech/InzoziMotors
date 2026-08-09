@@ -39,8 +39,8 @@
 # Every step that talks to the network, to Docker or to the database goes
 # through run_bounded, so this script cannot outlive the sum of its own budgets:
 #
-#   fetch 120 + backup 900 + up db 180 + migrate 300 + restart 300
-#   + readiness 150 + image prune 120 + builder prune 300  =  2370s (39m30s)
+#   fetch 120 + backup 900 + up db 180 + reap 120 + migrate 300 + restart 300
+#   + readiness 150 + image prune 120 + builder prune 300  =  2490s (41m30s)
 #
 # .github/workflows/deploy.yml sizes its Deploy step ABOVE that sum deliberately
 # (50 minutes, which also covers its own SSH connect retries). An outer timeout
@@ -175,6 +175,21 @@ fi
 # The database must be up for migrations. Idempotent: an unchanged, running db
 # container is left alone.
 run_bounded 180 $COMPOSE up -d db || die "could not bring up the database"
+
+# ── Clear abandoned one-offs before creating another one ─────────────────────
+# `compose run --rm` cleans up from the CLIENT side, so a cancelled CI job or a
+# dropped SSH connection leaves the container running forever. Sixteen cancelled
+# deploys left five of them on this host, four running for three days, each a
+# second API process against the live database.
+#
+# Runs here, after the database is up (so the compose project is resolvable) and
+# before the migration below creates a one-off of its own. The reaper's MIN_AGE
+# floor means it could not touch that migration even if the order changed.
+#
+# `|| true`: this is hygiene. A deploy that can ship must not be stopped by a
+# container it failed to tidy.
+log "clearing abandoned one-off containers"
+run_bounded 120 ops/reap-oneoffs.sh || true
 
 # ── Migrations ───────────────────────────────────────────────────────────────
 # This one line is what the 27-minute "deploy" actually was. `run` with no

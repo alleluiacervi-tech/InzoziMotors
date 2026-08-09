@@ -25,6 +25,8 @@ on:
           - restart-api     # restart just the API
           - rollback        # ops/rollback.sh — back to the previous revision
           - prune-builders  # clear wedged/leftover BuildKit state and cache
+          - list-stale      # what abandoned one-off containers are lying around
+          - cleanup-stale   # remove them (and reclaim the images they pinned)
 
 concurrency:
   group: deploy-production   # never race a deploy
@@ -75,6 +77,10 @@ jobs:
           USER: ${{ secrets.VPS_USER }}
           APP_DIR: ${{ secrets.VPS_APP_DIR }}
           ACTION: ${{ inputs.action }}
+          # The revision this lever's own ops scripts are read from — see
+          # load_script below. Not checked out; only read out of the object
+          # database, so the host's working tree is untouched.
+          REF: ${{ github.sha }}
           # ops/rollback.sh stops for confirmation when the deploy it is undoing
           # carried migrations. There is no terminal here, so the decision has
           # to be made in advance: rolling back CODE only is the documented safe
@@ -85,9 +91,10 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" \
-              "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") CONFIRM=$(printf %q "$CONFIRM") bash -s" <<'REMOTE'
+              "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") CONFIRM=$(printf %q "$CONFIRM") REF=$(printf %q "$REF") bash -s" <<'REMOTE'
           set -euo pipefail
           APP_DIR="${APP_DIR:-}"
+          REF="${REF:-HEAD}"
           if [ -z "$APP_DIR" ]; then
             for c in /srv/sawa /opt/sawa /root/sawa /var/www/sawa; do
               [ -x "$c/ops/deploy.sh" ] && APP_DIR="$c" && break
@@ -104,6 +111,38 @@ jobs:
           # Consumed by ops/rollback.sh, which cannot ask an interactive
           # question down an SSH heredoc.
           export CONFIRM="${CONFIRM:-}"
+
+          # ── Run ops scripts from the DISPATCHED revision, not from disk ─────
+          # The host's checkout is whatever the last deploy left there, which is
+          # by definition behind whenever this lever is being used to fix
+          # something. A new action that calls a new script would fail with "no
+          # such file" on its first and most important use.
+          #
+          # So: materialise the script from the revision this workflow is running
+          # at. `git show` reads the blob straight out of the object database —
+          # nothing is checked out, so the running stack's working tree is left
+          # exactly as it is (ops/rollback.sh depends on that).
+          #
+          # Falls back to the on-disk copy when the object is not reachable, so
+          # this still works on a host that cannot reach GitHub.
+          load_script() {
+            local path="$1" dest
+            dest="$(mktemp)"
+            if ! git cat-file -e "$REF:$path" 2>/dev/null; then
+              git fetch --quiet --all --tags 2>/dev/null || true
+            fi
+            if git cat-file -e "$REF:$path" 2>/dev/null; then
+              git show "$REF:$path" > "$dest"
+            elif [ -f "$path" ]; then
+              echo "note: $REF unreachable — using the copy on disk" >&2
+              cat "$path" > "$dest"
+            else
+              echo "$path is available neither at $REF nor on disk" >&2
+              return 1
+            fi
+            chmod +x "$dest"
+            printf '%s' "$dest"
+          }
 
           case "$ACTION" in
             status)
@@ -131,6 +170,43 @@ jobs:
               docker builder prune -af || true
               docker image prune -f || true
               df -h / | tail -1
+              ;;
+            list-stale)
+              # Read-only. Same filter and same age rule as the real thing, so
+              # what this prints is exactly what cleanup-stale would remove.
+              REAPER="$(load_script ops/reap-oneoffs.sh)"
+              DRY_RUN=1 bash "$REAPER"
+              ;;
+            cleanup-stale)
+              # A cancelled deploy leaves its `compose run` container running —
+              # `--rm` is client-side, and a cancelled job has no client left to
+              # honour it. Each survivor is a second API process against the live
+              # database, and it pins the image it was built from, so the disk it
+              # holds is unreclaimable while it lives.
+              #
+              # ops/reap-oneoffs.sh filters on the compose project + oneoff
+              # labels, never on the container name: this host is shared, and a
+              # name match would reach a neighbour's containers. Service
+              # containers are oneoff=False and cannot match, so this is safe
+              # against a live stack.
+              REAPER="$(load_script ops/reap-oneoffs.sh)"
+              echo "--- before ---"
+              docker ps -a --format 'table {{.Names}}\t{{.Status}}' | head -20
+              echo
+              bash "$REAPER"
+              echo
+              # Now that nothing references them, the images those containers
+              # were holding become reclaimable. Dangling only — tagged images
+              # stay, so the rollback window is untouched.
+              echo "--- reclaiming images the survivors were pinning ---"
+              docker image prune -f || true
+              echo
+              echo "--- after ---"
+              docker ps -a --format 'table {{.Names}}\t{{.Status}}' | head -20
+              echo
+              df -h "$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /)" | tail -1
+              echo "--- api readiness ---"
+              curl -fsS -m 5 http://127.0.0.1:4000/health/ready && echo || echo "NOT READY"
               ;;
             *)
               echo "unknown action: $ACTION"; exit 1 ;;
