@@ -717,10 +717,7 @@ export function AppProvider({ children }) {
         const token = await getToken();
         if (token) {
           const me = await authApi.getMe();
-          setCurrentUser({
-            ...me,
-            initials: me.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
-          });
+          setCurrentUser(withInitials(me));
           setIsLoggedIn(true);
           await loadInitialData(me);
         } else {
@@ -881,10 +878,9 @@ export function AppProvider({ children }) {
     try {
       const data = await authApi.login(email, password);
       const user = data.user;
-      setCurrentUser({
-        ...user,
-        initials: user.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
-      });
+      // withInitials, not a bare .split: a server response without a name
+      // must not crash the sign-in it just succeeded at.
+      setCurrentUser(withInitials(user));
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
@@ -934,10 +930,7 @@ export function AppProvider({ children }) {
     try {
       const data = await authApi.register(name, email, password, role);
       const user = data.user;
-      setCurrentUser({
-        ...user,
-        initials: user.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
-      });
+      setCurrentUser(withInitials(user));
       setIsLoggedIn(true);
       await loadInitialData(user);
     } catch (err) {
@@ -1453,7 +1446,7 @@ export function AppProvider({ children }) {
               setPendingVerifications(queueList.map((v) => ({
                 id: v.id,
                 name: v.name,
-                initials: v.name.split(' ').map((w) => w[0]).join('').toUpperCase(),
+                initials: withInitials({ name: v.name }).initials,
                 submitted: new Date(v.submitted_at).toLocaleDateString('en-US'),
                 status: v.id_verified,
               })));

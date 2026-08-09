@@ -8,6 +8,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import linking from './src/navigation/linking';
 import { navigationRef, initPushNavigation, flushPendingPushNavigation } from './src/utils/pushNavigation';
 import AnimatedSplash from './src/components/AnimatedSplash';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import FeedbackHost from './src/components/Feedback';
 import { getJSON } from './src/storage';
 
@@ -41,6 +42,10 @@ export default function App() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
+    // Outermost on purpose: a throw anywhere — a screen, the navigator, the
+    // context provider itself — lands here instead of a permanent white
+    // screen. Reload remounts the whole tree.
+    <ErrorBoundary>
     <AppProvider>
       <SafeAreaProvider>
         {initialRoute && (
@@ -61,5 +66,6 @@ export default function App() {
         {(!splashDone || !initialRoute) && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
       </SafeAreaProvider>
     </AppProvider>
+    </ErrorBoundary>
   );
 }
