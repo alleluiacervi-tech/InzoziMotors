@@ -3,6 +3,9 @@ import localFont from 'next/font/local'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { getCurrentUser } from '@/lib/session'
+import { fx } from '@/lib/api'
+import { setRwfRate } from '@/lib/business'
+import { FxSync } from '@/components/FxSync'
 import { SITE } from '@/lib/site'
 import './globals.css'
 
@@ -90,12 +93,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // the browser — only the safe profile fields the header needs.
   const user = await getCurrentUser()
 
+  // The live USD⇄RWF rate, fetched once per hour (Next revalidate) and pushed
+  // into lib/business for every server component below; <FxSync/> repeats the
+  // push for the client bundle. Never throws — fx.get falls back flagged-stale.
+  const rate = await fx.get()
+  setRwfRate(rate.rate)
+
   return (
     <html lang="en" className={satoshi.variable}>
       <body className="flex min-h-screen flex-col">
         <a href="#main" className="skip-link">
           Skip to main content
         </a>
+        <FxSync rate={rate.rate} />
         <Header user={user} />
         <main id="main" className="flex-1">
           {children}

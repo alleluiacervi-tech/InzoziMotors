@@ -21,9 +21,14 @@
 // signed legal document is not a data migration, it is forgery. handovers keeps
 // its own currency + price_minor from 0005 for the same reason.
 //
-//   node scripts/convert-to-rwf.js --rate=1447.5              # dry run
-//   node scripts/convert-to-rwf.js --rate=1447.5 --commit     # do it
+//   node scripts/convert-to-rwf.js --rate=live                 # dry run, live rate
+//   node scripts/convert-to-rwf.js --rate=1447.5               # dry run, chosen rate
+//   node scripts/convert-to-rwf.js --rate=live --commit        # do it
 //   node scripts/convert-to-rwf.js --rate=1447.5 --commit --note="BNR mid 2026-08-09"
+//
+// --rate=live fetches from the platform's FX providers (src/lib/fx.js) and
+// REFUSES a stale answer: restating what sellers owe on last week's rate is a
+// decision, and this script does not make decisions on its own.
 //
 // Idempotent: it only ever selects rows still marked USD, so running it twice
 // cannot double-convert.
@@ -43,9 +48,10 @@ const TARGETS = [
 ];
 
 function parseArgs(argv) {
-  const out = { rate: null, commit: false, note: null };
+  const out = { rate: null, live: false, commit: false, note: null };
   for (const a of argv.slice(2)) {
-    if (a.startsWith('--rate=')) out.rate = Number(a.slice(7));
+    if (a === '--rate=live') out.live = true;
+    else if (a.startsWith('--rate=')) out.rate = Number(a.slice(7));
     else if (a === '--commit') out.commit = true;
     else if (a.startsWith('--note=')) out.note = a.slice(7);
     else {
@@ -65,7 +71,25 @@ function usage(message) {
 }
 
 async function main() {
-  const { rate, commit, note } = parseArgs(process.argv);
+  const parsed = parseArgs(process.argv);
+  const { commit } = parsed;
+  let { rate, note } = parsed;
+
+  if (parsed.live) {
+    const { getRate } = require('../src/lib/fx');
+    const fx = await getRate('USD', 'RWF');
+    if (fx.stale) {
+      console.error('\nRefusing --rate=live: the freshest available rate is STALE');
+      console.error(`  (${fx.rate} from ${fx.source}, fetched ${fx.fetched_at || 'never'}).`);
+      console.error('Money is not restated on an old rate. Retry when the providers');
+      console.error('answer, or pass an explicit --rate you are prepared to defend.\n');
+      await pool.end();
+      process.exit(2);
+    }
+    rate = fx.rate;
+    note = note || `live rate from ${fx.source} at ${fx.fetched_at}`;
+    console.log(`\nLive rate: ${rate} RWF per USD (${fx.source}, fetched ${fx.fetched_at})`);
+  }
 
   if (rate == null || !Number.isFinite(rate)) usage('A --rate is required.');
   if (rate <= 0) usage('The rate must be positive.');

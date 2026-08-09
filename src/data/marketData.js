@@ -1,4 +1,19 @@
-export const RWF_RATE = 1300; // 1 USD ≈ 1,300 RWF (2026 rate)
+// The USD⇄RWF rate. LIVE: refreshed from GET /fx on app boot (AppContext) and
+// cached in storage for offline starts. `let` on purpose — Metro's CJS interop
+// reads the binding at each use, so screens that show {RWF_RATE} pick up the
+// refreshed value. The initial figure matches the backend's floor; it renders
+// only before the first refresh on a first-ever launch.
+//
+// It was `const 1300` while the real rate drifted to ~1473 — every converted
+// figure in the app was ~12% wrong, silently, which is why this stopped being
+// a constant.
+export let RWF_RATE = 1470;
+
+/** Called from AppContext with the /fx response. Ignores nonsense so a broken
+ *  payload can never zero out every price in the app. */
+export function setRwfRate(rate) {
+  if (Number.isFinite(rate) && rate > 100 && rate < 10000) RWF_RATE = rate;
+}
 
 // Kigali neighborhood assignments per car ID
 const NEIGHBORHOOD_MAP = {
