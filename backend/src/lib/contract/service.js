@@ -20,7 +20,10 @@ const COMPANY = {
   tin: process.env.COMPANY_TIN || null,
   address: process.env.COMPANY_ADDRESS || 'Nyarutarama, Kigali, Rwanda',
   website: process.env.COMPANY_WEBSITE || 'sawacars.com',
-  phone: process.env.COMPANY_PHONE || null,
+  // Was null-by-default because the number was a placeholder, so contracts
+  // went out with no phone on the letterhead. It is real now.
+  phone: process.env.COMPANY_PHONE || '+250 788 308 611',
+  email: process.env.COMPANY_EMAIL || 'contact@sawacars.com',
 };
 
 const LIVE_STATUSES = ['draft', 'issued', 'signed'];

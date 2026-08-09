@@ -69,10 +69,15 @@ class ContractRenderer {
       .text('DRIVEN BY TRUST', M + 2, M + 26, { characterSpacing: 1.6, lineBreak: false });
 
     d.font('brandBody').fontSize(8).fillColor(C.muted);
+    // Four lines maximum. Each sits at M+1+i*10.5 and the red rule is at M+44,
+    // so a fifth would collide with it. Email gets its own line rather than
+    // joining the one above: these are drawn with lineBreak:false, which CLIPS
+    // rather than wraps, and website + phone + email exceeds the 260pt column.
     const right = [
       `${co.legal_name}${co.tin ? ` · TIN ${co.tin}` : ''}`,
       co.address,
       [co.website, co.phone].filter(Boolean).join(' · '),
+      co.email,
     ].filter(Boolean);
     right.forEach((line, i) => {
       d.text(line, M + W - 260, M + 1 + i * 10.5, { width: 260, align: 'right', lineBreak: false });

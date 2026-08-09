@@ -185,6 +185,9 @@ app.use('/referrals',       require('./src/routes/referrals'));
 app.use('/disputes',        require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));
 app.use('/admin',           require('./src/routes/admin'));
+// The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
+// see src/lib/mail/ for why it is a live read rather than a synced copy.
+app.use('/mail',            require('./src/routes/mail'));
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 // Two endpoints, because "is the process up?" and "can it serve a request?" are
