@@ -49,7 +49,7 @@ export function StoreButtons({
   const highlight =
     tone === 'dark'
       ? 'border-white/40 bg-white/12'
-      : 'border-brand/35 shadow-brand'
+      : 'border-brand/35'
 
   const stores = [
     {

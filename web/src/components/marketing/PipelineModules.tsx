@@ -42,7 +42,12 @@ export function PipelineModules({ steps }: { steps: PipelineStep[] }) {
           pipeline. Horizontal behind the indices on lg, vertical on mobile. */}
       <div
         aria-hidden="true"
-        className="absolute left-[7px] top-2 h-[calc(100%-2rem)] border-l-2 border-dashed border-line lg:left-0 lg:top-[9px] lg:h-auto lg:w-full lg:border-l-0 lg:border-t-2"
+        // Width stops at the LAST node instead of running to the row's edge —
+        // a rail that continues past its final stop reads as a sixth step that
+        // never loaded. In a 5-col grid with 2rem gaps, each column is
+        // (100% − 8rem)/5 wide, so column 5 begins at 4 × (col + gap)
+        // = 80% + 1.6rem; +8px reaches the centre of the 16px node circle.
+        className="absolute left-[7px] top-2 h-[calc(100%-2rem)] border-l-2 border-dashed border-line lg:left-0 lg:top-[9px] lg:h-auto lg:w-[calc(80%+1.6rem+8px)] lg:border-l-0 lg:border-t-2"
       />
       {steps.map((step, i) => (
         <li key={step.title} className="relative pl-8 lg:pl-0">

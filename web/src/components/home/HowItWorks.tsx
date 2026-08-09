@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
-import { HANDOVER_IMAGE } from '@/lib/imagery'
 
 // The pipeline as numbered modules on one dashed line — the offline handover
 // is a first-class node, not an apology. Shared grammar with /sell and
@@ -18,13 +17,12 @@ export function HowItWorks() {
         />
 
         <div className="mt-12">
-          {/* The handover node carries the row's one image — the physical
-              moment is the visual anchor of the pipeline. */}
-          <PipelineModules
-            steps={LISTING_PIPELINE.map((step, i) =>
-              i === LISTING_PIPELINE.length - 1 ? { ...step, image: HANDOVER_IMAGE } : step
-            )}
-          />
+          {/* Five equal columns. Step 5 used to carry the row's only image —
+              "the visual anchor" in theory, but on screen it left four text
+              columns dangling over a void next to one photo, and the image was
+              a concept render anyway. Equal treatment reads as a process;
+              one decorated node reads as unfinished. */}
+          <PipelineModules steps={LISTING_PIPELINE} />
         </div>
 
         <p className="mt-10 text-body text-content-secondary">

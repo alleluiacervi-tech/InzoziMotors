@@ -87,7 +87,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
 
         <div className="mt-4 flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-price font-extrabold tracking-[-0.02em] text-brand">
+            <p className="text-price font-extrabold tracking-[-0.02em] text-content">
               {formatUSD(car.daily_rate)}
               <span className="text-caption font-bold text-content-muted"> / day</span>
             </p>

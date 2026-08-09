@@ -12,6 +12,7 @@ import {
   formatRWF,
   formatUSD,
   getCertTier,
+  isDemoListing,
   isHighDemand,
   isNewListing,
   listedAgo,
@@ -139,6 +140,8 @@ export default async function CarDetailPage({ params }: PageProps) {
   const similar = similarResult.filter((other) => other.id !== car.id).slice(0, 4)
   const images = (car.images ?? []).filter(Boolean)
   const tier = getCertTier(car)
+  // Seeded rows never carry a certification claim — see isDemoListing.
+  const demo = isDemoListing(car)
   const market = marketPosition(car)
   const drop = priceDrop(car)
   const monthly = monthlyEstimate(car.price)
@@ -223,7 +226,9 @@ export default async function CarDetailPage({ params }: PageProps) {
 
             <header>
               <div className="flex flex-wrap items-center gap-2">
-                {tier ? (
+                {demo ? (
+                  <Badge tone="neutral">Preview listing</Badge>
+                ) : tier ? (
                   <Badge
                     tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'}
                     icon="shield-check"
@@ -236,7 +241,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     Price reduced
                   </Badge>
                 ) : null}
-                {isNewListing(car) && drop === 0 ? <Badge tone="info">New listing</Badge> : null}
+                {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">New listing</Badge> : null}
                 {isHighDemand(car) ? <Badge tone="danger">High demand</Badge> : null}
                 {!isAvailable ? (
                   <Badge tone={car.status === 'reserved' ? 'reserved' : 'neutral'}>
@@ -281,7 +286,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <Card className="p-5 sm:p-6">
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
-                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
+                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-content">
                   {formatUSD(car.price)}
                 </p>
                 <p className="mt-2 text-caption text-content-secondary">
