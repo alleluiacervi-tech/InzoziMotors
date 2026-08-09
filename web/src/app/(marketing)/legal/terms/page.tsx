@@ -41,9 +41,11 @@ const SECTIONS: LegalSection[] = [
           Sellers cannot publish listings themselves.
         </p>
         <p>
-          <strong>Sawa Cars is not a payment provider, an escrow service or a bank.</strong> No money
-          moves through this website or the app. The price is settled between buyer and seller in
-          person at a center, in our presence.
+          <strong>Sawa Cars is not a payment provider, an escrow service or a bank.</strong> The
+          price of a car never moves through this website or the app — it is settled between buyer
+          and seller in person at a center, in our presence. The one exception is rental bookings,
+          where the rental fee may optionally be paid online through our licensed payment
+          processor (Pesapal); Sawa Cars itself never holds card or mobile-money credentials.
         </p>
         <p>
           Sawa Cars is not the owner of the vehicle unless a listing says otherwise. The seller
@@ -86,7 +88,7 @@ const SECTIONS: LegalSection[] = [
           any time before the handover at no charge.
         </p>
         <ul>
-          <li>Payment happens in person at a Sawa center. Never through the app or this site.</li>
+          <li>Payment for a car happens in person at a Sawa center — never through the app or this site.</li>
           <li>
             We check both parties’ documents at the handover and process the RRA ownership
             transfer with you. Registration documents typically complete within 2–3 working days.

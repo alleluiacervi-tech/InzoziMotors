@@ -232,8 +232,9 @@ export default async function RentalDetailPage({ params }: PageProps) {
                 </div>
 
                 <p className="mt-4 text-micro leading-relaxed text-content-muted">
-                  Nothing is charged online. You pay at the center when you collect
-                  the car, after we have gone through it together.
+                  Pay at the center when you collect the car, or pay the rental
+                  online in the app. The refundable deposit is always handled at
+                  the center, after we have gone through the car together.
                 </p>
               </Card>
             </div>

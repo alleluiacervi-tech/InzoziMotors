@@ -47,7 +47,7 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
         <View style={styles.infoBox}>
           <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.infoTitle}>No payment in the app</Text>
+            <Text style={styles.infoTitle}>Cars are never paid for in the app</Text>
             <Text style={styles.infoSub}>
               Payment, documents and ownership transfer all happen at the Sawa center — where we protect both you and the seller.
             </Text>

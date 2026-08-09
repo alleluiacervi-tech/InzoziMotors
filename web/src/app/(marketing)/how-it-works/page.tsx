@@ -31,7 +31,7 @@ const BRING = [
   {
     icon: 'cash' as const,
     title: 'Your payment',
-    desc: 'Handed over in person at the center, in the form you agreed with our team. There is no payment feature in the app or on this website.',
+    desc: 'Handed over in person at the center, in the form you agreed with our team. A car is never paid for in the app or on this website.',
   },
   {
     icon: 'eye' as const,
@@ -45,7 +45,7 @@ export default function HowItWorksPage() {
     <>
       <PageHeader
         eyebrow="How it works"
-        title="Six steps to buy. Six steps to sell. No payment on either side of the screen."
+        title="Six steps to buy. Six steps to sell. The car is never paid for online."
         lede="Sawa Cars sits between the two of you for the whole transaction: we inspect the car, we publish the listing, we arrange the handover, and we process the ownership transfer with you at the center."
         actions={
           <>

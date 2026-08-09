@@ -16,7 +16,7 @@ import type { Handover } from '@/lib/types'
 // status vocabulary is the backend's own — pending, confirmed, complete,
 // cancelled — so what a buyer reads here matches what the admin sees.
 
-/** What Sawa Cars does next, per status. No payment step exists anywhere. */
+/** What Sawa Cars does next, per status. No payment step exists for car purchases. */
 function nextStep(handover: Handover): { title: string; body: string } {
   switch (handover.status) {
     case 'pending':

@@ -36,8 +36,8 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
   },
   {
     icon: 'cash',
-    title: 'No payment in the app',
-    desc: 'Money changes hands in person at a Sawa center, never through this site. Buyers pay us nothing.',
+    title: 'Cars are never paid for online',
+    desc: 'A car changes hands in person at a Sawa center, never through this site. Buyers pay us nothing.',
   },
 ]
 
