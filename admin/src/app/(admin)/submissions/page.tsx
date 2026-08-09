@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
+import { useToast } from '@/components/feedback'
 
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
@@ -20,6 +21,7 @@ export default function SubmissionsPage() {
   const [loading, setLoading]       = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId]     = useState<string | null>(null)
+  const toast = useToast()
   const [notes, setNotes]           = useState('')
   const [showNotesFor, setShowNotesFor] = useState<string | null>(null)
   const [showScheduleFor, setShowScheduleFor] = useState<string | null>(null)
@@ -48,7 +50,7 @@ export default function SubmissionsPage() {
       await api.updateSubmission(id, { status, ...extra })
       load(tab)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
       setShowNotesFor(null)
@@ -193,7 +195,7 @@ export default function SubmissionsPage() {
                   </label>
                   <button
                     onClick={() => {
-                      if (!schedDate) { alert('Pick a date'); return }
+                      if (!schedDate) { toast('Pick a date for the appointment first.', 'error'); return }
                       updateStatus(sub.id, 'scheduled', {
                         center: schedCenter,
                         scheduled_date: schedDate,

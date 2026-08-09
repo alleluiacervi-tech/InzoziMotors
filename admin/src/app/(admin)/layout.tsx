@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { api, signOut, getApiStatus, onApiStatus, type ApiStatus } from '@/lib/api'
 import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
+import { FeedbackProvider } from '@/components/feedback'
 
 // Grouped navigation — the shape of the business, not a flat list.
 const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label: string }[] }[] = [
@@ -161,6 +162,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   )
 
   return (
+    <FeedbackProvider>
     <div className="flex h-screen overflow-hidden bg-surface-page">
       {/* Sidebar */}
       <aside
@@ -273,5 +275,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+    </FeedbackProvider>
   )
 }

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { api, type ApiError } from '@/lib/api'
 import { Card, PageHeader, Pill, fmtMoney } from '@/components/ui'
+import { useConfirm } from '@/components/feedback'
 
 // The contract generator. The admin stands at the handover desk with two
 // physical ID documents and a logbook in hand and transcribes them here; what
@@ -270,6 +271,7 @@ export default function ContractPage() {
   const [supersedeOpen, setSupersedeOpen] = useState(false)
   const [reason, setReason]               = useState('')
   const [supersedeError, setSupersedeError] = useState('')
+  const ask = useConfirm()
 
   async function load() {
     setLoading(true)
@@ -397,10 +399,12 @@ export default function ContractPage() {
       )
       return
     }
-    if (!window.confirm(
-      'Generate the sale agreement? A contract number is allocated permanently and the PDF '
-      + 'becomes the record of this sale — replacing it later requires an explicit supersede.'
-    )) return
+    const ok = await ask({
+      title: 'Generate the sale agreement?',
+      message: 'A contract number is allocated permanently and the PDF becomes the record of this sale — replacing it later requires an explicit supersede.',
+      confirmLabel: 'Generate contract',
+    })
+    if (!ok) return
 
     setSaving(true)
     setFormError('')
@@ -434,10 +438,12 @@ export default function ContractPage() {
 
   async function signIt() {
     if (!live) return
-    if (!window.confirm(
-      `Record contract ${live.contract_number} as signed? Only an issued contract can be signed, `
-      + 'and after this it can never be regenerated — only superseded.'
-    )) return
+    const ok = await ask({
+      title: `Record ${live.contract_number} as signed?`,
+      message: 'Only an issued contract can be signed, and after this it can never be regenerated — only superseded.',
+      confirmLabel: 'Record as signed',
+    })
+    if (!ok) return
     setActionId(live.id)
     setLiveError('')
     try {
@@ -457,10 +463,13 @@ export default function ContractPage() {
       setSupersedeError('Give a reason of at least 5 characters — it is written into the register against the old number.')
       return
     }
-    if (!window.confirm(
-      `Supersede ${live.contract_number}? It stays in the register as “superseded” with this reason, `
-      + 'its PDF is kept, and the replacement is issued under a NEW number.'
-    )) return
+    const ok = await ask({
+      title: `Supersede ${live.contract_number}?`,
+      message: 'It stays in the register as “superseded” with this reason, its PDF is kept, and the replacement is issued under a new number.',
+      confirmLabel: 'Supersede contract',
+      tone: 'danger',
+    })
+    if (!ok) return
     setActionId(live.id)
     setSupersedeError('')
     try {

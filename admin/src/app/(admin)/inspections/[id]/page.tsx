@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useToast } from '@/components/feedback'
 
 const CATEGORIES = [
   {
@@ -46,6 +47,7 @@ export default function InspectionDetailPage() {
   const [results, setResults] = useState<Record<string, Result>>({})
   const [notes, setNotes]   = useState('')
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
 
   useEffect(() => {
     api.getInspection(id)
@@ -57,7 +59,7 @@ export default function InspectionDetailPage() {
         }
         if (data.notes) setNotes(data.notes)
       })
-      .catch((e) => alert(e.message))
+      .catch((e) => toast(e.message, 'error'))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -79,16 +81,16 @@ export default function InspectionDetailPage() {
     const allItems = CATEGORIES.flatMap((c) => c.items)
     const missing  = allItems.filter((item) => !results[item])
     if (missing.length > 0) {
-      alert(`Please rate all items. ${missing.length} item(s) remaining.`)
+      toast(`Rate every item before submitting — ${missing.length} still unrated.`, 'error')
       return
     }
     setSaving(true)
     try {
       await api.completeInspection(id, { checklist_results: results, notes })
-      alert('Inspection complete! Car is now live.')
+      toast('Inspection complete — the car is ready to list.', 'success')
       router.push('/inspections')
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setSaving(false)
     }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
+import { useConfirm, useToast } from '@/components/feedback'
 
 // Fee types are categories, not statuses — they don't earn a hue each.
 const TYPE_COLORS: Record<string, string> = {
@@ -35,6 +36,8 @@ export default function FeesPage() {
   const [loading, setLoading]   = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
+  const ask = useConfirm()
+  const toast = useToast()
 
   async function load(s: string) {
     setLoading(true)
@@ -54,13 +57,21 @@ export default function FeesPage() {
   useEffect(() => { load(tab) }, [tab])
 
   async function setStatus(id: string, status: 'paid' | 'waived') {
-    if (status === 'waived' && !window.confirm('Waive this fee? It will no longer count as outstanding revenue.')) return
+    if (status === 'waived') {
+      const ok = await ask({
+        title: 'Waive this fee?',
+        message: 'It stops counting as outstanding revenue. The row stays in the register marked waived.',
+        confirmLabel: 'Waive fee',
+        tone: 'danger',
+      })
+      if (!ok) return
+    }
     setActionId(id)
     try {
       await api.updateFee(id, status)
       load(tab)
     } catch (e: any) {
-      alert(e.message)
+      toast(e.message, 'error')
     } finally {
       setActionId(null)
     }
