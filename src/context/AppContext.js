@@ -1279,6 +1279,26 @@ export function AppProvider({ children }) {
     activeConvRef.current = convId && !String(convId).startsWith('new_') ? convId : null;
   }, []);
 
+  // Resolve one conversation's metadata (the other party's id, above all)
+  // straight from the server. A chat opened from a push or deep link renders
+  // before the conversations list has loaded, and Block cannot wait for a
+  // list refresh that may never come — safety actions must work on the first
+  // attempt, not the second visit.
+  const getConversationMeta = useCallback(async (convId) => {
+    if (!convId || String(convId).startsWith('new_')) return null;
+    try {
+      const list = await messagesApi.getConversations();
+      if (Array.isArray(list)) {
+        setConversations(list.map(mapConversation));
+        const conv = list.find((c) => c.id === convId);
+        return conv ? mapConversation(conv) : null;
+      }
+    } catch (err) {
+      console.warn('Could not resolve conversation meta:', err?.message);
+    }
+    return null;
+  }, [mapConversation]);
+
   // Block / report — the Apple-required safety actions on the chat surface.
   const blockUser = useCallback(async (userId) => {
     await messagesApi.blockUser(userId);
@@ -1618,7 +1638,7 @@ export function AppProvider({ children }) {
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
     joinConversation, sendTyping, typingConvId, setActiveConversation,
     // Chat safety
-    blockUser, reportConversation,
+    blockUser, reportConversation, getConversationMeta,
     // Authentication
     currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, loading, error,
     // Push preference (Settings toggle)

@@ -58,12 +58,15 @@ function PinnedCarCard({ car, onViewListing }) {
 }
 
 export default function ChatScreen({ navigation, route }) {
-  const convId = route.params?.convId || 'c1';
+  // No fallback id: 'c1' was a demo fixture, and aiming report/send calls at
+  // it produced 400s from a working server — a broken safety feature. With no
+  // conversation and no car there is simply nothing to act on yet.
+  const convId = route.params?.convId || null;
   const car = route.params?.car || null;
   const {
     getMessages, sendMessage, loadConversationMessages, getOrCreateConversation,
     sendTyping, typingConvId, setActiveConversation, conversations,
-    blockUser, reportConversation,
+    blockUser, reportConversation, getConversationMeta,
   } = useApp();
   const [activeConvId, setActiveConvId] = useState(route.params?.convId);
   // A push tap or deep link carries only convId — resolve the display name
@@ -121,7 +124,11 @@ export default function ChatScreen({ navigation, route }) {
   const send = async (msg) => {
     const toSend = msg || text.trim();
     if (!toSend) return;
-    const sendId = activeConvId || 'c1';
+    const sendId = activeConvId || convId;
+    if (!sendId) {
+      showToast("This chat isn't ready yet. Open it from the listing or your messages.", 'error');
+      return;
+    }
     try {
       const newId = await sendMessage(sendId, toSend, car?.id);
       if (sendId.startsWith('new_') && newId) {
@@ -157,6 +164,12 @@ export default function ChatScreen({ navigation, route }) {
     });
 
     if (choice === 0) {
+      const targetId = activeConvId || convId;
+      if (!targetId || String(targetId).startsWith('new_')) {
+        // Nothing exists server-side yet — there is no content to report.
+        showToast('Send or receive a message first, then you can report the conversation.', 'info');
+        return;
+      }
       const reasonIdx = await showActionSheet({
         title: 'What’s wrong?',
         message: 'Our team reviews every report. The other person is not told.',
@@ -164,7 +177,7 @@ export default function ChatScreen({ navigation, route }) {
       });
       if (reasonIdx === -1) return;
       try {
-        await reportConversation(activeConvId || convId, REPORT_REASONS[reasonIdx].label);
+        await reportConversation(targetId, REPORT_REASONS[reasonIdx].label);
         showToast('Thanks — our team will take a look.', 'success');
       } catch (err) {
         showToast(err?.message || "The report didn't send. Check your connection and try again.", 'error');
@@ -172,8 +185,16 @@ export default function ChatScreen({ navigation, route }) {
     }
 
     if (choice === 1) {
-      if (!conversation?.otherId) {
-        showToast('Blocking is available once the conversation is live on the server.', 'info');
+      // The other party's id normally comes from the conversations list, but a
+      // chat opened from a push renders before that list loads. Resolve it from
+      // the server on demand — Block has to work on the first attempt.
+      let otherId = conversation?.otherId;
+      if (!otherId && getConversationMeta) {
+        const meta = await getConversationMeta(activeConvId || convId);
+        otherId = meta?.otherId;
+      }
+      if (!otherId) {
+        showToast("Couldn't reach the server to identify this user. Check your connection and try again.", 'error');
         return;
       }
       const ok = await showConfirm({
@@ -184,7 +205,7 @@ export default function ChatScreen({ navigation, route }) {
       });
       if (!ok) return;
       try {
-        await blockUser(conversation.otherId);
+        await blockUser(otherId);
         showToast(`${name} is blocked.`, 'success');
         navigation.goBack();
       } catch (err) {
