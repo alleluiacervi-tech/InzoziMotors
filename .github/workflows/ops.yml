@@ -70,7 +70,8 @@ jobs:
 
       - name: Run
         # Long enough for a rollback's on-host rebuild to finish (see the job
-        # comment). Every other action is seconds.
+        # comment). Every other action is seconds — plus up to 220s of connect
+        # probing (5 × 20s timeout + 4 × 30s wait) before any of them start.
         timeout-minutes: 50
         env:
           HOST: ${{ secrets.VPS_HOST }}
@@ -89,6 +90,62 @@ jobs:
           CONFIRM: continue
         run: |
           set -euo pipefail
+
+          # ── Wait for the connection before doing anything with it ────────────
+          # This lever connected exactly once, with a 20s timeout, and died with
+          # exit 255 on the first dropped packet. deploy.yml has probed and
+          # retried since it was written; ops.yml never did, which made the tool
+          # you reach for WHEN PRODUCTION IS BROKEN the least resilient of the
+          # two. Two list-stale runs failed this way minutes after a deploy had
+          # succeeded over the same key to the same host — the deploy retried
+          # through what ops could not.
+          #
+          # A burst of deploys is also enough to look like an attack: each one
+          # opens two SSH sessions from a fresh runner IP, and brute-force
+          # protection on the host drops packets for a while afterwards. That
+          # produces a timeout rather than a refusal, and it passes on its own.
+          #
+          # Only the PROBE is retried. The action itself still runs exactly once:
+          # rollback is not safe to re-run because a connection died halfway
+          # through it, and a lever that might silently do a thing twice is worse
+          # than one that fails loudly.
+          probe() {
+            ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+                -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+                "$USER@$HOST" true 2>&1
+          }
+          for attempt in 1 2 3 4 5; do
+            if out="$(probe)"; then
+              [ "$attempt" = 1 ] || echo "connected on attempt $attempt"
+              break
+            fi
+            echo "connect attempt $attempt: ${out:-no output}"
+            if [ "$attempt" = 5 ]; then
+              # Name the failure mode. All three arrive as exit 255 and they need
+              # completely different responses, so the log should not make the
+              # reader guess which one happened.
+              case "$out" in
+                *"Connection timed out"*|*"No route to host"*)
+                  echo "::error::Host unreachable on port 22 — packets are being dropped, not refused."
+                  echo "::error::Usually brute-force protection (fail2ban) or a firewall rule after a burst"
+                  echo "::error::of runner connections; it clears on its own. Check the public surfaces before"
+                  echo "::error::assuming the host is down, and use the provider console rather than SSH to unban." ;;
+                *"Connection refused"*)
+                  echo "::error::Port 22 refused the connection — sshd is not listening. The host is up (or this"
+                  echo "::error::would time out instead), so this is sshd itself, not the network." ;;
+                *"Permission denied"*|*"Too many authentication failures"*)
+                  echo "::error::Reached sshd but the key was rejected — VPS_SSH_KEY or VPS_USER is wrong." ;;
+                *"Host key verification failed"*|*"REMOTE HOST IDENTIFICATION HAS CHANGED"*)
+                  echo "::error::Host key mismatch — the box was rebuilt, or VPS_HOST_KEY is stale." ;;
+                *)
+                  echo "::error::Server unreachable over SSH: ${out:-no output}" ;;
+              esac
+              exit 1
+            fi
+            echo "waiting 30s"
+            sleep 30
+          done
+
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" \
               "APP_DIR=$(printf %q "$APP_DIR") ACTION=$(printf %q "$ACTION") CONFIRM=$(printf %q "$CONFIRM") REF=$(printf %q "$REF") bash -s" <<'REMOTE'
