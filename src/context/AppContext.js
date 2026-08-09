@@ -735,6 +735,13 @@ export function AppProvider({ children }) {
 
   // Register this device for push once we know who is signed in. The server
   // keys tokens to the user, so this has to run after auth, not at boot.
+  //
+  // prompt: false — this effect fired the OS permission dialog the instant
+  // "Create account" succeeded, before the user had a message, a saved car or
+  // any reason to say yes. That dialog is one-shot (a decline is near-permanent
+  // on iOS), so sign-in only SYNCS a permission that already exists; the ASK
+  // happens at the first moment notifications have visible value — saving a
+  // car (maybeAskForPush) or the Settings toggle.
   useEffect(() => {
     if (!isLoggedIn) return;
     let alive = true;
@@ -743,9 +750,27 @@ export function AppProvider({ children }) {
     // the kind of thing a Play data-safety complaint is made of.
     getJSON('pushEnabled', true).then((enabled) => {
       if (!alive || !enabled) return;
-      syncPushToken().then((token) => { if (alive && token) setPushToken(token); });
+      syncPushToken({ prompt: false }).then((token) => { if (alive && token) setPushToken(token); });
     });
     return () => { alive = false; };
+  }, [isLoggedIn]);
+
+  // The one-time contextual ask. Called from the first user action that push
+  // notifications visibly serve (saving a car — "we'll tell you when the price
+  // drops"). Asks once ever; after that the Settings toggle owns the choice.
+  const maybeAskForPush = useCallback(async () => {
+    if (!isLoggedIn) return;
+    try {
+      const asked = await getJSON('pushAsked', false);
+      if (asked) return;
+      await setJSON('pushAsked', true);
+      const enabled = await getJSON('pushEnabled', true);
+      if (!enabled) return;
+      const token = await syncPushToken();
+      if (token) setPushToken(token);
+    } catch (err) {
+      console.warn('Push ask skipped:', err?.message);
+    }
   }, [isLoggedIn]);
 
   // The Settings screen's push toggle. Off = the server forgets this device
@@ -1012,13 +1037,17 @@ export function AppProvider({ children }) {
 
   const toggleSaveCar = useCallback((id) => {
     // Local-first so the heart always responds; sync to API in the background when possible
+    const saving = !savedCarIds.includes(id);
     setSavedCarIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
     if (isLoggedIn) {
       carsApi.saveCar(id).catch(() => {}); // backend optional in demo
     }
-  }, [isLoggedIn]);
+    // Saving is the moment push has an obvious payoff (price-drop alerts on
+    // this exact car) — the right moment to ask, once.
+    if (saving) maybeAskForPush();
+  }, [isLoggedIn, savedCarIds, maybeAskForPush]);
 
   const isCarSaved = useCallback((id) => savedCarIds.includes(id), [savedCarIds]);
   const getSavedCars = useCallback(
