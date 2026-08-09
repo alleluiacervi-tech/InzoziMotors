@@ -31,7 +31,10 @@ const STAGE = HERO_SLIDES[0]
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[calc(100svh-var(--header-h))] items-end overflow-hidden bg-ink-900">
+    // -mt pulls the stage up UNDER the transparent header (see Header.tsx's
+    // overlay mode) so the page opens as one full-bleed photograph with the
+    // navigation floating on it, rather than a white bar stacked on an image.
+    <section className="relative -mt-[var(--header-h)] flex min-h-[100svh] items-end overflow-hidden bg-ink-900">
       {STAGE.image ? (
         <Image
           src={STAGE.image}
@@ -45,6 +48,9 @@ export function Hero() {
       ) : null}
       {/* Legibility gradient — the text sits on ink, not on the photo. */}
       <div className="absolute inset-0 bg-gradient-to-t from-ink-900/90 via-ink-900/45 to-ink-900/15" />
+      {/* Top scrim for the overlay header: the floating nav's white type must
+          hold contrast even when the photograph's sky is bright. */}
+      <div className="absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-ink-900/70 to-transparent" />
 
       <div className="relative mx-auto w-full max-w-content px-5 pb-14 pt-32 sm:px-8 sm:pb-16 lg:px-12">
         <div className="max-w-2xl text-white">
