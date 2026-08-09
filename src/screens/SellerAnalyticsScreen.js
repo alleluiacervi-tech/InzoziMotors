@@ -210,7 +210,7 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
                     {analytics.viewsThisWeek === null ? (
                       <>
                         <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{analytics.views}</Text>
-                        {' '}views total · daily breakdown coming soon
+                        {' '}views total
                       </>
                     ) : (
                       <>
@@ -235,7 +235,7 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
                 <BarChart data={VIEWS_DATA} />
               ) : (
                 <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: fonts.regular }}>
-                  Daily view tracking is coming soon.
+                  No daily breakdown is available for this listing yet.
                 </Text>
               )}
             </View>

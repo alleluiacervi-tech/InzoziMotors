@@ -15,13 +15,6 @@ const HOW_IT_WORKS = [
   { icon: 'pricetag-outline', step: '3', title: 'You save on fees', desc: 'You receive a 10% discount on your next listing fee, automatically applied.' },
 ];
 
-const WHATSAPP_FEATURES = [
-  { icon: 'checkmark-circle', text: 'Inspection appointment reminders (24h + 1h before)' },
-  { icon: 'checkmark-circle', text: 'Listing live notification with a share link' },
-  { icon: 'checkmark-circle', text: 'Buyer inquiry alerts — never miss a message' },
-  { icon: 'checkmark-circle', text: 'Price drop alerts for saved cars' },
-  { icon: 'checkmark-circle', text: 'Order status updates (confirmed, arranged, complete)' },
-];
 
 export default function ReferralScreen({ navigation }) {
   const { currentUser, isLoggedIn } = useApp();
@@ -185,36 +178,6 @@ export default function ReferralScreen({ navigation }) {
           </View>
         </View>
 
-        {/* WhatsApp Notifications concept */}
-        <View style={styles.whatsappSection}>
-          <View style={styles.whatsappHeader}>
-            <View style={styles.whatsappIcon}>
-              <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
-            </View>
-            <View>
-              <Text style={styles.whatsappTitle}>Stay updated via WhatsApp</Text>
-              <Text style={styles.whatsappSub}>Coming soon · Opt in from Settings</Text>
-            </View>
-            <View style={styles.comingSoonBadge}>
-              <Text style={styles.comingSoonText}>Soon</Text>
-            </View>
-          </View>
-          <View style={styles.whatsappFeatures}>
-            {WHATSAPP_FEATURES.map((f, i) => (
-              <View key={i} style={styles.whatsappFeature}>
-                <Ionicons name={f.icon} size={14} color="#25D366" />
-                <Text style={styles.whatsappFeatureText}>{f.text}</Text>
-              </View>
-            ))}
-          </View>
-          <Pressable
-            style={styles.whatsappOptIn}
-            onPress={() => showToast("WhatsApp alerts are coming soon — we'll notify you at launch.", 'info')}
-          >
-            <Ionicons name="notifications-outline" size={16} color="#25D366" />
-            <Text style={styles.whatsappOptInText}>Notify me when WhatsApp alerts launch</Text>
-          </Pressable>
-        </View>
 
       </ScrollView>
     </Screen>
@@ -303,29 +266,4 @@ const styles = StyleSheet.create({
   rewardSub: { fontSize: 13, color: '#92400E', lineHeight: 19 },
   rewardNote: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', marginTop: 10 },
   rewardNoteText: { flex: 1, fontSize: 11, color: colors.textMuted, lineHeight: 15 },
-  whatsappSection: {
-    backgroundColor: '#F0FFF4', borderWidth: 1, borderColor: '#BBF7D0',
-    borderRadius: radius.xl, margin: 16, padding: 16,
-  },
-  whatsappHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  whatsappIcon: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#DCF8C6', alignItems: 'center', justifyContent: 'center',
-  },
-  whatsappTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: '#065F46' },
-  whatsappSub: { fontSize: 11, color: '#059669', marginTop: 1 },
-  comingSoonBadge: {
-    marginLeft: 'auto', backgroundColor: '#059669',
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill,
-  },
-  comingSoonText: { fontSize: 11, fontFamily: fonts.bold, color: '#fff' },
-  whatsappFeatures: { gap: 8, marginBottom: 14 },
-  whatsappFeature: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  whatsappFeatureText: { fontSize: 13, color: '#065F46' },
-  whatsappOptIn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#BBF7D0', borderRadius: radius.xl, padding: 12,
-  },
-  whatsappOptInText: { fontSize: 13, fontFamily: fonts.bold, color: '#059669' },
 });

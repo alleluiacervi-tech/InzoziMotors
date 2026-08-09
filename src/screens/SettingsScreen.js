@@ -34,15 +34,15 @@ async function openLink(url) {
   }
 }
 
-// Rows that promise nothing they can't deliver: the dead "Email alerts" and
-// "Dark mode (preview)" toggles are gone (they flipped local state and did
-// nothing — a control that lies is a policy complaint waiting to happen), and
-// coming-soon rows carry no chevron so they don't read as navigation.
+// Rows that promise nothing they can't deliver. The dead toggles went first
+// (they flipped local state and did nothing); the "coming soon" rows went
+// next — a settings row whose only behaviour is announcing a future feature
+// is exactly what a store reviewer probes as non-functional (guideline 4.2).
+// Edit-profile, language and rate-us return WHEN they work.
 const buildGroups = (verificationValue) => [
   {
     title: 'Account',
     items: [
-      { icon: 'person-outline', label: 'Edit profile', comingSoon: 'Profile editing is coming in a future update.' },
       { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: verificationValue, screen: 'IDVerification' },
       { icon: 'notifications-outline', label: 'Saved searches', screen: 'Saved' },
     ],
@@ -51,7 +51,6 @@ const buildGroups = (verificationValue) => [
     title: 'Preferences',
     items: [
       { icon: 'notifications-outline', label: 'Push notifications', toggle: true },
-      { icon: 'globe-outline', label: 'Language', value: 'English', comingSoon: 'Kinyarwanda support is coming soon.' },
     ],
   },
   {
@@ -80,7 +79,6 @@ const buildGroups = (verificationValue) => [
         : []),
       { icon: 'mail-outline', label: 'Email us', value: SAWA_EMAIL, link: `mailto:${SAWA_EMAIL}` },
       { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
-      { icon: 'star-outline', label: 'Rate Sawa Cars', comingSoon: 'App store rating will be available after launch.' },
     ],
   },
   {
@@ -144,8 +142,6 @@ export default function SettingsScreen({ navigation }) {
       navigation.navigate(item.screen);
     } else if (item.link) {
       openLink(item.link);
-    } else if (item.comingSoon) {
-      showToast(item.comingSoon, 'info');
     }
   };
 
