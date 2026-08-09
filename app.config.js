@@ -18,11 +18,10 @@ export default ({ config }) => ({
   scheme: 'sawa',
   userInterfaceStyle: 'light',
   newArchEnabled: true,
-  splash: {
-    image: './assets/splash.png',
-    resizeMode: 'contain',
-    backgroundColor: '#FFFFFF',
-  },
+  // Configured through the expo-splash-screen plugin below — a top-level
+  // `splash` key does nothing without that package installed, which is
+  // exactly the state this repo shipped in for months: the key was here,
+  // the package wasn't, and every launch was a plain white flash.
   // Only what the app actually shows. '**/*' also shipped about.png, sawa.png
   // and refference.png — roughly 4 MB of marketing and design-reference art
   // that no screen requires — into every download.
@@ -111,6 +110,16 @@ export default ({ config }) => ({
     'expo-asset',
     'expo-font',
     'expo-secure-store',
+    [
+      // The native launch screen — what shows before the JS bundle (and the
+      // AnimatedSplash it renders) has loaded.
+      'expo-splash-screen',
+      {
+        image: './assets/splash.png',
+        resizeMode: 'contain',
+        backgroundColor: '#FFFFFF',
+      },
+    ],
     [
       'expo-image-picker',
       {
