@@ -7,10 +7,9 @@ import { CENTERS, CONTACT, SITE } from './site'
 // HONESTY RULE, same as everywhere else in this codebase: schema.org markup is
 // a machine-readable claim to Google, and a false one earns a manual action.
 // Nothing here may assert something the site does not already show a human:
-//   · no telephone until CONTACT.whatsappVerified flips (the number is a
-//     placeholder), · no aggregateRating until real reviews exist, · no
-//     priceValidUntil we cannot honour, · no sameAs for social profiles we
-//     have not created.
+//   · telephone only while CONTACT.whatsappVerified holds, · no aggregateRating
+//     until real reviews exist, · no priceValidUntil we cannot honour, · no
+//     sameAs for social profiles we have not created.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Schema.org wants absolute URLs. Relative ones are silently dropped. */
@@ -36,14 +35,17 @@ export function organizationNode() {
     },
     image: absoluteUrl('/opengraph-image'),
     areaServed: { '@type': 'City', name: 'Kigali', addressCountry: 'RW' },
-    // Email is real and already published on /contact. The WhatsApp number is
-    // still a placeholder, so no telephone is claimed.
+    // Both are real and both are published on /contact, so both may be claimed
+    // here. The telephone stays gated on whatsappVerified: if the line is ever
+    // disconnected that flag goes false, the site stops showing the number, and
+    // this stops asserting it to Google in the same change.
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
       email: CONTACT.supportEmail,
+      ...(CONTACT.whatsappVerified ? { telephone: `+${CONTACT.phone}` } : {}),
       areaServed: 'RW',
-      availableLanguage: ['en'],
+      availableLanguage: ['en', 'rw'],
     },
   }
 }

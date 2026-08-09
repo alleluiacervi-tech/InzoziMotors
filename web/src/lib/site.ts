@@ -30,20 +30,40 @@ export const APP = {
   storesLive: false,
 } as const
 
-/** Sawa business line. TODO: replace with the real WhatsApp Business number
- *  before launch — the same placeholder lives in src/utils/whatsapp.js. */
+/**
+ * Sawa Cars' single business line and single public mailbox.
+ *
+ * ONE number and ONE address on purpose. Every extra contact route is another
+ * place a customer can be ignored, and this is a trust product — "we inspect
+ * every car" reads badly next to an unanswered inbox. The line takes calls and
+ * WhatsApp on the same handset; the mailbox is read by the team through the
+ * admin dashboard's inbox.
+ *
+ * The address here MUST be a mailbox the team actually monitors. contact@ is the
+ * one the admin inbox connects to over IMAP, so advertising anything else would
+ * send customers somewhere nobody is looking. operations@ exists as an internal
+ * alias and is deliberately NOT published.
+ *
+ * Mirrored in src/utils/whatsapp.js for the Expo app — change both together.
+ */
 export const CONTACT = {
-  whatsapp: '250788000000',
-  whatsappDisplay: '+250 788 000 000',
-  email: 'hello@sawacars.com',
-  supportEmail: 'support@sawacars.com',
+  /** Digits only, E.164 without the +. For wa.me and tel: URLs. */
+  whatsapp: '250788308611',
+  whatsappDisplay: '+250 788 308 611',
+  /** Same handset. Kept as its own key so a future dedicated line is a one-line change. */
+  phone: '250788308611',
+  phoneDisplay: '+250 788 308 611',
+  email: 'contact@sawacars.com',
+  /** Support and general enquiries are the same mailbox — see above. */
+  supportEmail: 'contact@sawacars.com',
   /**
-   * HONESTY GATE. The number above is a placeholder. Every WhatsApp surface —
-   * header furniture, contact page, escalation links in empty states — checks
-   * this flag and renders nothing while it is false. "Three ways to reach us,
-   * all of them real" must be literally true.
+   * HONESTY GATE, now satisfied. This was false while the number was a
+   * placeholder, and every WhatsApp surface rendered as absence rather than
+   * opening a chat to a number nobody answers. The number above is real, so the
+   * surfaces are live. If the line is ever disconnected, set this back to false
+   * rather than leaving a dead button on the site.
    */
-  whatsappVerified: false,
+  whatsappVerified: true,
 } as const
 
 /** Inspection centers — mirrors the inspection_centers table seeded in schema.sql. */

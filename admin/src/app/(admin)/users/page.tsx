@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
 
 export default function UsersPage() {
   const [items, setItems]     = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
+    setError(null)
     try {
       const data = await api.idVerificationQueue()
       setItems(data)
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -48,12 +51,12 @@ export default function UsersPage() {
         Review seller identity documents. Approving grants 30 trust-score points and unlocks listing submission.
       </p>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load()} />
+      ) : loading ? (
+        <LoadingState />
       ) : items.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          Queue is empty — no pending verifications.
-        </div>
+        <EmptyState icon="user" title="Queue is empty" description="No sellers are waiting on an ID check." />
       ) : (
         <div className="space-y-4">
           {items.map((u) => (

@@ -11,6 +11,9 @@ import { colors, radius, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 import { getJSON } from '../storage';
+import {
+  SAWA_WHATSAPP, SAWA_PHONE_DISPLAY, SAWA_EMAIL, WHATSAPP_VERIFIED,
+} from '../utils/whatsapp';
 
 // The legal texts live on the website so there is one wording, not two that
 // drift. Play Store policy requires the privacy policy to be reachable from
@@ -52,8 +55,30 @@ const buildGroups = (verificationValue) => [
     ],
   },
   {
+    // The Support group used to offer no way to reach support: an intro replay
+    // and a coming-soon rating row. The three rows below are the same single
+    // business line and single mailbox the website publishes, and they are
+    // gated on WHATSAPP_VERIFIED for the same reason every other surface is —
+    // a dead contact row is worse than none.
     title: 'Support',
     items: [
+      ...(WHATSAPP_VERIFIED
+        ? [
+            {
+              icon: 'logo-whatsapp',
+              label: 'WhatsApp us',
+              value: SAWA_PHONE_DISPLAY,
+              link: `https://wa.me/${SAWA_WHATSAPP}`,
+            },
+            {
+              icon: 'call-outline',
+              label: 'Call us',
+              value: SAWA_PHONE_DISPLAY,
+              link: `tel:+${SAWA_WHATSAPP}`,
+            },
+          ]
+        : []),
+      { icon: 'mail-outline', label: 'Email us', value: SAWA_EMAIL, link: `mailto:${SAWA_EMAIL}` },
       { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
       { icon: 'star-outline', label: 'Rate Sawa Cars', comingSoon: 'App store rating will be available after launch.' },
     ],

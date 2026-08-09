@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { fmtUSD, fmtRWF } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
 
 // Fee types are categories, not statuses — they don't earn a hue each.
 const TYPE_COLORS: Record<string, string> = {
@@ -12,6 +12,9 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 interface Fee {
+  /** Set by migration 0006. Legacy rows are still 'USD' until
+   *  scripts/convert-to-rwf.js has been run with an agreed rate. */
+  currency: string
   id: string
   seller_name: string
   booking_id: string | null
@@ -26,17 +29,23 @@ export default function FeesPage() {
   const [tab, setTab]           = useState<'due' | 'paid' | 'waived'>('due')
   const [fees, setFees]         = useState<Fee[]>([])
   const [totals, setTotals]     = useState<Record<string, number>>({})
+  // Which currency `totals` is expressed in. The API picks the dominant one
+  // and says so, rather than summing across currencies.
+  const [totalsCurrency, setTotalsCurrency] = useState<string>('RWF')
   const [loading, setLoading]   = useState(true)
+  const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
 
   async function load(s: string) {
     setLoading(true)
+    setError(null)
     try {
       const data = await api.getFees(s)
       setFees(data.fees)
       setTotals(data.totals || {})
+      setTotalsCurrency((data.currencies || []).includes('RWF') ? 'RWF' : (data.currencies || ['RWF'])[0])
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -78,12 +87,12 @@ export default function FeesPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load(tab)} />
+      ) : loading ? (
+        <LoadingState />
       ) : fees.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No {tab} fees.
-        </div>
+        <EmptyState icon="cash" title="Nothing to show" description={`No ${tab} fees have been recorded.`} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
@@ -113,7 +122,7 @@ export default function FeesPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{f.booking_id || '—'}</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">
-                    {fmtUSD(f.amount)}
+                    {fmtMoney(f.amount, f.currency)}
                   </td>
                   {tab === 'due' && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -144,8 +153,7 @@ export default function FeesPage() {
                   Total {tab}
                 </td>
                 <td className="px-4 py-3 text-right font-bold text-brand whitespace-nowrap">
-                  {fmtUSD(tabTotal)}
-                  <span className="ml-1.5 text-[11px] font-medium text-gray-400">≈ {fmtRWF(tabTotal)}</span>
+                  {fmtMoney(tabTotal, totalsCurrency)}
                 </td>
                 {tab === 'due' && <td />}
               </tr>

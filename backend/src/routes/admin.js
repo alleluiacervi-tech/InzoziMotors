@@ -18,12 +18,30 @@ router.get('/stats', requireAdmin, async (req, res) => {
       pool.query("SELECT COUNT(*) FROM handovers WHERE status = 'pending'"),
       pool.query("SELECT COUNT(*) FROM users WHERE id_verified = 'pending'"),
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'sold'"),
-      pool.query("SELECT COALESCE(SUM(price), 0) AS total FROM cars WHERE status = 'sold'"),
-      pool.query(`SELECT
+      // GROUP BY currency, not a bare SUM. Migration 0006 makes mixed rows
+      // possible — historical amounts stay USD until scripts/convert-to-rwf.js
+      // runs — and SUM across currencies produces a figure that is not money in
+      // any of them. A dashboard tile is exactly where that would be believed.
+      pool.query(`SELECT currency, COALESCE(SUM(price), 0) AS total
+                  FROM cars WHERE status = 'sold' GROUP BY currency`),
+      pool.query(`SELECT currency,
                     COALESCE(SUM(amount) FILTER (WHERE status IN ('due','paid')), 0) AS earned,
                     COALESCE(SUM(amount) FILTER (WHERE status = 'due'), 0) AS due
-                  FROM platform_fees`),
+                  FROM platform_fees GROUP BY currency`),
     ]);
+
+    // Report the dominant currency's figures in the flat fields the dashboard
+    // already reads, and hand over the full breakdown alongside so a mixed
+    // database is visible rather than averaged into nonsense. RWF wins when
+    // present because it is the currency the business now operates in.
+    const pickCurrency = (rows) => {
+      const set = rows.map((r) => r.currency);
+      return set.includes('RWF') ? 'RWF' : set[0] || 'RWF';
+    };
+    const gmvCurrency = pickCurrency(gmvRes.rows);
+    const feeCurrency = pickCurrency(feesRes.rows);
+    const gmvRow = gmvRes.rows.find((r) => r.currency === gmvCurrency);
+    const feeRow = feesRes.rows.find((r) => r.currency === feeCurrency);
 
     res.json({
       liveListings:          parseInt(listingsRes.rows[0].count),
@@ -31,10 +49,19 @@ router.get('/stats', requireAdmin, async (req, res) => {
       pendingHandovers:      parseInt(handoversRes.rows[0].count),
       pendingIdVerifications: parseInt(idQueueRes.rows[0].count),
       totalSold:             parseInt(soldRes.rows[0].count),
-      // GMV = value of cars sold; feeRevenue = Sawa's actual earnings
-      totalGMV:              parseInt(gmvRes.rows[0].total),
-      totalRevenue:          parseInt(feesRes.rows[0].earned),
-      feesOutstanding:       parseInt(feesRes.rows[0].due),
+      // GMV = value of cars sold; totalRevenue = Sawa's actual earnings.
+      // Each is expressed in the currency named beside it — never converted.
+      totalGMV:              parseInt(gmvRow?.total || 0),
+      gmvCurrency,
+      totalRevenue:          parseInt(feeRow?.earned || 0),
+      feesOutstanding:       parseInt(feeRow?.due || 0),
+      feeCurrency,
+      // Present so the dashboard can say "and 4 more in USD" instead of
+      // pretending a single figure is the whole truth.
+      gmvByCurrency:  gmvRes.rows.map((r) => ({ currency: r.currency, total: parseInt(r.total) })),
+      feesByCurrency: feesRes.rows.map((r) => ({
+        currency: r.currency, earned: parseInt(r.earned), due: parseInt(r.due),
+      })),
     });
   } catch (err) {
     log.error(err.message);
@@ -61,22 +88,34 @@ router.get('/analytics', requireAdmin, async (req, res) => {
                COUNT(*) FILTER (WHERE status = 'complete') AS completed
         FROM inspections GROUP BY center
       `),
+      // Grouped by currency as well as month — a bar chart is the last place a
+      // mixed-currency sum should be plotted, because the shape of the chart
+      // would encode the exchange rate rather than the business.
       pool.query(`
         SELECT TO_CHAR(DATE_TRUNC('month', sold_at), 'YYYY-MM') AS month,
+               currency,
                COUNT(*) AS total_sold,
                COALESCE(SUM(price), 0) AS total_value
         FROM cars WHERE status = 'sold'
           AND sold_at > NOW() - INTERVAL '6 months'
-        GROUP BY DATE_TRUNC('month', sold_at)
+        GROUP BY DATE_TRUNC('month', sold_at), currency
         ORDER BY DATE_TRUNC('month', sold_at) ASC
       `),
     ]);
+
+    // The chart plots one currency. Collapse to the dominant one and say which,
+    // rather than adding francs to dollars to make a taller bar.
+    const monthCurrencies = [...new Set(monthlyRes.rows.map((r) => r.currency))];
+    const salesCurrency = monthCurrencies.includes('RWF') ? 'RWF' : monthCurrencies[0] || 'RWF';
 
     res.json({
       topMakes:       makesRes.rows,
       pipelineFunnel: pipelineRes.rows,
       centers:        centersRes.rows,
-      monthlySales:   monthlyRes.rows,
+      monthlySales:   monthlyRes.rows.filter((r) => r.currency === salesCurrency),
+      salesCurrency,
+      // Every currency present, so a mixed database is legible instead of hidden.
+      monthlySalesByCurrency: monthlyRes.rows,
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -161,11 +200,30 @@ router.get('/fees', requireAdmin, async (req, res) => {
        ORDER BY f.created_at DESC`,
       params
     );
-    const totals = rows.reduce((acc, r) => {
-      acc[r.status] = (acc[r.status] || 0) + r.amount;
-      return acc;
-    }, {});
-    res.json({ fees: rows, totals });
+    // Totals are per status AND per currency. Adding a USD fee to an RWF fee
+    // produces a number that is not money in any currency, and 0006 makes mixed
+    // rows possible for the first time (historical fees stay USD until
+    // scripts/convert-to-rwf.js is run with an agreed rate). Summing blind here
+    // would have understated the outstanding balance by ~1300x per legacy row.
+    //
+    // `totals` keeps its old shape — { due: n, paid: n } — so existing callers
+    // keep working, but it now only counts the DEFAULT currency, and
+    // totalsByCurrency carries the full picture. currencies[] lets a client tell
+    // "one currency, render a single figure" from "mixed, render both".
+    const totalsByCurrency = {};
+    for (const r of rows) {
+      const cur = r.currency || 'RWF';
+      totalsByCurrency[cur] = totalsByCurrency[cur] || {};
+      totalsByCurrency[cur][r.status] = (totalsByCurrency[cur][r.status] || 0) + Number(r.amount);
+    }
+    const currencies = Object.keys(totalsByCurrency).sort();
+    const primary = currencies.includes('RWF') ? 'RWF' : currencies[0];
+    res.json({
+      fees: rows,
+      totals: totalsByCurrency[primary] || {},
+      totalsByCurrency,
+      currencies,
+    });
   } catch (err) {
     log.error('fees list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });

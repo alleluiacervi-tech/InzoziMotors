@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { fmtUSD, fmtRWF } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
 
 // Secondary action grammar on this page — the tabs already use it.
 const secondaryBtn =
@@ -24,15 +24,17 @@ export default function HandoversPage() {
   const [tab, setTab]         = useState<'pending' | 'confirmed' | 'complete' | 'cancelled'>('pending')
   const [items, setItems]     = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId] = useState<string | null>(null)
 
   async function load(s: string) {
     setLoading(true)
+    setError(null)
     try {
       const data = await api.handovers(s)
       setItems(data)
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -85,12 +87,12 @@ export default function HandoversPage() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load(tab)} />
+      ) : loading ? (
+        <LoadingState />
       ) : items.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No {TAB_LABELS[tab]} handovers.
-        </div>
+        <EmptyState icon="key" title="No handovers" description={`Nothing ${TAB_LABELS[tab]} right now.`} />
       ) : (
         <div className="space-y-4">
           {items.map((h) => (
@@ -119,7 +121,7 @@ export default function HandoversPage() {
                     <p><strong>{h.center || 'Slot not arranged yet'}</strong></p>
                     <p>{h.handover_date ? `${h.handover_date}${h.handover_time ? ` at ${h.handover_time}` : ''}` : 'Coordinate via buyer phone below'}</p>
                     {h.contact_phone && <p>Contact: {h.contact_phone}</p>}
-                    <p className="mt-1 font-medium text-brand">{fmtUSD(h.agreed_price || 0)} <span className="font-normal text-gray-400">≈ {fmtRWF(h.agreed_price || 0)}</span></p>
+                    <p className="mt-1 font-medium text-brand">{fmtMoney(h.agreed_price || 0, h.currency)}</p>
                   </div>
                 </div>
               </div>

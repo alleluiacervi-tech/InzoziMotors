@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
 
 const CENTERS = ['all', 'Nyarutarama', 'Kicukiro', 'Kimironko']
 const STATUS_COLORS: Record<string, string> = {
@@ -21,9 +22,11 @@ export default function InspectionsPage() {
   const [status, setStatus]   = useState('scheduled')
   const [items, setItems]     = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError]             = useState<unknown>(null)
 
   async function load() {
     setLoading(true)
+    setError(null)
     const params: Record<string, string> = { status }
     if (center !== 'all') params.center = center
     if (date)             params.date   = date
@@ -31,7 +34,7 @@ export default function InspectionsPage() {
       const data = await api.inspections(params)
       setItems(data)
     } catch (e: any) {
-      console.error(e.message)
+      setError(e)
     } finally {
       setLoading(false)
     }
@@ -78,12 +81,12 @@ export default function InspectionsPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-gray-400 text-sm">Loading…</div>
+      {error ? (
+        <ErrorState error={error} onRetry={() => load()} />
+      ) : loading ? (
+        <LoadingState />
       ) : items.length === 0 ? (
-        <div className="text-gray-400 text-sm bg-white rounded-xl border border-gray-100 p-8 text-center">
-          No inspections found for the selected filters.
-        </div>
+        <EmptyState icon="settings" title="No inspections match" description="Try clearing the center, date or status filter." />
       ) : (
         <div className="space-y-3">
           {items.map((insp) => (
