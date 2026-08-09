@@ -268,23 +268,127 @@ router.post('/conversations/:id/report', requireAuth, requireUuid('id'), async (
   }
 });
 
-// GET /messages/admin/reports — open reports queue for the Sawa team.
+// ─── Reported messages: the moderation queue ─────────────────────────────────
+// This endpoint existed and worked, and had no interface of any kind — so users
+// could report abuse and nobody could see it. Beyond the operational hole, App
+// Store guideline 1.2 requires a way to ACT on reports about user-generated
+// content, so an invisible queue is also a review risk.
+//
+// What was missing to make it usable, and is added below: a status filter (the
+// queue only returned 'open', so a resolved report vanished with no history),
+// the reported party's identity (a report naming only the reporter cannot be
+// acted on), surrounding messages for context, and a way to close one.
+
+// GET /messages/admin/reports?status=open|resolved|dismissed|all
 router.get('/admin/reports', requireAdmin, paginate(), async (req, res) => {
+  const status = String(req.query.status || 'open');
+  if (!['open', 'resolved', 'dismissed', 'all'].includes(status)) {
+    return res.status(400).json({ error: 'status must be open, resolved, dismissed or all' });
+  }
+  const params = [req.pagination.limit, req.pagination.offset];
+  let where = '';
+  if (status !== 'all') {
+    params.push(status);
+    where = `WHERE r.status = $${params.length}`;
+  }
   try {
     const { rows } = await pool.query(
-      `SELECT r.*, reporter.name AS reporter_name, conv.buyer_id, conv.seller_id,
-              m.text AS message_text
+      `SELECT r.*,
+              reporter.name  AS reporter_name,  reporter.email AS reporter_email,
+              conv.buyer_id, conv.seller_id, conv.car_id,
+              buyer.name  AS buyer_name,  seller.name  AS seller_name,
+              car.title   AS car_title,
+              m.text      AS message_text,
+              m.sender_id AS message_sender_id,
+              m.created_at AS message_sent_at,
+              sender.name AS message_sender_name,
+              -- Who the report is ABOUT: the message's author when a specific
+              -- message was reported, otherwise the other party in the thread.
+              -- A queue that only names the complainant cannot be acted on.
+              COALESCE(m.sender_id,
+                       CASE WHEN r.reporter_id = conv.buyer_id
+                            THEN conv.seller_id ELSE conv.buyer_id END) AS accused_id,
+              -- Has the reporter already blocked them? Then the urgent part is
+              -- handled and this is a moderation decision, not a rescue.
+              EXISTS (
+                SELECT 1 FROM blocked_users b
+                WHERE b.user_id = r.reporter_id
+                  AND b.blocked_id = COALESCE(m.sender_id,
+                        CASE WHEN r.reporter_id = conv.buyer_id
+                             THEN conv.seller_id ELSE conv.buyer_id END)
+              ) AS reporter_has_blocked
        FROM message_reports r
        JOIN users reporter ON reporter.id = r.reporter_id
        JOIN conversations conv ON conv.id = r.conversation_id
        LEFT JOIN messages m ON m.id = r.message_id
-       WHERE r.status = 'open'
+       LEFT JOIN users sender ON sender.id = m.sender_id
+       LEFT JOIN users buyer  ON buyer.id  = conv.buyer_id
+       LEFT JOIN users seller ON seller.id = conv.seller_id
+       LEFT JOIN cars  car    ON car.id    = conv.car_id
+       ${where}
        ORDER BY r.created_at ASC
        LIMIT $1 OFFSET $2`,
-      [req.pagination.limit, req.pagination.offset]
+      params
     );
     res.json(rows);
   } catch (err) {
+    log.error('reports list error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /messages/admin/reports/:id/thread — the conversation around a report.
+//
+// A report quotes one message. Deciding whether it is abuse or a
+// misunderstanding almost always needs what came before it, so this returns the
+// surrounding thread. Admin-only, and deliberately a separate request: the queue
+// list must not carry every message of every reported conversation.
+router.get('/admin/reports/:id/thread', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const rep = await pool.query(
+      'SELECT conversation_id, message_id FROM message_reports WHERE id = $1',
+      [req.params.id]
+    );
+    if (!rep.rows.length) return res.status(404).json({ error: 'Report not found' });
+    const { conversation_id, message_id } = rep.rows[0];
+    const { rows } = await pool.query(
+      `SELECT m.id, m.sender_id, m.text, m.created_at, u.name AS sender_name,
+              (m.id = $2) AS is_reported
+       FROM messages m
+       JOIN users u ON u.id = m.sender_id
+       WHERE m.conversation_id = $1
+       ORDER BY m.created_at ASC
+       LIMIT 200`,
+      [conversation_id, message_id]
+    );
+    res.json({ conversation_id, reported_message_id: message_id, messages: rows });
+  } catch (err) {
+    log.error('report thread error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /messages/admin/reports/:id — close a report.
+//
+// `resolved` means action was taken, `dismissed` means it was not abuse. Both
+// are terminal and both are kept: deleting a handled report destroys the only
+// record that a pattern exists, and a repeat offender is exactly the thing this
+// queue is for.
+router.patch('/admin/reports/:id', requireAdmin, requireUuid('id'), async (req, res) => {
+  const { status } = req.body || {};
+  if (!['resolved', 'dismissed'].includes(status)) {
+    return res.status(400).json({ error: 'status must be resolved or dismissed' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `UPDATE message_reports SET status = $2 WHERE id = $1 RETURNING *`,
+      [req.params.id, status]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Report not found' });
+    log.info('report closed', { id: req.params.id, status, by: req.user.id });
+    res.json(rows[0]);
+  } catch (err) {
+    log.error('report update error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

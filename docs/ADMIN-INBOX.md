@@ -31,9 +31,30 @@ nothing else on the dashboard is affected.
 **1. Add the credentials to the host `.env`** (next to `docker-compose.prod.yml`,
 so `/srv/sawa/.env`):
 
+```bash
+cd /srv/sawa
+
+grep -q '^MAIL_USER=' .env || echo 'MAIL_USER=contact@sawacars.com' >> .env
+
+# Prompted, not typed into the command: `read -rs` does not echo, so the
+# password stays out of ~/.bash_history and out of the process list.
+#
+# Do NOT write it inline as MAIL_PASS=<something>. A copy-pasteable block with a
+# placeholder in it runs perfectly and puts the literal placeholder in .env,
+# which then fails as an authentication error — this has already happened once.
+sed -i '/^MAIL_PASS=/d' .env
+read -rsp 'Mailbox password: ' PW && echo
+printf 'MAIL_PASS=%s\n' "$PW" >> .env && unset PW
 ```
-MAIL_USER=contact@sawacars.com
-MAIL_PASS=<the mailbox password>
+
+Deleting and re-appending the line avoids `sed` substitution, so a password
+containing `|`, `&` or `/` needs no escaping.
+
+Check it took, without printing it:
+
+```bash
+grep -c '^MAIL_PASS=' .env   # 1, not 2
+grep '^MAIL_USER=' .env
 ```
 
 `MAIL_IMAP_HOST`, `MAIL_IMAP_PORT`, `MAIL_SMTP_HOST` and `MAIL_SMTP_PORT` default
@@ -44,11 +65,18 @@ The password belongs in that file and nowhere else. It is not in the repository,
 not in the compose file, not in a GitHub secret, and it is never sent to the
 browser or written to a log.
 
-**2. Restart the API** so it picks the variables up:
+**2. RECREATE the API container** so it picks the variables up:
 
-> GitHub → Actions → **Ops** → Run workflow → `restart-api`
+> GitHub → Actions → **Ops** → Run workflow → **`start-stack`**
 
 or on the host: `docker compose -f docker-compose.prod.yml up -d api`
+
+**Not `restart-api`.** That runs `docker compose restart api`, which restarts the
+*existing* container — and a container's environment is fixed when it is created,
+so a `restart` cannot see a variable added to `.env` afterwards. The inbox would
+go on reporting "not connected" and the `.env` edit would look like it had failed.
+`up -d` recreates the container when its resolved config has changed, which is
+what actually applies a new value.
 
 **3. Check it.** Open `/inbox` in the dashboard. You should see the mailbox
 contents. If not, the page will tell you which of these it is:

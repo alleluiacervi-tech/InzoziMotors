@@ -185,6 +185,9 @@ app.use('/referrals',       require('./src/routes/referrals'));
 app.use('/disputes',        require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));
 app.use('/admin',           require('./src/routes/admin'));
+// Inspection centers. Admin-only CRUD over the table submissions.js already
+// enforces booking capacity against — see the header of routes/centers.js.
+app.use('/centers',         require('./src/routes/centers'));
 // The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
 // see src/lib/mail/ for why it is a live read rather than a synced copy.
 app.use('/mail',            require('./src/routes/mail'));

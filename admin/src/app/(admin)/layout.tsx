@@ -19,6 +19,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/handovers', icon: 'key', label: 'Handovers' },
       { href: '/contracts', icon: 'document', label: 'Contracts' },
       { href: '/disputes', icon: 'shield', label: 'Disputes' },
+      { href: '/reports', icon: 'alert', label: 'Reported chats' },
     ],
   },
   {
@@ -34,6 +35,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/fees', icon: 'cash', label: 'Revenue' },
       { href: '/users', icon: 'user', label: 'Users & ID checks' },
       { href: '/analytics', icon: 'chart', label: 'Analytics' },
+      { href: '/centers', icon: 'location', label: 'Centers' },
     ],
   },
 ]
@@ -86,6 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [openDisputes, setOpenDisputes] = useState(0)
   const [unreadMail, setUnreadMail] = useState(0)
+  const [openReports, setOpenReports] = useState(0)
 
   useEffect(() => {
     api.me()
@@ -103,6 +106,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     api.disputes('open')
       .then((d) => setOpenDisputes(d.length))
       .catch(() => setOpenDisputes(0))
+    // Chat reports accumulated invisibly until this page existed; a badge is what
+    // stops that happening again.
+    api.reports('open')
+      .then((r) => setOpenReports(r.length))
+      .catch(() => setOpenReports(0))
   }, [ready, pathname])
 
   // Unread mail, same treatment: a customer waiting on a reply is as urgent as a
@@ -143,7 +151,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const badgeFor = (href: string) =>
-    href === '/disputes' ? openDisputes : href === '/inbox' ? unreadMail : 0
+    href === '/disputes' ? openDisputes
+      : href === '/inbox' ? unreadMail
+      : href === '/reports' ? openReports
+      : 0
 
   const current = ALL_ITEMS.find(
     (n) => pathname === n.href || (n.href !== '/dashboard' && pathname.startsWith(n.href)),
