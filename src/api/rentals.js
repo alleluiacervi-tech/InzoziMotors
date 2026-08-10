@@ -11,9 +11,18 @@ export const rentals = {
     return await api.get(`/rentals/${id}`);
   },
 
-  // Body: { start_date (ISO), days, pickup_window?, airport_pickup?, center? }
+  // Body: { start_date (ISO), days, pickup_window?, airport_pickup?, center?,
+  //         pay_online? } — with pay_online the response carries
+  // payment: { merchant_ref, amount, currency, redirect_url } and the booking
+  // holds the dates as pending_payment until the gateway confirms.
   bookRental: async (carId, data) => {
     return await api.post(`/rentals/${carId}/book`, data);
+  },
+
+  // Poll after the hosted checkout returns. Also the safety net for a missed
+  // gateway callback — a pending payment is re-verified live server-side.
+  getPaymentStatus: async (merchantRef) => {
+    return await api.get(`/payments/${merchantRef}`);
   },
 
   getMyBookings: async () => {

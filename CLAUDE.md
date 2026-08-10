@@ -15,7 +15,7 @@
 | Identity | Optional | Mandatory for sellers |
 | Trust | Low | Maximum |
 
-> No payment flow exists in the app. Buyers request to buy → coordinate offline. Payment integrations (MTN MoMo, DPO Pay) are a backend-phase feature.
+> Cars are never paid for in the app: buyers request to buy → coordinate offline. The one exception is RENTALS (Aug 2026): the rental fee can optionally be paid online via Pesapal's hosted checkout (cards + MTN MoMo + Airtel Money, opened in the browser); the refundable deposit is always physical at the center.
 
 ---
 
@@ -896,7 +896,9 @@ payments, automated tests, CI.
 
 - Buyers pay nothing, ever.
 - The 7-day return guarantee applies only to handovers completed at the Sawa center.
-- Payment is physical at the center — not in the app, not now, not later.
+- CAR payment is physical at the center — not in the app, not now, not later.
+  Rentals are the exception: the rental fee (never the deposit) can be paid
+  online via Pesapal (`backend/src/lib/pesapal.js`, `/payments` routes).
 - Commission is collectable because the handover (admin confirms) is the sale event — Sawa processes it, so we always know.
 
 ---

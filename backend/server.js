@@ -207,6 +207,10 @@ app.use('/admin',           require('./src/routes/admin'));
 app.use('/centers',         require('./src/routes/centers'));
 // The platform USD/RWF rate — public display data, cached and provenance-
 // stamped. See src/lib/fx.js for the provider chain.
+// Payment confirmation: the IPN inside is public by necessity (Pesapal's
+// servers call it) and trusts nothing — every confirmation is verified
+// against the gateway's status API before any state moves.
+app.use('/payments', require('./src/routes/payments'));
 app.use('/fx',              require('./src/routes/fx'));
 // The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
 // see src/lib/mail/ for why it is a live read rather than a synced copy.

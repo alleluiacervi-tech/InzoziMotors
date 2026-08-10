@@ -44,7 +44,11 @@ const TARGETS = [
   { table: 'platform_fees',   pk: 'id', columns: ['amount'] },
   { table: 'price_history',   pk: 'id', columns: ['price'] },
   { table: 'rental_cars',     pk: 'id', columns: ['daily_rate', 'weekly_rate', 'deposit'] },
-  { table: 'rental_bookings', pk: 'id', columns: ['deposit', 'pickup_fee'] },
+  // subtotal and total were missing here once — a run would have converted a
+  // booking's deposit, flipped its currency flag, and left total as a USD
+  // number labelled RWF, off by the FX rate with no corrective re-run
+  // possible. Every amount on the row converts together or none do.
+  { table: 'rental_bookings', pk: 'id', columns: ['subtotal', 'deposit', 'pickup_fee', 'total', 'amount_due_online'] },
 ];
 
 function parseArgs(argv) {

@@ -189,10 +189,11 @@ export default async function RentalsPage({ searchParams }: PageProps) {
                 ))}
               </ul>
               <p className="mt-8 max-w-prose text-body leading-relaxed text-content-secondary">
-                Payment happens in person at the center when you collect the car —
-                there is no payment feature on this website or in the app. Bring
-                your licence and ID, and we photograph the car with you before you
-                drive off.
+                Pay at the center when you collect the car, or pay the rental
+                online in the app — card, MTN MoMo or Airtel Money, through a
+                secure checkout. The refundable deposit is always handled at the
+                center. Bring your licence and ID, and we photograph the car with
+                you before you drive off.
               </p>
             </div>
 

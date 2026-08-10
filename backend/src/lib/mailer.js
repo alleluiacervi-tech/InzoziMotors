@@ -290,6 +290,20 @@ function sendRentalBooked(email, name, carTitle, startDate, days, ref) {
   });
 }
 
+/** The paid-rental receipt — sent only when the gateway confirmed the money.
+ *  The confirmation code is the line the renter reads out at the center. */
+function sendRentalPaymentReceipt(email, name, carTitle, ref, amount, currency, code) {
+  const money = `${currency === 'USD' ? '$' : 'RWF '}${Number(amount).toLocaleString('en-US')}`;
+  return sendTemplate(email, `Payment received — ${ref}`, {
+    title: 'Payment received',
+    lines: [
+      `Hi ${name || 'there'} — your payment of ${money} for the ${carTitle} is confirmed. This email is your receipt.`,
+      { strong: `${ref}${code ? ` · ${code}` : ''}` },
+      'The refundable deposit is handled at the center at pick-up, and comes back after the documented return check. Bring your driving licence and ID.',
+    ],
+  });
+}
+
 function sendDisputeUpdate(email, name, opened, resolution) {
   return sendTemplate(
     email,
@@ -325,5 +339,6 @@ module.exports = {
   sendHandoverComplete,
   sendIdDecision,
   sendRentalBooked,
+  sendRentalPaymentReceipt,
   sendDisputeUpdate,
 };

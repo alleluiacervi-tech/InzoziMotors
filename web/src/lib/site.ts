@@ -214,7 +214,7 @@ export const SELLING_STEPS = [
 export const FAQS = [
   {
     q: 'Do I pay anything through the app or website?',
-    a: 'Never. There is no payment feature at all. Payment happens physically at a Sawa center at handover — that is what protects both you and the seller.',
+    a: 'Not for buying a car — ever. Car payment happens physically at a Sawa center at handover, which is what protects both you and the seller. Rentals are the one exception: in the app you can choose to pay the rental fee online (card, MTN MoMo or Airtel Money) through a secure checkout — and even then the refundable deposit is handled at the center.',
   },
   {
     q: 'What does the 150-point inspection actually cover?',

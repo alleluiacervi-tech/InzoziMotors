@@ -23,7 +23,8 @@ interface RentalBooking {
   center: string | null
   total: number
   currency: string
-  status: 'upcoming' | 'active' | 'completed' | 'cancelled'
+  status: 'upcoming' | 'active' | 'completed' | 'cancelled' | 'pending_payment' | 'expired'
+  paid_at: string | null
   pickup_record: any
   return_record: any
 }
@@ -102,7 +103,7 @@ export default function RentalsPage() {
                 <th className="px-4 py-3 font-medium">Renter</th>
                 <th className="px-4 py-3 font-medium">Start</th>
                 <th className="px-4 py-3 font-medium">Center</th>
-                <th className="px-4 py-3 font-medium text-right">Total (USD)</th>
+                <th className="px-4 py-3 font-medium text-right">Total</th>
                 {(tab === 'upcoming' || tab === 'active') && (
                   <th className="px-4 py-3 font-medium text-right">Actions</th>
                 )}
@@ -124,6 +125,9 @@ export default function RentalsPage() {
                   <td className="px-4 py-3 text-gray-600">{b.center || '—'}</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">
                     {fmtMoney(b.total, b.currency)}
+                    {b.paid_at ? (
+                      <span className="mt-0.5 block text-caption font-bold text-success-text">Paid online</span>
+                    ) : null}
                   </td>
                   {(tab === 'upcoming' || tab === 'active') && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">

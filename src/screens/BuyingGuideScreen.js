@@ -25,7 +25,7 @@ const REFUND_ROWS = [
 ];
 
 const FAQS = [
-  { q: 'Do I pay anything in the app?', a: 'Never. The app has no payment feature at all. Payment happens physically at the Sawa center at handover — that is what protects both you and the seller.' },
+  { q: 'Do I pay anything in the app?', a: 'Not for buying a car — ever. Car payment happens physically at the Sawa center at handover, which is what protects both you and the seller. Rentals are the one exception: you can choose to pay the rental fee online through our secure checkout, and even then the refundable deposit is handled at the center.' },
   { q: 'What if the seller sells the car to someone else?', a: "Once you request a car it is reserved and removed from the marketplace. Only you can complete or release that reservation." },
   { q: 'Can I inspect the car myself before paying?', a: 'Yes — the handover happens at our center, where you can check the car against its 150-point report before any money changes hands. You can also ask for a WhatsApp video viewing first.' },
   { q: 'What documents do I need?', a: 'Your national ID, proof of insurance (or arrange it at the center), and payment. We handle the RRA paperwork with you.' },

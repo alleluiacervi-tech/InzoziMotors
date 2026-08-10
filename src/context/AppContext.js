@@ -187,13 +187,15 @@ export function AppProvider({ children }) {
   const [rentalBookings, setRentalBookings] = useState([]);
   const bookRental = useCallback(async (booking) => {
     let bookingId;
+    let created = null;
     try {
-      const created = await rentalsApi.bookRental(booking.carId, {
+      created = await rentalsApi.bookRental(booking.carId, {
         start_date: booking.startDateISO,
         days: booking.days,
         pickup_window: booking.time,
         airport_pickup: !!booking.airportPickup,
         center: booking.center,
+        ...(booking.payOnline ? { pay_online: true } : {}),
       });
       bookingId = created?.id || created?.booking_ref;
       const mine = await rentalsApi.getMyBookings();
@@ -221,14 +223,28 @@ export function AppProvider({ children }) {
       date: 'Today',
       read: false,
     }, ...prev]);
-    return bookingId;
+    // The payment leg (redirect_url etc.) rides back to the caller — the
+    // booking screen decides whether a checkout page needs opening.
+    return { bookingId, payment: created?.payment || null };
   }, []);
-  const updateRentalBookingStatus = useCallback((id, status, record = null) => {
-    // Optimistic local update; backend sync is best-effort
-    setRentalBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status } : b))
-    );
-    rentalsApi.updateBookingStatus(id, status, record).catch(() => {});
+  const updateRentalBookingStatus = useCallback(async (id, status, record = null) => {
+    // Optimistic so the button responds — but a rejected transition ROLLS
+    // BACK. The old fire-and-forget left the phone showing a status the
+    // server never reached, which is unacceptable the moment money is
+    // involved in the machine.
+    let before;
+    setRentalBookings((prev) => {
+      before = prev;
+      return prev.map((b) => (b.id === id ? { ...b, status } : b));
+    });
+    try {
+      await rentalsApi.updateBookingStatus(id, status, record);
+      return true;
+    } catch (err) {
+      if (DEMO_MODE) return true; // local fixtures have no server to disagree with
+      setRentalBookings(before);
+      throw err;
+    }
   }, []);
 
   // Socket state

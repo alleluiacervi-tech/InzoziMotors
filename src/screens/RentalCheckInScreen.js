@@ -64,7 +64,7 @@ export default function RentalCheckInScreen({ navigation, route }) {
       if (shots.length) {
         await rentalsApi.uploadBookingPhotos(booking.id, shots, stage);
       }
-      updateRentalBookingStatus(booking.id, isReturn ? 'completed' : 'active', {
+      await updateRentalBookingStatus(booking.id, isReturn ? 'completed' : 'active', {
         ...staffRecord,
         agreed_at: new Date().toISOString(),
         renter_photo_count: shots.length,

@@ -229,13 +229,15 @@ export default async function DownloadPage({
         <Container>
           <div className="max-w-2xl">
             <h2 className="text-headline font-extrabold tracking-[-0.025em] text-white">
-              No payment, anywhere
+              A car is never paid for online
             </h2>
             <p className="mt-5 text-title-sm leading-relaxed text-white/70">
-              There is no payment feature in the app or on this site, and there is not going to be
-              one. Money changes hands in person at a Sawa center on the day of handover, with
-              our team checking the documents alongside you. That is exactly what makes the 7-day
-              drive-it guarantee something we can honour.
+              Buying a car through Sawa never involves paying in the app or on this site. Money
+              changes hands in person at a Sawa center on the day of handover, with our team
+              checking the documents alongside you. That is exactly what makes the 7-day
+              drive-it guarantee something we can honour. Rentals are the one exception — the
+              app offers a secure online checkout (card or mobile money) for the rental fee,
+              and even then the refundable deposit is handled at the center.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button href="/promise">Read the Sawa Promise</Button>

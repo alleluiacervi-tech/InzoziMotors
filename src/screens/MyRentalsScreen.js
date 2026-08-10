@@ -9,9 +9,16 @@ import { useApp } from '../context/AppContext';
 import { formatRWF } from '../data/marketData';
 
 const STATUS_CONFIG = {
+  // pending_payment: dates held while checkout completes; the hold expires on
+  // its own if the payment never lands.
+  pending_payment: { label: 'Awaiting Payment', color: colors.amber, bg: colors.statusPendingBg, icon: 'card-outline' },
   confirmed: { label: 'Confirmed', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
   active: { label: 'On Trip', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'car-outline' },
   completed: { label: 'Completed', color: colors.statusSold, bg: colors.statusSoldBg, icon: 'checkmark-circle-outline' },
+  // Falling through to "Confirmed" used to give a CANCELLED booking a live
+  // check-in button.
+  cancelled: { label: 'Cancelled', color: colors.textMuted, bg: colors.surfaceAlt, icon: 'close-circle-outline' },
+  expired: { label: 'Expired', color: colors.textMuted, bg: colors.surfaceAlt, icon: 'time-outline' },
 };
 
 export default function MyRentalsScreen({ navigation }) {

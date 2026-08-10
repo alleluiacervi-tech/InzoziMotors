@@ -17,8 +17,14 @@ Ground truth the forms rest on:
 - All transport is HTTPS (enforced at boot in a release build).
 - Account deletion is in-app (Settings → Danger zone) and documented at
   https://sawacars.com/account/delete.
-- There is **no payment in the app**: cars are physical goods paid for in
+- **Cars are never paid for in the app**: they are physical goods paid for in
   person at the handover center. No in-app purchases, no subscriptions.
+- **Rentals** (physical service) can optionally be paid online: the app opens
+  Pesapal's hosted checkout **in the browser** (cards + MTN MoMo + Airtel
+  Money). The app itself never collects card or mobile-money numbers; it
+  stores the booking's payment status and reference. Physical services must
+  not use IAP (App Store 3.1.3(e) / Play "physical goods"), so an external
+  processor is the compliant route on both stores.
 
 ---
 
@@ -46,8 +52,18 @@ processed ephemerally; everything is **required** unless marked optional):
 | App info and performance | Crash logs | Analytics | server request logs only; no crash SDK |
 | Device or other IDs | Device or other IDs | App functionality | Expo push token, **optional** (only if push granted) |
 
-Answer **No** to: location, financial info, health, contacts, calendar,
-audio, files/docs, browsing history, installed apps.
+Add for the rental payment feature:
+
+| Category | Data type | Purpose | Notes |
+|---|---|---|---|
+| Financial info | Purchase history | App functionality | rental bookings + their payment status/reference |
+
+**User payment info stays NO** — card and mobile-money details are entered on
+Pesapal's page in the browser, never in the app.
+
+Answer **No** to: location, financial info → *user payment info / credit
+score / salary*, health, contacts, calendar, audio, files/docs, browsing
+history, installed apps.
 
 **Photo and Video Permissions declaration**: not required — the app declares
 no `READ_MEDIA_*` permission (it uses the Android system photo picker; the
@@ -64,6 +80,9 @@ legacy storage permissions are scoped to Android ≤ 12 by the OS itself).
   Text Messages (in-app chat), Other User Content (reviews, submissions,
   saved searches)
 - Identifiers → User ID, Device ID (push token)
+- Purchases → Purchase History (rental bookings and their payment status;
+  card/MoMo details never touch the app — Pesapal's browser checkout takes
+  them)
 - Sensitive Info → **only if the reviewer asks**: government-ID photos are
   collected from sellers for identity verification; they are admin-visible
   only and deleted with the account
@@ -75,7 +94,9 @@ but conservatively declare everything as linked — the account owns it).
 
 - **Google Play (IARC questionnaire):** no violence, no sexual content, no
   profanity, no drugs, no gambling, no scary content. **Users can interact**
-  (chat) → yes. **Shares location** → no. **Digital purchases** → no.
+  (chat) → yes. **Shares location** → no. **Digital purchases** → no
+  (rental payment is for a physical service and happens in the browser via
+  Pesapal — not a digital-goods purchase).
   Expected outcome: *Everyone / PEGI 3* with the "Users Interact" notice.
 - **Apple:** all content questionnaire answers "None"; unrestricted web
   access → No; gambling → No. Expected outcome: **4+**. UGC is moderated
@@ -87,8 +108,11 @@ but conservatively declare everything as linked — the account owns it).
 > can publish listings, after physically inspecting each car (150-point
 > report attached to every listing). Buyers browse free; a "purchase
 > request" reserves a car — payment happens in person at our handover
-> center, so the app contains no payment flow (physical goods, offline
-> settlement).
+> center, so buying a car involves no payment flow in the app (physical
+> goods, offline settlement). Car RENTALS can optionally be paid online:
+> the app opens Pesapal's hosted checkout in the device browser (physical
+> service — external payment is the compliant route); the app never
+> collects card or mobile-money details.
 >
 > Test accounts (all flows): BUYER — email: `<fill in>` password: `<fill in>`;
 > SELLER (ID-verified) — email: `<fill in>` password: `<fill in>`.
@@ -132,8 +156,9 @@ but conservatively declare everything as linked — the account owns it).
 > • Import duty calculator for the true landed cost
 > • Financing estimates from Kigali banks
 >
-> Payment happens in person at our handover centers in Kigali — never in
-> the app. Questions? contact@sawacars.com · +250 788 308 611
+> Cars are paid for in person at our handover centers in Kigali — never in
+> the app. Rentals can optionally be paid online through a secure checkout
+> (card or mobile money). Questions? contact@sawacars.com · +250 788 308 611
 
 ## 6. Listing copy — App Store
 

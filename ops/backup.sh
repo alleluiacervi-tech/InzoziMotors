@@ -60,7 +60,7 @@ TOC="$($RESTORE_CMD --list < "$DB_FILE" 2>/dev/null)" || die "dump is unreadable
 
 # The tables whose loss would end the business. Their absence means the dump
 # ran against the wrong database, which a size check would never catch.
-for table in users cars handovers platform_fees inspections submissions; do
+for table in users cars handovers platform_fees inspections submissions rental_cars rental_bookings payments; do
   echo "$TOC" | grep -q "TABLE DATA public $table" \
     || die "dump is missing table '$table' — wrong database?"
 done
