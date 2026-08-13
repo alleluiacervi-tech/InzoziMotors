@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
+import { QueueSearch } from '@/components/QueueSearch'
 
 const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
@@ -24,6 +25,7 @@ export default function ListingsPage() {
   const [actionId, setActionId]         = useState<string | null>(null)
   const ask = useConfirm()
   const toast = useToast()
+  const [query, setQuery] = useState('')
 
   async function load(s: string) {
     setLoading(true)
@@ -39,6 +41,7 @@ export default function ListingsPage() {
   }
 
   useEffect(() => { load(statusFilter) }, [statusFilter])
+  const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((car) => !q || [car.title, car.make, car.model, car.year, car.location, car.seller_name, car.id, car.vin].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
 
   async function updateStatus(id: string, status: string) {
     setActionId(id)
@@ -84,6 +87,7 @@ export default function ListingsPage() {
           Create Listing
         </Link>
       </div>
+      <QueueSearch value={query} onChange={setQuery} resultCount={visible.length} placeholder="Search vehicle, seller, location, VIN, or listing ID" />
 
       {/* Status filter pills */}
       <div className="flex flex-wrap gap-1 mb-6">
@@ -104,11 +108,11 @@ export default function ListingsPage() {
         <ErrorState error={error} onRetry={() => load(statusFilter)} />
       ) : loading ? (
         <LoadingState />
-      ) : items.length === 0 ? (
-        <EmptyState icon="car" title="No listings here" description={`Nothing on the floor with status “${statusFilter}”.`} />
+      ) : visible.length === 0 ? (
+        <EmptyState icon="car" title={items.length ? 'No listings match' : 'No listings here'} description={items.length ? 'Try a different vehicle, seller, location, VIN, or ID.' : `Nothing on the floor with status “${statusFilter}”.`} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((car) => (
+          {visible.map((car) => (
             <div key={car.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               {/* Thumbnail */}
               {car.images?.[0] ? (
