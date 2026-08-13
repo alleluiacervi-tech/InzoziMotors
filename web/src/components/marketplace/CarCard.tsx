@@ -161,7 +161,7 @@ export function CarCard({
             {formatUSD(car.price)}
           </p>
           <p className="mt-0.5 text-micro text-content-muted tabular-nums">
-            {formatRWF(car.price)} · ~{formatUSD(monthlyEstimate(car.price))}/mo est.
+            ~{formatUSD(monthlyEstimate(car.price))}/mo est.
           </p>
 
           {/* The market line shows its work — amount and sample size, never a

@@ -125,8 +125,8 @@ function validateContractData(data) {
   }
 
   const currency = get(data, 'terms.currency');
-  if (!isBlank(currency) && !['RWF', 'USD'].includes(currency)) {
-    add('terms.currency', 'Sale terms — currency', 'must be RWF or USD');
+  if (!isBlank(currency) && currency !== 'RWF') {
+    add('terms.currency', 'Sale terms — currency', 'must be RWF');
   }
 
   for (const side of ['seller', 'buyer']) {

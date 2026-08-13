@@ -136,10 +136,10 @@ export function FilterPanel({
       />
 
       <fieldset>
-        <legend className={LABEL}>Price (USD)</legend>
+        <legend className={LABEL}>Price (RWF)</legend>
         <div className="flex items-center gap-2">
           <label className="sr-only" htmlFor={fieldId('min_price')}>
-            Minimum price in US dollars
+            Minimum price in Rwandan francs
           </label>
           <Input
             id={fieldId('min_price')}
@@ -155,7 +155,7 @@ export function FilterPanel({
             –
           </span>
           <label className="sr-only" htmlFor={fieldId('max_price')}>
-            Maximum price in US dollars
+            Maximum price in Rwandan francs
           </label>
           <Input
             id={fieldId('max_price')}

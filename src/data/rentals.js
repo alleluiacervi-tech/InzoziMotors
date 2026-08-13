@@ -2,7 +2,7 @@ import { STUDIO } from './carImageAssets';
 // Mock rental fleet — separate inventory from sale listings.
 // Every rental car is Sawa-certified (same 150-point inspection as sale cars).
 
-export const RENTAL_CARS = [
+const LEGACY_RENTAL_CARS = [
   {
     id: 'r1',
     title: 'Toyota RAV4 Hybrid',
@@ -236,6 +236,14 @@ export const RENTAL_CARS = [
   },
 ];
 
+export const RENTAL_CARS = LEGACY_RENTAL_CARS.map((car) => ({
+  ...car,
+  currency: 'RWF',
+  dailyRate: Math.round(car.dailyRate * 1470),
+  weeklyRate: Math.round(car.weeklyRate * 1470),
+  deposit: Math.round(car.deposit * 1470),
+}));
+
 // What every Sawa rental includes — shown on detail screen
 export const RENTAL_INCLUDES = [
   { icon: 'shield-checkmark-outline', label: 'Comprehensive insurance' },
@@ -249,7 +257,7 @@ export const RENTAL_CENTERS = [
   { id: 'c1', name: 'Nyarutarama Center', area: 'Nyarutarama', fee: 0 },
   { id: 'c2', name: 'Kicukiro Center', area: 'Kicukiro', fee: 0 },
   { id: 'c3', name: 'Kimironko Center', area: 'Kimironko', fee: 0 },
-  { id: 'c4', name: "Kigali Int'l Airport", area: 'Kanombe', fee: 20, airport: true },
+  { id: 'c4', name: "Kigali Int'l Airport", area: 'Kanombe', fee: 30000, airport: true },
 ];
 
 // Each rental car lives at one Sawa center — pickup happens where the car is.

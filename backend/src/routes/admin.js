@@ -175,6 +175,74 @@ router.get('/users', requireAdmin, async (req, res) => {
   }
 });
 
+// GET /admin/search?q= — one command-bar search across the records an operator
+// most often needs to jump between. Results are intentionally small and carry
+// their destination so the client cannot invent routing rules per entity.
+router.get('/search', requireAdmin, async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (q.length < 2) return res.json({ results: [] });
+  const needle = `%${q}%`;
+  try {
+    const [users, cars, submissions, rentals] = await Promise.all([
+      pool.query(`SELECT id, name, email FROM users
+                  WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone,'') ILIKE $1
+                  ORDER BY created_at DESC LIMIT 5`, [needle]),
+      pool.query(`SELECT id, title, status FROM cars
+                  WHERE title ILIKE $1 OR make ILIKE $1 OR model ILIKE $1
+                  ORDER BY created_at DESC LIMIT 5`, [needle]),
+      pool.query(`SELECT s.id, s.status, s.make, s.model, u.name AS seller_name
+                  FROM submissions s JOIN users u ON u.id=s.seller_id
+                  WHERE s.make ILIKE $1 OR s.model ILIKE $1 OR u.name ILIKE $1
+                  ORDER BY s.created_at DESC LIMIT 5`, [needle]),
+      pool.query(`SELECT rb.id, rb.booking_ref, u.name AS customer_name, rb.status
+                  FROM rental_bookings rb JOIN users u ON u.id=rb.renter_id
+                  WHERE rb.booking_ref ILIKE $1 OR u.name ILIKE $1 OR u.email ILIKE $1
+                  ORDER BY rb.booked_at DESC LIMIT 5`, [needle]),
+    ]);
+    res.json({ results: [
+      ...users.rows.map((r) => ({ kind: 'User', id: r.id, title: r.name, detail: r.email, href: `/users?q=${encodeURIComponent(r.email)}` })),
+      ...cars.rows.map((r) => ({ kind: 'Listing', id: r.id, title: r.title, detail: r.status, href: `/listings/${r.id}/edit` })),
+      ...submissions.rows.map((r) => ({ kind: 'Submission', id: r.id, title: `${r.make} ${r.model}`, detail: `${r.seller_name} · ${r.status}`, href: '/submissions' })),
+      ...rentals.rows.map((r) => ({ kind: 'Rental', id: r.id, title: r.booking_ref, detail: `${r.customer_name} · ${r.status}`, href: '/rentals' })),
+    ] });
+  } catch (err) {
+    log.error('admin search error', { error: err.message });
+    res.status(500).json({ error: 'Search unavailable' });
+  }
+});
+
+// GET /admin/activity — a factual cross-workflow timeline assembled from the
+// records themselves. This gives operators context without introducing an
+// eventually-consistent event store for actions the database already records.
+router.get('/activity', requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT * FROM (
+        SELECT 'Submission' AS kind, CONCAT(make, ' ', model) AS title,
+               status AS detail, created_at AS happened_at, '/submissions' AS href
+        FROM submissions
+        UNION ALL
+        SELECT 'Inspection', CONCAT('Inspection · ', center), status,
+               scheduled_at, '/inspections'
+        FROM inspections
+        UNION ALL
+        SELECT 'Handover', booking_id, status, booked_at, '/handovers'
+        FROM handovers
+        UNION ALL
+        SELECT 'Fee', CONCAT(fee_type, ' · RWF ', amount::text), status,
+               created_at, '/fees'
+        FROM platform_fees WHERE currency = 'RWF'
+      ) activity
+      WHERE happened_at IS NOT NULL
+      ORDER BY happened_at DESC LIMIT 20
+    `);
+    res.json(rows);
+  } catch (err) {
+    log.error('admin activity error', { error: err.message });
+    res.status(500).json({ error: 'Activity unavailable' });
+  }
+});
+
 // ─── Fees ledger — the platform_fees table finally gets a read side ──────────
 
 // GET /admin/fees?status=due|paid|waived — commission/certification/featured rows

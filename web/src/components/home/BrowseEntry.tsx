@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { ChipLink } from '@/components/ui/Chip'
 import { Reveal } from '@/components/ui/Reveal'
-import { getRwfRate, isDemoListing } from '@/lib/business'
+import { isDemoListing } from '@/lib/business'
 import { BODY_TYPE_IMAGES } from '@/lib/imagery'
 import type { Car } from '@/lib/types'
 
@@ -24,12 +24,12 @@ const FAMILIES = ['SUV', 'Sedan', 'Hatchback', 'Pickup'] as const
 // been fetched yet, and budget chips built on a stale rate would filter to the
 // wrong price band (~12% off, at the drift the old constant had accumulated).
 const budgets = () => {
-  const usd = (rwfMillions: number) => Math.round((rwfMillions * 1_000_000) / getRwfRate())
+  const rwf = (rwfMillions: number) => rwfMillions * 1_000_000
   return [
-    { label: 'Under 10M RWF', href: `/cars?max_price=${usd(10)}` },
-    { label: '10 – 20M RWF', href: `/cars?min_price=${usd(10)}&max_price=${usd(20)}` },
-    { label: '20 – 35M RWF', href: `/cars?min_price=${usd(20)}&max_price=${usd(35)}` },
-    { label: '35M+ RWF', href: `/cars?min_price=${usd(35)}` },
+    { label: 'Under 10M RWF', href: `/cars?max_price=${rwf(10)}` },
+    { label: '10 – 20M RWF', href: `/cars?min_price=${rwf(10)}&max_price=${rwf(20)}` },
+    { label: '20 – 35M RWF', href: `/cars?min_price=${rwf(20)}&max_price=${rwf(35)}` },
+    { label: '35M+ RWF', href: `/cars?min_price=${rwf(35)}` },
   ]
 }
 

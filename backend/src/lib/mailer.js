@@ -293,7 +293,7 @@ function sendRentalBooked(email, name, carTitle, startDate, days, ref) {
 /** The paid-rental receipt — sent only when the gateway confirmed the money.
  *  The confirmation code is the line the renter reads out at the center. */
 function sendRentalPaymentReceipt(email, name, carTitle, ref, amount, currency, code) {
-  const money = `${currency === 'USD' ? '$' : 'RWF '}${Number(amount).toLocaleString('en-US')}`;
+  const money = `RWF ${Number(amount).toLocaleString('en-RW')}`;
   return sendTemplate(email, `Payment received — ${ref}`, {
     title: 'Payment received',
     lines: [

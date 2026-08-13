@@ -75,7 +75,7 @@ export default function CarListCard({ car, onPress }) {
               </View>
             )}
           </View>
-          <Text style={styles.price}>${(price ?? 0).toLocaleString('en-US')}</Text>
+          <Text style={styles.price}>RWF {(price ?? 0).toLocaleString('en-RW')}</Text>
         </View>
       </View>
     </Pressable>

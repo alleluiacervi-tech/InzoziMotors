@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Button, Icon, LiveRegion } from '@/components/ui'
-import { CC_BRACKETS, calcRwandaDuty, formatRWF, formatUSD, type CcBracket } from '@/lib/business'
+import { CC_BRACKETS, calcRwandaDuty, formatUSD, type CcBracket } from '@/lib/business'
 import {
   ChipGroup,
   Headline,
@@ -56,11 +56,11 @@ export function DutyCalculator() {
           <NumberField
             id="duty-value"
             label="Purchase price"
-            prefix="$"
+            prefix="RWF"
             placeholder="15000"
             value={value}
             onChange={setValue}
-            hint="What you pay the exporter, in US dollars, before shipping."
+            hint="What you pay for the vehicle before shipping, entered in RWF."
           />
 
           <ChipGroup
@@ -90,7 +90,6 @@ export function DutyCalculator() {
               <Headline
                 label="Purchase price plus duties and taxes"
                 value={formatUSD(duty.grandTotal)}
-                sub={formatRWF(duty.grandTotal)}
                 note={`Duties add ${duty.effectiveRate}% on top of what you pay the exporter.`}
               />
 
@@ -99,36 +98,30 @@ export function DutyCalculator() {
                   label="CIF value"
                   hint={`Purchase price plus ${share(duty.cif - vehicleValue, vehicleValue)} freight and insurance`}
                   value={formatUSD(duty.cif)}
-                  sub={formatRWF(duty.cif)}
                 />
                 <ResultRow
                   label="Customs duty"
                   hint={`${share(duty.customs, duty.cif)} of CIF`}
                   value={formatUSD(duty.customs)}
-                  sub={formatRWF(duty.customs)}
                 />
                 <ResultRow
                   label="Excise duty"
                   hint={`${share(duty.excise, duty.cif)} of CIF — set by engine size`}
                   value={formatUSD(duty.excise)}
-                  sub={formatRWF(duty.excise)}
                 />
                 <ResultRow
                   label="VAT"
                   hint={`${share(duty.vat, duty.cif + duty.customs + duty.excise)} of CIF plus customs and excise`}
                   value={formatUSD(duty.vat)}
-                  sub={formatRWF(duty.vat)}
                 />
                 <ResultRow
                   label="Infrastructure levy"
                   hint={`${share(duty.infra, duty.cif)} of CIF`}
                   value={formatUSD(duty.infra)}
-                  sub={formatRWF(duty.infra)}
                 />
                 <ResultRow
                   label="Total duties and taxes"
                   value={formatUSD(duty.totalDuties)}
-                  sub={formatRWF(duty.totalDuties)}
                   emphasis
                 />
               </div>

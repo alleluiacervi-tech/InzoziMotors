@@ -29,7 +29,7 @@ const TOOLS: { href: string; icon: IconName; title: string; body: string; meta: 
     href: '/tools/import-duty',
     icon: 'document',
     title: 'Import duty calculator',
-    body: 'The full RRA breakdown on an imported vehicle — CIF, customs, excise by engine size, VAT and the infrastructure levy — in both USD and RWF.',
+    body: 'The full RRA breakdown on an imported vehicle — CIF, customs, excise by engine size, VAT and the infrastructure levy — entirely in RWF.',
     meta: 'For importers',
   },
   {

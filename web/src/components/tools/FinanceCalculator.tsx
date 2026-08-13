@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Button, Icon, LiveRegion } from '@/components/ui'
-import { FINANCE_TERMS, formatRWF, formatUSD, monthlyEstimate } from '@/lib/business'
+import { FINANCE_TERMS, formatUSD, monthlyEstimate } from '@/lib/business'
 import {
   ChipGroup,
   Headline,
@@ -122,7 +122,7 @@ export function FinanceCalculator() {
             <NumberField
               id="finance-price"
               label="Car price"
-              prefix="$"
+              prefix="RWF"
               placeholder="18000"
               value={price}
               onChange={setPrice}
@@ -132,7 +132,7 @@ export function FinanceCalculator() {
             <NumberField
               id="finance-budget"
               label="Monthly budget"
-              prefix="$"
+              prefix="RWF"
               placeholder="400"
               value={budget}
               onChange={setBudget}
@@ -177,7 +177,6 @@ export function FinanceCalculator() {
               <Headline
                 label={`Over ${months} months at ${FINANCE_TERMS.annualRatePct}% a year`}
                 value={`${formatUSD(fromPrice.monthly)}/mo`}
-                sub={`${formatRWF(fromPrice.monthly)} a month`}
                 note={
                   onStandardTerms
                     ? undefined
@@ -190,24 +189,20 @@ export function FinanceCalculator() {
                   label="Deposit"
                   hint={`${depositPct}% of the price, paid at the center`}
                   value={formatUSD(fromPrice.depositAmount)}
-                  sub={formatRWF(fromPrice.depositAmount)}
                 />
                 <ResultRow
                   label="Amount financed"
                   value={formatUSD(fromPrice.financed)}
-                  sub={formatRWF(fromPrice.financed)}
                 />
                 <ResultRow
                   label="Interest over the term"
                   hint="At the representative rate below"
                   value={formatUSD(fromPrice.totalInterest)}
-                  sub={formatRWF(fromPrice.totalInterest)}
                 />
                 <ResultRow
                   label="Total you pay"
                   hint="Deposit plus every repayment"
                   value={formatUSD(fromPrice.totalRepaid)}
-                  sub={formatRWF(fromPrice.totalRepaid)}
                   emphasis
                 />
               </div>
@@ -230,7 +225,6 @@ export function FinanceCalculator() {
               <Headline
                 label={`Paying ${formatUSD(fromBudget.monthly)} a month for ${months} months`}
                 value={`Up to ${formatUSD(fromBudget.maxPrice)}`}
-                sub={formatRWF(fromBudget.maxPrice)}
                 note={`Assumes a ${depositPct}% deposit at ${FINANCE_TERMS.annualRatePct}% a year.`}
               />
 
@@ -239,18 +233,15 @@ export function FinanceCalculator() {
                   label="Deposit you would need"
                   hint={`${depositPct}% of the car price`}
                   value={formatUSD(fromBudget.depositNeeded)}
-                  sub={formatRWF(fromBudget.depositNeeded)}
                 />
                 <ResultRow
                   label="Amount financed"
                   value={formatUSD(fromBudget.financed)}
-                  sub={formatRWF(fromBudget.financed)}
                 />
                 <ResultRow
                   label="Total you pay"
                   hint="Deposit plus every repayment"
                   value={formatUSD(fromBudget.depositNeeded + fromBudget.monthly * months)}
-                  sub={formatRWF(fromBudget.depositNeeded + fromBudget.monthly * months)}
                   emphasis
                 />
               </div>

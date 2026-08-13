@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
-import { formatRWF, RWF_RATE } from '../data/marketData';
+import { formatRWF } from '../data/marketData';
 
 // Logos are each bank's own trademark, shown nominatively in a rate
 // comparison (sources: Wikimedia/press assets). `brand` tints the selected
@@ -65,20 +65,20 @@ function BankCard({ bank, monthly, totalInterest, termMonths, isSelected, isBest
           <View style={styles.bankResultCol}>
             <Text style={styles.bankMonthlyLabel}>Monthly</Text>
             <Text style={[styles.bankMonthlyValue, isSelected && { color: colors.primary }]}>
-              ${Math.round(monthly).toLocaleString()}
+              {formatRWF(Math.round(monthly))}
             </Text>
             <Text style={styles.bankRwf}>≈ {formatRWF(Math.round(monthly))}</Text>
           </View>
           <View style={styles.resultDivider} />
           <View style={styles.bankResultCol}>
             <Text style={styles.bankMonthlyLabel}>Total interest</Text>
-            <Text style={styles.bankInterest}>${Math.round(totalInterest).toLocaleString()}</Text>
+            <Text style={styles.bankInterest}>{formatRWF(Math.round(totalInterest))}</Text>
           </View>
           <View style={styles.resultDivider} />
           <View style={styles.bankResultCol}>
             <Text style={styles.bankMonthlyLabel}>Total repaid</Text>
             {/* monthly × term — it already includes the interest */}
-            <Text style={styles.bankTotal}>${Math.round(monthly * termMonths).toLocaleString()}</Text>
+            <Text style={styles.bankTotal}>{formatRWF(Math.round(monthly * termMonths))}</Text>
           </View>
         </View>
       )}
@@ -121,9 +121,9 @@ export default function FinancingScreen({ navigation, route }) {
         </View>
 
         {/* Inputs */}
-        <Text style={styles.fieldLabel}>Car price (USD)</Text>
+        <Text style={styles.fieldLabel}>Car price (RWF)</Text>
         <View style={styles.inputRow}>
-          <Text style={styles.inputPrefix}>$</Text>
+          <Text style={styles.inputPrefix}>RWF</Text>
           <TextInput
             style={styles.input}
             value={carPrice}
@@ -134,9 +134,9 @@ export default function FinancingScreen({ navigation, route }) {
           />
         </View>
 
-        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Down payment (USD)</Text>
+        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Down payment (RWF)</Text>
         <View style={styles.inputRow}>
-          <Text style={styles.inputPrefix}>$</Text>
+          <Text style={styles.inputPrefix}>RWF</Text>
           <TextInput
             style={styles.input}
             value={downPayment}
@@ -152,7 +152,7 @@ export default function FinancingScreen({ navigation, route }) {
         {principal > 0 && (
           <View style={styles.loanSummary}>
             <Text style={styles.loanLabel}>Loan amount</Text>
-            <Text style={styles.loanValue}>${principal.toLocaleString()}</Text>
+            <Text style={styles.loanValue}>{formatRWF(principal)}</Text>
             <Text style={styles.loanRwf}>{formatRWF(principal)}</Text>
           </View>
         )}
@@ -210,13 +210,12 @@ export default function FinancingScreen({ navigation, route }) {
                 <Text style={styles.summaryTitle}>Your estimate · {selectedBankObj.name}</Text>
               </View>
               {[
-                { label: 'Loan amount', value: `$${principal.toLocaleString()}` },
+                { label: 'Loan amount', value: formatRWF(principal) },
                 { label: 'Loan term', value: `${termMonths} months (${termMonths / 12}yr)` },
                 { label: 'Annual rate', value: `${(selectedBankObj.rate * 100).toFixed(1)}% p.a.` },
-                { label: 'Monthly payment', value: `$${Math.round(monthly).toLocaleString()}`, bold: true, color: colors.primary },
-                { label: 'Monthly in RWF', value: `≈ ${formatRWF(Math.round(monthly))}` },
-                { label: 'Total interest', value: `$${Math.round(monthly * termMonths - principal).toLocaleString()}` },
-                { label: 'Total repaid', value: `$${Math.round(monthly * termMonths).toLocaleString()}` },
+                { label: 'Monthly payment', value: formatRWF(Math.round(monthly)), bold: true, color: colors.primary },
+                { label: 'Total interest', value: formatRWF(Math.round(monthly * termMonths - principal)) },
+                { label: 'Total repaid', value: formatRWF(Math.round(monthly * termMonths)) },
               ].map((row, i) => (
                 <View key={i} style={[styles.summaryRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderSoft }]}>
                   <Text style={styles.summaryLabel}>{row.label}</Text>

@@ -73,8 +73,7 @@ export default function MyRentalsScreen({ navigation }) {
               <View style={styles.cardBottom}>
                 <View>
                   <Text style={styles.totalLabel}>Due at pickup</Text>
-                  <Text style={styles.totalValue}>${b.total}</Text>
-                  <Text style={styles.totalRwf}>≈ {formatRWF(b.total)}</Text>
+                  <Text style={styles.totalValue}>{formatRWF(b.total)}</Text>
                 </View>
 
                 {b.status === 'confirmed' && (

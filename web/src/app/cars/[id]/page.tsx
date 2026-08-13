@@ -290,7 +290,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                   {formatUSD(car.price)}
                 </p>
                 <p className="mt-2 text-caption text-content-secondary">
-                  {formatRWF(car.price)} · ~{formatUSD(monthly)}/mo est.
+                  ~{formatUSD(monthly)}/mo estimated finance
                 </p>
 
                 {market && car.market_avg ? (
@@ -596,7 +596,7 @@ function JsonLd({ car, images }: { car: Car; images: string[] }) {
     offers: {
       '@type': 'Offer',
       price: car.price,
-      priceCurrency: 'USD',
+      priceCurrency: 'RWF',
       // A sold car keeps its URL — it has inbound links and search equity —
       // but must stop advertising itself as available.
       availability: offerAvailability(car.status),

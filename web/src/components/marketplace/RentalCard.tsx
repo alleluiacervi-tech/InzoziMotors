@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
-import { formatRWF, formatUSD, getCertTier } from '@/lib/business'
+import { formatUSD, getCertTier } from '@/lib/business'
 import type { RentalCar } from '@/lib/types'
 import { formatRating } from './rental-math'
 
@@ -92,7 +92,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
               <span className="text-caption font-bold text-content-muted"> / day</span>
             </p>
             <p className="mt-0.5 text-micro text-content-muted">
-              {formatRWF(car.daily_rate)} · {formatUSD(car.deposit)} deposit, refundable
+              {formatUSD(car.deposit)} deposit, refundable
             </p>
           </div>
 

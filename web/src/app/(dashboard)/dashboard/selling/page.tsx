@@ -12,7 +12,6 @@ import {
   SUBMISSION_STATUS_LABEL,
   formatDate,
   formatKm,
-  formatRWF,
   formatUSD,
 } from '@/lib/business'
 import { getCurrentUser, getToken } from '@/lib/session'
@@ -146,9 +145,6 @@ export default async function SellingPage() {
                         Asking{' '}
                         <span className="font-extrabold text-content">
                           {formatUSD(submission.asking_price)}
-                        </span>{' '}
-                        <span className="text-content-muted">
-                          ({formatRWF(submission.asking_price)})
                         </span>
                       </p>
                     ) : null}
@@ -245,9 +241,6 @@ export default async function SellingPage() {
                       <p className="mt-2">
                         <span className="text-price font-extrabold tracking-[-0.02em] text-brand">
                           {formatUSD(car.price)}
-                        </span>
-                        <span className="ml-2 text-caption text-content-muted">
-                          {formatRWF(car.price)}
                         </span>
                       </p>
 

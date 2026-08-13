@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react'
 import { estimateValuationAction, type ValuationState } from '@/app/sell/actions'
 import { Alert, Button, Field, Icon, Input, LiveRegion } from '@/components/ui'
-import { formatKm, formatRWF, formatUSD } from '@/lib/business'
+import { formatKm, formatUSD } from '@/lib/business'
 import { CONTACT } from '@/lib/site'
 import {
   Headline,
@@ -179,7 +179,6 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
       <Headline
         label={`${state.year} ${state.make}${state.mileage ? ` · ${formatKm(state.mileage)}` : ''}`}
         value={`${formatUSD(state.low)} – ${formatUSD(state.high)}`}
-        sub={`${formatRWF(state.low)} – ${formatRWF(state.high)}`}
         note={
           state.mileage
             ? 'Adjusted for the mileage you entered.'
@@ -193,7 +192,6 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
             label="Average price of those cars"
             hint={`${state.make}, ${from}–${to}`}
             value={formatUSD(state.market_avg)}
-            sub={formatRWF(state.market_avg)}
           />
         ) : null}
         {state.range_seen ? (

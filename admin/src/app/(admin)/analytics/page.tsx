@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
         <Card className="p-5">
           <div className="mb-4 flex items-baseline justify-between">
             <h2 className="text-sm font-bold text-content">Sales value per month</h2>
-            <span className="text-xs text-content-muted">USD</span>
+            <span className="text-xs text-content-muted">RWF</span>
           </div>
           <BarChart data={monthlyValue} height={150} formatValue={(v) => fmtMoneyShort(v, salesCurrency)} emptyLabel="No completed sales yet" />
         </Card>

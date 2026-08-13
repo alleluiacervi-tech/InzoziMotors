@@ -312,7 +312,7 @@ export default function RentalFleetPage() {
             {editing ? `Edit — ${editing.title}` : 'New rental car'}
           </h2>
           <p className="text-xs text-gray-500 mb-5">
-            All money fields are whole US dollars.
+            All money fields are whole Rwandan francs (RWF).
             {editing
               ? ' Specs (make, model, year, seats, fuel) are fixed after onboarding — the API does not accept them here.'
               : ' Safari-ready is a fleet flag set in the database; the API does not expose it.'}
@@ -399,11 +399,11 @@ export default function RentalFleetPage() {
 
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <label className={labelCls}>Daily rate (USD) *</label>
+                <label className={labelCls}>Daily rate (RWF) *</label>
                 <input type="number" step={1} value={form.daily_rate} onChange={(e) => set('daily_rate', e.target.value)} placeholder="e.g. 85" className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Weekly rate (USD)</label>
+                <label className={labelCls}>Weekly rate (RWF)</label>
                 <input type="number" step={1} value={form.weekly_rate} onChange={(e) => set('weekly_rate', e.target.value)} placeholder="blank = 6× daily" className={inputCls} />
               </div>
               <div>

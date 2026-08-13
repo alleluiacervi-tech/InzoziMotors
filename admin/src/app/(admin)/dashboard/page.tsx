@@ -83,12 +83,13 @@ const QUICK_ACTIONS: { href: string; label: string; sub: string; icon: IconName 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
+  const [activity, setActivity] = useState<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([api.stats(), api.analytics().catch(() => null)])
-      .then(([s, a]) => { setStats(s); setAnalytics(a) })
+    Promise.all([api.stats(), api.analytics().catch(() => null), api.activity().catch(() => [])])
+      .then(([s, a, recent]) => { setStats(s); setAnalytics(a); setActivity(recent) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -216,10 +217,11 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
       {/* Quick actions */}
       <Card className="p-5">
         <h2 className="mb-4 text-sm font-bold text-content">Quick actions</h2>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2">
           {QUICK_ACTIONS.map(({ href, label, sub, icon }) => (
             <Link
               key={href}
@@ -237,6 +239,22 @@ export default function DashboardPage() {
           ))}
         </div>
       </Card>
+      <Card className="overflow-hidden">
+        <div className="border-b border-line-soft px-5 py-4">
+          <h2 className="text-sm font-bold text-content">Recent operational activity</h2>
+          <p className="mt-0.5 text-xs text-content-muted">Latest movement across the whole workflow</p>
+        </div>
+        {activity.length ? <ul className="divide-y divide-line-soft">{activity.slice(0, 7).map((item, index) => (
+          <li key={`${item.kind}-${item.happened_at}-${index}`}>
+            <Link href={item.href} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-alt">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-brand" aria-hidden />
+              <span className="min-w-0 flex-1"><span className="block truncate text-label font-semibold text-content">{item.title}</span><span className="block truncate text-caption text-content-muted">{item.kind} · {item.detail.replaceAll('_', ' ')}</span></span>
+              <time className="shrink-0 text-caption text-content-muted" dateTime={item.happened_at}>{new Date(item.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+            </Link>
+          </li>
+        ))}</ul> : <EmptyState icon="chart" title="No activity yet" description="Workflow changes will collect here." />}
+      </Card>
+      </div>
     </div>
   )
 }

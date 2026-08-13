@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react'
 import { updatePriceAction } from '@/app/(dashboard)/dashboard/selling/actions'
 import { SubmitButton } from '@/components/dashboard/SubmitButton'
 import { Alert, Button, Field, Input, LiveRegion } from '@/components/ui'
-import { formatRWF, formatUSD } from '@/lib/business'
+import { formatRWF } from '@/lib/business'
 
 // Sellers keep control of their price. The consequence of lowering it is
 // stated up front, because the backend really does message every buyer who
@@ -47,9 +47,9 @@ export function PriceEditor({
       <input type="hidden" name="id" value={carId} />
 
       <Field
-        label="New asking price (USD)"
+        label="New asking price (RWF)"
         htmlFor={inputId}
-        hint={`Currently ${formatUSD(currentPrice)} · ${formatRWF(currentPrice)}`}
+        hint={`Currently ${formatRWF(currentPrice)}`}
         error={state?.fieldErrors?.price}
       >
         <Input

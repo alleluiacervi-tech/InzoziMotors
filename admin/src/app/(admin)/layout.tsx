@@ -90,6 +90,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [openDisputes, setOpenDisputes] = useState(0)
   const [unreadMail, setUnreadMail] = useState(0)
   const [openReports, setOpenReports] = useState(0)
+  const [globalQuery, setGlobalQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<{ kind: string; id: string; title: string; detail: string; href: string }[]>([])
+  const [searching, setSearching] = useState(false)
 
   useEffect(() => {
     api.me()
@@ -113,6 +116,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .then((r) => setOpenReports(r.length))
       .catch(() => setOpenReports(0))
   }, [ready, pathname])
+
+  useEffect(() => {
+    const q = globalQuery.trim()
+    if (q.length < 2) { setSearchResults([]); setSearching(false); return }
+    setSearching(true)
+    const timer = window.setTimeout(() => {
+      api.search(q).then((r) => setSearchResults(r.results)).catch(() => setSearchResults([])).finally(() => setSearching(false))
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [globalQuery])
+
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        document.getElementById('admin-global-search')?.focus()
+      }
+      if (event.key === 'Escape') { setGlobalQuery(''); setSearchResults([]) }
+    }
+    window.addEventListener('keydown', shortcut)
+    return () => window.removeEventListener('keydown', shortcut)
+  }, [])
 
   // Unread mail, same treatment: a customer waiting on a reply is as urgent as a
   // dispute. Silent on failure — the badge is not the place to report that the
@@ -266,6 +291,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Icon name="menu" size={20} />
           </button>
           <span className="text-section font-bold text-content">{current?.label ?? ''}</span>
+          <div className="relative ml-auto hidden w-full max-w-md md:block">
+            <label className="relative block">
+              <span className="sr-only">Search users, listings, submissions and rentals</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-content-muted"><Icon name="search" size={15} /></span>
+              <input id="admin-global-search" value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)}
+                placeholder="Search the operation…"
+                className="h-9 w-full rounded-lg border border-line bg-surface-alt pl-9 pr-12 text-label text-content placeholder:text-content-muted focus:border-content-muted focus:outline-none" />
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-line bg-surface px-1.5 py-0.5 text-micro text-content-muted">⌘K</kbd>
+            </label>
+            {globalQuery.trim().length >= 2 ? (
+              <div className="absolute left-0 right-0 top-11 z-50 overflow-hidden rounded-xl border border-line bg-surface shadow-card-lg">
+                {searching ? <p className="p-4 text-label text-content-muted">Searching…</p>
+                  : searchResults.length ? <ul className="max-h-80 overflow-y-auto py-1">{searchResults.map((result) => (
+                    <li key={`${result.kind}-${result.id}`}>
+                      <Link href={result.href} onClick={() => { setGlobalQuery(''); setSearchResults([]) }}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-surface-alt">
+                        <span className="w-20 shrink-0 text-micro font-bold uppercase tracking-wide text-brand">{result.kind}</span>
+                        <span className="min-w-0"><span className="block truncate text-label font-semibold text-content">{result.title}</span><span className="block truncate text-caption text-content-muted">{result.detail}</span></span>
+                      </Link>
+                    </li>
+                  ))}</ul> : <p className="p-4 text-label text-content-muted">No matching operational records.</p>}
+              </div>
+            ) : null}
+          </div>
           <ApiStatusBadge />
         </header>
 

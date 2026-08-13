@@ -8,7 +8,7 @@ const {
 } = require('../lib/mail/connection');
 const {
   listFolders, resolveFolder, listMessages, getMessage, getAttachment,
-  setFlag, sendReply, unreadCount,
+  setFlag, sendMessage, sendReply, unreadCount,
 } = require('../lib/mail/mailbox');
 
 // Reply attachments ride in memory to nodemailer — never the disk, so nothing
@@ -246,6 +246,29 @@ router.post(
       res.status(201).json(sent);
     } catch (err) {
       fail(res, err, 'reply');
+    }
+  }
+);
+
+// POST /mail/messages — compose one new email. Same attachment and rate limits
+// as replies; no CC/BCC or recipient arrays, deliberately preventing this
+// operational inbox from becoming a bulk-mail surface.
+router.post(
+  '/messages', requireAdmin, requireMailbox, replyLimiter,
+  (req, res, next) => replyUpload.array('attachments', 5)(req, res, (err) => {
+    if (!err) return next();
+    const msg = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Each attachment must be 8 MB or smaller.' : 'Attachments could not be read.';
+    return res.status(400).json({ error: msg, code: 'MAIL_BAD_ATTACHMENT' });
+  }),
+  async (req, res) => {
+    const { to, subject, text } = req.body || {};
+    try {
+      const sent = await sendMessage({ to, subject, text, attachments: req.files || [] });
+      log.info('mail composed', { to: sent.to, attachments: (req.files || []).length });
+      res.status(201).json(sent);
+    } catch (err) {
+      fail(res, err, 'compose');
     }
   }
 );

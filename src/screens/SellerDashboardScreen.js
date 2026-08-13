@@ -201,7 +201,7 @@ export default function SellerDashboardScreen({ navigation }) {
                   <StatusBadge status={sub.status} />
                 </View>
                 {sub.askingPrice > 0 && (
-                  <Text style={styles.subPrice}>${sub.askingPrice.toLocaleString()}</Text>
+                  <Text style={styles.subPrice}>RWF {sub.askingPrice.toLocaleString()}</Text>
                 )}
               </View>
 
@@ -243,7 +243,7 @@ export default function SellerDashboardScreen({ navigation }) {
                         style={styles.relistInput}
                         value={relistPrice}
                         onChangeText={setRelistPrice}
-                        placeholder="New asking price (USD)"
+                        placeholder="New asking price (RWF)"
                         keyboardType="numeric"
                         placeholderTextColor={colors.textMuted}
                       />

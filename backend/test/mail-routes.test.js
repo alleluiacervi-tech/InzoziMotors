@@ -61,6 +61,7 @@ const ADMIN_ROUTES = [
   ['get', '/mail/messages/12/attachments/0'],
   ['patch', '/mail/messages/12/flags'],
   ['post', '/mail/messages/12/reply'],
+  ['post', '/mail/messages'],
 ];
 
 test('the mailbox is invisible without a session', async () => {

@@ -688,7 +688,17 @@ const enrichedCars = rawCars.map((car, idx) => {
   return { ...car, image, images: list, location, seller };
 });
 
-export const cars = enrichedCars;
+// Bundled fallback inventory predates the RWF backend migration. Restate it at
+// a fixed demo-only rate so offline/first-run UI never presents implausible
+// amounts such as “RWF 24,900”. Live API records are already canonical RWF and
+// never pass through this mapping.
+export const cars = enrichedCars.map((car) => ({
+  ...car,
+  currency: 'RWF',
+  price: Math.round((car.price || 0) * 1470),
+  ...(car.currentBid != null ? { currentBid: Math.round(car.currentBid * 1470) } : {}),
+  ...(car.belowMarket != null ? { belowMarket: Math.round(car.belowMarket * 1470) } : {}),
+}));
 
 // Seller's own listings (Seller Dashboard)
 export const sellerListings = [
@@ -745,7 +755,7 @@ export const conversations = [
 ];
 
 export const formatPrice = (n) =>
-  '$' + (n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  'RWF ' + (n ?? 0).toLocaleString('en-RW', { maximumFractionDigits: 0 });
 
 export const formatMiles = (n) => (n ?? 0).toLocaleString('en-US') + ' km';
 

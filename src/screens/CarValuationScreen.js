@@ -66,9 +66,9 @@ export default function CarValuationScreen({ navigation }) {
             <Text style={styles.resultEyebrow}>ESTIMATED MARKET VALUE</Text>
             <Text style={styles.resultCar}>{year} {make} {model || ''}</Text>
             <View style={styles.rangeRow}>
-              <Text style={styles.rangeValue}>${result.low.toLocaleString()}</Text>
+              <Text style={styles.rangeValue}>RWF {result.low.toLocaleString()}</Text>
               <Text style={styles.rangeDash}>—</Text>
-              <Text style={styles.rangeValue}>${result.high.toLocaleString()}</Text>
+              <Text style={styles.rangeValue}>RWF {result.high.toLocaleString()}</Text>
             </View>
             <Text style={styles.resultBasis}>
               {result.comparables >= 2
