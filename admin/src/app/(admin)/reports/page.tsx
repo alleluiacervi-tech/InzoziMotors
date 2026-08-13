@@ -7,6 +7,7 @@ import {
 import {
   Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill,
 } from '@/components/ui'
+import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,11 +51,15 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<ApiError | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
 
   const [openThread, setOpenThread] = useState<string | null>(null)
   const [thread, setThread] = useState<ReportThreadMessage[]>([])
   const [threadLoading, setThreadLoading] = useState(false)
+  const matches = (value: unknown) => !query.trim() || JSON.stringify(value).toLowerCase().includes(query.trim().toLowerCase())
+  const visibleChats = rows.filter(matches)
+  const visibleReviews = reviewRows.filter(matches)
 
   const load = useCallback(async (t: typeof tab, s: typeof surface) => {
     setLoading(true)
@@ -171,6 +176,9 @@ export default function ReportsPage() {
           </button>
         ))}
       </div>
+      <QueueSearch value={query} onChange={setQuery}
+        resultCount={(surface === 'chats' ? visibleChats : visibleReviews).length}
+        placeholder="Search reporter, participant, vehicle, reason, or report ID" />
 
       {problem ? (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-danger/30 bg-danger-tint px-4 py-3 text-label font-semibold text-danger-strong">
@@ -183,7 +191,7 @@ export default function ReportsPage() {
         <LoadingState rows={4} />
       ) : error ? (
         <ErrorState error={error} onRetry={() => load(tab, surface)} />
-      ) : (surface === 'chats' ? rows : reviewRows).length === 0 ? (
+      ) : (surface === 'chats' ? visibleChats : visibleReviews).length === 0 ? (
         <EmptyState
           icon="shield-check"
           title={tab === 'open' ? 'Nothing reported' : `No ${tab} reports`}
@@ -195,7 +203,7 @@ export default function ReportsPage() {
         />
       ) : surface === 'reviews' ? (
         <div className="space-y-3">
-          {reviewRows.map((r) => (
+          {visibleReviews.map((r) => (
             <Card key={r.id} className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -252,7 +260,7 @@ export default function ReportsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {rows.map((r) => (
+          {visibleChats.map((r) => (
             <Card key={r.id} className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">

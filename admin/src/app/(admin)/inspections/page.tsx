@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
+import { QueueSearch } from '@/components/QueueSearch'
 
 const CENTERS = ['all', 'Nyarutarama', 'Kicukiro', 'Kimironko']
 const STATUS_COLORS: Record<string, string> = {
@@ -23,6 +24,7 @@ export default function InspectionsPage() {
   const [items, setItems]     = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError]             = useState<unknown>(null)
+  const [query, setQuery]             = useState('')
 
   async function load() {
     setLoading(true)
@@ -41,6 +43,7 @@ export default function InspectionsPage() {
   }
 
   useEffect(() => { load() }, [center, date, status])
+  const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((insp) => !q || [insp.make, insp.model, insp.year, insp.seller_name, insp.center, insp.id, insp.submission_id].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
 
   return (
     <div>
@@ -80,16 +83,17 @@ export default function InspectionsPage() {
           </select>
         </div>
       </div>
+      <QueueSearch value={query} onChange={setQuery} resultCount={visible.length} placeholder="Search vehicle, seller, center, inspection, or submission ID" />
 
       {error ? (
         <ErrorState error={error} onRetry={() => load()} />
       ) : loading ? (
         <LoadingState />
-      ) : items.length === 0 ? (
+      ) : visible.length === 0 ? (
         <EmptyState icon="settings" title="No inspections match" description="Try clearing the center, date or status filter." />
       ) : (
         <div className="space-y-3">
-          {items.map((insp) => (
+          {visible.map((insp) => (
             <div key={insp.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-1">

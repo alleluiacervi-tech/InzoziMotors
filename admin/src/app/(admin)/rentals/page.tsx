@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
+import { QueueSearch } from '@/components/QueueSearch'
 
 const STATUS_COLORS: Record<string, string> = {
   upcoming:  'bg-info-tint text-info',
@@ -37,6 +38,7 @@ export default function RentalsPage() {
   const [actionId, setActionId] = useState<string | null>(null)
   const ask = useConfirm()
   const toast = useToast()
+  const [query, setQuery] = useState('')
 
   async function load(s: string) {
     setLoading(true)
@@ -52,6 +54,7 @@ export default function RentalsPage() {
   }
 
   useEffect(() => { load(tab) }, [tab])
+  const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((b) => !q || [b.booking_ref, b.car_title, b.renter_name, b.renter_phone, b.center, b.id].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
 
   async function transition(
     id: string,
@@ -86,13 +89,14 @@ export default function RentalsPage() {
           </button>
         ))}
       </div>
+      <QueueSearch value={query} onChange={setQuery} resultCount={visible.length} placeholder="Search booking, vehicle, renter, phone, or center" />
 
       {error ? (
         <ErrorState error={error} onRetry={() => load(tab)} />
       ) : loading ? (
         <LoadingState />
-      ) : items.length === 0 ? (
-        <EmptyState icon="calendar" title="No bookings" description={`No ${tab} rental bookings.`} />
+      ) : visible.length === 0 ? (
+        <EmptyState icon="calendar" title={items.length ? 'No bookings match' : 'No bookings'} description={items.length ? 'Try a different booking, vehicle, renter, phone, or center.' : `No ${tab} rental bookings.`} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
@@ -110,7 +114,7 @@ export default function RentalsPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((b) => (
+              {visible.map((b) => (
                 <tr key={b.id} className="border-b border-gray-50 last:border-0">
                   <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{b.booking_ref}</td>
                   <td className="px-4 py-3 text-gray-900">{b.car_title}</td>

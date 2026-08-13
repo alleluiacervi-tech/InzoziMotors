@@ -1,8 +1,9 @@
 'use client'
 
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
 import { Icon } from '@/components/ui'
+import { QueueSearch } from '@/components/QueueSearch'
 
 const STATUS_COLORS: Record<string, string> = {
   open:     'bg-warning-tint text-warning-text',
@@ -37,6 +38,7 @@ export default function DisputesPage() {
   const [panelStatus, setPanelStatus] = useState<'resolved' | 'rejected'>('resolved')
   const [resolution, setResolution]   = useState('')
   const [panelError, setPanelError]   = useState('')
+  const [query, setQuery] = useState('')
 
   // One fetch for every tab — the open count must stay visible from any tab.
   async function load() {
@@ -90,7 +92,7 @@ export default function DisputesPage() {
     resolved: items.filter((d) => d.status === 'resolved').length,
     rejected: items.filter((d) => d.status === 'rejected').length,
   }
-  const rows = items.filter((d) => d.status === tab)
+  const rows = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((d) => d.status === tab && (!q || [d.booking_id, d.car_title, d.buyer_name, d.seller_name, d.reason, d.resolution, d.id].some((v) => String(v || '').toLowerCase().includes(q)))) }, [items, tab, query])
 
   return (
     <div>
@@ -117,6 +119,7 @@ export default function DisputesPage() {
           </p>
         </div>
       </div>
+      <QueueSearch value={query} onChange={setQuery} resultCount={rows.length} placeholder="Search booking, vehicle, buyer, seller, reason, or case ID" />
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6">

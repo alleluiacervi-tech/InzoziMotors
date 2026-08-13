@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
+import { QueueSearch } from '@/components/QueueSearch'
 
 // Secondary action grammar on this page — the tabs already use it.
 const secondaryBtn =
@@ -29,6 +30,7 @@ export default function HandoversPage() {
   const [actionId, setActionId] = useState<string | null>(null)
   const ask = useConfirm()
   const toast = useToast()
+  const [query, setQuery] = useState('')
 
   async function load(s: string) {
     setLoading(true)
@@ -44,6 +46,7 @@ export default function HandoversPage() {
   }
 
   useEffect(() => { load(tab) }, [tab])
+  const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((h) => !q || [h.booking_id, h.make, h.model, h.year, h.buyer_name, h.buyer_phone, h.seller_name, h.seller_phone, h.center].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
 
   async function complete(id: string) {
     const ok = await ask({
@@ -101,16 +104,17 @@ export default function HandoversPage() {
           </button>
         ))}
       </div>
+      <QueueSearch value={query} onChange={setQuery} resultCount={visible.length} placeholder="Search booking, vehicle, buyer, seller, phone, or center" />
 
       {error ? (
         <ErrorState error={error} onRetry={() => load(tab)} />
       ) : loading ? (
         <LoadingState />
-      ) : items.length === 0 ? (
-        <EmptyState icon="key" title="No handovers" description={`Nothing ${TAB_LABELS[tab]} right now.`} />
+      ) : visible.length === 0 ? (
+        <EmptyState icon="key" title={items.length ? 'No handovers match' : 'No handovers'} description={items.length ? 'Try a different booking, person, phone, vehicle, or center.' : `Nothing ${TAB_LABELS[tab]} right now.`} />
       ) : (
         <div className="space-y-4">
-          {items.map((h) => (
+          {visible.map((h) => (
             <div key={h.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
