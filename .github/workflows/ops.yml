@@ -21,6 +21,8 @@ on:
         type: choice
         options:
           - status          # what is running, and is the database answering
+          - readiness-report # health, free disk, backup freshness, off-site receipt
+          - backup-strict   # verified DB + uploads + required off-site copy
           - storage-report  # disk, Docker categories, Sawa images, backup size
           - start-stack     # bring the production stack up (db included)
           - restart-api     # restart just the API
@@ -211,6 +213,14 @@ jobs:
               echo "--- revision ---"; git log -1 --format='%h %s'
               echo "--- api readiness ---"
               curl -fsS -m 5 http://127.0.0.1:4000/health/ready && echo || echo "NOT READY"
+              ;;
+            readiness-report)
+              REPORT="$(load_script ops/readiness-report.sh)"
+              REQUIRE_OFFSITE=1 bash "$REPORT"
+              ;;
+            backup-strict)
+              BACKUP="$(load_script ops/backup.sh)"
+              REQUIRE_UPLOADS=1 REQUIRE_OFFSITE=1 bash "$BACKUP"
               ;;
             storage-report)
               root="$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /)"

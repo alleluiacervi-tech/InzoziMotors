@@ -1,5 +1,9 @@
 # Sawa — Production Deployment & Release Plan
 
+> Historical implementation plan. Use [PRODUCTION-READINESS.md](./PRODUCTION-READINESS.md)
+> for the current release gate, acceptance matrix and recovery procedure. Statements
+> below describe the state when this audit was written and may already be implemented.
+
 > **Version:** 1.0 · **Date:** August 1, 2026 · **Status:** Pre-launch planning
 >
 > Scope: everything required to take the four deployables — backend API, public

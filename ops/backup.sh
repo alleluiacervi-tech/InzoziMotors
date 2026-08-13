@@ -20,12 +20,22 @@
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
+# Non-interactive SSH does not reliably inherit /etc/environment. Keep the
+# destination in this root-readable file, outside both GitHub and the repo.
+BACKUP_ENV_FILE="${BACKUP_ENV_FILE:-/etc/sawa/backup.env}"
+if [ -r "$BACKUP_ENV_FILE" ]; then
+  # shellcheck disable=SC1090
+  . "$BACKUP_ENV_FILE"
+fi
+
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/sawa}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
 DB_CONTAINER="${DB_CONTAINER:-sawa-db-1}"
 DB_NAME="${DB_NAME:-sawa}"
 DB_USER="${DB_USER:-sawa}"
 UPLOADS_PATH="${UPLOADS_PATH:-/var/lib/docker/volumes/sawa_uploads/_data}"
+REQUIRE_UPLOADS="${REQUIRE_UPLOADS:-0}"
+REQUIRE_OFFSITE="${REQUIRE_OFFSITE:-0}"
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 DB_FILE="$BACKUP_DIR/db-$STAMP.dump"
@@ -73,6 +83,8 @@ if [ -d "$UPLOADS_PATH" ]; then
   tar -tzf "$UPLOADS_FILE" >/dev/null || die "uploads archive is corrupt"
   log "uploads verified ($(du -h "$UPLOADS_FILE" | cut -f1))"
 else
+  [ "$REQUIRE_UPLOADS" = "1" ] \
+    && die "uploads path not found at $UPLOADS_PATH (REQUIRE_UPLOADS=1)"
   log "WARNING: uploads path not found at $UPLOADS_PATH — skipping"
 fi
 
@@ -89,8 +101,13 @@ log "done — $(find "$BACKUP_DIR" -name 'db-*.dump' | wc -l) database backups r
 # off-box; the destination is deliberately not hardcoded here.
 if [ -n "${BACKUP_REMOTE:-}" ]; then
   log "copying to $BACKUP_REMOTE"
-  rsync -a "$DB_FILE" "$UPLOADS_FILE" "$BACKUP_REMOTE/" || die "off-site copy failed"
+  files=("$DB_FILE")
+  [ -f "$UPLOADS_FILE" ] && files+=("$UPLOADS_FILE")
+  rsync -a "${files[@]}" "$BACKUP_REMOTE/" || die "off-site copy failed"
+  printf '%s\n' "$STAMP" > "$BACKUP_DIR/last-offsite-success"
   log "off-site copy complete"
 else
+  [ "$REQUIRE_OFFSITE" = "1" ] \
+    && die "BACKUP_REMOTE is unset (REQUIRE_OFFSITE=1)"
   log "NOTE: BACKUP_REMOTE unset — these backups live on the same machine as the data"
 fi
