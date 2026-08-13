@@ -250,7 +250,7 @@ router.get('/activity', requireAdmin, async (_req, res) => {
 });
 
 // GET /admin/audit-log — durable operator history with bounded filters.
-router.get('/audit-log', requireAdmin, paginate, async (req, res) => {
+router.get('/audit-log', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 100 }), async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 120);
   const targetType = String(req.query.type || '').trim().slice(0, 50);
   const params = [];
