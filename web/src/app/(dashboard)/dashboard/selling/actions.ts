@@ -26,7 +26,7 @@ export async function updatePriceAction(
   if (!id) return { error: 'That listing could not be found.' }
   if (!raw) return { fieldErrors: { price: 'Enter a new price.' } }
   if (!Number.isFinite(price) || price <= 0) {
-    return { fieldErrors: { price: 'Enter a price in US dollars, digits only.' } }
+    return { fieldErrors: { price: 'Enter a price in Rwandan francs, digits only.' } }
   }
 
   const token = await getToken()

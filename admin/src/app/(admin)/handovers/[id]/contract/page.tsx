@@ -134,7 +134,6 @@ const GRADE_OPTIONS = [
 
 const CURRENCY_OPTIONS = [
   { value: 'RWF', label: 'RWF — Rwandan franc' },
-  { value: 'USD', label: 'USD — US dollar' },
 ]
 
 const isDateStr = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))

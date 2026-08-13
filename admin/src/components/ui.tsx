@@ -45,6 +45,18 @@ export function fmtMoney(n: number | null | undefined, currency: Currency | stri
   return `RWF ${amount.toLocaleString('en-US')}`
 }
 
+/** Form helper: accept spaces/commas operators naturally type in large RWF
+ * values, while keeping the submitted value an integer string. */
+export function parseRwfInput(value: string): number {
+  const cleaned = value.replace(/[\s,]/g, '')
+  return /^\d+$/.test(cleaned) ? Number(cleaned) : Number.NaN
+}
+
+export function formatRwfInput(value: string): string {
+  const amount = parseRwfInput(value)
+  return Number.isFinite(amount) ? Math.round(amount).toLocaleString('en-RW') : value
+}
+
 /** Compact form for stat tiles, where "RWF 41,000,000" will not fit. Only ever
  *  abbreviates — never converts. */
 export function fmtMoneyShort(n: number | null | undefined, currency: Currency | string): string {

@@ -7,7 +7,6 @@ import {
   RETURN_WINDOW_DAYS,
   daysLeftInReturnWindow,
   formatDate,
-  formatRWF,
   formatUSD,
 } from '@/lib/business'
 import type { Handover } from '@/lib/types'
@@ -113,7 +112,6 @@ export function RequestCard({ handover }: { handover: Handover }) {
               <span className="text-price font-extrabold tracking-[-0.02em] text-brand">
                 {formatUSD(price)}
               </span>
-              <span className="ml-2 text-caption text-content-muted">{formatRWF(price)}</span>
             </p>
           ) : null}
 

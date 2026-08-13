@@ -264,6 +264,8 @@ export const api = {
   // Dashboard
   stats:     () => request<any>('/admin/stats'),
   analytics: () => request<any>('/admin/analytics'),
+  search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
+  activity: () => request<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>('/admin/activity'),
 
   // Submissions
   submissions: (status?: string) =>
@@ -463,8 +465,18 @@ export const api = {
       `/mail/messages/${uid}/reply`, { method: 'POST', body: form }
     )
   },
+  mailCompose: (to: string, subject: string, text: string, files: File[] = []) => {
+    const form = new FormData()
+    form.set('to', to)
+    form.set('subject', subject)
+    form.set('text', text)
+    for (const f of files) form.append('attachments', f, f.name)
+    return request<{ messageId?: string; to: string; subject: string }>(
+      '/mail/messages', { method: 'POST', body: form }
+    )
+  },
 
-  // Rental fleet (rental_cars) — money fields are USD integers
+  // Rental fleet (rental_cars) — money fields are whole Rwandan francs
   rentalCars:    () => request<any[]>('/rentals'),
   getRentalCar:  (id: string) => request<any>(`/rentals/${id}`),
   createRentalCar: (data: any) =>

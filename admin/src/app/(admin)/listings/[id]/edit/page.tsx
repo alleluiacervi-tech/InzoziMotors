@@ -51,7 +51,7 @@ export default function EditListingPage() {
     e.preventDefault()
     if (!title.trim())                                  { setError('Title is required.'); return }
     const newPrice = parseInt(price, 10)
-    if (!Number.isFinite(newPrice) || newPrice < 0)     { setError('Price must be a whole number of USD.'); return }
+    if (!Number.isFinite(newPrice) || newPrice < 0)     { setError('Price must be a whole number of Rwandan francs.'); return }
     const newMileage = parseInt(mileage, 10)
     if (!Number.isFinite(newMileage) || newMileage < 0) { setError('Mileage must be a whole number of km.'); return }
 
@@ -115,7 +115,7 @@ export default function EditListingPage() {
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Price (USD) *</label>
+            <label className={labelCls}>Price (RWF) *</label>
             <input
               type="number"
               step={1}
@@ -150,7 +150,7 @@ export default function EditListingPage() {
         <div className={`rounded-xl border p-4 text-xs ${priceChanged ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
           <p className="font-semibold mb-1">
             {priceChanged
-              ? `Price change: USD ${Number(car.price).toLocaleString()} → ${Number(price || 0).toLocaleString()}`
+              ? `Price change: RWF ${Number(car.price).toLocaleString()} → RWF ${Number(price || 0).toLocaleString()}`
               : 'Price changes are permanent and public'}
           </p>
           <p>

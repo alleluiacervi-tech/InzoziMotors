@@ -21,7 +21,7 @@ const getSawaLocation = (car) => {
   return 'Kigali';
 };
 
-const getSawaPrice = (car) => `$${(car.price ?? car.currentBid ?? 0).toLocaleString('en-US')}`;
+const getSawaPrice = (car) => `RWF ${(car.price ?? car.currentBid ?? 0).toLocaleString('en-RW')}`;
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
   const { isCarSaved, toggleSaveCar } = useApp();
@@ -88,7 +88,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
               <Ionicons name="star" size={10} color={colors.amber} /> {car.rating} ({car.trips} trips) · {getSawaLocation(car)}
             </Text>
             <View style={styles.rentalPriceRow}>
-              <Text style={styles.price}>${car.dailyRate}</Text>
+              <Text style={styles.price}>RWF {Number(car.dailyRate || 0).toLocaleString('en-RW')}</Text>
               <Text style={styles.perDay}>/day</Text>
             </View>
           </>
@@ -98,7 +98,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             <Text style={styles.meta} numberOfLines={1}>{getSawaMileage(car)} · {getSawaLocation(car)}</Text>
             <Text style={styles.price}>{getSawaPrice(car)}</Text>
             {car.price ? (
-              <Text style={styles.monthly}>Finance from ${monthlyEstimate(car.price)}/mo</Text>
+            <Text style={styles.monthly}>Finance from RWF {monthlyEstimate(car.price).toLocaleString('en-RW')}/mo</Text>
             ) : null}
           </>
         )}

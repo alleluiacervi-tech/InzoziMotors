@@ -273,10 +273,8 @@ export function AppProvider({ children }) {
   const clearComparison = useCallback(() => setComparisonCars([]), []);
 
   // Currency toggle
-  const [currency, setCurrency] = useState('USD');
-  const toggleCurrency = useCallback(() => {
-    setCurrency((prev) => (prev === 'USD' ? 'RWF' : 'USD'));
-  }, []);
+  const currency = 'RWF';
+  const toggleCurrency = useCallback(() => {}, []);
 
   // Recently viewed — powers the Home personalization rail
   const [recentlyViewedIds, setRecentlyViewedIds] = useState([]);
@@ -303,7 +301,6 @@ export function AppProvider({ children }) {
       if (ids) setSavedCarIds(ids);
       if (searches) setSavedSearches(searches);
       if (bookings) setRentalBookings(bookings);
-      if (cur) setCurrency(cur);
       if (requests) setPurchaseRequests(requests);
       if (mode) setHomeMode(mode);
       if (viewed) setRecentlyViewedIds(viewed);
@@ -325,7 +322,6 @@ export function AppProvider({ children }) {
   useEffect(() => { if (hydrated) setJSON('savedCarIds', savedCarIds); }, [savedCarIds, hydrated]);
   useEffect(() => { if (hydrated) setJSON('savedSearches', savedSearches); }, [savedSearches, hydrated]);
   useEffect(() => { if (hydrated) setJSON('rentalBookings', rentalBookings); }, [rentalBookings, hydrated]);
-  useEffect(() => { if (hydrated) setJSON('currency', currency); }, [currency, hydrated]);
   useEffect(() => { if (hydrated) setJSON('purchaseRequests', purchaseRequests); }, [purchaseRequests, hydrated]);
   useEffect(() => { if (hydrated) setJSON('homeMode', homeMode); }, [homeMode, hydrated]);
   useEffect(() => { if (hydrated) setJSON('recentlyViewedIds', recentlyViewedIds); }, [recentlyViewedIds, hydrated]);

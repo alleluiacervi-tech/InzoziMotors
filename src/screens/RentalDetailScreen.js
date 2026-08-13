@@ -90,7 +90,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             </Pressable>
             <Pressable
               style={styles.circleBtn}
-              onPress={() => Share.share({ message: `${car.title} — $${car.dailyRate}/day on Sawa Cars` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
+              onPress={() => Share.share({ message: `${car.title} — ${formatRWF(car.dailyRate)}/day on Sawa Cars` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
             >
               <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
             </Pressable>
@@ -165,16 +165,15 @@ export default function RentalDetailScreen({ navigation, route }) {
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Daily rate</Text>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.priceValue}>${car.dailyRate}/day</Text>
-                <Text style={styles.priceRwf}>≈ {formatRWF(car.dailyRate)}</Text>
+                <Text style={styles.priceValue}>{formatRWF(car.dailyRate)}/day</Text>
               </View>
             </View>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Weekly rate</Text>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.priceValue}>${car.weeklyRate}/week</Text>
+                <Text style={styles.priceValue}>{formatRWF(car.weeklyRate)}/week</Text>
                 <Text style={styles.priceSave}>
-                  Save ${car.dailyRate * 7 - car.weeklyRate} vs daily
+                  Save {formatRWF(car.dailyRate * 7 - car.weeklyRate)} vs daily
                 </Text>
               </View>
             </View>
@@ -183,7 +182,7 @@ export default function RentalDetailScreen({ navigation, route }) {
                 <Text style={styles.priceLabel}>Security deposit</Text>
                 <Text style={styles.priceSub}>Fully refunded after return check</Text>
               </View>
-              <Text style={styles.priceValue}>${car.deposit}</Text>
+              <Text style={styles.priceValue}>{formatRWF(car.deposit)}</Text>
             </View>
             {car.minDays > 1 && (
               <View style={styles.minDaysNote}>
@@ -247,10 +246,10 @@ export default function RentalDetailScreen({ navigation, route }) {
       <View style={[styles.cta, { paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.ctaPrice}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={styles.ctaPriceValue}>${car.dailyRate}</Text>
+            <Text style={styles.ctaPriceValue}>{formatRWF(car.dailyRate)}</Text>
             <Text style={styles.ctaPerDay}>/day</Text>
           </View>
-          <Text style={styles.ctaDeposit}>+${car.deposit} deposit</Text>
+          <Text style={styles.ctaDeposit}>+{formatRWF(car.deposit)} deposit</Text>
         </View>
         {/* Honesty gate: no WhatsApp surface until the business line is real —
             an unverified number opens a chat nobody answers. */}
@@ -259,7 +258,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             style={styles.waBtn}
             onPress={() => openWhatsApp(
               SAWA_WHATSAPP,
-              `Hi Sawa Cars, is the ${car.title} ($${car.dailyRate}/day) available to rent?`
+              `Hi Sawa Cars, is the ${car.title} (${formatRWF(car.dailyRate)}/day) available to rent?`
             )} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp"
           >
             <Ionicons name="logo-whatsapp" size={24} color="#fff" />

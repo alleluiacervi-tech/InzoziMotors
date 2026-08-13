@@ -360,6 +360,69 @@ function getTransport() {
   return transport;
 }
 
+function prepareAttachments(attachments = []) {
+  if (attachments.length > 5) {
+    throw new MailError('MAIL_TOO_MANY_ATTACHMENTS', 'At most 5 attachments are allowed.', 400);
+  }
+  const totalBytes = attachments.reduce((n, a) => n + (a.size || 0), 0);
+  if (totalBytes > 15 * 1024 * 1024) {
+    throw new MailError('MAIL_ATTACHMENTS_TOO_LARGE', 'Attachments exceed 15 MB in total.', 400);
+  }
+  return attachments.map((a, i) => ({
+    filename: String(a.originalname || `attachment-${i + 1}`)
+      .replace(/[\\/]/g, '_').replace(/[\r\n"]/g, '').slice(0, 200),
+    content: a.buffer,
+    contentType: a.mimetype || 'application/octet-stream',
+  }));
+}
+
+async function appendToSent(info) {
+  try {
+    const sentPath = await resolveSentPath();
+    if (sentPath && info && info.message) {
+      const client = await getClient();
+      await client.append(sentPath, info.message, ['\\Seen']);
+    }
+  } catch (err) {
+    // Delivery already succeeded. Never invite a duplicate send just because
+    // the provider refused to archive our copy.
+    log.error('could not append outbound message to Sent', { error: err.message });
+  }
+}
+
+/** Start a new conversation. This remains admin-only at the route and applies
+ * strict recipient/subject/body limits so the company mailbox cannot become a
+ * bulk-mail endpoint. One compose request sends exactly one message. */
+async function sendMessage({ to, subject, text, attachments = [] }) {
+  const recipient = String(to || '').trim();
+  const title = String(subject || '').trim();
+  const body = String(text || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient) || recipient.length > 254) {
+    throw new MailError('MAIL_BAD_RECIPIENT', 'Enter one valid email address.', 422);
+  }
+  if (!title || title.length > 200 || /[\r\n]/.test(title)) {
+    throw new MailError('MAIL_BAD_SUBJECT', 'Subject is required and must be 200 characters or fewer.', 422);
+  }
+  if (!body) throw new MailError('MAIL_EMPTY_MESSAGE', 'A message is required.', 422);
+  if (body.length > 25_000) throw new MailError('MAIL_MESSAGE_TOO_LONG', 'That message is too long to send.', 400);
+
+  const cfg = mailConfig();
+  const message = {
+    from: `Sawa Cars <${cfg.user}>`, to: recipient, subject: title, text: body,
+    ...(attachments.length ? { attachments: prepareAttachments(attachments) } : {}),
+  };
+  let info;
+  try {
+    info = await getTransport().sendMail(message);
+  } catch (err) {
+    log.error('smtp compose failed', { error: err.message });
+    throw classify(err);
+  }
+  await appendToSent(info);
+  invalidateListCache();
+  return { messageId: info && info.messageId, to: recipient, subject: title };
+}
+
 /** Where does this account keep sent mail? Same resolver as the folder rail. */
 async function resolveSentPath() {
   const paths = await resolveSpecialPaths();
@@ -388,23 +451,7 @@ async function sendReply(uid, text, { mailbox = INBOX, attachments = [] } = {}) 
   // Attachment discipline. Per-file size is enforced by multer at the route;
   // the TOTAL is enforced here because most receiving servers cap a whole
   // message around 25 MB and a bounce reads as "Sawa never answered".
-  if (attachments.length > 5) {
-    throw new MailError('MAIL_TOO_MANY_ATTACHMENTS', 'At most 5 attachments per reply.', 400);
-  }
-  const totalBytes = attachments.reduce((n, a) => n + (a.size || 0), 0);
-  if (totalBytes > 15 * 1024 * 1024) {
-    throw new MailError('MAIL_ATTACHMENTS_TOO_LARGE', 'Attachments exceed 15 MB in total.', 400);
-  }
-  const mailAttachments = attachments.map((a, i) => ({
-    // Same sanitisation as the download path: the filename travels in a MIME
-    // header, and headers do not take newlines or quotes kindly.
-    filename: String(a.originalname || `attachment-${i + 1}`)
-      .replace(/[\\/]/g, '_')
-      .replace(/[\r\n"]/g, '')
-      .slice(0, 200),
-    content: a.buffer,
-    contentType: a.mimetype || 'application/octet-stream',
-  }));
+  const mailAttachments = prepareAttachments(attachments);
 
   const cfg = mailConfig();
   // Read the original WITHOUT marking it seen: replying already implies read,
@@ -451,15 +498,7 @@ async function sendReply(uid, text, { mailbox = INBOX, attachments = [] } = {}) 
 
   // APPEND to Sent, or the reply exists only in the recipient's mailbox and the
   // team's own webmail shows no record of having answered.
-  try {
-    const sentPath = await resolveSentPath();
-    if (sentPath && info && info.message) {
-      const client = await getClient();
-      await client.append(sentPath, info.message, ['\\Seen']);
-    }
-  } catch (err) {
-    log.error('could not append reply to Sent', { error: err.message });
-  }
+  await appendToSent(info);
 
   invalidateListCache();
   return { messageId: info && info.messageId, to: recipient, subject };
@@ -484,6 +523,7 @@ module.exports = {
   getMessage,
   getAttachment,
   setFlag,
+  sendMessage,
   sendReply,
   unreadCount,
   invalidateListCache,

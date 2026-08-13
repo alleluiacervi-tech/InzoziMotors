@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { ApiError, rentals as rentalsApi } from '@/lib/api'
 import { CENTERS, CONTACT, SITE } from '@/lib/site'
 import { breadcrumbNode, graph, organizationNode, ORG_ID } from '@/lib/seo'
-import { formatKm, formatRWF, formatUSD, getCertTier } from '@/lib/business'
+import { formatKm, formatUSD, getCertTier } from '@/lib/business'
 import type { RentalCar } from '@/lib/types'
 import { Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
 import { AvailabilityStrip } from '@/components/marketplace/AvailabilityStrip'
@@ -194,7 +194,6 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   {formatUSD(car.daily_rate)}
                   <span className="text-base font-bold text-content-muted"> / day</span>
                 </p>
-                <p className="mt-2 text-caption text-content-secondary">{formatRWF(car.daily_rate)} a day</p>
 
                 <dl className="mt-5 space-y-2 border-t border-line-soft pt-4 text-caption">
                   <div className="flex items-baseline justify-between gap-4">
@@ -378,7 +377,7 @@ function JsonLd({ car, images }: { car: RentalCar; images: string[] }) {
     offers: {
       '@type': 'Offer',
       price: car.daily_rate,
-      priceCurrency: 'USD',
+      priceCurrency: 'RWF',
       // Priced per day — saying so stops Google reading $80 as the car's value.
       unitCode: 'DAY',
       availability:

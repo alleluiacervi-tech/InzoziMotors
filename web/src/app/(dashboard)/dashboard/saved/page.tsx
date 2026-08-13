@@ -86,7 +86,7 @@ export default async function SavedPage() {
             <EmptyState
               icon="search"
               title="No saved searches"
-              description="Set the filters you care about — a Toyota RAV4 under $30,000, say — then save the search. We will tell you the moment a car that matches passes inspection."
+              description="Set the filters you care about — a Toyota RAV4 under RWF 30,000,000, say — then save the search. We will tell you the moment a car that matches passes inspection."
               action={
                 <Button href="/cars" variant="outline">
                   Start a search

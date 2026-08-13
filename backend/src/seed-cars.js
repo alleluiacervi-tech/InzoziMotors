@@ -21,7 +21,7 @@ const SELLER_PASSWORD = process.env.SEED_SELLER_PASSWORD || 'seller1234';
 const SELLER_NAME     = process.env.SEED_SELLER_NAME     || 'Sawa Demo Seller';
 
 // title, make, model, year, mileage(km), fuel_type, transmission, body_type,
-// color, price(USD), location, drive_side, description, images[], inspection_score(/150)
+// color, legacy demo price, location, drive_side, description, images[], inspection_score(/150)
 const CARS = [
   {
     title: '2022 Tesla Model 3 Long Range',
@@ -261,23 +261,24 @@ async function seed() {
   CARS.forEach((c, i) => { c.images = SEED_IMAGE_SETS[i % SEED_IMAGE_SETS.length]; });
 
   for (const c of CARS) {
+    const priceRwf = Math.round(c.price * 1470);
     const { rows: inserted } = await pool.query(
       `INSERT INTO cars
          (seller_id, title, make, model, year, mileage, fuel_type, transmission,
           body_type, color, price, location, drive_side, description, images,
-          inspected, inspection_score, status, listed_at)
+          inspected, inspection_score, status, listed_at, currency)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,
-               TRUE, $16, 'live', NOW())
+               TRUE, $16, 'live', NOW(), 'RWF')
        RETURNING id`,
       [
         sellerId, c.title, c.make, c.model, c.year, c.mileage, c.fuel,
-        c.transmission, c.body, c.color, c.price, c.location, c.drive,
+        c.transmission, c.body, c.color, priceRwf, c.location, c.drive,
         c.description, c.images, c.score,
       ]
     );
     await pool.query(
-      `INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)`,
-      [inserted[0].id, c.price, sellerId]
+      `INSERT INTO price_history (car_id, price, changed_by, currency) VALUES ($1, $2, $3, 'RWF')`,
+      [inserted[0].id, priceRwf, sellerId]
     );
   }
 

@@ -6,7 +6,7 @@ import { SITE } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Rwanda import duty calculator',
   description:
-    'Estimate RRA import duty on a vehicle brought into Rwanda: CIF value, customs duty, excise by engine size, VAT and the infrastructure levy — with the landed cost in both USD and RWF.',
+    'Estimate RRA import duty on a vehicle brought into Rwanda: CIF value, customs duty, excise by engine size, VAT and the infrastructure levy — all in RWF.',
   keywords: [
     'Rwanda import duty calculator',
     'RRA car duty Rwanda',
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Rwanda import duty calculator',
     description:
-      'Customs, excise, VAT and the infrastructure levy on an imported vehicle — the full RRA breakdown in USD and RWF.',
+      'Customs, excise, VAT and the infrastructure levy on an imported vehicle — the full RRA breakdown in RWF.',
     url: `${SITE.url}/tools/import-duty`,
     type: 'website',
   },

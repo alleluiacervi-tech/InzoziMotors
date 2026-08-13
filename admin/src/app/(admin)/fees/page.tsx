@@ -114,7 +114,7 @@ export default function FeesPage() {
                 <th className="px-4 py-3 font-medium">Seller</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Booking</th>
-                <th className="px-4 py-3 font-medium text-right">Amount (USD)</th>
+                <th className="px-4 py-3 font-medium text-right">Amount</th>
                 {tab === 'due' && <th className="px-4 py-3 font-medium text-right">Actions</th>}
               </tr>
             </thead>

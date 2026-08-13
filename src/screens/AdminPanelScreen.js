@@ -44,7 +44,7 @@ function SubmissionsTab({ submissions, onApprove, onReject }) {
                   <Text style={styles.inspCar}>
                     {Number(s.mileage || 0).toLocaleString()} km
                     {s.condition ? ` · ${s.condition}` : ''}
-                    {s.askingPrice ? ` · Asking $${Number(s.askingPrice).toLocaleString()}` : ''}
+                    {s.askingPrice ? ` · Asking RWF ${Number(s.askingPrice).toLocaleString()}` : ''}
                   </Text>
                   <Text style={[styles.inspMetaText, { marginTop: 4 }]}>Submitted {s.submittedDate}</Text>
                 </View>
@@ -367,7 +367,7 @@ function ListingsTab({ navigation, cars }) {
           <Pressable key={l.id} style={styles.listingCard} onPress={() => openListing(l)}>
             <View style={{ flex: 1 }}>
               <Text style={styles.listingTitle}>{l.title}</Text>
-              <Text style={styles.listingPrice}>${Number(l.price || 0).toLocaleString()}</Text>
+              <Text style={styles.listingPrice}>RWF {Number(l.price || 0).toLocaleString()}</Text>
               {(l.views > 0 || l.saves_count > 0) && (
                 <View style={styles.listingMeta}>
                   <Ionicons name="eye-outline" size={12} color={colors.textMuted} />

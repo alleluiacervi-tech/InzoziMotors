@@ -93,17 +93,18 @@ export function getRwfRate(): number {
   return rwfRate
 }
 
-export function formatUSD(amount?: number | null): string {
+/** Canonical product money formatter. All persisted and newly-entered product
+ * amounts are RWF whole francs; never perform an exchange-rate conversion in
+ * presentation code. */
+export function formatMoney(amount?: number | null): string {
   if (amount == null || !Number.isFinite(amount)) return '—'
-  return `$${Math.round(amount).toLocaleString('en-US')}`
+  return `RWF ${Math.round(amount).toLocaleString('en-RW')}`
 }
 
-export function formatRWF(usdAmount?: number | null): string {
-  if (usdAmount == null || !Number.isFinite(usdAmount)) return '—'
-  const rwf = Math.round(usdAmount * rwfRate)
-  if (rwf >= 1_000_000) return `RWF ${(rwf / 1_000_000).toFixed(1)}M`
-  return `RWF ${rwf.toLocaleString('en-US')}`
-}
+/** @deprecated Use formatMoney. Kept temporarily to make older call sites safe. */
+export const formatUSD = formatMoney
+/** @deprecated Use formatMoney. No conversion is performed. */
+export const formatRWF = formatMoney
 
 export function formatKm(km?: number | null): string {
   if (km == null || !Number.isFinite(km)) return '—'

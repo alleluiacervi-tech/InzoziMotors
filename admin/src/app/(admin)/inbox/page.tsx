@@ -95,6 +95,10 @@ export default function InboxPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState<string | null>(null)
   const [replyError, setReplyError] = useState<string | null>(null)
+  const [composing, setComposing] = useState(false)
+  const [composeTo, setComposeTo] = useState('')
+  const [composeSubject, setComposeSubject] = useState('')
+  const [composeBody, setComposeBody] = useState('')
 
   // Starred is the inbox filtered to \Flagged; everything else is a folder.
   const folder: MailFolderKey = view === 'starred' ? 'inbox' : view
@@ -191,6 +195,26 @@ export default function InboxPage() {
     }
   }
 
+  async function sendComposedMessage() {
+    if (!composeTo.trim() || !composeSubject.trim() || !composeBody.trim()) return
+    setSending(true)
+    setReplyError(null)
+    try {
+      const res = await api.mailCompose(composeTo, composeSubject, composeBody, files)
+      setSent(res.to)
+      setComposeTo('')
+      setComposeSubject('')
+      setComposeBody('')
+      setFiles([])
+      setComposing(false)
+      switchView('sent')
+    } catch (e) {
+      setReplyError((e as ApiError).message)
+    } finally {
+      setSending(false)
+    }
+  }
+
   // 5 files, 8 MB each, 15 MB together — same numbers the server enforces, so
   // the picker refuses what the send would bounce.
   function addFiles(picked: FileList | null) {
@@ -234,7 +258,14 @@ export default function InboxPage() {
             ? 'contact@sawacars.com'
             : `contact@sawacars.com · ${total} message${total === 1 ? '' : 's'}${unread ? `, ${unread} unread` : ''}`
         }
-        action={
+        action={<div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { setComposing(true); setOpenUid(null); setMessage(null); setSent(null); setReplyError(null) }}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-label font-bold text-white transition-colors hover:bg-brand-bright"
+          >
+            <Icon name="plus" size={16} /> Compose
+          </button>
           <button
             type="button"
             onClick={() => loadList(offset, search)}
@@ -243,7 +274,7 @@ export default function InboxPage() {
             <Icon name="refresh" size={16} />
             Refresh
           </button>
-        }
+        </div>}
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -394,7 +425,60 @@ export default function InboxPage() {
 
         {/* ── Reading pane ─────────────────────────────────────────────────── */}
         <Card className="min-h-[420px] overflow-hidden">
-          {openUid === null ? (
+          {composing ? (
+            <div className="flex h-full min-h-[520px] flex-col">
+              <div className="flex items-center justify-between border-b border-line-soft p-5">
+                <div>
+                  <h2 className="text-section font-extrabold text-content">New message</h2>
+                  <p className="mt-1 text-caption text-content-muted">Sends securely from contact@sawacars.com</p>
+                </div>
+                <button type="button" onClick={() => { setComposing(false); setFiles([]); setReplyError(null) }}
+                  aria-label="Close composer" className="rounded-lg p-2 text-content-muted hover:bg-surface-alt">
+                  <Icon name="close" size={17} />
+                </button>
+              </div>
+              <div className="flex-1 space-y-4 p-5">
+                <label className="block">
+                  <span className="mb-1.5 block text-caption font-semibold text-content-secondary">To</span>
+                  <input type="email" value={composeTo} onChange={(e) => setComposeTo(e.target.value)}
+                    placeholder="customer@example.com" autoComplete="email"
+                    className="h-11 w-full rounded-xl border border-line bg-surface px-3 text-label text-content focus:border-content-muted focus:outline-none" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-caption font-semibold text-content-secondary">Subject</span>
+                  <input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} maxLength={200}
+                    placeholder="Clear, specific subject"
+                    className="h-11 w-full rounded-xl border border-line bg-surface px-3 text-label text-content focus:border-content-muted focus:outline-none" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-caption font-semibold text-content-secondary">Message</span>
+                  <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} rows={12} maxLength={25_000}
+                    placeholder="Write your message…"
+                    className="w-full resize-y rounded-xl border border-line bg-surface p-3 text-label leading-relaxed text-content focus:border-content-muted focus:outline-none" />
+                </label>
+                {files.length ? <ul className="flex flex-wrap gap-2">{files.map((f, i) => (
+                  <li key={`${f.name}-${i}`} className="inline-flex items-center gap-2 rounded-pill border border-line px-3 py-1.5 text-caption font-semibold">
+                    <Icon name="document" size={12} /><span className="max-w-[180px] truncate">{f.name}</span>
+                    <button type="button" onClick={() => setFiles(files.filter((_, x) => x !== i))} aria-label={`Remove ${f.name}`}><Icon name="close" size={12} /></button>
+                  </li>
+                ))}</ul> : null}
+                {replyError ? <p role="alert" className="text-caption font-semibold text-danger-strong">{replyError}</p> : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-3 border-t border-line-soft bg-surface-alt p-4">
+                <input ref={fileInput} type="file" multiple onChange={(e) => { setReplyError(null); addFiles(e.target.files) }} className="hidden" aria-hidden />
+                <button type="button" disabled={sending || !composeTo.trim() || !composeSubject.trim() || !composeBody.trim()}
+                  onClick={sendComposedMessage}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-label font-bold text-white hover:bg-brand-bright disabled:opacity-50">
+                  <Icon name="mail" size={16} />{sending ? 'Sending…' : 'Send message'}
+                </button>
+                <button type="button" disabled={sending || files.length >= 5} onClick={() => fileInput.current?.click()}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-label font-semibold text-content-secondary hover:bg-surface-alt disabled:opacity-50">
+                  <Icon name="document" size={15} /> Attach
+                </button>
+                <span className="text-caption text-content-muted">One recipient · up to 5 attachments · 15 MB total</span>
+              </div>
+            </div>
+          ) : openUid === null ? (
             <EmptyState
               icon="mail"
               title="Nothing open"

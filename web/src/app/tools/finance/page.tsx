@@ -7,7 +7,7 @@ import { SITE } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Car finance calculator',
   description:
-    'Estimate the monthly repayment on a car loan in Kigali, or work backwards from what you can afford each month. Deposit, term and total interest, in USD and RWF.',
+    'Estimate the monthly repayment on a car loan in Kigali, or work backwards from what you can afford each month. Deposit, term and total interest, all in RWF.',
   keywords: [
     'car loan calculator Rwanda',
     'car finance Kigali',

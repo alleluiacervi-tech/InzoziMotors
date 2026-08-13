@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
-import { calcRwandaDuty, RWF_RATE, formatRWF } from '../data/marketData';
+import { calcRwandaDuty, formatRWF } from '../data/marketData';
 
 const CC_OPTIONS = [
   { id: 'small', label: '< 1,500 cc', rate: '10%', desc: 'City cars, small hatchbacks' },
@@ -21,9 +21,8 @@ function DutyRow({ label, amount, accent, bold }) {
       <Text style={[styles.dutyLabel, bold && styles.dutyLabelBold]}>{label}</Text>
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={[styles.dutyUSD, bold && styles.dutyUSDBold, accent && { color: accent }]}>
-          ${Math.round(amount).toLocaleString()}
+          {formatRWF(amount)}
         </Text>
-        <Text style={styles.dutyRWF}>{formatRWF(amount)}</Text>
       </View>
     </View>
   );
@@ -64,9 +63,9 @@ export default function DutyCalculatorScreen({ navigation }) {
         </View>
 
         {/* Input: Car value */}
-        <Text style={styles.fieldLabel}>Vehicle value (USD)</Text>
+        <Text style={styles.fieldLabel}>Vehicle value (RWF)</Text>
         <View style={styles.inputRow}>
-          <Text style={styles.inputCurrency}>$</Text>
+          <Text style={styles.inputCurrency}>RWF</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. 20000"
@@ -115,7 +114,7 @@ export default function DutyCalculatorScreen({ navigation }) {
           <View style={styles.resultsCard}>
             <View style={styles.resultHeader}>
               <Text style={styles.resultTitle}>Duty Breakdown</Text>
-              <Text style={styles.resultVehicle}>${valueNum.toLocaleString()} vehicle</Text>
+              <Text style={styles.resultVehicle}>{formatRWF(valueNum)} vehicle</Text>
             </View>
 
             {/* CIF value */}
@@ -139,7 +138,7 @@ export default function DutyCalculatorScreen({ navigation }) {
               <Text style={styles.effectiveRateTitle}>Effective duty rate</Text>
               <Text style={styles.effectiveRateValue}>{duty.effectiveRate}%</Text>
               <Text style={styles.effectiveRateDesc}>
-                Of the ${valueNum.toLocaleString()} vehicle value, {duty.effectiveRate}% is added as import duty when bringing this car into Rwanda.
+                Of the {formatRWF(valueNum)} vehicle value, {duty.effectiveRate}% is added as import duty when bringing this car into Rwanda.
               </Text>
             </View>
 
@@ -147,9 +146,9 @@ export default function DutyCalculatorScreen({ navigation }) {
             <View style={styles.rwfCard}>
               <Ionicons name="swap-horizontal-outline" size={18} color={colors.textSecondary} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.rwfTitle}>Grand total in Rwandan Francs</Text>
+                <Text style={styles.rwfTitle}>Estimated landed cost</Text>
                 <Text style={styles.rwfValue}>{formatRWF(duty.grandTotal)}</Text>
-                <Text style={styles.rwfNote}>At 1 USD ≈ {Math.round(RWF_RATE)} RWF (today's rate)</Text>
+                <Text style={styles.rwfNote}>All figures are shown in Rwandan francs</Text>
               </View>
             </View>
 

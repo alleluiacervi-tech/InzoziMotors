@@ -168,7 +168,7 @@ export default function AdminAnalyticsScreen({ navigation }) {
         { label: 'Sold', value: String(stats.totalSold) },
       ]
     : [
-        { label: 'Revenue est.', value: '$4.2k' },
+        { label: 'Revenue est.', value: 'RWF —' },
         { label: 'Submissions', value: '48' },
         { label: 'Active listings', value: '31' },
         { label: 'Sellers', value: '19' },

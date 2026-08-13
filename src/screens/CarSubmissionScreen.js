@@ -252,7 +252,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
               <Text style={styles.stepTitle}>Almost there</Text>
               <Text style={styles.stepSub}>Your asking price is a reference — our team will suggest a certified market price after inspection.</Text>
 
-              <Field label="Your Asking Price (USD)" hint="This is a reference. We'll provide a certified market price after inspection.">
+              <Field label="Your Asking Price (RWF)" hint="Enter the full amount in Rwandan francs. We'll provide a certified market price after inspection.">
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. 24000"
@@ -274,7 +274,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
                     </View>
                   </View>
                   <Text style={styles.aiSuggestRange}>
-                    ${priceSuggestion.low.toLocaleString()} – ${priceSuggestion.high.toLocaleString()}
+                    RWF {priceSuggestion.low.toLocaleString()} – RWF {priceSuggestion.high.toLocaleString()}
                   </Text>
                   <Text style={styles.aiSuggestSub}>
                     {comparablesCount
@@ -342,7 +342,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
                   <SummaryRow label="Vehicle" value={`${form.year} ${form.make} ${form.model}`} />
                   <SummaryRow label="Mileage" value={`${Number(form.mileage || 0).toLocaleString()} km`} />
                   <SummaryRow label="Fuel / Trans" value={`${form.fuelType} · ${form.transmission}`} />
-                  {form.askingPrice ? <SummaryRow label="Asking price" value={`$${Number(form.askingPrice).toLocaleString()}`} /> : null}
+                  {form.askingPrice ? <SummaryRow label="Asking price" value={`RWF ${Number(form.askingPrice).toLocaleString()}`} /> : null}
                 </View>
               </View>
 

@@ -12,10 +12,10 @@ const BODY = ['SUV', 'Sedan', 'Truck', 'EV', 'Coupe', 'Van'];
 const FUEL = ['Gasoline', 'Hybrid', 'Electric', 'Diesel'];
 const PRICE_PRESETS = [
   { label: 'Any price', value: null },
-  { label: 'Under $15k', value: 15000 },
-  { label: 'Under $25k', value: 25000 },
-  { label: 'Under $35k', value: 35000 },
-  { label: 'Under $50k', value: 50000 },
+  { label: 'Under RWF 10M', value: 10000000 },
+  { label: 'Under RWF 20M', value: 20000000 },
+  { label: 'Under RWF 35M', value: 35000000 },
+  { label: 'Under RWF 50M', value: 50000000 },
 ];
 
 function Chip({ label, active, onPress }) {
