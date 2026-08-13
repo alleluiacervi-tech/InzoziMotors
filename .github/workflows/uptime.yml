@@ -1,0 +1,46 @@
+name: Uptime
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime-production
+  cancel-in-progress: true
+
+jobs:
+  public-surfaces:
+    name: Public surfaces
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check with transient-failure tolerance
+        run: |
+          set -euo pipefail
+          fail=0
+          for url in \
+            https://sawacars.com \
+            https://api.sawacars.com/health/ready \
+            https://admin.sawacars.com
+          do
+            healthy=0
+            for attempt in 1 2 3; do
+              code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 -L "$url" || true)"
+              case "$code" in
+                200|301|302|307|308) healthy=1; break ;;
+              esac
+              [ "$attempt" = 3 ] || sleep 10
+            done
+            if [ "$healthy" = 1 ]; then
+              echo "OK    $url -> $code"
+            else
+              echo "FAIL  $url -> ${code:-no response}"
+              echo "::error title=Production surface unavailable::$url failed three checks"
+              fail=1
+            fi
+          done
+          exit "$fail"
