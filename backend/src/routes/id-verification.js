@@ -10,6 +10,7 @@ const { requireUuid } = require('../middleware/validate');
 const { uploadIdDocs, verifyImageContent } = require('../middleware/upload');
 const { recomputeTrustScore } = require('../lib/trust');
 const { notifyUser } = require('../lib/notify');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 const router = express.Router();
 
@@ -203,6 +204,12 @@ router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) =
       type: 'listing_update',
       title: `ID ${decision}`,
       body: msg,
+    });
+
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: `identity.${decision}`, targetType: 'user', targetId: req.params.userId,
+      summary: `Identity verification ${decision}`,
+      metadata: { previous_status: cur.rows[0].id_verified, decision },
     });
 
     await client.query('COMMIT');

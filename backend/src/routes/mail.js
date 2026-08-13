@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
+const pool = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { log } = require('../lib/log');
 const {
@@ -10,6 +11,7 @@ const {
   listFolders, resolveFolder, listMessages, getMessage, getAttachment,
   setFlag, moveMessage, sendMessage, sendReply, unreadCount,
 } = require('../lib/mail/mailbox');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 // Reply attachments ride in memory to nodemailer — never the disk, so nothing
 // to clean up and nothing an upload can overwrite. Per-file cap here; the
@@ -230,6 +232,10 @@ router.post('/messages/:uid/move', requireAdmin, requireMailbox, async (req, res
   }
   try {
     await moveMessage(uid, await resolveFolder(destination), { mailbox: await resolveFolder(source) });
+    recordAdminAction(pool, {
+      actorId: req.user.id, action: 'mail.moved', targetType: 'mail', targetId: uid,
+      summary: `Message moved from ${source} to ${destination}`, metadata: { source, destination },
+    }).catch((err) => log.error('mail move audit failed', { error: err.message }));
     res.json({ ok: true, destination });
   } catch (err) {
     fail(res, err, 'move');
@@ -262,6 +268,10 @@ router.post(
     const { text } = req.body || {};
     try {
       const sent = await sendReply(uid, text, { attachments: req.files || [] });
+      recordAdminAction(pool, {
+        actorId: req.user.id, action: 'mail.replied', targetType: 'mail', targetId: uid,
+        summary: `Reply sent to ${sent.to}`, metadata: { to: sent.to, subject: sent.subject, attachments: (req.files || []).length },
+      }).catch((err) => log.error('mail reply audit failed', { error: err.message }));
       log.info('mail reply sent', {
         uid, to: sent.to, attachments: (req.files || []).length,
       });
@@ -287,6 +297,10 @@ router.post(
     const { to, subject, text } = req.body || {};
     try {
       const sent = await sendMessage({ to, subject, text, attachments: req.files || [] });
+      recordAdminAction(pool, {
+        actorId: req.user.id, action: 'mail.composed', targetType: 'mail',
+        summary: `Email sent to ${sent.to}`, metadata: { to: sent.to, subject: sent.subject, attachments: (req.files || []).length },
+      }).catch((err) => log.error('mail compose audit failed', { error: err.message }));
       log.info('mail composed', { to: sent.to, attachments: (req.files || []).length });
       res.status(201).json(sent);
     } catch (err) {

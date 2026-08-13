@@ -3,6 +3,7 @@ const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 const router = express.Router();
 
@@ -218,6 +219,11 @@ router.get('/activity', requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT * FROM (
+        SELECT 'Admin action' AS kind, a.summary AS title,
+               CONCAT(COALESCE(u.name, 'Former admin'), ' · ', REPLACE(a.action, '.', ' ')) AS detail,
+               a.created_at AS happened_at, '/activity' AS href
+        FROM admin_audit_log a LEFT JOIN users u ON u.id = a.actor_id
+        UNION ALL
         SELECT 'Submission' AS kind, CONCAT(make, ' ', model) AS title,
                status AS detail, created_at AS happened_at, '/submissions' AS href
         FROM submissions
@@ -240,6 +246,38 @@ router.get('/activity', requireAdmin, async (_req, res) => {
   } catch (err) {
     log.error('admin activity error', { error: err.message });
     res.status(500).json({ error: 'Activity unavailable' });
+  }
+});
+
+// GET /admin/audit-log — durable operator history with bounded filters.
+router.get('/audit-log', requireAdmin, paginate, async (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 120);
+  const targetType = String(req.query.type || '').trim().slice(0, 50);
+  const params = [];
+  const where = [];
+  if (q) {
+    params.push(`%${q}%`);
+    where.push(`(a.summary ILIKE $${params.length} OR u.name ILIKE $${params.length} OR u.email ILIKE $${params.length} OR COALESCE(a.target_id, '') ILIKE $${params.length})`);
+  }
+  if (targetType) {
+    params.push(targetType);
+    where.push(`a.target_type = $${params.length}`);
+  }
+  params.push(req.pagination.limit, req.pagination.offset);
+  try {
+    const { rows } = await pool.query(
+      `SELECT a.id, a.action, a.target_type, a.target_id, a.summary,
+              a.metadata, a.created_at, u.name AS actor_name, u.email AS actor_email
+       FROM admin_audit_log a LEFT JOIN users u ON u.id = a.actor_id
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY a.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+    res.json(rows);
+  } catch (err) {
+    log.error('admin audit list error', { error: err.message });
+    res.status(500).json({ error: 'Audit history unavailable' });
   }
 });
 
@@ -310,15 +348,25 @@ router.patch('/fees/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   if (!['paid', 'waived', 'due'].includes(status)) {
     return res.status(400).json({ error: 'status must be paid, waived, or due' });
   }
+  const client = await pool.connect();
   try {
-    const { rows } = await pool.query(
+    await client.query('BEGIN');
+    const { rows } = await client.query(
       'UPDATE platform_fees SET status = $1 WHERE id = $2 RETURNING *',
       [status, req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Fee not found' });
+    if (!rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Fee not found' }); }
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'fee.status_changed', targetType: 'fee', targetId: req.params.id,
+      summary: `Fee marked ${status}`, metadata: { status, amount: rows[0].amount, currency: rows[0].currency },
+    });
+    await client.query('COMMIT');
     res.json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 

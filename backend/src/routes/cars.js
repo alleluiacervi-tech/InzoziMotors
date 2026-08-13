@@ -6,6 +6,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 const router = express.Router();
 
@@ -569,16 +570,27 @@ router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) =>
   if (!allowed.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+    const current = await client.query('SELECT status FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+    if (!current.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Car not found' }); }
     const extra = status === 'sold' ? ', sold_at = NOW()' : '';
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `UPDATE cars SET status = $1${extra} WHERE id = $2 RETURNING *`,
       [status, req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Car not found' });
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'listing.status_changed', targetType: 'listing', targetId: req.params.id,
+      summary: `${rows[0].title} moved to ${status}`, metadata: { previous_status: current.rows[0].status, status },
+    });
+    await client.query('COMMIT');
     res.json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 

@@ -21,6 +21,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/contracts', icon: 'document', label: 'Contracts' },
       { href: '/disputes', icon: 'shield', label: 'Disputes' },
       { href: '/reports', icon: 'alert', label: 'Reported chats' },
+      { href: '/activity', icon: 'clock', label: 'Activity history' },
     ],
   },
   {

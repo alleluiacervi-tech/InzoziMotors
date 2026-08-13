@@ -266,6 +266,18 @@ export const api = {
   analytics: () => request<any>('/admin/analytics'),
   search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
   activity: () => request<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>('/admin/activity'),
+  auditLog: (params?: { q?: string; type?: string; limit?: number; offset?: number }) => {
+    const q = new URLSearchParams()
+    if (params?.q) q.set('q', params.q)
+    if (params?.type) q.set('type', params.type)
+    if (params?.limit) q.set('limit', String(params.limit))
+    if (params?.offset) q.set('offset', String(params.offset))
+    return request<{
+      id: string; action: string; target_type: string; target_id: string | null
+      summary: string; metadata: Record<string, unknown>; created_at: string
+      actor_name: string | null; actor_email: string | null
+    }[]>(`/admin/audit-log?${q.toString()}`)
+  },
 
   // Submissions
   submissions: (status?: string) =>
