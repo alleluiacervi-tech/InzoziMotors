@@ -228,6 +228,11 @@ jobs:
                 --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}' \
                 || echo "Sawa image listing timed out"
               echo
+              echo "--- all image inventory (read-only) ---"
+              timeout 15s docker image ls --all \
+                --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}\t{{.CreatedSince}}' \
+                || echo "Image inventory timed out"
+              echo
               echo "--- local backups ---"
               timeout 20s du -sh /var/backups/sawa 2>/dev/null || echo "not readable, not configured, or timed out"
               echo
