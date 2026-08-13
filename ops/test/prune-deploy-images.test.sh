@@ -10,6 +10,9 @@ cat > "$TMP/bin/docker" <<'STUB'
 #!/usr/bin/env bash
 case "$1 $2" in
   "image ls")
+    # The old/dangling images must only be discoverable through --all. This
+    # reproduces the production bug where the cleaner saw only current tags.
+    [ "${3:-}" = "--all" ] || { echo "STUB FAILURE image ls omitted --all" >&2; exit 99; }
     # Two old Sawa images, one current Sawa image. A neighbour image is
     # deliberately absent because it has no Sawa ownership label.
     printf '%s\n' sha256:old-labeled sha256:referenced-old sha256:current-api ;;
