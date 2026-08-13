@@ -32,7 +32,12 @@ protect_id() {
 # age, or a caller-supplied ID list as proof. Those selectors can match another
 # project on a shared daemon. Every Sawa image is labeled at build time.
 while IFS= read -r id; do add_id "$id"; done < <(
-  docker image ls -q --filter 'label=com.sawacars.managed=true' 2>/dev/null | sort -u
+  # `docker image ls` defaults to the top-level tagged image view. After
+  # `docker load` moves `sawa-*:latest`, the superseded images become dangling
+  # and disappear from that view even though they retain the ownership label.
+  # `--all` is essential: without it cleanup reports success while every deploy
+  # leaves another ~1.3 GB generation behind.
+  docker image ls --all -q --filter 'label=com.sawacars.managed=true' 2>/dev/null | sort -u
 )
 
 # Protect the three current tags even before Compose has attached containers.

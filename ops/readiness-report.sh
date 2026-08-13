@@ -29,7 +29,7 @@ if command -v docker >/dev/null; then
     && ok "Docker filesystem has at least ${MIN_FREE_GB} GiB free" \
     || bad "Docker filesystem has less than ${MIN_FREE_GB} GiB free"
   note "Sawa-managed images (read-only inventory):"
-  docker image ls --filter 'label=com.sawacars.managed=true' \
+  docker image ls --all --filter 'label=com.sawacars.managed=true' \
     --format '      {{.Repository}}:{{.Tag}}  {{.ID}}  {{.Size}}' || true
 else
   bad "Docker is unavailable"

@@ -329,7 +329,7 @@ jobs:
           docker system df 2>/dev/null || true
           echo
           echo 'Sawa-managed images:'
-          docker image ls --filter 'label=com.sawacars.managed=true' \
+          docker image ls --all --filter 'label=com.sawacars.managed=true' \
             --format '{{.Repository}}:{{.Tag}}  {{.ID}}  {{.Size}}' 2>/dev/null || true
           echo '```'
           REMOTE

@@ -234,7 +234,7 @@ jobs:
               timeout 30s docker system df || echo "Docker summary timed out"
               echo
               echo "--- Sawa-managed images ---"
-              timeout 15s docker image ls --filter 'label=com.sawacars.managed=true' \
+              timeout 15s docker image ls --all --filter 'label=com.sawacars.managed=true' \
                 --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}' \
                 || echo "Sawa image listing timed out"
               echo
