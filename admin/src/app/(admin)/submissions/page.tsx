@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
-import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
+import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
@@ -28,6 +28,8 @@ export default function SubmissionsPage() {
   const [schedCenter, setSchedCenter] = useState('Nyarutarama Center')
   const [schedDate, setSchedDate]     = useState('')
   const [schedTime, setSchedTime]     = useState('10:00 AM')
+  const [query, setQuery]             = useState('')
+  const [order, setOrder]             = useState<'oldest' | 'newest'>('oldest')
 
   async function load(status: string) {
     setLoading(true)
@@ -43,6 +45,23 @@ export default function SubmissionsPage() {
   }
 
   useEffect(() => { load(tab) }, [tab])
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return items.filter((sub) => !needle || [sub.make, sub.model, sub.year, sub.seller_name, sub.seller_email, sub.id]
+      .some((value) => String(value || '').toLowerCase().includes(needle)))
+      .sort((a, b) => {
+        const delta = new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime()
+        return order === 'oldest' ? delta : -delta
+      })
+  }, [items, query, order])
+
+  function age(sub: { submitted_at: string; status: string }) {
+    const hours = Math.max(0, Math.floor((Date.now() - new Date(sub.submitted_at).getTime()) / 3_600_000))
+    if (hours < 24) return { label: `${hours}h waiting`, overdue: false }
+    const days = Math.floor(hours / 24)
+    return { label: `${days}d waiting`, overdue: ['under_review', 'pending'].includes(sub.status) && hours >= 24 }
+  }
 
   async function updateStatus(id: string, status: string, extra: any = {}) {
     setActionId(id)
@@ -60,7 +79,23 @@ export default function SubmissionsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Submissions</h1>
+      <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." />
+
+      <Card className="mb-5 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <label className="relative flex-1"><span className="sr-only">Search submissions</span>
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-content-muted"><Icon name="search" size={16} /></span>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search vehicle, seller, email, or submission ID"
+              className="h-11 w-full rounded-xl border border-line bg-surface pl-10 pr-3 text-label text-content focus:border-content-muted focus:outline-none" />
+          </label>
+          <label><span className="sr-only">Sort submissions</span>
+            <select value={order} onChange={(e) => setOrder(e.target.value as 'oldest' | 'newest')}
+              className="h-11 w-full rounded-xl border border-line bg-surface px-3 text-label font-semibold text-content focus:outline-none sm:w-48">
+              <option value="oldest">Oldest waiting first</option><option value="newest">Newest first</option>
+            </select>
+          </label>
+        </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
@@ -81,11 +116,13 @@ export default function SubmissionsPage() {
         <ErrorState error={error} onRetry={() => load(tab)} />
       ) : loading ? (
         <LoadingState />
-      ) : items.length === 0 ? (
-        <EmptyState icon="document" title="Nothing in this queue" description="No submissions are sitting at this stage." />
+      ) : visible.length === 0 ? (
+        <EmptyState icon="document" title={items.length ? 'No submissions match' : 'Nothing in this queue'} description={items.length ? 'Try a different vehicle, seller, email, or ID.' : 'No submissions are sitting at this stage.'} />
       ) : (
         <div className="space-y-4">
-          {items.map((sub) => (
+          {visible.map((sub) => {
+            const waiting = age(sub)
+            return (
             <div key={sub.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
@@ -96,6 +133,7 @@ export default function SubmissionsPage() {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[sub.status] || 'bg-gray-100 text-gray-600'}`}>
                       {sub.status.replace('_', ' ')}
                     </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${waiting.overdue ? 'bg-danger-tint text-danger-strong' : 'bg-surface-alt text-content-muted'}`}>{waiting.overdue ? 'Overdue · ' : ''}{waiting.label}</span>
                   </div>
                   <p className="text-sm text-gray-500">{sub.mileage?.toLocaleString()} km · {sub.condition} · {sub.transmission}</p>
                   <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {new Date(sub.submitted_at).toLocaleDateString()}</p>
@@ -240,7 +278,7 @@ export default function SubmissionsPage() {
                 </div>
               )}
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>

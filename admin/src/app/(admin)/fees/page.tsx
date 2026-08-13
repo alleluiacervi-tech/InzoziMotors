@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
-import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
+import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
 
 // Fee types are categories, not statuses — they don't earn a hue each.
@@ -20,7 +20,7 @@ interface Fee {
   seller_name: string
   booking_id: string | null
   car_title: string | null
-  fee_type: 'commission' | 'certification' | 'featured'
+  fee_type: 'commission' | 'certification' | 'featured' | 'rental'
   amount: number
   status: 'due' | 'paid' | 'waived'
   created_at: string
@@ -29,7 +29,6 @@ interface Fee {
 export default function FeesPage() {
   const [tab, setTab]           = useState<'due' | 'paid' | 'waived'>('due')
   const [fees, setFees]         = useState<Fee[]>([])
-  const [totals, setTotals]     = useState<Record<string, number>>({})
   // Which currency `totals` is expressed in. The API picks the dominant one
   // and says so, rather than summing across currencies.
   const [totalsCurrency, setTotalsCurrency] = useState<string>('RWF')
@@ -38,6 +37,8 @@ export default function FeesPage() {
   const [actionId, setActionId] = useState<string | null>(null)
   const ask = useConfirm()
   const toast = useToast()
+  const [query, setQuery] = useState('')
+  const [feeType, setFeeType] = useState('all')
 
   async function load(s: string) {
     setLoading(true)
@@ -45,7 +46,6 @@ export default function FeesPage() {
     try {
       const data = await api.getFees(s)
       setFees(data.fees)
-      setTotals(data.totals || {})
       setTotalsCurrency((data.currencies || []).includes('RWF') ? 'RWF' : (data.currencies || ['RWF'])[0])
     } catch (e: any) {
       setError(e)
@@ -77,11 +77,40 @@ export default function FeesPage() {
     }
   }
 
-  const tabTotal = totals[tab] || 0
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return fees.filter((fee) => (feeType === 'all' || fee.fee_type === feeType) &&
+      (!needle || [fee.seller_name, fee.car_title, fee.booking_id, fee.id, fee.fee_type]
+        .some((value) => String(value || '').toLowerCase().includes(needle))))
+  }, [fees, query, feeType])
+  const visibleTotals = useMemo(() => visible.reduce<Record<string, number>>((acc, fee) => {
+    const currency = fee.currency || 'RWF'
+    acc[currency] = (acc[currency] || 0) + Number(fee.amount)
+    return acc
+  }, {}), [visible])
+
+  function exportCsv() {
+    const quote = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`
+    const rows = [['Created', 'Car', 'Seller', 'Type', 'Booking', 'Amount', 'Currency', 'Status'],
+      ...visible.map((f) => [f.created_at, f.car_title, f.seller_name, f.fee_type, f.booking_id, f.amount, f.currency, f.status])]
+    const blob = new Blob([rows.map((row) => row.map(quote).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a'); link.href = url; link.download = `sawa-fees-${tab}-${new Date().toISOString().slice(0, 10)}.csv`; link.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Revenue</h1>
+      <PageHeader title="Revenue" description="Reconcile every platform fee in its stored currency. Exports contain raw amounts and explicit currency codes."
+        action={<button type="button" onClick={exportCsv} disabled={!visible.length} className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-label font-bold text-content hover:bg-surface-alt disabled:opacity-40"><Icon name="document" size={16} />Export CSV</button>} />
+
+      <Card className="mb-5 p-4"><div className="flex flex-col gap-3 sm:flex-row">
+        <label className="relative flex-1"><span className="sr-only">Search fees</span><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-content-muted"><Icon name="search" size={16} /></span>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search seller, vehicle, booking, or fee ID" className="h-11 w-full rounded-xl border border-line bg-surface pl-10 pr-3 text-label text-content focus:border-content-muted focus:outline-none" /></label>
+        <label><span className="sr-only">Filter fee type</span><select value={feeType} onChange={(e) => setFeeType(e.target.value)} className="h-11 w-full rounded-xl border border-line bg-surface px-3 text-label font-semibold text-content focus:outline-none sm:w-48">
+          <option value="all">All fee types</option><option value="commission">Commission</option><option value="certification">Certification</option><option value="featured">Featured</option><option value="rental">Rental</option>
+        </select></label>
+      </div></Card>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6">
@@ -102,8 +131,8 @@ export default function FeesPage() {
         <ErrorState error={error} onRetry={() => load(tab)} />
       ) : loading ? (
         <LoadingState />
-      ) : fees.length === 0 ? (
-        <EmptyState icon="cash" title="Nothing to show" description={`No ${tab} fees have been recorded.`} />
+      ) : visible.length === 0 ? (
+        <EmptyState icon="cash" title={fees.length ? 'No fees match' : 'Nothing to show'} description={fees.length ? 'Try a different seller, booking, or fee type.' : `No ${tab} fees have been recorded.`} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
@@ -119,7 +148,7 @@ export default function FeesPage() {
               </tr>
             </thead>
             <tbody>
-              {fees.map((f) => (
+              {visible.map((f) => (
                 <tr key={f.id} className="border-b border-gray-50 last:border-0">
                   <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                     {f.created_at ? new Date(f.created_at).toLocaleDateString() : '—'}
@@ -164,7 +193,7 @@ export default function FeesPage() {
                   Total {tab}
                 </td>
                 <td className="px-4 py-3 text-right font-bold text-brand whitespace-nowrap">
-                  {fmtMoney(tabTotal, totalsCurrency)}
+                  {Object.entries(visibleTotals).map(([currency, amount]) => fmtMoney(amount, currency)).join(' · ') || fmtMoney(0, totalsCurrency)}
                 </td>
                 {tab === 'due' && <td />}
               </tr>
