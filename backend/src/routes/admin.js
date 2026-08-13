@@ -73,7 +73,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
 // GET /admin/analytics — charts data
 router.get('/analytics', requireAdmin, async (req, res) => {
   try {
-    const [makesRes, pipelineRes, centersRes, monthlyRes] = await Promise.all([
+    const [makesRes, pipelineRes, centersRes, monthlyRes, healthRes, feesRes] = await Promise.all([
       pool.query(`
         SELECT make, COUNT(*) AS count
         FROM cars WHERE status NOT IN ('archived','under_review')
@@ -102,6 +102,24 @@ router.get('/analytics', requireAdmin, async (req, res) => {
         GROUP BY DATE_TRUNC('month', sold_at), currency
         ORDER BY DATE_TRUNC('month', sold_at) ASC
       `),
+      pool.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status IN ('under_review','pending'))::int AS awaiting_review,
+          COUNT(*) FILTER (WHERE status IN ('under_review','pending') AND submitted_at < NOW() - INTERVAL '24 hours')::int AS overdue_reviews,
+          COUNT(*) FILTER (WHERE status = 'rejected')::int AS rejected,
+          COUNT(*) FILTER (WHERE status IN ('live','sold'))::int AS reached_market,
+          COUNT(*)::int AS total_submissions,
+          COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (reviewed_at - submitted_at)) / 3600)
+            FILTER (WHERE reviewed_at IS NOT NULL)), 0)::int AS avg_review_hours
+        FROM submissions
+      `),
+      pool.query(`
+        SELECT currency,
+          COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0)::bigint AS paid,
+          COALESCE(SUM(amount) FILTER (WHERE status = 'due'), 0)::bigint AS due,
+          COUNT(*) FILTER (WHERE status = 'due')::int AS due_count
+        FROM platform_fees GROUP BY currency
+      `),
     ]);
 
     // The chart plots one currency. Collapse to the dominant one and say which,
@@ -117,6 +135,8 @@ router.get('/analytics', requireAdmin, async (req, res) => {
       salesCurrency,
       // Every currency present, so a mixed database is legible instead of hidden.
       monthlySalesByCurrency: monthlyRes.rows,
+      health: healthRes.rows[0],
+      feesByCurrency: feesRes.rows,
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
