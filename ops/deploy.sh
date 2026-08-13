@@ -32,7 +32,7 @@
 #   SKIP_BUILD=1     the images are already loaded here; do not build.
 #   MIGRATE_TIMEOUT  seconds to allow for migrations (default 300).
 #   BACKUP_TIMEOUT   seconds to allow for the pre-migration backup (default 900).
-#   SKIP_PRUNE=1     leave reclaimable disk alone.
+#   SKIP_PRUNE=1     leave reclaimable Sawa images alone.
 #   READY_URL        readiness probe (default http://127.0.0.1:4000/health/ready)
 #
 # ── Time budget — keep in step with the workflow ─────────────────────────────
@@ -40,7 +40,7 @@
 # through run_bounded, so this script cannot outlive the sum of its own budgets:
 #
 #   fetch 120 + backup 900 + up db 180 + reap 120 + migrate 300 + restart 300
-#   + readiness 150 + image prune 120 + builder prune 300  =  2490s (41m30s)
+#   + readiness 150 + scoped image cleanup 120  =  2190s (36m30s)
 #
 # .github/workflows/deploy.yml sizes its Deploy step ABOVE that sum deliberately
 # (50 minutes, which also covers its own SSH connect retries). An outer timeout
@@ -223,23 +223,15 @@ done
 [ "$READY" = 1 ] || die "did not become ready within 60s — run ops/rollback.sh"
 
 # ─── Reclaim disk ───────────────────────────────────────────────────────────
-# `docker load` retags each name onto the newly-arrived image, so the superseded
-# one is left dangling and even a dangling-only prune reclaims it. `-af` with an
-# age filter is the honest version of the same intent: it also collects images
-# that kept a tag — an abandoned local build, a base layer of a build stage this
-# host no longer runs — once they are 14 days old and no container references
-# them, while leaving the last fortnight alone as a rollback window. Unpruned,
-# this is how a small VPS runs out of disk and starts failing deploys for
-# reasons that look like anything except "no space left".
+# Replacing `latest` leaves the previous image object behind. This host is
+# shared, so daemon-wide image/builder prunes can delete another project's
+# cache and images. The scoped cleaner sees only Sawa-labeled images plus exact
+# pre-load IDs recorded by deploy.yml, and refuses anything used by a container.
+# Rollback rebuilds the previous revision; it never consumes retained images,
+# so keeping fourteen days of generations bought no rollback safety.
 if [ "${SKIP_PRUNE:-}" != "1" ]; then
-  log "reclaiming disk"
-  run_bounded 120 docker image prune -af --filter "until=336h" >/dev/null 2>&1 || true
-  # Only when this host did not build. A BuildKit cache on a host that no
-  # longer compiles is pure waste — but wiping it after a genuine local build
-  # would make every fallback build start from zero.
-  if [ "${SKIP_BUILD:-}" = "1" ]; then
-    run_bounded 300 docker builder prune -af >/dev/null 2>&1 || true
-  fi
+  log "reclaiming superseded Sawa images"
+  run_bounded 120 ops/prune-deploy-images.sh || true
   df -h "$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /)" 2>/dev/null | tail -1 || true
 fi
 

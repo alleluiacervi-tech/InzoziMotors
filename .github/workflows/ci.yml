@@ -153,7 +153,9 @@ jobs:
       # docker; see the header of the test for why that is the only honest way
       # to check them.
       - name: Reaper safety tests
-        run: ops/test/reap-oneoffs.test.sh
+        run: |
+          ops/test/reap-oneoffs.test.sh
+          ops/test/prune-deploy-images.test.sh
 
       # The deploy and ops workflows run shell that lives inside YAML, and the
       # ops one additionally sends a script down an SSH heredoc. Neither the YAML

@@ -17,6 +17,7 @@ RUN npm run build
 
 # ── Runtime ──────────────────────────────────────────────────────────────────
 FROM node:20-alpine
+LABEL com.sawacars.managed="true" com.sawacars.service="admin"
 WORKDIR /app
 
 ENV NODE_ENV=production
