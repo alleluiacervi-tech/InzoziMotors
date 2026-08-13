@@ -5,6 +5,7 @@ const { requireAuth, requireAdmin, requireVerified } = require('../middleware/au
 const { requireUuid, paginate } = require('../middleware/validate');
 const { parseIsoDate, isNotInPast, toTimestamp, toDisplayDate } = require('../lib/dates');
 const { notifyUser } = require('../lib/notify');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 const router = express.Router();
 
@@ -210,6 +211,11 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
         meta: JSON.stringify({ submissionId: sub.id }),
       });
     }
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'submission.status_changed', targetType: 'submission', targetId: sub.id,
+      summary: `${sub.year || ''} ${sub.make || ''} ${sub.model || ''} moved to ${status}`.trim(),
+      metadata: { status, center: center || null, scheduled_date: scheduled_date || null, admin_notes: admin_notes || null },
+    });
 
     res.json(sub);
   } catch (err) {

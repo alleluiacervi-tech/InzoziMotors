@@ -365,6 +365,7 @@ router.post('/', requireAdmin, async (req, res) => {
        daily_rate, weekly_rate || daily_rate * 6, deposit || 0, min_days || 1,
        inspection_score, location, images || []]
     );
+    await recordAdminAction(pool, { actorId: req.user.id, action: 'rental_car.created', targetType: 'rental_car', targetId: rows[0].id, summary: `${rows[0].title} added to rental fleet`, metadata: { daily_rate: rows[0].daily_rate, currency: rows[0].currency } });
     res.status(201).json(rows[0]);
   } catch (err) {
     log.error('rental create error', { error: err.message });
@@ -395,6 +396,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       params
     );
     if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
+    await recordAdminAction(pool, { actorId: req.user.id, action: 'rental_car.updated', targetType: 'rental_car', targetId: rows[0].id, summary: `${rows[0].title} rental details updated`, metadata: { changed_fields: updates.map((u) => u.split(' = ')[0]), status: rows[0].status } });
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

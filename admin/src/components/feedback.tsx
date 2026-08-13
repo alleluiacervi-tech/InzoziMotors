@@ -113,6 +113,7 @@ type PendingConfirm = { options: ConfirmOptions; resolve: (answer: boolean) => v
 
 function ConfirmDialog({ pending, answer }: { pending: PendingConfirm; answer: (ok: boolean) => void }) {
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const { title, message, confirmLabel, cancelLabel = 'Cancel', tone = 'primary' } = pending.options
 
   // Focus lands on the confirming button so Enter completes the action the
@@ -122,6 +123,13 @@ function ConfirmDialog({ pending, answer }: { pending: PendingConfirm; answer: (
     confirmRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') answer(false)
+      if (e.key === 'Tab' && dialogRef.current) {
+        const controls = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        if (!controls.length) return
+        const first = controls[0], last = controls[controls.length - 1]
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -133,6 +141,7 @@ function ConfirmDialog({ pending, answer }: { pending: PendingConfirm; answer: (
       onClick={() => answer(false)}
     >
       <div
+        ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
