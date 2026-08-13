@@ -25,7 +25,7 @@ on:
           - start-stack     # bring the production stack up (db included)
           - restart-api     # restart just the API
           - rollback        # ops/rollback.sh — back to the previous revision
-          - prune-builders  # clear wedged/leftover BuildKit state and cache
+          - prune-sawa-images # remove only unused, explicitly Sawa-owned images
           - list-stale      # what abandoned one-off containers are lying around
           - cleanup-stale   # remove them (and reclaim the images they pinned)
           - convert-rwf-dry     # restate USD money in RWF — DRY RUN, rolls back
@@ -218,18 +218,27 @@ jobs:
               df -h "$root"
               echo
               echo "--- Docker summary ---"
-              docker system df
+              # Docker asks every builder for cache accounting here. A wedged
+              # BuildKit instance can otherwise hold the production deployment
+              # concurrency group for nearly an hour just for a read-only report.
+              timeout 30s docker system df || echo "Docker summary timed out"
               echo
               echo "--- Sawa-managed images ---"
-              docker image ls --filter 'label=com.sawacars.managed=true' \
-                --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}'
+              timeout 15s docker image ls --filter 'label=com.sawacars.managed=true' \
+                --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}' \
+                || echo "Sawa image listing timed out"
+              echo
+              echo "--- all image inventory (read-only) ---"
+              timeout 15s docker image ls --all \
+                --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}\t{{.CreatedSince}}' \
+                || echo "Image inventory timed out"
               echo
               echo "--- local backups ---"
-              du -sh /var/backups/sawa 2>/dev/null || echo "not readable or not configured"
+              timeout 20s du -sh /var/backups/sawa 2>/dev/null || echo "not readable, not configured, or timed out"
               echo
               echo "--- uploads volume ---"
               uploads="$(docker volume inspect sawa_uploads -f '{{.Mountpoint}}' 2>/dev/null || true)"
-              [ -n "$uploads" ] && du -sh "$uploads" 2>/dev/null || echo "not readable or not configured"
+              [ -n "$uploads" ] && timeout 20s du -sh "$uploads" 2>/dev/null || echo "not readable, not configured, or timed out"
               ;;
             start-stack)
               $COMPOSE up -d
@@ -242,12 +251,9 @@ jobs:
             rollback)
               ops/rollback.sh
               ;;
-            prune-builders)
-              # A cancelled remote build can leave BuildKit jobs and locks
-              # behind; they sit on CPU and disk until cleared. Running
-              # containers and tagged images are untouched by either command.
-              docker builder prune -af || true
-              docker image prune -f || true
+            prune-sawa-images)
+              CLEANER="$(load_script ops/prune-deploy-images.sh)"
+              bash "$CLEANER"
               df -h / | tail -1
               ;;
             list-stale)
@@ -274,11 +280,9 @@ jobs:
               echo
               bash "$REAPER"
               echo
-              # Now that nothing references them, the images those containers
-              # were holding become reclaimable. Dangling only — tagged images
-              # stay, so the rollback window is untouched.
-              echo "--- reclaiming images the survivors were pinning ---"
-              docker image prune -f || true
+              echo "--- reclaiming Sawa-owned images the survivors were pinning ---"
+              CLEANER="$(load_script ops/prune-deploy-images.sh)"
+              bash "$CLEANER"
               echo
               echo "--- after ---"
               docker ps -a --format 'table {{.Names}}\t{{.Status}}' | head -20

@@ -38,26 +38,28 @@ STUB
 chmod +x "$TMP/bin/docker"
 
 export PATH="$TMP/bin:$PATH" CALLS="$TMP/calls"
-CANDIDATES="$TMP/candidates"
-printf '%s\n' sha256:old-unlabeled sha256:referenced-old > "$CANDIDATES"
-
 echo "dry run"
-out="$(DRY_RUN=1 CANDIDATE_FILE="$CANDIDATES" bash "$CLEANER")"
+out="$(DRY_RUN=1 bash "$CLEANER")"
 grep -q 'would remove old-labeled' <<< "$out"
-grep -q 'would remove old-unlabeled' <<< "$out"
 grep -q 'keep  referenced-old' <<< "$out"
-[ -f "$CANDIDATES" ]
 [ ! -e "$CALLS" ]
 
 echo "live cleanup"
-out="$(CANDIDATE_FILE="$CANDIDATES" bash "$CLEANER")"
+out="$(bash "$CLEANER")"
 grep -q 'removed old-labeled' <<< "$out"
-grep -q 'removed old-unlabeled' <<< "$out"
 grep -q 'keep  current-api' <<< "$out"
 grep -q 'keep  referenced-old' <<< "$out"
-[ ! -e "$CANDIDATES" ]
 grep -qx 'RM sha256:old-labeled' "$CALLS"
-grep -qx 'RM sha256:old-unlabeled' "$CALLS"
-[ "$(wc -l < "$CALLS" | tr -d ' ')" = 2 ]
+[ "$(wc -l < "$CALLS" | tr -d ' ')" = 1 ]
+
+# Deployment automation must never fall back to a daemon-wide prune. This is a
+# repository-level invariant, not merely an implementation detail of CLEANER.
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+if grep -REn --exclude='prune-deploy-images.test.sh' \
+    'docker (image|builder|system|container|volume) prune' \
+    "$ROOT/ops" "$ROOT/.github/workflows"; then
+  echo "global Docker prune is forbidden on the shared production daemon" >&2
+  exit 1
+fi
 
 echo "2 cleanup modes passed"
