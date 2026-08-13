@@ -3,6 +3,10 @@ const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
+const fs = require('fs');
+const path = require('path');
+const { withTransaction } = require('../lib/tx');
+const { REQUIRED_SLOTS, ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
 const { notifyUser } = require('../lib/notify');
@@ -113,25 +117,141 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
   }
 });
 
-// POST /inspections/cars/:carId/photos — admin uploads 36-angle photos
+function removeUploadedFiles(files) {
+  for (const file of files || []) fs.unlink(file.path, () => {});
+}
+
+function removeStoredPhoto(url) {
+  if (!url) return;
+  const filename = path.basename(String(url).split('?')[0]);
+  const carId = path.basename(path.dirname(String(url).split('?')[0]));
+  const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
+  fs.unlink(path.join(uploadDir, 'cars', carId, filename), () => {});
+}
+
+async function photoState(db, carId) {
+  const { rows } = await db.query(
+    `SELECT id, angle_key, url, position, is_cover, created_at, updated_at
+     FROM car_photos WHERE car_id = $1 ORDER BY is_cover DESC, position, created_at`, [carId]
+  );
+  const present = new Set(rows.map((row) => row.angle_key));
+  const missing_required = REQUIRED_SLOTS.filter((slot) => !present.has(slot));
+  return { photos: rows, missing_required, complete: missing_required.length === 0 };
+}
+
+// GET /inspections/cars/:carId/photos — structured gallery + completeness.
+router.get('/cars/:carId/photos', requireAdmin, requireUuid('carId'), async (req, res) => {
+  try {
+    const exists = await pool.query('SELECT 1 FROM cars WHERE id = $1', [req.params.carId]);
+    if (!exists.rowCount) return res.status(404).json({ error: 'Car not found' });
+    res.json(await photoState(pool, req.params.carId));
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /inspections/cars/:carId/photos — upload named 36-angle photos.
 // Must come before /:id
 router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', 40), verifyImageContent, async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ error: 'No photos uploaded' });
     }
+    const angleKeys = Array.isArray(req.body.angle_keys) ? req.body.angle_keys : [req.body.angle_keys].filter(Boolean);
+    if (angleKeys.length !== req.files.length || angleKeys.some((key) => !ALL_SLOTS.includes(key))) {
+      removeUploadedFiles(req.files);
+      return res.status(400).json({
+        error: 'Every photo needs one valid angle_keys value.',
+        valid_angle_keys: ALL_SLOTS,
+      });
+    }
+    if (new Set(angleKeys).size !== angleKeys.length) {
+      removeUploadedFiles(req.files);
+      return res.status(400).json({ error: 'Each angle may appear only once per upload.' });
+    }
+
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const urls = req.files.map(
-      (f) => `${baseUrl}/uploads/cars/${req.params.carId}/${f.filename}`
-    );
-    await pool.query(
-      `UPDATE cars SET images = array_cat(COALESCE(images, '{}'), $1::text[]) WHERE id = $2`,
-      [urls, req.params.carId]
-    );
-    res.json({ uploaded: urls.length, urls });
+    const incoming = req.files.map((file, index) => ({
+      angle_key: angleKeys[index],
+      position: SLOT_POSITION.get(angleKeys[index]),
+      url: `${baseUrl}/uploads/cars/${req.params.carId}/${file.filename}`,
+    }));
+    const replaced = [];
+    const state = await withTransaction(async (client) => {
+      const car = await client.query('SELECT id FROM cars WHERE id = $1 FOR UPDATE', [req.params.carId]);
+      if (!car.rowCount) { const err = new Error('Car not found'); err.status = 404; throw err; }
+      for (const photo of incoming) {
+        const prior = await client.query(
+          'SELECT url FROM car_photos WHERE car_id = $1 AND angle_key = $2',
+          [req.params.carId, photo.angle_key]
+        );
+        if (prior.rows[0]?.url) replaced.push(prior.rows[0].url);
+        await client.query(
+          `INSERT INTO car_photos (car_id, angle_key, url, position, is_cover)
+           VALUES ($1, $2, $3, $4, FALSE)
+           ON CONFLICT (car_id, angle_key) WHERE angle_key IS NOT NULL
+           DO UPDATE SET url = EXCLUDED.url, position = EXCLUDED.position,
+                         updated_at = NOW()`,
+          [req.params.carId, photo.angle_key, photo.url, photo.position]
+        );
+      }
+      await client.query(
+        `UPDATE car_photos SET is_cover = TRUE, updated_at = NOW()
+         WHERE id = (SELECT id FROM car_photos WHERE car_id = $1 ORDER BY position LIMIT 1)
+           AND NOT EXISTS (SELECT 1 FROM car_photos WHERE car_id = $1 AND is_cover)`,
+        [req.params.carId]
+      );
+      const gallery = await photoState(client, req.params.carId);
+      await client.query('UPDATE cars SET images = $1::text[] WHERE id = $2', [gallery.photos.map((p) => p.url), req.params.carId]);
+      return gallery;
+    });
+    replaced.forEach(removeStoredPhoto);
+    res.json({ uploaded: incoming.length, replaced: replaced.length, ...state });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    removeUploadedFiles(req.files);
+    res.status(err.status || 500).json({ error: err.status ? err.message : 'Server error' });
   }
+});
+
+router.patch('/cars/:carId/photos/:photoId/cover', requireAdmin, requireUuid('carId'), requireUuid('photoId'), async (req, res) => {
+  try {
+    const state = await withTransaction(async (client) => {
+      const found = await client.query('SELECT 1 FROM car_photos WHERE id = $1 AND car_id = $2', [req.params.photoId, req.params.carId]);
+      if (!found.rowCount) { const err = new Error('Photo not found'); err.status = 404; throw err; }
+      await client.query('UPDATE car_photos SET is_cover = FALSE WHERE car_id = $1', [req.params.carId]);
+      await client.query('UPDATE car_photos SET is_cover = TRUE, updated_at = NOW() WHERE id = $1', [req.params.photoId]);
+      const gallery = await photoState(client, req.params.carId);
+      const ordered = [...gallery.photos].sort((a, b) => Number(b.is_cover) - Number(a.is_cover) || a.position - b.position);
+      await client.query('UPDATE cars SET images = $1::text[] WHERE id = $2', [ordered.map((p) => p.url), req.params.carId]);
+      return { ...gallery, photos: ordered };
+    });
+    res.json(state);
+  } catch (err) { res.status(err.status || 500).json({ error: err.status ? err.message : 'Server error' }); }
+});
+
+router.delete('/cars/:carId/photos/:photoId', requireAdmin, requireUuid('carId'), requireUuid('photoId'), async (req, res) => {
+  try {
+    let removedUrl;
+    const state = await withTransaction(async (client) => {
+      const removed = await client.query(
+        'DELETE FROM car_photos WHERE id = $1 AND car_id = $2 RETURNING url',
+        [req.params.photoId, req.params.carId]
+      );
+      if (!removed.rowCount) { const err = new Error('Photo not found'); err.status = 404; throw err; }
+      removedUrl = removed.rows[0].url;
+      await client.query(
+        `UPDATE car_photos SET is_cover = TRUE, updated_at = NOW()
+         WHERE id = (SELECT id FROM car_photos WHERE car_id = $1 ORDER BY position LIMIT 1)
+           AND NOT EXISTS (SELECT 1 FROM car_photos WHERE car_id = $1 AND is_cover)`,
+        [req.params.carId]
+      );
+      const gallery = await photoState(client, req.params.carId);
+      await client.query('UPDATE cars SET images = $1::text[] WHERE id = $2', [gallery.photos.map((p) => p.url), req.params.carId]);
+      return gallery;
+    });
+    removeStoredPhoto(removedUrl);
+    res.json(state);
+  } catch (err) { res.status(err.status || 500).json({ error: err.status ? err.message : 'Server error' }); }
 });
 
 // GET /inspections/:id

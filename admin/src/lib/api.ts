@@ -347,6 +347,12 @@ export const api = {
     request<any>('/cars', { method: 'POST', body: JSON.stringify(data) }),
   uploadCarPhotos: (carId: string, formData: FormData) =>
     request<any>(`/inspections/cars/${carId}/photos`, { method: 'POST', body: formData }),
+  getCarPhotos: (carId: string) =>
+    request<any>(`/inspections/cars/${carId}/photos`),
+  setCarPhotoCover: (carId: string, photoId: string) =>
+    request<any>(`/inspections/cars/${carId}/photos/${photoId}/cover`, { method: 'PATCH' }),
+  deleteCarPhoto: (carId: string, photoId: string) =>
+    request<any>(`/inspections/cars/${carId}/photos/${photoId}`, { method: 'DELETE' }),
 
   // Fees / revenue
   // `totals` is expressed in ONE currency — the dominant one, named in

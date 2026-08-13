@@ -427,6 +427,45 @@ test('inspection rejects verdicts outside pass/flag/fail', async () => {
     .expect(400);
 });
 
+test('listing photos keep named slots, replace in place, and report completeness', async () => {
+  const seller = await register({ role: 'seller' });
+  await pool.query("UPDATE users SET id_verified = 'approved' WHERE id = $1", [seller.id]);
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const car = await api().post('/cars').set(auth)
+    .send({ seller_id: seller.id, title: 'Photographed', make: 'Toyota', model: 'RAV4', year: 2021, mileage: 20000, price: 25000 })
+    .expect(201);
+
+  // Valid 1×1 PNG. Content verification checks bytes, not the supplied MIME.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+  const first = await api().post(`/inspections/cars/${car.body.id}/photos`).set(auth)
+    .field('angle_keys', 'ext_front').field('angle_keys', 'ext_fl45')
+    .attach('photos', png, { filename: 'front.png', contentType: 'image/png' })
+    .attach('photos', png, { filename: 'front-left.png', contentType: 'image/png' })
+    .expect(200);
+  assert.equal(first.body.uploaded, 2);
+  assert.equal(first.body.photos.length, 2);
+  assert.equal(first.body.photos[0].angle_key, 'ext_front');
+  assert.equal(first.body.photos[0].is_cover, true);
+  assert.equal(first.body.complete, false);
+
+  const replacement = await api().post(`/inspections/cars/${car.body.id}/photos`).set(auth)
+    .field('angle_keys', 'ext_front')
+    .attach('photos', png, { filename: 'front-new.png', contentType: 'image/png' })
+    .expect(200);
+  assert.equal(replacement.body.replaced, 1);
+  assert.equal(replacement.body.photos.length, 2, 'replacement must not append a duplicate slot');
+
+  const gallery = await api().get(`/inspections/cars/${car.body.id}/photos`).set(auth).expect(200);
+  assert.ok(gallery.body.missing_required.includes('ext_rear'));
+  const deleteId = gallery.body.photos.find((photo) => photo.angle_key === 'ext_fl45').id;
+  const afterDelete = await api().delete(`/inspections/cars/${car.body.id}/photos/${deleteId}`).set(auth).expect(200);
+  assert.equal(afterDelete.body.photos.length, 1);
+
+  const stored = await pool.query('SELECT images FROM cars WHERE id = $1', [car.body.id]);
+  assert.deepEqual(stored.rows[0].images, afterDelete.body.photos.map((photo) => photo.url));
+});
+
 // ─── Review moderation: the second UGC surface ───────────────────────────────
 
 test('a review can be reported and taken down, and stops counting', async () => {

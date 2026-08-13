@@ -36,15 +36,13 @@ export const inspections = {
     });
   },
 
-  // Admin: 36-angle listing photos. The server APPENDS to cars.images, so
-  // uploading in batches is safe — each call adds, it never replaces.
-  // `assets` come from captureImage(); an optional angleKey names the file so
-  // the standardised set stays auditable on disk.
+  // Admin: named 36-angle listing photos. Re-uploading an angle replaces it.
   uploadCarPhotos: async (carId, assets) => {
     if (!assets?.length) throw new Error('No photos to upload');
     const formData = new FormData();
     assets.forEach((asset, i) => {
       appendImage(formData, 'photos', asset, asset.angleKey || `photo-${i + 1}`);
+      formData.append('angle_keys', asset.angleKey);
     });
     return await api.upload(`/inspections/cars/${carId}/photos`, formData);
   },

@@ -6,31 +6,33 @@ import { api } from '@/lib/api'
 import { Icon } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 
-// Pre-defined Encar photography slots (26 required shots)
+// Same canonical slot ids as mobile and backend (28 required + 8 defects).
 const PHOTO_GUIDE_SLOTS = [
   // Exterior
   { id: 'ext_front',       label: 'Front Full View',      cat: 'Exterior' },
-  { id: 'ext_front_left',  label: 'Front-Left 45° Angle',  cat: 'Exterior' },
+  { id: 'ext_fl45',        label: 'Front-Left 45° Angle',  cat: 'Exterior' },
   { id: 'ext_left',        label: 'Left Side Profile',    cat: 'Exterior' },
-  { id: 'ext_rear_left',   label: 'Rear-Left 45° Angle',   cat: 'Exterior' },
+  { id: 'ext_rl45',        label: 'Rear-Left 45° Angle',   cat: 'Exterior' },
   { id: 'ext_rear',        label: 'Rear Full View',       cat: 'Exterior' },
-  { id: 'ext_rear_right',  label: 'Rear-Right 45° Angle',  cat: 'Exterior' },
+  { id: 'ext_rr45',        label: 'Rear-Right 45° Angle',  cat: 'Exterior' },
   { id: 'ext_right',       label: 'Right Side Profile',   cat: 'Exterior' },
-  { id: 'ext_front_right', label: 'Front-Right 45° Angle', cat: 'Exterior' },
+  { id: 'ext_fr45',        label: 'Front-Right 45° Angle', cat: 'Exterior' },
   
   // Details
   { id: 'det_roof',        label: 'Roof Panel',           cat: 'Details' },
-  { id: 'det_underbody',   label: 'Underbody / Chassis',  cat: 'Details' },
-  { id: 'det_wheel_fl',    label: 'Front-Left Wheel',     cat: 'Details' },
-  { id: 'det_wheel_fr',    label: 'Front-Right Wheel',    cat: 'Details' },
-  { id: 'det_wheel_rl',    label: 'Rear-Left Wheel',      cat: 'Details' },
-  { id: 'det_wheel_rr',    label: 'Rear-Right Wheel',     cat: 'Details' },
-  { id: 'det_tyre_fl',     label: 'Front Tyre Tread',     cat: 'Details' },
-  { id: 'det_tyre_rl',     label: 'Rear Tyre Tread',      cat: 'Details' },
+  { id: 'det_under',       label: 'Underbody / Chassis',  cat: 'Details' },
+  { id: 'det_wfl',         label: 'Front-Left Wheel',     cat: 'Details' },
+  { id: 'det_wfr',         label: 'Front-Right Wheel',    cat: 'Details' },
+  { id: 'det_wrl',         label: 'Rear-Left Wheel',      cat: 'Details' },
+  { id: 'det_wrr',         label: 'Rear-Right Wheel',     cat: 'Details' },
+  { id: 'det_tfl',         label: 'Front-Left Tyre Tread',cat: 'Details' },
+  { id: 'det_tfr',         label: 'Front-Right Tyre Tread',cat: 'Details' },
+  { id: 'det_trl',         label: 'Rear-Left Tyre Tread', cat: 'Details' },
+  { id: 'det_trr',         label: 'Rear-Right Tyre Tread',cat: 'Details' },
 
   // Under Hood
-  { id: 'eng_bay',         label: 'Engine Bay Overall',   cat: 'Engine' },
-  { id: 'eng_serial',      label: 'Engine Block Serial',  cat: 'Engine' },
+  { id: 'hood_bay',        label: 'Engine Bay Overall',   cat: 'Engine' },
+  { id: 'hood_serial',     label: 'Engine Block Serial',  cat: 'Engine' },
 
   // Instruments
   { id: 'inst_odo',        label: 'Odometer Reading',     cat: 'Instruments' },
@@ -38,11 +40,19 @@ const PHOTO_GUIDE_SLOTS = [
 
   // Interior
   { id: 'int_dash',        label: 'Dashboard Overview',   cat: 'Interior' },
-  { id: 'int_console',     label: 'Infotainment Console', cat: 'Interior' },
+  { id: 'int_info',        label: 'Infotainment Console', cat: 'Interior' },
   { id: 'int_driver',      label: 'Driver Seat Bolster',  cat: 'Interior' },
   { id: 'int_rear',        label: 'Rear Passenger Bench', cat: 'Interior' },
   { id: 'int_boot',        label: 'Boot / Trunk Space',   cat: 'Interior' },
-  { id: 'int_headliner',   label: 'Ceiling Headliner',    cat: 'Interior' },
+  { id: 'int_head',        label: 'Ceiling Headliner',    cat: 'Interior' },
+  { id: 'def1', label: 'Defect Close-up #1', cat: 'Defects', optional: true },
+  { id: 'def2', label: 'Defect Close-up #2', cat: 'Defects', optional: true },
+  { id: 'def3', label: 'Defect Close-up #3', cat: 'Defects', optional: true },
+  { id: 'def4', label: 'Defect Close-up #4', cat: 'Defects', optional: true },
+  { id: 'def5', label: 'Defect Close-up #5', cat: 'Defects', optional: true },
+  { id: 'def6', label: 'Defect Close-up #6', cat: 'Defects', optional: true },
+  { id: 'def7', label: 'Defect Close-up #7', cat: 'Defects', optional: true },
+  { id: 'def8', label: 'Defect Close-up #8', cat: 'Defects', optional: true },
 ]
 
 export default function CarPhotosPage() {
@@ -51,6 +61,7 @@ export default function CarPhotosPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [car, setCar] = useState<any>(null)
+  const [gallery, setGallery] = useState<any>({ photos: [], missing_required: PHOTO_GUIDE_SLOTS.map((s) => s.id), complete: false })
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -59,8 +70,8 @@ export default function CarPhotosPage() {
 
   async function loadCar() {
     try {
-      const data = await api.getCar(id)
-      setCar(data)
+      const [data, photos] = await Promise.all([api.getCar(id), api.getCarPhotos(id)])
+      setCar(data); setGallery(photos)
     } catch (e: any) {
       toast('Failed to load listing: ' + e.message, 'error')
     } finally {
@@ -79,8 +90,12 @@ export default function CarPhotosPage() {
     
     try {
       const formData = new FormData()
+      const present = new Set(gallery.photos.map((photo: any) => photo.angle_key))
+      const available = PHOTO_GUIDE_SLOTS.filter((slot) => !present.has(slot.id))
+      if (files.length > available.length) throw new Error(`Only ${available.length} empty slot(s) remain. Upload fewer files so every photo has an unambiguous angle.`)
       for (let i = 0; i < files.length; i++) {
         formData.append('photos', files[i])
+        formData.append('angle_keys', available[i].id)
       }
       
       const res = await api.uploadCarPhotos(id, formData)
@@ -124,10 +139,26 @@ export default function CarPhotosPage() {
     }
   }
 
+  async function makeCover(photoId: string) {
+    try {
+      setGallery(await api.setCarPhotoCover(id, photoId))
+      toast('Cover photo updated.', 'success')
+    } catch (e: any) { toast(e.message || 'Could not update the cover photo.', 'error') }
+  }
+
+  async function removePhoto(photoId: string) {
+    if (!window.confirm('Remove this photo from the listing?')) return
+    try {
+      setGallery(await api.deleteCarPhoto(id, photoId))
+      toast('Photo removed.', 'success')
+    } catch (e: any) { toast(e.message || 'Could not remove the photo.', 'error') }
+  }
+
   if (loading) return <div className="text-gray-400 text-sm">Loading vehicle details…</div>
   if (!car) return <div className="text-red-600 text-sm">Listing not found.</div>
 
-  const currentCount = car.images?.length || 0
+  const currentCount = gallery.photos.length
+  const presentAngles = new Set(gallery.photos.map((p: any) => p.angle_key))
 
   return (
     <div className="space-y-6">
@@ -188,11 +219,17 @@ export default function CarPhotosPage() {
               <p className="text-xs text-gray-400 italic py-4">No images uploaded yet. Dump files inside the upload zone to populate.</p>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {car.images.map((img: string, i: number) => (
-                  <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-gray-150 shadow-sm bg-gray-50 group">
-                    <img src={img} alt={`Angle ${i + 1}`} className="w-full h-full object-cover" />
+                {gallery.photos.map((photo: any) => (
+                  <div key={photo.id} className="relative aspect-video rounded-lg overflow-hidden border border-gray-150 shadow-sm bg-gray-50 group">
+                    <img src={photo.url} alt={photo.angle_key} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-white text-[10px] font-bold">Angle {i + 1}</span>
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="text-white text-[10px] font-bold">{photo.angle_key}{photo.is_cover ? ' · cover' : ''}</span>
+                        <div className="flex gap-2">
+                          {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-white px-2 py-1 text-[10px] font-bold text-gray-800">Make cover</button>}
+                          <button type="button" onClick={() => removePhoto(photo.id)} className="rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white">Remove</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -204,10 +241,10 @@ export default function CarPhotosPage() {
         {/* Verification Checksheet Column */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 h-fit">
           <h2 className="text-sm font-bold text-gray-900 mb-2">Encar Photography Guide</h2>
-          <p className="text-xs text-gray-500 mb-4">Ensure your professional shoot matches the required 26 standardization angles.</p>
+          <p className="text-xs text-gray-500 mb-4">Files are assigned to the next empty slot in this guide. Upload them in guide order; all 28 required angles must be present.</p>
 
           <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-            {['Exterior', 'Details', 'Engine', 'Instruments', 'Interior'].map((cat) => {
+            {['Exterior', 'Details', 'Engine', 'Instruments', 'Interior', 'Defects'].map((cat) => {
               const slots = PHOTO_GUIDE_SLOTS.filter((s) => s.cat === cat)
               return (
                 <div key={cat} className="space-y-1.5">
@@ -215,8 +252,7 @@ export default function CarPhotosPage() {
                   <ul className="space-y-1">
                     {slots.map((s, idx) => {
                       // Check if we have at least this number of photos uploaded
-                      const itemIndex = PHOTO_GUIDE_SLOTS.findIndex((x) => x.id === s.id)
-                      const isMatched = currentCount > itemIndex
+                      const isMatched = presentAngles.has(s.id)
 
                       return (
                         <li key={s.id} className="flex items-center gap-2 text-xs py-0.5">
@@ -224,7 +260,7 @@ export default function CarPhotosPage() {
                             {isMatched ? '✓' : '○'}
                           </span>
                           <span className={isMatched ? 'text-gray-800 font-medium' : 'text-gray-400'}>
-                            {s.label}
+                            {s.label}{'optional' in s && s.optional ? ' · optional' : ''}
                           </span>
                         </li>
                       )
