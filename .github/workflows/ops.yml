@@ -218,18 +218,22 @@ jobs:
               df -h "$root"
               echo
               echo "--- Docker summary ---"
-              docker system df
+              # Docker asks every builder for cache accounting here. A wedged
+              # BuildKit instance can otherwise hold the production deployment
+              # concurrency group for nearly an hour just for a read-only report.
+              timeout 30s docker system df || echo "Docker summary timed out"
               echo
               echo "--- Sawa-managed images ---"
-              docker image ls --filter 'label=com.sawacars.managed=true' \
-                --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}'
+              timeout 15s docker image ls --filter 'label=com.sawacars.managed=true' \
+                --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}' \
+                || echo "Sawa image listing timed out"
               echo
               echo "--- local backups ---"
-              du -sh /var/backups/sawa 2>/dev/null || echo "not readable or not configured"
+              timeout 20s du -sh /var/backups/sawa 2>/dev/null || echo "not readable, not configured, or timed out"
               echo
               echo "--- uploads volume ---"
               uploads="$(docker volume inspect sawa_uploads -f '{{.Mountpoint}}' 2>/dev/null || true)"
-              [ -n "$uploads" ] && du -sh "$uploads" 2>/dev/null || echo "not readable or not configured"
+              [ -n "$uploads" ] && timeout 20s du -sh "$uploads" 2>/dev/null || echo "not readable, not configured, or timed out"
               ;;
             start-stack)
               $COMPOSE up -d
