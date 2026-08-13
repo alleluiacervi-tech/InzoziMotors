@@ -51,6 +51,29 @@ async function makeAdmin(user) {
 
 test.after(async () => { await pool.end(); });
 
+test('admin audit history records the actor and state-changing decision', async () => {
+  const adminUser = await register();
+  const admin = await makeAdmin(adminUser);
+  const seller = await register({ role: 'seller' });
+  const { rows: feeRows } = await pool.query(
+    `INSERT INTO platform_fees (seller_id, fee_type, amount, currency, status)
+     VALUES ($1, 'featured', 5000, 'RWF', 'due') RETURNING id`, [seller.id]
+  );
+
+  await api().patch(`/admin/fees/${feeRows[0].id}`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'paid' }).expect(200);
+
+  const history = await api().get('/admin/audit-log?type=fee')
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+  const event = history.body.find((row) => row.target_id === feeRows[0].id);
+  assert.ok(event, 'fee decision is missing from audit history');
+  assert.equal(event.actor_email, adminUser.email);
+  assert.equal(event.action, 'fee.status_changed');
+  assert.equal(event.metadata.status, 'paid');
+
+  await api().get('/admin/audit-log').set('Authorization', `Bearer ${seller.token}`).expect(403);
+});
+
 // ─── Health ──────────────────────────────────────────────────────────────────
 
 test('liveness and readiness are separate answers', async () => {
