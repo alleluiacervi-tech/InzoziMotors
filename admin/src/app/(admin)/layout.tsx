@@ -189,6 +189,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <FeedbackProvider>
+    <a href="#admin-main" className="skip-link">Skip to main content</a>
     <div className="flex h-screen overflow-hidden bg-surface-page">
       {/* Sidebar */}
       <aside
@@ -320,7 +321,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+        <main id="admin-main" tabIndex={-1} className="flex-1 overflow-y-auto p-4 lg:p-8">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>

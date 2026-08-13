@@ -9,6 +9,7 @@ const { withTransaction } = require('../lib/tx');
 const { REQUIRED_SLOTS, ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
+const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
@@ -297,6 +298,10 @@ router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
       `UPDATE submissions SET status = 'inspecting' WHERE id = $1`,
       [rows[0].submission_id]
     );
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'inspection.started', targetType: 'inspection', targetId: rows[0].id,
+      summary: 'Inspection checklist started', metadata: { submission_id: rows[0].submission_id },
+    });
     res.json(rows[0]);
   } catch (err) {
     log.error('start inspection error', { error: err.message });
@@ -402,6 +407,11 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
         meta: JSON.stringify({ inspectionId: insp.id, score, grade }),
       });
     }
+
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'inspection.completed', targetType: 'inspection', targetId: insp.id,
+      summary: `Inspection completed with ${score}/150`, metadata: { score, passed, published: autoPublished, submission_id: insp.submission_id, car_id: insp.car_id },
+    });
 
     await client.query('COMMIT');
 

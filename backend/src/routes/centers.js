@@ -2,6 +2,7 @@ const express = require('express');
 const { requireAdmin } = require('../middleware/auth');
 const { log } = require('../lib/log');
 const pool = require('../db');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 const router = express.Router();
 
@@ -131,6 +132,7 @@ router.post('/', requireAdmin, async (req, res) => {
       [id, String(name).trim(), area || null, address || null, Number(daily_capacity), Boolean(active)]
     );
     log.info('center created', { id, by: req.user.id });
+    await recordAdminAction(pool, { actorId: req.user.id, action: 'center.created', targetType: 'center', targetId: id, summary: `${rows[0].name} center created`, metadata: { daily_capacity: rows[0].daily_capacity, active: rows[0].active } });
     res.status(201).json(rows[0]);
   } catch (err) {
     // 23505 is unique_violation: the slug collided with an existing center.
@@ -190,6 +192,7 @@ router.patch('/:id', requireAdmin, async (req, res) => {
       [req.params.id, next.name, next.area, next.address, next.daily_capacity, next.active]
     );
     log.info('center updated', { id: req.params.id, by: req.user.id });
+    await recordAdminAction(pool, { actorId: req.user.id, action: 'center.updated', targetType: 'center', targetId: req.params.id, summary: `${rows[0].name} center updated`, metadata: { previous: center, current: rows[0] } });
     res.json(rows[0]);
   } catch (err) {
     log.error('center update error', { error: err.message });
@@ -213,6 +216,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Center not found' });
     const pending = await liveInspectionCount(rows[0].name);
     log.info('center deactivated', { id: req.params.id, by: req.user.id, pending });
+    await recordAdminAction(pool, { actorId: req.user.id, action: 'center.deactivated', targetType: 'center', targetId: req.params.id, summary: `${rows[0].name} center deactivated`, metadata: { pending_inspections: pending } });
     res.json({
       ...rows[0],
       // Deactivating with bookings outstanding is legitimate — a center closing
