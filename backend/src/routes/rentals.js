@@ -12,6 +12,7 @@ const { sendRentalBooked } = require('../lib/mailer');
 const { paymentsEnabled, submitOrder, PaymentError } = require('../lib/pesapal');
 
 const router = express.Router();
+const { recordAdminAction } = require('../lib/admin-audit');
 
 // One definition of "booked ranges" — used by list, detail, and (as the
 // overlap predicate below) the booking route itself.
@@ -325,6 +326,13 @@ router.patch('/bookings/:id/status', requireAuth, requireUuid('id'), async (req,
 
     if (status === 'completed') {
       await pool.query('UPDATE rental_cars SET trips = trips + 1 WHERE id = $1', [booking.rental_car_id]);
+    }
+
+    if (isAdmin) {
+      await recordAdminAction(pool, {
+        actorId: req.user.id, action: 'rental.status_changed', targetType: 'rental_booking', targetId: booking.id,
+        summary: `Rental ${booking.booking_ref} moved to ${status}`, metadata: { previous_status: booking.status, status },
+      });
     }
 
     res.json(rows[0]);

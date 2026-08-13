@@ -6,6 +6,7 @@ const { requireUuid } = require('../middleware/validate');
 const { recomputeTrustScore } = require('../lib/trust');
 
 const router = express.Router();
+const { recordAdminAction } = require('../lib/admin-audit');
 
 // Reviews are the platform's second user-generated surface (chat is the
 // first), so they carry the same Apple-1.2 obligations: anyone can report
@@ -189,6 +190,10 @@ router.patch('/admin/reports/:id', requireAdmin, requireUuid('id'), async (req, 
       [status, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Report not found' });
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: `review_report.${status}`, targetType: 'review_report', targetId: rows[0].id,
+      summary: `Review report ${status}`, metadata: { status, review_id: rows[0].review_id },
+    });
     res.json(rows[0]);
   } catch (err) {
     log.error(err.message);
@@ -217,6 +222,10 @@ router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       `UPDATE review_reports SET status = 'resolved' WHERE review_id = $1 AND status = 'open'`,
       [req.params.id]
     );
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'review.removed', targetType: 'review', targetId: req.params.id,
+      summary: 'Review removed by moderator', metadata: { reason, seller_id: rows[0].seller_id },
+    });
     await client.query('COMMIT');
     // The removed review no longer counts toward the seller's 20 review points.
     await recomputeTrustScore(rows[0].seller_id);

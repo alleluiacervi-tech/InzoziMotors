@@ -6,6 +6,7 @@ const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
 const router = express.Router();
+const { recordAdminAction } = require('../lib/admin-audit');
 
 // A block in either direction ends the conversation: neither side can write.
 async function isBlockedBetween(a, b) {
@@ -395,6 +396,10 @@ router.patch('/admin/reports/:id', requireAdmin, requireUuid('id'), async (req, 
       [req.params.id, status]
     );
     if (!rows.length) return res.status(404).json({ error: 'Report not found' });
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: `message_report.${status}`, targetType: 'message_report', targetId: rows[0].id,
+      summary: `Chat report ${status}`, metadata: { status, conversation_id: rows[0].conversation_id },
+    });
     log.info('report closed', { id: req.params.id, status, by: req.user.id });
     res.json(rows[0]);
   } catch (err) {
