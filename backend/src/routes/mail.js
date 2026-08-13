@@ -8,7 +8,7 @@ const {
 } = require('../lib/mail/connection');
 const {
   listFolders, resolveFolder, listMessages, getMessage, getAttachment,
-  setFlag, sendMessage, sendReply, unreadCount,
+  setFlag, moveMessage, sendMessage, sendReply, unreadCount,
 } = require('../lib/mail/mailbox');
 
 // Reply attachments ride in memory to nodemailer — never the disk, so nothing
@@ -211,6 +211,28 @@ router.patch('/messages/:uid/flags', requireAdmin, requireMailbox, async (req, r
     res.json({ ok: true, flag, value: Boolean(value) });
   } catch (err) {
     fail(res, err, 'flag');
+  }
+});
+
+// POST /mail/messages/:uid/move — archive spam or completed correspondence
+// using standard folder keys only. This is a move, not a permanent delete, so
+// an operator mistake remains recoverable in the mailbox's Trash/Junk folder.
+router.post('/messages/:uid/move', requireAdmin, requireMailbox, async (req, res) => {
+  const uid = parseUid(req.params.uid);
+  if (uid === null) return res.status(400).json({ error: 'Invalid message id' });
+  const source = parseFolder(req.body?.folder);
+  const destination = parseFolder(req.body?.destination);
+  if (source === null || destination === null) {
+    return res.status(400).json({ error: 'Unknown folder' });
+  }
+  if (source === destination) {
+    return res.status(400).json({ error: 'Choose a different destination folder' });
+  }
+  try {
+    await moveMessage(uid, await resolveFolder(destination), { mailbox: await resolveFolder(source) });
+    res.json({ ok: true, destination });
+  } catch (err) {
+    fail(res, err, 'move');
   }
 });
 

@@ -342,6 +342,21 @@ async function setFlag(uid, flag, on, { mailbox = INBOX } = {}) {
   invalidateListCache();
 }
 
+/** Move one message between already-resolved standard mailboxes. Raw mailbox
+ * names never come from the browser; routes resolve both keys first. */
+async function moveMessage(uid, destination, { mailbox = INBOX } = {}) {
+  if (!destination || destination === mailbox) {
+    throw new MailError('MAIL_BAD_DESTINATION', 'Choose a different destination folder.', 400);
+  }
+  await withMailbox(mailbox, async (client) => {
+    const moved = await client.messageMove(String(uid), destination, { uid: true });
+    if (moved === false) {
+      throw new MailError('MAIL_NOT_FOUND', 'That message is no longer in the mailbox.', 404);
+    }
+  });
+  invalidateListCache();
+}
+
 // ── Sending ──────────────────────────────────────────────────────────────────
 
 let transport = null;
@@ -523,6 +538,7 @@ module.exports = {
   getMessage,
   getAttachment,
   setFlag,
+  moveMessage,
   sendMessage,
   sendReply,
   unreadCount,
