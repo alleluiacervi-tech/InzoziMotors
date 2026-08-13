@@ -3,7 +3,6 @@
 # Docker retags `sawa-*:latest` on load; replacing a tag is not garbage collection.
 set -euo pipefail
 
-CANDIDATE_FILE="${CANDIDATE_FILE:-/tmp/sawa-prune-candidates}"
 DRY_RUN="${DRY_RUN:-}"
 
 log() { printf '  %s\n' "$*"; }
@@ -29,12 +28,9 @@ protect_id() {
   if [ -n "$id" ] && ! contains "$id" "${protected[@]}"; then protected+=("$id"); fi
 }
 
-# Exact IDs captured before docker load cover pre-label images and failed deploys.
-if [ -f "$CANDIDATE_FILE" ]; then
-  while IFS= read -r id; do add_id "$id"; done < "$CANDIDATE_FILE"
-fi
-
-# New generations are explicitly owned, so they remain discoverable after a failure.
+# Ownership is the hard boundary: never accept repository names, dangling state,
+# age, or a caller-supplied ID list as proof. Those selectors can match another
+# project on a shared daemon. Every Sawa image is labeled at build time.
 while IFS= read -r id; do add_id "$id"; done < <(
   docker image ls -q --filter 'label=com.sawacars.managed=true' 2>/dev/null | sort -u
 )
@@ -72,5 +68,4 @@ for id in "${candidates[@]}"; do
   fi
 done
 
-if [ -z "$DRY_RUN" ]; then rm -f "$CANDIDATE_FILE"; fi
 log "deploy-image cleanup: $removed removed, $kept protected"

@@ -203,11 +203,6 @@ jobs:
           try_net scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               /tmp/sawa-images.tgz "$USER@$HOST:/tmp/sawa-images.tgz"
           echo "Loading on the server…"
-          # Remember exactly what `latest` and the running services referenced
-          # before docker load retags them. Append across failed deploys: the
-          # next successful run will reclaim every stranded generation.
-          try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
-              "$USER@$HOST" 'for image in sawa-api:latest sawa-web:latest sawa-admin:latest; do docker image inspect -f "{{.Id}}" "$image" 2>/dev/null || true; done >> /tmp/sawa-prune-candidates; for container in sawa-api-1 sawa-web-1 sawa-admin-1; do docker inspect -f "{{.Image}}" "$container" 2>/dev/null || true; done >> /tmp/sawa-prune-candidates; sort -u -o /tmp/sawa-prune-candidates /tmp/sawa-prune-candidates'
           try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" 'gunzip -c /tmp/sawa-images.tgz | docker load && rm -f /tmp/sawa-images.tgz'
 
@@ -281,7 +276,7 @@ jobs:
           # Bootstrap-safe: the deploy may have started with an older script
           # from the host checkout. The target revision is now on disk, so run
           # the scoped cleaner explicitly. It can remove only labeled Sawa
-          # images or exact IDs captured before load; global prune is forbidden
+          # images carrying Sawa's ownership label; global prune is forbidden
           # because this Docker daemon is shared with another project.
           ops/prune-deploy-images.sh || true
           REMOTE

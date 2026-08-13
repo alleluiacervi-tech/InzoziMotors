@@ -25,7 +25,7 @@ on:
           - start-stack     # bring the production stack up (db included)
           - restart-api     # restart just the API
           - rollback        # ops/rollback.sh — back to the previous revision
-          - prune-builders  # clear wedged/leftover BuildKit state and cache
+          - prune-sawa-images # remove only unused, explicitly Sawa-owned images
           - list-stale      # what abandoned one-off containers are lying around
           - cleanup-stale   # remove them (and reclaim the images they pinned)
           - convert-rwf-dry     # restate USD money in RWF — DRY RUN, rolls back
@@ -251,12 +251,9 @@ jobs:
             rollback)
               ops/rollback.sh
               ;;
-            prune-builders)
-              # A cancelled remote build can leave BuildKit jobs and locks
-              # behind; they sit on CPU and disk until cleared. Running
-              # containers and tagged images are untouched by either command.
-              docker builder prune -af || true
-              docker image prune -f || true
+            prune-sawa-images)
+              CLEANER="$(load_script ops/prune-deploy-images.sh)"
+              bash "$CLEANER"
               df -h / | tail -1
               ;;
             list-stale)
@@ -283,11 +280,9 @@ jobs:
               echo
               bash "$REAPER"
               echo
-              # Now that nothing references them, the images those containers
-              # were holding become reclaimable. Dangling only — tagged images
-              # stay, so the rollback window is untouched.
-              echo "--- reclaiming images the survivors were pinning ---"
-              docker image prune -f || true
+              echo "--- reclaiming Sawa-owned images the survivors were pinning ---"
+              CLEANER="$(load_script ops/prune-deploy-images.sh)"
+              bash "$CLEANER"
               echo
               echo "--- after ---"
               docker ps -a --format 'table {{.Names}}\t{{.Status}}' | head -20

@@ -225,8 +225,8 @@ done
 # ─── Reclaim disk ───────────────────────────────────────────────────────────
 # Replacing `latest` leaves the previous image object behind. This host is
 # shared, so daemon-wide image/builder prunes can delete another project's
-# cache and images. The scoped cleaner sees only Sawa-labeled images plus exact
-# pre-load IDs recorded by deploy.yml, and refuses anything used by a container.
+# cache and images. The scoped cleaner sees only images carrying Sawa's explicit
+# ownership label, and refuses anything used by any container on the daemon.
 # Rollback rebuilds the previous revision; it never consumes retained images,
 # so keeping fourteen days of generations bought no rollback safety.
 if [ "${SKIP_PRUNE:-}" != "1" ]; then
