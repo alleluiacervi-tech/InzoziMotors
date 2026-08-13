@@ -233,6 +233,10 @@ jobs:
                 --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}\t{{.CreatedSince}}' \
                 || echo "Image inventory timed out"
               echo
+              echo "--- dangling image ownership labels (read-only) ---"
+              timeout 20s sh -c 'docker image ls -q --filter dangling=true | sort -u | while read -r id; do docker image inspect -f "{{.Id}} {{json .Config.Labels}}" "$id"; done' \
+                || echo "Dangling image label inventory timed out"
+              echo
               echo "--- local backups ---"
               timeout 20s du -sh /var/backups/sawa 2>/dev/null || echo "not readable, not configured, or timed out"
               echo
