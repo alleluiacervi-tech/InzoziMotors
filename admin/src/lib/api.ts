@@ -450,6 +450,10 @@ export const api = {
     request<{ ok: true }>(`/mail/messages/${uid}/flags`, {
       method: 'PATCH', body: JSON.stringify({ flag, value, folder }),
     }),
+  mailMove: (uid: number, destination: MailFolderKey, folder: MailFolderKey = 'inbox') =>
+    request<{ ok: true; destination: MailFolderKey }>(`/mail/messages/${uid}/move`, {
+      method: 'POST', body: JSON.stringify({ destination, folder }),
+    }),
   /** Reply with optional attachments. FormData when files ride along —
    *  request() already skips the JSON content-type for FormData bodies. */
   mailReply: (uid: number, text: string, files: File[] = []) => {

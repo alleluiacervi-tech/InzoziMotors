@@ -8,6 +8,7 @@ import {
   Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill,
 } from '@/components/ui'
 import { MessageBody } from './MessageBody'
+import { useConfirm, useToast } from '@/components/feedback'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The contact@sawacars.com inbox.
@@ -72,6 +73,8 @@ function when(date: string | null): string {
 }
 
 export default function InboxPage() {
+  const ask = useConfirm()
+  const toast = useToast()
   const [view, setView] = useState<MailFolderKey | 'starred'>('inbox')
   const [folders, setFolders] = useState<MailFolder[]>([])
   const [list, setList] = useState<MailEnvelope[]>([])
@@ -242,6 +245,41 @@ export default function InboxPage() {
       await api.mailFlag(message.uid, 'flagged', next, folder)
     } catch {
       setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, flagged: !next } : e)))
+    }
+  }
+
+  async function markUnread() {
+    if (!message) return
+    try {
+      await api.mailFlag(message.uid, 'seen', false, folder)
+      setList((prev) => prev.map((e) => (e.uid === message.uid ? { ...e, unread: true } : e)))
+      setOpenUid(null)
+      setMessage(null)
+      toast('Message marked unread', 'success')
+    } catch (e) {
+      toast((e as ApiError).message, 'error')
+    }
+  }
+
+  async function moveOpenMessage(destination: MailFolderKey) {
+    if (!message) return
+    const label = destination === 'trash' ? 'Trash' : 'Junk'
+    const ok = await ask({
+      title: `Move this message to ${label}?`,
+      message: `The message will leave ${view} and remain recoverable from ${label}.`,
+      confirmLabel: `Move to ${label}`,
+      tone: destination === 'trash' ? 'danger' : 'primary',
+    })
+    if (!ok) return
+    try {
+      await api.mailMove(message.uid, destination, folder)
+      setList((prev) => prev.filter((e) => e.uid !== message.uid))
+      setTotal((n) => Math.max(0, n - 1))
+      setOpenUid(null)
+      setMessage(null)
+      toast(`Message moved to ${label}`, 'success')
+    } catch (e) {
+      toast((e as ApiError).message, 'error')
     }
   }
 
@@ -493,16 +531,30 @@ export default function InboxPage() {
               <div className="border-b border-line-soft p-5">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-section font-extrabold text-content">{message.subject}</h2>
-                  <button
-                    type="button"
-                    onClick={toggleFlag}
-                    aria-label={openEnvelope?.flagged ? 'Remove flag' : 'Flag this message'}
-                    className={`shrink-0 rounded-lg p-2 transition-colors hover:bg-surface-alt ${
-                      openEnvelope?.flagged ? 'text-warning-text' : 'text-content-muted'
-                    }`}
-                  >
-                    <Icon name="star" size={17} />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {folder === 'inbox' ? <button type="button" onClick={markUnread} title="Mark unread" aria-label="Mark unread"
+                      className="rounded-lg p-2 text-content-muted transition-colors hover:bg-surface-alt hover:text-content">
+                      <Icon name="mail" size={17} />
+                    </button> : null}
+                    {folder === 'inbox' ? <button type="button" onClick={() => moveOpenMessage('junk')} title="Move to junk" aria-label="Move to junk"
+                      className="rounded-lg p-2 text-content-muted transition-colors hover:bg-surface-alt hover:text-content">
+                      <Icon name="alert" size={17} />
+                    </button> : null}
+                    {folder !== 'trash' ? <button type="button" onClick={() => moveOpenMessage('trash')} title="Move to trash" aria-label="Move to trash"
+                      className="rounded-lg p-2 text-content-muted transition-colors hover:bg-danger-tint hover:text-danger-strong">
+                      <Icon name="close" size={17} />
+                    </button> : null}
+                    <button
+                      type="button"
+                      onClick={toggleFlag}
+                      aria-label={openEnvelope?.flagged ? 'Remove flag' : 'Flag this message'}
+                      className={`rounded-lg p-2 transition-colors hover:bg-surface-alt ${
+                        openEnvelope?.flagged ? 'text-warning-text' : 'text-content-muted'
+                      }`}
+                    >
+                      <Icon name="star" size={17} />
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-2 text-label text-content-secondary">
                   <span className="font-semibold text-content">
