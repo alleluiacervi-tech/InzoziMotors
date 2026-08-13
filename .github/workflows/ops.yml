@@ -21,6 +21,7 @@ on:
         type: choice
         options:
           - status          # what is running, and is the database answering
+          - storage-report  # disk, Docker categories, Sawa images, backup size
           - start-stack     # bring the production stack up (db included)
           - restart-api     # restart just the API
           - rollback        # ops/rollback.sh — back to the previous revision
@@ -210,6 +211,25 @@ jobs:
               echo "--- revision ---"; git log -1 --format='%h %s'
               echo "--- api readiness ---"
               curl -fsS -m 5 http://127.0.0.1:4000/health/ready && echo || echo "NOT READY"
+              ;;
+            storage-report)
+              root="$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /)"
+              echo "--- filesystem ---"
+              df -h "$root"
+              echo
+              echo "--- Docker summary ---"
+              docker system df
+              echo
+              echo "--- Sawa-managed images ---"
+              docker image ls --filter 'label=com.sawacars.managed=true' \
+                --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}'
+              echo
+              echo "--- local backups ---"
+              du -sh /var/backups/sawa 2>/dev/null || echo "not readable or not configured"
+              echo
+              echo "--- uploads volume ---"
+              uploads="$(docker volume inspect sawa_uploads -f '{{.Mountpoint}}' 2>/dev/null || true)"
+              [ -n "$uploads" ] && du -sh "$uploads" 2>/dev/null || echo "not readable or not configured"
               ;;
             start-stack)
               $COMPOSE up -d

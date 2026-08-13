@@ -203,6 +203,11 @@ jobs:
           try_net scp -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               /tmp/sawa-images.tgz "$USER@$HOST:/tmp/sawa-images.tgz"
           echo "Loading on the server…"
+          # Remember exactly what `latest` and the running services referenced
+          # before docker load retags them. Append across failed deploys: the
+          # next successful run will reclaim every stranded generation.
+          try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+              "$USER@$HOST" 'for image in sawa-api:latest sawa-web:latest sawa-admin:latest; do docker image inspect -f "{{.Id}}" "$image" 2>/dev/null || true; done >> /tmp/sawa-prune-candidates; for container in sawa-api-1 sawa-web-1 sawa-admin-1; do docker inspect -f "{{.Image}}" "$container" 2>/dev/null || true; done >> /tmp/sawa-prune-candidates; sort -u -o /tmp/sawa-prune-candidates /tmp/sawa-prune-candidates'
           try_net ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
               "$USER@$HOST" 'gunzip -c /tmp/sawa-images.tgz | docker load && rm -f /tmp/sawa-images.tgz'
 
@@ -221,17 +226,17 @@ jobs:
       #     git fetch            120
       #     ops/backup.sh        900   (migration-bearing deploys only)
       #     up -d db             180
+      #     reap one-offs        120
       #     migrate              300   (MIGRATE_TIMEOUT)
       #     up -d api web admin  300
       #     readiness poll       150   (30 × (curl -m 3 + sleep 2))
-      #     image prune          120
-      #     builder prune        300
+      #     scoped image cleanup 120
       #                        ─────
-      #                         2370  = 39m30s
+      #                         2190  = 36m30s
       # plus this step's own connect probe: 5 × (20s ConnectTimeout + 30s wait)
       #                          250  =  4m10s
       #                        ─────
-      #                         2620  = 43m40s worst case
+      #                         2440  = 40m40s worst case
       #
       # 50 minutes leaves ~15% headroom. If a budget in ops/deploy.sh changes,
       # change this number in the same commit.
@@ -273,13 +278,12 @@ jobs:
           echo "Deploying $REVISION in $APP_DIR (pre-built images)"
           ops/deploy.sh "$REVISION"
 
-          # The save/load cycle strands the previous images as dangling layers;
-          # left alone they eat the disk one deploy at a time. ops/deploy.sh now
-          # does an age-bounded sweep itself, so this is the belt for a host
-          # still running an older copy of that script — the version on disk is
-          # whatever the last successful deploy checked out, not necessarily this
-          # one.
-          docker image prune -f >/dev/null || true
+          # Bootstrap-safe: the deploy may have started with an older script
+          # from the host checkout. The target revision is now on disk, so run
+          # the scoped cleaner explicitly. It can remove only labeled Sawa
+          # images or exact IDs captured before load; global prune is forbidden
+          # because this Docker daemon is shared with another project.
+          ops/prune-deploy-images.sh || true
           REMOTE
 
       - name: Verify the public surfaces answer
@@ -321,5 +325,16 @@ jobs:
           echo ''
           echo '```'
           git log -1 --format='%h  %s  (%an, %ar)' 2>/dev/null || true
+          echo '```'
+          echo ''
+          echo '### VPS storage after cleanup'
+          echo ''
+          echo '```'
+          df -h "$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo /)" 2>/dev/null | tail -2 || true
+          docker system df 2>/dev/null || true
+          echo
+          echo 'Sawa-managed images:'
+          docker image ls --filter 'label=com.sawacars.managed=true' \
+            --format '{{.Repository}}:{{.Tag}}  {{.ID}}  {{.Size}}' 2>/dev/null || true
           echo '```'
           REMOTE

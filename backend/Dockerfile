@@ -1,4 +1,5 @@
 FROM node:20-alpine
+LABEL com.sawacars.managed="true" com.sawacars.service="api"
 WORKDIR /app
 
 # Manifests before source, deliberately: this layer is keyed on the dependency
