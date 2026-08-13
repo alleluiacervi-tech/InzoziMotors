@@ -6,6 +6,7 @@ const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 
 const { sendDisputeUpdate } = require('../lib/mailer');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 const router = express.Router();
 
@@ -51,6 +52,10 @@ router.post('/', requireAuth, async (req, res) => {
       title: 'Dispute received',
       body: 'We received your dispute. The Sawa team will review it and contact both parties within 24 hours.',
       meta: JSON.stringify({ disputeId: rows[0].id }),
+    });
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: `dispute.${status}`, targetType: 'dispute', targetId: rows[0].id,
+      summary: `Dispute ${status}`, metadata: { status, resolution: resolution || null, handover_id: rows[0].handover_id },
     });
     res.status(201).json(rows[0]);
   } catch (err) {

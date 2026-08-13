@@ -7,6 +7,7 @@ const { parseIsoDate, isNotInPast, toDisplayDate } = require('../lib/dates');
 const { recomputeTrustScore } = require('../lib/trust');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
+const { recordAdminAction } = require('../lib/admin-audit');
 
 const {
   sendPurchaseRequested, sendHandoverConfirmed, sendHandoverComplete,
@@ -232,6 +233,10 @@ router.patch('/:id/confirm', requireAdmin, requireUuid('id'), async (req, res) =
           meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
         });
       }
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'handover.confirmed', targetType: 'handover', targetId: h.id,
+        summary: `Handover ${h.booking_id} confirmed`, metadata: { previous_status: h.status, status: 'confirmed', center: updated.center, handover_date: updated.handover_date },
+      });
 
       const who = await contactsOf(client, [h.buyer_id, h.seller_id]);
       const when = updated.center && updated.handover_date
@@ -330,6 +335,10 @@ router.patch('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) 
         title: 'Handover complete — car is yours!',
         body: `The ${carTitle} handover is confirmed by Sawa Cars. Your 7-day return guarantee starts now.`,
         meta: JSON.stringify({ bookingId: h.booking_id, carId: h.car_id }),
+      });
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'handover.completed', targetType: 'handover', targetId: h.id,
+        summary: `Sale ${h.booking_id} completed`, metadata: { previous_status: h.status, status: 'complete', car_id: h.car_id, commission },
       });
       await notifyUser(client, {
         user_id: h.seller_id,
