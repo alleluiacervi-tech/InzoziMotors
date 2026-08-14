@@ -35,7 +35,16 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
 
   return (
     <div>
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface-alt sm:aspect-[16/10]">
+      <div
+        className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface-alt sm:aspect-[16/10]"
+        tabIndex={count > 1 ? 0 : undefined}
+        role={count > 1 ? 'region' : undefined}
+        aria-label={count > 1 ? `${title} photo gallery. Use left and right arrow keys to browse.` : undefined}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowLeft') { event.preventDefault(); go(active - 1) }
+          if (event.key === 'ArrowRight') { event.preventDefault(); go(active + 1) }
+        }}
+      >
         <Image
           key={images[active]}
           src={images[active]}
@@ -64,7 +73,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
             >
               <Icon name="chevron-right" size={20} />
             </button>
-            <p className="absolute bottom-3 right-3 rounded-pill bg-ink-900/70 px-3 py-1.5 text-micro font-bold text-white">
+            <p aria-live="polite" className="absolute bottom-3 right-3 rounded-pill bg-ink-900/70 px-3 py-1.5 text-micro font-bold text-white">
               {active + 1} / {count}
             </p>
           </>

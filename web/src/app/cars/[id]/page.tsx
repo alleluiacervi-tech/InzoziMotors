@@ -9,6 +9,7 @@ import {
   CAR_STATUS_LABEL,
   FINANCE_TERMS,
   formatKm,
+  formatMoneyExact,
   formatRWF,
   formatUSD,
   getCertTier,
@@ -184,10 +185,10 @@ export default async function CarDetailPage({ params }: PageProps) {
   ]
 
   return (
-    <article>
+    <article className={isAvailable && !isOwnListing ? 'pb-20 lg:pb-0' : undefined}>
       <JsonLd car={car} images={images} />
 
-      <Container className="pt-6">
+      <Container className="pt-7 sm:pt-9">
         <nav aria-label="Breadcrumb">
           {/* Separators live inside their list item, so a screen reader counts
               four crumbs rather than seven. */}
@@ -217,8 +218,8 @@ export default async function CarDetailPage({ params }: PageProps) {
         </nav>
       </Container>
 
-      <Container className="pb-16 pt-6 sm:pb-20">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_368px] lg:gap-12">
+      <Container className="pb-16 pt-6 sm:pb-24">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14">
           {/* Explicit placement so the price and CTA sit directly under the
               gallery on a phone, instead of below every report on the page. */}
           <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
@@ -250,7 +251,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                 ) : null}
               </div>
 
-              <h1 className="mt-3 text-headline font-extrabold text-content">{car.title}</h1>
+              <h1 className="mt-4 max-w-4xl text-display font-extrabold text-content">{car.title}</h1>
 
               <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-content-secondary">
                 <span>{car.year}</span>
@@ -281,12 +282,14 @@ export default async function CarDetailPage({ params }: PageProps) {
             </header>
           </div>
 
-          <aside className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
+          <aside id="purchase-panel" className="scroll-mt-24 lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
-              <Card className="p-5 sm:p-6">
+              <Card className="relative overflow-hidden rounded-3xl border-line bg-surface p-6 shadow-float sm:p-7">
+                <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
+                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">Purchase overview</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
-                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-content">
+                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.price)}
                 </p>
                 <p className="mt-2 text-caption text-content-secondary">
@@ -427,7 +430,9 @@ export default async function CarDetailPage({ params }: PageProps) {
           </aside>
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
-            <section aria-labelledby="specs-heading">
+            <DecisionSummary car={car} report={report} history={vehicleHistory} />
+
+            <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
                 Specification
               </h2>
@@ -537,7 +542,78 @@ export default async function CarDetailPage({ params }: PageProps) {
           </Container>
         </Section>
       ) : null}
+
+      {isAvailable && !isOwnListing ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-8px_28px_rgba(26,20,19,0.12)] backdrop-blur lg:hidden">
+          <div className="mx-auto flex max-w-content items-center gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-micro font-semibold text-content-muted">{car.title}</p>
+              <p className="text-title-sm font-extrabold text-brand" aria-label={formatMoneyExact(car.price)}>{formatUSD(car.price)}</p>
+            </div>
+            <Button href="#purchase-panel" size="compact" trailingIcon={<Icon name="arrow-right" size={16} />}>
+              {user ? 'Request car' : 'See buying options'}
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </article>
+  )
+}
+
+function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<ReturnType<typeof carsApi.inspectionReport>> | null; history: Awaited<ReturnType<typeof carsApi.history>> | null }) {
+  const documentChecks = history
+    ? [history.rra_duty_paid, history.registration, history.service_history, history.insurance_valid]
+    : []
+  const verifiedDocuments = documentChecks.filter((value) => value === 'pass').length
+  const documentIssues = documentChecks.filter((value) => value === 'flag' || value === 'fail').length
+  const sellerVerified = car.seller_id_verified === 'approved'
+
+  const signals = [
+    {
+      icon: report ? 'shield-check' : 'clock',
+      label: 'Inspection',
+      value: report ? `${report.score}/150 recorded` : car.inspected ? 'Report being prepared' : 'Not yet published',
+      tone: report ? 'text-success' : 'text-content-muted',
+    },
+    {
+      icon: documentIssues ? 'alert' : verifiedDocuments ? 'check-circle' : 'minus',
+      label: 'Paperwork',
+      value: documentIssues ? `${documentIssues} item${documentIssues === 1 ? '' : 's'} need attention` : verifiedDocuments ? `${verifiedDocuments} checks verified` : 'No verified evidence yet',
+      tone: documentIssues ? 'text-warning-text' : verifiedDocuments ? 'text-success' : 'text-content-muted',
+    },
+    {
+      icon: sellerVerified ? 'shield-check' : 'user',
+      label: 'Seller',
+      value: sellerVerified ? 'Identity verified' : 'Verification not available',
+      tone: sellerVerified ? 'text-success' : 'text-content-muted',
+    },
+    {
+      icon: 'check-circle',
+      label: 'Buyer protection',
+      value: '7-day Sawa Guarantee',
+      tone: 'text-success',
+    },
+  ] as const
+
+  return (
+    <section aria-labelledby="decision-heading" className="overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">
+      <div className="border-b border-line-soft px-5 py-4 sm:px-7">
+        <p className="text-eyebrow font-bold uppercase text-brand">Decision summary</p>
+        <h2 id="decision-heading" className="mt-2 text-title font-extrabold text-content">What is verified right now</h2>
+        <p className="mt-1 text-caption text-content-muted">A quick view only—the complete evidence remains below.</p>
+      </div>
+      <dl className="grid sm:grid-cols-2">
+        {signals.map((signal, index) => (
+          <div key={signal.label} className={`flex gap-3 border-b border-line-soft px-5 py-4 last:border-b-0 sm:px-7 ${index < 2 ? 'sm:border-b' : 'sm:border-b-0'} ${index % 2 === 0 ? 'sm:border-r sm:border-line-soft' : ''}`}>
+            <Icon name={signal.icon} size={19} className={`mt-0.5 shrink-0 ${signal.tone}`} />
+            <div>
+              <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">{signal.label}</dt>
+              <dd className="mt-1 text-caption font-bold text-content">{signal.value}</dd>
+            </div>
+          </div>
+        ))}
+      </dl>
+    </section>
   )
 }
 
