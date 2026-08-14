@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { api } from '@/lib/api'
+import { api, type ActionCenterResponse } from '@/lib/api'
 import {
   Card, StatCard, PageHeader, EmptyState, BarChart, Icon,
   fmtMoney, fmtMoneyShort, type IconName,
@@ -84,12 +84,14 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [activity, setActivity] = useState<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>([])
+  const [actions, setActions] = useState<ActionCenterResponse | null>(null)
+  const [actionFilter, setActionFilter] = useState<'all' | 'urgent' | 'attention'>('all')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([api.stats(), api.analytics().catch(() => null), api.activity().catch(() => [])])
-      .then(([s, a, recent]) => { setStats(s); setAnalytics(a); setActivity(recent) })
+    Promise.all([api.stats(), api.analytics().catch(() => null), api.activity().catch(() => []), api.actionCenter().catch(() => null)])
+      .then(([s, a, recent, actionCenter]) => { setStats(s); setAnalytics(a); setActivity(recent); setActions(actionCenter) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -116,6 +118,13 @@ export default function DashboardPage() {
     value: funnelRaw.get(st)!,
   }))
   const funnelMax = Math.max(...funnel.map((f) => f.value), 1)
+  const visibleActions = (actions?.items ?? []).filter((item) => actionFilter === 'all' || item.priority === actionFilter)
+  const actionTone = {
+    urgent: { dot: 'bg-danger-strong', badge: 'bg-danger-tint text-danger-strong', label: 'Urgent' },
+    attention: { dot: 'bg-warning', badge: 'bg-warning-tint text-warning-text', label: 'Attention' },
+    routine: { dot: 'bg-info', badge: 'bg-info-tint text-info', label: 'Routine' },
+  } as const
+  const ageLabel = (hours: number) => hours < 1 ? 'Just now' : hours < 24 ? `${hours}h waiting` : `${Math.floor(hours / 24)}d waiting`
 
   return (
     <div>
@@ -132,6 +141,86 @@ export default function DashboardPage() {
           </Link>
         }
       />
+
+      {/* The Super Admin's working surface: decisions before reporting. */}
+      <Card className="mb-6 overflow-hidden">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line-soft px-5 py-5 sm:px-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-tint text-brand">
+                <Icon name="bell" size={18} />
+              </span>
+              <div>
+                <h2 className="text-body font-extrabold text-content">Action Center</h2>
+                <p className="text-caption text-content-muted">Your live operating queue, ordered by urgency.</p>
+              </div>
+            </div>
+          </div>
+          {actions && (
+            <div className="flex items-center gap-2" aria-label="Action center summary">
+              <span className="rounded-full bg-danger-tint px-2.5 py-1 text-caption font-bold text-danger-strong">{actions.summary.urgent} urgent</span>
+              <span className="rounded-full bg-warning-tint px-2.5 py-1 text-caption font-bold text-warning-text">{actions.summary.attention} attention</span>
+            </div>
+          )}
+        </div>
+
+        {!actions ? (
+          <div className="px-6 py-5 text-caption text-content-muted">Action Center is temporarily unavailable. The rest of the dashboard is current.</div>
+        ) : actions.summary.total === 0 ? (
+          <EmptyState icon="check-circle" title="Everything is under control" description="There are no approvals, exceptions or overdue workflows requiring action." />
+        ) : (
+          <>
+            <div className="flex gap-1 overflow-x-auto border-b border-line-soft px-5 py-3" role="tablist" aria-label="Filter actions">
+              {([
+                ['all', 'All', actions.summary.total],
+                ['urgent', 'Urgent', actions.summary.urgent],
+                ['attention', 'Attention', actions.summary.attention],
+              ] as const).map(([key, label, count]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={actionFilter === key}
+                  onClick={() => setActionFilter(key)}
+                  className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-caption font-bold transition-colors ${actionFilter === key ? 'bg-ink-900 text-white' : 'text-content-muted hover:bg-surface-alt hover:text-content'}`}
+                >
+                  {label} <span className="ml-1 opacity-70">{count}</span>
+                </button>
+              ))}
+            </div>
+            {visibleActions.length ? (
+              <ul className="divide-y divide-line-soft">
+                {visibleActions.slice(0, 8).map((action) => {
+                  const tone = actionTone[action.priority]
+                  return (
+                    <li key={action.id}>
+                      <Link href={action.href} className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-surface-alt sm:px-6">
+                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} aria-hidden />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="truncate text-label font-bold text-content">{action.title}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-micro font-bold ${tone.badge}`}>{tone.label}</span>
+                          </span>
+                          <span className="mt-0.5 block truncate text-caption text-content-muted">{action.kind} · {action.detail}</span>
+                        </span>
+                        <span className="hidden shrink-0 text-caption font-semibold text-content-muted sm:block">{ageLabel(action.age_hours)}</span>
+                        <span className="text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={16} /></span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : (
+              <div className="px-6 py-8 text-center text-caption text-content-muted">No {actionFilter} actions right now.</div>
+            )}
+            {visibleActions.length > 8 && (
+              <div className="border-t border-line-soft bg-surface-alt px-6 py-3 text-center text-caption font-semibold text-content-muted">
+                Showing the 8 most important of {visibleActions.length} actions
+              </div>
+            )}
+          </>
+        )}
+      </Card>
 
       {/* Money — Sawa's earnings first, marketplace volume second */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

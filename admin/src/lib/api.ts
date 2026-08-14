@@ -19,6 +19,23 @@ const BASE = '/api/backend'
 // reach the backend) counts as unreachable.
 export type ApiStatus = 'unknown' | 'ok' | 'unreachable'
 
+export type ActionCenterItem = {
+  id: string
+  kind: string
+  priority: 'urgent' | 'attention' | 'routine'
+  title: string
+  detail: string
+  href: string
+  occurred_at: string | null
+  age_hours: number
+}
+
+export type ActionCenterResponse = {
+  generated_at: string
+  summary: { total: number; urgent: number; attention: number; routine: number }
+  items: ActionCenterItem[]
+}
+
 let apiStatus: ApiStatus = 'unknown'
 const statusListeners = new Set<(s: ApiStatus) => void>()
 
@@ -264,6 +281,7 @@ export const api = {
   // Dashboard
   stats:     () => request<any>('/admin/stats'),
   analytics: () => request<any>('/admin/analytics'),
+  actionCenter: () => request<ActionCenterResponse>('/admin/action-center'),
   search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
   activity: () => request<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>('/admin/activity'),
   auditLog: (params?: { q?: string; type?: string; limit?: number; offset?: number }) => {
