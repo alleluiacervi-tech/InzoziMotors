@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Container, Eyebrow } from '@/components/ui'
+import { Container, Eyebrow, Icon } from '@/components/ui'
 
 /**
  * The workspace opening — one of exactly two sanctioned page openings on the
@@ -23,14 +23,21 @@ export function PageIntro({
   aside?: ReactNode
 }) {
   return (
-    <div className="border-b border-line-soft bg-surface-page py-8 sm:py-10">
-      <Container className="flex flex-wrap items-end justify-between gap-6">
-        <div className="max-w-2xl">
-          {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-          <h1 className="text-headline font-extrabold text-content">{title}</h1>
+    <div className="relative isolate overflow-hidden bg-ink-900 py-10 text-white sm:py-14">
+      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_12%,rgba(204,5,15,0.24),transparent_34%),radial-gradient(circle_at_8%_92%,rgba(255,255,255,0.08),transparent_27%)]" />
+      <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      <Container className="flex flex-wrap items-end justify-between gap-8">
+        <div className="max-w-3xl">
+          {eyebrow ? <Eyebrow tone="invert">{eyebrow}</Eyebrow> : null}
+          <h1 className="text-display font-extrabold text-white">{title}</h1>
           {description ? (
-            <p className="mt-3 text-body text-content-secondary">{description}</p>
+            <p className="mt-4 max-w-2xl text-title-sm leading-relaxed text-white/70">{description}</p>
           ) : null}
+          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-caption font-semibold text-white/70">
+            <span className="inline-flex items-center gap-1.5"><Icon name="shield-check" size={15} className="text-white" />150-point inspection</span>
+            <span className="inline-flex items-center gap-1.5"><Icon name="check-circle" size={15} className="text-white" />7-day guarantee</span>
+            <span className="inline-flex items-center gap-1.5"><Icon name="user" size={15} className="text-white" />No buyer fees</span>
+          </div>
         </div>
         {aside ? <div className="shrink-0">{aside}</div> : null}
       </Container>

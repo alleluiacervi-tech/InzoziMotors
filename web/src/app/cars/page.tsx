@@ -98,18 +98,22 @@ async function BrowseResults({
   const facets = facetSource.length ? buildFacets(facetSource) : EMPTY_FACETS
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-12">
+    <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
       <aside className="hidden lg:block">
-        <div className="sticky top-[calc(var(--header-h)+24px)]">
-          <h2 className="mb-5 text-caption font-bold uppercase tracking-wide text-content-muted">
-            Narrow it down
-          </h2>
+        <div className="sticky top-[calc(var(--header-h)+24px)] rounded-3xl border border-line-soft bg-surface p-6 shadow-card">
+          <div className="mb-6 flex items-center justify-between border-b border-line-soft pb-4">
+            <div>
+              <p className="text-micro font-bold uppercase tracking-[0.14em] text-brand">Find your fit</p>
+              <h2 className="mt-1 text-title-sm font-extrabold text-content">Refine the collection</h2>
+            </div>
+            <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface-alt text-content-secondary"><Icon name="filter" size={17} /></span>
+          </div>
           <FilterPanel facets={facets} filters={filters} sort={sort} />
         </div>
       </aside>
 
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line-soft bg-surface px-4 py-3 shadow-card sm:px-5">
           <div className="flex items-center gap-3">
             <FilterSheet facets={facets} filters={filters} sort={sort} />
             {/* "on this page" whenever more may exist — the API returns a
@@ -160,7 +164,7 @@ async function BrowseResults({
                 )
               )}
             />
-            <ul className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="stagger mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, index) => (
                 <li key={car.id}>
                   {/* Only the first row is eager — the rest would fight the
@@ -242,7 +246,7 @@ export default async function CarsPage({ searchParams }: PageProps) {
         description="Every car inspected on the same 150 points. Buyers never pay a fee."
       />
 
-      <Container className="py-8 sm:py-10">
+      <Container className="py-8 sm:py-12">
         <Suspense fallback={<BrowseSkeleton />}>
           <BrowseResults filters={filters} sort={sort} offset={offset} />
         </Suspense>

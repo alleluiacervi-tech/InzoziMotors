@@ -42,14 +42,14 @@ export function CarCard({
   return (
     <Link
       href={`/cars/${car.id}`}
-      className={`group block overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card
-                  transition-all duration-300 ease-brand
-                  hover:-translate-y-1 hover:border-line hover:shadow-card-lg
+      className={`group block overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card
+                  transition-all duration-500 ease-brand
+                  hover:-translate-y-1.5 hover:border-line hover:shadow-float
                   ${isRow ? 'sm:flex' : ''}`}
     >
       <div
         className={`relative overflow-hidden bg-surface-alt ${
-          isRow ? 'aspect-[4/3] sm:aspect-auto sm:w-72 sm:shrink-0' : 'aspect-[4/3]'
+          isRow ? 'aspect-[16/10] sm:aspect-auto sm:w-72 sm:shrink-0' : 'aspect-[16/10]'
         }`}
       >
         {/* Multi-photo listings preview their angles on hover/tap — the
@@ -113,8 +113,8 @@ export function CarCard({
         ) : null}
       </div>
 
-      <div className={`p-4 sm:p-5 ${isRow ? 'flex flex-1 flex-col' : ''}`}>
-        <h3 className="truncate text-body font-extrabold tracking-[-0.01em] text-content">
+      <div className={`p-5 ${isRow ? 'flex flex-1 flex-col' : ''}`}>
+        <h3 className="truncate text-title-sm font-extrabold tracking-[-0.015em] text-content transition-colors group-hover:text-brand">
           {car.title}
         </h3>
 
@@ -153,12 +153,12 @@ export function CarCard({
           </p>
         ) : null}
 
-        <div className={isRow ? 'mt-auto pt-4' : 'mt-4'}>
+        <div className={isRow ? 'mt-auto pt-5' : 'mt-5'}>
           {/* Price is one of the few places brand red is allowed. */}
           {/* tabular-nums so prices line up digit-for-digit down a grid of
               cards — Satoshi defaults to proportional figures. */}
           <p
-            className="text-price font-extrabold tracking-[-0.02em] text-content tabular-nums"
+            className="text-price font-extrabold tracking-[-0.02em] text-brand tabular-nums"
             title={formatMoneyExact(car.price)}
           >
             {formatUSD(car.price)}
@@ -188,12 +188,14 @@ export function CarCard({
           ) : null}
         </div>
 
-        {listedAgo(car) ? (
-          <p className="mt-3 border-t border-line-soft pt-3 text-micro text-content-muted">
-            {listedAgo(car)}
-            {car.saves_count ? ` · ${car.saves_count} saved` : ''}
+        <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3">
+          <p className="text-micro text-content-muted">
+            {listedAgo(car) || 'Available now'}{car.saves_count ? ` · ${car.saves_count} saved` : ''}
           </p>
-        ) : null}
+          <span className="inline-flex items-center gap-1 text-micro font-bold text-content-secondary transition-colors group-hover:text-brand">
+            View car <Icon name="arrow-right" size={13} />
+          </span>
+        </div>
       </div>
     </Link>
   )

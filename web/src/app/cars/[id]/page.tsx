@@ -187,7 +187,7 @@ export default async function CarDetailPage({ params }: PageProps) {
     <article>
       <JsonLd car={car} images={images} />
 
-      <Container className="pt-6">
+      <Container className="pt-7 sm:pt-9">
         <nav aria-label="Breadcrumb">
           {/* Separators live inside their list item, so a screen reader counts
               four crumbs rather than seven. */}
@@ -217,8 +217,8 @@ export default async function CarDetailPage({ params }: PageProps) {
         </nav>
       </Container>
 
-      <Container className="pb-16 pt-6 sm:pb-20">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_368px] lg:gap-12">
+      <Container className="pb-16 pt-6 sm:pb-24">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14">
           {/* Explicit placement so the price and CTA sit directly under the
               gallery on a phone, instead of below every report on the page. */}
           <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
@@ -250,7 +250,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                 ) : null}
               </div>
 
-              <h1 className="mt-3 text-headline font-extrabold text-content">{car.title}</h1>
+              <h1 className="mt-4 max-w-4xl text-display font-extrabold text-content">{car.title}</h1>
 
               <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-content-secondary">
                 <span>{car.year}</span>
@@ -283,10 +283,12 @@ export default async function CarDetailPage({ params }: PageProps) {
 
           <aside className="lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
-              <Card className="p-5 sm:p-6">
+              <Card className="relative overflow-hidden rounded-3xl border-line bg-surface p-6 shadow-float sm:p-7">
+                <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
+                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">Purchase overview</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
-                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-content">
+                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.price)}
                 </p>
                 <p className="mt-2 text-caption text-content-secondary">
@@ -427,7 +429,7 @@ export default async function CarDetailPage({ params }: PageProps) {
           </aside>
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
-            <section aria-labelledby="specs-heading">
+            <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
                 Specification
               </h2>
