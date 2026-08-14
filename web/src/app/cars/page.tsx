@@ -50,7 +50,9 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const { canonical, index } = browseIndexPolicy(filters, sort, offset)
 
   return {
-    title: `${browseHeading(filters)}`,
+    title: Object.keys(filters).length
+      ? `${browseHeading(filters)} in Kigali, Rwanda`
+      : 'Cars for sale in Kigali, Rwanda',
     description:
       `${description} listed by Sawa Cars in Kigali. Every car is physically ` +
       'inspected on our 150-point check, photographed by our team and covered by ' +

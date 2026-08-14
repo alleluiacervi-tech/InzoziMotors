@@ -159,7 +159,16 @@ export function getCarsInNeighborhood(cars, neighborhoodName) {
 // Canonical money formatting. Product amounts already represent whole francs;
 // presentation must never silently convert or relabel them.
 export function formatRWF(amount) {
-  return `RWF ${Math.round(Number(amount) || 0).toLocaleString('en-RW')}`;
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return '—';
+  if (Math.abs(value) >= 1_000_000) {
+    const millions = value / 1_000_000;
+    const compact = millions >= 100 || Number.isInteger(millions)
+      ? millions.toFixed(0)
+      : millions.toFixed(1).replace(/\.0$/, '');
+    return `${compact}M RWF`;
+  }
+  return `RWF ${Math.round(value).toLocaleString('en-RW')}`;
 }
 
 // Rwanda RRA import duty calculation (2026 simplified rates)

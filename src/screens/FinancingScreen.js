@@ -67,7 +67,6 @@ function BankCard({ bank, monthly, totalInterest, termMonths, isSelected, isBest
             <Text style={[styles.bankMonthlyValue, isSelected && { color: colors.primary }]}>
               {formatRWF(Math.round(monthly))}
             </Text>
-            <Text style={styles.bankRwf}>≈ {formatRWF(Math.round(monthly))}</Text>
           </View>
           <View style={styles.resultDivider} />
           <View style={styles.bankResultCol}>
@@ -153,7 +152,6 @@ export default function FinancingScreen({ navigation, route }) {
           <View style={styles.loanSummary}>
             <Text style={styles.loanLabel}>Loan amount</Text>
             <Text style={styles.loanValue}>{formatRWF(principal)}</Text>
-            <Text style={styles.loanRwf}>{formatRWF(principal)}</Text>
           </View>
         )}
 

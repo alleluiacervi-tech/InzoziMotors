@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext';
 import Badge from './Badge';
 import { getCertTier } from '../data/certification';
 import { monthlyEstimate } from '../data/finance';
+import { formatPrice } from '../data/cars';
 
 const getSawaYear = (car) => String(car.year);
 
@@ -21,7 +22,7 @@ const getSawaLocation = (car) => {
   return 'Kigali';
 };
 
-const getSawaPrice = (car) => `RWF ${(car.price ?? car.currentBid ?? 0).toLocaleString('en-RW')}`;
+const getSawaPrice = (car) => formatPrice(car.price ?? car.currentBid ?? 0);
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
   const { isCarSaved, toggleSaveCar } = useApp();
@@ -98,7 +99,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             <Text style={styles.meta} numberOfLines={1}>{getSawaMileage(car)} · {getSawaLocation(car)}</Text>
             <Text style={styles.price}>{getSawaPrice(car)}</Text>
             {car.price ? (
-            <Text style={styles.monthly}>Finance from RWF {monthlyEstimate(car.price).toLocaleString('en-RW')}/mo</Text>
+            <Text style={styles.monthly}>Finance from {formatPrice(monthlyEstimate(car.price))}/mo</Text>
             ) : null}
           </>
         )}
