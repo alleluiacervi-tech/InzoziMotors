@@ -124,7 +124,7 @@ services:
         # Search Console ownership token (public once serving — committed, not
         # a secret). Paste the content="..." value from the HTML-tag method
         # here and redeploy; empty omits the tag.
-        NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ''
+        NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
     restart: unless-stopped
     depends_on:
       - api
