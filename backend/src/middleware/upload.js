@@ -12,6 +12,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const resolveSubdir = (req) => {
   if (req.params.carId) return `cars/${req.params.carId}`;
   if (req.params.bookingId) return `rentals/${req.params.bookingId}`;
+  if (req.params.id && req.baseUrl === '/imports') return `imports/${req.params.id}`;
   return 'id-docs';
 };
 
@@ -107,6 +108,28 @@ function verifyImageContent(req, res, next) {
   next();
 }
 
+const IMPORT_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.pdf']);
+const IMPORT_MIME = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']);
+const importDocumentFilter = (_req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!IMPORT_EXT.has(ext) || !IMPORT_MIME.has(String(file.mimetype || '').toLowerCase())) {
+    return cb(new Error('Import documents must be a PDF, JPEG, PNG or WebP file'));
+  }
+  cb(null, true);
+};
+
+function verifyImportDocument(req, res, next) {
+  const files = req.files ? (Array.isArray(req.files) ? req.files : Object.values(req.files).flat()) : (req.file ? [req.file] : []);
+  const valid = (f) => looksLikeImage(f.path) || (() => {
+    try { return fs.readFileSync(f.path, { encoding: null }).subarray(0, 5).toString() === '%PDF-'; } catch { return false; }
+  })();
+  if (files.some((f) => !valid(f))) {
+    files.forEach((f) => fs.unlink(f.path, () => {}));
+    return res.status(400).json({ error: 'The uploaded document content does not match an accepted PDF or image', code: 'INVALID_DOCUMENT' });
+  }
+  next();
+}
+
 // Public URL for an uploaded file — one implementation for every route.
 // Uses the resolved subdir (not string surgery on the OS path) so it works on Windows too.
 exports.publicUploadUrl = (req, file) => {
@@ -127,6 +150,12 @@ exports.uploadIdDocs = multer({
   fileFilter: imageFilter,
   limits: { fileSize: 5 * 1024 * 1024, files: 3, fields: 10 },
 });
+exports.uploadImportDocs = multer({
+  storage,
+  fileFilter: importDocumentFilter,
+  limits: { fileSize: 12 * 1024 * 1024, files: 5, fields: 20 },
+});
 
 exports.verifyImageContent = verifyImageContent;
 exports.looksLikeImage = looksLikeImage;
+exports.verifyImportDocument = verifyImportDocument;

@@ -5,6 +5,7 @@ import { colors, radius, fonts } from '../theme';
 import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
+import { formatPrice } from '../data/cars';
 
 // Encar-style horizontal list card: photo left, dense specs right.
 // Built for scanning many cars quickly in search results.
@@ -75,7 +76,7 @@ export default function CarListCard({ car, onPress }) {
               </View>
             )}
           </View>
-          <Text style={styles.price}>RWF {(price ?? 0).toLocaleString('en-RW')}</Text>
+          <Text style={styles.price}>{formatPrice(price)}</Text>
         </View>
       </View>
     </Pressable>

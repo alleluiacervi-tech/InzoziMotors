@@ -36,6 +36,7 @@ const MENU_SECTIONS = [
     items: [
       { icon: 'calculator-outline', label: 'Financing Calculator', screen: 'Financing' },
       { icon: 'globe-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
+      { icon: 'boat-outline', label: 'My Vehicle Imports', screen: 'ImportOrders' },
       { icon: 'ribbon-outline', label: 'Trust Score', screen: 'TrustScore' },
     ],
   },

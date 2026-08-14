@@ -39,6 +39,7 @@ export const linking = {
       Disputes: 'disputes',
       NotificationCenter: 'notifications',
       SellerDashboard: 'selling',
+      ImportOrders: 'imports',
       SawaPromise: 'promise',
       BuyingGuide: 'how-it-works',
       DutyCalculator: 'tools/import-duty',

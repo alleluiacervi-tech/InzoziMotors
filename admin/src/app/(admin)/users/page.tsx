@@ -19,6 +19,9 @@ type UserRow = {
   id_front_url?: string
   id_back_url?: string
   selfie_url?: string
+  seller_type?: string | null
+  business_name?: string | null
+  must_change_password?: boolean
 }
 
 export default function UsersPage() {
@@ -30,6 +33,8 @@ export default function UsersPage() {
   const [search, setSearch] = useState('')
   const [role, setRole] = useState('all')
   const [actionId, setActionId] = useState<string | null>(null)
+  const [showroomOpen, setShowroomOpen] = useState(false)
+  const [showroom, setShowroom] = useState({ name: '', business_name: '', email: '', phone: '' })
   const ask = useConfirm()
   const toast = useToast()
 
@@ -77,6 +82,21 @@ export default function UsersPage() {
     }
   }
 
+  async function createShowroom(event: React.FormEvent) {
+    event.preventDefault()
+    setActionId('new-showroom')
+    try {
+      const created = await api.createShowroom(showroom)
+      toast(created.invitation_sent
+        ? 'Verified showroom created and activation email sent'
+        : 'Showroom created, but email delivery is not configured', created.invitation_sent ? 'success' : 'error')
+      setShowroom({ name: '', business_name: '', email: '', phone: '' })
+      setShowroomOpen(false)
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
   const visible = role === 'all' ? items : items.filter((u) => u.role === role)
   const counts = items.reduce<Record<string, number>>((acc, user) => {
     acc[user.role] = (acc[user.role] || 0) + 1
@@ -89,6 +109,36 @@ export default function UsersPage() {
         title="Users & identity"
         description="Find accounts, understand trust at a glance, and review seller identity documents."
       />
+
+      <div className="mb-5 flex justify-end">
+        <button type="button" onClick={() => setShowroomOpen((v) => !v)}
+          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-white hover:bg-brand-bright">
+          {showroomOpen ? 'Close form' : 'Create showroom account'}
+        </button>
+      </div>
+
+      {showroomOpen ? (
+        <Card className="mb-5 p-5">
+          <div className="mb-4"><h2 className="font-extrabold text-content">Invite a verified showroom</h2><p className="mt-1 text-label text-content-muted">The account is verified by Sawa. The recipient creates their own password from a one-use 48-hour email link.</p></div>
+          <form onSubmit={createShowroom} className="grid gap-3 sm:grid-cols-2">
+            {([
+              ['business_name', 'Showroom name', 'Kigali Prime Motors'],
+              ['name', 'Account contact', 'Jean Habimana'],
+              ['email', 'Business email', 'sales@example.rw'],
+              ['phone', 'Phone (optional)', '+250 7…'],
+            ] as const).map(([key, label, placeholder]) => (
+              <label key={key} className="text-label font-semibold text-content">{label}
+                <input required={key !== 'phone'} type={key === 'email' ? 'email' : 'text'} value={showroom[key]}
+                  onChange={(e) => setShowroom({ ...showroom, [key]: e.target.value })} placeholder={placeholder}
+                  className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+              </label>
+            ))}
+            <button disabled={actionId === 'new-showroom'} className="rounded-xl bg-ink-900 px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
+              {actionId === 'new-showroom' ? 'Creating…' : 'Create verified account and send activation'}
+            </button>
+          </form>
+        </Card>
+      ) : null}
 
       <div className="mb-5 flex gap-2 border-b border-line-soft" role="tablist" aria-label="User management views">
         {([
@@ -144,8 +194,8 @@ export default function UsersPage() {
               </thead>
               <tbody className="divide-y divide-line-soft">
                 {visible.map((u) => <tr key={u.id} className="hover:bg-surface-alt">
-                  <td className="px-5 py-4"><p className="font-bold text-content">{u.name}</p><p className="text-caption text-content-muted">{u.email}{u.phone ? ` · ${u.phone}` : ''}</p></td>
-                  <td className="px-4 py-4"><Pill status={u.role} label={u.role} /></td>
+                  <td className="px-5 py-4"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</td>
+                  <td className="px-4 py-4"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'verified showroom' : u.role} /></td>
                   <td className="px-4 py-4"><Pill status={u.id_verified} label={u.id_verified || 'not submitted'} /></td>
                   <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>

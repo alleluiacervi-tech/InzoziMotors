@@ -93,7 +93,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
     url: `${SITE.url}${route.path}`,
-    lastModified: new Date(),
+    // Do not stamp every static URL with "now" on each hourly regeneration.
+    // That is a false freshness signal; crawlers learn to ignore all lastmod
+    // values when unchanged pages repeatedly claim they were just updated.
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }))

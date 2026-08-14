@@ -16,6 +16,8 @@ import { cars } from '@/lib/api'
 import { CENTERS, FAQS, SITE } from '@/lib/site'
 import { InkClose } from '@/components/layout/InkClose'
 import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 
 // The page reads live inventory (catalogue makes for the valuation) — render
 // it per request like /cars, never at build. Prerendering it made the BUILD
@@ -24,7 +26,7 @@ import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/Pipeli
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Sell your car in Kigali',
+  title: 'Sell your car in Kigali, Rwanda — valuation and inspection',
   description:
     'Bring your car to a Sawa center once. We run the 150-point inspection, shoot the 36 standard photos, publish the listing, verify the buyer and process the RRA transfer. Free valuation, no account needed.',
   alternates: { canonical: '/sell' },
@@ -104,16 +106,27 @@ export default async function SellPage() {
 
   return (
     <>
+      <JsonLd data={graph(
+        serviceNode({
+          id: 'sell-car-kigali',
+          name: 'Sell your car in Kigali with Sawa Cars',
+          description: 'Car valuation, 150-point inspection, photography, buyer verification and RRA ownership transfer support in Kigali.',
+          path: '/sell',
+          serviceType: 'Vehicle selling service',
+        }),
+        breadcrumbNode([{ name: 'Home', path: '/' }, { name: 'Sell your car', path: '/sell' }])
+      )} />
       {/* ─── Hero — the valuation IS the hero ─────────────────────────────── */}
-      <Section tone="surface" id="valuation" className="pb-12 pt-12 sm:pb-16 sm:pt-20">
+      <Section tone="ink" id="valuation" className="relative isolate overflow-hidden pb-14 pt-14 sm:pb-20 sm:pt-20">
+        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_12%_15%,rgba(204,5,15,0.30),transparent_32%),radial-gradient(circle_at_88%_85%,rgba(255,255,255,0.08),transparent_28%)]" />
         <Container>
           <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
-              <p className="mb-4 text-eyebrow font-bold uppercase text-brand">Sell your car</p>
-              <h1 className="text-display font-extrabold text-content">
+              <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">Sell your car</p>
+              <h1 className="text-display-xl font-extrabold text-white">
                 What&apos;s your car worth in Kigali?
               </h1>
-              <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-content-secondary">
+              <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-white/70">
                 Priced from cars actually listed and sold on Sawa Cars — never a lookup table. If the
                 number works, we inspect it on 150 points, photograph it to one standard, publish
                 the listing, verify the buyer and process the RRA transfer with you at the center.
@@ -126,21 +139,22 @@ export default async function SellPage() {
                   'Buyers pay nothing — demand on your listing stays high',
                 ].map((line) => (
                   <li key={line} className="flex gap-3">
-                    <Icon name="check-circle" size={20} className="mt-0.5 shrink-0 text-success" />
-                    <span className="text-body leading-relaxed text-content">{line}</span>
+                    <Icon name="check-circle" size={20} className="mt-0.5 shrink-0 text-white" />
+                    <span className="text-body leading-relaxed text-white/85">{line}</span>
                   </li>
                 ))}
               </ul>
 
-              <p className="mt-6 text-caption text-content-muted">
-                <Link href="#cost" className="font-bold text-brand hover:underline">
+              <p className="mt-6 text-caption text-white/55">
+                <Link href="#cost" className="font-bold text-white hover:underline">
                   See what selling costs
                 </Link>{' '}
                 — two charges, both quoted before you commit.
               </p>
             </div>
 
-            <Card className="p-6 sm:p-8">
+            <Card className="relative overflow-hidden rounded-3xl border-white/10 p-6 shadow-float sm:p-8">
+              <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
               <h2 className="text-caption font-bold uppercase tracking-wide text-content-muted">
                 Free valuation
               </h2>
@@ -161,9 +175,9 @@ export default async function SellPage() {
             description="Selling privately in Kigali means photographing the car, fielding calls, meeting strangers, and hoping the paperwork goes through. This is the same sale without any of that."
           />
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {WHAT_WE_DO.map((item) => (
-              <Card key={item.title} className="p-6">
+              <Card key={item.title} interactive className="p-6">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                   <Icon name={item.icon} size={22} />
                 </span>

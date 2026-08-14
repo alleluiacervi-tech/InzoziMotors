@@ -204,6 +204,11 @@ export const auth = {
       body: JSON.stringify({ email, code, new_password: newPassword }),
       cache: 'no-store',
     }),
+
+  acceptShowroomInvite: (token: string, password: string) =>
+    request<{ user: User; token: string }>('/auth/accept-showroom-invite', {
+      method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store',
+    }),
 }
 
 // ─── Authenticated ───────────────────────────────────────────────────────────
@@ -234,6 +239,16 @@ export const account = {
       method: 'DELETE',
       body: JSON.stringify({ password }),
     }),
+}
+
+export const importOrders = {
+  mine: (token: string) => request<any[]>('/imports/mine', { token }),
+  get: (token: string, id: string) => request<any>(`/imports/${id}`, { token }),
+  create: (token: string, data: { origin_country: string; make: string; model: string; year?: number; supplier_reference?: string; customer_notes?: string }) =>
+    request<any>('/imports', { token, method: 'POST', body: JSON.stringify(data) }),
+  acceptAgreement: (token: string, id: string) => request<any>(`/imports/${id}/accept-agreement`, { token, method: 'POST' }),
+  submitPaymentProof: (token: string, orderId: string, paymentId: string, data: FormData) =>
+    request<any>(`/imports/${orderId}/payments/${paymentId}/proof`, { token, method: 'POST', body: data }),
 }
 
 export const saved = {

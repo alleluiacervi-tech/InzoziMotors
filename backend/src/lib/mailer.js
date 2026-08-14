@@ -194,6 +194,33 @@ function sendWelcome(email, name) {
   });
 }
 
+function sendShowroomInvite(email, name, businessName, token) {
+  const url = `${SITE}/activate-showroom?token=${encodeURIComponent(token)}`;
+  return sendTemplate(email, `Activate your ${businessName} showroom account`, {
+    title: 'Your showroom account is ready',
+    preheader: 'Create your private password to activate the account.',
+    lines: [
+      `Hi ${name || 'there'} — a Sawa Cars administrator created a verified showroom account for ${businessName}.`,
+      'For security, no reusable password is included in this email. Use the private link below to create your password. The link expires in 48 hours and can only be used once.',
+      'After activation, you can manage your showroom vehicles through Sawa Cars. Never share your password or verification codes with anyone.',
+    ],
+    cta: { label: 'Create my password', url },
+  });
+}
+
+function sendImportUpdate(email, name, orderRef, title, detail) {
+  return sendTemplate(email, `${orderRef} — ${title}`, {
+    title,
+    preheader: `${orderRef}: ${detail}`,
+    lines: [
+      `Hi ${name || 'there'} — ${detail}`,
+      `Order reference: ${orderRef}. Your agreement, verified payment status, documents and shipping milestones are available in your Sawa Cars dashboard.`,
+      'Only pay using the corporate bank instructions displayed on your official order. Sawa Cars never asks you to pay an employee or personal account.',
+    ],
+    cta: { label: 'Track my import', url: `${SITE}/dashboard/imports` },
+  });
+}
+
 /** After change-password AND after a completed reset: if it wasn't the owner,
  *  this email is the only way they ever find out. */
 function sendPasswordChanged(email, name) {
@@ -332,6 +359,8 @@ module.exports = {
   sendMail,
   sendResetCode,
   sendWelcome,
+  sendShowroomInvite,
+  sendImportUpdate,
   sendPasswordChanged,
   sendAccountDeleted,
   sendPurchaseRequested,

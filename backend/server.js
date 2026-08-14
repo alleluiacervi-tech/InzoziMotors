@@ -178,6 +178,7 @@ app.use(globalLimiter);
 app.use('/auth/login', authLimiter);
 app.use('/auth/register', authLimiter);
 app.use('/auth/change-password', authLimiter);
+app.use('/auth/accept-showroom-invite', authLimiter);
 app.use('/auth/forgot-password', resetLimiter);
 app.use('/auth/reset-password', resetLimiter);
 app.use('/messages', postOnly(writeLimiter));
@@ -202,6 +203,7 @@ app.use('/referrals',       require('./src/routes/referrals'));
 app.use('/disputes',        require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));
 app.use('/admin',           require('./src/routes/admin'));
+app.use('/imports',         require('./src/routes/imports'));
 // Inspection centers. Admin-only CRUD over the table submissions.js already
 // enforces booking capacity against — see the header of routes/centers.js.
 app.use('/centers',         require('./src/routes/centers'));

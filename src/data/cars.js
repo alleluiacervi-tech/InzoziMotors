@@ -754,8 +754,18 @@ export const conversations = [
   },
 ];
 
-export const formatPrice = (n) =>
-  'RWF ' + (n ?? 0).toLocaleString('en-RW', { maximumFractionDigits: 0 });
+export const formatPrice = (n) => {
+  const amount = Number(n);
+  if (!Number.isFinite(amount)) return '—';
+  if (Math.abs(amount) >= 1_000_000) {
+    const millions = amount / 1_000_000;
+    const compact = millions >= 100 || Number.isInteger(millions)
+      ? millions.toFixed(0)
+      : millions.toFixed(1).replace(/\.0$/, '');
+    return `${compact}M RWF`;
+  }
+  return `RWF ${Math.round(amount).toLocaleString('en-RW')}`;
+};
 
 export const formatMiles = (n) => (n ?? 0).toLocaleString('en-US') + ' km';
 

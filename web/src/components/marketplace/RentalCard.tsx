@@ -25,9 +25,9 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
   return (
     <Link
       href={`/rentals/${car.id}`}
-      className="group block overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card transition-all duration-300 ease-brand hover:-translate-y-1 hover:border-line hover:shadow-card-lg"
+      className="group block overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card transition-all duration-500 ease-brand hover:-translate-y-1.5 hover:border-line hover:shadow-float"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface-alt">
+      <div className="relative aspect-[16/10] overflow-hidden bg-surface-alt">
         <Image
           src={image}
           alt={`${car.title} — Sawa rental fleet`}
@@ -55,8 +55,8 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
         ) : null}
       </div>
 
-      <div className="p-4 sm:p-5">
-        <h3 className="truncate text-body font-extrabold tracking-[-0.01em] text-content">
+      <div className="p-5">
+        <h3 className="truncate text-title-sm font-extrabold tracking-[-0.015em] text-content transition-colors group-hover:text-brand">
           {car.title}
         </h3>
 
@@ -88,7 +88,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
         <div className="mt-4 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p
-              className="text-price font-extrabold tracking-[-0.02em] text-content"
+              className="text-price font-extrabold tracking-[-0.02em] text-brand"
               title={formatMoneyExact(car.daily_rate)}
             >
               {formatUSD(car.daily_rate)}
@@ -108,11 +108,14 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
           ) : null}
         </div>
 
-        {car.min_days > 1 ? (
-          <p className="mt-3 border-t border-line-soft pt-3 text-micro text-content-muted">
-            Minimum {car.min_days} days
+        <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3">
+          <p className="text-micro text-content-muted">
+            {car.min_days > 1 ? `Minimum ${car.min_days} days` : 'Available from one day'}
           </p>
-        ) : null}
+          <span className="inline-flex items-center gap-1 text-micro font-bold text-content-secondary transition-colors group-hover:text-brand">
+            View rental <Icon name="arrow-right" size={13} />
+          </span>
+        </div>
       </div>
     </Link>
   )
@@ -120,8 +123,8 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
 
 export function RentalCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-line-soft bg-surface">
-      <div className="skeleton aspect-[4/3]" />
+    <div className="overflow-hidden rounded-3xl border border-line-soft bg-surface">
+      <div className="skeleton aspect-[16/10]" />
       <div className="space-y-3 p-5">
         <div className="skeleton h-4 w-3/4 rounded" />
         <div className="skeleton h-3 w-1/2 rounded" />

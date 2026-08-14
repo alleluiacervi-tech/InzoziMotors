@@ -108,6 +108,39 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /auth/accept-showroom-invite — one-use, time-limited password setup.
+// This replaces the common but unsafe pattern of emailing a temporary password.
+router.post('/accept-showroom-invite', async (req, res) => {
+  const token = String(req.body.token || '');
+  const password = String(req.body.password || '');
+  if (token.length < 32 || password.length < 8) {
+    return res.status(400).json({ error: 'A valid invitation and password of 8+ characters are required' });
+  }
+  const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT * FROM users WHERE invite_token_hash=$1 AND invite_expires_at>NOW()
+          AND admin_created=TRUE AND seller_type='showroom' FOR UPDATE`, [tokenHash]
+      );
+      if (!rows.length) return null;
+      const passwordHash = await bcrypt.hash(password, 12);
+      const updated = await client.query(
+        `UPDATE users SET password_hash=$1,must_change_password=FALSE,invite_token_hash=NULL,
+          invite_expires_at=NULL,token_version=token_version+1 WHERE id=$2
+         RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,token_version,created_at`,
+        [passwordHash, rows[0].id]
+      );
+      return updated.rows[0];
+    });
+    if (!result) return res.status(410).json({ error: 'This invitation is invalid, expired, or already used' });
+    res.json({ user: result, token: makeToken(result) });
+  } catch (err) {
+    log.error('accept showroom invite error', { error: err.message });
+    res.status(500).json({ error: 'Could not activate showroom account' });
+  }
+});
+
 // ─── Password reset ───────────────────────────────────────────────────────────
 // No email/SMS provider is wired yet, so the 6-digit code is logged server-side.
 // Setting RESET_CODE_ECHO=true also returns it in the response — an explicit
