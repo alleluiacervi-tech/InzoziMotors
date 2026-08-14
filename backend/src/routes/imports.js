@@ -151,7 +151,7 @@ router.post('/:id/quote', requireAdmin, requireUuid('id'), async (req, res) => {
       );
       await client.query(
         `INSERT INTO import_order_events (import_order_id,actor_id,event_type,from_status,to_status,summary,metadata)
-         VALUES ($1,$2,'quote_issued',$3,'quoted','Quotation issued',jsonb_build_object('total_rwf',$4))`,
+         VALUES ($1,$2,'quote_issued',$3,'quoted','Quotation issued',jsonb_build_object('total_rwf',$4::bigint))`,
         [req.params.id, req.user.id, current.rows[0].status, total]
       );
       const version = await client.query(`SELECT COALESCE(MAX(version),0)+1 AS next FROM import_agreements WHERE import_order_id=$1`, [req.params.id]);
