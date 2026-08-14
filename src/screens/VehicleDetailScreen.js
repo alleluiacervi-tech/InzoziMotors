@@ -262,7 +262,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
             <View style={{ alignItems: 'flex-end' }}>
               {isAuction && <Text style={styles.bidLabel}>CURRENT BID</Text>}
               <Text style={styles.price}>{formatPrice(price)}</Text>
-              <Text style={styles.priceRwf}>{formatRWF(price)}</Text>
               {/* Market diff badge */}
               {marketDiff !== 0 && (
                 <View style={[styles.marketBadge, marketDiff < 0 ? styles.marketBadgeLow : styles.marketBadgeHigh]}>
@@ -524,7 +523,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
         <View style={styles.ctaPrice}>
           <Text style={styles.ctaPriceLabel}>{isAuction ? 'Current bid' : 'Price'}</Text>
           <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>{formatPrice(price)}</Text>
-          <Text style={styles.ctaPriceRwf} numberOfLines={1}>{formatRWF(price)}</Text>
         </View>
         <Pressable style={styles.waBtn} onPress={contactWhatsApp} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
           <Ionicons name="logo-whatsapp" size={24} color="#fff" />
