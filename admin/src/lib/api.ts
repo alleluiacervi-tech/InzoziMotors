@@ -311,6 +311,8 @@ export const api = {
   getInspection:      (id: string) => request<any>(`/inspections/${id}`),
   completeInspection: (id: string, data: any) =>
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
+  issueInspectionReport: (id: string) =>
+    request<any>(`/inspections/${id}/report`, { method: 'POST' }),
 
   // Handovers
   handovers: (status = 'pending') =>

@@ -11,8 +11,18 @@ const { uploadPhotos, verifyImageContent } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
+const { issueInspectionReport } = require('../lib/documents/inspection-report');
+const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
 
 const router = express.Router();
+
+function documentFailure(res, error) {
+  if (error instanceof DocumentError) {
+    return res.status(error.status).json({ error: error.message, code: error.code || undefined });
+  }
+  log.error('inspection document error', { error: error.message, stack: error.stack });
+  return res.status(500).json({ error: 'Could not prepare the inspection report' });
+}
 
 // ─── 150-point scoring ────────────────────────────────────────────────────────
 // Blueprint category weights (sum 150). Items not in the map fall into a
@@ -253,6 +263,53 @@ router.delete('/cars/:carId/photos/:photoId', requireAdmin, requireUuid('carId')
     removeStoredPhoto(removedUrl);
     res.json(state);
   } catch (err) { res.status(err.status || 500).json({ error: err.status ? err.message : 'Server error' }); }
+});
+
+// POST /inspections/:id/report — issue the immutable, branded PDF once. A
+// repeated call returns the same document and never rewrites historical facts.
+router.post('/:id/report', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const document = await issueInspectionReport(req.params.id, req.user.id);
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'document.inspection_report.issued',
+      targetType: 'inspection', targetId: req.params.id,
+      summary: `Issued ${document.document_number}`,
+      metadata: { document_id: document.id, document_number: document.document_number, sha256: document.file_sha256 },
+    });
+    res.status(document.issued_at ? 200 : 201).json(document);
+  } catch (error) { documentFailure(res, error); }
+});
+
+// GET /inspections/:id/report/file — private streaming route. The uploads
+// directory itself is denied by server.js, so the auth check cannot be bypassed.
+router.get('/:id/report/file', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const document = await downloadableDocument(
+      await documentForSubject('inspection_report', 'inspection', req.params.id)
+    );
+    const disposition = req.query.download === '1' ? 'attachment' : 'inline';
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `${disposition}; filename="${document.filename}"`);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Document-Number', document.document_number);
+    res.setHeader('X-Document-SHA256', document.file_sha256);
+    if (document.file_size) res.setHeader('Content-Length', String(document.file_size));
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'document.inspection_report.downloaded',
+      targetType: 'inspection', targetId: req.params.id,
+      summary: `Downloaded ${document.document_number}`,
+      metadata: { document_id: document.id, document_number: document.document_number },
+    });
+    const stream = fs.createReadStream(document.absolutePath);
+    stream.on('error', (error) => {
+      log.error('inspection report stream error', { id: req.params.id, error: error.message });
+      if (!res.headersSent) res.status(500).json({ error: 'Could not read the inspection report' });
+      else res.destroy();
+    });
+    stream.pipe(res);
+  } catch (error) { documentFailure(res, error); }
 });
 
 // GET /inspections/:id

@@ -240,6 +240,25 @@ CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON admin_audit_log(created_at
 CREATE INDEX IF NOT EXISTS idx_admin_audit_target ON admin_audit_log(target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_actor ON admin_audit_log(actor_id, created_at DESC);
 
+-- Generated-document registry. Production is migrated by
+-- migrations/0016_document_registry.sql; this mirror keeps fresh schema users
+-- and editor tooling aware of the current model.
+CREATE TABLE IF NOT EXISTS document_counters (
+  kind TEXT NOT NULL, year INT NOT NULL, last_number INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (kind, year)
+);
+CREATE TABLE IF NOT EXISTS generated_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), document_number TEXT UNIQUE NOT NULL,
+  kind TEXT NOT NULL, subject_type TEXT NOT NULL, subject_id UUID NOT NULL,
+  owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL, title TEXT NOT NULL,
+  version INT NOT NULL DEFAULT 1, status TEXT NOT NULL DEFAULT 'draft',
+  filename TEXT, mime_type TEXT NOT NULL DEFAULT 'application/pdf', file_path TEXT,
+  file_sha256 TEXT, file_size BIGINT, page_count INT, snapshot JSONB NOT NULL,
+  generated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), issued_at TIMESTAMPTZ,
+  superseded_at TIMESTAMPTZ, UNIQUE (kind, subject_type, subject_id, version)
+);
+
 -- ─── Vehicle import orders ──────────────────────────────────────────────────
 -- A separate workflow from local marketplace handovers. All money is integer
 -- RWF and all changes are appended to import_order_events for a durable trail.
