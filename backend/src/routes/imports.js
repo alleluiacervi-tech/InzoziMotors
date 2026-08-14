@@ -237,7 +237,29 @@ router.patch('/:id/shipment', requireAdmin, requireUuid('id'), async (req, res) 
   const fields = ['supplier_name','supplier_country','carrier','booking_reference','bill_of_lading','vessel_or_flight','departure_port','arrival_port','departed_at','estimated_arrival','arrived_at','last_location'];
   const values = fields.map((f) => req.body[f] || null);
   try {
-    const { rows } = await pool.query(`INSERT INTO import_shipments (import_order_id,${fields.join(',')},updated_by) VALUES ($1,${fields.map((_,i)=>`$${i+2}`).join(',')},$${fields.length+2}) ON CONFLICT (import_order_id) DO UPDATE SET ${fields.map((f,i)=>`${f}=COALESCE(EXCLUDED.${f},import_shipments.${f})`).join(',')},updated_by=EXCLUDED.updated_by,updated_at=NOW() RETURNING *`, [req.params.id, ...values, req.user.id]);
+    const { rows } = await pool.query(`
+      INSERT INTO import_shipments (
+        import_order_id, supplier_name, supplier_country, carrier, booking_reference,
+        bill_of_lading, vessel_or_flight, departure_port, arrival_port, departed_at,
+        estimated_arrival, arrived_at, last_location, updated_by
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      ON CONFLICT (import_order_id) DO UPDATE SET
+        supplier_name=COALESCE(EXCLUDED.supplier_name,import_shipments.supplier_name),
+        supplier_country=COALESCE(EXCLUDED.supplier_country,import_shipments.supplier_country),
+        carrier=COALESCE(EXCLUDED.carrier,import_shipments.carrier),
+        booking_reference=COALESCE(EXCLUDED.booking_reference,import_shipments.booking_reference),
+        bill_of_lading=COALESCE(EXCLUDED.bill_of_lading,import_shipments.bill_of_lading),
+        vessel_or_flight=COALESCE(EXCLUDED.vessel_or_flight,import_shipments.vessel_or_flight),
+        departure_port=COALESCE(EXCLUDED.departure_port,import_shipments.departure_port),
+        arrival_port=COALESCE(EXCLUDED.arrival_port,import_shipments.arrival_port),
+        departed_at=COALESCE(EXCLUDED.departed_at,import_shipments.departed_at),
+        estimated_arrival=COALESCE(EXCLUDED.estimated_arrival,import_shipments.estimated_arrival),
+        arrived_at=COALESCE(EXCLUDED.arrived_at,import_shipments.arrived_at),
+        last_location=COALESCE(EXCLUDED.last_location,import_shipments.last_location),
+        updated_by=EXCLUDED.updated_by,
+        updated_at=NOW()
+      RETURNING *
+    `, [req.params.id, ...values, req.user.id]);
     res.json(rows[0]);
   } catch (err) { res.status(500).json({ error: 'Could not update shipment' }); }
 });
