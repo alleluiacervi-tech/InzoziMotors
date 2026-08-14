@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
 import {
-  formatKm, formatRWF, formatUSD, getCertTier, isDemoListing, isHighDemand,
+  formatKm, formatMoneyExact, formatRWF, formatUSD, getCertTier, isDemoListing, isHighDemand,
   isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop,
 } from '@/lib/business'
 import type { Car } from '@/lib/types'
@@ -157,7 +157,10 @@ export function CarCard({
           {/* Price is one of the few places brand red is allowed. */}
           {/* tabular-nums so prices line up digit-for-digit down a grid of
               cards — Satoshi defaults to proportional figures. */}
-          <p className="text-price font-extrabold tracking-[-0.02em] text-content tabular-nums">
+          <p
+            className="text-price font-extrabold tracking-[-0.02em] text-content tabular-nums"
+            title={formatMoneyExact(car.price)}
+          >
             {formatUSD(car.price)}
           </p>
           <p className="mt-0.5 text-micro text-content-muted tabular-nums">

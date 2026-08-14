@@ -98,6 +98,21 @@ export function getRwfRate(): number {
  * presentation code. */
 export function formatMoney(amount?: number | null): string {
   if (amount == null || !Number.isFinite(amount)) return '—'
+  const whole = Math.round(amount)
+  if (Math.abs(whole) >= 1_000_000) {
+    const millions = whole / 1_000_000
+    const precision = Math.abs(millions) >= 100 || Number.isInteger(millions) ? 0 : 1
+    return `${millions.toLocaleString('en-RW', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: precision,
+    })}M RWF`
+  }
+  return `RWF ${whole.toLocaleString('en-RW')}`
+}
+
+/** Full precision for legal/payment contexts and accessible labels. */
+export function formatMoneyExact(amount?: number | null): string {
+  if (amount == null || !Number.isFinite(amount)) return '—'
   return `RWF ${Math.round(amount).toLocaleString('en-RW')}`
 }
 

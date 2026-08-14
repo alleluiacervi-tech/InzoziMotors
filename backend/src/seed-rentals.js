@@ -216,13 +216,17 @@ async function seed() {
 
   for (const c of FLEET) {
     const safariReady = SAFARI_MODELS.includes(c[2]); // c[2] = model
+    // The fixture was originally authored in USD. Persist whole Rwandan francs
+    // so a fresh environment never displays values such as "RWF 40 / day".
+    const rwf = [...c];
+    for (const index of [9, 10, 11]) rwf[index] = Math.round(rwf[index] * 1470);
     await pool.query(
       `INSERT INTO rental_cars
          (title, make, model, year, category, seats, fuel, transmission, mileage,
           daily_rate, weekly_rate, deposit, min_days, inspection_score, rating,
           trips, location, images, safari_ready)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
-      [...c, safariReady]
+      [...rwf, safariReady]
     );
   }
   console.log(`✅ Seeded ${FLEET.length} rental cars`);

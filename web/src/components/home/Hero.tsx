@@ -29,6 +29,13 @@ const TRUST_STRIP: { icon: IconName; label: string }[] = [
 // which is the right single message for a marketplace's front door.
 const STAGE = HERO_SLIDES[0]
 
+const JOURNEYS: { label: string; href: string; icon: IconName; active?: boolean }[] = [
+  { label: 'Buy', href: '/cars', icon: 'search', active: true },
+  { label: 'Rent', href: '/rentals', icon: 'key' },
+  { label: 'Sell', href: '/sell', icon: 'car' },
+  { label: 'Car tools', href: '/tools', icon: 'gauge' },
+]
+
 export function Hero() {
   return (
     // -mt pulls the stage up UNDER the transparent header (see Header.tsx's
@@ -61,23 +68,44 @@ export function Hero() {
             className="mb-3 animate-fade-up text-eyebrow font-bold uppercase text-white/85"
             style={{ animationDelay: '80ms' }}
           >
-            Rwanda&rsquo;s certified marketplace
+            Rwanda&rsquo;s trusted mobility marketplace
           </p>
           <h1 className="animate-fade-up text-display-xl font-extrabold" style={{ animationDelay: '160ms' }}>
-            {STAGE.headline}
+            The right car. The confidence to move.
           </h1>
           <p
             className="mt-4 max-w-xl animate-fade-up text-title-sm leading-relaxed text-white/80"
             style={{ animationDelay: '260ms' }}
           >
-            {STAGE.caption}
+            Buy certified, rent inspected, or sell with our team handling every important step.
           </p>
+
+          <nav
+            aria-label="Choose what you want to do"
+            className="mt-8 flex w-full max-w-xl gap-1 rounded-2xl border border-white/15 bg-ink-900/35 p-1.5 backdrop-blur-md"
+          >
+            {JOURNEYS.map((journey) => (
+              <Link
+                key={journey.label}
+                href={journey.href}
+                aria-current={journey.active ? 'page' : undefined}
+                className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-caption font-bold transition-all sm:px-3 ${
+                  journey.active
+                    ? 'bg-white text-content shadow-card'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon name={journey.icon} size={15} />
+                <span className="truncate">{journey.label}</span>
+              </Link>
+            ))}
+          </nav>
 
           <form
             action="/cars"
             method="get"
             role="search"
-            className="mt-8 flex w-full max-w-xl animate-fade-up items-center gap-2 rounded-2xl bg-white p-2 shadow-float"
+            className="mt-3 flex w-full max-w-xl animate-fade-up items-center gap-2 rounded-2xl bg-white p-2 shadow-float"
             style={{ animationDelay: '380ms' }}
           >
             <label htmlFor="hero-search" className="sr-only">
@@ -99,15 +127,8 @@ export function Hero() {
             </Button>
           </form>
 
-          <p className="mt-4 animate-fade-up text-caption text-white/80" style={{ animationDelay: '470ms' }}>
-            Selling?{' '}
-            <Link href="/sell" className="font-bold text-white underline underline-offset-4 hover:text-white/90">
-              Get a certified valuation
-            </Link>
-          </p>
-
           <ul
-            className="mt-8 flex animate-fade-up flex-wrap items-center gap-x-7 gap-y-3"
+            className="mt-6 flex animate-fade-up flex-wrap items-center gap-x-7 gap-y-3"
             style={{ animationDelay: '560ms' }}
           >
             {TRUST_STRIP.map((item) => (

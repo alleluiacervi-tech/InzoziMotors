@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
-import { formatUSD, getCertTier } from '@/lib/business'
+import { formatMoneyExact, formatUSD, getCertTier } from '@/lib/business'
 import type { RentalCar } from '@/lib/types'
 import { formatRating } from './rental-math'
 
@@ -87,7 +87,10 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
 
         <div className="mt-4 flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-price font-extrabold tracking-[-0.02em] text-content">
+            <p
+              className="text-price font-extrabold tracking-[-0.02em] text-content"
+              title={formatMoneyExact(car.daily_rate)}
+            >
               {formatUSD(car.daily_rate)}
               <span className="text-caption font-bold text-content-muted"> / day</span>
             </p>
