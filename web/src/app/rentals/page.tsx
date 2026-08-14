@@ -7,7 +7,7 @@ import { ChipLink } from '@/components/ui/Chip'
 import { PageIntro } from '@/components/marketplace/PageIntro'
 import { RentalCard } from '@/components/marketplace/RentalCard'
 import { JsonLd } from '@/components/JsonLd'
-import { breadcrumbNode, graph, itemListNode } from '@/lib/seo'
+import { breadcrumbNode, graph, itemListNode, serviceNode } from '@/lib/seo'
 import { CarCardSkeleton } from '@/components/marketplace/CarCard'
 import { RENTAL_INCLUDES } from '@/components/marketplace/rental-copy'
 
@@ -22,7 +22,7 @@ import { RENTAL_INCLUDES } from '@/components/marketplace/rental-copy'
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Rent a certified car in Kigali',
+  title: 'Car rental in Kigali, Rwanda — inspected vehicles',
   description:
     'Rent from a fleet that passes the same 150-point inspection as the cars we sell. ' +
     'Insurance, roadside assistance and unlimited kilometres included. Deposits returned in ' +
@@ -105,6 +105,13 @@ async function FleetResults({
                 visible.map((car) => ({ path: `/rentals/${car.id}`, name: car.title })),
                 'Cars for rent in Kigali'
               ),
+              serviceNode({
+                id: 'car-rental-kigali',
+                name: 'Car rental in Kigali, Rwanda',
+                description: 'Inspected rental cars in Kigali with insurance, roadside assistance and unlimited kilometres included.',
+                path: '/rentals',
+                serviceType: 'Car rental',
+              }),
               breadcrumbNode([
                 { name: 'Home', path: '/' },
                 { name: 'Car rentals', path: '/rentals' },
