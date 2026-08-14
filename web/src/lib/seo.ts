@@ -20,6 +20,37 @@ export function absoluteUrl(path: string): string {
 export const ORG_ID = `${SITE.url}/#organization`
 export const WEBSITE_ID = `${SITE.url}/#website`
 
+/** A real customer-facing service page. Category pages use this instead of
+ * pretending that a service is a Product with reviews or an invented price. */
+export function serviceNode({
+  id, name, description, path, serviceType,
+}: {
+  id: string
+  name: string
+  description: string
+  path: string
+  serviceType: string
+}) {
+  return {
+    '@type': 'Service',
+    '@id': `${SITE.url}/#${id}`,
+    name,
+    description,
+    url: absoluteUrl(path),
+    serviceType,
+    provider: { '@id': ORG_ID },
+    areaServed: [
+      { '@type': 'City', name: 'Kigali', addressCountry: 'RW' },
+      { '@type': 'Country', name: 'Rwanda' },
+    ],
+    availableChannel: {
+      '@type': 'ServiceChannel',
+      serviceUrl: absoluteUrl(path),
+      availableLanguage: ['en', 'rw'],
+    },
+  }
+}
+
 /** The publisher entity every other node points back to. */
 export function organizationNode() {
   return {
