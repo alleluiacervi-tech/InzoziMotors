@@ -63,6 +63,7 @@ async function FleetResults({
 
   return (
     <>
+      <div className="rounded-2xl border border-line-soft bg-surface p-3 shadow-card sm:p-4">
       <ul className="flex flex-wrap gap-2.5" aria-label="Filter the fleet">
         <li>
           <ChipLink href="/rentals" selected={!safariOnly && !category}>
@@ -87,6 +88,7 @@ async function FleetResults({
           </li>
         ))}
       </ul>
+      </div>
 
       {safariOnly ? (
         <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-secondary">
@@ -109,7 +111,7 @@ async function FleetResults({
               ])
             )}
           />
-          <ul className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <ul className="stagger mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {visible.map((car, index) => (
               <li key={car.id}>
                 <RentalCard car={car} priority={index < 3} />
@@ -164,7 +166,7 @@ export default async function RentalsPage({ searchParams }: PageProps) {
         description="The same 150-point standard as the cars we sell. Deposits back in full after the return check."
       />
 
-      <Container className="py-8 sm:py-10">
+      <Container className="py-8 sm:py-12">
         <Suspense fallback={<FleetSkeleton />}>
           <FleetResults safariOnly={safariOnly} category={category} />
         </Suspense>
@@ -197,7 +199,8 @@ export default async function RentalsPage({ searchParams }: PageProps) {
               </p>
             </div>
 
-            <Card className="h-fit p-6">
+            <Card className="relative h-fit overflow-hidden rounded-3xl border-line p-7 shadow-float">
+              <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
               <h3 className="text-title font-extrabold text-content">Booking a car</h3>
               <p className="mt-3 text-caption leading-relaxed text-content-secondary">
                 Tell us the dates and where you would like to collect. We confirm
