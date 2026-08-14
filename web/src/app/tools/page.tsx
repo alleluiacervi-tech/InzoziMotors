@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Container, Icon, Section, type IconName } from '@/components/ui'
 import { SITE } from '@/lib/site'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 
 export const metadata: Metadata = {
-  title: 'Free car tools for Rwanda',
+  title: 'Free car valuation, finance and import-duty tools for Rwanda',
   description:
     'Free calculators for anyone buying, selling or importing a car in Rwanda: a market valuation from real Sawa Cars sales, the full RRA import duty breakdown, and a monthly finance estimate.',
   alternates: { canonical: '/tools' },
@@ -43,28 +45,40 @@ const TOOLS: { href: string; icon: IconName; title: string; body: string; meta: 
 
 export default function ToolsPage() {
   return (
-    <Section tone="surface" className="pt-12 sm:pt-20">
+    <>
+    <JsonLd data={graph(
+      serviceNode({
+        id: 'car-tools-rwanda',
+        name: 'Free car tools for Rwanda',
+        description: 'Free Rwandan car valuation, RRA import-duty and vehicle-finance calculators.',
+        path: '/tools',
+        serviceType: 'Vehicle valuation and cost calculators',
+      }),
+      breadcrumbNode([{ name: 'Home', path: '/' }, { name: 'Car tools', path: '/tools' }])
+    )} />
+    <Section tone="ink" className="relative isolate overflow-hidden pt-14 sm:pt-20">
+      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_12%,rgba(204,5,15,0.28),transparent_32%),radial-gradient(circle_at_10%_90%,rgba(255,255,255,0.08),transparent_28%)]" />
       <Container>
         <div className="max-w-3xl">
-          <p className="mb-4 text-eyebrow font-bold uppercase text-brand">Tools</p>
-          <h1 className="text-display font-extrabold text-content">
+          <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">Tools</p>
+          <h1 className="text-display-xl font-extrabold text-white">
             Work out the numbers before you commit
           </h1>
-          <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
+          <p className="mt-5 text-title-sm leading-relaxed text-white/70">
             Three calculators built for the Rwandan market. No account, no phone number, no
             follow-up call — they are here because a buyer or seller who understands the numbers
             makes a better decision.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((tool) => (
             <Link
               key={tool.href}
               href={tool.href}
-              className="group flex flex-col rounded-2xl border border-line-soft bg-surface p-6 shadow-card
-                         transition-all duration-300 ease-brand
-                         hover:-translate-y-1 hover:border-line hover:shadow-card-lg"
+              className="group flex flex-col rounded-3xl border border-white/10 bg-white p-7 text-content shadow-float
+                         transition-all duration-500 ease-brand
+                         hover:-translate-y-1.5 hover:border-white/30"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                 <Icon name={tool.icon} size={22} />
@@ -89,5 +103,6 @@ export default function ToolsPage() {
         </div>
       </Container>
     </Section>
+    </>
   )
 }
