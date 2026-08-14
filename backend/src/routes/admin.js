@@ -1,11 +1,114 @@
 const express = require('express');
+const crypto = require('crypto');
 const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { recordAdminAction } = require('../lib/admin-audit');
+const { sendShowroomInvite } = require('../lib/mailer');
 
 const router = express.Router();
+
+// GET /admin/action-center — one factual queue for the single Super Admin.
+//
+// This deliberately derives work from source-of-truth workflow tables instead
+// of maintaining a second "tasks" table that can drift out of sync. Every item
+// is actionable, carries a stable destination, and explains why it is urgent.
+router.get('/action-center', requireAdmin, async (_req, res) => {
+  try {
+    const [submissions, ids, handovers, inspections, disputes, reports, imports, payments, contracts] = await Promise.all([
+      pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
+                  FROM submissions
+                  WHERE status IN ('under_review','pending')
+                  ORDER BY submitted_at ASC LIMIT 20`),
+      pool.query(`SELECT id, name, COALESCE(id_submitted_at, created_at) AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - COALESCE(id_submitted_at, created_at))) / 3600 AS age_hours
+                  FROM users WHERE id_verified = 'pending'
+                  ORDER BY COALESCE(id_submitted_at, created_at) ASC LIMIT 20`),
+      pool.query(`SELECT h.id, h.booking_id, h.booked_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - h.booked_at)) / 3600 AS age_hours,
+                    c.title AS car_title
+                  FROM handovers h LEFT JOIN cars c ON c.id = h.car_id
+                  WHERE h.status = 'pending'
+                  ORDER BY h.booked_at ASC LIMIT 20`),
+      pool.query(`SELECT i.id, i.scheduled_at AS occurred_at, c.title AS car_title,
+                    CASE WHEN i.scheduled_at IS NULL THEN 0
+                         ELSE EXTRACT(EPOCH FROM (NOW() - i.scheduled_at)) / 3600 END AS age_hours
+                  FROM inspections i LEFT JOIN cars c ON c.id = i.car_id
+                  WHERE i.status IN ('scheduled','in_progress')
+                    AND (i.status = 'in_progress' OR i.scheduled_at <= NOW() + INTERVAL '24 hours')
+                  ORDER BY i.scheduled_at ASC NULLS LAST LIMIT 20`),
+      pool.query(`SELECT d.id, d.created_at AS occurred_at, d.reason,
+                    EXTRACT(EPOCH FROM (NOW() - d.created_at)) / 3600 AS age_hours
+                  FROM disputes d WHERE d.status = 'open'
+                  ORDER BY d.created_at ASC LIMIT 20`),
+      pool.query(`SELECT r.id, r.created_at AS occurred_at, r.reason,
+                    EXTRACT(EPOCH FROM (NOW() - r.created_at)) / 3600 AS age_hours
+                  FROM message_reports r WHERE r.status = 'open'
+                  ORDER BY r.created_at ASC LIMIT 20`),
+      pool.query(`SELECT id, order_ref, status, updated_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - updated_at)) / 3600 AS age_hours
+                  FROM import_orders
+                  WHERE status NOT IN ('completed','cancelled')
+                    AND (status IN ('enquiry','deposit_due','balance_due') OR updated_at < NOW() - INTERVAL '72 hours')
+                  ORDER BY updated_at ASC LIMIT 20`),
+      pool.query(`SELECT p.id, p.import_order_id, p.milestone, p.submitted_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - p.submitted_at)) / 3600 AS age_hours,
+                    o.order_ref
+                  FROM import_payments p JOIN import_orders o ON o.id = p.import_order_id
+                  WHERE p.status IN ('submitted','reviewed')
+                  ORDER BY p.submitted_at ASC NULLS LAST LIMIT 20`),
+      pool.query(`SELECT c.id, c.handover_id, c.contract_number, c.status,
+                    c.generated_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - c.generated_at)) / 3600 AS age_hours
+                  FROM contracts c WHERE c.status IN ('draft','issued')
+                  ORDER BY c.generated_at ASC LIMIT 20`),
+    ]);
+
+    const item = (row, data) => ({
+      id: data.id,
+      kind: data.kind,
+      priority: data.priority,
+      title: data.title,
+      detail: data.detail,
+      href: data.href,
+      occurred_at: row.occurred_at,
+      age_hours: Math.max(0, Math.round(Number(row.age_hours) || 0)),
+    });
+    const agedPriority = (row, urgentHours, attentionHours = 0) =>
+      Number(row.age_hours) >= urgentHours ? 'urgent'
+        : Number(row.age_hours) >= attentionHours ? 'attention' : 'routine';
+
+    const items = [
+      ...submissions.rows.map((r) => item(r, { id: `submission:${r.id}`, kind: 'Submission', priority: agedPriority(r, 24, 8), title: `Review ${r.make} ${r.model}`, detail: 'Seller submission is awaiting a decision', href: '/submissions' })),
+      ...ids.rows.map((r) => item(r, { id: `identity:${r.id}`, kind: 'Identity', priority: agedPriority(r, 24, 8), title: `Verify ${r.name}`, detail: 'Identity documents are waiting for review', href: '/users' })),
+      ...handovers.rows.map((r) => item(r, { id: `handover:${r.id}`, kind: 'Handover', priority: agedPriority(r, 24, 4), title: `Confirm ${r.booking_id}`, detail: r.car_title || 'Vehicle handover is awaiting confirmation', href: '/handovers' })),
+      ...inspections.rows.map((r) => item(r, { id: `inspection:${r.id}`, kind: 'Inspection', priority: Number(r.age_hours) > 0 ? 'urgent' : 'attention', title: Number(r.age_hours) > 0 ? 'Inspection is due' : 'Inspection within 24 hours', detail: r.car_title || 'Scheduled vehicle inspection', href: '/inspections' })),
+      ...disputes.rows.map((r) => item(r, { id: `dispute:${r.id}`, kind: 'Dispute', priority: 'urgent', title: 'Resolve open dispute', detail: r.reason, href: '/disputes' })),
+      ...reports.rows.map((r) => item(r, { id: `report:${r.id}`, kind: 'Safety', priority: agedPriority(r, 12, 0), title: 'Review reported conversation', detail: r.reason, href: '/reports' })),
+      ...imports.rows.map((r) => item(r, { id: `import:${r.id}`, kind: 'Import', priority: Number(r.age_hours) >= 72 ? 'urgent' : agedPriority(r, 24, 0), title: `${r.order_ref} needs attention`, detail: r.status === 'enquiry' ? 'New import enquiry needs a quotation' : r.status.replaceAll('_', ' '), href: `/imports/${r.id}` })),
+      ...payments.rows.map((r) => item(r, { id: `payment:${r.id}`, kind: 'Payment', priority: agedPriority(r, 8, 0), title: `Verify payment for ${r.order_ref}`, detail: `${r.milestone.replaceAll('_', ' ')} proof submitted`, href: `/imports/${r.import_order_id}` })),
+      ...contracts.rows.map((r) => item(r, { id: `contract:${r.id}`, kind: 'Contract', priority: agedPriority(r, 48, 12), title: `${r.contract_number} is ${r.status}`, detail: r.status === 'draft' ? 'Complete and issue the contract' : 'Collect and record signatures', href: '/contracts' })),
+    ];
+    const rank = { urgent: 0, attention: 1, routine: 2 };
+    items.sort((a, b) => rank[a.priority] - rank[b.priority] || b.age_hours - a.age_hours);
+
+    res.json({
+      generated_at: new Date().toISOString(),
+      summary: {
+        total: items.length,
+        urgent: items.filter((i) => i.priority === 'urgent').length,
+        attention: items.filter((i) => i.priority === 'attention').length,
+        routine: items.filter((i) => i.priority === 'routine').length,
+      },
+      items: items.slice(0, 60),
+    });
+  } catch (err) {
+    log.error('action center error', { error: err.message });
+    res.status(500).json({ error: 'Could not load the action center' });
+  }
+});
 
 // GET /admin/stats — dashboard overview numbers
 router.get('/stats', requireAdmin, async (req, res) => {
@@ -182,7 +285,8 @@ router.get('/users', requireAdmin, async (req, res) => {
   const safeLimit = Math.min(Math.max(parseInt(limit) || 25, 1), 100);
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, email, phone, role, id_verified, trust_score,
+      `SELECT id, name, email, phone, role, id_verified, seller_type,
+              business_name, admin_created, must_change_password, trust_score,
               completed_sales, created_at
        FROM users
        WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
@@ -193,6 +297,43 @@ router.get('/users', requireAdmin, async (req, res) => {
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /admin/showrooms — commercial seller accounts are created and verified
+// by Sawa, never self-selected at public registration. The recipient receives
+// a one-use setup link; admins and email logs never contain a password.
+router.post('/showrooms', requireAdmin, async (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 120);
+  const businessName = String(req.body.business_name || '').trim().slice(0, 160);
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const phone = String(req.body.phone || '').trim().slice(0, 40) || null;
+  if (!name || !businessName || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return res.status(400).json({ error: 'Contact name, showroom name and a valid email are required' });
+  }
+  const token = crypto.randomBytes(32).toString('base64url');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  try {
+    const result = await require('../lib/tx').withTransaction(async (client) => {
+      const exists = await client.query('SELECT id FROM users WHERE email=$1', [email]);
+      if (exists.rows.length) return { conflict: true };
+      const { rows } = await client.query(
+        `INSERT INTO users
+          (name,email,phone,role,id_verified,seller_type,business_name,admin_created,
+           must_change_password,invite_token_hash,invite_expires_at,invited_by)
+         VALUES ($1,$2,$3,'seller','approved','showroom',$4,TRUE,TRUE,$5,NOW()+INTERVAL '48 hours',$6)
+         RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,created_at`,
+        [name, email, phone, businessName, tokenHash, req.user.id]
+      );
+      await recordAdminAction(client, { actorId: req.user.id, action: 'showroom.invite', targetType: 'user', targetId: rows[0].id, summary: `Created verified showroom account for ${businessName}`, metadata: { email } });
+      return { user: rows[0] };
+    });
+    if (result.conflict) return res.status(409).json({ error: 'An account already uses this email' });
+    const delivered = await sendShowroomInvite(email, name, businessName, token);
+    res.status(201).json({ ...result.user, invitation_sent: delivered });
+  } catch (err) {
+    log.error('showroom invite error', { error: err.message });
+    res.status(500).json({ error: 'Could not create showroom account' });
   }
 });
 

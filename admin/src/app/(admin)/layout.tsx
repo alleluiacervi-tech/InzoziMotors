@@ -13,9 +13,10 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
   {
     title: 'Operations',
     items: [
-      { href: '/dashboard', icon: 'gauge', label: 'Dashboard' },
+      { href: '/dashboard', icon: 'gauge', label: 'Action Center' },
       { href: '/inbox', icon: 'mail', label: 'Inbox' },
       { href: '/submissions', icon: 'document', label: 'Submissions' },
+      { href: '/imports', icon: 'car', label: 'Vehicle imports' },
       { href: '/inspections', icon: 'settings', label: 'Inspections' },
       { href: '/handovers', icon: 'key', label: 'Handovers' },
       { href: '/contracts', icon: 'document', label: 'Contracts' },

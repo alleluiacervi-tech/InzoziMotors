@@ -19,6 +19,23 @@ const BASE = '/api/backend'
 // reach the backend) counts as unreachable.
 export type ApiStatus = 'unknown' | 'ok' | 'unreachable'
 
+export type ActionCenterItem = {
+  id: string
+  kind: string
+  priority: 'urgent' | 'attention' | 'routine'
+  title: string
+  detail: string
+  href: string
+  occurred_at: string | null
+  age_hours: number
+}
+
+export type ActionCenterResponse = {
+  generated_at: string
+  summary: { total: number; urgent: number; attention: number; routine: number }
+  items: ActionCenterItem[]
+}
+
 let apiStatus: ApiStatus = 'unknown'
 const statusListeners = new Set<(s: ApiStatus) => void>()
 
@@ -264,6 +281,7 @@ export const api = {
   // Dashboard
   stats:     () => request<any>('/admin/stats'),
   analytics: () => request<any>('/admin/analytics'),
+  actionCenter: () => request<ActionCenterResponse>('/admin/action-center'),
   search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
   activity: () => request<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>('/admin/activity'),
   auditLog: (params?: { q?: string; type?: string; limit?: number; offset?: number }) => {
@@ -352,6 +370,23 @@ export const api = {
     request<any>(`/id-verification/${userId}`, {
       method: 'PATCH', body: JSON.stringify({ decision }),
     }),
+  createShowroom: (data: { name: string; business_name: string; email: string; phone?: string }) =>
+    request<any>('/admin/showrooms', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Imports — a separate operation and ledger from local vehicle handovers.
+  importOrders: (status?: string) =>
+    request<any[]>(`/imports/admin/all${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  importOrder: (id: string) => request<any>(`/imports/${id}`),
+  quoteImport: (id: string, data: { quoted_total_rwf: number; exchange_rate?: number; quote_expires_at?: string; delivery_estimate?: string }) =>
+    request<any>(`/imports/${id}/quote`, { method: 'POST', body: JSON.stringify(data) }),
+  updateImportStatus: (id: string, status: string, summary?: string) =>
+    request<any>(`/imports/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, summary }) }),
+  reviewImportPayment: (orderId: string, paymentId: string, status: 'reviewed' | 'verified' | 'rejected', reason?: string) =>
+    request<any>(`/imports/${orderId}/payments/${paymentId}`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
+  uploadImportDocument: (orderId: string, data: FormData) =>
+    request<any>(`/imports/${orderId}/documents`, { method: 'POST', body: data }),
+  updateImportShipment: (orderId: string, data: Record<string, string>) =>
+    request<any>(`/imports/${orderId}/shipment`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Trust score
   trustScore: (userId: string) => request<any>(`/reviews/trust-score/${userId}`),
