@@ -16,6 +16,8 @@ import { cars } from '@/lib/api'
 import { CENTERS, FAQS, SITE } from '@/lib/site'
 import { InkClose } from '@/components/layout/InkClose'
 import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 
 // The page reads live inventory (catalogue makes for the valuation) — render
 // it per request like /cars, never at build. Prerendering it made the BUILD
@@ -24,7 +26,7 @@ import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/Pipeli
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Sell your car in Kigali',
+  title: 'Sell your car in Kigali, Rwanda — valuation and inspection',
   description:
     'Bring your car to a Sawa center once. We run the 150-point inspection, shoot the 36 standard photos, publish the listing, verify the buyer and process the RRA transfer. Free valuation, no account needed.',
   alternates: { canonical: '/sell' },
@@ -104,6 +106,16 @@ export default async function SellPage() {
 
   return (
     <>
+      <JsonLd data={graph(
+        serviceNode({
+          id: 'sell-car-kigali',
+          name: 'Sell your car in Kigali with Sawa Cars',
+          description: 'Car valuation, 150-point inspection, photography, buyer verification and RRA ownership transfer support in Kigali.',
+          path: '/sell',
+          serviceType: 'Vehicle selling service',
+        }),
+        breadcrumbNode([{ name: 'Home', path: '/' }, { name: 'Sell your car', path: '/sell' }])
+      )} />
       {/* ─── Hero — the valuation IS the hero ─────────────────────────────── */}
       <Section tone="ink" id="valuation" className="relative isolate overflow-hidden pb-14 pt-14 sm:pb-20 sm:pt-20">
         <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_12%_15%,rgba(204,5,15,0.30),transparent_32%),radial-gradient(circle_at_88%_85%,rgba(255,255,255,0.08),transparent_28%)]" />
