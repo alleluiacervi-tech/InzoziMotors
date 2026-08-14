@@ -28,7 +28,10 @@ valuation, finance/import tools, accounts and Sawa centers.
 - [x] Make large prices scannable and expose exact values on hover.
 - [ ] Add compare only after comparison state/API behavior exists.
 - [ ] Add price alerts only after notification preferences are implemented.
-- [ ] Consolidate inspection, paperwork and availability into a decision summary.
+- [x] Consolidate inspection, paperwork, seller identity and availability into a decision summary.
+- [x] Keep the primary buying action reachable on mobile without duplicating the request form.
+- [x] Add a route-shaped loading experience for vehicle details.
+- [x] Make vehicle galleries operable with arrow keys as well as pointer controls.
 
 ## Rentals
 
@@ -50,3 +53,44 @@ valuation, finance/import tools, accounts and Sawa centers.
 - [ ] Verify keyboard navigation, focus order, reduced motion and contrast.
 - [ ] Verify metadata uses exact RWF amounts where abbreviated values are unclear.
 - [ ] Run production build and inspect all five public journeys live.
+
+## World-class consistency programme
+
+### Vehicle detail and buying confidence
+
+- [x] Put price, availability and the primary action immediately after the gallery on mobile.
+- [x] Separate verified evidence from unavailable evidence; never imply that an unchecked item passed.
+- [x] Present inspection, paperwork, seller and guarantee signals in one scan-friendly summary.
+- [x] Keep full inspection and document evidence available below the summary.
+- [ ] Validate the complete request journey against real production inventory.
+
+### Marketplace discovery
+
+- [x] Use shareable, indexable filter URLs and truthful result counts.
+- [x] Keep active filters visible and individually removable.
+- [x] Provide grid loading skeletons and a distinct API-unavailable state.
+- [ ] Add comparison only when persistent comparison behavior exists.
+- [ ] Add saved price alerts only when notification preferences exist.
+
+### Rentals
+
+- [x] Present daily, weekly, deposit and minimum-stay costs without conversion ambiguity.
+- [x] Show real booked ranges and truthful availability.
+- [ ] Move existing date selection into the first decision panel.
+- [ ] Keep the calculated quote visible from date selection through booking handoff.
+
+### Selling and tools
+
+- [x] Make valuation the seller-page hero and require no account.
+- [x] Share the same valuation component between the seller journey and tools hub.
+- [ ] Consolidate valuation evidence, fees and next steps into one result state.
+- [ ] Standardize tool results around one evidence-and-next-action layout.
+
+### Responsive, accessibility and performance
+
+- [x] Provide a global visible focus treatment and reduced-motion behavior.
+- [x] Keep touch targets at least 40–44px on primary controls.
+- [x] Prioritize only likely LCP imagery and defer non-critical listing photos.
+- [ ] Run and record visual QA at 390, 768, 1024 and 1440 pixels.
+- [ ] Run keyboard-only and screen-reader QA on Buy, Rent, Sell and Tools.
+- [ ] Measure production Core Web Vitals and fix any failing route.
