@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
+import { useToast } from '@/components/feedback'
 
 const CENTERS = ['all', 'Nyarutarama', 'Kicukiro', 'Kimironko']
 const STATUS_COLORS: Record<string, string> = {
@@ -18,6 +19,7 @@ function todayISO() {
 }
 
 export default function InspectionsPage() {
+  const toast = useToast()
   const [center, setCenter]   = useState('all')
   const [date, setDate]       = useState(todayISO())
   const [status, setStatus]   = useState('scheduled')
@@ -25,6 +27,7 @@ export default function InspectionsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [query, setQuery]             = useState('')
+  const [preparingReport, setPreparingReport] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -44,6 +47,24 @@ export default function InspectionsPage() {
 
   useEffect(() => { load() }, [center, date, status])
   const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((insp) => !q || [insp.make, insp.model, insp.year, insp.seller_name, insp.center, insp.id, insp.submission_id].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
+
+  async function downloadReport(inspectionId: string) {
+    setPreparingReport(inspectionId)
+    try {
+      const document = await api.issueInspectionReport(inspectionId)
+      const link = window.document.createElement('a')
+      link.href = `/api/backend/inspections/${inspectionId}/report/file?download=1`
+      link.download = document.filename || `${document.document_number}.pdf`
+      window.document.body.appendChild(link)
+      link.click()
+      link.remove()
+      toast(`${document.document_number} is ready to download.`, 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not prepare the report.', 'error')
+    } finally {
+      setPreparingReport(null)
+    }
+  }
 
   return (
     <div>
@@ -116,16 +137,26 @@ export default function InspectionsPage() {
                 </Link>
               )}
               {insp.status === 'complete' && (
-                insp.car_id ? (
-                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">Live Listing</span>
-                ) : (
-                  <Link
-                    href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
-                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadReport(insp.id)}
+                    disabled={preparingReport === insp.id}
+                    className="flex-shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-content transition-colors hover:bg-surface-alt disabled:cursor-wait disabled:opacity-60"
                   >
-                    Create Listing
-                  </Link>
-                )
+                    {preparingReport === insp.id ? 'Preparing PDF…' : 'Download report PDF'}
+                  </button>
+                  {insp.car_id ? (
+                    <span className="text-xs text-green-600 font-semibold flex-shrink-0">Live Listing</span>
+                  ) : (
+                    <Link
+                      href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
+                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
+                    >
+                      Create Listing
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
           ))}

@@ -118,6 +118,7 @@ app.use(express.urlencoded({ extended: true }));
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 app.use('/uploads/id-docs', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads/contracts', (req, res) => res.status(403).json({ error: 'Forbidden' }));
+app.use('/uploads/documents', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads', express.static(uploadDir));
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
