@@ -80,6 +80,10 @@ export const metadata: Metadata = {
       : undefined,
   },
   alternates: { canonical: '/' },
+  other: {
+    'geo.region': 'RW-01',
+    'geo.placename': 'Kigali',
+  },
 }
 
 export const viewport: Viewport = {
