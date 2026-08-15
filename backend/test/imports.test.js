@@ -18,6 +18,10 @@ test('imports are private, quoted in RWF, and agreement acceptance unlocks the f
   const created=await api().post('/imports').set('Authorization',`Bearer ${buyer.token}`).send({origin_country:'China',make:'Toyota',model:'RAV4',year:2023}).expect(201);
   await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${stranger.token}`).expect(404);
   await api().post(`/imports/${created.body.id}/quote`).set('Authorization',`Bearer ${operator.token}`).send({quoted_total_rwf:30000000,exchange_rate:1400}).expect(200);
+  const pack=await api().post(`/imports/${created.body.id}/document-pack`).set('Authorization',`Bearer ${operator.token}`).expect(200);
+  assert.equal(pack.body.documents.length,3);
+  assert.deepEqual(pack.body.documents.map(d=>d.kind).sort(),['import_agreement','import_deposit_invoice','import_quotation']);
+  await api().get(`/imports/${created.body.id}/generated-documents/import_quotation/file`).set('Authorization',`Bearer ${buyer.token}`).expect('Content-Type',/application\/pdf/).expect(200);
   const quoted=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
   assert.deepEqual(quoted.body.payments.map(p=>Number(p.amount_rwf)),[15000000,15000000]);
   assert.equal(quoted.body.agreements.length,1);
@@ -26,15 +30,18 @@ test('imports are private, quoted in RWF, and agreement acceptance unlocks the f
   assert.equal(accepted.body.status,'deposit_due');assert.ok(accepted.body.agreement_accepted_at);
 });
 
-test('the admin who reviews payment proof cannot also verify it',async()=>{
-  const buyer=await register();const first=await admin();const second=await admin();
+test('the single super admin completes separate review and verification checkpoints',async()=>{
+  const buyer=await register();const operator=await admin();
   const created=await api().post('/imports').set('Authorization',`Bearer ${buyer.token}`).send({origin_country:'South Korea',make:'Hyundai',model:'Tucson',year:2022}).expect(201);
-  await api().post(`/imports/${created.body.id}/quote`).set('Authorization',`Bearer ${first.token}`).send({quoted_total_rwf:24000000}).expect(200);
+  await api().post(`/imports/${created.body.id}/quote`).set('Authorization',`Bearer ${operator.token}`).send({quoted_total_rwf:24000000}).expect(200);
   const detail=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${buyer.token}`).expect(200);const payment=detail.body.payments[0];
   await pool.query("UPDATE import_payments SET status='submitted',bank_reference='BK-TEST' WHERE id=$1",[payment.id]);
-  await api().patch(`/imports/${created.body.id}/payments/${payment.id}`).set('Authorization',`Bearer ${first.token}`).send({status:'reviewed'}).expect(200);
-  await api().patch(`/imports/${created.body.id}/payments/${payment.id}`).set('Authorization',`Bearer ${first.token}`).send({status:'verified'}).expect(409);
-  await api().patch(`/imports/${created.body.id}/payments/${payment.id}`).set('Authorization',`Bearer ${second.token}`).send({status:'verified'}).expect(200);
+  await api().patch(`/imports/${created.body.id}/payments/${payment.id}`).set('Authorization',`Bearer ${operator.token}`).send({status:'verified'}).expect(409);
+  await api().patch(`/imports/${created.body.id}/payments/${payment.id}`).set('Authorization',`Bearer ${operator.token}`).send({status:'reviewed'}).expect(200);
+  await api().patch(`/imports/${created.body.id}/payments/${payment.id}`).set('Authorization',`Bearer ${operator.token}`).send({status:'verified'}).expect(200);
+  const receipt=await api().post(`/imports/${created.body.id}/payments/${payment.id}/receipt`).set('Authorization',`Bearer ${operator.token}`).expect(200);
+  assert.equal(receipt.body.kind,'import_payment_receipt');
+  await api().get(`/imports/${created.body.id}/payments/${payment.id}/receipt/file`).set('Authorization',`Bearer ${buyer.token}`).expect('Content-Type',/application\/pdf/).expect(200);
 });
 
 test('only an admin can create a pre-verified showroom account',async()=>{

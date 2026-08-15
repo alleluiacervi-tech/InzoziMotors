@@ -15,7 +15,13 @@ class DocumentError extends Error {
   }
 }
 
-const PREFIX = { inspection_report: 'INSP' };
+const PREFIX = {
+  inspection_report: 'INSP',
+  import_quotation: 'QUO',
+  import_agreement: 'AGR',
+  import_deposit_invoice: 'INV',
+  import_payment_receipt: 'RCT',
+};
 
 async function allocateDocumentNumber(client, kind, year) {
   await client.query(

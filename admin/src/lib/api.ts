@@ -379,7 +379,7 @@ export const api = {
   importOrders: (status?: string) =>
     request<any[]>(`/imports/admin/all${status ? `?status=${encodeURIComponent(status)}` : ''}`),
   importOrder: (id: string) => request<any>(`/imports/${id}`),
-  quoteImport: (id: string, data: { quoted_total_rwf: number; exchange_rate?: number; quote_expires_at?: string; delivery_estimate?: string }) =>
+  quoteImport: (id: string, data: { quoted_total_rwf: number; exchange_rate?: number; quote_expires_at?: string; delivery_estimate?: string; line_items?: { label: string; amount_rwf: number }[]; terms?: string }) =>
     request<any>(`/imports/${id}/quote`, { method: 'POST', body: JSON.stringify(data) }),
   updateImportStatus: (id: string, status: string, summary?: string) =>
     request<any>(`/imports/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, summary }) }),
@@ -389,6 +389,10 @@ export const api = {
     request<any>(`/imports/${orderId}/documents`, { method: 'POST', body: data }),
   updateImportShipment: (orderId: string, data: Record<string, string>) =>
     request<any>(`/imports/${orderId}/shipment`, { method: 'PATCH', body: JSON.stringify(data) }),
+  prepareImportDocumentPack: (orderId: string) =>
+    request<{ documents: any[] }>(`/imports/${orderId}/document-pack`, { method: 'POST' }),
+  issueImportPaymentReceipt: (orderId: string, paymentId: string) =>
+    request<any>(`/imports/${orderId}/payments/${paymentId}/receipt`, { method: 'POST' }),
 
   // Trust score
   trustScore: (userId: string) => request<any>(`/reviews/trust-score/${userId}`),

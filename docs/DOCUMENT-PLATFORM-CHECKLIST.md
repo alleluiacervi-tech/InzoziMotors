@@ -28,11 +28,11 @@ are streamed through authenticated routes, and every issue action is audited.
 
 ## Imports
 
-- [ ] Itemized quotation
-- [ ] Import service agreement
-- [ ] 50% deposit invoice and receipt
+- [x] Itemized quotation
+- [x] Import service agreement
+- [x] 50% deposit invoice and verified-payment receipt
 - [ ] Final balance invoice and receipt
-- [ ] Payment-verification record
+- [x] Payment-verification record (immutable receipt snapshot and audit trail)
 - [ ] Shipping-status report
 - [ ] Customs checklist and final import dossier
 

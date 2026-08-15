@@ -1,5 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
@@ -11,6 +12,8 @@ const { uploadImportDocs, verifyImportDocument } = require('../middleware/upload
 const { notifyUser } = require('../lib/notify');
 const { sendImportUpdate } = require('../lib/mailer');
 const { UPLOAD_DIR } = require('../lib/storage');
+const { issueImportPack, issueImportReceipt } = require('../lib/documents/import-documents');
+const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
 
 const router = express.Router();
 
@@ -50,14 +53,42 @@ async function fullOrder(client, id, user) {
       WHERE o.id=$1 AND ($2::boolean OR o.buyer_id=$3)`, [id, admin, user.id]
   );
   if (!rows.length) return null;
-  const [payments, documents, events, agreements, shipment] = await Promise.all([
+  const [payments, documents, generatedDocuments, events, agreements, shipment] = await Promise.all([
     client.query(`SELECT * FROM import_payments WHERE import_order_id=$1 ORDER BY created_at`, [id]),
     client.query(`SELECT * FROM import_documents WHERE import_order_id=$1 AND ($2::boolean OR customer_visible) ORDER BY created_at`, [id, admin]),
+    client.query(`SELECT id,document_number,kind,subject_type,subject_id,title,version,status,file_sha256,file_size,page_count,issued_at
+                    FROM generated_documents
+                   WHERE status='issued' AND owner_user_id=$3
+                     AND ((subject_type='import_order' AND subject_id=$1)
+                       OR (subject_type='import_payment' AND subject_id IN
+                         (SELECT id FROM import_payments WHERE import_order_id=$1)))
+                   ORDER BY generated_at DESC`, [id, admin, rows[0].buyer_id]),
     client.query(`SELECT * FROM import_order_events WHERE import_order_id=$1 AND ($2::boolean OR customer_visible) ORDER BY created_at`, [id, admin]),
     client.query(`SELECT id,version,terms_snapshot,issued_at,accepted_at FROM import_agreements WHERE import_order_id=$1 AND superseded_at IS NULL ORDER BY version DESC`, [id]),
     client.query(`SELECT * FROM import_shipments WHERE import_order_id=$1`, [id]),
   ]);
-  return { ...rows[0], payments: payments.rows, documents: documents.rows, events: events.rows, agreements: agreements.rows, shipment: shipment.rows[0] || null };
+  return { ...rows[0], payments: payments.rows, documents: documents.rows, generated_documents: generatedDocuments.rows, events: events.rows, agreements: agreements.rows, shipment: shipment.rows[0] || null };
+}
+
+function documentFailure(res, error) {
+  if (!(error instanceof DocumentError)) log.error('import document error', { error: error.message });
+  res.status(error.status || 500).json({ error: error instanceof DocumentError ? error.message : 'Could not prepare the document' });
+}
+
+async function streamGenerated(res, req, document) {
+  const ready = await downloadableDocument(document);
+  const disposition = req.query.download === '0' ? 'inline' : 'attachment';
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `${disposition}; filename="${ready.filename}"`);
+  res.setHeader('Cache-Control', 'no-store, private');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Document-Number', ready.document_number);
+  res.setHeader('X-Document-SHA256', ready.file_sha256);
+  if (ready.file_size) res.setHeader('Content-Length', String(ready.file_size));
+  const stream = fs.createReadStream(ready.absolutePath);
+  stream.on('error', () => res.headersSent ? res.destroy() : res.status(500).json({ error: 'Could not read the document' }));
+  stream.pipe(res);
 }
 
 // Buyer creates an enquiry. This is deliberately payment-free: finance only
@@ -131,6 +162,11 @@ router.get('/:id', requireAuth, requireUuid('id'), async (req, res) => {
 router.post('/:id/quote', requireAdmin, requireUuid('id'), async (req, res) => {
   const total = Number(req.body.quoted_total_rwf);
   if (!Number.isSafeInteger(total) || total < 100000) return res.status(400).json({ error: 'A valid total in RWF is required' });
+  const lineItems = Array.isArray(req.body.line_items) ? req.body.line_items.map((item) => ({
+    label: clean(item?.label, 180), amount_rwf: Number(item?.amount_rwf),
+  })) : [];
+  if (lineItems.some((item) => !item.label || !Number.isSafeInteger(item.amount_rwf) || item.amount_rwf < 0)) return res.status(400).json({ error: 'Every quotation line needs a label and exact RWF amount' });
+  if (lineItems.length && lineItems.reduce((sum, item) => sum + item.amount_rwf, 0) !== total) return res.status(400).json({ error: 'Quotation lines must add up to the complete landed price' });
   try {
     const result = await withTransaction(async (client) => {
       const current = await client.query(`SELECT * FROM import_orders WHERE id=$1 FOR UPDATE`, [req.params.id]);
@@ -166,7 +202,7 @@ router.post('/:id/quote', requireAdmin, requireUuid('id'), async (req, res) => {
           exchange_rate: req.body.exchange_rate || null,
           quote_expires_at: req.body.quote_expires_at || null,
           delivery_estimate: clean(req.body.delivery_estimate, 200) || null,
-          line_items: Array.isArray(req.body.line_items) ? req.body.line_items : [],
+          line_items: lineItems,
           terms: clean(req.body.terms, 10000) || '50% is due after agreement acceptance. The remaining 50% is due after arrival and Kigali inspection, before handover.',
         }, req.user.id]
       );
@@ -231,6 +267,51 @@ router.get('/documents/:documentId/file', requireAuth, requireUuid('documentId')
     res.set('Cache-Control', 'no-store, private'); res.set('Referrer-Policy', 'no-referrer');
     res.sendFile(path.join(UPLOAD_DIR, rows[0].file_url));
   } catch (err) { res.status(500).json({ error: 'Could not open document' }); }
+});
+
+// Generate the three documents which must agree before the buyer pays. They
+// all use the same immutable agreement snapshot and version.
+router.post('/:id/document-pack', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const documents = await issueImportPack(req.params.id, req.user.id);
+    for (const document of documents) {
+      await recordAdminAction(pool, {
+        actorId:req.user.id, action:`document.${document.kind}.issued`, targetType:'import_order', targetId:req.params.id,
+        summary:`Issued ${document.document_number}`, metadata:{ document_id:document.id,document_number:document.document_number,version:document.version,sha256:document.file_sha256 },
+      });
+    }
+    res.json({ documents });
+  } catch (error) { documentFailure(res,error); }
+});
+
+router.post('/:id/payments/:paymentId/receipt', requireAdmin, requireUuid('id'), requireUuid('paymentId'), async (req, res) => {
+  try {
+    const document=await issueImportReceipt(req.params.id,req.params.paymentId,req.user.id);
+    await recordAdminAction(pool,{ actorId:req.user.id,action:'document.import_payment_receipt.issued',targetType:'import_payment',targetId:req.params.paymentId,summary:`Issued ${document.document_number}`,metadata:{ order_id:req.params.id,document_id:document.id,document_number:document.document_number,sha256:document.file_sha256 } });
+    res.json(document);
+  } catch(error){ documentFailure(res,error); }
+});
+
+const PACK_KINDS=new Set(['import_quotation','import_agreement','import_deposit_invoice']);
+router.get('/:id/generated-documents/:kind/file', requireAuth, requireUuid('id'), async (req,res)=>{
+  try{
+    if(!PACK_KINDS.has(req.params.kind)) throw new DocumentError('Document not found',404);
+    const order=await pool.query(`SELECT buyer_id FROM import_orders WHERE id=$1`,[req.params.id]);
+    if(!order.rows.length || (req.user.role!=='admin' && order.rows[0].buyer_id!==req.user.id)) throw new DocumentError('Document not found',404);
+    const document=await documentForSubject(req.params.kind,'import_order',req.params.id);
+    await recordAdminAction(pool,{ actorId:req.user.id,action:`document.${req.params.kind}.downloaded`,targetType:'import_order',targetId:req.params.id,summary:`Downloaded ${document.document_number}`,metadata:{ document_id:document.id,document_number:document.document_number } });
+    await streamGenerated(res,req,document);
+  }catch(error){ documentFailure(res,error); }
+});
+
+router.get('/:id/payments/:paymentId/receipt/file', requireAuth, requireUuid('id'), requireUuid('paymentId'), async(req,res)=>{
+  try{
+    const access=await pool.query(`SELECT o.buyer_id FROM import_payments p JOIN import_orders o ON o.id=p.import_order_id WHERE p.id=$1 AND o.id=$2`,[req.params.paymentId,req.params.id]);
+    if(!access.rows.length || (req.user.role!=='admin' && access.rows[0].buyer_id!==req.user.id)) throw new DocumentError('Receipt not found',404);
+    const document=await documentForSubject('import_payment_receipt','import_payment',req.params.paymentId);
+    await recordAdminAction(pool,{ actorId:req.user.id,action:'document.import_payment_receipt.downloaded',targetType:'import_payment',targetId:req.params.paymentId,summary:`Downloaded ${document.document_number}`,metadata:{ order_id:req.params.id,document_id:document.id,document_number:document.document_number } });
+    await streamGenerated(res,req,document);
+  }catch(error){ documentFailure(res,error); }
 });
 
 router.patch('/:id/shipment', requireAdmin, requireUuid('id'), async (req, res) => {
@@ -302,7 +383,10 @@ router.patch('/:id/payments/:paymentId', requireAdmin, requireUuid('id'), requir
     const current = await pool.query(`SELECT * FROM import_payments WHERE id=$1 AND import_order_id=$2`, [req.params.paymentId, req.params.id]);
     if (!current.rows.length) return res.status(404).json({ error: 'Payment not found' });
     if (status === 'reviewed' && current.rows[0].status !== 'submitted') return res.status(409).json({ error: 'Only submitted proof can enter finance review' });
-    if (status === 'verified' && (current.rows[0].status !== 'reviewed' || current.rows[0].reviewed_by === req.user.id)) return res.status(409).json({ error: 'A different admin must complete the second approval' });
+    // This installation has one super admin. Keep review and verification as
+    // two explicit checkpoints, without making the workflow impossible by
+    // requiring a second account that does not exist.
+    if (status === 'verified' && current.rows[0].status !== 'reviewed') return res.status(409).json({ error: 'Complete finance review before final verification' });
     const { rows } = await pool.query(
       `UPDATE import_payments SET status=$1,
         reviewed_at=CASE WHEN $1='reviewed' THEN NOW() ELSE reviewed_at END,
