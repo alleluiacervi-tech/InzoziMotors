@@ -12,6 +12,7 @@ type ImportRow = {
   status: string; quoted_total_rwf?: number | string; paid_rwf?: number | string
   created_at: string; delivery_estimate?: string
 }
+type QuoteDraft = { vehicle?: string; freight?: string; landed?: string; expires?: string; delivery?: string }
 
 const nextStatus: Record<string, string> = {
   quoted: 'agreement_pending', agreement_pending: 'deposit_due', deposit_due: 'deposit_review',
@@ -30,8 +31,9 @@ export default function ImportsPage() {
   const [error, setError] = useState<unknown>(null)
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
-  const [quote, setQuote] = useState<Record<string, string>>({})
+  const [quote, setQuote] = useState<Record<string, QuoteDraft>>({})
   const toast = useToast()
+  const quoteTotal=(draft:QuoteDraft={})=>Number(draft.vehicle||0)+Number(draft.freight||0)+Number(draft.landed||0)
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -42,10 +44,12 @@ export default function ImportsPage() {
   useEffect(() => { load() }, [load])
 
   async function issueQuote(item: ImportRow) {
-    const amount = Number(quote[item.id])
+    const draft=quote[item.id]||{}
+    const line_items=[['Vehicle and supplier preparation',draft.vehicle],['Freight and insurance',draft.freight],['Import, customs and service costs',draft.landed]].map(([label,value])=>({label:String(label),amount_rwf:Number(value||0)})).filter(row=>row.amount_rwf>0)
+    const amount=quoteTotal(draft)
     if (!Number.isSafeInteger(amount) || amount < 100000) { toast('Enter the complete landed price in RWF', 'error'); return }
     setBusy(item.id)
-    try { await api.quoteImport(item.id, { quoted_total_rwf: amount }); toast('Quotation issued with two 50% milestones', 'success'); await load() }
+    try { await api.quoteImport(item.id, { quoted_total_rwf: amount,line_items,quote_expires_at:draft.expires||undefined,delivery_estimate:draft.delivery||undefined }); toast('Itemized quotation issued with two 50% milestones', 'success'); await load() }
     catch (e: any) { toast(e.message, 'error') } finally { setBusy(null) }
   }
 
@@ -77,9 +81,12 @@ export default function ImportsPage() {
           </div>
           <div className="text-left md:text-right"><p className="font-extrabold text-content">{item.quoted_total_rwf ? money(item.quoted_total_rwf) : 'Awaiting quotation'}</p><p className="text-caption text-content-muted">Verified paid: {money(item.paid_rwf)}</p></div>
         </div>
-        {item.status === 'enquiry' ? <div className="mt-4 flex flex-col gap-2 border-t border-line-soft pt-4 sm:flex-row">
-          <input inputMode="numeric" value={quote[item.id] || ''} onChange={(e) => setQuote({ ...quote, [item.id]: e.target.value.replace(/\D/g,'') })} placeholder="Complete landed price in RWF" className="h-11 flex-1 rounded-xl border border-line px-3" />
-          <button onClick={() => issueQuote(item)} disabled={busy === item.id} className="rounded-xl bg-brand px-5 py-2.5 text-label font-bold text-white disabled:opacity-50">Issue 50/50 quotation</button>
+        {item.status === 'enquiry' ? <div className="mt-4 border-t border-line-soft pt-4"><p className="mb-3 text-label font-bold text-content">Build an exact landed-price quotation</p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {[['vehicle','Vehicle & supplier (RWF)'],['freight','Freight & insurance (RWF)'],['landed','Import, customs & service (RWF)']].map(([key,label])=><input key={key} inputMode="numeric" value={(quote[item.id] as any)?.[key]||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],[key]:e.target.value.replace(/\D/g,'')}})} placeholder={label} className="h-11 rounded-xl border border-line px-3"/>)}
+          <input type="date" value={quote[item.id]?.expires||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],expires:e.target.value}})} aria-label="Quotation expiry" className="h-11 rounded-xl border border-line px-3"/>
+          <input value={quote[item.id]?.delivery||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],delivery:e.target.value}})} placeholder="Delivery estimate, e.g. 8–12 weeks" className="h-11 rounded-xl border border-line px-3"/>
+          <button onClick={() => issueQuote(item)} disabled={busy === item.id} className="rounded-xl bg-brand px-5 py-2.5 text-label font-bold text-white disabled:opacity-50">Issue itemized 50/50 quotation</button>
+        </div><p className="mt-2 text-caption text-content-muted">Total: {money(quoteTotal(quote[item.id]))}</p>
         </div> : nextStatus[item.status] ? <div className="mt-4 flex flex-wrap gap-3 border-t border-line-soft pt-4"><button onClick={() => advance(item)} disabled={busy === item.id} className="rounded-xl bg-ink-900 px-5 py-2.5 text-label font-bold text-white disabled:opacity-50">Advance to {nextStatus[item.status].replaceAll('_',' ')}</button><Link href={`/imports/${item.id}`} className="rounded-xl border border-line px-5 py-2.5 text-label font-bold text-content">Open operations record</Link></div> : <div className="mt-4 border-t border-line-soft pt-4"><Link href={`/imports/${item.id}`} className="text-label font-bold text-brand">Open operations record →</Link></div>}
       </Card>)}</div>}
   </div>
