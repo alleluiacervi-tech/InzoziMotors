@@ -58,11 +58,11 @@ async function fullOrder(client, id, user) {
     client.query(`SELECT * FROM import_documents WHERE import_order_id=$1 AND ($2::boolean OR customer_visible) ORDER BY created_at`, [id, admin]),
     client.query(`SELECT id,document_number,kind,subject_type,subject_id,title,version,status,file_sha256,file_size,page_count,issued_at
                     FROM generated_documents
-                   WHERE status='issued' AND owner_user_id=$3
+                   WHERE status='issued' AND owner_user_id=$2
                      AND ((subject_type='import_order' AND subject_id=$1)
                        OR (subject_type='import_payment' AND subject_id IN
                          (SELECT id FROM import_payments WHERE import_order_id=$1)))
-                   ORDER BY generated_at DESC`, [id, admin, rows[0].buyer_id]),
+                   ORDER BY generated_at DESC`, [id, rows[0].buyer_id]),
     client.query(`SELECT * FROM import_order_events WHERE import_order_id=$1 AND ($2::boolean OR customer_visible) ORDER BY created_at`, [id, admin]),
     client.query(`SELECT id,version,terms_snapshot,issued_at,accepted_at FROM import_agreements WHERE import_order_id=$1 AND superseded_at IS NULL ORDER BY version DESC`, [id]),
     client.query(`SELECT * FROM import_shipments WHERE import_order_id=$1`, [id]),
