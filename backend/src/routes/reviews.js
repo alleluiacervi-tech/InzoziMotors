@@ -4,6 +4,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
 const { recomputeTrustScore } = require('../lib/trust');
+const { screenUserText } = require('../lib/moderation');
 
 const router = express.Router();
 const { recordAdminAction } = require('../lib/admin-audit');
@@ -27,7 +28,14 @@ router.post('/', requireAuth, async (req, res) => {
   // Free text needs a ceiling — an unbounded comment is a storage and
   // moderation problem at once.
   if (comment != null) {
-    comment = String(comment).trim().slice(0, 1000) || null;
+    const trimmedComment = String(comment).trim();
+    if (!trimmedComment) {
+      comment = null;
+    } else {
+      const screened = screenUserText(trimmedComment, 1000);
+      if (!screened.ok) return res.status(400).json({ error: screened.error, code: screened.code });
+      comment = screened.text;
+    }
   }
   try {
     const hRes = await pool.query(

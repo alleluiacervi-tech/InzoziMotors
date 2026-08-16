@@ -14,9 +14,13 @@ import { openWhatsApp, SAWA_WHATSAPP, WHATSAPP_VERIFIED } from '../utils/whatsap
 
 // Payment amounts arrive from the server already in the booking's own
 // currency — unlike the screen's local estimates, they must never be
-// re-converted, only formatted.
-const fmtAmount = (amount, currency) =>
-  currency === 'RWF' ? `RWF ${Number(amount).toLocaleString()}` : `$${amount}`;
+// re-converted, only formatted. Rental rows are RWF by default; retaining a
+// named fallback keeps an old non-RWF row from silently acquiring a dollar
+// sign that means something it does not.
+const fmtAmount = (amount, currency = 'RWF') =>
+  currency === 'RWF'
+    ? formatRWF(amount)
+    : `${currency} ${Number(amount).toLocaleString()}`;
 
 
 export default function RentalBookingScreen({ navigation, route }) {
@@ -63,6 +67,8 @@ export default function RentalBookingScreen({ navigation, route }) {
   const center = airportPickup ? AIRPORT_PICKUP : homeCenter;
   const pickupFee = airportPickup ? AIRPORT_PICKUP.fee : 0;
   const totalDue = cost.total + pickupFee;
+  const currency = car.currency || 'RWF';
+  const localAmount = (amount) => fmtAmount(amount, currency);
 
   const handleConfirm = async () => {
     if (!canBook || booking) return;
@@ -187,10 +193,10 @@ export default function RentalBookingScreen({ navigation, route }) {
             {paidOnline ? (
               <>
                 <ConfirmRow icon="card-outline" label="Paid online" value={fmtAmount(payment.amount, payment.currency)} />
-                <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${cost.deposit} refundable deposit`} last />
+                <ConfirmRow icon="cash-outline" label="Due at pickup" value={`${localAmount(cost.deposit)} refundable deposit`} last />
               </>
             ) : (
-              <ConfirmRow icon="cash-outline" label="Due at pickup" value={`$${totalDue} (incl. $${cost.deposit} deposit)`} last />
+              <ConfirmRow icon="cash-outline" label="Due at pickup" value={`${localAmount(totalDue)} (incl. ${localAmount(cost.deposit)} deposit)`} last />
             )}
           </View>
 
@@ -247,7 +253,7 @@ export default function RentalBookingScreen({ navigation, route }) {
             <ConfirmRow icon="car-outline" label="Vehicle" value={car.title} />
             <ConfirmRow icon="calendar-outline" label="Pickup" value={`${startDate.full} · ${time}`} />
             <ConfirmRow icon="card-outline" label="Pay now" value={fmtAmount(payment.amount, payment.currency)} />
-            <ConfirmRow icon="cash-outline" label="At the center" value={`$${cost.deposit} refundable deposit`} last />
+            <ConfirmRow icon="cash-outline" label="At the center" value={`${localAmount(cost.deposit)} refundable deposit`} last />
           </View>
 
           {failed ? (
@@ -291,7 +297,7 @@ export default function RentalBookingScreen({ navigation, route }) {
             <Text style={styles.carTitle} numberOfLines={1}>{car.title}</Text>
             <Text style={styles.carMeta}>{car.seats} seats · {car.transmission} · {car.fuel}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 4 }}>
-              <Text style={styles.carRate}>${car.dailyRate}</Text>
+              <Text style={styles.carRate}>{localAmount(car.dailyRate)}</Text>
               <Text style={styles.carRateUnit}>/day</Text>
             </View>
           </View>
@@ -380,7 +386,7 @@ export default function RentalBookingScreen({ navigation, route }) {
           </View>
           <Ionicons name="airplane-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.airportText}>Airport meet & greet instead</Text>
-          <Text style={styles.airportFee}>+${AIRPORT_PICKUP.fee}</Text>
+          <Text style={styles.airportFee}>+{localAmount(AIRPORT_PICKUP.fee)}</Text>
         </Pressable>
 
         {/* Cost breakdown */}
@@ -390,29 +396,29 @@ export default function RentalBookingScreen({ navigation, route }) {
             <Text style={styles.costLabel}>
               {days >= 7
                 ? `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''}${days % 7 ? ` + ${days % 7} day${days % 7 > 1 ? 's' : ''}` : ''}`
-                : `$${car.dailyRate} × ${days} day${days > 1 ? 's' : ''}`}
+                : `${localAmount(car.dailyRate)} × ${days} day${days > 1 ? 's' : ''}`}
             </Text>
-            <Text style={styles.costValue}>${cost.subtotal}</Text>
+            <Text style={styles.costValue}>{localAmount(cost.subtotal)}</Text>
           </View>
           <View style={styles.costRow}>
             <View>
               <Text style={styles.costLabel}>Refundable deposit</Text>
               <Text style={styles.costSub}>Returned after the vehicle check</Text>
             </View>
-            <Text style={styles.costValue}>${cost.deposit}</Text>
+            <Text style={styles.costValue}>{localAmount(cost.deposit)}</Text>
           </View>
           {pickupFee > 0 && (
             <View style={styles.costRow}>
               <Text style={styles.costLabel}>Airport meet & greet</Text>
-              <Text style={styles.costValue}>${pickupFee}</Text>
+              <Text style={styles.costValue}>{localAmount(pickupFee)}</Text>
             </View>
           )}
           <View style={styles.costDivider} />
           <View style={styles.costRow}>
             <Text style={styles.costTotalLabel}>Due at pickup</Text>
-            <Text style={styles.costTotalValue}>${totalDue}</Text>
+            <Text style={styles.costTotalValue}>{localAmount(totalDue)}</Text>
           </View>
-          <Text style={styles.costRwf}>≈ {formatRWF(totalDue)}</Text>
+          <Text style={styles.costRwf}>All amounts are in {currency}</Text>
         </View>
 
         {/* How you'll pay — the deposit is NEVER part of the online charge */}
@@ -441,7 +447,7 @@ export default function RentalBookingScreen({ navigation, route }) {
           <Ionicons name="shield-checkmark-outline" size={13} color={colors.green} />
           <Text style={styles.depositChipText}>
             {payOnline
-              ? `Online you pay the rental only — the $${cost.deposit} refundable deposit stays at the center`
+              ? `Online you pay the rental only — the ${localAmount(cost.deposit)} refundable deposit stays at the center`
               : 'No payment now — everything is handled at the Sawa center'}
           </Text>
         </View>

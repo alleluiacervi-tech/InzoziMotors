@@ -4,6 +4,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
+const { screenUserText } = require('../lib/moderation');
 
 const router = express.Router();
 const { recordAdminAction } = require('../lib/admin-audit');
@@ -95,9 +96,11 @@ router.get('/conversations/:id', requireAuth, requireUuid('id'), async (req, res
 // POST /messages/conversations — start a new conversation (buyer → seller about a car)
 router.post('/conversations', requireAuth, async (req, res) => {
   const { car_id, message } = req.body;
-  if (!car_id || !message) {
+  if (!car_id) {
     return res.status(400).json({ error: 'car_id and message are required' });
   }
+  const screened = screenUserText(message, 2000);
+  if (!screened.ok) return res.status(400).json({ error: screened.error, code: screened.code });
   try {
     const carRes = await pool.query('SELECT * FROM cars WHERE id = $1', [car_id]);
     if (!carRes.rows.length) return res.status(404).json({ error: 'Car not found' });
@@ -132,12 +135,12 @@ router.post('/conversations', requireAuth, async (req, res) => {
     const msgRes = await pool.query(
       `INSERT INTO messages (conversation_id, sender_id, text)
        VALUES ($1, $2, $3) RETURNING *`,
-      [conv.id, req.user.id, message]
+      [conv.id, req.user.id, screened.text]
     );
 
     await pool.query(
       `UPDATE conversations SET last_message = $1, last_message_at = NOW() WHERE id = $2`,
-      [message, conv.id]
+      [screened.text, conv.id]
     );
 
     // Notify seller
@@ -160,7 +163,8 @@ router.post('/conversations', requireAuth, async (req, res) => {
 router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, res) => {
   // accept both `text` and `message` — POST /conversations uses `message`
   const text = req.body.text ?? req.body.message;
-  if (!text) return res.status(400).json({ error: 'text is required' });
+  const screened = screenUserText(text, 2000);
+  if (!screened.ok) return res.status(400).json({ error: screened.error, code: screened.code });
   try {
     const convRes = await pool.query(
       'SELECT * FROM conversations WHERE id = $1 AND (buyer_id = $2 OR seller_id = $2)',
@@ -177,12 +181,12 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
     const { rows } = await pool.query(
       `INSERT INTO messages (conversation_id, sender_id, text)
        VALUES ($1, $2, $3) RETURNING *`,
-      [conv.id, req.user.id, text]
+      [conv.id, req.user.id, screened.text]
     );
 
     await pool.query(
       `UPDATE conversations SET last_message = $1, last_message_at = NOW() WHERE id = $2`,
-      [text, conv.id]
+      [screened.text, conv.id]
     );
 
     // Realtime fan-out for the single REST write. Delivery goes to the two
@@ -210,7 +214,7 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
       user_id: otherId,
       type: 'new_message',
       title: 'New message',
-      body: text.slice(0, 80),
+      body: screened.text.slice(0, 80),
       meta: JSON.stringify({ conversationId: conv.id }),
     }, { skipPush: recipientOnline });
 

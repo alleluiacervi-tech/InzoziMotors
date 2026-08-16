@@ -570,6 +570,7 @@ export function AppProvider({ children }) {
       category: rc.category, seats: rc.seats, fuel: rc.fuel, transmission: rc.transmission,
       mileage: rc.mileage, listingType: 'rental',
       dailyRate: rc.daily_rate, weeklyRate: rc.weekly_rate, deposit: rc.deposit,
+      currency: rc.currency || 'RWF',
       minDays: rc.min_days, inspected: rc.inspected, inspectionScore: rc.inspection_score,
       rating: Number(rc.rating) || 0, trips: rc.trips, location: rc.location,
       image: rc.images?.[0] || null, images: rc.images || [],
