@@ -7,6 +7,7 @@
 // about that server has to travel through here.
 
 const DEV_FALLBACK = null; // resolved on-device in src/api/client.js
+const EAS_PROJECT_ID = '9c7aebc4-04b3-4950-b4db-0021e7836e65';
 
 export default ({ config }) => ({
   ...config,
@@ -159,8 +160,11 @@ export default ({ config }) => ({
     // and which have to be one text rather than two copies that drift.
     siteUrl: process.env.EXPO_PUBLIC_SITE_URL || 'https://sawacars.com',
     eas: {
-      // Filled in by `eas init` — required before the first cloud build.
-      projectId: process.env.EAS_PROJECT_ID || undefined,
+      // Public project identity (not a credential). Keeping it in source makes
+      // release builds and Expo push-token registration resolve the same EAS
+      // project on every machine; the environment override remains useful for
+      // an intentionally separate staging project.
+      projectId: process.env.EAS_PROJECT_ID || EAS_PROJECT_ID,
     },
   },
 });
