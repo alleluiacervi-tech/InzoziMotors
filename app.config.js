@@ -12,7 +12,7 @@ const EAS_PROJECT_ID = '9c7aebc4-04b3-4950-b4db-0021e7836e65';
 export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
-  slug: 'sawa',
+  slug: 'sawa-cars',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
