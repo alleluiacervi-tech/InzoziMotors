@@ -28,7 +28,9 @@ router.post('/', requireAuth, async (req, res) => {
   // Free text needs a ceiling — an unbounded comment is a storage and
   // moderation problem at once.
   if (comment != null) {
-    const trimmedComment = String(comment).trim();
+    // Preserve the existing API contract: reviews longer than the public
+    // limit are stored as the first 1,000 characters, then screened.
+    const trimmedComment = String(comment).trim().slice(0, 1000);
     if (!trimmedComment) {
       comment = null;
     } else {
