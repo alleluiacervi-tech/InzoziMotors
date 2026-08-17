@@ -17,10 +17,6 @@ on:
         required: false
         default: 'production'
 
-concurrency:
-  group: mobile-update-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   update:
     name: Publish EAS OTA Update
@@ -37,12 +33,6 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: package-lock.json
-
-      - name: Setup EAS CLI
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies
         run: npm ci
