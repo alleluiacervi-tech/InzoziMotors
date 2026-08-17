@@ -83,11 +83,8 @@ services:
       MAIL_IMAP_PORT:      ${MAIL_IMAP_PORT:-993}
       MAIL_SMTP_HOST:      ${MAIL_SMTP_HOST:-smtp.hostinger.com}
       MAIL_SMTP_PORT:      ${MAIL_SMTP_PORT:-465}
-      # ── Transactional mail (no-reply@) ─────────────────────────────────────
-      # These were documented in .env.production.template but never listed
-      # here, so filling them in .env did nothing and every transactional
-      # email (welcome, reset code, receipts) was silently disabled. A var
-      # that is not in this block does not exist inside the container.
+      # ── Transactional mail (Resend or SMTP) ────────────────────────────────
+      RESEND_API_KEY:      ${RESEND_API_KEY:-}
       SMTP_HOST:           ${SMTP_HOST:-}
       SMTP_PORT:           ${SMTP_PORT:-465}
       SMTP_USER:           ${SMTP_USER:-}
