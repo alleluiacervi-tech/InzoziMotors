@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { withTransaction } = require('../lib/tx');
 const { REQUIRED_SLOTS, ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
-const { uploadPhotos, verifyImageContent } = require('../middleware/upload');
+const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
@@ -181,12 +181,11 @@ router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPho
       return res.status(400).json({ error: 'Each angle may appear only once per upload.' });
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const incoming = req.files.map((file, index) => ({
+    const incoming = await Promise.all(req.files.map(async (file, index) => ({
       angle_key: angleKeys[index],
       position: SLOT_POSITION.get(angleKeys[index]),
-      url: `${baseUrl}/uploads/cars/${req.params.carId}/${file.filename}`,
-    }));
+      url: await resolveUploadUrl(req, file),
+    })));
     const replaced = [];
     const state = await withTransaction(async (client) => {
       const car = await client.query('SELECT id FROM cars WHERE id = $1 FOR UPDATE', [req.params.carId]);
