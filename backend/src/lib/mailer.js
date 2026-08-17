@@ -39,9 +39,9 @@ function getTransport() {
   return transport;
 }
 
-/** True when real email delivery is configured. */
+/** True when real email delivery is configured (Resend or SMTP). */
 function mailEnabled() {
-  return !!process.env.SMTP_HOST;
+  return Boolean(process.env.RESEND_API_KEY || process.env.SMTP_HOST);
 }
 
 const SITE = 'https://sawacars.com';
@@ -136,11 +136,45 @@ function render({ title, preheader, lines, cta }) {
   return { text, html };
 }
 
+async function sendViaResend({ to, subject, text, html }) {
+  const from = process.env.MAIL_FROM || 'Sawa Cars <no-reply@sawacars.com>';
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      text,
+      html,
+    }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || `Resend API error ${res.status}`);
+  }
+  return true;
+}
+
 /**
  * Send, best-effort. Returns true on accepted, false otherwise — callers keep
  * their fallback path; a mail outage must never break the API route around it.
  */
 async function sendMail({ to, subject, text, html }) {
+  if (process.env.RESEND_API_KEY) {
+    try {
+      await sendViaResend({ to, subject, text, html });
+      log.info('email sent via resend', { to, subject });
+      return true;
+    } catch (err) {
+      log.error('resend email failed', { error: err.message, to, subject });
+      if (!process.env.SMTP_HOST) return false;
+    }
+  }
+
   const t = getTransport();
   if (!t) return false;
   try {
