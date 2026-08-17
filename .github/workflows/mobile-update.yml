@@ -48,5 +48,8 @@ jobs:
         run: npm ci
 
       - name: Publish update to EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          npx eas-cli update --auto --non-interactive
+          branch="${{ github.event.inputs.branch || 'production' }}"
+          npx eas-cli update --branch "$branch" --message "${{ github.event.head_commit.message || 'Automated update from GitHub' }}" --non-interactive
