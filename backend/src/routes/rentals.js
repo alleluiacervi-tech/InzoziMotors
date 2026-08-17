@@ -4,7 +4,7 @@ const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
-const { uploadPhotos, publicUploadUrl, verifyImageContent } = require('../middleware/upload');
+const { uploadPhotos, publicUploadUrl, resolveUploadUrl, verifyImageContent } = require('../middleware/upload');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
 
@@ -418,7 +418,7 @@ router.post('/bookings/:bookingId/photos', requireAuth, requireUuid('bookingId')
     const cur = await pool.query(`SELECT * FROM rental_bookings WHERE id = $1${owner}`, params);
     if (!cur.rows.length) return res.status(404).json({ error: 'Booking not found' });
 
-    const urls = req.files.map((f) => publicUploadUrl(req, f));
+    const urls = await Promise.all(req.files.map((f) => resolveUploadUrl(req, f)));
     const col = stage === 'pickup' ? 'pickup_record' : 'return_record';
     const { rows } = await pool.query(
       `UPDATE rental_bookings
