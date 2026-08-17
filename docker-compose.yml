@@ -55,6 +55,10 @@ services:
       NODE_ENV:             development
       CORS_ORIGINS:         "*"
       UPLOAD_DIR:           /app/uploads
+      CLOUDINARY_URL:       ${CLOUDINARY_URL:-}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY:   ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       SEED_ADMIN_EMAIL:     admin@sawacars.com
       SEED_ADMIN_PASSWORD:  admin1234
     ports:
