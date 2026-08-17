@@ -130,12 +130,35 @@ function verifyImportDocument(req, res, next) {
   next();
 }
 
-// Public URL for an uploaded file — one implementation for every route.
+const { isConfigured: hasCloudinary, uploadToCloudinary } = require('../lib/cloudinary');
+
+// Public URL for an uploaded file — supports Cloudinary when configured, falls back to local disk.
 // Uses the resolved subdir (not string surgery on the OS path) so it works on Windows too.
-exports.publicUploadUrl = (req, file) => {
+const publicUploadUrl = (req, file) => {
+  if (file.cloudinaryUrl) return file.cloudinaryUrl;
   const base = `${req.protocol}://${req.get('host')}`;
   return `${base}/uploads/${resolveSubdir(req)}/${file.filename}`;
 };
+
+const resolveUploadUrl = async (req, file) => {
+  if (file.cloudinaryUrl) return file.cloudinaryUrl;
+  if (hasCloudinary && file.path) {
+    try {
+      const cUrl = await uploadToCloudinary(file.path, resolveSubdir(req));
+      if (cUrl) {
+        file.cloudinaryUrl = cUrl;
+        fs.unlink(file.path, () => {});
+        return cUrl;
+      }
+    } catch (err) {
+      console.error('[Cloudinary] Upload failed, falling back to local:', err.message);
+    }
+  }
+  return publicUploadUrl(req, file);
+};
+
+exports.publicUploadUrl = publicUploadUrl;
+exports.resolveUploadUrl = resolveUploadUrl;
 
 // files/fields caps matter as much as fileSize: without them a single request
 // can open an unbounded number of parts, and the per-file limit stops being a
