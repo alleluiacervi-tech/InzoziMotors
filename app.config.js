@@ -19,6 +19,12 @@ export default ({ config }) => ({
   scheme: 'sawa',
   userInterfaceStyle: 'light',
   newArchEnabled: true,
+  updates: {
+    url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   // Configured through the expo-splash-screen plugin below — a top-level
   // `splash` key does nothing without that package installed, which is
   // exactly the state this repo shipped in for months: the key was here,
