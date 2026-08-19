@@ -142,13 +142,6 @@ export default ({ config }) => ({
       },
     ],
     [
-      'expo-notifications',
-      {
-        icon: './assets/adaptive-icon.png',
-        color: '#CC050F',
-      },
-    ],
-    [
       // Play Store requires new apps to target API 36 — pin it rather than
       // inheriting whatever the SDK default happens to be at build time.
       'expo-build-properties',
