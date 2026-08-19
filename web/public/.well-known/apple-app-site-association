@@ -3,8 +3,8 @@
     "apps": [],
     "details": [
       {
-        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.sawacars.app",
-        "appIDs": ["REPLACE_WITH_APPLE_TEAM_ID.com.sawacars.app"],
+        "appID": "5Z2LA9U639.com.sawacars.app",
+        "appIDs": ["5Z2LA9U639.com.sawacars.app"],
         "paths": ["/cars/*", "/rentals/*", "/download"],
         "components": [
           {
