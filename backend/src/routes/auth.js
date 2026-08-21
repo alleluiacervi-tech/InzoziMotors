@@ -86,10 +86,9 @@ router.post('/login', async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      // deleted_at IS NULL: a deleted account must not be signable-into, and the
-      // response must be indistinguishable from "no such account" so deletion
-      // cannot be probed.
-      'SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL',
+      // Deleted and suspended accounts must not be signable-into. The shared
+      // response keeps both states indistinguishable from "no such account".
+      'SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL AND account_status = \'active\'',
       [email.toLowerCase()]
     );
     const user = rows[0];

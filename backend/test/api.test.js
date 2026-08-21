@@ -154,6 +154,42 @@ test('admin routes reject a non-admin token', async () => {
   await api().get('/handovers').set(auth).expect(403);
 });
 
+test('admins can suspend, restore, and safely reset a user account with an audit trail', async () => {
+  const adminUser = await register({ name: 'Operations Admin' });
+  const admin = await makeAdmin(adminUser);
+  const member = await register({ name: 'Managed Seller', role: 'seller' });
+  const auth = { Authorization: `Bearer ${admin}` };
+
+  await api().patch(`/admin/users/${member.id}/access`)
+    .set('Authorization', `Bearer ${member.token}`)
+    .send({ action: 'suspend', reason: 'Permission test' }).expect(403);
+
+  const suspended = await api().patch(`/admin/users/${member.id}/access`)
+    .set(auth).send({ action: 'suspend', reason: 'Repeated prohibited listings' }).expect(200);
+  assert.equal(suspended.body.account_status, 'suspended');
+  await api().get('/auth/me').set('Authorization', `Bearer ${member.token}`).expect(401);
+  await api().post('/auth/login').send({ email: member.email, password: member.password }).expect(200);
+
+  const restored = await api().patch(`/admin/users/${member.id}/access`)
+    .set(auth).send({ action: 'restore' }).expect(200);
+  assert.equal(restored.body.account_status, 'active');
+  const relogin = await api().post('/auth/login')
+    .send({ email: member.email, password: member.password }).expect(200);
+
+  const reset = await api().post(`/admin/users/${member.id}/password-reset`).set(auth).expect(200);
+  assert.equal(reset.body.success, true);
+  // Reset initiation ends any token that existed before it; no password or
+  // reset code may ever be returned to an administrator or the browser.
+  assert.equal(Object.hasOwn(reset.body, 'code'), false);
+  await api().get('/auth/me').set('Authorization', `Bearer ${relogin.body.token}`).expect(401);
+
+  const audit = await api().get('/admin/audit-log?type=user').set(auth).expect(200);
+  const actions = audit.body.filter((row) => row.target_id === member.id).map((row) => row.action);
+  assert.ok(actions.includes('user.suspended'));
+  assert.ok(actions.includes('user.restored'));
+  assert.ok(actions.includes('user.password_reset_initiated'));
+});
+
 test('protected routes reject a missing or forged token', async () => {
   await api().get('/auth/me').expect(401);
   await api().get('/auth/me').set('Authorization', 'Bearer not.a.token').expect(401);

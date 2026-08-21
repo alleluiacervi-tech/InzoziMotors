@@ -1,11 +1,12 @@
 const express = require('express');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { recordAdminAction } = require('../lib/admin-audit');
-const { sendShowroomInvite } = require('../lib/mailer');
+const { sendShowroomInvite, sendResetCode, mailEnabled } = require('../lib/mailer');
 
 const router = express.Router();
 
@@ -286,7 +287,8 @@ router.get('/users', requireAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, name, email, phone, role, id_verified, seller_type,
-              business_name, admin_created, must_change_password, trust_score,
+              business_name, admin_created, must_change_password, account_status,
+              suspended_at, suspension_reason, trust_score,
               completed_sales, created_at
        FROM users
        WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
@@ -298,6 +300,106 @@ router.get('/users', requireAdmin, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// PATCH /admin/users/:id — correct ordinary account data and buyer/seller role.
+// Admin promotion is deliberately not an HTTP dashboard operation: allowing any
+// signed-in administrator to mint more administrators is an avoidable takeover
+// path. It is handled through the controlled deployment/database process.
+router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => {
+  if (req.params.id === req.user.id) return res.status(400).json({ error: 'Use your own profile settings to change your account.' });
+  const allowed = ['name', 'phone', 'business_name', 'seller_type', 'role'];
+  const fields = allowed.filter((field) => req.body[field] !== undefined);
+  if (!fields.length) return res.status(400).json({ error: 'No editable account fields provided' });
+
+  const values = {};
+  for (const field of fields) values[field] = req.body[field] == null ? null : String(req.body[field]).trim();
+  if (values.name !== undefined && (!values.name || values.name.length > 120)) return res.status(400).json({ error: 'name must be between 1 and 120 characters' });
+  if (values.phone !== undefined && values.phone && values.phone.length > 40) return res.status(400).json({ error: 'phone is too long' });
+  if (values.business_name !== undefined && values.business_name && values.business_name.length > 160) return res.status(400).json({ error: 'business_name is too long' });
+  if (values.seller_type !== undefined && values.seller_type && !['individual', 'showroom'].includes(values.seller_type)) return res.status(400).json({ error: 'seller_type must be individual or showroom' });
+  if (values.role !== undefined && !['buyer', 'seller'].includes(values.role)) return res.status(400).json({ error: 'role must be buyer or seller' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const before = await client.query('SELECT role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
+    if (!before.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
+    if (before.rows[0].role === 'admin') { await client.query('ROLLBACK'); return res.status(403).json({ error: 'Administrator accounts cannot be changed here' }); }
+    const params = fields.map((field) => values[field]);
+    const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
+    params.push(req.params.id);
+    const { rows } = await client.query(
+      `UPDATE users SET ${assignments.join(', ')} WHERE id=$${params.length}
+       RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,account_status,created_at`, params
+    );
+    if (values.role !== undefined && values.role !== before.rows[0].role) {
+      await client.query('UPDATE users SET token_version=token_version+1 WHERE id=$1', [req.params.id]);
+    }
+    await recordAdminAction(client, { actorId: req.user.id, action: 'user.updated', targetType: 'user', targetId: req.params.id,
+      summary: `Updated account details for ${rows[0].email}`, metadata: { fields } });
+    await client.query('COMMIT');
+    res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    log.error('admin user update error', { error: err.message });
+    res.status(500).json({ error: 'Could not update user' });
+  } finally { client.release(); }
+});
+
+// POST /admin/users/:id/password-reset — initiate, never set or reveal a password.
+router.post('/users/:id/password-reset', requireAdmin, requireUuid('id'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const user = await client.query('SELECT id,email,name,role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
+    if (!user.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = await bcrypt.hash(code, 12);
+    await client.query('UPDATE password_resets SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [req.params.id]);
+    await client.query("INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES ($1,$2,NOW()+INTERVAL '30 minutes')", [req.params.id, codeHash]);
+    await client.query('UPDATE users SET token_version=token_version+1 WHERE id=$1', [req.params.id]);
+    await recordAdminAction(client, { actorId: req.user.id, action: 'user.password_reset_initiated', targetType: 'user', targetId: req.params.id,
+      summary: `Password reset initiated for ${user.rows[0].email}`, metadata: { delivery: mailEnabled() ? 'email' : 'not_configured' } });
+    await client.query('COMMIT');
+    const delivered = await sendResetCode(user.rows[0].email, code);
+    res.json({ success: true, delivery: delivered ? 'email_sent' : 'email_not_configured' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    log.error('admin password reset error', { error: err.message });
+    res.status(500).json({ error: 'Could not initiate password reset' });
+  } finally { client.release(); }
+});
+
+// PATCH /admin/users/:id/access — reversible suspension with immediate logout.
+router.patch('/users/:id/access', requireAdmin, requireUuid('id'), async (req, res) => {
+  const action = String(req.body.action || '');
+  const reason = String(req.body.reason || '').trim().slice(0, 500);
+  if (!['suspend', 'restore'].includes(action)) return res.status(400).json({ error: 'action must be suspend or restore' });
+  if (action === 'suspend' && !reason) return res.status(400).json({ error: 'A suspension reason is required' });
+  if (req.params.id === req.user.id) return res.status(400).json({ error: 'You cannot suspend your own account' });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const user = await client.query('SELECT email,role,account_status FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
+    if (!user.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
+    if (user.rows[0].role === 'admin') { await client.query('ROLLBACK'); return res.status(403).json({ error: 'Administrator accounts cannot be suspended here' }); }
+    const status = action === 'suspend' ? 'suspended' : 'active';
+    const { rows } = await client.query(
+      `UPDATE users SET account_status=$1, suspended_at=${action === 'suspend' ? 'NOW()' : 'NULL'},
+       suspension_reason=$2, token_version=token_version+1 WHERE id=$3
+       RETURNING id,name,email,role,account_status,suspended_at,suspension_reason`,
+      [status, action === 'suspend' ? reason : null, req.params.id]
+    );
+    await recordAdminAction(client, { actorId: req.user.id, action: action === 'suspend' ? 'user.suspended' : 'user.restored', targetType: 'user', targetId: req.params.id,
+      summary: `${action === 'suspend' ? 'Suspended' : 'Restored'} account ${user.rows[0].email}`, metadata: { previous_status: user.rows[0].account_status, reason: action === 'suspend' ? reason : undefined } });
+    await client.query('COMMIT');
+    res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    log.error('admin user access error', { error: err.message });
+    res.status(500).json({ error: 'Could not update account access' });
+  } finally { client.release(); }
 });
 
 // POST /admin/showrooms — commercial seller accounts are created and verified

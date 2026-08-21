@@ -13,11 +13,12 @@ const pool = require('../db');
 // the right trade for being able to end a session at all.
 async function verifyLiveSession(payload) {
   const { rows } = await pool.query(
-    'SELECT token_version, deleted_at FROM users WHERE id = $1',
+    'SELECT token_version, deleted_at, account_status FROM users WHERE id = $1',
     [payload.id]
   );
   if (!rows.length) return { ok: false, error: 'Account no longer exists' };
   if (rows[0].deleted_at) return { ok: false, error: 'This account has been deleted' };
+  if (rows[0].account_status === 'suspended') return { ok: false, error: 'This account has been suspended. Contact support if you believe this is an error.' };
   // Tokens minted before the column existed carry no tv; treat as version 0.
   if ((payload.tv || 0) !== rows[0].token_version) {
     return { ok: false, error: 'Session ended. Please sign in again.' };

@@ -22,6 +22,9 @@ type UserRow = {
   seller_type?: string | null
   business_name?: string | null
   must_change_password?: boolean
+  account_status?: 'active' | 'suspended'
+  suspended_at?: string | null
+  suspension_reason?: string | null
 }
 
 export default function UsersPage() {
@@ -92,6 +95,63 @@ export default function UsersPage() {
         : 'Showroom created, but email delivery is not configured', created.invitation_sent ? 'success' : 'error')
       setShowroom({ name: '', business_name: '', email: '', phone: '' })
       setShowroomOpen(false)
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  async function resetPassword(user: UserRow) {
+    const ok = await ask({
+      title: `Send password reset to ${user.name}?`,
+      message: 'This immediately signs the user out everywhere. Their current password is never shown or changed by an administrator.',
+      confirmLabel: 'Send reset email', tone: 'danger',
+    })
+    if (!ok) return
+    setActionId(`reset-${user.id}`)
+    try {
+      const result = await api.initiateUserPasswordReset(user.id)
+      toast(result.delivery === 'email_sent' ? 'Password reset email sent and existing sessions ended' : 'Reset created, but email delivery is not configured', result.delivery === 'email_sent' ? 'success' : 'error')
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  async function changeAccess(user: UserRow) {
+    const suspending = user.account_status !== 'suspended'
+    let reason: string | undefined
+    if (suspending) {
+      reason = window.prompt(`Why are you suspending ${user.name}'s account? This reason is retained in the audit log.`)?.trim()
+      if (!reason) return
+    }
+    const ok = await ask({
+      title: suspending ? `Suspend ${user.name}?` : `Restore ${user.name}?`,
+      message: suspending ? 'The account will be signed out on every device and cannot use the platform until restored.' : 'The account will be able to sign in again.',
+      confirmLabel: suspending ? 'Suspend account' : 'Restore account', tone: suspending ? 'danger' : 'primary',
+    })
+    if (!ok) return
+    setActionId(`access-${user.id}`)
+    try {
+      await api.setUserAccess(user.id, suspending ? 'suspend' : 'restore', reason)
+      toast(suspending ? 'Account suspended and all sessions ended' : 'Account restored', 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  async function editUser(user: UserRow) {
+    const name = window.prompt('Account name', user.name)
+    if (name === null) return
+    const phone = window.prompt('Phone number (leave blank to remove)', user.phone || '')
+    if (phone === null) return
+    const role = window.prompt('Role: buyer or seller', user.role)
+    if (role === null) return
+    if (!['buyer', 'seller'].includes(role.trim())) {
+      toast('Role must be buyer or seller', 'error')
+      return
+    }
+    setActionId(`edit-${user.id}`)
+    try {
+      await api.updateUser(user.id, { name: name.trim(), phone: phone.trim() || null, role: role.trim() as 'buyer' | 'seller' })
+      toast('Account details updated', 'success')
       await load()
     } catch (e: any) { toast(e.message, 'error') }
     finally { setActionId(null) }
@@ -190,7 +250,7 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left">
               <thead className="border-b border-line-soft bg-surface-alt text-caption uppercase tracking-wide text-content-muted">
-                <tr><th className="px-5 py-3">User</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Identity</th><th className="px-4 py-3">Trust</th><th className="px-4 py-3">Sales</th><th className="px-5 py-3">Joined</th></tr>
+                <tr><th className="px-5 py-3">User</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Identity</th><th className="px-4 py-3">Trust</th><th className="px-4 py-3">Sales</th><th className="px-4 py-3">Access</th><th className="px-5 py-3">Joined</th></tr>
               </thead>
               <tbody className="divide-y divide-line-soft">
                 {visible.map((u) => <tr key={u.id} className="hover:bg-surface-alt">
@@ -199,6 +259,8 @@ export default function UsersPage() {
                   <td className="px-4 py-4"><Pill status={u.id_verified} label={u.id_verified || 'not submitted'} /></td>
                   <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>
+                  <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2"><Pill status={u.account_status === 'suspended' ? 'rejected' : 'approved'} label={u.account_status === 'suspended' ? 'suspended' : 'active'} />
+                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button><button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-white hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
                   <td className="px-5 py-4 text-label text-content-muted">{new Date(u.created_at).toLocaleDateString()}</td>
                 </tr>)}
               </tbody>

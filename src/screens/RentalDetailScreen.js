@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Share, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -12,8 +12,6 @@ import { formatRWF } from '../data/marketData';
 import { useApp } from '../context/AppContext';
 import { openWhatsApp, SAWA_WHATSAPP, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
-const { width } = Dimensions.get('window');
-
 const SPEC_ITEMS = [
   { icon: 'people-outline', label: 'Seats', key: 'seats' },
   { icon: 'cog-outline', label: 'Gearbox', key: 'transmission' },
@@ -22,6 +20,7 @@ const SPEC_ITEMS = [
 ];
 
 export default function RentalDetailScreen({ navigation, route }) {
+  const { width } = useWindowDimensions();
   // A deep link (sawa://rentals/<id>) carries only an id — resolve it against
   // the rental catalogue instead of reading fields off an absent car object,
   // which used to crash every link-opened rental.
@@ -79,7 +78,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           >
             {imageList.map((img, index) => (
               <Pressable key={index} onPress={() => setViewerIdx(index)}>
-                <Image source={{ uri: img }} style={styles.heroImage} resizeMode="contain" />
+                <Image source={{ uri: img }} style={[styles.heroImage, { width }]} resizeMode="contain" />
               </Pressable>
             ))}
           </ScrollView>
@@ -284,7 +283,7 @@ export default function RentalDetailScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   gallery: { height: 300, backgroundColor: colors.border },
-  heroImage: { width, height: 300 },
+  heroImage: { height: 300 },
   galleryBar: {
     position: 'absolute', left: 16, right: 16,
     flexDirection: 'row', justifyContent: 'space-between',

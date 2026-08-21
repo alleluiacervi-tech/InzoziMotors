@@ -374,6 +374,12 @@ export const api = {
     }),
   createShowroom: (data: { name: string; business_name: string; email: string; phone?: string }) =>
     request<any>('/admin/showrooms', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (userId: string, data: { name?: string; phone?: string | null; business_name?: string | null; seller_type?: string | null; role?: 'buyer' | 'seller' }) =>
+    request<any>(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  initiateUserPasswordReset: (userId: string) =>
+    request<{ success: boolean; delivery: 'email_sent' | 'email_not_configured' }>(`/admin/users/${userId}/password-reset`, { method: 'POST' }),
+  setUserAccess: (userId: string, action: 'suspend' | 'restore', reason?: string) =>
+    request<any>(`/admin/users/${userId}/access`, { method: 'PATCH', body: JSON.stringify({ action, reason }) }),
 
   // Imports — a separate operation and ledger from local vehicle handovers.
   importOrders: (status?: string) =>

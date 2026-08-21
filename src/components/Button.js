@@ -13,6 +13,7 @@ export default function Button({
   onDark = false,
   disabled = false,
   loading = false,
+  accessibilityLabel,
 }) {
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
@@ -39,6 +40,11 @@ export default function Button({
     <Pressable
       onPress={blocked ? undefined : onPress}
       disabled={blocked}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityState={{ disabled: blocked, busy: loading }}
+      hitSlop={6}
+      android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
       style={({ pressed }) => [containerStyle, pressed && !blocked && styles.pressed]}
     >
       {loading ? (
@@ -56,6 +62,7 @@ export default function Button({
 const styles = StyleSheet.create({
   base: {
     width: '100%',
+    minHeight: 52,
     paddingVertical: 16,
     borderRadius: radius.xl,
     alignItems: 'center',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Dimensions, FlatList, Share, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, FlatList, Share, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -20,8 +20,6 @@ import {
 } from '../data/marketData';
 import { monthlyEstimate } from '../data/finance';
 import { isDealerSeller } from './DealerProfileScreen';
-
-const { width } = Dimensions.get('window');
 
 const SPECS = [
   { icon: 'speedometer-outline', label: 'Mileage', key: 'mileage' },
@@ -51,6 +49,7 @@ function Sparkline({ data, width: w = 80, height: h = 30 }) {
 }
 
 export default function VehicleDetailScreen({ navigation, route }) {
+  const { width } = useWindowDimensions();
   const listCar = route.params?.car;
   // A deep link (sawa://cars/<id>, or a push notification tap) carries only an
   // id — there is no car object to render from until the fetch lands.
@@ -189,7 +188,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           >
             {imageList.map((img, index) => (
               <Pressable key={index} onPress={() => setViewerIdx(index)}>
-                <Image source={{ uri: img }} style={styles.heroImage} resizeMode="contain" />
+                <Image source={{ uri: img }} style={[styles.heroImage, { width }]} resizeMode="contain" />
               </Pressable>
             ))}
           </ScrollView>
@@ -568,7 +567,7 @@ const styles = StyleSheet.create({
   },
   linkStateBtnText: { fontSize: 15, fontFamily: fonts.extraBold, color: '#FFFFFF' },
   gallery: { height: 320, backgroundColor: colors.navyDeep },
-  heroImage: { width, height: 320 },
+  heroImage: { height: 320 },
   galleryBar: {
     position: 'absolute', left: 16, right: 16,
     flexDirection: 'row', justifyContent: 'space-between',
