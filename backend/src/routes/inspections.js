@@ -6,7 +6,7 @@ const { requireUuid } = require('../middleware/validate');
 const fs = require('fs');
 const path = require('path');
 const { withTransaction } = require('../lib/tx');
-const { REQUIRED_SLOTS, ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
+const { ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
 const { matchSavedSearches } = require('../lib/alerts');
 const { recordAdminAction } = require('../lib/admin-audit');
@@ -145,9 +145,10 @@ async function photoState(db, carId) {
     `SELECT id, angle_key, url, position, is_cover, created_at, updated_at
      FROM car_photos WHERE car_id = $1 ORDER BY is_cover DESC, position, created_at`, [carId]
   );
-  const present = new Set(rows.map((row) => row.angle_key));
-  const missing_required = REQUIRED_SLOTS.filter((slot) => !present.has(slot));
-  return { photos: rows, missing_required, complete: missing_required.length === 0 };
+  // A real listing needs a truthful gallery, not a prescribed 36-angle shoot.
+  // Named angles are still accepted where the inspection team uses them, but
+  // admins can publish any professionally chosen set of valid images.
+  return { photos: rows, missing_required: [], complete: rows.length > 0 };
 }
 
 // GET /inspections/cars/:carId/photos — structured gallery + completeness.
@@ -161,29 +162,30 @@ router.get('/cars/:carId/photos', requireAdmin, requireUuid('carId'), async (req
   }
 });
 
-// POST /inspections/cars/:carId/photos — upload named 36-angle photos.
+// POST /inspections/cars/:carId/photos — upload a flexible listing gallery.
 // Must come before /:id
 router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', 40), verifyImageContent, async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ error: 'No photos uploaded' });
     }
-    const angleKeys = Array.isArray(req.body.angle_keys) ? req.body.angle_keys : [req.body.angle_keys].filter(Boolean);
-    if (angleKeys.length !== req.files.length || angleKeys.some((key) => !ALL_SLOTS.includes(key))) {
+    const suppliedKeys = Array.isArray(req.body.angle_keys) ? req.body.angle_keys : [req.body.angle_keys].filter(Boolean);
+    if (suppliedKeys.length && (suppliedKeys.length !== req.files.length || suppliedKeys.some((key) => !ALL_SLOTS.includes(key)))) {
       removeUploadedFiles(req.files);
       return res.status(400).json({
-        error: 'Every photo needs one valid angle_keys value.',
+        error: 'If angle_keys are supplied, every photo needs one valid angle_keys value.',
         valid_angle_keys: ALL_SLOTS,
       });
     }
-    if (new Set(angleKeys).size !== angleKeys.length) {
+    if (new Set(suppliedKeys).size !== suppliedKeys.length) {
       removeUploadedFiles(req.files);
       return res.status(400).json({ error: 'Each angle may appear only once per upload.' });
     }
 
+    const nextPosition = await pool.query('SELECT COALESCE(MAX(position), -1) + 1 AS next FROM car_photos WHERE car_id = $1', [req.params.carId]);
     const incoming = await Promise.all(req.files.map(async (file, index) => ({
-      angle_key: angleKeys[index],
-      position: SLOT_POSITION.get(angleKeys[index]),
+      angle_key: suppliedKeys[index] || `gallery_${Date.now()}_${index}`,
+      position: suppliedKeys[index] ? SLOT_POSITION.get(suppliedKeys[index]) : Number(nextPosition.rows[0].next) + index,
       url: await resolveUploadUrl(req, file),
     })));
     const replaced = [];
