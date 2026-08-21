@@ -168,7 +168,7 @@ test('admins can suspend, restore, and safely reset a user account with an audit
     .set(auth).send({ action: 'suspend', reason: 'Repeated prohibited listings' }).expect(200);
   assert.equal(suspended.body.account_status, 'suspended');
   await api().get('/auth/me').set('Authorization', `Bearer ${member.token}`).expect(401);
-  await api().post('/auth/login').send({ email: member.email, password: member.password }).expect(200);
+  await api().post('/auth/login').send({ email: member.email, password: member.password }).expect(401);
 
   const restored = await api().patch(`/admin/users/${member.id}/access`)
     .set(auth).send({ action: 'restore' }).expect(200);
@@ -486,7 +486,7 @@ test('inspection rejects verdicts outside pass/flag/fail', async () => {
     .expect(400);
 });
 
-test('listing photos keep named slots, replace in place, and report completeness', async () => {
+test('listing photos accept a flexible gallery, retain named replacements, and stay synchronized', async () => {
   const seller = await register({ role: 'seller' });
   await pool.query("UPDATE users SET id_verified = 'approved' WHERE id = $1", [seller.id]);
   const admin = await makeAdmin(await register());
@@ -506,7 +506,7 @@ test('listing photos keep named slots, replace in place, and report completeness
   assert.equal(first.body.photos.length, 2);
   assert.equal(first.body.photos[0].angle_key, 'ext_front');
   assert.equal(first.body.photos[0].is_cover, true);
-  assert.equal(first.body.complete, false);
+  assert.equal(first.body.complete, true, 'a listing is complete once it has usable photos; no fixed 360° checklist is required');
 
   const replacement = await api().post(`/inspections/cars/${car.body.id}/photos`).set(auth)
     .field('angle_keys', 'ext_front')
@@ -516,7 +516,7 @@ test('listing photos keep named slots, replace in place, and report completeness
   assert.equal(replacement.body.photos.length, 2, 'replacement must not append a duplicate slot');
 
   const gallery = await api().get(`/inspections/cars/${car.body.id}/photos`).set(auth).expect(200);
-  assert.ok(gallery.body.missing_required.includes('ext_rear'));
+  assert.deepEqual(gallery.body.missing_required, []);
   const deleteId = gallery.body.photos.find((photo) => photo.angle_key === 'ext_fl45').id;
   const afterDelete = await api().delete(`/inspections/cars/${car.body.id}/photos/${deleteId}`).set(auth).expect(200);
   assert.equal(afterDelete.body.photos.length, 1);

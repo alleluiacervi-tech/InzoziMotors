@@ -95,7 +95,8 @@ async function issuePdf({ kind, subjectType, subjectId, ownerUserId, title, snap
   const pdf = await render(document.snapshot, document);
   const hash = crypto.createHash('sha256').update(pdf.buffer).digest('hex');
   const filename = `${document.document_number}-${hash.slice(0, 8)}.pdf`;
-  const relativePath = path.join('documents', kind, filename);
+  // Database paths are portable identifiers, not host filesystem paths.
+  const relativePath = path.posix.join('documents', kind, filename);
   await writeAtomic(path.join(UPLOAD_DIR, relativePath), pdf.buffer);
 
   const { rows } = await pool.query(

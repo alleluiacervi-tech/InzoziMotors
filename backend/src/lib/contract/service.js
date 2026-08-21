@@ -390,7 +390,10 @@ async function generateContract({ handoverId, adminId, body }) {
   // ── phase 3: finalise ──
   const hash = await sha256(pdf.buffer);
   const filename = `${contractNumber}-${hash.slice(0, 8)}.pdf`;
-  const relPath = path.join('contracts', filename);
+  // Persist portable URL-like paths. `path.join` would write backslashes on
+  // Windows, then the same database row behaves differently after a Linux
+  // deploy or when returned to an API client.
+  const relPath = path.posix.join('contracts', filename);
   try {
     await writeAtomic(path.join(CONTRACT_DIR, filename), pdf.buffer);
   } catch (err) {
