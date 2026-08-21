@@ -39,6 +39,16 @@ forbidText('web/public/.well-known/apple-app-site-association', /REPLACE_WITH_AP
 forbidText('src/screens/RentalBookingScreen.js', /\$\$\{|\$\{car\.dailyRate\}|\$\{cost\.(?:subtotal|deposit|total)\}/,
   'Rental booking still interpolates an unlabelled dollar amount.');
 
+// Templates are committed, production credentials are not. Catch the two
+// provider formats that were accidentally added to environment examples so a
+// release cannot normalise secret leakage as a routine configuration change.
+for (const relative of ['.env.production.template', 'backend/.env.example']) {
+  forbidText(relative, /re_[A-Za-z0-9_-]{20,}/,
+    `${relative} contains a Resend API key; revoke it and keep the replacement outside Git.`);
+  forbidText(relative, /cloudinary:\/\/[^\s#]+:[^\s#]+@[^\s#]+/,
+    `${relative} contains Cloudinary credentials; revoke them and keep the replacement outside Git.`);
+}
+
 if (process.env.RELEASE_REQUIRE_ENV === '1') {
   for (const name of ['EAS_PROJECT_ID', 'EXPO_PUBLIC_API_URL', 'EXPO_PUBLIC_SITE_URL']) {
     if (!process.env[name]) failures.push(`${name} is not set for the production release environment.`);

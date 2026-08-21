@@ -8,12 +8,8 @@ on:
       - 'assets/**'
       - 'App.js'
       - 'index.js'
-      - 'app.config.js'
       - 'babel.config.js'
       - 'metro.config.js'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'eas.json'
   workflow_dispatch:
     inputs:
       branch:
