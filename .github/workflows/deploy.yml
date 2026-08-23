@@ -138,7 +138,7 @@ jobs:
           echo "rev=$REV" >> "$GITHUB_OUTPUT"
           echo "Deploying revision: $REV"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         timeout-minutes: 5
         with:
           ref: ${{ steps.rev.outputs.rev }}

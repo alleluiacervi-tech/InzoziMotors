@@ -84,6 +84,7 @@ function resolve(sql) {
     .replace(/\$\{params\.length\}/g, '2')
     .replace(/\$\{updates\.join\([^)]*\)\}/g, 'price = $1')
     .replace(/\$\{sets\.join\([^)]*\)\}/g, 'price = $1')
+    .replace(/\$\{assignments\.join\([^)]*\)\}/g, 'name = $1')
     .replace(/\$\{fields\.join\([^)]*\)\}/g, 'price')
     // notifyMany builds one VALUES list per recipient; a single tuple is enough
     // to prove the statement's shape.
