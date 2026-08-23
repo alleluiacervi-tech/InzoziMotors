@@ -7,6 +7,12 @@ const { requireUuid, paginate } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 const { recordAdminAction } = require('../lib/admin-audit');
+const {
+  MARKETPLACE_TERMS_VERSION,
+  DIRECT_DEAL_NOTICE,
+  contactAvailability,
+  ensureMarketplaceAcknowledgement,
+} = require('../lib/marketplace');
 
 const router = express.Router();
 
@@ -114,6 +120,8 @@ router.get('/', async (req, res) => {
          LIMIT $${params.length - 1} OFFSET $${params.length}
        )
        SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust,
+              u.id_verified AS seller_id_verified,
+              u.business_verified AS seller_business_verified,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
 ${MARKET_COLUMNS}
        FROM page c
@@ -195,13 +203,88 @@ function optionalAuth(req, _res, next) {
   next();
 }
 
+// POST /cars/:id/contact — disclose an opted-in seller contact to an
+// authenticated buyer and record the disclosure. The public catalogue never
+// carries phone numbers, and an acknowledgement is required once per policy
+// version before any direct channel is revealed.
+router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => {
+  const channel = String(req.body.channel || 'in_app');
+  if (!['phone', 'whatsapp', 'in_app'].includes(channel)) {
+    return res.status(400).json({ error: 'channel must be phone, whatsapp, or in_app' });
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT c.id, c.seller_id, c.status,
+              u.phone, u.whatsapp_phone, u.phone_visible, u.whatsapp_visible,
+              u.id_verified, u.account_status, u.deleted_at,
+              buyer.marketplace_terms_accepted_at,
+              buyer.marketplace_terms_version
+       FROM cars c
+       JOIN users u ON u.id = c.seller_id
+       JOIN users buyer ON buyer.id = $2
+       WHERE c.id = $1`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length || (rows[0].status !== 'live' && req.user.role !== 'admin' && rows[0].seller_id !== req.user.id)) {
+      return res.status(404).json({ error: 'Live listing not found' });
+    }
+    const car = rows[0];
+    const isInsider = req.user.role === 'admin' || car.seller_id === req.user.id;
+    if (!isInsider) {
+      const blocked = await pool.query(
+        `SELECT 1 FROM blocked_users
+         WHERE (user_id = $1 AND blocked_id = $2)
+            OR (user_id = $2 AND blocked_id = $1)
+         LIMIT 1`,
+        [req.user.id, car.seller_id]
+      );
+      if (blocked.rowCount) return res.status(403).json({ error: 'Contact is unavailable for these accounts' });
+      await ensureMarketplaceAcknowledgement(pool, {
+        id: req.user.id,
+        marketplace_terms_accepted_at: car.marketplace_terms_accepted_at,
+        marketplace_terms_version: car.marketplace_terms_version,
+      }, req.body.acknowledge === true);
+    }
+
+    const available = contactAvailability(car);
+    if (!isInsider && channel !== 'in_app' && !available[channel]) {
+      return res.status(409).json({
+        error: `The seller has not made ${channel === 'whatsapp' ? 'WhatsApp' : 'phone'} contact available. Use in-app chat instead.`,
+        code: 'CONTACT_NOT_AVAILABLE',
+        available,
+      });
+    }
+
+    if (!isInsider) {
+      await pool.query(
+        `INSERT INTO listing_contact_events (car_id, buyer_id, seller_id, channel)
+         VALUES ($1, $2, $3, $4)`,
+        [car.id, req.user.id, car.seller_id, channel]
+      );
+    }
+
+    res.json({
+      channel,
+      available,
+      contact: channel === 'phone' ? car.phone : channel === 'whatsapp' ? car.whatsapp_phone : null,
+      seller_id: car.seller_id,
+      notice: DIRECT_DEAL_NOTICE,
+      terms_version: MARKETPLACE_TERMS_VERSION,
+    });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message, code: err.code, notice: err.notice });
+    }
+    log.error('seller contact disclosure error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /cars/:id
 // Public, because the catalogue is the indexable part of the product — but the
-// seller's personal phone number is NOT part of the catalogue. Listing ids are
-// published in the sitemap, so returning it here made every seller's number
-// enumerable by anyone who could count. It is now released only to a signed-in
-// buyer with a live handover on this specific car; everyone else, crawlers
-// included, gets null and the Sawa business line.
+// seller contact details are NOT part of the catalogue. Availability is public;
+// the value itself is released only by POST /:id/contact after authentication,
+// consent and the current direct-deal acknowledgement.
 router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
   try {
     // price_history is ordered oldest-first, so element 0 is the original
@@ -209,6 +292,11 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
     // synthesised; the app renders an empty history rather than a fake one.
     const { rows } = await pool.query(
       `SELECT c.*, u.name AS seller_name, u.phone AS seller_phone,
+              u.whatsapp_phone AS seller_whatsapp,
+              u.phone_visible AS seller_phone_visible,
+              u.whatsapp_visible AS seller_whatsapp_visible,
+              u.account_status AS seller_account_status,
+              u.deleted_at AS seller_deleted_at,
               u.trust_score AS seller_trust,
               u.response_rate AS seller_response_rate, u.completed_sales AS seller_sales,
               u.id_verified AS seller_id_verified,
@@ -229,32 +317,33 @@ ${MARKET_LATERALS}
     // (under_review, scheduled, inspecting, archived) describes a car that was
     // never on the marketplace, so it is not public — 404, not 403, because the
     // existence of the row is itself the thing not to confirm.
-    const PUBLICLY_VISIBLE = ['live', 'reserved', 'sold'];
+    const PUBLICLY_VISIBLE = ['live', 'sold'];
     const isInsider =
       req.user && (req.user.role === 'admin' || req.user.id === car.seller_id);
     if (!PUBLICLY_VISIBLE.includes(car.status) && !isInsider) {
       return res.status(404).json({ error: 'Car not found' });
     }
 
-    // Who may see the seller's number: the seller themselves, an admin, or a
-    // buyer who has an open/completed handover on this car (the only point at
-    // which the two parties need to reach each other directly).
-    let maySeeSellerPhone = false;
-    if (req.user) {
-      if (req.user.role === 'admin' || req.user.id === car.seller_id) {
-        maySeeSellerPhone = true;
-      } else {
-        const { rows: h } = await pool.query(
-          `SELECT 1 FROM handovers
-           WHERE car_id = $1 AND buyer_id = $2
-             AND status IN ('pending', 'confirmed', 'complete')
-           LIMIT 1`,
-          [req.params.id, req.user.id]
-        );
-        maySeeSellerPhone = h.length > 0;
-      }
+    const available = contactAvailability({
+      phone: car.seller_phone,
+      whatsapp_phone: car.seller_whatsapp,
+      phone_visible: car.seller_phone_visible,
+      whatsapp_visible: car.seller_whatsapp_visible,
+      id_verified: car.seller_id_verified,
+      account_status: car.seller_account_status,
+      deleted_at: car.seller_deleted_at,
+    });
+    if (!isInsider) {
+      car.seller_phone = null;
+      car.seller_whatsapp = null;
     }
-    if (!maySeeSellerPhone) car.seller_phone = null;
+    car.seller_contact_available = available;
+    car.direct_deal_notice = DIRECT_DEAL_NOTICE;
+    car.marketplace_terms_version = MARKETPLACE_TERMS_VERSION;
+    delete car.seller_phone_visible;
+    delete car.seller_whatsapp_visible;
+    delete car.seller_account_status;
+    delete car.seller_deleted_at;
 
     // Fire-and-forget, but never unhandled: a DB blip here must not become an
     // unhandled rejection that takes the process down under --unhandled-rejections.
@@ -337,11 +426,13 @@ router.get('/saved/list', requireAuth, paginate(), async (req, res) => {
 
 // ─── Admin-only routes ────────────────────────────────────────────────────────
 
-// POST /cars  (admin creates a listing after inspection)
+// POST /cars — admin creates a reviewable listing. Creation never publishes:
+// inspection completion and an explicit admin publish are separate auditable
+// decisions, so a partially entered car cannot leak into the public catalogue.
 router.post('/', requireAdmin, async (req, res) => {
   const { seller_id, title, make, model, year, mileage, fuel_type, transmission,
           body_type, color, price, location, drive_side, vin, description, images,
-          inspected, inspection_score, submission_id } = req.body;
+          submission_id } = req.body;
   // year, mileage and price are NOT NULL in the schema but were not checked
   // here, so omitting one produced a 500 from the constraint violation rather
   // than telling the caller which field was missing.
@@ -359,49 +450,72 @@ router.post('/', requireAdmin, async (req, res) => {
   try {
     // ID is checked in person at the inspection center; admin marks the seller
     // approved there. A listing cannot go live for an unverified seller.
-    const sellerRes = await pool.query('SELECT id_verified FROM users WHERE id = $1', [seller_id]);
+    const sellerRes = await pool.query(
+      'SELECT id_verified, account_status, deleted_at FROM users WHERE id = $1',
+      [seller_id]
+    );
     if (!sellerRes.rows.length) return res.status(404).json({ error: 'Seller not found' });
     if (sellerRes.rows[0].id_verified !== 'approved') {
       return res.status(400).json({
         error: "Seller is not ID-verified yet. Verify them at the center (Users → approve) before publishing.",
       });
     }
-    const { rows } = await pool.query(
-      `INSERT INTO cars
-         (seller_id, title, make, model, year, mileage, fuel_type, transmission,
-          body_type, color, price, location, drive_side, vin, description, images,
-          inspected, inspection_score, status, listed_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'live',NOW())
-       RETURNING *`,
-      [seller_id, title, make, model, year, mileage, fuel_type, transmission,
-       body_type, color, price, location, drive_side, vin, description, images,
-       inspected, inspection_score]
-    );
-    const car = rows[0];
-
-    if (car.price != null) {
-      await pool.query(
-        `INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)`,
-        [car.id, car.price, req.user.id]
-      );
+    if (sellerRes.rows[0].account_status !== 'active' || sellerRes.rows[0].deleted_at) {
+      return res.status(400).json({ error: 'Seller account is not active' });
     }
-    // Fire saved-search matches (fire-and-forget; failures only log)
-    matchSavedSearches(car);
-
-    // Link back to submission and inspection tables if this listing was promoted from pipeline
-    if (submission_id) {
-      await pool.query(
-        'UPDATE submissions SET car_id = $1, status = \'live\' WHERE id = $2',
-        [car.id, submission_id]
+    const car = await withTransaction(async (client) => {
+      if (submission_id) {
+        const submission = await client.query(
+          'SELECT seller_id FROM submissions WHERE id = $1 FOR UPDATE', [submission_id]
+        );
+        if (!submission.rowCount) { const e = new Error('Submission not found'); e.status = 404; throw e; }
+        if (submission.rows[0].seller_id !== seller_id) {
+          const e = new Error('Submission belongs to a different seller'); e.status = 409; throw e;
+        }
+      }
+      const { rows } = await client.query(
+        `INSERT INTO cars
+           (seller_id, title, make, model, year, mileage, fuel_type, transmission,
+            body_type, color, price, location, drive_side, vin, description, images,
+            inspected, inspection_score, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,FALSE,NULL,'under_review')
+         RETURNING *`,
+        [seller_id, title, make, model, year, mileage, fuel_type, transmission,
+         body_type, color, price, location, drive_side, vin, description, images || []]
       );
-      await pool.query(
-        'UPDATE inspections SET car_id = $1 WHERE submission_id = $2',
-        [car.id, submission_id]
+      const created = rows[0];
+      await client.query(
+        'INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)',
+        [created.id, created.price, req.user.id]
       );
-    }
-
-    res.status(201).json(car);
+      if (submission_id) {
+        await client.query(
+          "UPDATE submissions SET car_id = $1, status = 'inspected' WHERE id = $2",
+          [created.id, submission_id]
+        );
+        await client.query(
+          'UPDATE inspections SET car_id = $1 WHERE submission_id = $2',
+          [created.id, submission_id]
+        );
+        await client.query(
+          `UPDATE cars c SET inspected = TRUE, inspection_score = i.score
+           FROM inspections i
+           WHERE c.id = $1 AND i.submission_id = $2 AND i.status = 'complete'`,
+          [created.id, submission_id]
+        );
+      }
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'listing.created', targetType: 'listing', targetId: created.id,
+        summary: `${created.title} created for review`, metadata: { seller_id, submission_id: submission_id || null },
+      });
+      return (await client.query('SELECT * FROM cars WHERE id = $1', [created.id])).rows[0];
+    });
+    res.status(201).json({
+      ...car,
+      next_step: 'Upload a truthful gallery, complete the inspection, then publish from Listings.',
+    });
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     log.error('create car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
@@ -465,7 +579,11 @@ router.get('/valuation/estimate', async (req, res) => {
 
 // PATCH /cars/:id — admin edits listing fields; price changes are recorded
 router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
-  const EDITABLE = ['title', 'price', 'description', 'location', 'mileage', 'color', 'drive_side', 'images'];
+  const EDITABLE = [
+    'seller_id', 'title', 'make', 'model', 'year', 'mileage', 'fuel_type',
+    'transmission', 'body_type', 'color', 'price', 'location', 'drive_side',
+    'vin', 'description', 'images', 'review_notes',
+  ];
   const updates = [];
   const params = [];
   for (const field of EDITABLE) {
@@ -475,12 +593,22 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     }
   }
   if (!updates.length) return res.status(400).json({ error: 'No editable fields provided' });
-  if (req.body.price !== undefined && (!Number.isFinite(Number(req.body.price)) || Number(req.body.price) < 0)) {
-    return res.status(400).json({ error: 'price must be a non-negative number' });
+  for (const field of ['price', 'mileage', 'year']) {
+    if (req.body[field] !== undefined && (!Number.isFinite(Number(req.body[field])) || Number(req.body[field]) < 0)) {
+      return res.status(400).json({ error: `${field} must be a non-negative number` });
+    }
   }
   try {
-    const before = await pool.query('SELECT price FROM cars WHERE id = $1', [req.params.id]);
+    const before = await pool.query('SELECT * FROM cars WHERE id = $1', [req.params.id]);
     if (!before.rows.length) return res.status(404).json({ error: 'Car not found' });
+
+    if (req.body.seller_id !== undefined) {
+      const seller = await pool.query(
+        `SELECT 1 FROM users WHERE id = $1 AND id_verified = 'approved'
+         AND account_status = 'active' AND deleted_at IS NULL`, [req.body.seller_id]
+      );
+      if (!seller.rowCount) return res.status(400).json({ error: 'New seller must be active and identity-verified' });
+    }
 
     params.push(req.params.id);
     const { rows } = await pool.query(
@@ -495,6 +623,11 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       );
       notifyPriceDrop(req.params.id, Number(before.rows[0].price), Number(req.body.price));
     }
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'listing.updated', targetType: 'listing', targetId: req.params.id,
+      summary: `${rows[0].title} listing details updated`,
+      metadata: { changed_fields: updates.map((u) => u.split(' = ')[0]) },
+    });
     res.json(rows[0]);
   } catch (err) {
     log.error('edit car error', { error: err.message });
@@ -537,11 +670,10 @@ router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
   }
 });
 
-// PATCH /cars/:id/feature — admin boosts a listing to the top of browse.
-// Records the featured fee ('due' — collected offline like commissions).
+// PATCH /cars/:id/feature — editorial merchandising only. There is no paid
+// boost product and no fee is created from this action.
 router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) => {
   const days = Math.min(Math.max(parseInt(req.body.days) || 7, 1), 30);
-  const fee = Math.max(parseInt(req.body.fee) || 0, 0);
   try {
     const { rows } = await pool.query(
       `UPDATE cars SET featured_until = NOW() + ($1 || ' days')::interval
@@ -549,13 +681,10 @@ router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) =
       [String(days), req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Live listing not found' });
-    if (fee > 0) {
-      await pool.query(
-        `INSERT INTO platform_fees (seller_id, fee_type, amount, status)
-         VALUES ($1, 'featured', $2, 'due')`,
-        [rows[0].seller_id, fee]
-      );
-    }
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'listing.featured', targetType: 'listing', targetId: req.params.id,
+      summary: `${rows[0].title} featured editorially for ${days} days`, metadata: { days },
+    });
     res.json(rows[0]);
   } catch (err) {
     log.error('feature car error', { error: err.message });
@@ -563,34 +692,174 @@ router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) =
   }
 });
 
+async function publicationReadiness(client, carId) {
+  const { rows } = await client.query(
+    `SELECT c.id, c.title,
+            u.id_verified, u.account_status, u.deleted_at,
+            COALESCE(cardinality(c.images), 0)::int AS legacy_photo_count,
+            (SELECT COUNT(*)::int FROM car_photos p WHERE p.car_id = c.id) AS structured_photo_count,
+            EXISTS (
+              SELECT 1 FROM inspections i
+              WHERE i.car_id = c.id AND i.status = 'complete'
+            ) AS has_completed_inspection
+     FROM cars c JOIN users u ON u.id = c.seller_id
+     WHERE c.id = $1`,
+    [carId]
+  );
+  if (!rows.length) return null;
+  const settings = await client.query(
+    `SELECT key, value FROM platform_settings
+     WHERE key IN ('inspection_required', 'listing_min_photos')`
+  );
+  const values = Object.fromEntries(settings.rows.map((row) => [row.key, row.value]));
+  const inspectionRequired = values.inspection_required !== false;
+  const minPhotos = Math.max(Number(values.listing_min_photos) || 1, 1);
+  const car = rows[0];
+  const photoCount = Math.max(car.legacy_photo_count, car.structured_photo_count);
+  const missing = [];
+  if (car.id_verified !== 'approved') missing.push('seller identity approval');
+  if (car.account_status !== 'active' || car.deleted_at) missing.push('active seller account');
+  if (photoCount < minPhotos) missing.push(`${minPhotos} valid listing photo${minPhotos === 1 ? '' : 's'}`);
+  if (inspectionRequired && !car.has_completed_inspection) missing.push('completed vehicle inspection');
+  return { ready: missing.length === 0, missing, photo_count: photoCount, inspection_required: inspectionRequired };
+}
+
 router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) => {
-  // 'removed' is the admin-dashboard verb for archiving a listing
-  const status = req.body.status === 'removed' ? 'archived' : req.body.status;
-  const allowed = ['under_review', 'scheduled', 'inspecting', 'live', 'reserved', 'sold', 'archived'];
+  const status = req.body.status === 'removed' ? 'archived' : String(req.body.status || '');
+  const reason = String(req.body.reason || '').trim().slice(0, 1000);
+  const allowed = ['draft', 'under_review', 'scheduled', 'inspecting', 'approved', 'live', 'paused', 'sold', 'rejected', 'archived'];
   if (!allowed.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' });
+  }
+  if (['rejected', 'archived'].includes(status) && !reason) {
+    return res.status(400).json({ error: `A reason is required when a listing is ${status}` });
   }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const current = await client.query('SELECT status FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+    const current = await client.query('SELECT status, seller_id FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
     if (!current.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Car not found' }); }
-    const extra = status === 'sold' ? ', sold_at = NOW()' : '';
+    let readiness = null;
+    if (status === 'approved' || status === 'live') {
+      readiness = await publicationReadiness(client, req.params.id);
+      if (!readiness?.ready) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: `Listing cannot be ${status === 'live' ? 'published' : 'approved'} yet. Missing: ${readiness?.missing.join(', ') || 'requirements'}.`,
+          code: 'LISTING_NOT_READY',
+          readiness,
+        });
+      }
+    }
     const { rows } = await client.query(
-      `UPDATE cars SET status = $1${extra} WHERE id = $2 RETURNING *`,
-      [status, req.params.id]
+      `UPDATE cars SET status = $1,
+         sold_at = CASE WHEN $1 = 'sold' THEN NOW() WHEN $1 <> 'sold' THEN NULL ELSE sold_at END,
+         listed_at = CASE WHEN $1 = 'live' THEN COALESCE(listed_at, NOW()) ELSE listed_at END,
+         approved_at = CASE WHEN $1 IN ('approved','live') THEN COALESCE(approved_at, NOW()) ELSE approved_at END,
+         approved_by = CASE WHEN $1 IN ('approved','live') THEN $3 ELSE approved_by END,
+         archived_at = CASE WHEN $1 = 'archived' THEN NOW() ELSE NULL END,
+         archive_reason = CASE WHEN $1 IN ('archived','rejected') THEN $4 ELSE NULL END,
+         review_notes = CASE WHEN $1 = 'rejected' THEN $4 ELSE review_notes END
+       WHERE id = $2 RETURNING *`,
+      [status, req.params.id, req.user.id, reason || null]
+    );
+    await client.query(
+      `UPDATE submissions SET status = CASE
+         WHEN $1 = 'live' THEN 'live'
+         WHEN $1 = 'rejected' THEN 'rejected'
+         WHEN $1 = 'archived' THEN 'archived'
+         ELSE status END,
+         admin_notes = CASE WHEN $1 IN ('rejected','archived') THEN $3 ELSE admin_notes END,
+         reviewed_at = CASE WHEN $1 IN ('approved','live','rejected') THEN NOW() ELSE reviewed_at END,
+         reviewer_id = CASE WHEN $1 IN ('approved','live','rejected') THEN $4 ELSE reviewer_id END
+       WHERE car_id = $2`,
+      [status, req.params.id, reason || null, req.user.id]
     );
     await recordAdminAction(client, {
       actorId: req.user.id, action: 'listing.status_changed', targetType: 'listing', targetId: req.params.id,
-      summary: `${rows[0].title} moved to ${status}`, metadata: { previous_status: current.rows[0].status, status },
+      summary: `${rows[0].title} moved to ${status}`,
+      metadata: { previous_status: current.rows[0].status, status, reason: reason || undefined, readiness },
     });
     await client.query('COMMIT');
+    if (status === 'live' && current.rows[0].status !== 'live') {
+      matchSavedSearches(rows[0]).catch(() => {});
+    }
     res.json(rows[0]);
   } catch (err) {
     await client.query('ROLLBACK');
+    log.error('listing status error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();
+  }
+});
+
+// Sellers can withdraw, restore or close their own listing. Restoring still
+// passes the same publication gate as an administrator action.
+router.patch('/:id/seller-status', requireAuth, requireUuid('id'), async (req, res) => {
+  const status = String(req.body.status || '');
+  if (!['live', 'paused', 'sold'].includes(status)) {
+    return res.status(400).json({ error: 'status must be live, paused, or sold' });
+  }
+  try {
+    const result = await withTransaction(async (client) => {
+      const current = await client.query(
+        'SELECT * FROM cars WHERE id = $1 AND seller_id = $2 FOR UPDATE',
+        [req.params.id, req.user.id]
+      );
+      if (!current.rowCount) { const e = new Error('Listing not found'); e.status = 404; throw e; }
+      const allowed = current.rows[0].status === 'live'
+        ? ['paused', 'sold']
+        : current.rows[0].status === 'paused' ? ['live', 'sold'] : [];
+      if (!allowed.includes(status)) {
+        const e = new Error(`Cannot move a ${current.rows[0].status} listing to ${status}`); e.status = 409; throw e;
+      }
+      if (status === 'live') {
+        const readiness = await publicationReadiness(client, req.params.id);
+        if (!readiness?.ready) {
+          const e = new Error(`Listing cannot be restored. Missing: ${readiness?.missing.join(', ') || 'requirements'}`);
+          e.status = 409; e.code = 'LISTING_NOT_READY'; e.readiness = readiness; throw e;
+        }
+      }
+      const { rows } = await client.query(
+        `UPDATE cars SET status = $1,
+           sold_at = CASE WHEN $1 = 'sold' THEN NOW() ELSE NULL END,
+           listed_at = CASE WHEN $1 = 'live' THEN COALESCE(listed_at, NOW()) ELSE listed_at END
+         WHERE id = $2 RETURNING *`,
+        [status, req.params.id]
+      );
+      return rows[0];
+    });
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, readiness: err.readiness });
+    log.error('seller listing status error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Removal is a reversible, auditable archive—not a destructive delete.
+router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
+  const reason = String(req.body?.reason || '').trim().slice(0, 1000);
+  if (!reason) return res.status(400).json({ error: 'A removal reason is required' });
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `UPDATE cars SET status = 'archived', archived_at = NOW(), archive_reason = $1
+         WHERE id = $2 RETURNING *`,
+        [reason, req.params.id]
+      );
+      if (!rows.length) { const e = new Error('Car not found'); e.status = 404; throw e; }
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'listing.archived', targetType: 'listing', targetId: req.params.id,
+        summary: `${rows[0].title} archived`, metadata: { reason },
+      });
+      return rows[0];
+    });
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

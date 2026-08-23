@@ -8,7 +8,6 @@ const path = require('path');
 const { withTransaction } = require('../lib/tx');
 const { ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
-const { matchSavedSearches } = require('../lib/alerts');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 const { issueInspectionReport } = require('../lib/documents/inspection-report');
@@ -400,16 +399,16 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
 
     const passed = score >= PUBLISH_THRESHOLD;
 
-    // Publish only when a listing exists AND the car clears the threshold.
-    let autoPublished = false;
+    // Inspection is evidence, not publication and not a guarantee. Passing the
+    // checklist makes the listing approval-ready; an administrator must still
+    // review the gallery and explicitly publish it.
     if (insp.car_id && passed) {
       await client.query(
         `UPDATE cars
-         SET inspected = TRUE, inspection_score = $1, status = 'live', listed_at = NOW()
+         SET inspected = TRUE, inspection_score = $1, status = 'approved'
          WHERE id = $2`,
         [score, insp.car_id]
       );
-      autoPublished = true;
     } else if (insp.car_id) {
       await client.query(
         `UPDATE cars SET inspected = TRUE, inspection_score = $1 WHERE id = $2`,
@@ -417,43 +416,18 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       );
     }
 
-    // Submission: 'live' only with a published listing; otherwise 'inspected'
-    // (report done — admin creates/publishes the listing, or follows up on a low score).
+    // The report is complete, but publication remains a separate decision.
     await client.query(
-      `UPDATE submissions SET status = $1 WHERE id = $2`,
-      [insp.car_id && passed ? 'live' : 'inspected', insp.submission_id]
+      `UPDATE submissions SET status = 'inspected' WHERE id = $1`,
+      [insp.submission_id]
     );
 
     const subRes = await client.query('SELECT seller_id FROM submissions WHERE id = $1', [insp.submission_id]);
 
-    // ── Certification fee ──────────────────────────────────────────────────
-    // The business model lists three revenue streams; platform_fees has always
-    // permitted fee_type='certification' and nothing ever inserted one, so
-    // /admin/fees under-reported by the entire upfront stream. Commission and
-    // featured were recorded; the fee that pays for the inspection itself was
-    // not.
-    //
-    // This is the moment it is earned: the 150-point check is done and the
-    // report exists, whether or not the car went live. Priced from the
-    // environment because the amount is a business decision — unset means no
-    // row, so nothing is invoiced until someone sets the real number.
-    const certificationFee = Math.max(parseInt(process.env.CERTIFICATION_FEE || '0', 10) || 0, 0);
-    if (certificationFee > 0 && subRes.rows.length) {
-      // ON CONFLICT against the partial unique index on submission_id: one
-      // certification per submission, so a re-inspection after remedial work
-      // cannot bill the seller twice for the same car.
-      await client.query(
-        `INSERT INTO platform_fees (seller_id, submission_id, fee_type, amount, status)
-         VALUES ($1, $2, 'certification', $3, 'due')
-         ON CONFLICT (submission_id) WHERE fee_type = 'certification' DO NOTHING`,
-        [subRes.rows[0].seller_id, insp.submission_id, certificationFee]
-      );
-    }
-
     if (subRes.rows.length) {
       const grade = score >= 128 ? 'A' : score >= 105 ? 'B' : score >= 83 ? 'C' : 'D';
       const body = insp.car_id && passed
-        ? `Your car passed the 150-point inspection with a score of ${score}/150 (Grade ${grade}). It is now live on the marketplace.`
+        ? `The inspection record for your car is complete with a score of ${score}/150 (Grade ${grade}). Our team will review the listing before publication.`
         : passed
           ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team is preparing your listing — it goes live shortly.`
           : `Your inspection report is ready (score ${score}/150, Grade ${grade}). Some items need attention — our team will contact you about next steps.`;
@@ -468,20 +442,12 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
 
     await recordAdminAction(client, {
       actorId: req.user.id, action: 'inspection.completed', targetType: 'inspection', targetId: insp.id,
-      summary: `Inspection completed with ${score}/150`, metadata: { score, passed, published: autoPublished, submission_id: insp.submission_id, car_id: insp.car_id },
+      summary: `Inspection completed with ${score}/150`, metadata: { score, passed, published: false, submission_id: insp.submission_id, car_id: insp.car_id },
     });
 
     await client.query('COMMIT');
 
-    // Saved-search alerts fire on BOTH publish paths (manual POST /cars and
-    // this auto-publish). Fire-and-forget after commit.
-    if (autoPublished) {
-      pool.query('SELECT * FROM cars WHERE id = $1', [insp.car_id])
-        .then(({ rows }) => rows[0] && matchSavedSearches(rows[0]))
-        .catch(() => {});
-    }
-
-    res.json({ success: true, score, published: !!(insp.car_id && passed) });
+    res.json({ success: true, score, published: false, ready_for_review: !!(insp.car_id && passed) });
   } catch (err) {
     await client.query('ROLLBACK');
     log.error('complete inspection error', { error: err.message });

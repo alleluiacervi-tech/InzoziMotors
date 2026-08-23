@@ -90,18 +90,6 @@ services:
       SMTP_USER:           ${SMTP_USER:-}
       SMTP_PASS:           ${SMTP_PASS:-}
       MAIL_FROM:           ${MAIL_FROM:-Sawa Cars <no-reply@sawacars.com>}
-      # ── Pesapal — online payment for RENTALS only ──────────────────────────
-      # Same not-required contract as MAIL_*: unset means the /payments routes
-      # answer 503 PAYMENTS_NOT_CONFIGURED, bookings fall back to
-      # pay-at-center, and nothing else is affected.
-      PESAPAL_CONSUMER_KEY:    ${PESAPAL_CONSUMER_KEY:-}
-      PESAPAL_CONSUMER_SECRET: ${PESAPAL_CONSUMER_SECRET:-}
-      PESAPAL_ENV:             ${PESAPAL_ENV:-sandbox}
-      PESAPAL_IPN_URL:         ${PESAPAL_IPN_URL:-https://api.sawacars.com/payments/ipn}
-      PESAPAL_CALLBACK_URL:    ${PESAPAL_CALLBACK_URL:-https://sawacars.com/rentals/payment-return}
-      CERTIFICATION_FEE:   ${CERTIFICATION_FEE:-0}
-      COMMISSION_RATE:     ${COMMISSION_RATE:-0.05}
-      REFERRAL_DISCOUNT:   ${REFERRAL_DISCOUNT:-0.2}
       LOG_LEVEL:           info
     ports:
       - "127.0.0.1:4000:3000"

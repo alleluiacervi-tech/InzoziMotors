@@ -4,9 +4,11 @@ Rwanda's certified used-car marketplace. Sawa is the middleman: every car is
 physically inspected on a 150-point check and photographed by our team before
 it is listed. Sellers submit cars — they never publish directly.
 
-**There is no payment feature.** Buyers request a car, Sawa arranges the
-handover, and money changes hands in person at a center. That is deliberate and
-is not a gap to be filled later.
+**There is no marketplace payment or guarantee feature.** Sawa reviews listings
+and provides communication tools. Buyers, sellers and rental providers contact
+one another directly and independently handle due diligence, contracts,
+payments, transfers, collection and disputes. Sawa does not reserve vehicles or
+act as a party to their deal.
 
 ---
 
