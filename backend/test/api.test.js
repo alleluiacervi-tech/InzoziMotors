@@ -22,7 +22,7 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret_at_least_32_characters_long';
 process.env.CERTIFICATION_FEE = '150';
 
-const { app } = require('../server');
+const { app, server } = require('../server');
 const pool = require('../src/db');
 
 const api = () => request(app);
@@ -50,6 +50,13 @@ async function makeAdmin(user) {
 }
 
 test.after(async () => { await pool.end(); });
+
+test('HTTP server timeouts bound slow connections without making uploads impractical', () => {
+  assert.equal(server.headersTimeout, 65_000);
+  assert.equal(server.requestTimeout, 120_000);
+  assert.equal(server.keepAliveTimeout, 5_000);
+  assert.ok(server.headersTimeout < server.requestTimeout);
+});
 
 test('admin audit history records the actor and state-changing decision', async () => {
   const adminUser = await register();

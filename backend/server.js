@@ -11,6 +11,15 @@ const { log, reportError, requestLogger } = require('./src/lib/log');
 const app = express();
 const server = http.createServer(app);
 
+// Node's historical defaults allow a peer to keep a socket or incomplete
+// request around for minutes. A small number of slow connections can then tie
+// up every worker before any application rate limit runs. These values leave
+// ample room for a mobile photo upload on a normal connection while making
+// resource use bounded. Keep headers below requestTimeout as required by Node.
+server.headersTimeout = 65_000;
+server.requestTimeout = 120_000;
+server.keepAliveTimeout = 5_000;
+
 // Nginx terminates TLS in front of this process, so without trust proxy every
 // request appears to come from 127.0.0.1 — which would collapse all rate limits
 // below into a single shared bucket for the entire internet.
