@@ -7,7 +7,7 @@ import { CONTACT } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Contact us',
   description:
-    'Call or WhatsApp the Sawa Cars team on +250 788 308 611, or email contact@sawacars.com. Opening hours and addresses for our three inspection and handover centers in Kigali.',
+    'Call or WhatsApp the Sawa Cars team on +250 788 308 611, or email contact@sawacars.com. Opening hours and addresses for our inspection centers in Kigali.',
   alternates: { canonical: '/contact' },
 }
 
@@ -86,7 +86,7 @@ export default function ContactPage() {
       <PageHeader
         eyebrow="Contact"
         title="Talk to a person"
-        lede="One line, answered by the team that inspects the cars and runs the handovers. WhatsApp is how Rwanda communicates, so it is how we do too — and the same number takes calls."
+        lede="One line, answered by the team that supports inspections, listings and platform questions. Buyers and sellers use their own enabled contact channels for direct deal discussions."
       />
 
       {/* ─── The number, front and centre ─────────────────────────────────────
@@ -268,7 +268,7 @@ export default function ContactPage() {
           <SectionHeading
             eyebrow="Come and see us"
             title="Our centers"
-            description="Inspections, handovers and returns all happen here. No appointment is needed to look around, but bring one if you are dropping a car off."
+            description="Platform inspection services happen here. Contact the team before dropping off a vehicle; user transactions are arranged independently."
           />
           <CenterList className="mt-12" />
         </Container>

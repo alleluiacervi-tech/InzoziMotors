@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ApiError, cars as carsApi } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
-import { BUYING_STEPS, CONTACT, SITE } from '@/lib/site'
+import { BUYING_STEPS, SITE } from '@/lib/site'
 import { breadcrumbNode, graph, offerAvailability, organizationNode, ORG_ID } from '@/lib/seo'
 import {
   CAR_STATUS_LABEL,
@@ -103,7 +103,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .join(' · ')
 
   const description = car.inspected
-    ? `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali. Passed the Sawa 150-point inspection, photographed by our team, covered by the 7-day drive-it guarantee.`
+    ? `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali. Inspection information and verified-seller contact available on Sawa Cars.`
     : `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali, listed by Sawa Cars.`
 
   const image = car.images?.[0]
@@ -150,13 +150,6 @@ export default async function CarDetailPage({ params }: PageProps) {
 
   const isAvailable = car.status === 'live'
   const isOwnListing = Boolean(user && user.id === car.seller_id)
-
-  // Always the Sawa business line, never car.seller_phone. The app can surface
-  // a seller's number to a signed-in buyer; a public page cannot, because it is
-  // crawled — and because Sawa Cars is the middleman, so the conversation belongs
-  // with us anyway.
-  const contactMessage = `Hi Sawa Cars, I'm interested in the ${car.title} (${formatUSD(car.price)}) on your website. Is it still available?`
-  const whatsappHref = `https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(contactMessage)}`
 
   const specs: Spec[] = [
     { label: 'Year', value: String(car.year), icon: 'calendar' },
@@ -245,7 +238,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                 {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">New listing</Badge> : null}
                 {isHighDemand(car) ? <Badge tone="danger">High demand</Badge> : null}
                 {!isAvailable ? (
-                  <Badge tone={car.status === 'reserved' ? 'reserved' : 'neutral'}>
+                  <Badge tone="neutral">
                     {CAR_STATUS_LABEL[car.status] ?? car.status}
                   </Badge>
                 ) : null}
@@ -325,10 +318,8 @@ export default async function CarDetailPage({ params }: PageProps) {
                 <div className="mt-5 border-t border-line-soft pt-5">
                   {!isAvailable ? (
                     <div className="space-y-4">
-                      <Alert tone={car.status === 'reserved' ? 'warning' : 'info'}>
-                        {car.status === 'reserved'
-                          ? 'Another buyer has requested this car. It returns to the marketplace if they release it.'
-                          : 'This car has been sold and is no longer available.'}
+                      <Alert tone="info">
+                        This car is not currently available. Browse the live marketplace for alternatives.
                       </Alert>
                       <Button href="/cars" variant="outline" fullWidth>
                         Browse available cars
@@ -336,13 +327,13 @@ export default async function CarDetailPage({ params }: PageProps) {
                     </div>
                   ) : isOwnListing ? (
                     <div className="space-y-4">
-                      <Alert tone="info">This is your listing, so you cannot request it.</Alert>
+                      <Alert tone="info">This is your listing. Use your dashboard to manage it.</Alert>
                       <Button href="/dashboard" variant="outline" fullWidth>
                         Manage this listing
                       </Button>
                     </div>
                   ) : user ? (
-                    <RequestCarForm carId={car.id} phone={user.phone} />
+                    <RequestCarForm carId={car.id} available={car.seller_contact_available} />
                   ) : (
                     <div className="space-y-4">
                       <Button
@@ -351,11 +342,10 @@ export default async function CarDetailPage({ params }: PageProps) {
                         fullWidth
                         trailingIcon={<Icon name="arrow-right" size={18} />}
                       >
-                        Request this car
+                        Sign in to contact seller
                       </Button>
                       <p className="text-micro leading-relaxed text-content-muted">
-                        Sign in first so we can reserve the car in your name. No
-                        payment now, and none in the app —{' '}
+                        Contact details are released only to signed-in users after the direct-deal notice is acknowledged.{' '}
                         <Link href="/how-it-works" className="font-bold text-brand hover:underline">
                           see how buying works
                         </Link>
@@ -365,23 +355,12 @@ export default async function CarDetailPage({ params }: PageProps) {
                   )}
 
                   <div className="mt-4 space-y-2">
-                    {CONTACT.whatsappVerified ? (
-                      <Button
-                        href={whatsappHref}
-                        variant="outline"
-                        fullWidth
-                        target="_blank"
-                        leadingIcon={<Icon name="whatsapp" size={17} className="text-content-secondary" />}
-                      >
-                        Ask a question on WhatsApp
-                      </Button>
-                    ) : null}
                     <OpenInAppButton path={`cars/${car.id}`} variant="ghost" fullWidth />
                   </div>
 
                   <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">
                     <Icon name="shield" size={14} className="mt-px shrink-0" />
-                    The Sawa 7-Day Guarantee · Handover at a Sawa center
+                    Verified listing · Direct buyer–seller contact · No in-app payment
                   </p>
                 </div>
 
@@ -423,8 +402,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
               <p className="mt-4 flex items-start gap-2 px-1 text-micro leading-relaxed text-content-muted">
                 <Icon name="location" size={14} className="mt-0.5" />
-                Handovers happen at a Sawa center in Kigali, with our team
-                present for the documents and the RRA transfer.
+                Arrange your own viewing, document checks, ownership transfer and delivery directly with the seller.
               </p>
             </div>
           </aside>
@@ -472,19 +450,20 @@ export default async function CarDetailPage({ params }: PageProps) {
               </Alert>
             ) : null}
 
-            {/* The named guarantee, between the evidence and the history. */}
+            {/* Marketplace role, between the evidence and the history. */}
             <Card className="p-5 sm:p-6">
               <h2 className="text-title-sm font-extrabold text-content">
-                The Sawa 7-Day Guarantee
+                A verified listing, not a managed transaction
               </h2>
               <p className="mt-2 max-w-prose text-body leading-relaxed text-content-secondary">
-                From the day of handover you have 7 days: if this car doesn&apos;t match the
-                report above, return it to any Sawa center for a full refund. It applies to
-                every purchase handed over at our centers — no premium tier required.
+                Sawa Cars reviews seller identity and vehicle information before publication.
+                Buyers and sellers then communicate, negotiate, inspect further, agree terms and
+                transact directly. Sawa Cars does not hold funds, write the parties&apos; contract,
+                guarantee the deal or decide transaction disputes.
               </p>
               <p className="mt-3 text-caption">
-                <Link href="/legal/guarantee" className="font-bold text-brand hover:underline">
-                  The guarantee terms in full
+                <Link href="/legal/terms" className="font-bold text-brand hover:underline">
+                  Read the marketplace terms
                 </Link>
               </p>
             </Card>
@@ -495,7 +474,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
             <section aria-labelledby="next-heading">
               <h2 id="next-heading" className="mb-4 text-title font-extrabold text-content">
-                What happens after you request
+                What happens after you make contact
               </h2>
               <ol className="space-y-4">
                 {BUYING_STEPS.slice(0, 4).map((step, index) => (
@@ -589,9 +568,9 @@ function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<R
     },
     {
       icon: 'check-circle',
-      label: 'Buyer protection',
-      value: '7-day Sawa Guarantee',
-      tone: 'text-success',
+      label: 'Transaction model',
+      value: 'Direct buyer–seller agreement',
+      tone: 'text-content-secondary',
     },
   ] as const
 
@@ -644,13 +623,13 @@ function SellerCard({ car }: { car: Car }) {
         {typeof car.seller_sales === 'number' && car.seller_sales > 0 ? (
           <p className="text-caption text-content-secondary">
             <span className="font-bold text-content">{car.seller_sales}</span> completed{' '}
-            {car.seller_sales === 1 ? 'sale' : 'sales'} through Sawa Cars
+            {car.seller_sales === 1 ? 'listing' : 'listings'} previously marked sold
           </p>
         ) : null}
       </div>
 
       <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-muted">
-        You deal with Sawa Cars, not the seller — the handover happens at our center.
+        You deal directly with the seller. Verify the vehicle, documents, price, payment method and written terms before making any commitment.
       </p>
     </Card>
   )

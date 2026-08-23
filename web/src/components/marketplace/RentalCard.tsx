@@ -14,7 +14,7 @@ const FALLBACK_IMAGE =
 /**
  * Fleet card. Same shape as CarCard so the two marketplaces feel like one
  * product, but the numbers are rental numbers: a daily rate, a refundable
- * deposit, and a minimum stay. Trips and rating come from the API — a car with
+ * indicative deposit, and a minimum stay. Trips and rating come from the API — a car with
  * no history shows none rather than a flattering placeholder.
  */
 export function RentalCard({ car, priority = false }: { car: RentalCar; priority?: boolean }) {
@@ -95,7 +95,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
               <span className="text-caption font-bold text-content-muted"> / day</span>
             </p>
             <p className="mt-0.5 text-micro text-content-muted">
-              {formatUSD(car.deposit)} deposit, refundable
+              {formatUSD(car.deposit)} provider-stated deposit
             </p>
           </div>
 
@@ -108,12 +108,10 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
           ) : null}
         </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3">
-          <p className="text-micro text-content-muted">
-            {car.min_days > 1 ? `Minimum ${car.min_days} days` : 'Available from one day'}
-          </p>
-          <span className="inline-flex items-center gap-1 text-micro font-bold text-content-secondary transition-colors group-hover:text-brand">
-            View rental <Icon name="arrow-right" size={13} />
+        <div className="mt-4 border-t border-line-soft pt-4">
+          <p className="mb-3 text-micro text-content-muted">{car.min_days > 1 ? `Minimum ${car.min_days} days` : 'Available from one day'} · provider confirms dates</p>
+          <span className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-caption font-extrabold text-white shadow-card transition-colors group-hover:bg-brand-deep">
+            View details &amp; request availability <Icon name="arrow-right" size={15} />
           </span>
         </div>
       </div>

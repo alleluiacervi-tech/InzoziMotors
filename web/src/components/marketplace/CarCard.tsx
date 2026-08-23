@@ -52,11 +52,9 @@ export function CarCard({
           isRow ? 'aspect-[16/10] sm:aspect-auto sm:w-72 sm:shrink-0' : 'aspect-[16/10]'
         }`}
       >
-        {/* Multi-photo listings preview their angles on hover/tap — the
-            36-angle standard, felt on the card itself. */}
-        {/* Full-bleed crops for real inventory — our photographers shoot the
-            36 angles for exactly this frame. Seeded press renders keep
-            object-contain: their 2.7:1 side profiles crop into a door. */}
+        {/* Multi-photo listings preview their available gallery on hover or tap.
+            Seeded press renders use object-contain because their wide side
+            profiles would otherwise crop into a door. */}
         {(car.images?.length ?? 0) >= 2 ? (
           <CardPhotoFlick
             images={car.images!}
@@ -104,13 +102,6 @@ export function CarCard({
           </span>
         ) : null}
 
-        {car.status === 'reserved' ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-ink-900/55 backdrop-blur-[2px]">
-            <span className="rounded-pill bg-white/95 px-4 py-2 text-micro font-extrabold text-content">
-              Reserved
-            </span>
-          </div>
-        ) : null}
       </div>
 
       <div className={`p-5 ${isRow ? 'flex flex-1 flex-col' : ''}`}>

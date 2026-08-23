@@ -15,31 +15,31 @@ import { CountUp } from '@/components/ui/CountUp'
 
 const FACTS = [
   { value: 150, label: 'point inspection, published in full' },
-  { value: 36, label: 'standard photo angles, shot by us' },
-  { value: 7, label: 'day drive-it guarantee' },
+  { value: 40, label: 'gallery images supported per listing' },
+  { value: 0, label: 'payments processed by Sawa Cars' },
   { value: 3, label: 'Kigali inspection centers' },
 ] as const
 
 const LEDGER: { claim: string; proof: string }[] = [
   {
-    claim: '150-Point Certification',
-    proof: 'Enforced in code: no car reaches “live” without an inspection record and a published score.',
+    claim: 'Inspection evidence',
+    proof: 'Publication checks require a completed inspection when the platform inspection policy is enabled.',
   },
   {
-    claim: 'Drive It for 7 Days',
-    proof: 'Every purchase handed over at a Sawa center carries the 7-Day Guarantee, in writing.',
+    claim: 'Verified seller status',
+    proof: 'A listing cannot go live for a suspended, deleted or identity-unverified seller.',
   },
   {
-    claim: 'Verified History',
+    claim: 'Evidence without guessing',
     proof: 'Ownership, mileage and RRA duty status are checked — unknowns are labelled unknown, never guessed.',
   },
   {
-    claim: 'Zero Fake Listings',
-    proof: 'Only the Sawa team can publish, and only after physically inspecting the car. Sellers cannot post.',
+    claim: 'Controlled publication',
+    proof: 'Only authorized administrators publish, with the decision and readiness result retained in the audit history.',
   },
   {
-    claim: 'Buyers Pay Nothing',
-    proof: 'Browsing, buying and the guarantee are free for buyers — every fee on the platform is the seller’s.',
+    claim: 'Direct transactions',
+    proof: 'Sawa Cars does not accept, hold or route user transaction funds and does not create the parties’ contract.',
   },
 ]
 
@@ -50,9 +50,9 @@ export function TrustBand() {
         <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <SectionHeading
-              eyebrow="The Sawa promise"
-              title="Nothing here is listed unseen"
-              description="A classifieds site carries whatever is posted to it. Every listing above went through our hands first."
+              eyebrow="Marketplace controls"
+              title="Evidence before contact"
+              description="Sawa Cars controls verification and publication. Users retain control—and responsibility—for the deal itself."
             />
 
             {/* The process in four numbers. Facts about how we work — not
@@ -81,7 +81,7 @@ export function TrustBand() {
                 href="/promise"
                 className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
               >
-                The promise in full, including the fine print
+                See the controls and their limits
                 <Icon name="arrow-right" size={16} />
               </Link>
             </p>

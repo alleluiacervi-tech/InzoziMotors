@@ -35,8 +35,8 @@ export function PageIntro({
           ) : null}
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-caption font-semibold text-white/70">
             <span className="inline-flex items-center gap-1.5"><Icon name="shield-check" size={15} className="text-white" />150-point inspection</span>
-            <span className="inline-flex items-center gap-1.5"><Icon name="check-circle" size={15} className="text-white" />7-day guarantee</span>
-            <span className="inline-flex items-center gap-1.5"><Icon name="user" size={15} className="text-white" />No buyer fees</span>
+            <span className="inline-flex items-center gap-1.5"><Icon name="check-circle" size={15} className="text-white" />Admin-approved listings</span>
+            <span className="inline-flex items-center gap-1.5"><Icon name="user" size={15} className="text-white" />Direct seller contact</span>
           </div>
         </div>
         {aside ? <div className="shrink-0">{aside}</div> : null}

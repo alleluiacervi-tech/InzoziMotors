@@ -46,7 +46,7 @@ export default async function SellingPage() {
   const myListings = settled(listingResult, [])
   const failed = submissionResult.status === 'rejected' || listingResult.status === 'rejected'
 
-  const live = myListings.filter((car) => car.status === 'live' || car.status === 'reserved')
+  const live = myListings.filter((car) => car.status === 'live')
   const closed = myListings.filter((car) => car.status === 'sold' || car.status === 'archived')
 
   return (
@@ -280,9 +280,7 @@ export default async function SellingPage() {
                           />
                         ) : (
                           <p className="text-caption leading-relaxed text-content-secondary">
-                            A buyer has reserved this car, so the price is locked while we arrange
-                            the handover. If the request is cancelled it goes back on sale
-                            automatically.
+                            Price editing is available while a listing is live. Keep the status and price accurate whenever availability changes.
                           </p>
                         )}
                       </div>

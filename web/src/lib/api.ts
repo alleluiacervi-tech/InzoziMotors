@@ -1,6 +1,6 @@
 import type {
-  AppNotification, Car, CarQuery, Conversation, Dispute, Handover, InspectionReport,
-  Message, Referral, RentalCar, Review, SavedSearch, Submission, TrustScore, User,
+  AppNotification, Car, CarQuery, Conversation, InspectionReport,
+  Message, RentalCar, RentalInquiry, Review, SavedSearch, Submission, TrustScore, User,
   Valuation, VehicleHistory,
 } from './types'
 
@@ -156,6 +156,11 @@ export const cars = {
   inspectionReport: (id: string) =>
     request<InspectionReport>(`/inspections/report/${id}`, { revalidate: CATALOGUE_REVALIDATE }),
 
+  contact: (token: string, id: string, channel: 'phone' | 'whatsapp' | 'in_app', acknowledge = false) =>
+    request<{ channel: string; contact: string | null; seller_id: string; notice: string; available: { phone: boolean; whatsapp: boolean; in_app: boolean } }>(`/cars/${id}/contact`, {
+      token, method: 'POST', body: JSON.stringify({ channel, acknowledge }), cache: 'no-store',
+    }),
+
   /** Public valuation tool — no account needed, same endpoint the app calls. */
   valuation: (params: { make: string; year: number; mileage?: number }) =>
     request<Valuation>(`/cars/valuation/estimate${qs(params)}`, { cache: 'no-store' }),
@@ -164,6 +169,13 @@ export const cars = {
 export const rentals = {
   list: () => request<RentalCar[]>('/rentals', { revalidate: CATALOGUE_REVALIDATE, tags: ['rentals'] }),
   get: (id: string) => request<RentalCar>(`/rentals/${id}`, { revalidate: CATALOGUE_REVALIDATE }),
+  inquire: (token: string, id: string, body: { start_date?: string; days?: number; pickup_location?: string; message?: string; preferred_channel: 'in_app' | 'phone' | 'whatsapp'; acknowledge: boolean }) =>
+    request<RentalInquiry & { contact?: string | null; notice: string }>(`/rentals/${id}/inquire`, {
+      token, method: 'POST', body: JSON.stringify(body), cache: 'no-store',
+    }),
+  myInquiries: (token: string) => request<RentalInquiry[]>('/rentals/inquiries/my', { token, cache: 'no-store' }),
+  updateInquiry: (token: string, id: string, status: 'cancelled') =>
+    request<RentalInquiry>(`/rentals/inquiries/${id}/status`, { token, method: 'PATCH', body: JSON.stringify({ status }) }),
 }
 
 export const sellers = {
@@ -219,7 +231,7 @@ export const auth = {
 export const account = {
   me: (token: string) => request<User>('/auth/me', { token }),
 
-  updateProfile: (token: string, fields: { name?: string; phone?: string; avatar_url?: string }) =>
+  updateProfile: (token: string, fields: { name?: string; phone?: string; whatsapp_phone?: string; phone_visible?: boolean; whatsapp_visible?: boolean; avatar_url?: string }) =>
     request<User>('/auth/me', { token, method: 'PATCH', body: JSON.stringify(fields) }),
 
   /** Returns a replacement token: the backend ends every other session on a
@@ -269,20 +281,6 @@ export const saved = {
     request<{ success: true }>(`/saved-searches/${id}`, { token, method: 'DELETE' }),
 }
 
-export const handovers = {
-  mine: (token: string) => request<Handover[]>('/handovers/my', { token }),
-  selling: (token: string) => request<Handover[]>('/handovers/selling', { token }),
-
-  /** Reserve a car. No payment — Sawa arranges the handover offline. */
-  book: (
-    token: string,
-    body: { car_id: string; contact_phone?: string; center?: string | null; handover_date?: string | null; handover_time?: string | null }
-  ) => request<Handover>('/handovers', { token, method: 'POST', body: JSON.stringify(body) }),
-
-  cancel: (token: string, id: string) =>
-    request<Handover>(`/handovers/${id}/cancel`, { token, method: 'PATCH' }),
-}
-
 export const submissions = {
   mine: (token: string) => request<Submission[]>('/submissions', { token }),
 
@@ -319,22 +317,6 @@ export const messages = {
     }),
 }
 
-export const disputes = {
-  mine: (token: string) => request<Dispute[]>('/disputes/mine', { token }),
-  raise: (token: string, handover_id: string, reason: string) =>
-    request<Dispute>('/disputes', {
-      token, method: 'POST', body: JSON.stringify({ handover_id, reason }),
-    }),
-}
-
-export const referrals = {
-  mine: (token: string) => request<Referral>('/referrals/mine', { token }),
-  redeem: (token: string, code: string) =>
-    request<{ success: true }>('/referrals/redeem', {
-      token, method: 'POST', body: JSON.stringify({ code }),
-    }),
-}
-
 export const sellerListings = {
   mine: (token: string) => request<Car[]>('/cars/seller/mine', { token }),
   updatePrice: (token: string, id: string, price: number) =>
@@ -342,8 +324,8 @@ export const sellerListings = {
 }
 
 export const api = {
-  cars, rentals, sellers, auth, account, saved, handovers,
-  submissions, notifications, messages, disputes, referrals, sellerListings,
+  cars, rentals, sellers, auth, account, saved,
+  submissions, notifications, messages, sellerListings,
 }
 
 export default api

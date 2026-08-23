@@ -12,8 +12,8 @@ export function HowItWorks() {
       <Container>
         <SectionHeading
           eyebrow="How it works"
-          title="Driveway to handover, in five steps"
-          description="Every step in the middle is done by our team, on the record."
+          title="Submission to direct enquiry, in five steps"
+          description="Our team controls the evidence and publication stages. The seller controls the resulting negotiation."
         />
 
         <div className="mt-12">
@@ -30,7 +30,7 @@ export function HowItWorks() {
             href="/how-it-works"
             className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
           >
-            Refund conditions, what to bring, and how selling works
+            Buying safety, direct deals, and how selling works
             <Icon name="arrow-right" size={16} />
           </Link>
         </p>

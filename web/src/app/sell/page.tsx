@@ -28,12 +28,12 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Sell your car in Kigali, Rwanda — valuation and inspection',
   description:
-    'Bring your car to a Sawa center once. We run the 150-point inspection, shoot the 36 standard photos, publish the listing, verify the buyer and process the RRA transfer. Free valuation, no account needed.',
+    'Submit your vehicle for seller verification, inspection and controlled publication on Sawa Cars. Manage direct buyer enquiries and keep control of your price.',
   alternates: { canonical: '/sell' },
   openGraph: {
     title: `Sell your car with ${SITE.name}`,
     description:
-      'We inspect, photograph, list, find the buyer and handle the RRA transfer. You keep control of the price.',
+      'We review, inspect and publish verified listings. You communicate and agree any sale directly with the buyer.',
     url: `${SITE.url}/sell`,
     type: 'website',
   },
@@ -50,7 +50,7 @@ const WHAT_WE_DO: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'camera',
     title: 'We photograph it',
-    body: 'Our photographers shoot the same 36 angles on every car — exteriors, wheels, engine bay, odometer, VIN plate, interior, and honest close-ups of anything the inspection flagged.',
+    body: 'We add a clear, truthful gallery with the useful exterior, interior, document and defect views this particular vehicle needs. There is no fixed angle count.',
   },
   {
     icon: 'chart',
@@ -59,18 +59,18 @@ const WHAT_WE_DO: { icon: IconName; title: string; body: string }[] = [
   },
   {
     icon: 'user',
-    title: 'We verify the buyer',
-    body: 'Buyers request through Sawa Cars, not through your phone number. Your car is reserved for one buyer at a time, and we confirm who they are before a handover is scheduled.',
+    title: 'You choose your contact channels',
+    body: 'Use in-app messages, or opt in to phone and WhatsApp disclosure. Direct details are released only after a signed-in buyer acknowledges the marketplace notice.',
   },
   {
     icon: 'document',
-    title: 'We process the transfer',
-    body: 'The RRA ownership transfer is completed with both of you at the center. New registration documents typically complete within two to three working days.',
+    title: 'You agree the sale directly',
+    body: 'You and the buyer decide the price, payment, viewing, written contract, ownership transfer and delivery without making Sawa Cars a party.',
   },
   {
     icon: 'cash',
-    title: 'Payment happens in person',
-    body: 'Money changes hands at the center on handover day — never through the app, never through the website. Nobody pays a deposit to hold your car.',
+    title: 'Sawa never holds the payment',
+    body: 'There is no platform checkout or escrow. Verify the buyer and recipient, document your terms and retain proof of any independent payment.',
   },
 ]
 
@@ -128,15 +128,15 @@ export default async function SellPage() {
               </h1>
               <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-white/70">
                 Priced from cars actually listed and sold on Sawa Cars — never a lookup table. If the
-                number works, we inspect it on 150 points, photograph it to one standard, publish
-                the listing, verify the buyer and process the RRA transfer with you at the center.
+                 number works, we inspect it, create a useful gallery and publish only after admin
+                 review. You then manage verified buyer enquiries and any agreement directly.
               </p>
 
               <ul className="mt-8 space-y-3">
                 {[
                   'The valuation takes about ten seconds and needs no account',
                   'You keep control of the price the whole way',
-                  'Buyers pay nothing — demand on your listing stays high',
+                   'You control whether buyers can request phone or WhatsApp contact',
                 ].map((line) => (
                   <li key={line} className="flex gap-3">
                     <Icon name="check-circle" size={20} className="mt-0.5 shrink-0 text-white" />
@@ -194,8 +194,8 @@ export default async function SellPage() {
         <Container>
           <SectionHeading
             eyebrow="How selling works"
-            title="Six steps, and you know where you are at every one"
-            description="Your submission carries a status from the moment you send it until the day the car is handed over. Nothing happens without you being told."
+            title="Five steps, and you know where you are at every one"
+            description="Your submission carries a status from verification through inspection, publication and any seller-reported close."
           />
 
           <div className="mt-12">
@@ -208,39 +208,36 @@ export default async function SellPage() {
       <Section id="cost" tone="surface">
         <Container>
           <SectionHeading
-            eyebrow="What it costs"
-            title="Two charges, both explained before you commit"
-            description="We do not take a cut of a sale we did not complete, and we do not add fees at handover."
+            eyebrow="Clear boundaries"
+            title="What the platform controls—and what you control"
+            description="The publication workflow is managed by Sawa Cars. The transaction workflow belongs to you and the buyer."
           />
 
           <div className="mt-12 grid gap-4 lg:grid-cols-3">
             <Card className="p-6">
-              <Badge tone="neutral">Paid once, upfront</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">Certification fee</h3>
+              <Badge tone="neutral">Platform</Badge>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">Publication requirements</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                Covers the 150-point inspection, the professional photography and publishing your
-                listing. It pays for real work by real people, which is why it is charged whether
-                or not the car sells. We confirm the amount with you before your inspection is
-                booked — never after.
+                Your account must be active and verified, the required inspection must be complete,
+                and the listing needs a valid gallery before an administrator can make it public.
               </p>
             </Card>
 
             <Card className="p-6">
-              <Badge tone="success">Only when it sells</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">Success commission</h3>
+              <Badge tone="success">Seller</Badge>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">Direct buyer communication</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                A small share of the sale price, charged when the handover completes at a Sawa
-                center. It is quoted with your certification fee, before inspection. If the car
-                does not sell, there is nothing to pay.
+                Reply in the platform or enable phone and WhatsApp. Keep the listing accurate,
+                disclose material changes and pause or mark it sold when it is no longer available.
               </p>
             </Card>
 
             <Card className="p-6">
-              <Badge tone="neutral">Optional</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">Featured placement</h3>
+              <Badge tone="neutral">Independent</Badge>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">Contract and payment</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                Moves your listing to the top of browse for a set number of days. Useful on a
-                crowded model, unnecessary on a rare one. Never applied unless you ask for it.
+                You and the buyer are responsible for inspection, price, payment, ownership
+                transfer, delivery and written terms. Sawa Cars does not hold money or guarantee the deal.
               </p>
             </Card>
           </div>
@@ -248,9 +245,7 @@ export default async function SellPage() {
           <div className="mt-8 flex flex-col gap-3 rounded-2xl bg-ink-900 p-6 text-white sm:flex-row sm:items-center sm:gap-5 sm:p-8">
             <Icon name="info" size={22} className="text-white/70" />
             <p className="text-body leading-relaxed text-white/85">
-              <span className="font-extrabold text-white">Buyers pay nothing, ever.</span> No
-              buyer&apos;s premium, no booking fee, no charge to see the inspection report. That is
-              deliberate — it keeps demand on your listing as high as it can be.
+              <span className="font-extrabold text-white">No Sawa transaction checkout.</span> Contacting you is an inquiry only; it does not reserve the vehicle or create a contract with Sawa Cars.
             </p>
           </div>
         </Container>
@@ -287,7 +282,8 @@ export default async function SellPage() {
                   { where: 'Web', what: 'Free valuation and browsing the market' },
                   { where: 'Both', what: 'Tracking your submission through the pipeline' },
                   { where: 'Both', what: 'Messages from buyers, and changing your price' },
-                  { where: 'Center', what: 'Inspection, photography, handover and RRA transfer' },
+                  { where: 'Center', what: 'Vehicle inspection and listing evidence where required' },
+                  { where: 'Direct', what: 'Viewing, negotiation, contract, payment, transfer and delivery' },
                 ].map((row) => (
                   <li key={row.what} className="flex items-start gap-3">
                     <span className="mt-0.5 w-[52px] shrink-0 rounded-pill bg-surface-alt px-2 py-1 text-center text-micro font-bold uppercase tracking-wide text-content-muted">
@@ -321,7 +317,7 @@ export default async function SellPage() {
           <SectionHeading
             eyebrow="Where you bring it"
             title="Three centers across Kigali"
-            description="Inspection, photography and handover all happen at the center you choose. Bring the car, your ID and any service records you have."
+            description="Inspection services happen at the center you choose. Bring the car, your ID and any service records you have."
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -65,7 +65,7 @@ export default async function ProfilePage() {
         <section aria-labelledby="details">
           <PanelHeading id="details" title="Your details" />
           <Card className="p-5 sm:p-6">
-            <ProfileForm name={user.name} phone={user.phone ?? ''} email={user.email} />
+            <ProfileForm name={user.name} phone={user.phone ?? ''} whatsapp={user.whatsapp_phone ?? ''} phoneVisible={!!user.phone_visible} whatsappVisible={!!user.whatsapp_visible} email={user.email} />
           </Card>
         </section>
 
@@ -103,7 +103,7 @@ export default async function ProfilePage() {
             <PanelHeading id="session" title="This device" />
             <Card className="p-5 sm:p-6">
               <p className="text-caption leading-relaxed text-content-secondary">
-                Signing out clears your session on this browser only. Your saved cars, requests and
+                Signing out clears your session on this browser only. Your saved cars, inquiries and
                 alerts stay exactly as they are.
               </p>
               <form action={signOutAction} className="mt-4">

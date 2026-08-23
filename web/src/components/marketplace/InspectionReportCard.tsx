@@ -145,7 +145,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
 
       <p className="border-t border-line-soft px-5 py-4 text-micro leading-relaxed text-content-muted sm:px-6">
         Recorded by a Sawa mechanic at the inspection center, not by the seller.
-        The same report is attached to the car at handover.
+        Use this record as one input to your own viewing and independent checks.
       </p>
     </Card>
   )

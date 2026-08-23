@@ -1,338 +1,41 @@
 import Link from 'next/link'
-import { HandoverRow } from '@/components/dashboard/HandoverRow'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { StatTile } from '@/components/dashboard/StatTile'
 import { getNotifications, settled } from '@/components/dashboard/data'
 import { notificationTarget } from '@/components/dashboard/meta'
-import { Alert, Badge, Button, Card, EmptyState, Icon, type IconName } from '@/components/ui'
-import { handovers, saved, submissions } from '@/lib/api'
-import {
-  SUBMISSION_STATUS_LABEL,
-  daysLeftInReturnWindow,
-  formatRelative,
-} from '@/lib/business'
+import { Alert, Badge, Button, Card, EmptyState, Icon } from '@/components/ui'
+import { rentals, saved, submissions } from '@/lib/api'
+import { SUBMISSION_STATUS_LABEL, formatRelative } from '@/lib/business'
 import { getCurrentUser, getToken } from '@/lib/session'
-import type { Handover } from '@/lib/types'
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Overview.
-//
-// Four independent calls, all in flight together. allSettled rather than all,
-// because one failing endpoint should cost the visitor one panel — not the
-// whole page. Every figure shown is the length of a list the API returned.
-// ─────────────────────────────────────────────────────────────────────────────
-
-type NextStep = { icon: IconName; title: string; body: string; href: string; cta: string }
-
-/** The concrete thing to do next, derived only from live records. */
-function buildNextSteps(list: Handover[], savedCount: number): NextStep[] {
-  const steps: NextStep[] = []
-
-  const inWindow = list.find(
-    (h) => h.status === 'complete' && daysLeftInReturnWindow(h.confirmed_at) > 0
-  )
-  if (inWindow) {
-    const days = daysLeftInReturnWindow(inWindow.confirmed_at)
-    steps.push({
-      icon: 'shield-check',
-      title: `${days} ${days === 1 ? 'day' : 'days'} left in your guarantee window`,
-      body: `Drive the ${inWindow.car_title ?? 'car'}. If it does not match its inspection report, return it to any Sawa center for a full refund.`,
-      href: '/dashboard/requests',
-      cta: 'See the terms',
-    })
-  }
-
-  const confirmed = list.find((h) => h.status === 'confirmed')
-  if (confirmed) {
-    steps.push({
-      icon: 'calendar',
-      title: 'Your handover is confirmed',
-      body: confirmed.center && confirmed.handover_date
-        ? `Meet us at ${confirmed.center} on ${confirmed.handover_date}${confirmed.handover_time ? ` at ${confirmed.handover_time}` : ''}. Bring your national ID and payment.`
-        : 'Our team is finalising the time and place with you and the seller.',
-      href: '/dashboard/requests',
-      cta: 'View request',
-    })
-  }
-
-  const pending = list.filter((h) => h.status === 'pending').length
-  if (pending > 0) {
-    steps.push({
-      icon: 'clock',
-      title: pending === 1 ? 'One request is being confirmed' : `${pending} requests are being confirmed`,
-      body: 'The car is reserved for you. We contact you on WhatsApp within 24 hours to arrange the handover at a center.',
-      href: '/dashboard/requests',
-      cta: 'View requests',
-    })
-  }
-
-  if (savedCount === 0) {
-    steps.push({
-      icon: 'search',
-      title: 'Save the cars you are weighing up',
-      body: 'Saved cars keep their price history in one place, and we tell you the moment one of them drops.',
-      href: '/cars',
-      cta: 'Browse certified cars',
-    })
-  }
-
-  return steps.slice(0, 3)
-}
 
 export default async function DashboardOverviewPage() {
-  const user = await getCurrentUser()
-  const token = await getToken()
-  if (!user || !token) return null // layout has already redirected
-
-  const [savedResult, handoverResult, notificationResult, submissionResult] =
-    await Promise.allSettled([
-      saved.cars(token),
-      handovers.mine(token),
-      getNotifications(),
-      submissions.mine(token),
-    ])
-
-  const savedCars = settled(savedResult, [])
-  const myHandovers = settled(handoverResult, [])
-  const myNotifications = settled(notificationResult, [])
-  const mySubmissions = settled(submissionResult, [])
-
-  const somethingFailed = [savedResult, handoverResult, submissionResult].some(
-    (r) => r.status === 'rejected'
-  )
-
-  const openRequests = myHandovers.filter(
-    (h) => h.status === 'pending' || h.status === 'confirmed'
-  ).length
-  const unread = myNotifications.filter((n) => !n.read).length
+  const user = await getCurrentUser(); const token = await getToken()
+  if (!user || !token) return null
+  const [savedResult, inquiryResult, notificationResult, submissionResult] = await Promise.allSettled([
+    saved.cars(token), rentals.myInquiries(token), getNotifications(), submissions.mine(token),
+  ])
+  const savedCars = settled(savedResult, []); const inquiries = settled(inquiryResult, []); const notes = settled(notificationResult, []); const selling = settled(submissionResult, [])
+  const failed = [savedResult, inquiryResult, submissionResult].some((result) => result.status === 'rejected')
+  const unread = notes.filter((note) => !note.read).length
+  const activeInquiries = inquiries.filter((item) => ['new', 'contacted'].includes(item.status)).length
   const firstName = user.name.trim().split(' ')[0]
+  return <>
+    <PageHeader title={`Hello, ${firstName}`} description="Your shortlists, rental inquiries, seller submissions and platform updates in one place." />
+    {failed ? <Alert tone="warning" title="Part of your dashboard did not load" className="mb-6">Refresh to try again. No account data was changed.</Alert> : null}
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <StatTile label="Saved" value={savedCars.length} icon="heart" href="/dashboard/saved" hint="vehicle shortlist" />
+      <StatTile label="Rental inquiries" value={activeInquiries} icon="calendar" href="/dashboard/rentals" hint="awaiting or contacted" />
+      <StatTile label="Unread" value={unread} icon="bell" href="/dashboard/notifications" hint="platform updates" />
+      <StatTile label="Selling" value={selling.length} icon="car" href="/dashboard/selling" hint="vehicles in review" />
+    </div>
 
-  const nothingYet =
-    savedCars.length === 0 &&
-    myHandovers.length === 0 &&
-    myNotifications.length === 0 &&
-    mySubmissions.length === 0
+    <Card className="mt-8 border-brand/20 bg-brand-tint p-5"><div className="flex gap-3"><Icon name="info" size={20} className="mt-0.5 shrink-0 text-brand" /><div><h2 className="font-extrabold text-content">Your deals remain yours</h2><p className="mt-1 text-caption leading-relaxed text-content-secondary">Sawa Cars does not hold funds or confirm a sale or rental. Verify the other party, vehicle and documents, then record your price, payment, delivery and cancellation terms in your own written agreement.</p><Link href="/how-it-works" className="mt-2 inline-flex min-h-11 items-center text-caption font-bold text-brand">Review the safety steps <Icon name="arrow-right" size={15} className="ml-1" /></Link></div></div></Card>
 
-  const nextSteps = buildNextSteps(myHandovers, savedCars.length)
+    <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <section><PanelHeading id="updates" title="Latest updates" /><Card className="p-2">{notes.length === 0 ? <EmptyState icon="bell" title="Nothing yet" description="Price changes, messages and listing updates appear here." className="py-10" /> : <ul>{notes.slice(0, 5).map((note) => { const target = notificationTarget(note); return <li key={note.id} className="hairline"><div className="flex items-start gap-3 p-3"><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h3 className="text-caption font-bold text-content">{note.title}</h3>{!note.read ? <Badge tone="info">New</Badge> : null}</div><p className="mt-1 line-clamp-2 text-caption text-content-secondary">{note.body}</p><time className="mt-1 block text-micro text-content-muted">{formatRelative(note.created_at)}</time></div>{target ? <Link href={target.href} className="inline-flex min-h-11 items-center text-caption font-bold text-brand">{target.label}</Link> : null}</div></li>})}</ul>}</Card></section>
+      <section><PanelHeading id="inquiries" title="Rental inquiries" /><Card className="p-2">{inquiries.length === 0 ? <EmptyState icon="calendar" title="No rental inquiries" description="Ask a verified provider to confirm dates and terms directly." className="py-10" action={<Button href="/rentals" size="sm" variant="outline">Browse rentals</Button>} /> : <ul>{inquiries.slice(0, 5).map((item) => <li key={item.id} className="hairline"><Link href="/dashboard/rentals" className="flex min-h-16 items-center justify-between rounded-xl p-3 hover:bg-surface-alt"><span><span className="block text-caption font-bold text-content">{item.car_title || item.inquiry_ref}</span><span className="text-micro text-content-muted">{item.inquiry_ref} · {item.status}</span></span><Icon name="chevron-right" size={16} /></Link></li>)}</ul>}</Card></section>
+    </div>
 
-  return (
-    <>
-      <PageHeader
-        title={`Hello, ${firstName}`}
-        description="Everything you have running with Sawa Cars — your saved cars, your requests and where each car you sell has reached."
-      />
-
-      {somethingFailed ? (
-        <Alert tone="warning" title="Part of your dashboard did not load" className="mb-6">
-          We could not reach one of our services. Refresh the page to try again — nothing on your
-          account has changed.
-        </Alert>
-      ) : null}
-
-      {nothingYet ? (
-        <Card>
-          <EmptyState
-            icon="car"
-            title="Your account is ready"
-            description="Every car on Sawa Cars passes a 150-point inspection before it is listed, and every purchase carries a 7-day guarantee. Start with the cars available now — saving one takes a tap, and costs nothing."
-            action={
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button href="/cars">Browse certified cars</Button>
-                <Button href="/sell" variant="outline">
-                  Sell your car
-                </Button>
-              </div>
-            }
-          />
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <StatTile
-              label="Saved"
-              value={savedCars.length}
-              icon="heart"
-              href="/dashboard/saved"
-              hint={savedCars.length === 1 ? 'car on your shortlist' : 'cars on your shortlist'}
-            />
-            <StatTile
-              label="Requests"
-              value={openRequests}
-              icon="key"
-              href="/dashboard/requests"
-              hint="awaiting handover"
-            />
-            <StatTile
-              label="Unread"
-              value={unread}
-              icon="bell"
-              href="/dashboard/notifications"
-              hint="updates from our team"
-            />
-            <StatTile
-              label="Selling"
-              value={mySubmissions.length}
-              icon="car"
-              href="/dashboard/selling"
-              hint={mySubmissions.length === 1 ? 'car in the pipeline' : 'cars in the pipeline'}
-            />
-          </div>
-
-          {nextSteps.length > 0 ? (
-            <section className="mt-8" aria-labelledby="next-steps">
-              <PanelHeading id="next-steps" title="What happens next" />
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {nextSteps.map((step) => (
-                  <Card key={step.title} className="flex flex-col p-5">
-                    <Icon name={step.icon} size={20} className="text-content-secondary" />
-                    <h3 className="mt-3 text-body font-extrabold text-content">{step.title}</h3>
-                    <p className="mt-2 flex-1 text-caption leading-relaxed text-content-secondary">
-                      {step.body}
-                    </p>
-                    <Link
-                      href={step.href}
-                      className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
-                    >
-                      {step.cta}
-                      <Icon name="arrow-right" size={15} />
-                    </Link>
-                  </Card>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <section aria-labelledby="recent-updates">
-              <PanelHeading id="recent-updates" title="Latest updates" />
-              <Card className="p-2">
-                {myNotifications.length === 0 ? (
-                  <EmptyState
-                    icon="bell"
-                    title="Nothing yet"
-                    description="Price drops on cars you saved, handover confirmations and messages from our team all land here."
-                    className="py-10"
-                  />
-                ) : (
-                  <ul>
-                    {myNotifications.slice(0, 4).map((notification) => {
-                      const target = notificationTarget(notification)
-                      return (
-                        <li key={notification.id} className="hairline">
-                          <div className="flex items-start gap-3 p-3">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3
-                                  className={`text-caption ${notification.read ? 'font-semibold text-content-secondary' : 'font-extrabold text-content'}`}
-                                >
-                                  {notification.title}
-                                </h3>
-                                {notification.read ? null : <Badge tone="info">New</Badge>}
-                              </div>
-                              <p className="mt-1 line-clamp-2 text-caption leading-relaxed text-content-secondary">
-                                {notification.body}
-                              </p>
-                              <time
-                                dateTime={notification.created_at}
-                                className="mt-1 block text-micro text-content-muted"
-                              >
-                                {formatRelative(notification.created_at)}
-                              </time>
-                            </div>
-                            {target ? (
-                              <Link
-                                href={target.href}
-                                className="inline-flex min-h-[44px] shrink-0 items-center text-caption font-bold text-brand hover:underline"
-                              >
-                                {target.label}
-                              </Link>
-                            ) : null}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-                {myNotifications.length > 4 ? (
-                  <div className="px-3">
-                    <Link
-                      href="/dashboard/notifications"
-                      className="inline-flex min-h-[44px] items-center text-caption font-bold text-brand hover:underline"
-                    >
-                      All notifications
-                    </Link>
-                  </div>
-                ) : null}
-              </Card>
-            </section>
-
-            <section aria-labelledby="recent-requests">
-              <PanelHeading id="recent-requests" title="Your requests" />
-              <Card className="p-2">
-                {myHandovers.length === 0 ? (
-                  <EmptyState
-                    icon="key"
-                    title="No requests yet"
-                    description="Requesting a car reserves it for you and costs nothing. Payment only ever happens in person at a Sawa center."
-                    className="py-10"
-                    action={<Button href="/cars" size="sm" variant="outline">Browse cars</Button>}
-                  />
-                ) : (
-                  <ul>
-                    {myHandovers.slice(0, 3).map((handover) => (
-                      <li key={handover.id} className="hairline">
-                        <HandoverRow handover={handover} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
-            </section>
-          </div>
-
-          {mySubmissions.length > 0 ? (
-            <section className="mt-8" aria-labelledby="selling-summary">
-              <PanelHeading
-                id="selling-summary"
-                title="Cars you are selling"
-                action={
-                  <Link
-                    href="/dashboard/selling"
-                    className="inline-flex min-h-[44px] items-center text-caption font-bold text-brand hover:underline"
-                  >
-                    Full pipeline
-                  </Link>
-                }
-              />
-              <Card className="p-2">
-                <ul>
-                  {mySubmissions.slice(0, 3).map((submission) => (
-                    <li key={submission.id} className="hairline">
-                      <Link
-                        href="/dashboard/selling"
-                        className="flex items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-surface-alt"
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate text-caption font-bold text-content">
-                            {submission.car_title ??
-                              [submission.year, submission.make, submission.model]
-                                .filter(Boolean)
-                                .join(' ')}
-                          </span>
-                          <span className="block text-caption text-content-muted">
-                            {SUBMISSION_STATUS_LABEL[submission.status] ?? submission.status}
-                          </span>
-                        </span>
-                        <Icon name="chevron-right" size={16} className="text-content-muted" />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </section>
-          ) : null}
-        </>
-      )}
-    </>
-  )
+    {selling.length ? <section className="mt-8"><PanelHeading id="selling" title="Vehicles you are selling" action={<Link href="/dashboard/selling" className="inline-flex min-h-11 items-center text-caption font-bold text-brand">Full pipeline</Link>} /><Card className="p-2"><ul>{selling.slice(0, 3).map((item) => <li key={item.id} className="hairline"><Link href="/dashboard/selling" className="flex items-center justify-between rounded-xl p-3 hover:bg-surface-alt"><span><span className="block text-caption font-bold text-content">{item.car_title ?? [item.year, item.make, item.model].filter(Boolean).join(' ')}</span><span className="text-caption text-content-muted">{SUBMISSION_STATUS_LABEL[item.status] ?? item.status}</span></span><Icon name="chevron-right" size={16} /></Link></li>)}</ul></Card></section> : null}
+  </>
 }

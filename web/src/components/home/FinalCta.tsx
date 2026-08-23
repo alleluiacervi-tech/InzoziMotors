@@ -23,8 +23,7 @@ export function FinalCta() {
         </>
       }
     >
-      Every listing carries its own report, its verified history and a 7-day window to change
-      your mind. Browsing costs nothing, and so does buying — the fees are the seller&apos;s.
+      Review the listing evidence, contact the verified seller, then inspect, negotiate and document your own agreement. Sawa Cars never takes custody of the transaction funds.
     </InkClose>
   )
 }

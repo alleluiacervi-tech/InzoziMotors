@@ -14,8 +14,7 @@ export function Footer() {
           <div>
             <Logo size={19} tone="light" />
             <p className="mt-5 max-w-sm text-body leading-relaxed text-white/60">
-              Rwanda&apos;s certified car marketplace. We inspect every car on a 150-point
-              check, photograph it ourselves, and stand behind it for 7 days.
+              Rwanda&apos;s verified vehicle marketplace. We improve listing evidence and seller accountability, then let users communicate and agree independently.
             </p>
 
             <div className="mt-7">
@@ -105,7 +104,7 @@ export function Footer() {
             © {year} {SITE.name}. Kigali, Rwanda. All rights reserved.
           </p>
           <p className="text-micro text-white/45">
-            Buyers pay nothing. Payment happens in person at a Sawa center — never online.
+            No Sawa checkout or escrow. Users remain responsible for their own contracts and payments.
           </p>
         </div>
       </div>

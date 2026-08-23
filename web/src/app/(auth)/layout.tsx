@@ -31,13 +31,13 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
   },
   {
     icon: 'refresh',
-    title: 'Seven days to decide',
-    desc: 'Every certified purchase carries a 7-day window. If the car does not match its report, return it to any center for a full refund.',
+    title: 'Consent-based seller contact',
+    desc: 'Phone and WhatsApp details are released only when a seller enables them and a signed-in buyer accepts the direct-deal notice.',
   },
   {
     icon: 'cash',
-    title: 'Cars are never paid for online',
-    desc: 'A car changes hands in person at a Sawa center, never through this site. Buyers pay us nothing.',
+    title: 'No checkout or escrow',
+    desc: 'Users decide their own contract, payment, delivery and ownership-transfer arrangements. Sawa Cars never holds transaction funds.',
   },
 ]
 
@@ -92,13 +92,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               href="/promise"
               className="font-bold text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
             >
-              Read the full Sawa Promise
+              Read about marketplace safety
             </Link>
           </p>
 
           <div className="mt-auto border-t border-white/10 pt-7">
             <p className="text-eyebrow font-bold uppercase text-white/50">
-              Inspection &amp; handover centers
+              Inspection centers
             </p>
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-caption text-white/70">
               {CENTERS.map((center) => (

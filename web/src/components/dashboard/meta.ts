@@ -19,10 +19,10 @@ export function notificationTarget(
 ): { href: string; label: string } | null {
   const meta = notification.meta
   const disputeId = readId(meta, 'disputeId')
-  if (disputeId) return { href: '/dashboard/disputes', label: 'View dispute' }
+  if (disputeId) return { href: '/dashboard', label: 'View account' }
 
   const bookingId = readId(meta, 'bookingId')
-  if (bookingId) return { href: '/dashboard/requests', label: 'View request' }
+  if (bookingId) return { href: '/dashboard', label: 'View account' }
 
   const carId = readId(meta, 'carId')
   if (carId) return { href: `/cars/${carId}`, label: 'View car' }

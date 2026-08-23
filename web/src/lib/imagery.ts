@@ -94,9 +94,3 @@ export const BODY_TYPE_IMAGES: Record<string, { image: MarketingImage; alt: stri
     alt: 'Pickup truck on open ground',
   },
 }
-
-/** The handover moment — the one process step that earns an image. */
-export const HANDOVER_IMAGE: { image: MarketingImage; alt: string } = {
-  image: heroSuvCourtyard,
-  alt: 'Cars presented in a modern courtyard',
-}

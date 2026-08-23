@@ -16,6 +16,10 @@ export interface User {
   name: string
   email: string
   phone?: string | null
+  whatsapp_phone?: string | null
+  phone_visible?: boolean
+  whatsapp_visible?: boolean
+  business_verified?: boolean
   role: UserRole
   id_verified: IdVerificationStatus
   trust_score: number
@@ -26,12 +30,15 @@ export interface User {
 }
 
 export type CarStatus =
+  | 'draft'
   | 'under_review'
   | 'scheduled'
   | 'inspecting'
+  | 'approved'
   | 'live'
-  | 'reserved'
+  | 'paused'
   | 'sold'
+  | 'rejected'
   | 'archived'
 
 export interface PricePoint {
@@ -71,6 +78,10 @@ export interface Car {
   // Joined by the API
   seller_name?: string
   seller_phone?: string | null
+  seller_whatsapp?: string | null
+  seller_contact_available?: { phone: boolean; whatsapp: boolean; in_app: boolean }
+  direct_deal_notice?: string
+  marketplace_terms_version?: string
   seller_trust?: number
   seller_id_verified?: IdVerificationStatus
   seller_sales?: number
@@ -120,6 +131,7 @@ export interface InspectionReport {
 
 export interface RentalCar {
   id: string
+  provider_id?: string | null
   title: string
   make?: string
   model?: string
@@ -142,30 +154,30 @@ export interface RentalCar {
   safari_ready: boolean
   status: 'active' | 'maintenance' | 'retired'
   booked_ranges?: { start_date: string; days: number }[]
+  provider_name?: string | null
+  provider_business_name?: string | null
+  provider_contact_available?: { phone: boolean; whatsapp: boolean; in_app: boolean }
+  direct_deal_notice?: string
+  marketplace_terms_version?: string
 }
 
-export type HandoverStatus = 'pending' | 'confirmed' | 'complete' | 'cancelled'
-
-export interface Handover {
+export interface RentalInquiry {
   id: string
-  booking_id: string
-  car_id: string
-  buyer_id: string
-  seller_id: string
-  center?: string | null
-  handover_date?: string | null
-  handover_time?: string | null
-  contact_phone?: string | null
-  agreed_price?: number | null
-  status: HandoverStatus
-  booked_at: string
-  confirmed_at?: string | null
-  // Joined
+  inquiry_ref: string
+  rental_car_id: string
+  renter_id: string
+  provider_id?: string | null
+  start_date?: string | null
+  days?: number | null
+  pickup_location?: string | null
+  message?: string | null
+  preferred_channel: 'in_app' | 'phone' | 'whatsapp'
+  status: 'new' | 'contacted' | 'closed' | 'cancelled'
+  created_at: string
   car_title?: string
   car_images?: string[] | null
-  price?: number
-  seller_name?: string
-  buyer_name?: string
+  provider_name?: string | null
+  provider_business_name?: string | null
 }
 
 export type SubmissionStatus =
@@ -262,29 +274,6 @@ export interface Message {
   read: boolean
   created_at: string
   sender_name?: string
-}
-
-export type DisputeStatus = 'open' | 'resolved' | 'rejected'
-
-export interface Dispute {
-  id: string
-  handover_id: string
-  raised_by: string
-  reason: string
-  status: DisputeStatus
-  resolution?: string | null
-  created_at: string
-  resolved_at?: string | null
-  booking_id?: string
-  car_title?: string
-}
-
-export interface Referral {
-  user_id: string
-  code: string
-  uses: number
-  redemptions: number
-  created_at: string
 }
 
 export interface TrustScore {

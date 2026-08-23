@@ -54,9 +54,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
       ? `${browseHeading(filters)} in Kigali, Rwanda`
       : 'Cars for sale in Kigali, Rwanda',
     description:
-      `${description} listed by Sawa Cars in Kigali. Every car is physically ` +
-      'inspected on our 150-point check, photographed by our team and covered by ' +
-      'the 7-day drive-it guarantee. Buyers pay no fees.',
+      `${description} reviewed for publication on Sawa Cars in Kigali. View listing evidence and contact verified sellers directly.`,
     // Always self-canonical: a filtered view is a narrower page, not a
     // duplicate of the unfiltered one.
     alternates: { canonical },

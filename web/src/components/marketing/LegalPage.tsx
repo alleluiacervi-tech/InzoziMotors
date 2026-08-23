@@ -89,8 +89,8 @@ export function LegalPage({
               <Alert tone="warning" title="Draft — pending legal review">
                 This document describes how Sawa Cars actually operates today, written in
                 plain language. It has not yet been reviewed by a qualified lawyer in Rwanda and
-                is not legal advice. The version handed to you at a Sawa center governs any
-                transaction.
+                is not legal advice. Users should obtain independent legal advice for their own
+                contracts and regulated obligations before launch.
               </Alert>
 
               <div className="mt-12 space-y-12">

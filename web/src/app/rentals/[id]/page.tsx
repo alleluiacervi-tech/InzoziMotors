@@ -2,26 +2,25 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ApiError, rentals as rentalsApi } from '@/lib/api'
-import { CENTERS, CONTACT, SITE } from '@/lib/site'
+import { SITE } from '@/lib/site'
+import { getCurrentUser } from '@/lib/session'
 import { breadcrumbNode, graph, organizationNode, ORG_ID } from '@/lib/seo'
 import { formatKm, formatUSD, getCertTier } from '@/lib/business'
 import type { RentalCar } from '@/lib/types'
 import { Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
-import { AvailabilityStrip } from '@/components/marketplace/AvailabilityStrip'
 import { Gallery } from '@/components/marketplace/Gallery'
 import { OpenInAppButton } from '@/components/marketplace/OpenInAppButton'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { RENTAL_INCLUDES, RENTAL_REQUIREMENTS } from '@/components/marketplace/rental-copy'
-import { AIRPORT_PICKUP_FEE, formatRating, tripCost } from '@/components/marketplace/rental-math'
+import { formatRating, tripCost } from '@/components/marketplace/rental-math'
+import { RentalInquiryForm } from './RentalInquiryForm'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rental detail.
 //
-// There is no booking form here on purpose. A rental is priced and held by a
-// person at a center — the website's job is to show the real rates, the real
-// availability and the conditions, then hand over to WhatsApp or the app where
-// the booking actually happens. A fake form that only sends an email would be
-// worse than an honest handoff.
+// The website records an availability inquiry and then hands communication to
+// the verified provider. It never turns an inquiry into a booking or takes part
+// in the provider/renter agreement.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type PageProps = { params: Promise<{ id: string }> }
@@ -53,8 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const description =
     `Rent the ${car.title} in Kigali from ${formatUSD(car.daily_rate)} a day. ` +
-    'Inspected on the Sawa 150-point check, insurance and unlimited kilometres included, ' +
-    'deposit returned in full after the return check.'
+    'Provider-supplied rates and vehicle details, with direct availability inquiries through Sawa Cars.'
 
   const image = car.images?.[0]
 
@@ -77,6 +75,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
 
   const car = await loadCar(id)
   if (!car) notFound()
+  const user = await getCurrentUser()
 
   const images = (car.images ?? []).filter(Boolean)
   const tier = getCertTier(car)
@@ -88,10 +87,6 @@ export default async function RentalDetailPage({ params }: PageProps) {
   const quotes = [...new Set([car.min_days, 7, 14].filter((days) => days >= car.min_days))]
     .sort((a, b) => a - b)
     .map((days) => tripCost(car, days))
-
-  const whatsappHref = `https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
-    `Hi Sawa Cars, I would like to rent the ${car.title} (${formatUSD(car.daily_rate)}/day). My dates are:`
-  )}`
 
   const specs: Spec[] = [
     { label: 'Seats', value: car.seats ? String(car.seats) : '', icon: 'user' },
@@ -214,40 +209,22 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   </div>
                 </dl>
 
-                <p className="mt-3 text-micro leading-relaxed text-content-muted">
-                  The deposit is refundable and comes back the same day, once the
-                  return check is done at the center.
-                </p>
+                <p className="mt-3 text-micro leading-relaxed text-content-muted">Rates and deposits are supplied by the provider and remain subject to their written confirmation and rental contract.</p>
 
                 <div className="mt-5 space-y-2 border-t border-line-soft pt-5">
-                  <Button
-                    href={whatsappHref}
-                    target="_blank"
-                    size="lg"
-                    fullWidth
-                    leadingIcon={<Icon name="whatsapp" size={18} />}
-                  >
-                    Check these dates
-                  </Button>
-                  <OpenInAppButton path={`rentals/${car.id}`} label="Book in the app" fullWidth />
+                  {user ? <RentalInquiryForm rentalId={car.id} minDays={car.min_days || 1} available={car.provider_contact_available} /> : <Button href={`/signin?next=${encodeURIComponent(`/rentals/${car.id}`)}`} size="lg" fullWidth>Sign in to request availability</Button>}
+                  <OpenInAppButton path={`rentals/${car.id}`} label="Open in the app" fullWidth />
                 </div>
 
                 <p className="mt-4 text-micro leading-relaxed text-content-muted">
-                  Pay at the center when you collect the car, or pay the rental
-                  online in the app. The refundable deposit is always handled at
-                  the center, after we have gone through the car together.
+                  An inquiry does not reserve the car. The provider confirms availability and is solely responsible for payment, deposit, insurance, pickup, return and contract terms.
                 </p>
               </Card>
             </div>
           </aside>
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
-            <section aria-labelledby="availability-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
-              <h2 id="availability-heading" className="mb-4 text-title font-extrabold text-content">
-                Availability
-              </h2>
-              <AvailabilityStrip ranges={car.booked_ranges} />
-            </section>
+            <section aria-labelledby="availability-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7"><h2 id="availability-heading" className="text-title font-extrabold text-content">Availability is confirmed by the provider</h2><p className="mt-2 text-body leading-relaxed text-content-secondary">Send your dates as an inquiry. Sawa Cars does not block the calendar or confirm a rental on the provider&apos;s behalf.</p></section>
 
             <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
@@ -282,17 +259,14 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   ))}
                 </ul>
                 <p className="border-t border-line-soft bg-surface-alt px-5 py-4 text-micro leading-relaxed text-content-muted">
-                  Full weeks are billed at the weekly rate and the remaining days at
-                  the daily rate. Airport meet-and-greet adds{' '}
-                  {formatUSD(AIRPORT_PICKUP_FEE)}. We confirm the final figure before
-                  you collect.
+                  Illustrative calculation from the provider&apos;s published rates. Ask the provider to confirm the final price, taxes, deposit, mileage, insurance and extras in writing.
                 </p>
               </Card>
             </section>
 
             <section aria-labelledby="included-heading">
               <h2 id="included-heading" className="mb-4 text-title font-extrabold text-content">
-                Included in every rental
+                Provider-stated rental features
               </h2>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {RENTAL_INCLUDES.map((item) => (
@@ -323,25 +297,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
               </ul>
             </Card>
 
-            <section aria-labelledby="pickup-heading">
-              <h2 id="pickup-heading" className="mb-4 text-title font-extrabold text-content">
-                Where to collect
-              </h2>
-              <ul className="grid gap-3 sm:grid-cols-3">
-                {CENTERS.map((center) => (
-                  <li key={center.id} className="rounded-xl border border-line-soft bg-surface p-4">
-                    <p className="text-caption font-bold text-content">{center.name}</p>
-                    <p className="mt-1 text-caption text-content-secondary">{center.address}</p>
-                    <p className="mt-2 text-micro text-content-muted">{center.hours}</p>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-secondary">
-                Cars are collected from the center they are kept at. Airport
-                meet-and-greet at Kigali International is available as an add-on for{' '}
-                {formatUSD(AIRPORT_PICKUP_FEE)}.
-              </p>
-            </section>
+            <section aria-labelledby="pickup-heading"><h2 id="pickup-heading" className="mb-4 text-title font-extrabold text-content">Pickup and return</h2><p className="max-w-prose text-body leading-relaxed text-content-secondary">Agree the exact location, vehicle condition record, fuel level, deposit handling and return process directly with the provider before paying or collecting the vehicle.</p></section>
           </div>
         </div>
       </Container>
@@ -354,9 +310,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                 Renting to see whether you want to buy?
               </h2>
               <p className="mt-2 text-body leading-relaxed text-content-secondary">
-                Plenty of buyers do. The same 150-point standard applies to the cars
-                on the marketplace, and every purchase carries the 7-day drive-it
-                guarantee.
+                Compare inspected sale listings and then contact the verified seller directly. A rental provider and a vehicle seller may be different businesses with different terms.
               </p>
             </div>
             <Button href="/cars" variant="outline">

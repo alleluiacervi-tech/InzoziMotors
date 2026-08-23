@@ -241,8 +241,10 @@ export const CAR_STATUS_LABEL: Record<string, string> = {
   under_review: 'Under review',
   scheduled: 'Inspection booked',
   inspecting: 'Being inspected',
+  approved: 'Approved',
   live: 'Available',
-  reserved: 'Reserved',
+  paused: 'Paused',
+  rejected: 'Rejected',
   sold: 'Sold',
   archived: 'Archived',
 }
@@ -255,13 +257,6 @@ export const SUBMISSION_STATUS_LABEL: Record<string, string> = {
   inspected: 'Inspection complete',
   live: 'Live on marketplace',
   rejected: 'Action required',
-}
-
-export const HANDOVER_STATUS_LABEL: Record<string, string> = {
-  pending: 'Awaiting confirmation',
-  confirmed: 'Handover scheduled',
-  complete: 'Complete',
-  cancelled: 'Cancelled',
 }
 
 // ─── Dates ───────────────────────────────────────────────────────────────────
@@ -285,14 +280,4 @@ export function formatRelative(iso?: string | null): string {
   const days = Math.floor(hours / 24)
   if (days < 7) return `${days}d ago`
   return formatDate(iso)
-}
-
-/** The 7-day drive-it guarantee window, enforced server-side on disputes. */
-export const RETURN_WINDOW_DAYS = 7
-
-export function daysLeftInReturnWindow(completedAt?: string | null): number {
-  if (!completedAt) return 0
-  const elapsed = Date.now() - new Date(completedAt).getTime()
-  const left = Math.ceil((RETURN_WINDOW_DAYS * 86400000 - elapsed) / 86400000)
-  return left > 0 ? left : 0
 }
