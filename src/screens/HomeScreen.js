@@ -165,7 +165,7 @@ export default function HomeScreen({ navigation }) {
 
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <Pressable style={styles.hamburger} onPress={() => setDrawerOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Open menu">
+        <Pressable style={({ pressed }) => [styles.hamburger, pressed && styles.headerControlPressed]} onPress={() => setDrawerOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Open menu">
           <View style={styles.hamburgerLine} />
           <View style={[styles.hamburgerLine, { width: 16 }]} />
           <View style={styles.hamburgerLine} />
@@ -179,10 +179,10 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.topBarRight}>
-          <Pressable style={styles.iconBtn} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View cars on a map">
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View cars on a map">
             <Ionicons name="map-outline" size={20} color={colors.textSecondary} />
           </Pressable>
-          <Pressable style={styles.bellBtn} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel="Notifications">
+          <Pressable style={({ pressed }) => [styles.bellBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel="Notifications">
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             {hasUnread && <View style={styles.bellBadge} />}
           </Pressable>
@@ -199,6 +199,9 @@ export default function HomeScreen({ navigation }) {
                 key={m}
                 style={[styles.modeBtn, on && styles.modeBtnOn]}
                 onPress={() => setHomeMode(m)}
+                accessibilityRole="tab"
+                accessibilityLabel={m === 'buy' ? 'Cars for sale' : 'Cars for rent'}
+                accessibilityState={{ selected: on }}
               >
                 <Ionicons
                   name={m === 'buy' ? 'pricetag-outline' : 'key-outline'}
@@ -590,7 +593,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   // ── Top Bar ──
   topBar: {
-    height: 54,
+    minHeight: 64,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -600,8 +603,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   hamburger: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 5,
@@ -624,20 +627,21 @@ const styles = StyleSheet.create({
   locationText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   iconBtn: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.greenTint,
   },
   bellBtn: {
-    width: 36, height: 36,
+    width: 44, height: 44,
     alignItems: 'center', justifyContent: 'center',
     position: 'relative',
   },
   bellBadge: {
-    position: 'absolute', top: 6, right: 6,
+    position: 'absolute', top: 9, right: 9,
     width: 6, height: 6, borderRadius: 3,
     backgroundColor: colors.alertRed,
   },
+  headerControlPressed: { opacity: 0.7, transform: [{ scale: 0.94 }] },
 
   scrollContent: { paddingBottom: 40 },
   offlineNotice: {
@@ -673,7 +677,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
+    minHeight: 44,
+    paddingVertical: 10,
     borderRadius: radius.pill,
   },
   modeBtnOn: { backgroundColor: colors.primary },
@@ -733,9 +738,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   searchBar: {
-    height: 40,
+    minHeight: 48,
     backgroundColor: colors.surfaceAlt,
-    borderRadius: 20,
+    borderRadius: radius.xl,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,

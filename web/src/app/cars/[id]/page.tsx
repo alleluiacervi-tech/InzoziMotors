@@ -551,7 +551,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <p className="text-title-sm font-extrabold text-brand" aria-label={formatMoneyExact(car.price)}>{formatUSD(car.price)}</p>
             </div>
             <Button href="#purchase-panel" size="compact" trailingIcon={<Icon name="arrow-right" size={16} />}>
-              {user ? 'Request car' : 'See buying options'}
+              Request this car
             </Button>
           </div>
         </div>

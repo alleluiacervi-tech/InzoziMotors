@@ -109,6 +109,7 @@ export default function FiltersScreen({ navigation, route }) {
         </Pressable>
         <Button
           title={`View ${getMatchingCount()} cars`}
+          fullWidth={false}
           style={{ flex: 1 }}
           onPress={() => {
             navigation.navigate('SearchResults', { filters: selected });

@@ -302,7 +302,7 @@ export default function SellerDashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   scroll: { paddingBottom: 40 },
   addBtn: {
-    width: 42, height: 42, borderRadius: radius.md,
+    width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },

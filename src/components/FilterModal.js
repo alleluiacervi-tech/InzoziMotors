@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   yearGridItem: {
     width: '23%',
-    height: 38,
+    minHeight: 44,
     borderRadius: 6,
     backgroundColor: '#F5F5F5',
     alignItems: 'center',

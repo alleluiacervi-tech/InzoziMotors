@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, Pressable, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows, fonts } from '../theme';
+import { colors, radius, fonts } from '../theme';
 
 export default function Button({
   title,
@@ -14,13 +14,18 @@ export default function Button({
   disabled = false,
   loading = false,
   accessibilityLabel,
+  accessibilityHint,
+  fullWidth = true,
+  size = 'md',
 }) {
   const isPrimary = variant === 'primary';
   const isSecondary = variant === 'secondary';
 
   const containerStyle = [
     styles.base,
-    isPrimary && [styles.primary, shadows.blueGlow],
+    styles[size] || styles.md,
+    fullWidth && styles.fullWidth,
+    isPrimary && styles.primary,
     isSecondary && (onDark ? styles.secondaryDark : styles.secondaryLight),
     variant === 'dark' && styles.dark,
     variant === 'outline' && styles.outline,
@@ -42,6 +47,7 @@ export default function Button({
       disabled={blocked}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: blocked, busy: loading }}
       hitSlop={6}
       android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
@@ -52,7 +58,14 @@ export default function Button({
       ) : (
         <View style={styles.content}>
           {icon ? <Ionicons name={icon} size={18} color={color} /> : null}
-          <Text style={[styles.text, { color }, textStyle]}>{title}</Text>
+          <Text
+            style={[styles.text, { color }, textStyle]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+          >
+            {title}
+          </Text>
         </View>
       )}
     </Pressable>
@@ -61,15 +74,18 @@ export default function Button({
 
 const styles = StyleSheet.create({
   base: {
-    width: '100%',
-    minHeight: 52,
-    paddingVertical: 16,
     borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 0,
+    overflow: 'hidden',
   },
-  content: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  text: { fontFamily: fonts.bold, fontSize: 16, letterSpacing: -0.1 },
+  fullWidth: { width: '100%' },
+  sm: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.lg },
+  md: { minHeight: 52, paddingHorizontal: 20, paddingVertical: 14 },
+  lg: { minHeight: 56, paddingHorizontal: 24, paddingVertical: 16 },
+  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, minWidth: 0 },
+  text: { flexShrink: 1, fontFamily: fonts.bold, fontSize: 15, lineHeight: 20, letterSpacing: -0.1, textAlign: 'center' },
   primary: { backgroundColor: colors.primary },
   secondaryLight: { backgroundColor: colors.surfaceAlt },
   secondaryDark: {
@@ -79,6 +95,6 @@ const styles = StyleSheet.create({
   },
   dark: { backgroundColor: colors.textPrimary },
   outline: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
-  disabled: { opacity: 0.5 },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
+  disabled: { opacity: 0.46 },
 });

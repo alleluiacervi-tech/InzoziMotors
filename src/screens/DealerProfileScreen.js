@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   hero: { paddingTop: 80, paddingBottom: 24, paddingHorizontal: 20, alignItems: 'center', gap: 6 },
   backBtn: { position: 'absolute', left: 16 },
   backCircle: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center',
   },
   heroBadges: { flexDirection: 'row', gap: 8 },

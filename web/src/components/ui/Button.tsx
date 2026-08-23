@@ -34,7 +34,7 @@ const VARIANTS: Record<Variant, string> = {
 }
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-10 px-4 text-caption gap-1.5 rounded-lg',
+  sm: 'h-11 px-4 text-caption gap-1.5 rounded-lg',
   // The de-facto size for dashboard rows and toolbars — existed as 21
   // hand-rolled `h-11` copies before it was given a name here.
   compact: 'h-11 px-4 text-caption gap-1.5 rounded-xl',
@@ -44,8 +44,10 @@ const SIZES: Record<Size, string> = {
 
 const BASE =
   'inline-flex items-center justify-center font-bold tracking-[-0.01em] whitespace-nowrap ' +
-  'transition-all duration-200 ease-brand select-none ' +
-  'disabled:opacity-50 disabled:pointer-events-none'
+  'transition-all duration-200 ease-brand select-none touch-manipulation ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ' +
+  'motion-reduce:transform-none motion-reduce:transition-none ' +
+  'disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none'
 
 type CommonProps = {
   variant?: Variant

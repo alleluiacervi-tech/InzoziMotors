@@ -33,7 +33,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 
   return (
     <Pressable
-      style={[styles.card, shadows.card]}
+      style={({ pressed }) => [styles.card, shadows.card, pressed && styles.cardPressed]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${car.title}, ${getSawaPrice(car)}`}
@@ -53,7 +53,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             ) : null}
 
             <Pressable
-              style={styles.heart}
+              style={({ pressed }) => [styles.heart, pressed && styles.heartPressed]}
               onPress={() => toggleSaveCar(car.id)}
               hitSlop={10}
               accessibilityRole="button"
@@ -64,7 +64,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             >
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
-                size={15}
+                size={18}
                 color={saved ? '#EF4444' : '#555'}
               />
             </Pressable>
@@ -118,6 +118,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  cardPressed: { opacity: 0.94, transform: [{ scale: 0.992 }] },
   imageWrap: {
     aspectRatio: 4 / 3,
     backgroundColor: colors.surfaceAlt,
@@ -135,11 +136,12 @@ const styles = StyleSheet.create({
   certBadgeText: { color: '#fff', fontSize: 10, fontFamily: fonts.extraBold },
   heart: {
     position: 'absolute', top: 6, right: 6,
-    width: 26, height: 26, borderRadius: 13,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center', justifyContent: 'center',
     zIndex: 10,
   },
+  heartPressed: { opacity: 0.76, transform: [{ scale: 0.92 }] },
   rankBadge: {
     position: 'absolute', bottom: 0, left: 0,
     backgroundColor: 'rgba(23,18,15,0.85)',

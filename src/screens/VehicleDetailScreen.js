@@ -175,7 +175,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 184 }}>
         {/* Gallery */}
         <View style={styles.gallery}>
           <ScrollView
@@ -294,13 +294,13 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
           {/* Financing strip — own it monthly */}
           {monthly && !isAuction && (
-            <Pressable style={styles.financeStrip} onPress={() => navigation.navigate('Financing', { car })}>
+            <Pressable style={styles.financeStrip} onPress={() => navigation.navigate('Financing', { carPrice: car.price })}>
               <View style={styles.financeIcon}>
                 <Ionicons name="card-outline" size={18} color={colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.financeTitle}>
-                  Bank financing from <Text style={styles.financeAmount}>${monthly}/mo</Text>
+                  Bank financing from <Text style={styles.financeAmount}>{formatPrice(monthly)}/mo</Text>
                 </Text>
                 <Text style={styles.financeSub}>Loan estimate · 20% down · 60 months · 4 partner banks</Text>
               </View>
@@ -518,19 +518,45 @@ export default function VehicleDetailScreen({ navigation, route }) {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={[styles.cta, { paddingBottom: insets.bottom + 12 }]}>
-        <View style={styles.ctaPrice}>
-          <Text style={styles.ctaPriceLabel}>{isAuction ? 'Current bid' : 'Price'}</Text>
-          <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>{formatPrice(price)}</Text>
+      <View style={[styles.cta, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
+        <View style={styles.ctaInner}>
+          <View style={styles.ctaMetaRow}>
+            <View style={styles.ctaPrice}>
+              <Text style={styles.ctaPriceLabel}>{isAuction ? 'Current bid' : 'Asking price'}</Text>
+              <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>
+                {formatPrice(price)}
+              </Text>
+              <Text style={styles.ctaContext}>
+                {isAuction ? 'Bid securely through Sawa Cars' : 'Free request · payment at the center'}
+              </Text>
+            </View>
+            <View style={styles.ctaAssurance}>
+              <Ionicons name="shield-checkmark" size={14} color={colors.greenText} />
+              <Text style={styles.ctaAssuranceText}>7-day guarantee</Text>
+            </View>
+          </View>
+
+          <View style={styles.ctaActions}>
+            <Pressable
+              style={({ pressed }) => [styles.waBtn, pressed && styles.waBtnPressed]}
+              onPress={contactWhatsApp}
+              accessibilityRole="button"
+              accessibilityLabel="Ask about this car on WhatsApp"
+            >
+              <Ionicons name="logo-whatsapp" size={23} color="#fff" />
+            </Pressable>
+            <Button
+              title={isAuction ? 'Place a bid' : 'Request this car'}
+              icon={isAuction ? 'hammer-outline' : 'arrow-forward-outline'}
+              fullWidth={false}
+              style={styles.requestButton}
+              accessibilityHint={isAuction
+                ? 'Opens the secure bidding request'
+                : 'Opens the free vehicle request form'}
+              onPress={() => navigation.navigate('Checkout', { car })}
+            />
+          </View>
         </View>
-        <Pressable style={styles.waBtn} onPress={contactWhatsApp} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
-          <Ionicons name="logo-whatsapp" size={24} color="#fff" />
-        </Pressable>
-        <Button
-          title={isAuction ? 'Place a Bid' : 'Request via Sawa Cars'}
-          style={{ flex: 1 }}
-          onPress={() => navigation.navigate('Checkout', { car })}
-        />
       </View>
 
       <PhotoViewer
@@ -573,7 +599,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
   },
   circleBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -667,17 +693,18 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   ratingText: { fontSize: 12, color: colors.textSecondary },
   msgBtn: {
-    width: 42, height: 42, borderRadius: radius.md,
+    width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: colors.blueTint, alignItems: 'center', justifyContent: 'center',
   },
   waSmallBtn: {
-    width: 42, height: 42, borderRadius: radius.md,
+    width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: '#E9F9EF', alignItems: 'center', justifyContent: 'center',
   },
   waBtn: {
-    width: 52, height: 52, borderRadius: radius.lg,
+    width: 54, height: 54, borderRadius: radius.lg,
     backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
   },
+  waBtnPressed: { opacity: 0.82, transform: [{ scale: 0.97 }] },
   inspectionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
@@ -746,12 +773,36 @@ const styles = StyleSheet.create({
   dutyLinkSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.borderSoft,
-    paddingHorizontal: 20, paddingTop: 12, ...shadows.floating,
+    paddingHorizontal: 16, paddingTop: 12, ...shadows.floating,
   },
-  ctaPrice: {},
-  ctaPriceLabel: { fontSize: 12, color: colors.textSecondary },
-  ctaPriceValue: { fontVariant: ['tabular-nums'], fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  ctaPriceRwf: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  ctaInner: {
+    width: '100%', maxWidth: 720, alignSelf: 'center', gap: 12,
+  },
+  ctaMetaRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+  },
+  ctaPrice: { flex: 1, minWidth: 0 },
+  ctaPriceLabel: {
+    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
+    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
+  },
+  ctaPriceValue: {
+    flexShrink: 1, fontVariant: ['tabular-nums'], fontSize: 22, lineHeight: 27,
+    fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5,
+  },
+  ctaContext: {
+    fontSize: 11, lineHeight: 15, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 1,
+  },
+  ctaAssurance: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: colors.greenTint, borderRadius: radius.pill,
+    paddingHorizontal: 10, paddingVertical: 7,
+  },
+  ctaAssuranceText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
+  ctaActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  requestButton: {
+    flex: 1, width: 'auto', minWidth: 0, minHeight: 54,
+    paddingVertical: 14, borderRadius: radius.lg,
+  },
 });

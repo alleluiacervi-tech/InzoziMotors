@@ -105,7 +105,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   setRwfRate(rate.rate)
 
   return (
-    <html lang="en" className={satoshi.variable}>
+    // The inline splash script below may add `splash-done` before React
+    // hydrates. That difference is intentional (it prevents a repeat-visit
+    // flash), so suppress only this root attribute warning.
+    <html lang="en" className={satoshi.variable} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         {/* Runs before first paint: a repeat visit this session gets the
             splash-done class on <html>, and CSS hides the splash overlay with

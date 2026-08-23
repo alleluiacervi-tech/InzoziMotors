@@ -103,12 +103,18 @@ export default function FeedbackHost() {
             <Text style={styles.sheetTitle}>{confirm?.title}</Text>
             {confirm?.message ? <Text style={styles.sheetMessage}>{confirm.message}</Text> : null}
             <Pressable
-              style={[styles.confirmBtn, confirm?.destructive && styles.confirmBtnDanger]}
+              style={({ pressed }) => [
+                styles.confirmBtn,
+                confirm?.destructive && styles.confirmBtnDanger,
+                pressed && styles.controlPressed,
+              ]}
               onPress={() => close(true)}
+              accessibilityRole="button"
+              accessibilityLabel={confirm?.confirmLabel || 'Confirm'}
             >
               <Text style={styles.confirmBtnText}>{confirm?.confirmLabel || 'Confirm'}</Text>
             </Pressable>
-            <Pressable style={styles.cancelBtn} onPress={() => close(false)} hitSlop={6}>
+            <Pressable style={({ pressed }) => [styles.cancelBtn, pressed && styles.controlPressed]} onPress={() => close(false)} hitSlop={6} accessibilityRole="button">
               <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || 'Cancel'}</Text>
             </Pressable>
           </Pressable>
@@ -123,14 +129,14 @@ export default function FeedbackHost() {
             {sheet?.message ? <Text style={styles.sheetMessage}>{sheet.message}</Text> : null}
             <View style={styles.optionList}>
               {(sheet?.options || []).map((opt, i) => (
-                <Pressable key={opt.label} style={styles.optionRow} onPress={() => closeSheet(i)}>
+                <Pressable key={opt.label} style={({ pressed }) => [styles.optionRow, pressed && styles.optionRowPressed]} onPress={() => closeSheet(i)} accessibilityRole="button" accessibilityLabel={opt.label}>
                   {opt.icon ? <Ionicons name={opt.icon} size={19} color={colors.textSecondary} /> : null}
                   <Text style={styles.optionText}>{opt.label}</Text>
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                 </Pressable>
               ))}
             </View>
-            <Pressable style={styles.cancelBtn} onPress={() => closeSheet(-1)} hitSlop={6}>
+            <Pressable style={({ pressed }) => [styles.cancelBtn, pressed && styles.controlPressed]} onPress={() => closeSheet(-1)} hitSlop={6} accessibilityRole="button">
               <Text style={styles.cancelBtnText}>{sheet?.cancelLabel || 'Cancel'}</Text>
             </Pressable>
           </Pressable>
@@ -166,7 +172,7 @@ const styles = StyleSheet.create({
   sheetMessage: { fontSize: 14, color: colors.textSecondary, lineHeight: 21, marginTop: 8 },
   confirmBtn: {
     backgroundColor: colors.primary,
-    borderRadius: radius.xl, paddingVertical: 15,
+    borderRadius: radius.xl, minHeight: 52, paddingHorizontal: 20, paddingVertical: 14,
     alignItems: 'center', marginTop: 20,
   },
   confirmBtnDanger: { backgroundColor: colors.danger },
@@ -175,9 +181,11 @@ const styles = StyleSheet.create({
   optionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surfaceAlt,
-    borderRadius: radius.xl, paddingHorizontal: 16, paddingVertical: 15,
+    borderRadius: radius.xl, minHeight: 52, paddingHorizontal: 16, paddingVertical: 14,
   },
+  optionRowPressed: { backgroundColor: colors.borderSoft },
   optionText: { flex: 1, fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
-  cancelBtn: { alignItems: 'center', paddingVertical: 14, marginTop: 2 },
+  cancelBtn: { minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 2 },
   cancelBtnText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textSecondary },
+  controlPressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
 });

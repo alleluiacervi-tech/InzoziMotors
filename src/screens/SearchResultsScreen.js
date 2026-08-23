@@ -187,7 +187,13 @@ export default function SearchResultsScreen({ navigation, route }) {
                     <Ionicons name="bookmark-outline" size={16} color={colors.textSecondary} />
                   </Pressable>
                 )}
-                <Pressable style={styles.layoutBtn} onPress={() => setLayout(isGrid ? 'list' : 'grid')} hitSlop={6}>
+                <Pressable
+                  style={styles.layoutBtn}
+                  onPress={() => setLayout(isGrid ? 'list' : 'grid')}
+                  hitSlop={6}
+                  accessibilityRole="button"
+                  accessibilityLabel={isGrid ? 'Show results as a list' : 'Show results as a grid'}
+                >
                   <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
                 </Pressable>
                 <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View results on a map">
@@ -293,7 +299,7 @@ const styles = StyleSheet.create({
     fontSize: 12.5, fontFamily: fonts.medium, color: colors.textMuted,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
-  backBtn: { width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
@@ -312,11 +318,11 @@ const styles = StyleSheet.create({
   resultCount: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   resultActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   layoutBtn: {
-    width: 34, height: 34, borderRadius: radius.pill,
+    width: 44, height: 44, borderRadius: radius.pill,
     backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center',
   },
-  mapBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.blueTint, paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill },
+  mapBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.blueTint, paddingHorizontal: 12, paddingVertical: 9, borderRadius: radius.pill },
   mapText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   activeFiltersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   filterChip: {
@@ -327,9 +333,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.pill,
+    minHeight: 44,
   },
   filterChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
-  sortChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
+  sortChip: { minHeight: 44, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   sortText: { fontSize: 13, fontFamily: fonts.semiBold },
   emptyState: {

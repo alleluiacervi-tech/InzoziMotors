@@ -59,10 +59,13 @@ export function RequestCarForm({ carId, phone }: { carId: string; phone?: string
 
       <SubmitButton />
 
-      <p className="text-micro leading-relaxed text-content-muted">
-        No payment now, and none in the app. You pay at the center on handover
-        day, once you have seen the car and the documents.
-      </p>
+      <div className="flex items-start gap-2.5 rounded-xl bg-surface-alt px-4 py-3">
+        <Icon name="shield" size={16} className="mt-0.5 shrink-0 text-content-secondary" />
+        <p className="text-micro leading-relaxed text-content-secondary">
+          <strong className="text-content">Free request. No card details.</strong>{' '}
+          Payment only happens at the Sawa center after you inspect the car and its documents.
+        </p>
+      </div>
     </form>
   )
 }

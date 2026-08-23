@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, fonts } from '../theme';
 import { LogoMark } from './Logo';
+import Button from './Button';
 
 // There is no social sign-in yet — the old "Continue with Google" here did not
 // talk to Google at all, it just dropped the user into the demo account. Both
@@ -28,20 +29,21 @@ export default function LoginModal({ visible, onClose, onSignIn, onContinueAsGue
 
           <Text style={styles.title}>Sign in to continue</Text>
           <Text style={styles.subtitle}>
-            Saving cars and messaging sellers{'\n'}needs an account.
+            Saving cars and messaging sellers{'\n'}requires an account.
           </Text>
 
-          <Pressable style={styles.signInBtn} onPress={onSignIn}>
-            <Text style={styles.signInText}>Sign in</Text>
-          </Pressable>
+          <Button title="Sign in" onPress={onSignIn} />
 
           {/* The demo account only exists in development builds — see DEMO_MODE
               in AppContext. Rendering it in a release build would offer a door
               that leads nowhere. */}
           {onContinueAsGuest && (
-            <Pressable style={styles.guestBtn} onPress={onContinueAsGuest}>
-              <Text style={styles.guestText}>Browse with a demo account</Text>
-            </Pressable>
+            <Button
+              title="Browse with a demo account"
+              variant="secondary"
+              onPress={onContinueAsGuest}
+              style={styles.guestBtn}
+            />
           )}
         </View>
       </View>
@@ -59,6 +61,7 @@ const styles = StyleSheet.create({
   },
   container: {
     width: '100%',
+    maxWidth: 420,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingVertical: 32,
@@ -68,8 +71,14 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: 12,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoWrapper: {
     marginBottom: 12,
@@ -87,27 +96,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 28,
   },
-  signInBtn: {
-    width: '100%',
-    height: 48,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  signInText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontFamily: fonts.extraBold,
-    letterSpacing: -0.2,
-  },
   guestBtn: {
-    paddingVertical: 8,
-  },
-  guestText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontFamily: fonts.bold,
+    marginTop: 10,
   },
 });

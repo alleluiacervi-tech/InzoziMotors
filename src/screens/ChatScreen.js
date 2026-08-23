@@ -328,7 +328,7 @@ export default function ChatScreen({ navigation, route }) {
           <Pressable
             style={[styles.send, !text.trim() && styles.sendDisabled]}
             onPress={() => send()}
-            disabled={!text.trim()} accessibilityRole="button" accessibilityLabel="Back to top"
+            disabled={!text.trim()} accessibilityRole="button" accessibilityLabel="Send message"
           >
             <Ionicons name="arrow-up" size={20} color="#fff" />
           </Pressable>
@@ -340,7 +340,7 @@ export default function ChatScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   headerBtn: {
-    width: 38, height: 38, borderRadius: radius.md,
+    width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   viewListingBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: colors.greenTint,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.lg,
+    minHeight: 44, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.lg,
   },
   viewListingText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
   daySep: { textAlign: 'center', fontSize: 12, color: colors.textMuted, marginVertical: 4 },
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: 12, paddingVertical: 7,
+    minHeight: 44, paddingHorizontal: 12, paddingVertical: 9,
     borderRadius: radius.pill, flexShrink: 0,
   },
   quickChipArrange: { backgroundColor: colors.primary, borderColor: colors.primary },

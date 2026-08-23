@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8 },
   h1: { fontSize: 24, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
   dashBtn: {
-    width: 42, height: 42, borderRadius: radius.md, backgroundColor: colors.surface,
+    width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
   valCard: { margin: 20, marginTop: 16, borderRadius: radius.xxl, padding: 22 },

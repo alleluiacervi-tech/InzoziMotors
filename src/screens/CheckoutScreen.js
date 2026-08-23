@@ -114,20 +114,39 @@ function RequestState({ car, price, phone, setPhone, onSend, sending, navigation
       </ScrollView>
 
       <StickyFooter style={styles.footer}>
-        <View>
-          <Text style={styles.footerLabel}>Asking price</Text>
-          <Text style={styles.footerValue}>{formatPrice(price)}</Text>
+        <View style={styles.requestFooterInner}>
+          <View style={styles.requestFooterMeta}>
+            <View style={styles.footerPrice}>
+              <Text style={styles.footerLabel}>Asking price</Text>
+              <Text style={styles.footerValue} numberOfLines={1} adjustsFontSizeToFit>
+                {formatPrice(price)}
+              </Text>
+            </View>
+            <View style={styles.footerAssurance}>
+              <Ionicons name="lock-closed" size={13} color={colors.greenText} />
+              <Text style={styles.footerAssuranceText}>No payment now</Text>
+            </View>
+          </View>
+          <View style={styles.requestFooterActions}>
+            <Pressable
+              style={({ pressed }) => [styles.waBtn, pressed && styles.waBtnPressed]}
+              onPress={askAvailability}
+              accessibilityRole="button"
+              accessibilityLabel="Ask about this car on WhatsApp"
+            >
+              <Ionicons name="logo-whatsapp" size={23} color="#fff" />
+            </Pressable>
+            <Button
+              title={sending ? 'Sending request…' : 'Send free request'}
+              icon="paper-plane-outline"
+              onPress={onSend}
+              disabled={sending}
+              fullWidth={false}
+              style={styles.requestButton}
+              accessibilityHint="Reserves the car while Sawa Cars confirms availability"
+            />
+          </View>
         </View>
-        <Pressable style={styles.waBtn} onPress={askAvailability} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
-          <Ionicons name="logo-whatsapp" size={24} color="#fff" />
-        </Pressable>
-        <Button
-          title={sending ? 'Sending…' : 'Request This Car'}
-          icon="paper-plane-outline"
-          onPress={onSend}
-          disabled={sending}
-          style={{ flex: 1 }}
-        />
       </StickyFooter>
     </>
   );
@@ -287,7 +306,7 @@ export default function CheckoutScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: 16, paddingTop: 8, paddingBottom: 120 },
+  scroll: { padding: 16, paddingTop: 8, paddingBottom: 184 },
 
   // Car summary
   carCard: {
@@ -411,21 +430,44 @@ const styles = StyleSheet.create({
   nextText: { flex: 1, fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, lineHeight: 18 },
 
   waBtn: {
-    width: 52, height: 52, borderRadius: radius.lg,
+    width: 54, height: 54, borderRadius: radius.lg,
     backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
   },
+  waBtnPressed: { opacity: 0.82, transform: [{ scale: 0.97 }] },
   waSmallBtn: {
-    width: 40, height: 40, borderRadius: radius.md,
+    width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: '#E9F9EF', alignItems: 'center', justifyContent: 'center',
   },
   // Shared footer
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingHorizontal: 20, paddingTop: 12,
+    paddingHorizontal: 16, paddingTop: 12,
     borderTopWidth: 1, borderTopColor: colors.borderSoft,
     backgroundColor: colors.surface, ...shadows.floating,
   },
-  footerLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, marginBottom: 2 },
-  footerValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  requestFooterInner: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center', gap: 12 },
+  requestFooterMeta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+  },
+  footerPrice: { flex: 1, minWidth: 0 },
+  footerLabel: {
+    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
+    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
+  },
+  footerValue: {
+    flexShrink: 1, fontVariant: ['tabular-nums'], fontSize: 22, lineHeight: 27,
+    fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5,
+  },
+  footerAssurance: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: colors.greenTint, borderRadius: radius.pill,
+    paddingHorizontal: 10, paddingVertical: 7,
+  },
+  footerAssuranceText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
+  requestFooterActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  requestButton: {
+    flex: 1, width: 'auto', minWidth: 0, minHeight: 54,
+    paddingVertical: 14, borderRadius: radius.lg,
+  },
 });

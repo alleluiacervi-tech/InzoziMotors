@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   email: { fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, marginBottom: 8 },
   badgeRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   editBtn: {
-    width: 42, height: 42, borderRadius: radius.md,
+    width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },

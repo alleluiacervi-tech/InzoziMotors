@@ -44,7 +44,7 @@ export default function PhotoViewer({ visible, images = [], initialIndex = 0, on
         />
 
         <Pressable
-          style={[styles.closeBtn, { top: insets.top + 12 }]}
+          style={({ pressed }) => [styles.closeBtn, { top: insets.top + 12 }, pressed && styles.closeBtnPressed]}
           onPress={onClose}
           hitSlop={12} accessibilityRole="button" accessibilityLabel="Close"
         >
@@ -65,10 +65,11 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.96)' },
   closeBtn: {
     position: 'absolute', right: 16,
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center', justifyContent: 'center',
   },
+  closeBtnPressed: { opacity: 0.72, transform: [{ scale: 0.94 }] },
   counter: {
     position: 'absolute', alignSelf: 'center',
     backgroundColor: 'rgba(255,255,255,0.14)',

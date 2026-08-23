@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
   },
   circleBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   },
   ctaAssurance: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: colors.greenTint, borderRadius: radius.full,
+    backgroundColor: colors.greenTint, borderRadius: radius.pill,
     paddingHorizontal: 10, paddingVertical: 7,
   },
   ctaAssuranceText: {
