@@ -5,22 +5,14 @@ import Link from 'next/link'
 import { api, type ActionCenterResponse } from '@/lib/api'
 import {
   Card, StatCard, PageHeader, EmptyState, BarChart, Icon,
-  fmtMoney, fmtMoneyShort, type IconName,
+  fmtMoneyShort, type IconName,
 } from '@/components/ui'
 
 interface Stats {
   liveListings: number
   pendingSubmissions: number
-  pendingHandovers: number
+  pendingInquiries: number
   pendingIdVerifications: number
-  totalSold: number
-  totalGMV: number
-  totalRevenue: number
-  feesOutstanding: number
-  // Named by the API rather than assumed: /admin/stats groups by currency and
-  // reports the dominant one, because a database mid-conversion holds both.
-  gmvCurrency: string
-  feeCurrency: string
 }
 
 interface Analytics {
@@ -37,46 +29,17 @@ const monthLabel = (ym: string) => {
 }
 
 // Fixed pipeline order — a funnel reads top-of-funnel first, not by count.
-const FUNNEL_ORDER = ['under_review', 'pending', 'scheduled', 'inspecting', 'inspected', 'live', 'sold', 'rejected']
+const FUNNEL_ORDER = ['draft', 'under_review', 'scheduled', 'inspecting', 'approved', 'live', 'paused', 'sold', 'rejected', 'archived']
 const FUNNEL_LABELS: Record<string, string> = {
-  under_review: 'Under review', pending: 'Pending', scheduled: 'Inspection booked',
-  inspecting: 'Being inspected', inspected: 'Inspected', live: 'Live', sold: 'Sold', rejected: 'Rejected',
-}
-
-function RevenueCard({
-  label, amount, currency, sub, tone, href,
-}: {
-  label: string
-  amount: number
-  /** The currency the figure is stored in. Never converted for display — the
-   *  old version printed "≈ RWF x" underneath using a hardcoded 1300 rate,
-   *  which set an estimate in the same type as a fact. */
-  currency: string
-  sub: string
-  tone: 'brand' | 'neutral' | 'warning'
-  href?: string
-}) {
-  const body = (
-    <div className="p-6">
-      <p className="text-[13px] font-semibold text-content-muted">{label}</p>
-      <p className={`mt-2 text-[32px] font-extrabold leading-none tracking-[-0.02em] ${tone === 'brand' ? 'text-brand' : 'text-content'}`}>
-        {fmtMoney(amount, currency)}
-      </p>
-      <p className="mt-2 text-xs text-content-muted">
-        {sub}
-      </p>
-    </div>
-  )
-  const cls =
-    'block rounded-2xl border border-line-soft bg-surface shadow-card transition-all duration-200 ' +
-    (href ? 'hover:-translate-y-0.5 hover:shadow-card-lg' : '')
-  return href ? <Link href={href} className={cls}>{body}</Link> : <div className={cls}>{body}</div>
+  draft: 'Draft', under_review: 'Under review', scheduled: 'Inspection booked',
+  inspecting: 'Being inspected', approved: 'Approved', live: 'Live', paused: 'Paused',
+  sold: 'Marked sold', rejected: 'Rejected', archived: 'Archived',
 }
 
 const QUICK_ACTIONS: { href: string; label: string; sub: string; icon: IconName }[] = [
   { href: '/listings/new', label: 'Create a listing', sub: 'Publish an inspected car', icon: 'plus' },
   { href: '/submissions', label: 'Review submissions', sub: 'Approve or schedule', icon: 'document' },
-  { href: '/handovers', label: 'Confirm handovers', sub: 'The sale event', icon: 'key' },
+  { href: '/rentals/inquiries', label: 'Rental inquiries', sub: 'Coordinate availability requests', icon: 'calendar' },
   { href: '/users', label: 'ID verification queue', sub: 'Approve sellers', icon: 'user' },
 ]
 
@@ -222,38 +185,11 @@ export default function DashboardPage() {
         )}
       </Card>
 
-      {/* Money — Sawa's earnings first, marketplace volume second */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <RevenueCard
-          label="Fee revenue (earned)"
-          amount={s.totalRevenue}
-          currency={s.feeCurrency}
-          sub="certification + commission"
-          tone="brand"
-          href="/fees"
-        />
-        <RevenueCard
-          label="Marketplace volume (GMV)"
-          amount={s.totalGMV}
-          currency={s.gmvCurrency}
-          sub={`${s.totalSold} car${s.totalSold === 1 ? '' : 's'} sold`}
-          tone="neutral"
-        />
-        <RevenueCard
-          label="Fees outstanding"
-          amount={s.feesOutstanding}
-          currency={s.feeCurrency}
-          sub="due, not yet collected"
-          tone={s.feesOutstanding > 0 ? 'warning' : 'neutral'}
-          href="/fees"
-        />
-      </div>
-
       {/* Operational counts — each one is a doorway, not a decoration */}
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Live listings" value={s.liveListings} icon="car" href="/listings" />
         <StatCard label="Pending submissions" value={s.pendingSubmissions} icon="document" href="/submissions" sub="awaiting review" />
-        <StatCard label="Pending handovers" value={s.pendingHandovers} icon="key" href="/handovers" sub="confirm to record the sale" />
+        <StatCard label="Rental inquiries" value={s.pendingInquiries} icon="calendar" href="/rentals/inquiries" sub="awaiting a response" />
         <StatCard label="ID queue" value={s.pendingIdVerifications} icon="user" href="/users" sub="sellers waiting" />
       </div>
 
@@ -261,19 +197,19 @@ export default function DashboardPage() {
       <div className="mb-6 grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-sm font-bold text-content">Monthly sales value</h2>
+            <h2 className="text-sm font-bold text-content">Seller-reported listing value</h2>
             <span className="text-caption text-content-muted">last 6 months, {salesCurrency}</span>
           </div>
           <BarChart
             data={monthly}
             height={160}
             formatValue={(v) => fmtMoneyShort(v, salesCurrency)}
-            emptyLabel="No completed sales yet"
+            emptyLabel="No listings have been marked sold yet"
           />
           {monthly.length > 0 && (
             <p className="mt-3 text-xs text-content-muted">
-              {monthly.reduce((n, m) => n + m.sold, 0)} handover
-              {monthly.reduce((n, m) => n + m.sold, 0) === 1 ? '' : 's'} confirmed in this window.
+              {monthly.reduce((n, m) => n + m.sold, 0)} listing
+              {monthly.reduce((n, m) => n + m.sold, 0) === 1 ? '' : 's'} marked sold in this window. Sawa Cars does not process or verify the sale transaction.
             </p>
           )}
         </Card>

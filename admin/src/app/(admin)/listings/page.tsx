@@ -7,10 +7,12 @@ import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/componen
 import { useConfirm, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
 
-const STATUSES = ['live', 'reserved', 'sold', 'under_review', 'scheduled', 'inspecting', 'archived']
+const STATUSES = ['under_review', 'approved', 'live', 'paused', 'sold', 'rejected', 'scheduled', 'inspecting', 'archived']
 const STATUS_COLORS: Record<string, string> = {
   live:         'bg-success-tint text-success',
-  reserved:     'bg-purple-100 text-purple-700',
+  approved:     'bg-info-tint text-info',
+  paused:       'bg-gray-100 text-gray-700',
+  rejected:     'bg-danger-tint text-danger-strong',
   sold:         'bg-gray-100 text-gray-600',
   under_review: 'bg-warning-tint text-warning-text',
   scheduled:    'bg-info-tint text-info',
@@ -43,10 +45,10 @@ export default function ListingsPage() {
   useEffect(() => { load(statusFilter) }, [statusFilter])
   const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((car) => !q || [car.title, car.make, car.model, car.year, car.location, car.seller_name, car.id, car.vin].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: string, reason?: string) {
     setActionId(id)
     try {
-      await api.updateCarStatus(id, status)
+      await api.updateCarStatus(id, status, reason)
       load(statusFilter)
     } catch (e: any) {
       toast(e.message, 'error')
@@ -138,6 +140,11 @@ export default function ListingsPage() {
                 <p className="text-xs text-gray-500">{car.mileage?.toLocaleString()} km · {car.location}</p>
                 <p className="text-sm font-bold text-brand mt-1">{fmtMoney(car.price, car.currency)}</p>
                 <p className="text-xs text-gray-400">{car.views || 0} views</p>
+                <div className="mt-3 grid grid-cols-3 gap-1 text-center text-[11px]">
+                  <span className={`rounded-md px-1 py-1 ${car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? 'bg-success-tint text-success' : 'bg-danger-tint text-danger-strong'}`}>Seller</span>
+                  <span className={`rounded-md px-1 py-1 ${car.has_completed_inspection ? 'bg-success-tint text-success' : 'bg-warning-tint text-warning-text'}`}>Inspection</span>
+                  <span className={`rounded-md px-1 py-1 ${Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 ? 'bg-success-tint text-success' : 'bg-warning-tint text-warning-text'}`}>Gallery</span>
+                </div>
 
                 {/* Actions */}
                 <div className="mt-3 flex flex-wrap gap-1.5">
@@ -168,6 +175,26 @@ export default function ListingsPage() {
                   )}
                   {car.status === 'live' && (
                     <button
+                      onClick={() => updateStatus(car.id, 'paused')}
+                      disabled={actionId === car.id}
+                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                    >Pause</button>
+                  )}
+                  {['approved', 'under_review', 'paused'].includes(car.status) && (
+                    <button
+                      onClick={async () => {
+                        const ok = await ask({ title: 'Publish this listing?', message: 'The API will re-check seller verification, gallery and completed inspection before making it public.', confirmLabel: 'Publish listing' })
+                        if (ok) updateStatus(car.id, 'live')
+                      }}
+                      disabled={actionId === car.id}
+                      className="px-2 py-1 text-xs font-medium bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
+                    >Publish</button>
+                  )}
+                  {car.status === 'under_review' && (
+                    <button onClick={() => { const reason = window.prompt('Why is this listing rejected?'); if (reason?.trim()) updateStatus(car.id, 'rejected', reason.trim()) }} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-red-50 text-red-700 rounded-lg disabled:opacity-50">Reject</button>
+                  )}
+                  {car.status === 'live' && (
+                    <button
                       onClick={() => updateStatus(car.id, 'sold')}
                       disabled={actionId === car.id}
                       className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
@@ -175,16 +202,7 @@ export default function ListingsPage() {
                       Mark Sold
                     </button>
                   )}
-                  {car.status === 'reserved' && (
-                    <button
-                      onClick={() => updateStatus(car.id, 'live')}
-                      disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-                    >
-                      Un-reserve
-                    </button>
-                  )}
-                  {(car.status === 'live' || car.status === 'reserved' || car.status === 'under_review') && (
+                  {!['sold', 'archived'].includes(car.status) && (
                     <button
                       onClick={async () => {
                         const ok = await ask({
@@ -193,7 +211,10 @@ export default function ListingsPage() {
                           confirmLabel: 'Remove listing',
                           tone: 'danger',
                         })
-                        if (ok) updateStatus(car.id, 'removed')
+                        if (ok) {
+                          const reason = window.prompt('Record the reason for archiving this listing:')
+                          if (reason?.trim()) updateStatus(car.id, 'archived', reason.trim())
+                        }
                       }}
                       disabled={actionId === car.id}
                       className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"

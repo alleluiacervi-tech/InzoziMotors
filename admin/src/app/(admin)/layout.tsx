@@ -18,9 +18,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/submissions', icon: 'document', label: 'Submissions' },
       { href: '/imports', icon: 'car', label: 'Vehicle imports' },
       { href: '/inspections', icon: 'settings', label: 'Inspections' },
-      { href: '/handovers', icon: 'key', label: 'Handovers' },
-      { href: '/contracts', icon: 'document', label: 'Contracts' },
-      { href: '/disputes', icon: 'shield', label: 'Disputes' },
+      { href: '/rentals/inquiries', icon: 'calendar', label: 'Rental inquiries' },
       { href: '/reports', icon: 'alert', label: 'Reported chats' },
       { href: '/activity', icon: 'clock', label: 'Activity history' },
     ],
@@ -29,13 +27,13 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     title: 'Marketplace',
     items: [
       { href: '/listings', icon: 'car', label: 'Listings' },
-      { href: '/rentals', icon: 'calendar', label: 'Rentals' },
+      { href: '/rentals/fleet', icon: 'calendar', label: 'Rental inventory' },
+      { href: '/settings', icon: 'settings', label: 'Platform settings' },
     ],
   },
   {
-    title: 'Money & People',
+    title: 'People & Oversight',
     items: [
-      { href: '/fees', icon: 'cash', label: 'Revenue' },
       { href: '/users', icon: 'user', label: 'Users & ID checks' },
       { href: '/analytics', icon: 'chart', label: 'Analytics' },
       { href: '/centers', icon: 'location', label: 'Centers' },
@@ -89,7 +87,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<any>(null)
   const [ready, setReady] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [openDisputes, setOpenDisputes] = useState(0)
   const [unreadMail, setUnreadMail] = useState(0)
   const [openReports, setOpenReports] = useState(0)
   const [globalQuery, setGlobalQuery] = useState('')
@@ -106,14 +103,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => router.replace('/login'))
   }, [router])
 
-  // The 7-day return window is short — an open dispute has to be visible from every page.
   useEffect(() => {
     if (!ready) return
-    api.disputes('open')
-      .then((d) => setOpenDisputes(d.length))
-      .catch(() => setOpenDisputes(0))
-    // Chat reports accumulated invisibly until this page existed; a badge is what
-    // stops that happening again.
     api.reports('open')
       .then((r) => setOpenReports(r.length))
       .catch(() => setOpenReports(0))
@@ -179,8 +170,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const badgeFor = (href: string) =>
-    href === '/disputes' ? openDisputes
-      : href === '/inbox' ? unreadMail
+    href === '/inbox' ? unreadMail
       : href === '/reports' ? openReports
       : 0
 

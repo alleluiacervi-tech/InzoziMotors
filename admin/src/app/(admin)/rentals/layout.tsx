@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const SUB_NAV = [
-  { href: '/rentals',       label: 'Bookings' },
-  { href: '/rentals/fleet', label: 'Fleet' },
+  { href: '/rentals/inquiries', label: 'Inquiries' },
+  { href: '/rentals/fleet',     label: 'Provider inventory' },
 ]
 
 export default function RentalsLayout({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,10 @@ export default function RentalsLayout({ children }: { children: React.ReactNode 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Rentals</h1>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Rental marketplace</h1>
+          <p className="mt-1 text-xs text-gray-500">Providers confirm availability, terms and payment directly with renters.</p>
+        </div>
         <div className="flex gap-1">
           {SUB_NAV.map(({ href, label }) => (
             <Link
