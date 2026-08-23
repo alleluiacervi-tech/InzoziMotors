@@ -64,7 +64,7 @@ export default function RentalDetailScreen({ navigation, route }) {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 184 }}>
 
         {/* Gallery */}
         <View style={styles.gallery}>
@@ -242,32 +242,50 @@ export default function RentalDetailScreen({ navigation, route }) {
       </ScrollView>
 
       {/* Sticky CTA */}
-      <View style={[styles.cta, { paddingBottom: insets.bottom + 12 }]}>
-        <View style={styles.ctaPrice}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={styles.ctaPriceValue}>{formatRWF(car.dailyRate)}</Text>
-            <Text style={styles.ctaPerDay}>/day</Text>
+      <View style={[styles.cta, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
+        <View style={styles.ctaInner}>
+          <View style={styles.ctaMetaRow}>
+            <View style={styles.ctaPrice}>
+              <Text style={styles.ctaPriceLabel}>Daily rental</Text>
+              <View style={styles.ctaPriceLine}>
+                <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>
+                  {formatRWF(car.dailyRate)}
+                </Text>
+                <Text style={styles.ctaPerDay}>/ day</Text>
+              </View>
+              <Text style={styles.ctaDeposit}>Refundable deposit · {formatRWF(car.deposit)}</Text>
+            </View>
+            <View style={styles.ctaAssurance}>
+              <Ionicons name="shield-checkmark" size={14} color={colors.greenText} />
+              <Text style={styles.ctaAssuranceText}>Pay at pickup</Text>
+            </View>
           </View>
-          <Text style={styles.ctaDeposit}>+{formatRWF(car.deposit)} deposit</Text>
+
+          <View style={styles.ctaActions}>
+            {/* Honesty gate: no WhatsApp surface until the business line is real —
+                an unverified number opens a chat nobody answers. */}
+            {WHATSAPP_VERIFIED && (
+              <Pressable
+                style={({ pressed }) => [styles.waBtn, pressed && styles.waBtnPressed]}
+                onPress={() => openWhatsApp(
+                  SAWA_WHATSAPP,
+                  `Hi Sawa Cars, is the ${car.title} (${formatRWF(car.dailyRate)}/day) available to rent?`
+                )}
+                accessibilityRole="button"
+                accessibilityLabel="Ask about this rental on WhatsApp"
+              >
+                <Ionicons name="logo-whatsapp" size={23} color="#fff" />
+              </Pressable>
+            )}
+            <Button
+              title="Book this car"
+              icon="calendar-outline"
+              style={styles.bookButton}
+              textStyle={styles.bookButtonText}
+              onPress={() => navigation.navigate('RentalBooking', { car })}
+            />
+          </View>
         </View>
-        {/* Honesty gate: no WhatsApp surface until the business line is real —
-            an unverified number opens a chat nobody answers. */}
-        {WHATSAPP_VERIFIED && (
-          <Pressable
-            style={styles.waBtn}
-            onPress={() => openWhatsApp(
-              SAWA_WHATSAPP,
-              `Hi Sawa Cars, is the ${car.title} (${formatRWF(car.dailyRate)}/day) available to rent?`
-            )} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp"
-          >
-            <Ionicons name="logo-whatsapp" size={24} color="#fff" />
-          </Pressable>
-        )}
-        <Button
-          title="Book This Car"
-          style={{ flex: 1 }}
-          onPress={() => navigation.navigate('RentalBooking', { car })}
-        />
       </View>
 
       <PhotoViewer
@@ -408,16 +426,50 @@ const styles = StyleSheet.create({
   stepDesc: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.borderSoft,
-    paddingHorizontal: 20, paddingTop: 12, ...shadows.floating,
+    paddingHorizontal: 16, paddingTop: 12, ...shadows.floating,
+  },
+  ctaInner: {
+    width: '100%', maxWidth: 720, alignSelf: 'center', gap: 12,
+  },
+  ctaMetaRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+  },
+  ctaPrice: { flex: 1, minWidth: 0 },
+  ctaPriceLabel: {
+    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
+    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
+  },
+  ctaPriceLine: { flexDirection: 'row', alignItems: 'baseline', minWidth: 0 },
+  ctaPriceValue: {
+    flexShrink: 1, fontVariant: ['tabular-nums'], fontSize: 22, lineHeight: 27,
+    fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5,
+  },
+  ctaPerDay: {
+    flexShrink: 0, fontSize: 12, fontFamily: fonts.semiBold, color: colors.textMuted, marginLeft: 4,
+  },
+  ctaDeposit: {
+    fontSize: 11, lineHeight: 15, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 1,
+  },
+  ctaAssurance: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: colors.greenTint, borderRadius: radius.full,
+    paddingHorizontal: 10, paddingVertical: 7,
+  },
+  ctaAssuranceText: {
+    fontSize: 11, fontFamily: fonts.bold, color: colors.greenText,
+  },
+  ctaActions: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
   },
   waBtn: {
-    width: 52, height: 52, borderRadius: radius.lg,
+    width: 54, height: 54, borderRadius: radius.lg,
     backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
   },
-  ctaPrice: { minWidth: 90 },
-  ctaPriceValue: { fontVariant: ['tabular-nums'], fontSize: 22, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5 },
-  ctaPerDay: { fontSize: 12, fontFamily: fonts.medium, color: colors.textMuted, marginLeft: 2 },
-  ctaDeposit: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 1 },
+  waBtnPressed: { opacity: 0.82, transform: [{ scale: 0.97 }] },
+  bookButton: {
+    flex: 1, width: 'auto', minWidth: 0, minHeight: 54,
+    paddingVertical: 14, borderRadius: radius.lg,
+  },
+  bookButtonText: { fontSize: 15, letterSpacing: 0 },
 });
