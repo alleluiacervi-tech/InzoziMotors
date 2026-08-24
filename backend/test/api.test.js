@@ -23,6 +23,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret_at_least_32_char
 
 const { app, server } = require('../server');
 const pool = require('../src/db');
+const { REQUIRED_ITEM_IDS, CHECKLIST_VERSION } = require('../src/lib/inspection-policy');
 
 const api = () => request(app);
 const unique = (p) => `${p}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@test.local`;
@@ -46,6 +47,40 @@ async function makeAdmin(user) {
     .send({ email: user.email, password: user.password })
     .expect(200);
   return res.body.token;
+}
+
+function canonicalChecklist(verdict = 'pass') {
+  return Object.fromEntries(REQUIRED_ITEM_IDS.map((id) => [id, verdict]));
+}
+
+let inspectionFixtureDay = 30;
+
+async function createPassingInspection({ seller, admin, carId = null, vehicle = {} }) {
+  if (carId && !vehicle.make) {
+    const linked = await pool.query('SELECT make,model,year FROM cars WHERE id=$1', [carId]);
+    vehicle = linked.rows[0];
+  }
+  const submission = await api().post('/submissions')
+    .set('Authorization', `Bearer ${seller.token}`)
+    .send({ make: vehicle.make || 'Toyota', model: vehicle.model || 'Workflow fixture', year: vehicle.year || 2020, mileage: 32000, asking_price: 18000000 })
+    .expect(201);
+  // One future date per fixture keeps the test independent of a center's
+  // configured daily capacity while still using a real, active center.
+  const day = new Date(Date.now() + inspectionFixtureDay++ * 86400_000).toISOString().slice(0, 10);
+  await api().patch(`/submissions/${submission.body.id}`)
+    .set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'scheduled', center: 'Nyarutarama Center', scheduled_date: day, scheduled_time: '10:00 AM' })
+    .expect(200);
+  const found = await pool.query('SELECT id FROM inspections WHERE submission_id=$1', [submission.body.id]);
+  const inspectionId = found.rows[0].id;
+  if (carId) await pool.query('UPDATE inspections SET car_id=$1 WHERE id=$2', [carId, inspectionId]);
+  await api().post(`/inspections/${inspectionId}/start`)
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+  const completed = await api().post(`/inspections/${inspectionId}/complete`)
+    .set('Authorization', `Bearer ${admin}`)
+    .send({ checklist_results: canonicalChecklist() }).expect(200);
+  assert.equal(completed.body.passed, true);
+  return { submissionId: submission.body.id, inspectionId, completed: completed.body };
 }
 
 test.after(async () => { await pool.end(); });
@@ -196,13 +231,13 @@ test('protected routes reject a missing or forged token', async () => {
   await api().get('/auth/me').set('Authorization', 'Bearer not.a.token').expect(401);
 });
 
-test('unverified sellers cannot submit a car', async () => {
+test('seller submission is allowed before identity approval but publication is not', async () => {
   const seller = await register({ role: 'seller' });
   const res = await api().post('/submissions')
     .set('Authorization', `Bearer ${seller.token}`)
     .send({ make: 'Toyota', model: 'RAV4', year: 2020 })
-    .expect(403);
-  assert.equal(res.body.code, 'ID_VERIFICATION_REQUIRED');
+    .expect(201);
+  assert.equal(res.body.status, 'under_review');
 });
 
 // ─── Validation ──────────────────────────────────────────────────────────────
@@ -234,6 +269,7 @@ test('a stranger cannot read a seller phone number off a listing', async () => {
   // to the public. Publish this fixture so the assertions below test contact
   // privacy on a real catalogue listing rather than the unpublished-listing
   // access rule.
+  await createPassingInspection({ seller, admin, carId: car.body.id });
   await pool.query("UPDATE cars SET status = 'live' WHERE id = $1", [car.body.id]);
 
   const anon = await api().get(`/cars/${car.body.id}`).expect(200);
@@ -266,6 +302,8 @@ test('saving is idempotent and the cached counter matches the table', async () =
   const car = await api().post('/cars').set('Authorization', `Bearer ${admin}`)
     .send({ seller_id: seller.id, title: 'Saveable', make: 'Mazda', model: 'CX-5', year: 2021, mileage: 22000, price: 28000 })
     .expect(201);
+  await createPassingInspection({ seller, admin, carId: car.body.id });
+  await pool.query("UPDATE cars SET status='live' WHERE id=$1", [car.body.id]);
 
   const buyer = await register();
   const auth = { Authorization: `Bearer ${buyer.token}` };
@@ -314,6 +352,7 @@ test('seller contact requires consent, verification, acknowledgement, and an aud
   const car = await api().post('/cars').set('Authorization', `Bearer ${admin}`)
     .send({ seller_id: seller.id, title: 'Direct listing', make: 'Kia', model: 'Sportage', year: 2020, mileage: 41000, price: 19000, images: ['https://example.test/car.jpg'] })
     .expect(201);
+  await createPassingInspection({ seller, admin, carId: car.body.id });
   await pool.query("UPDATE cars SET status='live' WHERE id=$1", [car.body.id]);
 
   const buyer = await register();
@@ -360,13 +399,16 @@ test('rental inquiries only reach active verified providers and never create a b
     [provider.id]
   );
   const admin = await makeAdmin(await register());
+  const evidence = await createPassingInspection({ seller: provider, admin, vehicle: { make: 'Toyota', model: 'RAV4', year: 2020 } });
   const rental = await api().post('/rentals').set('Authorization', `Bearer ${admin}`)
     .send({
       provider_id: provider.id,
       title: 'Verified rental SUV',
       make: 'Toyota',
       model: 'RAV4',
+      year: 2020,
       daily_rate: 65000,
+      inspection_id: evidence.inspectionId,
       images: ['https://example.test/rental.jpg'],
     })
     .expect(201);
@@ -392,7 +434,7 @@ test('rental inquiries only reach active verified providers and never create a b
 
 // ─── Inspection scoring ──────────────────────────────────────────────────────
 
-test('inspection scoring is weighted but never charges or auto-publishes', async () => {
+test('inspection requires the exact 150 checks, a recorded start, and never auto-publishes', async () => {
   const seller = await register({ role: 'seller' });
   await pool.query("UPDATE users SET id_verified = 'approved' WHERE id = $1", [seller.id]);
   const admin = await makeAdmin(await register());
@@ -415,22 +457,30 @@ test('inspection scoring is weighted but never charges or auto-publishes', async
   );
   const inspectionId = rows[0].id;
 
-  // All passes = full marks on the 150-point scale.
+  const incomplete = canonicalChecklist();
+  delete incomplete.e01;
+  const rejected = await api().post(`/inspections/${inspectionId}/complete`)
+    .set('Authorization', `Bearer ${admin}`)
+    .send({ checklist_results: incomplete })
+    .expect(400);
+  assert.equal(rejected.body.code, 'INSPECTION_CHECKLIST_INCOMPLETE');
+  assert.equal(rejected.body.missing_count, 1);
+
+  await api().post(`/inspections/${inspectionId}/complete`)
+    .set('Authorization', `Bearer ${admin}`)
+    .send({ checklist_results: canonicalChecklist() })
+    .expect(409);
+  await api().post(`/inspections/${inspectionId}/start`)
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+
+  // All 150 passes = full marks on the canonical scale.
   const allPass = await api().post(`/inspections/${inspectionId}/complete`)
     .set('Authorization', `Bearer ${admin}`)
-    .send({
-      checklist_results: {
-        'Engine oil level & condition': 'pass',
-        'Front brake pads': 'pass',
-        'Paint condition': 'pass',
-        'Seat condition': 'pass',
-        'Battery health': 'pass',
-        'Front-left tread': 'pass',
-        'Registration / logbook': 'pass',
-      },
-    })
+    .send({ checklist_results: canonicalChecklist() })
     .expect(200);
   assert.equal(allPass.body.score, 150);
+  assert.equal(allPass.body.passed, true);
+  assert.equal(allPass.body.checklist_version, CHECKLIST_VERSION);
   assert.equal(allPass.body.published, false);
 
   // Inspection is evidence, not a charge or an automatic publication event.
@@ -442,8 +492,87 @@ test('inspection scoring is weighted but never charges or auto-publishes', async
 
   await api().post(`/inspections/${inspectionId}/complete`)
     .set('Authorization', `Bearer ${admin}`)
-    .send({ checklist_results: { 'Battery health': 'pass' } })
+    .send({ checklist_results: canonicalChecklist() })
     .expect(409);
+});
+
+test('publication and buyer actions fail closed until passing inspection evidence exists', async () => {
+  const seller = await register({ role: 'seller' });
+  await pool.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id]);
+  const admin = await makeAdmin(await register());
+  const car = await api().post('/cars').set('Authorization', `Bearer ${admin}`)
+    .send({
+      seller_id: seller.id, title: 'Workflow gated car', make: 'Toyota', model: 'RAV4',
+      year: 2021, mileage: 24000, price: 28000000, images: ['https://example.test/gated.jpg'],
+    }).expect(201);
+
+  const blocked = await api().patch(`/cars/${car.body.id}/status`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'approved' }).expect(409);
+  assert.equal(blocked.body.code, 'LISTING_NOT_READY');
+  assert.match(blocked.body.readiness.missing.join(' '), /inspection/i);
+
+  const buyer = await register();
+  await api().post('/messages/conversations').set('Authorization', `Bearer ${buyer.token}`)
+    .send({ car_id: car.body.id, message: 'Is this available?' }).expect(404);
+  await api().post(`/cars/save/${car.body.id}`).set('Authorization', `Bearer ${buyer.token}`).expect(404);
+
+  await createPassingInspection({ seller, admin, carId: car.body.id });
+  const stillNeedsApproval = await api().patch(`/cars/${car.body.id}/status`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'live' }).expect(409);
+  assert.deepEqual(stillNeedsApproval.body.allowed_transitions, ['approved', 'rejected', 'archived']);
+  await api().patch(`/cars/${car.body.id}/status`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'approved' }).expect(200);
+  const published = await api().patch(`/cars/${car.body.id}/status`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'live' }).expect(200);
+  assert.equal(published.body.status, 'live');
+  await api().get(`/cars/${car.body.id}/history`).expect(200);
+  await api().post('/messages/conversations').set('Authorization', `Bearer ${buyer.token}`)
+    .send({ car_id: car.body.id, message: 'Is this available?' }).expect(201);
+
+  const invalidEdit = await api().patch(`/cars/${car.body.id}`)
+    .set('Authorization', `Bearer ${admin}`).send({ price: 0 }).expect(409);
+  assert.equal(invalidEdit.body.code, 'LISTING_NOT_READY');
+  const stored = await pool.query('SELECT price,status FROM cars WHERE id=$1', [car.body.id]);
+  assert.equal(Number(stored.rows[0].price), 28000000);
+  assert.equal(stored.rows[0].status, 'live');
+});
+
+test('seller submission flows through inspection, verification, listing approval and publication', async () => {
+  const seller = await register({ role: 'seller' });
+  const admin = await makeAdmin(await register());
+  const evidence = await createPassingInspection({
+    seller, admin, vehicle: { make: 'Honda', model: 'CR-V', year: 2022 },
+  });
+  await api().patch(`/id-verification/${seller.id}`)
+    .set('Authorization', `Bearer ${admin}`).send({ decision: 'approved' }).expect(200);
+
+  const car = await api().post('/cars').set('Authorization', `Bearer ${admin}`).send({
+    seller_id: seller.id, submission_id: evidence.submissionId,
+    title: '2022 Honda CR-V', make: 'Honda', model: 'CR-V', year: 2022,
+    mileage: 32000, price: 32000000, images: ['https://example.test/honda.jpg'],
+  }).expect(201);
+  assert.equal(car.body.status, 'under_review');
+  assert.equal(car.body.inspected, true);
+  assert.equal(Number(car.body.inspection_score), 150);
+
+  await api().patch(`/cars/${car.body.id}/status`).set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'approved' }).expect(200);
+  await api().patch(`/cars/${car.body.id}/status`).set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'live' }).expect(200);
+  const publicCar = await api().get(`/cars/${car.body.id}`).expect(200);
+  assert.equal(publicCar.body.title, '2022 Honda CR-V');
+
+  await api().patch(`/admin/users/${seller.id}/access`).set('Authorization', `Bearer ${admin}`)
+    .send({ action: 'suspend', reason: 'End-to-end access test' }).expect(200);
+  await api().get(`/cars/${car.body.id}`).expect(404);
+  const paused = await pool.query('SELECT status FROM cars WHERE id=$1', [car.body.id]);
+  assert.equal(paused.rows[0].status, 'paused');
+  await api().patch(`/admin/users/${seller.id}/access`).set('Authorization', `Bearer ${admin}`)
+    .send({ action: 'restore' }).expect(200);
+  const stillHidden = await api().get(`/cars/${car.body.id}`).expect(404);
+  assert.match(stillHidden.body.error, /not found/i, 'restoring an account must not silently republish inventory');
+  await api().patch(`/cars/${car.body.id}/status`).set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'live' }).expect(200);
 });
 
 // ─── Scheduling dates ────────────────────────────────────────────────────────
@@ -461,6 +590,13 @@ test('scheduling rejects non-ISO dates and past days', async () => {
     api().patch(`/submissions/${submission.body.id}/schedule`).set(auth)
       .send({ center: 'Kicukiro Center', scheduled_date, scheduled_time: '10:00 AM' });
 
+  const activeCenters = await api().get('/centers/active').set(auth).expect(200);
+  assert.ok(activeCenters.body.some((center) => center.id === 'kicukiro'));
+
+  await api().patch(`/submissions/${submission.body.id}/schedule`).set(auth)
+    .send({ center: 'A Center That Does Not Exist', scheduled_date: '2099-01-01', scheduled_time: '10:00 AM' })
+    .expect(400);
+
   // "Aug 12" is what the app used to send: no year, so it could not be
   // compared or ordered, and the capacity check silently stopped working.
   await attempt('Aug 12').expect(400);
@@ -477,6 +613,23 @@ test('scheduling rejects non-ISO dates and past days', async () => {
     [future]
   );
   await attempt(future).expect(200);
+
+  // The admin page filters on the canonical center name, real DATE column and
+  // actual inspection status. These three values previously disagreed with
+  // the UI, producing an empty queue even though the appointment existed.
+  const admin = await makeAdmin(await register());
+  const scheduledQueue = await api().get(
+    `/inspections?center=${encodeURIComponent('Kicukiro Center')}&date=${future}&status=scheduled`
+  ).set('Authorization', `Bearer ${admin}`).expect(200);
+  const scheduledInspection = scheduledQueue.body.find((row) => row.submission_id === submission.body.id);
+  assert.ok(scheduledInspection, 'scheduled inspection must appear in the exact admin filter');
+
+  await api().post(`/inspections/${scheduledInspection.id}/start`)
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+  const activeQueue = await api().get(
+    `/inspections?center=${encodeURIComponent('Kicukiro Center')}&date=${future}&status=in_progress`
+  ).set('Authorization', `Bearer ${admin}`).expect(200);
+  assert.ok(activeQueue.body.some((row) => row.id === scheduledInspection.id), 'in-progress inspection must remain visible');
 
   // Formatted by Postgres, not by JS. node-postgres hands a DATE back as local
   // midnight, so .toISOString() on it reports the previous day wherever the
