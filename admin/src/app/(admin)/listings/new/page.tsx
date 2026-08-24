@@ -1,9 +1,104 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Choosing the inspection is step one, not an optional query string.
+//
+// A listing is bound to its inspection in exactly one place: the create call,
+// and only when it carries the submission id. Nothing anywhere can link them
+// afterwards. So a listing started without that id can never be published —
+// not because publication is unsafe, but because the evidence it needs can
+// never be attached, and the only remedy is to archive it and retype
+// everything including the photographs.
+//
+// The blank form was reachable from the dashboard's primary button, its
+// "Publish an inspected car" tile and the listings header — the three most
+// prominent routes in the product all led into work that had to be thrown
+// away. This picker makes the binding structural: pick the inspection, and
+// the same form opens pre-filled and correctly linked.
+// ─────────────────────────────────────────────────────────────────────────────
+function InspectionPicker() {
+  const router = useRouter()
+  const toast = useToast()
+  const [rows, setRows] = useState<any[] | null>(null)
+  const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    api.inspections({ status: 'complete' })
+      .then((data) => setRows(data.filter((i: any) => i.passed && !i.car_id)))
+      .catch((e: any) => { toast('Could not load inspections: ' + e.message, 'error'); setRows([]) })
+  }, [])
+
+  const visible = (rows || []).filter((i) => {
+    const q = query.trim().toLowerCase()
+    if (!q) return true
+    return [i.submission_make, i.submission_model, i.submission_year, i.seller_name, i.seller_email]
+      .filter(Boolean).join(' ').toLowerCase().includes(q)
+  })
+
+  if (rows === null) return <div className="text-sm text-gray-400">Loading passed inspections…</div>
+
+  return (
+    <div className="max-w-2xl">
+      <h1 className="text-xl font-bold text-gray-900">Create a listing</h1>
+      <p className="mt-2 text-sm text-gray-500">
+        Pick the completed inspection this listing is for. That link is what lets the
+        listing be published later — it cannot be added afterwards.
+      </p>
+
+      {rows.length === 0 ? (
+        <div className="mt-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold text-gray-900">No inspection is waiting for a listing</p>
+          <p className="mt-2 text-sm text-gray-500">
+            A listing needs a completed, passing 150-point inspection that has not been used yet.
+            Complete one first and it will appear here.
+          </p>
+          <Link href="/inspections" className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-deep">
+            Go to Inspections
+          </Link>
+        </div>
+      ) : (
+        <>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter by vehicle or seller…"
+            className="mt-5 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+          <ul className="mt-3 space-y-2">
+            {visible.map((insp) => (
+              <li key={insp.id}>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`)}
+                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-colors hover:border-brand"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-gray-900">
+                      {[insp.submission_year, insp.submission_make, insp.submission_model].filter(Boolean).join(' ') || 'Inspected vehicle'}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-gray-500">
+                      {insp.seller_name || insp.seller_email || 'Seller'} · scored {insp.score}/150
+                    </span>
+                  </span>
+                  <span className="flex-shrink-0 text-xs font-bold text-brand">Use this →</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {visible.length === 0 && (
+            <p className="mt-4 text-sm text-gray-400">No inspection matches that filter.</p>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
 
 function ListingCreatorForm() {
   const router = useRouter()
@@ -12,6 +107,7 @@ function ListingCreatorForm() {
   const toast = useToast()
   const submissionId = searchParams.get('submissionId') || ''
   const inspectionId = searchParams.get('inspectionId') || ''
+
 
   // Seller picker — the API requires seller_id; nobody should type a UUID.
   const [sellerId, setSellerId] = useState('')
@@ -391,10 +487,18 @@ function ListingCreatorForm() {
   )
 }
 
+/** Which of the two screens this route is. Kept as its own component so each
+ *  branch owns a stable set of hooks — picker and form are the same route, so
+ *  branching inside one component would change its hook count mid-navigation. */
+function NewListingRoute() {
+  const submissionId = useSearchParams().get('submissionId') || ''
+  return submissionId ? <ListingCreatorForm /> : <InspectionPicker />
+}
+
 export default function NewListingPage() {
   return (
     <Suspense fallback={<div className="text-gray-400 text-sm">Loading form components…</div>}>
-      <ListingCreatorForm />
+      <NewListingRoute />
     </Suspense>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api, type CenterRow } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney } from '@/components/ui'
 import { useToast } from '@/components/feedback'
+import { useFocusRow } from '@/components/useFocusRow'
 
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
@@ -16,6 +17,8 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function SubmissionsPage() {
+  // Arrives here from an Action Center item; marks the row it named.
+  const { focusProps } = useFocusRow()
   const [tab, setTab]               = useState('under_review')
   const [items, setItems]           = useState<any[]>([])
   const [loading, setLoading]       = useState(true)
@@ -133,7 +136,7 @@ export default function SubmissionsPage() {
           {visible.map((sub) => {
             const waiting = age(sub)
             return (
-            <div key={sub.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <div key={sub.id} id={`row-${sub.id}`} className={`bg-white rounded-xl border border-gray-100 shadow-sm p-5 ${focusProps(sub.id).className}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1">

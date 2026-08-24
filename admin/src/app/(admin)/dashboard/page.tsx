@@ -37,7 +37,7 @@ const FUNNEL_LABELS: Record<string, string> = {
 }
 
 const QUICK_ACTIONS: { href: string; label: string; sub: string; icon: IconName }[] = [
-  { href: '/listings/new', label: 'Create a listing', sub: 'Publish an inspected car', icon: 'plus' },
+  { href: '/listings/new', label: 'Create a listing', sub: 'Starts from a passed inspection', icon: 'plus' },
   { href: '/submissions', label: 'Review submissions', sub: 'Approve or schedule', icon: 'document' },
   { href: '/rentals/inquiries', label: 'Rental inquiries', sub: 'Coordinate availability requests', icon: 'calendar' },
   { href: '/users', label: 'ID verification queue', sub: 'Approve sellers', icon: 'user' },

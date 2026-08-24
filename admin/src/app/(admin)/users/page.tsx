@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
+import { useSearchParams } from 'next/navigation'
+import { useFocusRow } from '@/components/useFocusRow'
 
 type UserRow = {
   id: string
@@ -32,7 +34,13 @@ type UserRow = {
 }
 
 export default function UsersPage() {
-  const [tab, setTab] = useState<'directory' | 'verification'>('directory')
+  // The Action Center links straight to the identity queue with the person it
+  // named, so the tab is part of the destination, not a thing to find again.
+  const { focusProps } = useFocusRow()
+  const requestedTab = useSearchParams().get('tab')
+  const [tab, setTab] = useState<'directory' | 'verification'>(
+    requestedTab === 'verification' ? 'verification' : 'directory'
+  )
   const [items, setItems] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
@@ -106,6 +114,31 @@ export default function UsersPage() {
       await load()
     } catch (e: any) { toast(e.message, 'error') }
     finally { setActionId(null) }
+  }
+
+  // Revoking an approved identity was backend-only: the approve/reject buttons
+  // live in the pending queue, so once a seller was verified there was no way
+  // to undo it from the dashboard — only the blunter Suspend. The server does
+  // the whole cascade (sessions ended, contact hidden, listings back to review,
+  // rental inventory to maintenance); this just exposes it where it is needed.
+  async function revokeIdentity(user: UserRow) {
+    const ok = await ask({
+      title: `Revoke ${user.name}'s identity approval?`,
+      message: 'Their sessions end immediately, phone and WhatsApp visibility are switched off, live listings return to under review, and any rental inventory goes to maintenance. They must submit documents again.',
+      confirmLabel: 'Revoke approval',
+      tone: 'danger',
+    })
+    if (!ok) return
+    setActionId(`revoke-${user.id}`)
+    try {
+      await api.decideVerification(user.id, 'rejected')
+      toast('Identity approval revoked — listings and contact visibility were withdrawn', 'success')
+      await load()
+    } catch (e: any) {
+      toast(e.message, 'error')
+    } finally {
+      setActionId(null)
+    }
   }
 
   async function resetPassword(user: UserRow) {
@@ -311,14 +344,14 @@ export default function UsersPage() {
                 <tr><th className="px-5 py-3">User</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Identity</th><th className="px-4 py-3">Trust</th><th className="px-4 py-3">Sales</th><th className="px-4 py-3">Access</th><th className="px-5 py-3">Joined</th></tr>
               </thead>
               <tbody className="divide-y divide-line-soft">
-                {visible.map((u) => <tr key={u.id} className="hover:bg-surface-alt">
+                {visible.map((u) => <tr key={u.id} id={`row-${u.id}`} className={`hover:bg-surface-alt ${focusProps(u.id).className}`}>
                   <td className="px-5 py-4"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</td>
                   <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'showroom' : u.role} />{u.business_verified ? <Pill status="approved" label="business verified" /> : null}</div></td>
                   <td className="px-4 py-4"><Pill status={u.id_verified} label={u.id_verified || 'not submitted'} /></td>
                   <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>
                   <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2"><Pill status={u.account_status === 'suspended' ? 'rejected' : 'approved'} label={u.account_status === 'suspended' ? 'suspended' : 'active'} />
-                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button><button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-white hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
+                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button>{u.id_verified === 'approved' ? <button type="button" onClick={() => revokeIdentity(u)} disabled={actionId === `revoke-${u.id}`} className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">{actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID'}</button> : null}<button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-white hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
                   <td className="px-5 py-4 text-label text-content-muted">{new Date(u.created_at).toLocaleDateString()}</td>
                 </tr>)}
               </tbody>
@@ -329,7 +362,7 @@ export default function UsersPage() {
       ) : (
         <div className="space-y-4">
           {visible.map((u) => (
-            <Card key={u.id} className="p-5">
+            <Card key={u.id} id={`row-${u.id}`} className={`p-5 ${focusProps(u.id).className}`}>
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-tint text-lg font-bold text-brand">{(u.name || 'U')[0].toUpperCase()}</div>
                 <div className="min-w-0 flex-1">

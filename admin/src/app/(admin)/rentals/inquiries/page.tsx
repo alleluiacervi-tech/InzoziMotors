@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
+import { useFocusRow } from '@/components/useFocusRow'
 
 const TABS = ['new', 'contacted', 'closed', 'cancelled'] as const
 type Status = typeof TABS[number]
@@ -17,6 +18,8 @@ const STATUS_STYLE: Record<Status, string> = {
 }
 
 export default function RentalInquiriesPage() {
+  // Arrives here from an Action Center item; marks the row it named.
+  const { focusProps } = useFocusRow()
   const [tab, setTab] = useState<Status>('new')
   const [items, setItems] = useState<any[]>([])
   const [query, setQuery] = useState('')
@@ -87,7 +90,7 @@ export default function RentalInquiriesPage() {
                 <th className="px-4 py-3">Request</th><th className="px-4 py-3 text-right">Actions</th>
               </tr></thead>
               <tbody>{visible.map((item) => (
-                <tr key={item.id} className="border-b border-gray-50 align-top last:border-0">
+                <tr key={item.id} id={`row-${item.id}`} className={`border-b border-gray-50 align-top last:border-0 ${focusProps(item.id).className}`}>
                   <td className="px-4 py-3"><p className="font-bold text-gray-900">{item.inquiry_ref}</p><span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[item.status as Status]}`}>{item.status}</span></td>
                   <td className="px-4 py-3 font-semibold text-gray-900">{item.car_title}</td>
                   <td className="px-4 py-3"><p className="text-gray-900">{item.renter_name}</p><p className="text-xs text-gray-500">{item.renter_phone || item.renter_whatsapp || 'In-app contact'}</p></td>

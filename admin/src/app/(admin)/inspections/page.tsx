@@ -6,6 +6,7 @@ import { api, type CenterRow } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useToast } from '@/components/feedback'
+import { useFocusRow } from '@/components/useFocusRow'
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled:  'bg-info-tint text-info',
@@ -20,6 +21,8 @@ function todayISO() {
 }
 
 export default function InspectionsPage() {
+  // Arrives here from an Action Center item; marks the row it named.
+  const { focusProps } = useFocusRow()
   const toast = useToast()
   const [center, setCenter]   = useState('all')
   const [date, setDate]       = useState(todayISO())
@@ -123,7 +126,7 @@ export default function InspectionsPage() {
       ) : (
         <div className="space-y-3">
           {visible.map((insp) => (
-            <div key={insp.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4">
+            <div key={insp.id} id={`row-${insp.id}`} className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4 ${focusProps(insp.id).className}`}>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-semibold text-gray-900 text-sm">
