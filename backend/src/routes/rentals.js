@@ -13,6 +13,11 @@ const {
   contactAvailability,
   ensureMarketplaceAcknowledgement,
 } = require('../lib/marketplace');
+const {
+  CHECKLIST_VERSION,
+  PUBLISH_THRESHOLD,
+  evaluateChecklist,
+} = require('../lib/inspection-policy');
 
 const router = express.Router();
 const MAX_RENTAL_PHOTOS = 40;
@@ -35,6 +40,40 @@ async function verifiedRentalProvider(db, providerId) {
   );
   return provider.rowCount > 0;
 }
+
+async function inspectionEvidenceForProvider(db, inspectionId, providerId) {
+  if (!inspectionId) return null;
+  const { rows } = await db.query(
+    `SELECT i.id, i.score, i.checklist_results, i.checklist_version, i.passed,
+            i.critical_failures, s.seller_id, s.make, s.model, s.year
+       FROM inspections i JOIN submissions s ON s.id = i.submission_id
+      WHERE i.id = $1 AND i.status = 'complete'`,
+    [inspectionId]
+  );
+  if (!rows.length || rows[0].seller_id !== providerId || rows[0].checklist_version !== CHECKLIST_VERSION || !rows[0].passed) return null;
+  const evaluated = evaluateChecklist(rows[0].checklist_results);
+  if (!evaluated.valid || !evaluated.passed || evaluated.score !== Number(rows[0].score)) return null;
+  return { ...rows[0], evaluated };
+}
+
+function inspectionMatchesVehicle(evidence, vehicle) {
+  const sameText = (left, right) => String(left || '').trim().toLowerCase() === String(right || '').trim().toLowerCase();
+  return evidence && sameText(evidence.make, vehicle.make) && sameText(evidence.model, vehicle.model)
+    && Number(evidence.year) === Number(vehicle.year);
+}
+
+const VALID_RENTAL_INSPECTION = `
+  JOIN inspections evidence ON evidence.id = rc.inspection_id
+  JOIN submissions evidence_submission ON evidence_submission.id = evidence.submission_id
+    AND evidence_submission.seller_id = rc.provider_id
+    AND lower(evidence_submission.make) = lower(rc.make)
+    AND lower(evidence_submission.model) = lower(rc.model)
+    AND evidence_submission.year = rc.year
+    AND evidence.status = 'complete'
+    AND evidence.checklist_version = '${CHECKLIST_VERSION}'
+    AND evidence.passed = TRUE
+    AND evidence.score >= ${PUBLISH_THRESHOLD}
+    AND jsonb_array_length(COALESCE(evidence.critical_failures, '[]'::jsonb)) = 0`;
 
 const PROVIDER_COLUMNS = `
   u.name AS provider_name,
@@ -87,6 +126,7 @@ router.get('/', async (_req, res) => {
     const { rows } = await pool.query(
       `SELECT rc.*, ${PROVIDER_COLUMNS}
        FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
+       ${VALID_RENTAL_INSPECTION}
        WHERE rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
          AND u.account_status = 'active' AND u.deleted_at IS NULL
@@ -244,6 +284,7 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
                 buyer.marketplace_terms_version
          FROM rental_cars rc
          JOIN users u ON u.id = rc.provider_id
+         ${VALID_RENTAL_INSPECTION}
          JOIN users buyer ON buyer.id = $2
          WHERE rc.id = $1 AND rc.status = 'active'
            AND u.role = 'seller' AND u.id_verified = 'approved'
@@ -324,6 +365,7 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
     const { rows } = await pool.query(
       `SELECT rc.*, ${PROVIDER_COLUMNS}
        FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
+       ${VALID_RENTAL_INSPECTION}
        WHERE rc.id = $1 AND rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
          AND u.account_status = 'active' AND u.deleted_at IS NULL`,
@@ -340,8 +382,8 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
 router.post('/', requireAdmin, async (req, res) => {
   const { provider_id, title, make, model, year, category, seats, fuel,
           transmission, mileage, daily_rate, weekly_rate, deposit, min_days,
-          inspection_score, location, images } = req.body;
-  if (!provider_id || !title || !daily_rate) return res.status(400).json({ error: 'provider_id, title and daily_rate are required' });
+          inspection_id, location, images } = req.body;
+  if (!provider_id || !title || !make || !model || !year || !daily_rate || !inspection_id) return res.status(400).json({ error: 'provider_id, title, make, model, year, daily_rate and inspection_id are required' });
   if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) return res.status(400).json({ error: 'daily_rate must be a positive number' });
   const galleryError = rentalGalleryError(images, true);
   if (galleryError) return res.status(400).json({ error: galleryError });
@@ -352,25 +394,39 @@ router.post('/', requireAdmin, async (req, res) => {
         error.status = 400;
         throw error;
       }
+      const evidence = await inspectionEvidenceForProvider(client, inspection_id, provider_id);
+      if (!evidence) {
+        const error = new Error('Choose a complete, passing 150-point inspection belonging to this provider');
+        error.status = 409;
+        throw error;
+      }
+      if (!inspectionMatchesVehicle(evidence, { make, model, year })) {
+        const error = new Error('The selected inspection belongs to a different make, model, or model year');
+        error.status = 409;
+        throw error;
+      }
       const { rows } = await client.query(
         `INSERT INTO rental_cars
            (provider_id,title,make,model,year,category,seats,fuel,transmission,mileage,
-            daily_rate,weekly_rate,deposit,min_days,inspection_score,location,images)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+            daily_rate,weekly_rate,deposit,min_days,inspection_id,inspected,inspection_score,location,images)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TRUE,$16,$17,$18)
          RETURNING *`,
         [provider_id, String(title).trim(), make, model, year, category, seats || 5, fuel,
          transmission, mileage, daily_rate, weekly_rate || Number(daily_rate) * 6,
-         deposit || 0, min_days || 1, inspection_score, location, images.map((url) => url.trim())]
+         deposit || 0, min_days || 1, inspection_id, Number(evidence.score), location, images.map((url) => url.trim())]
       );
       await recordAdminAction(client, {
         actorId: req.user.id, action: 'rental_car.created', targetType: 'rental_car', targetId: rows[0].id,
-        summary: `${rows[0].title} added for a verified rental provider`, metadata: { provider_id, daily_rate: rows[0].daily_rate },
+        summary: `${rows[0].title} added for a verified rental provider`, metadata: {
+          provider_id, daily_rate: rows[0].daily_rate, inspection_id, inspection_score: Number(evidence.score),
+        },
       });
       return rows[0];
     });
     res.status(201).json(created);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
+    if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle' });
     log.error('rental create error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
@@ -379,7 +435,7 @@ router.post('/', requireAdmin, async (req, res) => {
 router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   const EDITABLE = ['provider_id', 'title', 'make', 'model', 'year', 'category',
     'seats', 'fuel', 'transmission', 'mileage', 'daily_rate', 'weekly_rate',
-    'deposit', 'min_days', 'inspection_score', 'location', 'images', 'status'];
+    'deposit', 'min_days', 'inspection_id', 'location', 'images', 'status'];
   const fields = EDITABLE.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable fields provided' });
   if (req.body.status && !['active', 'maintenance', 'retired'].includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
@@ -401,6 +457,23 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       const providerId = req.body.provider_id !== undefined ? req.body.provider_id : before.provider_id;
       const status = req.body.status !== undefined ? req.body.status : before.status;
       const images = req.body.images !== undefined ? req.body.images : (before.images || []);
+      const inspectionId = req.body.inspection_id !== undefined ? req.body.inspection_id : before.inspection_id;
+      const evidence = await inspectionEvidenceForProvider(client, inspectionId, providerId);
+      if (inspectionId && !evidence) {
+        const error = new Error('The selected inspection must be complete, passing, and belong to this provider');
+        error.status = 409;
+        throw error;
+      }
+      const vehicle = {
+        make: req.body.make !== undefined ? req.body.make : before.make,
+        model: req.body.model !== undefined ? req.body.model : before.model,
+        year: req.body.year !== undefined ? req.body.year : before.year,
+      };
+      if (evidence && !inspectionMatchesVehicle(evidence, vehicle)) {
+        const error = new Error('The rental vehicle details do not match the selected inspection');
+        error.status = 409;
+        throw error;
+      }
       if (status === 'active') {
         if (!await verifiedRentalProvider(client, providerId)) {
           const error = new Error('An active rental listing requires an active, identity- and business-verified provider');
@@ -409,12 +482,19 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
         }
         const galleryError = rentalGalleryError(images, true);
         if (galleryError) { const error = new Error(galleryError); error.status = 409; throw error; }
+        if (!evidence) {
+          const error = new Error('An active rental listing requires a valid 150-point inspection');
+          error.status = 409;
+          throw error;
+        }
       }
       const normalized = { ...req.body };
       if (normalized.title !== undefined) normalized.title = String(normalized.title).trim();
       if (normalized.images !== undefined) normalized.images = normalized.images.map((url) => url.trim());
       const params = fields.map((field) => normalized[field]);
       const assignments = fields.map((field, index) => `${field}=$${index + 1}`);
+      params.push(Boolean(evidence), evidence ? Number(evidence.score) : null);
+      assignments.push(`inspected=$${params.length - 1}`, `inspection_score=$${params.length}`);
       if (req.body.status === 'retired') assignments.push('retired_at=NOW()');
       if (req.body.status && req.body.status !== 'retired') assignments.push('retired_at=NULL', 'retirement_reason=NULL');
       params.push(req.params.id);
@@ -430,6 +510,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     res.json(updated);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
+    if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle' });
     log.error('rental update error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
