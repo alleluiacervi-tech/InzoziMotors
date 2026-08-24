@@ -6,6 +6,9 @@ export const inspections = {
   getReport: async (carId) => {
     return await api.get(`/inspections/report/${carId}`);
   },
+  getRentalReport: async (rentalCarId) => {
+    return await api.get(`/inspections/report/rental/${rentalCarId}`);
+  },
 
   // Vehicle history card (ownership, accidents, mileage verification, RRA)
   getVehicleHistory: async (carId) => {
@@ -22,6 +25,14 @@ export const inspections = {
 
   get: async (id) => {
     return await api.get(`/inspections/${id}`);
+  },
+
+  checklist: async () => {
+    return await api.get('/inspections/checklist');
+  },
+
+  activeCenters: async () => {
+    return await api.get('/centers/active');
   },
 
   // Mechanic begins the walkaround (scheduled -> in_progress)

@@ -362,7 +362,7 @@ export default function AdminPanelScreen({ navigation }) {
   const handleApprove = (id) => {
     showConfirm({
       title: 'Approve seller?',
-      message: 'This seller will be notified and can submit cars for listing.',
+      message: 'This seller will be notified and eligible inspected listings can proceed toward publication.',
       confirmLabel: 'Approve',
     }).then((ok) => { if (ok) adminApproveVerification(id); });
   };

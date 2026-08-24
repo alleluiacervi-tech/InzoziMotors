@@ -17,7 +17,7 @@ const STEPS = [
 
 const OPTIONS = [
   { icon: 'trending-up-outline', title: "What's My Car Worth?", sub: 'Free instant estimate — 30 seconds', accent: colors.green, screen: 'CarValuation' },
-  // Gated: identity has to be verified before a car can enter the pipeline
+  // Account-gated only: identity approval is enforced later, before publication.
   { icon: 'shield-checkmark-outline', title: 'Submit for Certification', sub: '150-point inspection, we list it for you', accent: colors.primary, screen: 'CarSubmission', gated: true },
   { icon: 'grid-outline', title: 'My Submissions', sub: 'Track your cars through the pipeline', accent: colors.amber, screen: 'SellerDashboard' },
 ];
@@ -25,8 +25,8 @@ const OPTIONS = [
 const VERIFY_BANNER = {
   none: {
     icon: 'shield-outline',
-    title: 'Verify your identity to sell',
-    body: 'One two-minute check, done once. It is what keeps every Sawa Cars listing real.',
+    title: 'Verify before your listing goes live',
+    body: 'You can submit now. Complete this one-time check before publication and public contact activation.',
     cta: 'Start verification',
   },
   pending: {
@@ -81,7 +81,7 @@ export default function SellScreen({ navigation }) {
           </LinearGradient>
         </Pressable>
 
-        {/* Verification state — the one thing standing between a seller and listing */}
+        {/* Verification never blocks submission, but it is required for publication. */}
         {banner && (
           <Pressable style={styles.verifyCard} onPress={() => navigation.navigate('IDVerification')}>
             <View style={styles.verifyIcon}>

@@ -2,10 +2,9 @@ import { useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { showConfirm, showToast } from '../components/Feedback';
 
-// Sawa's hard rule: identity is mandatory before a car can enter the
-// pipeline. The server enforces it (requireVerified on POST /submissions) —
-// this is the friendly front door so the seller meets the requirement where it
-// makes sense, not as a 403 after filling in a four-step form.
+// Sellers may submit first; the team verifies identity during onboarding and
+// inspection. Identity remains mandatory before a listing or contact channel
+// can become public, but it must not block the workflow that obtains it.
 //
 //   const gate = useSellerGate(navigation);
 //   <Pressable onPress={() => gate('CarSubmission')} />
@@ -27,30 +26,11 @@ export function useSellerGate(navigation) {
         return false;
       }
 
-      if (idVerificationStatus === 'approved') {
-        navigation.navigate(destination, params);
-        return true;
+      if (idVerificationStatus !== 'approved') {
+        showToast('You can submit now. Identity approval is required before your listing and contact details become public.', 'info');
       }
-
-      if (idVerificationStatus === 'pending') {
-        showToast('Your identity check is under review — we will notify you within 24 hours.', 'info');
-        navigation.navigate('IDVerification');
-        return false;
-      }
-
-      const rejected = idVerificationStatus === 'rejected';
-      const ok = await showConfirm({
-        title: rejected ? 'Re-verify your identity' : 'Verify your identity first',
-        message: rejected
-          ? 'Your last submission was not accepted. Send clearer photos of your ID and we will re-check within 24 hours.'
-          : 'Every Sawa Cars seller is verified before listing — it takes about two minutes and only has to be done once.',
-        confirmLabel: rejected ? 'Re-submit Documents' : 'Verify Now',
-        cancelLabel: 'Not now',
-      });
-      if (ok) {
-        navigation.navigate('IDVerification', { returnTo: destination, returnParams: params });
-      }
-      return false;
+      navigation.navigate(destination, params);
+      return true;
     },
     [isLoggedIn, idVerificationStatus, navigation]
   );

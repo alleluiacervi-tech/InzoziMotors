@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -8,8 +8,8 @@ import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import StickyFooter from '../components/StickyFooter';
 import { colors, radius, shadows, fonts } from '../theme';
-import { showToast, showConfirm } from '../components/Feedback';
-import { INSPECTION_CATEGORIES } from '../data/inspectionData';
+import { showToast } from '../components/Feedback';
+import inspectionsApi from '../api/inspections';
 import { useApp } from '../context/AppContext';
 
 const RESULT_OPTIONS = [
@@ -30,8 +30,8 @@ function calcCategoryScore(category, results) {
   return Math.round((earned / total) * category.maxPts);
 }
 
-function calcTotalScore(results) {
-  return INSPECTION_CATEGORIES.reduce(
+function calcTotalScore(categories, results) {
+  return categories.reduce(
     (sum, cat) => sum + calcCategoryScore(cat, results),
     0,
   );
@@ -143,11 +143,39 @@ export default function InspectionFormScreen({ navigation, route }) {
   const [notes, setNotes] = useState('');
   const [expandedId, setExpandedId] = useState('engine');
   const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [definition, setDefinition] = useState(null);
+  const [loadingChecklist, setLoadingChecklist] = useState(true);
 
-  const totalScore = calcTotalScore(results);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const policy = await inspectionsApi.checklist();
+        if (!active) return;
+        setDefinition(policy);
+        setCategories(policy.categories.map((category) => ({
+          ...category,
+          maxPts: category.max_points,
+        })));
+        if (inspection?.id && /^[0-9a-f-]{36}$/i.test(String(inspection.id)) && inspection.status === 'scheduled') {
+          await inspectionsApi.start(inspection.id);
+        }
+      } catch (error) {
+        if (active) showToast(error?.message || 'The official inspection checklist could not be loaded.', 'error');
+      } finally {
+        if (active) setLoadingChecklist(false);
+      }
+    };
+    load();
+    return () => { active = false; };
+  }, [inspection?.id, inspection?.status]);
+
+  const totalScore = calcTotalScore(categories, results);
   const totalAnswered = Object.keys(results).length;
-  const totalItems = INSPECTION_CATEGORIES.reduce((s, c) => s + c.items.length, 0);
-  const pct = Math.round((totalScore / 150) * 100);
+  const totalItems = categories.reduce((s, c) => s + c.items.length, 0);
+  const maxScore = definition?.max_score || 150;
+  const pct = Math.round((totalScore / maxScore) * 100);
 
   const handleResult = (itemId, value) => {
     setResults((prev) => ({ ...prev, [itemId]: value }));
@@ -155,16 +183,10 @@ export default function InspectionFormScreen({ navigation, route }) {
 
   const handleGenerate = () => {
     if (totalAnswered < totalItems) {
-      showConfirm({
-        title: 'Incomplete form',
-        message: `${totalItems - totalAnswered} item(s) still need a result. Fill all items before generating the report.`,
-        confirmLabel: 'Continue Anyway',
-        cancelLabel: 'Go Back',
-      }).then((ok) => { if (ok) proceed(); }
-      );
-    } else {
-      proceed();
+      showToast(`${totalItems - totalAnswered} check(s) still need a result. Every check is required.`, 'error');
+      return;
     }
+    proceed();
   };
 
   const proceed = async () => {
@@ -193,7 +215,7 @@ export default function InspectionFormScreen({ navigation, route }) {
         onBack={() => navigation.goBack()}
         right={
           <View style={styles.scorePill}>
-            <Text style={styles.scorePillText}>{totalScore}<Text style={{ fontSize: 11, fontFamily: fonts.semiBold }}>/150</Text></Text>
+            <Text style={styles.scorePillText}>{totalScore}<Text style={{ fontSize: 11, fontFamily: fonts.semiBold }}>/{maxScore}</Text></Text>
           </View>
         }
       />
@@ -231,7 +253,7 @@ export default function InspectionFormScreen({ navigation, route }) {
             <Text style={styles.progressPct}>{pct}%</Text>
           </View>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${(totalAnswered / totalItems) * 100}%` }]} />
+            <View style={[styles.progressFill, { width: `${totalItems ? (totalAnswered / totalItems) * 100 : 0}%` }]} />
           </View>
           <View style={styles.legendRow}>
             {RESULT_OPTIONS.map((opt) => {
@@ -253,7 +275,8 @@ export default function InspectionFormScreen({ navigation, route }) {
         </View>
 
         <View style={styles.accordions}>
-          {INSPECTION_CATEGORIES.map((cat) => (
+          {loadingChecklist && <Text style={styles.sectionSub}>Loading the official checklist…</Text>}
+          {categories.map((cat) => (
             <CategoryAccordion
               key={cat.id}
               category={cat}
@@ -289,10 +312,10 @@ export default function InspectionFormScreen({ navigation, route }) {
           icon="document-text-outline"
           onPress={handleGenerate}
           loading={submitting}
-          disabled={submitting}
+          disabled={submitting || loadingChecklist || totalItems === 0 || totalAnswered !== totalItems}
         />
         <Text style={styles.ctaSub}>
-          Score: {totalScore}/150 · {pct}% · Admin review is required before publication
+          Score: {totalScore}/{maxScore} · {pct}% · Admin review is required before publication
         </Text>
       </StickyFooter>
     </Screen>

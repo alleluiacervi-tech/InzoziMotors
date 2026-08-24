@@ -117,7 +117,7 @@ const INITIAL_MESSAGES = {
     { id: '5', me: false, text: "Absolutely — Saturday at 11:30 AM works. I'll send the address.", time: '11:30 AM' },
   ],
   c2: [
-    { id: '1', me: false, text: 'Your purchase request has been confirmed ✓', time: 'Yesterday' },
+    { id: '1', me: false, text: 'Yes, the vehicle is still available. When would you like to view it?', time: 'Yesterday' },
     { id: '2', me: true, text: 'Thank you! When will the car be delivered?', time: 'Yesterday' },
     { id: '3', me: false, text: "Estimated delivery is within 1-2 business days. We'll send tracking info soon.", time: 'Yesterday' },
   ],

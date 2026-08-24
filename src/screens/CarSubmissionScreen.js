@@ -163,13 +163,6 @@ export default function CarSubmissionScreen({ navigation, route }) {
         else navigation.navigate('SellerDashboard');
       });
     } catch (err) {
-      // The server rejects unverified sellers — send them to verification
-      // rather than leaving them staring at a failed submit button.
-      if (err.code === 'ID_VERIFICATION_REQUIRED') {
-        showToast(err.message || 'Verify your identity before submitting a car.', 'error');
-        navigation.replace('IDVerification', { returnTo: 'CarSubmission' });
-        return;
-      }
       showToast(err.message || 'Your submission could not be saved. Please try again.', 'error');
     } finally {
       setSubmitting(false);
