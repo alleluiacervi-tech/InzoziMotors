@@ -259,7 +259,10 @@ router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPho
     res.json({ uploaded: incoming.length, replaced: replaced.length, ...state });
   } catch (err) {
     removeUploadedFiles(req.files);
-    res.status(err.status || 500).json({ error: err.status ? err.message : 'Server error' });
+    res.status(err.status || 500).json({
+      error: err.status ? err.message : 'Server error',
+      ...(err.code ? { code: err.code } : {}),
+    });
   }
 });
 

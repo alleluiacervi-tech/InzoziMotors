@@ -7,6 +7,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { log, reportError, requestLogger } = require('./src/lib/log');
+const { parseConfiguredOrigin } = require('./src/lib/public-origin');
 
 const app = express();
 const server = http.createServer(app);
@@ -72,6 +73,17 @@ function assertProductionConfig() {
   // admin included, to any unauthenticated caller.
   if (process.env.RESET_CODE_ECHO === 'true') {
     problems.push('RESET_CODE_ECHO must not be enabled in production.');
+  }
+
+  try {
+    const publicApiOrigin = parseConfiguredOrigin(process.env.PUBLIC_API_URL);
+    if (!publicApiOrigin) {
+      problems.push('PUBLIC_API_URL is not set. Use the browser-reachable API origin.');
+    } else if (!publicApiOrigin.startsWith('https://')) {
+      problems.push('PUBLIC_API_URL must use HTTPS in production.');
+    }
+  } catch (err) {
+    problems.push(err.message);
   }
 
   if (problems.length) {
