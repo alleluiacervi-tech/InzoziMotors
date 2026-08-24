@@ -9,7 +9,7 @@ import { useToast } from '@/components/feedback'
 const EMPTY = {
   provider_id: '', title: '', make: '', model: '', year: '', daily_rate: '',
   weekly_rate: '', deposit: '', min_days: '1', mileage: '', location: '',
-  images: '', status: 'active',
+  images: '', status: 'active', inspection_id: '',
 }
 
 const input = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand focus:outline-none'
@@ -26,12 +26,19 @@ export default function RentalFleetPage() {
   const [form, setForm] = useState(EMPTY)
   const [providerQuery, setProviderQuery] = useState('')
   const [providers, setProviders] = useState<any[]>([])
+  const [inspections, setInspections] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const toast = useToast()
 
   async function load() {
     setLoading(true); setError(null)
-    try { setCars(await api.rentalCars()) }
+    try {
+      const [fleet, completedInspections] = await Promise.all([
+        api.rentalCars(), api.inspections({ status: 'complete' }),
+      ])
+      setCars(fleet)
+      setInspections(completedInspections.filter((inspection) => inspection.passed && inspection.checklist_version === 'sawa-150-v1'))
+    }
     catch (e) { setError(e) }
     finally { setLoading(false) }
   }
@@ -67,13 +74,14 @@ export default function RentalFleetPage() {
       deposit: car.deposit == null ? '' : String(car.deposit), min_days: String(car.min_days || 1),
       mileage: car.mileage == null ? '' : String(car.mileage), location: car.location || '',
       images: (car.images || []).join('\n'), status: car.status,
+      inspection_id: car.inspection_id || '',
     } : EMPTY)
   }
 
   async function save(event: React.FormEvent) {
     event.preventDefault()
-    if (!form.provider_id || !form.title.trim() || !number(form.daily_rate)) {
-      toast('Choose a verified rental provider and enter a title and daily rate.', 'error'); return
+    if (!form.provider_id || !form.inspection_id || !form.title.trim() || !number(form.daily_rate)) {
+      toast('Choose a verified rental provider, a passing inspection, a title and a daily rate.', 'error'); return
     }
     const payload = {
       provider_id: form.provider_id, title: form.title.trim(), make: form.make.trim() || null,
@@ -81,6 +89,7 @@ export default function RentalFleetPage() {
       weekly_rate: number(form.weekly_rate), deposit: number(form.deposit) || 0,
       min_days: number(form.min_days) || 1, mileage: number(form.mileage),
       location: form.location.trim() || null,
+      inspection_id: form.inspection_id,
       images: form.images.split('\n').map((item) => item.trim()).filter(Boolean), status: form.status,
     }
     setSaving(true)
@@ -121,15 +130,16 @@ export default function RentalFleetPage() {
       {editing && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(null) }}>
         <form onSubmit={save} className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6">
           <div className="mb-5 flex items-center justify-between"><div><h2 className="text-lg font-bold text-gray-900">{editing.id ? 'Edit rental vehicle' : 'Add rental vehicle'}</h2><p className="mt-1 text-xs text-gray-500">Every vehicle must belong to a verified rental company.</p></div><button type="button" onClick={() => setEditing(null)} className="text-gray-500">Close</button></div>
-          <div className="mb-4"><label className={label}>Verified provider</label><input value={providerQuery} onChange={(e) => { setProviderQuery(e.target.value); setForm((old) => ({ ...old, provider_id: '' })) }} placeholder="Search showroom or contact" className={input} />
+          <div className="mb-4"><label className={label}>Verified provider</label><input value={providerQuery} onChange={(e) => { setProviderQuery(e.target.value); setForm((old) => ({ ...old, provider_id: '', inspection_id: '' })) }} placeholder="Search showroom or contact" className={input} />
             {form.provider_id && <p className="mt-1 text-xs font-semibold text-success">Provider selected</p>}
-            {providers.length > 0 && <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white">{providers.map((provider) => <button key={provider.id} type="button" onClick={() => { setForm((old) => ({ ...old, provider_id: provider.id })); setProviderQuery(provider.business_name || provider.name); setProviders([]) }} className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-0 hover:bg-gray-50"><span className="font-semibold">{provider.business_name || provider.name}</span><span className="ml-2 text-xs text-gray-500">{provider.email}</span></button>)}</div>}
+            {providers.length > 0 && <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white">{providers.map((provider) => <button key={provider.id} type="button" onClick={() => { setForm((old) => ({ ...old, provider_id: provider.id, inspection_id: '' })); setProviderQuery(provider.business_name || provider.name); setProviders([]) }} className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-0 hover:bg-gray-50"><span className="font-semibold">{provider.business_name || provider.name}</span><span className="ml-2 text-xs text-gray-500">{provider.email}</span></button>)}</div>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2"><label className={label}>Passing 150-point inspection</label><select value={form.inspection_id} onChange={(e) => { const selected = inspections.find((inspection) => inspection.id === e.target.value); setForm({ ...form, inspection_id: e.target.value, make: selected ? String(selected.make || selected.submission_make || '') : form.make, model: selected ? String(selected.model || selected.submission_model || '') : form.model, year: selected ? String(selected.year || selected.submission_year || '') : form.year }) }} className={input} required disabled={!form.provider_id}><option value="">Select inspection evidence</option>{inspections.filter((inspection) => inspection.seller_id === form.provider_id && (!cars.some((car) => car.inspection_id === inspection.id) || inspection.id === editing?.inspection_id)).map((inspection) => <option key={inspection.id} value={inspection.id}>{inspection.year || inspection.submission_year} {inspection.make || inspection.submission_make} {inspection.model || inspection.submission_model} · {inspection.score}/150 · {new Date(inspection.completed_at).toLocaleDateString()}</option>)}</select><p className="mt-1 text-xs text-gray-500">Only a complete, passing inspection belonging to the selected provider can activate this vehicle.</p></div>
             <div className="sm:col-span-2"><label className={label}>Listing title</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={input} required /></div>
-            <div><label className={label}>Make</label><input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} className={input} /></div>
-            <div><label className={label}>Model</label><input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={input} /></div>
-            <div><label className={label}>Year</label><input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className={input} /></div>
+            <div><label className={label}>Make</label><input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} className={input} required /></div>
+            <div><label className={label}>Model</label><input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={input} required /></div>
+            <div><label className={label}>Year</label><input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className={input} required /></div>
             <div><label className={label}>Mileage (km)</label><input type="number" value={form.mileage} onChange={(e) => setForm({ ...form, mileage: e.target.value })} className={input} /></div>
             <div><label className={label}>Provider daily rate (RWF)</label><input type="number" value={form.daily_rate} onChange={(e) => setForm({ ...form, daily_rate: e.target.value })} className={input} required /></div>
             <div><label className={label}>Provider weekly rate (RWF)</label><input type="number" value={form.weekly_rate} onChange={(e) => setForm({ ...form, weekly_rate: e.target.value })} className={input} /></div>

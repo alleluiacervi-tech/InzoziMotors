@@ -180,16 +180,21 @@ export default function ListingsPage() {
                       className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >Pause</button>
                   )}
-                  {['approved', 'under_review', 'paused'].includes(car.status) && (
+                  {['approved', 'paused'].includes(car.status) && (
                     <button
                       onClick={async () => {
                         const ok = await ask({ title: 'Publish this listing?', message: 'The API will re-check seller verification, gallery and completed inspection before making it public.', confirmLabel: 'Publish listing' })
                         if (ok) updateStatus(car.id, 'live')
                       }}
-                      disabled={actionId === car.id}
+                      disabled={actionId === car.id || !car.has_completed_inspection || Math.max(car.image_count || 0, car.structured_photo_count || 0) < 1 || car.seller_id_verified !== 'approved' || car.seller_account_status !== 'active'}
                       className="px-2 py-1 text-xs font-medium bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
                     >Publish</button>
                   )}
+                  {car.status === 'under_review' && car.has_completed_inspection && Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 && car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? (
+                    <button onClick={() => updateStatus(car.id, 'approved')} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-info-tint text-info rounded-lg disabled:opacity-50">Approve for publication</button>
+                  ) : car.status === 'under_review' ? (
+                    <span className="px-2 py-1 text-xs font-medium text-warning-text">Inspection, seller approval and gallery are required</span>
+                  ) : null}
                   {car.status === 'under_review' && (
                     <button onClick={() => { const reason = window.prompt('Why is this listing rejected?'); if (reason?.trim()) updateStatus(car.id, 'rejected', reason.trim()) }} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-red-50 text-red-700 rounded-lg disabled:opacity-50">Reject</button>
                   )}

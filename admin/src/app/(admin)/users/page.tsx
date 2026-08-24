@@ -75,8 +75,8 @@ export default function UsersPage() {
     const ok = await ask({
       title: approving ? 'Approve this ID verification?' : 'Reject this ID verification?',
       message: approving
-        ? 'The seller is verified, gains 30 trust-score points, and can submit cars for inspection.'
-        : 'The seller is notified and must re-submit their documents before they can list a car.',
+        ? 'The seller is verified, gains 30 trust-score points, and eligible inspected listings can proceed toward publication.'
+        : 'The seller is notified and must re-submit documents before any listing or direct contact can become public.',
       confirmLabel: approving ? 'Approve seller' : 'Reject documents',
       tone: approving ? 'primary' : 'danger',
     })
@@ -256,7 +256,7 @@ export default function UsersPage() {
         </Card>
       ) : (
         <div className="mb-5 rounded-xl border border-warning-border bg-warning-tint px-4 py-3 text-label text-warning-text">
-          Approval unlocks listing submission and adds 30 trust-score points. Document links expire after 15 minutes.
+          Approval unlocks publication and public contact eligibility and adds 30 trust-score points. Document links expire after 15 minutes.
         </div>
       )}
 

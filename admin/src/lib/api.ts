@@ -309,6 +309,9 @@ export const api = {
     return request<any[]>(`/inspections${q}`)
   },
   getInspection:      (id: string) => request<any>(`/inspections/${id}`),
+  inspectionChecklist: () => request<any>('/inspections/checklist'),
+  startInspection: (id: string) =>
+    request<any>(`/inspections/${id}/start`, { method: 'POST' }),
   completeInspection: (id: string, data: any) =>
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
   issueInspectionReport: (id: string) =>
@@ -346,7 +349,7 @@ export const api = {
     return request<any[]>(`/contracts${q}`)
   },
 
-  // Disputes — the 7-day return guarantee queue
+  // Historical transaction disputes — read/close retained records only.
   disputes: (status?: string) =>
     request<any[]>(`/disputes${status ? `?status=${status}` : ''}`),
   resolveDispute: (id: string, data: { status: 'resolved' | 'rejected'; resolution: string }) =>
