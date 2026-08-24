@@ -90,9 +90,9 @@ export function PageHeader({
   )
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({ children, className = '', id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <div className={`rounded-2xl border border-line-soft bg-surface shadow-card ${className}`}>
+    <div id={id} className={`rounded-2xl border border-line-soft bg-surface shadow-card ${className}`}>
       {children}
     </div>
   )

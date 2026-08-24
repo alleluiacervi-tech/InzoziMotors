@@ -235,6 +235,16 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   if (status === 'scheduled' && (!center || !scheduled_date || !scheduled_time)) {
     return res.status(400).json({ error: 'Scheduling requires center, scheduled_date, and scheduled_time' });
   }
+  // A rejection is the one message the seller cannot act on without a reason.
+  // The fallback below used to read "Contact us for details", which turned
+  // every blank rejection into an inbound support thread — more work for the
+  // admin who skipped the sentence than writing it would have cost.
+  if (status === 'rejected' && String(admin_notes || '').trim().length < 4) {
+    return res.status(400).json({
+      error: 'Give the seller a reason for the rejection — it is sent to them and saved in the audit log.',
+      code: 'REJECTION_REASON_REQUIRED',
+    });
+  }
   let slot = null;
   if (status === 'scheduled') {
     slot = readSlot({ scheduled_date, scheduled_time });
@@ -277,7 +287,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     // Notify seller
     const messages = {
       scheduled: `Your inspection is booked at ${scheduledCenter || 'our center'} on ${slot?.display || 'a date TBC'} at ${scheduled_time || ''}.`,
-      rejected: `Your submission was not accepted. Reason: ${admin_notes || 'Contact us for details.'}`,
+      rejected: `Your submission was not accepted. Reason: ${admin_notes || sub.admin_notes || 'Contact us for details.'}`,
       live: 'Your car is now live on the marketplace!',
     };
     if (messages[status]) {

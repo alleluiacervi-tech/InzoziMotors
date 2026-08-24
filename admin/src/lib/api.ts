@@ -55,6 +55,15 @@ export function onApiStatus(cb: (s: ApiStatus) => void): () => void {
   return () => statusListeners.delete(cb)
 }
 
+export type Readiness = {
+  ready: boolean
+  missing: string[]
+  photo_count: number
+  min_photos: number
+  inspection_required: boolean
+  inspection: { id: string; version: string; score: number; passed: boolean; critical_failures: string[] } | null
+}
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     ...(opts.headers as Record<string, string> | undefined),
@@ -361,6 +370,10 @@ export const api = {
     return request<any[]>(`/admin/listings${q}`)
   },
   getCar: (id: string) => request<any>(`/cars/${id}`),
+  /** Why a listing can (or cannot) be published — the same verdict the
+   *  approve/publish transaction enforces, so the dashboard never has to
+   *  re-derive the rules or guess which one is unmet. */
+  listingReadiness: (id: string) => request<Readiness>(`/cars/${id}/readiness`),
   updateCarStatus: (id: string, status: string, reason?: string) =>
     request<any>(`/cars/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
   updateCar: (id: string, data: Record<string, unknown>) =>

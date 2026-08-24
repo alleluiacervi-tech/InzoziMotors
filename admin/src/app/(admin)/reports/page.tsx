@@ -9,6 +9,7 @@ import {
 } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
+import { useFocusRow } from '@/components/useFocusRow'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reported messages.
@@ -42,6 +43,8 @@ function ago(iso: string): string {
 }
 
 export default function ReportsPage() {
+  // Arrives here from an Action Center item; marks the row it named.
+  const { focusProps } = useFocusRow()
   const [surface, setSurface] = useState<'chats' | 'reviews'>('chats')
   const [tab, setTab] = useState<'open' | 'resolved' | 'dismissed' | 'all'>('open')
   const [rows, setRows] = useState<MessageReport[]>([])
@@ -204,7 +207,7 @@ export default function ReportsPage() {
       ) : surface === 'reviews' ? (
         <div className="space-y-3">
           {visibleReviews.map((r) => (
-            <Card key={r.id} className="p-5">
+            <Card key={r.id} id={`row-${r.id}`} className={`p-5 ${focusProps(r.id).className}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -261,7 +264,7 @@ export default function ReportsPage() {
       ) : (
         <div className="space-y-3">
           {visibleChats.map((r) => (
-            <Card key={r.id} className="p-5">
+            <Card key={r.id} id={`row-${r.id}`} className={`p-5 ${focusProps(r.id).className}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">

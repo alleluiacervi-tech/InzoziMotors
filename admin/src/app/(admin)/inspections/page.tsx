@@ -6,6 +6,7 @@ import { api, type CenterRow } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useToast } from '@/components/feedback'
+import { useFocusRow } from '@/components/useFocusRow'
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled:  'bg-info-tint text-info',
@@ -20,6 +21,8 @@ function todayISO() {
 }
 
 export default function InspectionsPage() {
+  // Arrives here from an Action Center item; marks the row it named.
+  const { focusProps } = useFocusRow()
   const toast = useToast()
   const [center, setCenter]   = useState('all')
   const [date, setDate]       = useState(todayISO())
@@ -123,7 +126,7 @@ export default function InspectionsPage() {
       ) : (
         <div className="space-y-3">
           {visible.map((insp) => (
-            <div key={insp.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4">
+            <div key={insp.id} id={`row-${insp.id}`} className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4 ${focusProps(insp.id).className}`}>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-semibold text-gray-900 text-sm">
@@ -155,7 +158,24 @@ export default function InspectionsPage() {
                     {preparingReport === insp.id ? 'Preparing PDF…' : 'Download report PDF'}
                   </button>
                   {insp.car_id ? (
-                    <span className="text-xs text-green-600 font-semibold flex-shrink-0">Live Listing</span>
+                    // Was hardcoded "Live Listing" the moment a listing existed,
+                    // which is true only after an admin has separately approved
+                    // and published it. It read as done while the listing sat
+                    // under review.
+                    <span
+                      className={`text-xs font-semibold flex-shrink-0 ${
+                        insp.car_status === 'live' ? 'text-green-600'
+                          : insp.car_status === 'sold' || insp.car_status === 'archived' ? 'text-gray-500'
+                          : 'text-amber-600'
+                      }`}
+                    >
+                      {insp.car_status === 'live' ? 'Live listing'
+                        : insp.car_status === 'approved' ? 'Approved — not published'
+                        : insp.car_status === 'sold' ? 'Sold'
+                        : insp.car_status === 'archived' ? 'Archived'
+                        : insp.car_status === 'rejected' ? 'Listing rejected'
+                        : 'Listing under review'}
+                    </span>
                   ) : (
                     <Link
                       href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}

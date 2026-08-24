@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { api } from '@/lib/api'
+import { api, type Readiness } from '@/lib/api'
 import { Icon } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 
@@ -17,12 +17,20 @@ export default function CarPhotosPage() {
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
+  // The minimum is a platform setting an admin can raise to 10. This page used
+  // to hardcode "at least one", so raising it produced a page that said the
+  // gallery was sufficient while publication refused it.
+  const [readiness, setReadiness] = useState<Readiness | null>(null)
   const toast = useToast()
 
   async function loadCar() {
     try {
-      const [data, photos] = await Promise.all([api.getCar(id), api.getCarPhotos(id)])
-      setCar(data); setGallery(photos)
+      const [data, photos, verdict] = await Promise.all([
+        api.getCar(id),
+        api.getCarPhotos(id),
+        api.listingReadiness(id).catch(() => null),
+      ])
+      setCar(data); setGallery(photos); setReadiness(verdict)
     } catch (e: any) {
       toast('Failed to load listing: ' + e.message, 'error')
     } finally {
@@ -108,6 +116,8 @@ export default function CarPhotosPage() {
   if (!car) return <div className="text-red-600 text-sm">Listing not found.</div>
 
   const currentCount = gallery.photos.length
+  const minPhotos = Math.max(readiness?.min_photos ?? 1, 1)
+  const galleryMeetsMinimum = currentCount >= minPhotos
 
   return (
     <div className="space-y-6">
@@ -166,7 +176,7 @@ export default function CarPhotosPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 className="text-sm font-bold text-gray-900 mb-4">Uploaded Gallery ({currentCount} photos)</h2>
             {currentCount === 0 ? (
-              <p className="text-xs text-gray-400 italic py-4">No images uploaded yet. Add at least one clear image before publishing.</p>
+              <p className="text-xs text-gray-400 italic py-4">{`No images uploaded yet. Add ${minPhotos} clear image${minPhotos === 1 ? '' : 's'} before publishing.`}</p>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {gallery.photos.map((photo: any) => (
@@ -198,10 +208,33 @@ export default function CarPhotosPage() {
             <li className="flex gap-2"><span className="font-bold text-brand">3.</span><span>Never hide damage, registration details that must be disclosed, or material differences.</span></li>
             <li className="flex gap-2"><span className="font-bold text-brand">4.</span><span>Publishing remains a separate admin action and will run all verification checks.</span></li>
           </ul>
-          <div className={`mt-5 rounded-lg border p-3 ${currentCount > 0 ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
-            <p className="text-xs font-bold">{currentCount > 0 ? `${currentCount} photo${currentCount === 1 ? '' : 's'} ready` : 'Photo required'}</p>
-            <p className="mt-1 text-[11px]">{currentCount > 0 ? 'The gallery meets the minimum photo requirement.' : 'Upload at least one photo to make publication possible.'}</p>
+          <div className={`mt-5 rounded-lg border p-3 ${galleryMeetsMinimum ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+            <p className="text-xs font-bold">
+              {galleryMeetsMinimum
+                ? `${currentCount} photo${currentCount === 1 ? '' : 's'} ready`
+                : `${currentCount} of ${minPhotos} required photo${minPhotos === 1 ? '' : 's'}`}
+            </p>
+            <p className="mt-1 text-[11px]">
+              {galleryMeetsMinimum
+                ? 'The gallery meets the configured minimum.'
+                : `Upload ${minPhotos - currentCount} more photo${minPhotos - currentCount === 1 ? '' : 's'} to make publication possible.`}
+            </p>
           </div>
+
+          {/* Everything else publication will check, so the gallery is not the
+              only thing the operator learns about on this screen. */}
+          {readiness && !readiness.ready && readiness.missing.length > 0 && (
+            <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <p className="text-xs font-bold text-gray-900">Also required before publication</p>
+              <ul className="mt-1.5 space-y-1">
+                {readiness.missing.map((item) => (
+                  <li key={item} className="flex gap-2 text-[11px] text-gray-600">
+                    <span aria-hidden>•</span><span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
