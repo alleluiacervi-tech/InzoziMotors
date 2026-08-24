@@ -9,9 +9,11 @@ const DIRECT_DEAL_NOTICE =
 function contactAvailability(user) {
   const eligible = Boolean(
     user &&
+    user.role === 'seller' &&
     user.id_verified === 'approved' &&
     user.account_status === 'active' &&
-    !user.deleted_at
+    !user.deleted_at &&
+    (user.seller_type !== 'showroom' || user.business_verified === true)
   );
   return {
     phone: eligible && Boolean(user.phone_visible && user.phone),
@@ -26,7 +28,7 @@ async function ensureMarketplaceAcknowledgement(db, user, acknowledged) {
   if (acknowledged !== true) {
     const error = new Error('Please acknowledge the direct-deal notice before contacting this provider.');
     error.status = 428;
-    error.code = 'MARKETPLACE_ACK_REQUIRED';
+    error.code = 'MARKETPLACE_TERMS_REQUIRED';
     error.notice = DIRECT_DEAL_NOTICE;
     throw error;
   }

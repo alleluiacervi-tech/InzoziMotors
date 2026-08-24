@@ -71,7 +71,8 @@ test('admin audit history records the actor and state-changing decision', async 
   assert.equal(event.action, 'setting.updated');
   assert.equal(event.metadata.current, 1);
 
-  await api().get('/admin/audit-log').set('Authorization', `Bearer ${seller.token}`).expect(403);
+  const ordinaryUser = await register();
+  await api().get('/admin/audit-log').set('Authorization', `Bearer ${ordinaryUser.token}`).expect(403);
 });
 
 // ─── Health ──────────────────────────────────────────────────────────────────
@@ -328,6 +329,61 @@ test('seller contact requires consent, verification, acknowledgement, and an aud
   assert.equal(events.rows[0].channel, 'whatsapp');
 });
 
+test('public contact settings require a verified seller and a usable channel', async () => {
+  const buyer = await register();
+  await api().patch('/auth/me').set('Authorization', `Bearer ${buyer.token}`)
+    .send({ phone: '+250788000333', phone_visible: true }).expect(403);
+
+  const seller = await register({ role: 'seller' });
+  const auth = { Authorization: `Bearer ${seller.token}` };
+  await api().patch('/auth/me').set(auth).send({ phone_visible: true }).expect(403);
+  await pool.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id]);
+  await api().patch('/auth/me').set(auth).send({ phone_visible: true }).expect(400);
+  const updated = await api().patch('/auth/me').set(auth)
+    .send({ phone: '+250788000444', phone_visible: true }).expect(200);
+  assert.equal(updated.body.phone_visible, true);
+  assert.equal(updated.body.account_status, 'active');
+});
+
+test('rental inquiries only reach active verified providers and never create a booking', async () => {
+  const provider = await register({ role: 'seller' });
+  await pool.query(
+    `UPDATE users SET id_verified='approved', seller_type='showroom', business_verified=TRUE,
+       phone='+250788000555', phone_visible=TRUE, contact_consent_at=NOW()
+     WHERE id=$1`,
+    [provider.id]
+  );
+  const admin = await makeAdmin(await register());
+  const rental = await api().post('/rentals').set('Authorization', `Bearer ${admin}`)
+    .send({
+      provider_id: provider.id,
+      title: 'Verified rental SUV',
+      make: 'Toyota',
+      model: 'RAV4',
+      daily_rate: 65000,
+      images: ['https://example.test/rental.jpg'],
+    })
+    .expect(201);
+
+  const renter = await register();
+  const auth = { Authorization: `Bearer ${renter.token}` };
+  const start = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  await api().post(`/rentals/${rental.body.id}/inquire`).set(auth)
+    .send({ start_date: start, days: 3, preferred_channel: 'phone' }).expect(428);
+  const inquiry = await api().post(`/rentals/${rental.body.id}/inquire`).set(auth)
+    .send({ start_date: start, days: 3, preferred_channel: 'phone', acknowledge: true }).expect(201);
+  assert.equal(inquiry.body.contact, '+250788000555');
+  assert.match(inquiry.body.notice, /does not collect or hold transaction funds/i);
+  const legacyBookings = await pool.query('SELECT COUNT(*)::int AS count FROM rental_bookings WHERE renter_id=$1', [renter.id]);
+  assert.equal(legacyBookings.rows[0].count, 0);
+
+  await pool.query('UPDATE users SET business_verified=FALSE WHERE id=$1', [provider.id]);
+  const catalogue = await api().get('/rentals').expect(200);
+  assert.equal(catalogue.body.some((car) => car.id === rental.body.id), false);
+  await api().post(`/rentals/${rental.body.id}/inquire`).set(auth)
+    .send({ start_date: start, days: 3, preferred_channel: 'in_app', acknowledge: true }).expect(404);
+});
+
 // ─── Inspection scoring ──────────────────────────────────────────────────────
 
 test('inspection scoring is weighted but never charges or auto-publishes', async () => {
@@ -515,6 +571,23 @@ test('listing photos accept a flexible gallery, retain named replacements, and s
 
   const stored = await pool.query('SELECT images FROM cars WHERE id = $1', [car.body.id]);
   assert.deepEqual(stored.rows[0].images, afterDelete.body.photos.map((photo) => photo.url));
+});
+
+test('listing photos accept ordered generic gallery keys from the mobile uploader', async () => {
+  const seller = await register({ role: 'seller' });
+  await pool.query("UPDATE users SET id_verified = 'approved' WHERE id = $1", [seller.id]);
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const car = await api().post('/cars').set(auth)
+    .send({ seller_id: seller.id, title: 'Flexible gallery', make: 'Mazda', model: 'CX-5', year: 2022, mileage: 18000, price: 28000 })
+    .expect(201);
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+  const uploaded = await api().post(`/inspections/cars/${car.body.id}/photos`).set(auth)
+    .field('angle_keys', 'gallery-001')
+    .attach('photos', png, { filename: 'gallery-001.png', contentType: 'image/png' })
+    .expect(200);
+  assert.equal(uploaded.body.photos[0].angle_key, 'gallery-001');
+  assert.equal(uploaded.body.complete, true);
 });
 
 // ─── Review moderation: the second UGC surface ───────────────────────────────

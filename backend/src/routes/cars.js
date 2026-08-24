@@ -111,10 +111,16 @@ router.get('/', async (req, res) => {
     // of cars, not the whole table. Ordering is repeated outside the CTE
     // because a join makes no promise about preserving row order.
     const { rows } = await pool.query(
-      `WITH page AS (
+       `WITH page AS (
          SELECT c.*
          FROM cars c
+         JOIN users eligible_seller ON eligible_seller.id = c.seller_id
          WHERE ${conditions.join(' AND ')}
+           AND eligible_seller.role = 'seller'
+           AND eligible_seller.id_verified = 'approved'
+           AND eligible_seller.account_status = 'active'
+           AND eligible_seller.deleted_at IS NULL
+           AND (COALESCE(eligible_seller.seller_type, 'individual') <> 'showroom' OR eligible_seller.business_verified = TRUE)
          ORDER BY (c.featured_until IS NOT NULL AND c.featured_until > NOW()) DESC,
                   c.${safeSort} ${safeOrder}
          LIMIT $${params.length - 1} OFFSET $${params.length}
@@ -216,7 +222,8 @@ router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => 
     const { rows } = await pool.query(
       `SELECT c.id, c.seller_id, c.status,
               u.phone, u.whatsapp_phone, u.phone_visible, u.whatsapp_visible,
-              u.id_verified, u.account_status, u.deleted_at,
+              u.role, u.id_verified, u.account_status, u.deleted_at,
+              u.seller_type, u.business_verified,
               buyer.marketplace_terms_accepted_at,
               buyer.marketplace_terms_version
        FROM cars c
@@ -300,6 +307,9 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
               u.trust_score AS seller_trust,
               u.response_rate AS seller_response_rate, u.completed_sales AS seller_sales,
               u.id_verified AS seller_id_verified,
+              u.role AS seller_role,
+              u.seller_type AS seller_type,
+              u.business_verified AS seller_business_verified,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
               COALESCE((SELECT json_agg(json_build_object('price', ph.price, 'at', ph.changed_at) ORDER BY ph.changed_at)
                         FROM price_history ph WHERE ph.car_id = c.id), '[]') AS price_history,
@@ -320,6 +330,12 @@ ${MARKET_LATERALS}
     const PUBLICLY_VISIBLE = ['live', 'sold'];
     const isInsider =
       req.user && (req.user.role === 'admin' || req.user.id === car.seller_id);
+    const sellerEligible = car.seller_role === 'seller' && car.seller_id_verified === 'approved' &&
+      car.seller_account_status === 'active' && !car.seller_deleted_at &&
+      (car.seller_type !== 'showroom' || car.seller_business_verified === true);
+    if (!sellerEligible && !isInsider) {
+      return res.status(404).json({ error: 'Car not found' });
+    }
     if (!PUBLICLY_VISIBLE.includes(car.status) && !isInsider) {
       return res.status(404).json({ error: 'Car not found' });
     }
@@ -330,6 +346,9 @@ ${MARKET_LATERALS}
       phone_visible: car.seller_phone_visible,
       whatsapp_visible: car.seller_whatsapp_visible,
       id_verified: car.seller_id_verified,
+      role: car.seller_role,
+      seller_type: car.seller_type,
+      business_verified: car.seller_business_verified,
       account_status: car.seller_account_status,
       deleted_at: car.seller_deleted_at,
     });
@@ -451,10 +470,13 @@ router.post('/', requireAdmin, async (req, res) => {
     // ID is checked in person at the inspection center; admin marks the seller
     // approved there. A listing cannot go live for an unverified seller.
     const sellerRes = await pool.query(
-      'SELECT id_verified, account_status, deleted_at FROM users WHERE id = $1',
+      'SELECT role, id_verified, account_status, deleted_at, seller_type, business_verified FROM users WHERE id = $1',
       [seller_id]
     );
     if (!sellerRes.rows.length) return res.status(404).json({ error: 'Seller not found' });
+    if (sellerRes.rows[0].role !== 'seller') {
+      return res.status(400).json({ error: 'The listing owner must have a seller account' });
+    }
     if (sellerRes.rows[0].id_verified !== 'approved') {
       return res.status(400).json({
         error: "Seller is not ID-verified yet. Verify them at the center (Users → approve) before publishing.",
@@ -462,6 +484,9 @@ router.post('/', requireAdmin, async (req, res) => {
     }
     if (sellerRes.rows[0].account_status !== 'active' || sellerRes.rows[0].deleted_at) {
       return res.status(400).json({ error: 'Seller account is not active' });
+    }
+    if (sellerRes.rows[0].seller_type === 'showroom' && sellerRes.rows[0].business_verified !== true) {
+      return res.status(400).json({ error: 'Showroom business verification is required' });
     }
     const car = await withTransaction(async (client) => {
       if (submission_id) {
@@ -604,8 +629,9 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 
     if (req.body.seller_id !== undefined) {
       const seller = await pool.query(
-        `SELECT 1 FROM users WHERE id = $1 AND id_verified = 'approved'
-         AND account_status = 'active' AND deleted_at IS NULL`, [req.body.seller_id]
+        `SELECT 1 FROM users WHERE id = $1 AND role = 'seller' AND id_verified = 'approved'
+         AND account_status = 'active' AND deleted_at IS NULL
+         AND (COALESCE(seller_type, 'individual') <> 'showroom' OR business_verified = TRUE)`, [req.body.seller_id]
       );
       if (!seller.rowCount) return res.status(400).json({ error: 'New seller must be active and identity-verified' });
     }
@@ -695,7 +721,8 @@ router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) =
 async function publicationReadiness(client, carId) {
   const { rows } = await client.query(
     `SELECT c.id, c.title,
-            u.id_verified, u.account_status, u.deleted_at,
+            u.role, u.id_verified, u.account_status, u.deleted_at,
+            u.seller_type, u.business_verified,
             COALESCE(cardinality(c.images), 0)::int AS legacy_photo_count,
             (SELECT COUNT(*)::int FROM car_photos p WHERE p.car_id = c.id) AS structured_photo_count,
             EXISTS (
@@ -717,8 +744,10 @@ async function publicationReadiness(client, carId) {
   const car = rows[0];
   const photoCount = Math.max(car.legacy_photo_count, car.structured_photo_count);
   const missing = [];
+  if (car.role !== 'seller') missing.push('seller account role');
   if (car.id_verified !== 'approved') missing.push('seller identity approval');
   if (car.account_status !== 'active' || car.deleted_at) missing.push('active seller account');
+  if (car.seller_type === 'showroom' && car.business_verified !== true) missing.push('showroom business approval');
   if (photoCount < minPhotos) missing.push(`${minPhotos} valid listing photo${minPhotos === 1 ? '' : 's'}`);
   if (inspectionRequired && !car.has_completed_inspection) missing.push('completed vehicle inspection');
   return { ready: missing.length === 0, missing, photo_count: photoCount, inspection_required: inspectionRequired };

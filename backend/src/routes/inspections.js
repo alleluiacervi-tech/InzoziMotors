@@ -6,7 +6,7 @@ const { requireUuid } = require('../middleware/validate');
 const fs = require('fs');
 const path = require('path');
 const { withTransaction } = require('../lib/tx');
-const { ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
+const { SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
@@ -14,6 +14,11 @@ const { issueInspectionReport } = require('../lib/documents/inspection-report');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
 
 const router = express.Router();
+const MAX_GALLERY_PHOTOS = 40;
+
+function validGalleryKey(key) {
+  return typeof key === 'string' && /^[a-z0-9][a-z0-9_-]{0,63}$/i.test(key);
+}
 
 function documentFailure(res, error) {
   if (error instanceof DocumentError) {
@@ -38,6 +43,19 @@ const CATEGORY_WEIGHTS = {
 const ITEM_TO_CATEGORY = {};
 for (const [cat, def] of Object.entries(CATEGORY_WEIGHTS)) {
   for (const item of def.items) ITEM_TO_CATEGORY[item] = cat;
+}
+// Stable item ids used by the mobile checklist. Labels can improve without
+// silently changing category weights or turning every response into "other".
+for (const [category, ids] of Object.entries({
+  'Engine & Drivetrain': ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7'],
+  'Brakes & Steering': ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'],
+  'Body & Exterior': ['bo1', 'bo2', 'bo3', 'bo4', 'bo5', 'bo6'],
+  'Interior & Comfort': ['i1', 'i2', 'i3', 'i4', 'i5', 'i6'],
+  'Electronics & Safety': ['el1', 'el2', 'el3', 'el4', 'el5', 'el6'],
+  'Tyres & Wheels': ['t1', 't2', 't3', 't4', 't5'],
+  Documentation: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
+})) {
+  for (const id of ids) ITEM_TO_CATEGORY[id] = category;
 }
 // Canonical scale is the 150-point score used everywhere (app tiers, seeds,
 // display "/150"). 105/150 = 70% — below this, admin reviews before publish.
@@ -163,28 +181,42 @@ router.get('/cars/:carId/photos', requireAdmin, requireUuid('carId'), async (req
 
 // POST /inspections/cars/:carId/photos — upload a flexible listing gallery.
 // Must come before /:id
-router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', 40), verifyImageContent, async (req, res) => {
+router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', MAX_GALLERY_PHOTOS), verifyImageContent, async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ error: 'No photos uploaded' });
     }
     const suppliedKeys = Array.isArray(req.body.angle_keys) ? req.body.angle_keys : [req.body.angle_keys].filter(Boolean);
-    if (suppliedKeys.length && (suppliedKeys.length !== req.files.length || suppliedKeys.some((key) => !ALL_SLOTS.includes(key)))) {
+    if (suppliedKeys.length && (suppliedKeys.length !== req.files.length || suppliedKeys.some((key) => !validGalleryKey(key)))) {
       removeUploadedFiles(req.files);
       return res.status(400).json({
-        error: 'If angle_keys are supplied, every photo needs one valid angle_keys value.',
-        valid_angle_keys: ALL_SLOTS,
+        error: 'If gallery keys are supplied, every photo needs one safe, unique key.',
       });
     }
     if (new Set(suppliedKeys).size !== suppliedKeys.length) {
       removeUploadedFiles(req.files);
-      return res.status(400).json({ error: 'Each angle may appear only once per upload.' });
+      return res.status(400).json({ error: 'Each gallery key may appear only once per upload.' });
     }
 
-    const nextPosition = await pool.query('SELECT COALESCE(MAX(position), -1) + 1 AS next FROM car_photos WHERE car_id = $1', [req.params.carId]);
+    const existing = await pool.query(
+      `SELECT angle_key, COALESCE(MAX(position) OVER (), -1) + 1 AS next
+       FROM car_photos WHERE car_id = $1`,
+      [req.params.carId]
+    );
+    const existingKeys = new Set(existing.rows.map((photo) => photo.angle_key).filter(Boolean));
+    const incomingNewCount = suppliedKeys.length
+      ? suppliedKeys.filter((key) => !existingKeys.has(key)).length
+      : req.files.length;
+    if (existing.rows.length + incomingNewCount > MAX_GALLERY_PHOTOS) {
+      removeUploadedFiles(req.files);
+      return res.status(409).json({ error: `A listing gallery may contain at most ${MAX_GALLERY_PHOTOS} photos.` });
+    }
+    const nextPosition = existing.rows.length ? Number(existing.rows[0].next) : 0;
     const incoming = await Promise.all(req.files.map(async (file, index) => ({
       angle_key: suppliedKeys[index] || `gallery_${Date.now()}_${index}`,
-      position: suppliedKeys[index] ? SLOT_POSITION.get(suppliedKeys[index]) : Number(nextPosition.rows[0].next) + index,
+      position: suppliedKeys[index] && SLOT_POSITION.has(suppliedKeys[index])
+        ? SLOT_POSITION.get(suppliedKeys[index])
+        : nextPosition + index,
       url: await resolveUploadUrl(req, file),
     })));
     const replaced = [];
@@ -429,7 +461,7 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       const body = insp.car_id && passed
         ? `The inspection record for your car is complete with a score of ${score}/150 (Grade ${grade}). Our team will review the listing before publication.`
         : passed
-          ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team is preparing your listing — it goes live shortly.`
+          ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team will prepare and review the listing before it becomes public.`
           : `Your inspection report is ready (score ${score}/150, Grade ${grade}). Some items need attention — our team will contact you about next steps.`;
       await notifyUser(client, {
         user_id: subRes.rows[0].seller_id,
@@ -447,7 +479,7 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
 
     await client.query('COMMIT');
 
-    res.json({ success: true, score, published: false, ready_for_review: !!(insp.car_id && passed) });
+    res.json({ success: true, score, car_id: insp.car_id, published: false, ready_for_review: !!(insp.car_id && passed) });
   } catch (err) {
     await client.query('ROLLBACK');
     log.error('complete inspection error', { error: err.message });

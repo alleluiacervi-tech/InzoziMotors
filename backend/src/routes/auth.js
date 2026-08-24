@@ -280,7 +280,7 @@ router.get('/me', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
-              whatsapp_visible, contact_consent_at, role, id_verified,
+              whatsapp_visible, contact_consent_at, role, id_verified, account_status,
               seller_type, business_name, business_verified, trust_score,
               response_rate, completed_sales, avatar_url,
               marketplace_terms_accepted_at, marketplace_terms_version, created_at
@@ -313,28 +313,60 @@ router.patch('/me', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `${field} must be true or false` });
     }
   }
+  const values = Object.fromEntries(fields.map((field) => {
+    if (['phone_visible', 'whatsapp_visible'].includes(field)) return [field, req.body[field]];
+    const value = req.body[field];
+    return [field, value == null || value === '' ? null : String(value).trim()];
+  }));
   try {
-    const params = fields.map((field) => {
-      if (['phone_visible', 'whatsapp_visible'].includes(field)) return req.body[field];
-      const value = req.body[field];
-      return value == null || value === '' ? null : String(value).trim();
+    const result = await withTransaction(async (client) => {
+      const current = await client.query(
+        `SELECT id, role, id_verified, account_status, deleted_at, seller_type,
+                business_verified, phone, whatsapp_phone, phone_visible, whatsapp_visible
+         FROM users WHERE id = $1 FOR UPDATE`,
+        [req.user.id]
+      );
+      if (!current.rowCount) return { status: 404, body: { error: 'User not found' } };
+      const before = current.rows[0];
+      const finalPhone = values.phone !== undefined ? values.phone : before.phone;
+      const finalWhatsapp = values.whatsapp_phone !== undefined ? values.whatsapp_phone : before.whatsapp_phone;
+      const finalPhoneVisible = values.phone_visible !== undefined ? values.phone_visible : before.phone_visible;
+      const finalWhatsappVisible = values.whatsapp_visible !== undefined ? values.whatsapp_visible : before.whatsapp_visible;
+      if (finalPhoneVisible || finalWhatsappVisible) {
+        const eligible = before.role === 'seller' && before.id_verified === 'approved' &&
+          before.account_status === 'active' && !before.deleted_at &&
+          (before.seller_type !== 'showroom' || before.business_verified === true);
+        if (!eligible) {
+          return { status: 403, body: { error: 'Only an active, verified seller may publish contact details' } };
+        }
+        if (finalPhoneVisible && !finalPhone) {
+          return { status: 400, body: { error: 'Add a phone number before making it visible' } };
+        }
+        if (finalWhatsappVisible && !finalWhatsapp) {
+          return { status: 400, body: { error: 'Add a WhatsApp number before making it visible' } };
+        }
+      }
+
+      const params = fields.map((field) => values[field]);
+      const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
+      if (values.phone_visible === true || values.whatsapp_visible === true) {
+        assignments.push('contact_consent_at = NOW()');
+      }
+      params.push(req.user.id);
+      const { rows } = await client.query(
+        `UPDATE users
+         SET ${assignments.join(', ')}
+         WHERE id = $${params.length}
+         RETURNING id, name, email, phone, whatsapp_phone, phone_visible,
+                   whatsapp_visible, contact_consent_at, role, id_verified, account_status,
+                   seller_type, business_name, business_verified, trust_score, avatar_url`,
+        params
+      );
+      return { status: 200, body: rows[0] };
     });
-    const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
-    if ((req.body.phone_visible === true || req.body.whatsapp_visible === true)) {
-      assignments.push('contact_consent_at = NOW()');
-    }
-    params.push(req.user.id);
-    const { rows } = await pool.query(
-      `UPDATE users
-       SET ${assignments.join(', ')}
-       WHERE id = $${params.length}
-       RETURNING id, name, email, phone, whatsapp_phone, phone_visible,
-                 whatsapp_visible, contact_consent_at, role, id_verified,
-                 seller_type, business_name, business_verified, trust_score, avatar_url`,
-      params
-    );
-    res.json(rows[0]);
+    res.status(result.status).json(result.body);
   } catch (err) {
+    log.error('profile update error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

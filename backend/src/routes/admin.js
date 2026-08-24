@@ -342,9 +342,30 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const before = await client.query('SELECT role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
+    const before = await client.query(
+      `SELECT role,id_verified,account_status,deleted_at,seller_type,business_verified,
+              phone,whatsapp_phone,phone_visible,whatsapp_visible
+       FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`,
+      [req.params.id]
+    );
     if (!before.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
     if (before.rows[0].role === 'admin') { await client.query('ROLLBACK'); return res.status(403).json({ error: 'Administrator accounts cannot be changed here' }); }
+    const profile = before.rows[0];
+    const finalRole = values.role !== undefined ? values.role : profile.role;
+    const finalSellerType = values.seller_type !== undefined ? values.seller_type : profile.seller_type;
+    const finalBusinessVerified = values.business_verified !== undefined ? values.business_verified : profile.business_verified;
+    const finalPhone = values.phone !== undefined ? values.phone : profile.phone;
+    const finalWhatsapp = values.whatsapp_phone !== undefined ? values.whatsapp_phone : profile.whatsapp_phone;
+    const finalPhoneVisible = values.phone_visible !== undefined ? values.phone_visible : profile.phone_visible;
+    const finalWhatsappVisible = values.whatsapp_visible !== undefined ? values.whatsapp_visible : profile.whatsapp_visible;
+    if (finalPhoneVisible || finalWhatsappVisible) {
+      const eligible = finalRole === 'seller' && profile.id_verified === 'approved' &&
+        profile.account_status === 'active' && !profile.deleted_at &&
+        (finalSellerType !== 'showroom' || finalBusinessVerified === true);
+      if (!eligible) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Public contact requires an active, verified seller account' }); }
+      if (finalPhoneVisible && !finalPhone) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Add a phone number before making it visible' }); }
+      if (finalWhatsappVisible && !finalWhatsapp) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Add a WhatsApp number before making it visible' }); }
+    }
     const params = fields.map((field) => values[field]);
     const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
     if (values.phone_visible === true || values.whatsapp_visible === true) assignments.push('contact_consent_at = NOW()');
@@ -585,7 +606,6 @@ router.get('/settings', requireAdmin, async (_req, res) => {
 router.patch('/settings/:key', requireAdmin, async (req, res) => {
   const key = String(req.params.key || '');
   const validators = {
-    inspection_required: (value) => typeof value === 'boolean',
     listing_min_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 10,
     listing_recommended_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 20,
   };
