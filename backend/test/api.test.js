@@ -537,6 +537,32 @@ test('publication and buyer actions fail closed until passing inspection evidenc
   assert.equal(stored.rows[0].status, 'live');
 });
 
+test('an admin token expires with the admin session, not in thirty days', async () => {
+  const decode = (token) => JSON.parse(
+    Buffer.from(token.split('.')[1], 'base64url').toString('utf8')
+  );
+
+  // An ordinary account keeps the long lifetime — signing a buyer out daily
+  // would be hostile for no security gain.
+  const buyer = await register();
+  const buyerLife = (() => { const p = decode(buyer.token); return p.exp - p.iat; })();
+  assert.ok(buyerLife > 7 * 24 * 3600, `buyer token should be long-lived, got ${buyerLife}s`);
+
+  // An admin token carries full pipeline control and can read national ID
+  // documents. The dashboard cookie was already 12h; the token inside it was
+  // not, so the limit only ever bound the browser that stored it.
+  const adminToken = await makeAdmin(await register());
+  const adminPayload = decode(adminToken);
+  const adminLife = adminPayload.exp - adminPayload.iat;
+  assert.equal(adminPayload.role, 'admin');
+  assert.equal(adminLife, 12 * 3600, `admin token should last 12h, got ${adminLife}s`);
+  assert.ok(adminLife < buyerLife, 'an admin token must not outlive an ordinary one');
+
+  // Still a working credential right now — shortening the life must not break
+  // the session it belongs to.
+  await api().get('/admin/stats').set('Authorization', `Bearer ${adminToken}`).expect(200);
+});
+
 test('readiness is readable before the attempt, not only inside the refusal', async () => {
   const seller = await register({ role: 'seller' });
   await pool.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id]);
