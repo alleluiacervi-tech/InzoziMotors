@@ -97,6 +97,8 @@ jobs:
             catch(err){bad++;console.log('FAIL',f,err.message.split('\n')[0])}});
           console.log(n+' files, '+bad+' failures');
           process.exit(bad?1:0);"
+      - name: Every relative mobile import resolves
+        run: npm run mobile:imports
 
   web:
     name: Website — typecheck + production build
