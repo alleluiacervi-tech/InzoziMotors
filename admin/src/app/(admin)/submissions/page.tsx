@@ -259,7 +259,7 @@ export default function SubmissionsPage() {
               {/* Reject notes modal */}
               {showNotesFor === sub.id && (
                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                  <p className="text-xs font-medium text-red-700 mb-2">Rejection reason (shown to seller)</p>
+                  <p className="text-xs font-medium text-red-700 mb-2">Rejection reason (sent to the seller)</p>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -269,8 +269,9 @@ export default function SubmissionsPage() {
                   />
                   <div className="flex gap-2 mt-2">
                     <button
-                      onClick={() => updateStatus(sub.id, 'rejected', { admin_notes: notes })}
-                      disabled={actionId === sub.id}
+                      onClick={() => updateStatus(sub.id, 'rejected', { admin_notes: notes.trim() })}
+                      disabled={actionId === sub.id || notes.trim().length < 4}
+                      title={notes.trim().length < 4 ? 'Write the reason the seller will receive' : undefined}
                       className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                     >
                       Confirm Reject

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { api } from '@/lib/api'
+import { api, type Readiness } from '@/lib/api'
 import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
@@ -28,6 +28,21 @@ export default function ListingsPage() {
   const ask = useConfirm()
   const toast = useToast()
   const [query, setQuery] = useState('')
+  // Readiness is fetched per listing on demand rather than for every row: the
+  // verdict costs a query each, and a list of fifty would mean fifty of them
+  // to answer a question the operator only asks about the one they are
+  // working on.
+  const [readiness, setReadiness] = useState<Record<string, Readiness | 'loading' | 'error'>>({})
+
+  async function checkReadiness(id: string) {
+    setReadiness((prev) => ({ ...prev, [id]: 'loading' }))
+    try {
+      const verdict = await api.listingReadiness(id)
+      setReadiness((prev) => ({ ...prev, [id]: verdict }))
+    } catch {
+      setReadiness((prev) => ({ ...prev, [id]: 'error' }))
+    }
+  }
 
   async function load(s: string) {
     setLoading(true)
@@ -193,7 +208,14 @@ export default function ListingsPage() {
                   {car.status === 'under_review' && car.has_completed_inspection && Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 && car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? (
                     <button onClick={() => updateStatus(car.id, 'approved')} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-info-tint text-info rounded-lg disabled:opacity-50">Approve for publication</button>
                   ) : car.status === 'under_review' ? (
-                    <span className="px-2 py-1 text-xs font-medium text-warning-text">Inspection, seller approval and gallery are required</span>
+                    <button
+                      type="button"
+                      onClick={() => checkReadiness(car.id)}
+                      disabled={readiness[car.id] === 'loading'}
+                      className="px-2 py-1 text-xs font-semibold text-warning-text underline underline-offset-2 hover:text-content disabled:opacity-50"
+                    >
+                      {readiness[car.id] === 'loading' ? 'Checking…' : "Not ready — see what's missing"}
+                    </button>
                   ) : null}
                   {car.status === 'under_review' && (
                     <button onClick={() => { const reason = window.prompt('Why is this listing rejected?'); if (reason?.trim()) updateStatus(car.id, 'rejected', reason.trim()) }} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-red-50 text-red-700 rounded-lg disabled:opacity-50">Reject</button>
@@ -228,6 +250,36 @@ export default function ListingsPage() {
                     </button>
                   )}
                 </div>
+
+                {/* The server's own verdict, verbatim. Previously the operator
+                    could only be told that "inspection, seller approval and
+                    gallery are required" — three categories, whichever one was
+                    actually wrong — and had to trip the 409 to find out. */}
+                {readiness[car.id] && readiness[car.id] !== 'loading' && (
+                  <div className="mt-3 rounded-lg border border-line-soft bg-surface-alt p-3">
+                    {readiness[car.id] === 'error' ? (
+                      <p className="text-xs text-danger-strong">Could not read the publication checks. Try again.</p>
+                    ) : (readiness[car.id] as Readiness).ready ? (
+                      <p className="text-xs font-semibold text-success">Every publication check passes — ready to approve.</p>
+                    ) : (
+                      <>
+                        <p className="text-xs font-bold text-content">Still required before publication</p>
+                        <ul className="mt-1.5 space-y-1">
+                          {(readiness[car.id] as Readiness).missing.map((item) => (
+                            <li key={item} className="flex gap-2 text-xs text-content-secondary">
+                              <span aria-hidden className="text-warning-text">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-2 text-[11px] text-content-muted">
+                          {(readiness[car.id] as Readiness).photo_count} of {(readiness[car.id] as Readiness).min_photos} required photo
+                          {(readiness[car.id] as Readiness).min_photos === 1 ? '' : 's'} uploaded.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

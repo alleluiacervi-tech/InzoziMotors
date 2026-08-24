@@ -155,7 +155,24 @@ export default function InspectionsPage() {
                     {preparingReport === insp.id ? 'Preparing PDF…' : 'Download report PDF'}
                   </button>
                   {insp.car_id ? (
-                    <span className="text-xs text-green-600 font-semibold flex-shrink-0">Live Listing</span>
+                    // Was hardcoded "Live Listing" the moment a listing existed,
+                    // which is true only after an admin has separately approved
+                    // and published it. It read as done while the listing sat
+                    // under review.
+                    <span
+                      className={`text-xs font-semibold flex-shrink-0 ${
+                        insp.car_status === 'live' ? 'text-green-600'
+                          : insp.car_status === 'sold' || insp.car_status === 'archived' ? 'text-gray-500'
+                          : 'text-amber-600'
+                      }`}
+                    >
+                      {insp.car_status === 'live' ? 'Live listing'
+                        : insp.car_status === 'approved' ? 'Approved — not published'
+                        : insp.car_status === 'sold' ? 'Sold'
+                        : insp.car_status === 'archived' ? 'Archived'
+                        : insp.car_status === 'rejected' ? 'Listing rejected'
+                        : 'Listing under review'}
+                    </span>
                   ) : (
                     <Link
                       href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
