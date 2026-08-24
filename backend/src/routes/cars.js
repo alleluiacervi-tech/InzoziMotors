@@ -901,6 +901,26 @@ async function publicationReadiness(client, carId) {
   };
 }
 
+// GET /cars/:id/readiness — admin: why is (or isn't) this listing publishable?
+//
+// The same verdict the approve/publish transactions enforce, offered BEFORE
+// the attempt instead of only inside a 409. The dashboard used to be able to
+// say no more than "inspection, seller approval and gallery are required" —
+// three categories, regardless of which one was actually wrong — so the only
+// way to learn the real reason was to try the action and read the error.
+// Publication stays exactly as gated as it was; the reasoning is just no
+// longer a secret from the person doing the work.
+router.get('/:id/readiness', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const readiness = await publicationReadiness(pool, req.params.id);
+    if (!readiness) return res.status(404).json({ error: 'Listing not found' });
+    res.json(readiness);
+  } catch (err) {
+    log.error('listing readiness error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) => {
   const status = req.body.status === 'removed' ? 'archived' : String(req.body.status || '');
   const reason = String(req.body.reason || '').trim().slice(0, 1000);

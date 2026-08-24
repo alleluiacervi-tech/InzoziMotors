@@ -537,6 +537,66 @@ test('publication and buyer actions fail closed until passing inspection evidenc
   assert.equal(stored.rows[0].status, 'live');
 });
 
+test('readiness is readable before the attempt, not only inside the refusal', async () => {
+  const seller = await register({ role: 'seller' });
+  await pool.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id]);
+  const admin = await makeAdmin(await register());
+  const car = await api().post('/cars').set('Authorization', `Bearer ${admin}`)
+    .send({
+      seller_id: seller.id, title: 'Readiness probe', make: 'Toyota', model: 'Corolla',
+      year: 2020, mileage: 40000, price: 19000000, images: [],
+    }).expect(201);
+
+  const readiness = await api().get(`/cars/${car.body.id}/readiness`)
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+
+  assert.equal(readiness.body.ready, false);
+  // The whole point: the operator learns WHICH requirement is unmet without
+  // having to trip the 409 first.
+  assert.match(readiness.body.missing.join(' '), /inspection/i);
+  assert.match(readiness.body.missing.join(' '), /photo/i);
+  assert.equal(readiness.body.photo_count, 0);
+  assert.ok(readiness.body.min_photos >= 1, 'the configured minimum must be reported');
+
+  // Same verdict the enforcing transaction reaches — one source of truth.
+  const refused = await api().patch(`/cars/${car.body.id}/status`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'approved' }).expect(409);
+  assert.deepEqual(refused.body.readiness.missing, readiness.body.missing);
+
+  // It is an admin lens on an unpublished listing, so it is admin-only.
+  const outsider = await register();
+  await api().get(`/cars/${car.body.id}/readiness`)
+    .set('Authorization', `Bearer ${outsider.token}`).expect(403);
+  await api().get(`/cars/${car.body.id}/readiness`).expect(401);
+});
+
+test('a submission cannot be rejected without a reason for the seller', async () => {
+  const seller = await register({ role: 'seller' });
+  await pool.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id]);
+  const admin = await makeAdmin(await register());
+  const submission = await api().post('/submissions')
+    .set('Authorization', `Bearer ${seller.token}`)
+    .send({ make: 'Toyota', model: 'Vitz', year: 2018, mileage: 80000, asking_price: 9000000 })
+    .expect(201);
+
+  const blank = await api().patch(`/submissions/${submission.body.id}`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'rejected' }).expect(400);
+  assert.equal(blank.body.code, 'REJECTION_REASON_REQUIRED');
+  await api().patch(`/submissions/${submission.body.id}`)
+    .set('Authorization', `Bearer ${admin}`).send({ status: 'rejected', admin_notes: '   ' }).expect(400);
+
+  await api().patch(`/submissions/${submission.body.id}`)
+    .set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'rejected', admin_notes: 'Chassis number does not match the logbook.' })
+    .expect(200);
+
+  // The seller is told why, rather than being sent to find out.
+  const { rows } = await pool.query(
+    "SELECT body FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1", [seller.id]
+  );
+  assert.match(rows[0].body, /does not match the logbook/);
+});
+
 test('seller submission flows through inspection, verification, listing approval and publication', async () => {
   const seller = await register({ role: 'seller' });
   const admin = await makeAdmin(await register());
