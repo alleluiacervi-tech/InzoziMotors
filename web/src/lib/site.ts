@@ -200,10 +200,10 @@ export const BUYING_STEPS = [
 
 /** Seller journey — mirrors the pipeline in CLAUDE.md and SellerDashboardScreen. */
 export const SELLING_STEPS = [
-  { title: 'Verify your identity', desc: 'A one-time ID check. It is what keeps every Sawa Cars listing real — and it takes about two minutes.' },
   { title: 'Submit your car', desc: 'Tell us the make, model, mileage and your asking price. We suggest a range from real comparable sales.' },
   { title: 'Book your inspection', desc: 'Pick a center and a slot. Bring the car and your service records.' },
   { title: 'We inspect and review', desc: 'Our team records the inspection and adds a clear, truthful image gallery. There is no fixed angle count.' },
+  { title: 'Complete seller verification', desc: 'Before publication, our team must approve your one-time identity check and activate your seller account.' },
   { title: 'An admin publishes it', desc: 'Publication is gated by seller verification, inspection completion and a valid gallery. You keep control of the price.' },
   { title: 'You manage buyer enquiries', desc: 'Talk, negotiate and agree any sale directly. Sawa Cars is not a party to your contract or payment.' },
 ] as const

@@ -26,7 +26,7 @@ const VERIFICATION: Record<
     label: 'Verified',
     tone: 'success',
     body:
-      'Our team has confirmed your identity. You can submit cars for inspection, and buyers see a verified-seller mark on your listings.',
+      'Our team has confirmed your identity. Eligible inspected listings can now be approved for publication, and buyers see a verified-seller mark on them.',
   },
   pending: {
     label: 'In review',
@@ -44,7 +44,7 @@ const VERIFICATION: Record<
     label: 'Not started',
     tone: 'neutral',
     body:
-      'Buying, saving and requests all work without this. Verification is only needed to sell a car, and it happens in the Sawa Cars app: a photo of your national ID and a selfie.',
+      'Buying, saving and requests all work without this, and you may submit a car for inspection. Verification is required before publication or public contact activation and happens in the Sawa Cars app: a photo of your national ID and a selfie.',
   },
 }
 

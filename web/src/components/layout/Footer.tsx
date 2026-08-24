@@ -2,10 +2,12 @@ import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
 import { Eyebrow, Icon } from '@/components/ui'
 import { StoreButtons } from '@/components/app/StoreButtons'
-import { CENTERS, CONTACT, FOOTER_LINKS, SITE } from '@/lib/site'
+import { CONTACT, FOOTER_LINKS, SITE } from '@/lib/site'
+import { getDisplayCenters } from '@/lib/centers'
 
-export function Footer() {
+export async function Footer() {
   const year = new Date().getFullYear()
+  const centers = await getDisplayCenters()
 
   return (
     <footer className="border-t border-line bg-ink-900 text-white">
@@ -89,7 +91,7 @@ export function Footer() {
         <div className="mt-14 border-t border-white/10 pt-10">
           <Eyebrow tone="invert">Visit us</Eyebrow>
           <div className="grid gap-6 sm:grid-cols-3">
-            {CENTERS.map((center) => (
+            {centers.map((center) => (
               <div key={center.id} className="text-caption leading-relaxed text-white/60">
                 <p className="font-bold text-white/85">{center.name}</p>
                 <p>{center.address}</p>

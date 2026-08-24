@@ -9,7 +9,7 @@ import { SignInForm } from './SignInForm'
 // otherwise crawl with a hundred `?next=` variants.
 export const metadata: Metadata = {
   title: 'Sign in',
-  description: 'Sign in to Sawa Cars to see your saved cars, saved searches and purchase requests.',
+  description: 'Sign in to Sawa Cars to see your saved cars, saved searches, vehicle enquiries and submissions.',
   robots: { index: false, follow: true },
 }
 
