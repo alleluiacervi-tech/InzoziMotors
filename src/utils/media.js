@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { showToast, showActionSheet } from '../components/Feedback';
 
 // One capture path for every photo surface in the app — ID documents, seller
-// reference shots, the 36-angle listing set, and rental condition records.
+// reference shots and the flexible listing gallery.
 // Keeping it in one place means permission handling and compression can never
 // drift between screens.
 
@@ -11,7 +11,7 @@ import { showToast, showActionSheet } from '../components/Feedback';
 const PRESETS = {
   document: { quality: 0.75, allowsEditing: false },   // ID front/back, VIN plate
   selfie:   { quality: 0.7,  allowsEditing: false, cameraType: 'front' },
-  listing:  { quality: 0.85, allowsEditing: false },   // 36-angle standard
+  listing:  { quality: 0.85, allowsEditing: false },
   quick:    { quality: 0.6,  allowsEditing: false },   // rental check-in records
 };
 

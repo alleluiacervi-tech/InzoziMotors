@@ -1,159 +1,32 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows, fonts } from '../theme';
 import { LogoMark } from '../components/Logo';
+import { colors, fonts, radius, shadows } from '../theme';
 
-const PROMISES = [
-  {
-    icon: 'shield-checkmark',
-    title: '150-Point Certification',
-    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa Cars. No exceptions, no seller shortcuts.',
-  },
-  {
-    icon: 'refresh',
-    title: 'Drive It for 7 Days',
-    desc: "Every certified purchase comes with a 7-day decision window. Drive it, live with it — if it doesn't match its inspection report, return it at any Sawa center for a full refund.",
-  },
-  {
-    icon: 'document-text',
-    title: 'Verified History',
-    desc: 'Ownership records, mileage verification and RRA duty status are checked and published on every listing. What you read is what we verified.',
-  },
-  {
-    icon: 'cash',
-    title: 'Deposit-Back Guarantee',
-    desc: 'Rental deposits are returned in full after the return check — same day, at the center. Documented condition photos protect both sides.',
-  },
-  {
-    icon: 'eye-off',
-    title: 'Zero Fake Listings',
-    desc: 'Only the Sawa team can publish listings, and only after physically inspecting the car. Every photo is shot by our photographers. If it looks real, it is.',
-  },
+const CONTROLS = [
+  { icon: 'person-circle-outline', title: 'Verified access', text: 'Seller and rental-provider eligibility is reviewed before publication and can be revoked by the team.' },
+  { icon: 'construct-outline', title: 'Inspection evidence', text: 'Inspection results describe recorded checks on the inspection date; they are evidence, not a future-condition warranty.' },
+  { icon: 'eye-outline', title: 'Controlled publication', text: 'Only authorized administrators publish, pause, correct, reject or archive public vehicle listings.' },
+  { icon: 'lock-closed-outline', title: 'Consent-based contacts', text: 'Phone and WhatsApp details are disclosed only when an approved seller or provider enables that channel.' },
+  { icon: 'flag-outline', title: 'Platform safety', text: 'Users can report content and conversations. Sawa Cars can moderate accounts and preserve platform audit history.' },
 ];
 
 export default function SawaPromiseScreen({ navigation }) {
-  return (
-    <Screen background={colors.bg}>
-      <BackHeader title="The Sawa Promise" onBack={() => navigation.goBack()} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-
-        {/* Hero — the Sawa identity */}
-        <View style={styles.hero}>
-          <LogoMark size={84} />
-          <Text style={styles.heroTitle}>Our promise to every customer</Text>
-          <Text style={styles.heroSub}>
-            Buying or renting a car is one of the biggest decisions you'll make.
-            These five guarantees apply to every single vehicle on Sawa Cars.
-          </Text>
-        </View>
-
-        {/* Refund conditions — transparent, no fine print */}
-        <View style={styles.refundCard}>
-          <Text style={styles.refundTitle}>The 7-day window, in plain terms</Text>
-          {[
-            { free: true,  text: 'Cancel before handover — always free' },
-            { free: true,  text: "Days 1–7: full refund if the car doesn't match its report" },
-            { free: false, text: 'Change of mind: reconditioning fee is deducted' },
-            { free: false, text: 'Over 300 km driven: per-km usage charge applies' },
-          ].map((r) => (
-            <View key={r.text} style={styles.refundRow}>
-              <Ionicons
-                name={r.free ? 'checkmark-circle' : 'information-circle-outline'}
-                size={15}
-                color={r.free ? colors.green : colors.amber}
-              />
-              <Text style={styles.refundText}>{r.text}</Text>
-            </View>
-          ))}
-          <Pressable style={styles.guideLink} onPress={() => navigation.navigate('BuyingGuide')}>
-            <Text style={styles.guideLinkText}>See the full buying guide</Text>
-            <Ionicons name="chevron-forward" size={13} color={colors.primary} />
-          </Pressable>
-        </View>
-
-        {/* Promises */}
-        {PROMISES.map((p, i) => (
-          <View key={p.title} style={styles.card}>
-            <View style={styles.cardIcon}>
-              <Ionicons name={p.icon} size={20} color={colors.textSecondary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.cardTitleRow}>
-                <Text style={styles.cardNum}>{String(i + 1).padStart(2, '0')}</Text>
-                <Text style={styles.cardTitle}>{p.title}</Text>
-              </View>
-              <Text style={styles.cardDesc}>{p.desc}</Text>
-            </View>
-          </View>
-        ))}
-
-        {/* Fine print */}
-        <Text style={styles.finePrint}>
-          The 7-day return guarantee applies to purchases handed over at a Sawa center.
-          Deposit refunds follow the documented return check. Full terms available at any center.
-        </Text>
-
-        <Button
-          title="Browse Certified Cars"
-          icon="car-outline"
-          onPress={() => navigation.navigate('Main')}
-          style={{ marginTop: 8 }}
-        />
-      </ScrollView>
-    </Screen>
-  );
+  return <Screen background={colors.bg}><BackHeader title="Marketplace safety" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content}>
+    <View style={styles.hero}><LogoMark size={78} /><Text style={styles.heroTitle}>Useful controls. Honest limits.</Text><Text style={styles.heroText}>Verification and evidence reduce avoidable marketplace risk. They do not make Sawa Cars a party to the users' sale or rental.</Text></View>
+    <Text style={styles.sectionTitle}>What the platform controls</Text>{CONTROLS.map((item) => <View key={item.title} style={styles.card}><View style={styles.icon}><Ionicons name={item.icon} size={21} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={styles.cardTitle}>{item.title}</Text><Text style={styles.cardText}>{item.text}</Text></View></View>)}
+    <View style={styles.directCard}><Text style={styles.directTitle}>What users control</Text><Text style={styles.directText}>Viewings, independent checks, price, written contract, payment, deposit, ownership transfer, insurance, delivery, pickup, return and resolution of an external transaction dispute.</Text></View>
+    <View style={styles.noGuarantee}><Ionicons name="information-circle-outline" size={22} color={colors.amber} /><Text style={styles.noGuaranteeText}>There is no Sawa checkout, escrow, seven-day return guarantee, transaction warranty or rental-deposit guarantee. Any such term must come from the users' separate written agreement or applicable law.</Text></View>
+    <Button title="How direct buying works" icon="book-outline" onPress={() => navigation.navigate('BuyingGuide')} style={{ marginTop: 16 }} />
+  </ScrollView></Screen>;
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
-  hero: {
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xxl, padding: 24,
-    alignItems: 'center', marginTop: 4, marginBottom: 16,
-    ...shadows.card,
-  },
-  heroTitle: {
-    fontSize: 21, fontFamily: fonts.extraBold, color: colors.textPrimary,
-    textAlign: 'center', letterSpacing: -0.4, marginTop: 16,
-  },
-  refundCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 16, marginBottom: 16,
-    ...shadows.card,
-  },
-  refundTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary, marginBottom: 10 },
-  refundRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
-  refundText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
-  guideLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
-  guideLinkText: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
-  heroSub: {
-    fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary,
-    textAlign: 'center', marginTop: 8, lineHeight: 19,
-  },
-  card: {
-    flexDirection: 'row', gap: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 16, marginBottom: 10,
-    ...shadows.card,
-  },
-  cardIcon: {
-    width: 42, height: 42, borderRadius: radius.md,
-    backgroundColor: colors.greenTint,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardNum: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: 0.5 },
-  cardTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
-  cardDesc: { fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 5, lineHeight: 18 },
-  finePrint: {
-    fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted,
-    lineHeight: 16, marginTop: 8, marginBottom: 16, textAlign: 'center',
-  },
+  content: { padding: 20, paddingTop: 8, paddingBottom: 46 }, hero: { alignItems: 'center', borderRadius: radius.xxl, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.surface, padding: 23, ...shadows.card }, heroTitle: { marginTop: 14, fontSize: 21, fontFamily: fonts.extraBold, color: colors.textPrimary, textAlign: 'center' }, heroText: { marginTop: 8, fontSize: 13.5, lineHeight: 20, color: colors.textSecondary, textAlign: 'center' }, sectionTitle: { marginTop: 24, marginBottom: 10, fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  card: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, marginBottom: 10, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.surface, padding: 15 }, icon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.blueTint, alignItems: 'center', justifyContent: 'center' }, cardTitle: { fontSize: 14.5, fontFamily: fonts.extraBold, color: colors.textPrimary }, cardText: { marginTop: 4, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
+  directCard: { marginTop: 8, borderRadius: radius.xl, backgroundColor: colors.navyDeep, padding: 17 }, directTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: '#fff' }, directText: { marginTop: 6, fontSize: 12.5, lineHeight: 19, color: 'rgba(255,255,255,0.82)' }, noGuarantee: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12, borderRadius: radius.xl, backgroundColor: '#FFF8E8', padding: 15 }, noGuaranteeText: { flex: 1, fontSize: 12.5, lineHeight: 19, color: colors.textSecondary },
 });

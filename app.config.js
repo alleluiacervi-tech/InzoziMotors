@@ -56,7 +56,7 @@ export default ({ config }) => ({
       'applinks:www.sawacars.com',
     ],
     infoPlist: {
-      // Seller KYC documents and the 36-angle listing shoot both need the camera
+      // Seller KYC documents and the flexible listing gallery need the camera.
       NSCameraUsageDescription:
         'Sawa uses the camera to photograph your ID for seller verification and to capture vehicle photos.',
       NSPhotoLibraryUsageDescription:

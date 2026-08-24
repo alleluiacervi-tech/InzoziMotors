@@ -309,7 +309,7 @@ export default function InspectionReportScreen({ navigation, route }) {
             </Text>
             <Text style={styles.footerSub}>
               {certified
-                ? 'Scored ≥ 88% · Passed all critical safety checks · 7-day return eligible'
+                ? 'Scored ≥ 88% · Passed all configured critical safety checks'
                 : 'Scored below 88% threshold · Flags require buyer attention'}
             </Text>
           </View>

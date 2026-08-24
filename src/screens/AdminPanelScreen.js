@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { ErrorState } from '../components/StateViews';
 import adminApi from '../api/admin';
+import inspectionsApi from '../api/inspections';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 
-const TABS = ['Submissions', 'IDs', 'Inspections', 'Handovers', 'Listings'];
+const TABS = ['Submissions', 'IDs', 'Inspections', 'Listings'];
 
 const STAT_CARDS = ({ pendingCount, reviewCount, todayInspections, activeListings }) => [
   { label: 'To Review', value: String(reviewCount), icon: 'file-tray-full-outline', color: colors.amberText, bg: colors.amberTint },
@@ -81,79 +82,6 @@ function SubmissionsTab({ submissions, onApprove, onReject }) {
                 <Text style={styles.inspCar}>{s.statusDetail || ''}</Text>
               </View>
               <StatusBadge status={s.status} />
-            </View>
-          ))}
-        </>
-      )}
-    </View>
-  );
-}
-
-function HandoversTab({ handovers, onConfirm }) {
-  const pending = handovers.filter((h) => h.status === 'pending');
-  const done = handovers.filter((h) => h.status === 'complete');
-
-  if (handovers.length === 0) {
-    return (
-      <View style={styles.tabContent}>
-        <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>No handovers yet</Text>
-          <Text style={styles.emptySub}>Booked handover slots will appear here.</Text>
-        </View>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.tabContent}>
-      {pending.length > 0 && (
-        <>
-          <Text style={styles.subHeader}>Upcoming ({pending.length})</Text>
-          {pending.map((h) => (
-            <View key={h.id} style={[styles.inspCard, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={[styles.inspDot, { backgroundColor: colors.statusReserved }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inspSeller}>{h.car}</Text>
-                  <Text style={styles.inspCar}>Buyer: {h.buyer} · Seller: {h.seller}</Text>
-                  <View style={styles.inspMeta}>
-                    <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-                    <Text style={styles.inspMetaText}>{h.date} · {h.time}</Text>
-                    <View style={styles.inspMetaDot} />
-                    <Ionicons name="location-outline" size={12} color={colors.textMuted} />
-                    <Text style={styles.inspMetaText}>{h.center}</Text>
-                  </View>
-                </View>
-                <View style={[styles.inspBadge, { backgroundColor: colors.statusReservedBg }]}>
-                  <Text style={[styles.inspBadgeText, { color: colors.statusReserved }]}>BOOKED</Text>
-                </View>
-              </View>
-              <Pressable
-                style={styles.confirmHandoverBtn}
-                onPress={() => onConfirm(h.id, h.car)}
-              >
-                <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
-                <Text style={styles.confirmHandoverBtnText}>Confirm Handover → Mark Sold</Text>
-              </Pressable>
-            </View>
-          ))}
-        </>
-      )}
-      {done.length > 0 && (
-        <>
-          <Text style={[styles.subHeader, { marginTop: 20 }]}>Completed ({done.length})</Text>
-          {done.map((h) => (
-            <View key={h.id} style={[styles.inspCard, { opacity: 0.6 }]}>
-              <View style={[styles.inspDot, { backgroundColor: colors.statusSold }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inspSeller}>{h.car}</Text>
-                <Text style={styles.inspCar}>{h.buyer} → {h.seller}</Text>
-                <Text style={[styles.inspMetaText, { marginTop: 4 }]}>{h.date} · {h.center}</Text>
-              </View>
-              <View style={[styles.inspBadge, { backgroundColor: colors.statusSoldBg }]}>
-                <Text style={[styles.inspBadgeText, { color: colors.statusSold }]}>SOLD</Text>
-              </View>
             </View>
           ))}
         </>
@@ -240,8 +168,16 @@ function InspectionsTab({ inspections, navigation }) {
   const today = inspections.filter((i) => i.status === 'today');
   const upcoming = inspections.filter((i) => i.status !== 'today');
 
-  const goToForm = (inspection) => {
-    navigation.navigate('InspectionForm', { inspection });
+  const goToForm = async (inspection) => {
+    try {
+      const isDemoRow = !String(inspection.id || '').includes('-');
+      const started = inspection.workflowStatus === 'scheduled' && !isDemoRow
+        ? await inspectionsApi.start(inspection.id)
+        : inspection;
+      navigation.navigate('InspectionForm', { inspection: { ...inspection, ...started, workflowStatus: started.status || inspection.workflowStatus } });
+    } catch (error) {
+      showToast(error?.message || 'Could not start this inspection.', 'error');
+    }
   };
 
   return (
@@ -306,10 +242,10 @@ function InspectionsTab({ inspections, navigation }) {
 
 // Admins browse every status, not just live — that is the whole point of the
 // admin listings route versus the public /cars feed.
-const LISTING_FILTERS = ['live', 'under_review', 'scheduled', 'reserved', 'sold'];
+const LISTING_FILTERS = ['draft', 'under_review', 'scheduled', 'approved', 'live', 'paused', 'sold', 'rejected', 'archived'];
 const FILTER_LABEL = {
-  live: 'Live', under_review: 'Review', scheduled: 'Scheduled',
-  reserved: 'Reserved', sold: 'Sold',
+  draft: 'Draft', live: 'Live', under_review: 'Review', scheduled: 'Scheduled', approved: 'Approved',
+  paused: 'Paused', sold: 'Sold', rejected: 'Rejected', archived: 'Archived',
 };
 
 function ListingsTab({ navigation, cars }) {
@@ -389,7 +325,7 @@ function ListingsTab({ navigation, cars }) {
 export default function AdminPanelScreen({ navigation }) {
   const {
     pendingVerifications, adminInspections, adminApproveVerification, adminRejectVerification,
-    handovers, confirmHandover, submissions, updateSubmissionStatus, cars,
+    submissions, updateSubmissionStatus, cars,
     currentUser, demoMode,
   } = useApp();
   const [activeTab, setActiveTab] = useState(0);
@@ -400,7 +336,6 @@ export default function AdminPanelScreen({ navigation }) {
   const isAdmin = demoMode || currentUser?.role === 'admin';
 
   const pendingCount = pendingVerifications.filter((v) => v.status === 'pending').length;
-  const pendingHandovers = handovers.filter((h) => h.status === 'pending').length;
   const reviewCount = submissions.filter((s) => s.status === 'under_review').length;
   const todayInspections = adminInspections.filter((i) => i.status === 'today').length;
 
@@ -438,14 +373,6 @@ export default function AdminPanelScreen({ navigation }) {
       message: 'The seller will be asked to resubmit clearer documents.',
       confirmLabel: 'Reject', destructive: true,
     }).then((ok) => { if (ok) adminRejectVerification(id); });
-  };
-
-  const handleConfirmHandover = (handoverId, carName) => {
-    showConfirm({
-      title: 'Confirm handover?',
-      message: `This will mark the ${carName} as sold and remove it from the marketplace. This cannot be undone.`,
-      confirmLabel: 'Confirm & Mark Sold',
-    }).then((ok) => { if (ok) confirmHandover(handoverId); });
   };
 
   if (!isAdmin) {
@@ -493,12 +420,17 @@ export default function AdminPanelScreen({ navigation }) {
           </View>
         </LinearGradient>
 
+        <Pressable style={styles.fullConsole} onPress={() => Linking.openURL('https://sawacars.com/admin-portal').catch(() => showToast('Could not open the full admin console.', 'error'))}>
+          <View style={styles.fullConsoleIcon}><Ionicons name="desktop-outline" size={21} color={colors.primary} /></View>
+          <View style={{ flex: 1 }}><Text style={styles.fullConsoleTitle}>Open full admin console</Text><Text style={styles.fullConsoleText}>Accounts, passwords, contact permissions, listings, rentals, settings and audit history.</Text></View>
+          <Ionicons name="open-outline" size={18} color={colors.textMuted} />
+        </Pressable>
+
         {/* Tabs */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
           {TABS.map((tab, idx) => {
             const badge = idx === 0 && reviewCount > 0 ? reviewCount
-              : idx === 1 && pendingCount > 0 ? pendingCount
-              : idx === 3 && pendingHandovers > 0 ? pendingHandovers : null;
+              : idx === 1 && pendingCount > 0 ? pendingCount : null;
             return (
               <Pressable
                 key={tab}
@@ -531,8 +463,7 @@ export default function AdminPanelScreen({ navigation }) {
           />
         )}
         {activeTab === 2 && <InspectionsTab inspections={adminInspections} navigation={navigation} />}
-        {activeTab === 3 && <HandoversTab handovers={handovers} onConfirm={handleConfirmHandover} />}
-        {activeTab === 4 && <ListingsTab navigation={navigation} cars={cars} />}
+        {activeTab === 3 && <ListingsTab navigation={navigation} cars={cars} />}
       </ScrollView>
     </Screen>
   );
@@ -540,7 +471,7 @@ export default function AdminPanelScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   analyticsLink: {
-    width: 40, height: 40, borderRadius: radius.md,
+    width: 48, height: 48, borderRadius: radius.md,
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -554,6 +485,10 @@ const styles = StyleSheet.create({
   },
   adminBadgeText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: 0.5 },
   statsHero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
+  fullConsole: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 4, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xl, backgroundColor: colors.surface, padding: 14, ...shadows.card },
+  fullConsoleIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueTint },
+  fullConsoleTitle: { fontSize: 14.5, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  fullConsoleText: { marginTop: 3, fontSize: 11.5, lineHeight: 16, color: colors.textSecondary },
   statsHeroTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   statsHeroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2, marginBottom: 16 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -576,6 +511,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   tab: {
+    minHeight: 48,
     alignItems: 'center', paddingVertical: 14, paddingHorizontal: 14,
     borderBottomWidth: 2, borderBottomColor: 'transparent',
     flexDirection: 'row', justifyContent: 'center', gap: 6,
@@ -618,7 +554,7 @@ const styles = StyleSheet.create({
   verifyActions: { flexDirection: 'row', gap: 8 },
   verifyBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 10, borderRadius: radius.lg,
+    minHeight: 48, gap: 6, paddingVertical: 10, borderRadius: radius.lg,
   },
   verifyBtnApprove: { backgroundColor: colors.primary },
   verifyBtnReject: { backgroundColor: colors.statusRejectedBg, borderWidth: 1, borderColor: colors.statusRejected + '44' },
@@ -646,6 +582,7 @@ const styles = StyleSheet.create({
   },
   inspBadgeText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5 },
   confirmBtn: {
+    minHeight: 48, justifyContent: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1.5, borderColor: colors.primary,
     borderRadius: radius.lg,
@@ -673,6 +610,7 @@ const styles = StyleSheet.create({
   listingMetaText: { fontSize: 11, color: colors.textMuted },
   listingFilters: { gap: 8, paddingBottom: 4 },
   listingFilter: {
+    minHeight: 48, justifyContent: 'center',
     paddingHorizontal: 14, paddingVertical: 7,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,
@@ -687,11 +625,6 @@ const styles = StyleSheet.create({
   },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
   badgeText: { fontSize: 11, fontFamily: fonts.bold },
-  confirmHandoverBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: 11,
-  },
-  confirmHandoverBtnText: { fontSize: 13, fontFamily: fonts.bold, color: '#fff' },
   // Empty state
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.textPrimary },

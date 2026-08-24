@@ -7,10 +7,8 @@ import Button from '../components/Button';
 import PhotoViewer from '../components/PhotoViewer';
 import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
-import { RENTAL_INCLUDES, getRentalDates } from '../data/rentals';
 import { formatRWF } from '../data/marketData';
 import { useApp } from '../context/AppContext';
-import { openWhatsApp, SAWA_WHATSAPP, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
 const SPEC_ITEMS = [
   { icon: 'people-outline', label: 'Seats', key: 'seats' },
@@ -46,7 +44,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           <ErrorState
             icon="key-outline"
             title="This rental isn't available"
-            sub="It may have been booked or removed from the fleet."
+            sub="It may have been paused or removed from the fleet."
             actionLabel="Go back"
             onAction={() => navigation.goBack()}
           />
@@ -57,8 +55,6 @@ export default function RentalDetailScreen({ navigation, route }) {
     );
   }
 
-  const dates = getRentalDates(14);
-  const unavailableDays = car.unavailableDays || [];
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
   return (
@@ -141,22 +137,9 @@ export default function RentalDetailScreen({ navigation, route }) {
             ))}
           </View>
 
-          {/* Availability — next 14 days */}
+          {/* Availability is confirmed by the independent provider. */}
           <Text style={styles.sectionTitle}>Availability</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingRight: 4 }}>
-            {dates.map((d) => {
-              const blocked = unavailableDays.includes(d.index);
-              return (
-                <View key={d.index} style={[styles.dateChip, blocked && styles.dateChipBlocked]}>
-                  <Text style={[styles.dateDay, blocked && styles.dateTextBlocked]}>{d.day}</Text>
-                  <Text style={[styles.dateNum, blocked && styles.dateTextBlocked]}>{d.date}</Text>
-                  <Text style={[styles.dateMonth, blocked && styles.dateTextBlocked]}>{d.month}</Text>
-                  {blocked && <View style={styles.blockedLine} />}
-                </View>
-              );
-            })}
-          </ScrollView>
-          <Text style={styles.availHint}>Greyed dates are already booked</Text>
+          <View style={styles.availabilityNote}><Ionicons name="calendar-outline" size={21} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.availabilityTitle}>Request your dates</Text><Text style={styles.availabilityText}>The verified provider will confirm the vehicle, price and pickup arrangements. Sending an inquiry does not hold or book the car.</Text></View></View>
 
           {/* Pricing */}
           <Text style={styles.sectionTitle}>Pricing</Text>
@@ -179,7 +162,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             <View style={[styles.priceRow, styles.priceRowLast]}>
               <View>
                 <Text style={styles.priceLabel}>Security deposit</Text>
-                <Text style={styles.priceSub}>Fully refunded after return check</Text>
+                <Text style={styles.priceSub}>Provider-stated amount · confirm written terms</Text>
               </View>
               <Text style={styles.priceValue}>{formatRWF(car.deposit)}</Text>
             </View>
@@ -192,9 +175,14 @@ export default function RentalDetailScreen({ navigation, route }) {
           </View>
 
           {/* What's included */}
-          <Text style={styles.sectionTitle}>Every Sawa Cars rental includes</Text>
+          <Text style={styles.sectionTitle}>Confirm these terms with the provider</Text>
           <View style={styles.includesGrid}>
-            {RENTAL_INCLUDES.map((item) => (
+            {[
+              { icon: 'shield-checkmark-outline', label: 'Insurance coverage' },
+              { icon: 'construct-outline', label: 'Roadside assistance' },
+              { icon: 'speedometer-outline', label: 'Kilometre limits' },
+              { icon: 'cash-outline', label: 'Deposit & refund terms' },
+            ].map((item) => (
               <View key={item.label} style={styles.includeCard}>
                 <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
                 <Text style={styles.includeLabel}>{item.label}</Text>
@@ -204,7 +192,7 @@ export default function RentalDetailScreen({ navigation, route }) {
 
           <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-            <Text style={styles.promiseLinkText}>Backed by the Sawa Promise</Text>
+            <Text style={styles.promiseLinkText}>Marketplace safety & responsibilities</Text>
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
@@ -226,9 +214,9 @@ export default function RentalDetailScreen({ navigation, route }) {
           {/* How it works */}
           <Text style={styles.sectionTitle}>How renting works</Text>
           {[
-            { n: '1', t: 'Book your dates', d: 'Choose pickup date and duration — instant confirmation.' },
-            { n: '2', t: 'Pick up at a Sawa center', d: 'Bring your driving licence and ID. Pay at pickup.' },
-            { n: '3', t: 'Drive & return', d: 'Return to the same center. Deposit refunded after a quick check.' },
+            { n: '1', t: 'Send an inquiry', d: 'Share your dates and preferred contact channel.' },
+            { n: '2', t: 'Agree directly', d: 'The provider confirms availability, price, insurance, deposit and written rental terms.' },
+            { n: '3', t: 'Manage the rental', d: 'Pickup, payment, vehicle condition and return are handled directly between you and the provider.' },
           ].map((step) => (
             <View key={step.n} style={styles.stepRow}>
               <View style={styles.stepNum}><Text style={styles.stepNumText}>{step.n}</Text></View>
@@ -253,36 +241,21 @@ export default function RentalDetailScreen({ navigation, route }) {
                 </Text>
                 <Text style={styles.ctaPerDay}>/ day</Text>
               </View>
-              <Text style={styles.ctaDeposit}>Refundable deposit · {formatRWF(car.deposit)}</Text>
+              <Text style={styles.ctaDeposit}>Provider-stated rate · confirm directly</Text>
             </View>
             <View style={styles.ctaAssurance}>
               <Ionicons name="shield-checkmark" size={14} color={colors.greenText} />
-              <Text style={styles.ctaAssuranceText}>Pay at pickup</Text>
+              <Text style={styles.ctaAssuranceText}>Inquiry only</Text>
             </View>
           </View>
 
           <View style={styles.ctaActions}>
-            {/* Honesty gate: no WhatsApp surface until the business line is real —
-                an unverified number opens a chat nobody answers. */}
-            {WHATSAPP_VERIFIED && (
-              <Pressable
-                style={({ pressed }) => [styles.waBtn, pressed && styles.waBtnPressed]}
-                onPress={() => openWhatsApp(
-                  SAWA_WHATSAPP,
-                  `Hi Sawa Cars, is the ${car.title} (${formatRWF(car.dailyRate)}/day) available to rent?`
-                )}
-                accessibilityRole="button"
-                accessibilityLabel="Ask about this rental on WhatsApp"
-              >
-                <Ionicons name="logo-whatsapp" size={23} color="#fff" />
-              </Pressable>
-            )}
             <Button
-              title="Book this car"
+              title="Request availability"
               icon="calendar-outline"
               style={styles.bookButton}
               textStyle={styles.bookButtonText}
-              onPress={() => navigation.navigate('RentalBooking', { car })}
+              onPress={() => navigation.navigate('RentalInquiry', { car })}
             />
           </View>
         </View>
@@ -307,7 +280,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
   },
   circleBtn: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 48, height: 48, borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -352,24 +325,9 @@ const styles = StyleSheet.create({
   specValue: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
   specLabel: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted },
   sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 24, marginBottom: 12, letterSpacing: -0.3 },
-  dateChip: {
-    width: 54, paddingVertical: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md,
-    alignItems: 'center', gap: 2,
-    overflow: 'hidden',
-  },
-  dateChipBlocked: { backgroundColor: colors.surfaceAlt, borderColor: colors.borderSoft },
-  dateDay: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.textMuted },
-  dateNum: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  dateMonth: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted },
-  dateTextBlocked: { color: colors.textDisabled },
-  blockedLine: {
-    position: 'absolute', top: '50%', left: 6, right: 6, height: 1.5,
-    backgroundColor: colors.border, transform: [{ rotate: '-18deg' }],
-  },
-  availHint: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 8 },
+  availabilityNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.surface, padding: 15 },
+  availabilityTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  availabilityText: { marginTop: 4, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
   priceCard: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -462,11 +420,6 @@ const styles = StyleSheet.create({
   ctaActions: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
   },
-  waBtn: {
-    width: 54, height: 54, borderRadius: radius.lg,
-    backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
-  },
-  waBtnPressed: { opacity: 0.82, transform: [{ scale: 0.97 }] },
   bookButton: {
     flex: 1, width: 'auto', minWidth: 0, minHeight: 54,
     paddingVertical: 14, borderRadius: radius.lg,

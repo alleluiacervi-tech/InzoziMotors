@@ -1,345 +1,69 @@
 import React, { useState } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, Pressable, Image,
-} from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import StickyFooter from '../components/StickyFooter';
-import { colors, radius, shadows, fonts } from '../theme';
-import { showToast, showConfirm } from '../components/Feedback';
+import { showToast } from '../components/Feedback';
 import { captureImage } from '../utils/media';
 import inspectionsApi from '../api/inspections';
-import { PHOTO_GROUPS } from '../data/inspectionData';
+import { colors, fonts, radius, shadows } from '../theme';
 
-const TOTAL_REQUIRED = PHOTO_GROUPS.reduce((s, g) => {
-  // Defect group is optional — only first 28 are required
-  if (g.group === 'Defects (if any)') return s;
-  return s + g.slots.length;
-}, 0);
-
-const TOTAL_SLOTS = PHOTO_GROUPS.reduce((s, g) => s + g.slots.length, 0);
-
-function SlotCard({ slot, asset, onPress, optional }) {
-  if (asset) {
-    return (
-      <Pressable style={[styles.slot, styles.slotFilled]} onPress={onPress}>
-        <Image source={{ uri: asset.uri }} style={styles.slotImage} />
-        <View style={styles.slotOverlay}>
-          <Text style={styles.slotOverlayLabel} numberOfLines={1}>{slot.label}</Text>
-        </View>
-        <View style={styles.slotCheckBadge}>
-          <Ionicons name="checkmark" size={12} color="#fff" />
-        </View>
-      </Pressable>
-    );
-  }
-  return (
-    <Pressable style={[styles.slot, optional && styles.slotOptional]} onPress={onPress}>
-      <View style={[styles.slotAddIcon, optional && styles.slotAddIconOptional]}>
-        <Ionicons name="camera-outline" size={18} color={optional ? colors.textMuted : colors.primary} />
-      </View>
-      <Text style={[styles.slotLabel, optional && styles.slotLabelOptional]} numberOfLines={2}>
-        {slot.label}
-      </Text>
-      {optional && <Text style={styles.optionalTag}>optional</Text>}
-    </Pressable>
-  );
-}
+const MAX_PHOTOS = 40;
+const RECOMMENDED_PHOTOS = 10;
 
 export default function PhotoUploadScreen({ navigation, route }) {
   const { inspection, score, carId } = route.params || {};
-  // slotId -> captured asset. Keyed by slot so the standardised set stays
-  // ordered and every angle is traceable to the file that filled it.
-  const [shots, setShots] = useState({});
+  const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  const uploadedCount = Object.keys(shots).length;
-  const requiredUploaded = PHOTO_GROUPS.filter((g) => g.group !== 'Defects (if any)')
-    .reduce((s, g) => s + g.slots.filter((sl) => shots[sl.id]).length, 0);
-
-  const handleSlotPress = async (slot) => {
-    if (shots[slot.id]) {
-      const choice = await showConfirm({
-        title: slot.label,
-        message: 'Replace this photo, or remove it from the set?',
-        confirmLabel: 'Retake',
-        cancelLabel: 'Remove',
-      });
-      if (choice) {
-        const asset = await captureImage({ preset: 'listing', title: slot.label });
-        if (asset) setShots((prev) => ({ ...prev, [slot.id]: asset }));
-      } else {
-        setShots((prev) => {
-          const next = { ...prev };
-          delete next[slot.id];
-          return next;
-        });
-      }
-      return;
-    }
-    const asset = await captureImage({
-      preset: 'listing',
-      title: slot.label,
-      message: slot.hint || 'Shoot straight on, in even light, filling the frame.',
-    });
-    if (asset) setShots((prev) => ({ ...prev, [slot.id]: asset }));
+  const addPhoto = async () => {
+    if (photos.length >= MAX_PHOTOS) return showToast(`A listing can contain up to ${MAX_PHOTOS} images.`, 'info');
+    const asset = await captureImage({ preset: 'listing', title: `Vehicle photo ${photos.length + 1}`, message: 'Capture a clear, honest view of the vehicle or a relevant detail.' });
+    if (asset) setPhotos((current) => [...current, asset]);
   };
 
-  const handleSubmit = () => {
-    if (requiredUploaded < TOTAL_REQUIRED) {
-      showConfirm({
-        title: 'Missing required photos',
-        message: `${TOTAL_REQUIRED - requiredUploaded} required photo(s) missing. All non-defect slots must be filled before publishing.`,
-        confirmLabel: 'Upload Anyway',
-        cancelLabel: 'Keep Shooting',
-      }).then((ok) => { if (ok) proceed(); });
-    } else {
-      proceed();
-    }
+  const replacePhoto = async (index) => {
+    const asset = await captureImage({ preset: 'listing', title: `Replace photo ${index + 1}` });
+    if (asset) setPhotos((current) => current.map((photo, photoIndex) => photoIndex === index ? asset : photo));
   };
 
-  const proceed = async () => {
-    // Upload in slot order so cars.images[0] is the front three-quarter hero
-    // shot the cards render, not whichever angle was shot first.
-    const ordered = PHOTO_GROUPS.flatMap((g) => g.slots)
-      .filter((slot) => shots[slot.id])
-      .map((slot) => ({ ...shots[slot.id], angleKey: slot.id }));
+  const removePhoto = (index) => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index));
 
-    if (!ordered.length) {
-      showToast('Add at least one photo before uploading.', 'error');
-      return;
-    }
-
+  const upload = async () => {
+    if (!photos.length) return showToast('Add at least one clear vehicle photo.', 'error');
     const targetCarId = carId || inspection?.car_id;
-    if (!targetCarId) {
-      // No listing row yet (demo path) — keep the flow moving rather than
-      // pretending an upload happened.
-      showToast('No listing linked to this inspection yet — create the listing first.', 'error');
-      return;
-    }
-
+    if (!targetCarId) return showToast('Create or link the listing before uploading its gallery.', 'error');
     setUploading(true);
     try {
-      const res = await inspectionsApi.uploadCarPhotos(targetCarId, ordered);
-      showToast(`${res.uploaded} photo${res.uploaded === 1 ? '' : 's'} uploaded to the listing.`, 'success');
+      const ordered = photos.map((photo, index) => ({ ...photo, angleKey: `gallery-${String(index + 1).padStart(3, '0')}` }));
+      const result = await inspectionsApi.uploadCarPhotos(targetCarId, ordered);
+      showToast(`${result.uploaded} photo${result.uploaded === 1 ? '' : 's'} uploaded.`, 'success');
       navigation.navigate('Main');
     } catch (err) {
-      showToast(err.message || 'Upload failed. Check your connection and try again.', 'error');
-    } finally {
-      setUploading(false);
-    }
+      showToast(err?.message || 'Upload failed. Check your connection and try again.', 'error');
+    } finally { setUploading(false); }
   };
 
-  const pct = Math.round((uploadedCount / TOTAL_SLOTS) * 100);
-
-  return (
-    <Screen background={colors.bg}>
-      <BackHeader title="Photo Upload" onBack={() => navigation.goBack()} />
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Header card */}
-        <View style={styles.headerCard}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.headerTitle}>{inspection?.car || '2019 Toyota RAV4'}</Text>
-              <Text style={styles.headerSub}>
-                Inspection score: <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{score || 143}/150</Text>
-              </Text>
-            </View>
-            <View style={styles.scoreCircle}>
-              <Text style={styles.scoreCirclePct}>{pct}%</Text>
-              <Text style={styles.scoreCircleLabel}>uploaded</Text>
-            </View>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${pct}%` }]} />
-          </View>
-          <View style={styles.progressMeta}>
-            <Text style={styles.progressMetaText}>{uploadedCount} / {TOTAL_SLOTS} photos</Text>
-            <Text style={styles.progressMetaReq}>{requiredUploaded}/{TOTAL_REQUIRED} required</Text>
-          </View>
-        </View>
-
-        {/* Standard info banner */}
-        <View style={styles.infoBanner}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-          <Text style={styles.infoBannerText}>
-            36 standardized angles — identical format for every listing. Defect photos are optional but recommended.
-          </Text>
-        </View>
-
-        {/* Photo groups */}
-        {PHOTO_GROUPS.map((group) => {
-          const isOptional = group.group === 'Defects (if any)';
-          const groupUploaded = group.slots.filter((s) => shots[s.id]).length;
-          return (
-            <View key={group.group} style={styles.group}>
-              <View style={styles.groupHeader}>
-                <Text style={styles.groupTitle}>{group.group}</Text>
-                <Text style={styles.groupCount}>
-                  {groupUploaded}/{group.slots.length}
-                  {isOptional && <Text style={styles.groupOptional}> · optional</Text>}
-                </Text>
-              </View>
-              <View style={styles.slotsGrid}>
-                {group.slots.map((slot) => (
-                  <SlotCard
-                    key={slot.id}
-                    slot={slot}
-                    asset={shots[slot.id]}
-                    onPress={() => handleSlotPress(slot)}
-                    optional={isOptional}
-                  />
-                ))}
-              </View>
-            </View>
-          );
-        })}
-
-        {/* Quality tips */}
-        <View style={styles.tipsCard}>
-          <Text style={styles.tipsTitle}>Photo Quality Guidelines</Text>
-          {[
-            'Use natural light or studio lighting — no flash shadows',
-            'Shoot from consistent angles per the slot guide above',
-            'Close-up shots must be in focus — no blurry images',
-            'Defect photos must show honest damage with no hiding',
-          ].map((tip, i) => (
-            <View key={i} style={styles.tipRow}>
-              <View style={styles.tipDot} />
-              <Text style={styles.tipText}>{tip}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-
-      {/* Sticky CTA */}
-      <StickyFooter style={styles.cta}>
-        <Button
-          title={
-            requiredUploaded >= TOTAL_REQUIRED
-              ? 'Upload to Listing'
-              : `Shoot ${TOTAL_REQUIRED - requiredUploaded} More Required`
-          }
-          icon={requiredUploaded >= TOTAL_REQUIRED ? 'cloud-upload-outline' : 'camera-outline'}
-          onPress={handleSubmit}
-          loading={uploading}
-          disabled={uploadedCount === 0}
-        />
-        <Text style={styles.ctaSub}>
-          {uploading
-            ? `Uploading ${uploadedCount} photos…`
-            : requiredUploaded >= TOTAL_REQUIRED
-            ? 'All required angles captured · Uploads in slot order'
-            : `${TOTAL_REQUIRED} required · Defect shots optional`}
-        </Text>
-      </StickyFooter>
-    </Screen>
-  );
+  return <Screen background={colors.bg}><BackHeader title="Listing gallery" onBack={() => navigation.goBack()} />
+    <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.header}><View style={{ flex: 1 }}><Text style={styles.carTitle}>{inspection?.car || 'Vehicle listing'}</Text><Text style={styles.score}>Inspection score: <Text style={styles.scoreValue}>{score || '—'}/150</Text></Text></View><View style={styles.count}><Text style={styles.countValue}>{photos.length}</Text><Text style={styles.countLabel}>photos</Text></View></View>
+      <View style={styles.info}><Ionicons name="images-outline" size={22} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.infoTitle}>Flexible image gallery</Text><Text style={styles.infoText}>One image is enough to save the gallery. Six to ten clear views are recommended for buyers, and you may upload up to {MAX_PHOTOS}. There are no mandatory angle slots.</Text></View></View>
+      <View style={styles.grid}>
+        {photos.map((photo, index) => <View key={`${photo.uri}-${index}`} style={styles.photoCard}><Pressable style={styles.photoPress} onPress={() => replacePhoto(index)} accessibilityRole="button" accessibilityLabel={`Replace photo ${index + 1}`}><Image source={{ uri: photo.uri }} style={styles.photo} /><View style={styles.order}><Text style={styles.orderText}>{index + 1}</Text></View><View style={styles.replace}><Ionicons name="camera-outline" size={15} color="#fff" /><Text style={styles.replaceText}>Replace</Text></View></Pressable><Pressable style={styles.remove} hitSlop={8} onPress={() => removePhoto(index)} accessibilityRole="button" accessibilityLabel={`Remove photo ${index + 1}`}><Ionicons name="close" size={17} color="#fff" /></Pressable></View>)}
+        {photos.length < MAX_PHOTOS && <Pressable style={styles.addCard} onPress={addPhoto} accessibilityRole="button" accessibilityLabel="Add vehicle photo"><View style={styles.addIcon}><Ionicons name="camera-outline" size={23} color={colors.primary} /></View><Text style={styles.addTitle}>Add photo</Text><Text style={styles.addText}>{photos.length < RECOMMENDED_PHOTOS ? `${RECOMMENDED_PHOTOS - photos.length} to recommended` : `${MAX_PHOTOS - photos.length} slots available`}</Text></Pressable>}
+      </View>
+      <View style={styles.tips}><Text style={styles.tipsTitle}>Quality checklist</Text>{['Lead with the clearest full-vehicle image', 'Show exterior, interior, dashboard and key details', 'Use even light and keep every image in focus', 'Include visible defects honestly—never conceal damage'].map((tip) => <View key={tip} style={styles.tip}><Ionicons name="checkmark-circle" size={16} color={colors.green} /><Text style={styles.tipText}>{tip}</Text></View>)}</View>
+    </ScrollView>
+    <StickyFooter style={styles.footer}><Button title={uploading ? 'Uploading gallery…' : `Upload ${photos.length || ''} photo${photos.length === 1 ? '' : 's'}`} icon="cloud-upload-outline" onPress={upload} loading={uploading} disabled={!photos.length} /><Text style={styles.footerText}>Images upload in the order shown. Tap an image to replace it.</Text></StickyFooter>
+  </Screen>;
 }
 
 const styles = StyleSheet.create({
-  headerCard: {
-    margin: 16, marginBottom: 8,
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 16,
-    ...shadows.card,
-  },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
-  headerTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  headerSub: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
-  scoreCircle: {
-    width: 62, height: 62, borderRadius: 31,
-    borderWidth: 3, borderColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  scoreCirclePct: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary },
-  scoreCircleLabel: { fontSize: 10, color: colors.textMuted, marginTop: -2 },
-  progressTrack: { height: 6, borderRadius: 3, backgroundColor: colors.border },
-  progressFill: { height: 6, borderRadius: 3, backgroundColor: colors.primary },
-  progressMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  progressMetaText: { fontSize: 12, color: colors.textSecondary },
-  progressMetaReq: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
-  infoBanner: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    marginHorizontal: 16, marginBottom: 8,
-    backgroundColor: colors.greenTint, borderRadius: radius.lg, padding: 12,
-  },
-  infoBannerText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
-  group: { marginHorizontal: 16, marginBottom: 16 },
-  groupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  groupTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  groupCount: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textMuted },
-  groupOptional: { color: colors.textMuted, fontStyle: 'italic' },
-  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  slot: {
-    width: '30.5%',
-    aspectRatio: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5, borderColor: colors.border,
-    borderRadius: radius.lg,
-    alignItems: 'center', justifyContent: 'center',
-    padding: 8, gap: 6,
-    borderStyle: 'dashed',
-  },
-  slotFilled: {
-    borderColor: colors.primary,
-    borderStyle: 'solid',
-    padding: 0,
-    overflow: 'hidden',
-  },
-  slotImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  slotOverlay: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(23,18,15,0.72)',
-    paddingHorizontal: 6, paddingVertical: 4,
-  },
-  slotOverlayLabel: { fontSize: 10, fontFamily: fonts.bold, color: '#fff', textAlign: 'center' },
-  slotCheckBadge: {
-    position: 'absolute', top: 5, right: 5,
-    width: 20, height: 20, borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  slotOptional: {
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceAlt,
-    opacity: 0.75,
-  },
-  slotAddIcon: {
-    width: 34, height: 34, borderRadius: radius.md,
-    backgroundColor: colors.greenTint,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  slotAddIconOptional: { backgroundColor: colors.surfaceAlt },
-  slotLabel: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.textSecondary, textAlign: 'center', lineHeight: 13 },
-  slotLabelUploaded: { fontSize: 10, fontFamily: fonts.bold, color: colors.primary, textAlign: 'center', lineHeight: 13 },
-  slotLabelOptional: { color: colors.textMuted },
-  slotCheckCircle: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  optionalTag: { fontSize: 10, color: colors.textMuted, fontStyle: 'italic' },
-  markAllBtn: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
-  tipsCard: {
-    marginHorizontal: 16, marginBottom: 8,
-    backgroundColor: colors.amberTint,
-    borderRadius: radius.xl, padding: 16, gap: 10,
-  },
-  tipsTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.amberText },
-  tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  tipDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.amberText, marginTop: 6 },
-  tipText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 18 },
-  cta: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 16,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1, borderTopColor: colors.borderSoft,
-    ...shadows.floating,
-  },
-  ctaSub: { fontSize: 11, color: colors.textMuted, textAlign: 'center', marginTop: 8 },
+  content: { padding: 16, paddingTop: 8, paddingBottom: 150 }, header: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.surface, padding: 16, ...shadows.card }, carTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }, score: { marginTop: 4, fontSize: 12.5, color: colors.textSecondary }, scoreValue: { fontFamily: fonts.extraBold, color: colors.primary }, count: { width: 62, height: 62, borderRadius: 31, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueTint }, countValue: { fontSize: 20, fontFamily: fonts.extraBold, color: colors.primary }, countLabel: { fontSize: 10.5, color: colors.textMuted },
+  info: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, marginTop: 12, borderRadius: radius.xl, backgroundColor: colors.blueTint, padding: 15 }, infoTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary }, infoText: { marginTop: 4, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary }, grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 },
+  photoCard: { position: 'relative', width: '48.4%', aspectRatio: 1.28, borderRadius: radius.lg }, photoPress: { flex: 1, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.surfaceAlt }, photo: { width: '100%', height: '100%' }, order: { position: 'absolute', top: 8, left: 8, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.68)' }, orderText: { fontSize: 11, fontFamily: fonts.extraBold, color: '#fff' }, replace: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 34, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.68)' }, replaceText: { fontSize: 11, fontFamily: fonts.bold, color: '#fff' }, remove: { position: 'absolute', top: -7, right: -7, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.danger, borderWidth: 2, borderColor: colors.bg },
+  addCard: { width: '48.4%', aspectRatio: 1.28, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.primary + '70', borderRadius: radius.lg, backgroundColor: colors.surface, padding: 10 }, addIcon: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueTint }, addTitle: { marginTop: 8, fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary }, addText: { marginTop: 2, fontSize: 10.5, color: colors.textMuted },
+  tips: { marginTop: 20, borderRadius: radius.xl, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, padding: 16 }, tipsTitle: { marginBottom: 10, fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary }, tip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 }, tipText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary }, footer: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopWidth: 1, borderTopColor: colors.borderSoft, backgroundColor: colors.surface, padding: 16, ...shadows.floating }, footerText: { marginTop: 7, fontSize: 11, textAlign: 'center', color: colors.textMuted },
 });

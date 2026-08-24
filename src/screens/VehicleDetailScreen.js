@@ -9,7 +9,6 @@ import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
-import { contactSellerOnWhatsApp } from '../utils/whatsapp';
 import LoginModal from '../components/LoginModal';
 import PhotoViewer from '../components/PhotoViewer';
 import { getCertTier } from '../data/certification';
@@ -153,8 +152,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
-  const contactWhatsApp = () => contactSellerOnWhatsApp(car, formatPrice(price));
-
   const infoRows = [
     { label: 'Make', value: car.make },
     { label: 'Model', value: car.model },
@@ -207,7 +204,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Pressable
                 style={styles.circleBtn}
                 onPress={() => Share.share({
-                  message: `${car.title} — ${formatPrice(price)} on Sawa Cars. Every car 150-point inspected.`,
+                  message: `${car.title} — ${formatPrice(price)} on Sawa Cars. View the listing and available inspection information in the app.`,
                 }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
               >
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
@@ -390,15 +387,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 </Text>
               </View>
             </View>
-            <Pressable style={styles.waSmallBtn} onPress={contactWhatsApp} accessibilityRole="button" accessibilityLabel="Contact on WhatsApp">
-              <Ionicons name="logo-whatsapp" size={19} color="#25D366" />
-            </Pressable>
-            <Pressable
-              style={styles.msgBtn}
-              onPress={() => executeWithAuth(() => navigation.navigate('Chat', { name: car.seller, car }))} accessibilityRole="button" accessibilityLabel="Messages"
-            >
-              <Ionicons name="chatbubble-outline" size={18} color={colors.primary} />
-            </Pressable>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
 
           {/* Trust rows */}
@@ -429,14 +418,14 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </Pressable>
 
           <View style={styles.trustChips}>
-            <Badge variant="tag" label="Drive it 7 days" />
+            <Badge variant="tag" label="Direct seller contact" />
             <Badge variant="tag" label={`${driveType} drive`} />
             {tier && <Badge variant={tier.variant} label={tier.label} />}
           </View>
 
           <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-            <Text style={styles.promiseLinkText}>Backed by the Sawa Promise</Text>
+            <Text style={styles.promiseLinkText}>Marketplace safety & responsibilities</Text>
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
@@ -445,8 +434,8 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <Text style={styles.desc}>
             {car.year} {car.make} {car.model} · {formatMiles(car.mileage)} · {car.fuel}, {car.transmission?.toLowerCase()} transmission.
             {car.inspected
-              ? ' Passed the full Sawa 150-point inspection and is protected by our 7-day return guarantee.'
-              : ' Inspection scheduled — full report will be attached before handover.'}
+              ? ' The published inspection records the checks completed by Sawa Cars on the inspection date.'
+              : ' Inspection scheduled — the report must be completed before the listing can be published.'}
             {marketDiff < 0 ? ` Priced ${Math.abs(marketDiff)}% below the Kigali market average for this model.` : ''}
           </Text>
 
@@ -527,33 +516,22 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 {formatPrice(price)}
               </Text>
               <Text style={styles.ctaContext}>
-                {isAuction ? 'Bid securely through Sawa Cars' : 'Free request · payment at the center'}
+                Contact seller directly · no Sawa checkout
               </Text>
             </View>
             <View style={styles.ctaAssurance}>
               <Ionicons name="shield-checkmark" size={14} color={colors.greenText} />
-              <Text style={styles.ctaAssuranceText}>7-day guarantee</Text>
+              <Text style={styles.ctaAssuranceText}>Direct deal</Text>
             </View>
           </View>
 
           <View style={styles.ctaActions}>
-            <Pressable
-              style={({ pressed }) => [styles.waBtn, pressed && styles.waBtnPressed]}
-              onPress={contactWhatsApp}
-              accessibilityRole="button"
-              accessibilityLabel="Ask about this car on WhatsApp"
-            >
-              <Ionicons name="logo-whatsapp" size={23} color="#fff" />
-            </Pressable>
             <Button
-              title={isAuction ? 'Place a bid' : 'Request this car'}
-              icon={isAuction ? 'hammer-outline' : 'arrow-forward-outline'}
-              fullWidth={false}
+              title="Contact verified seller"
+              icon="chatbubble-outline"
               style={styles.requestButton}
-              accessibilityHint={isAuction
-                ? 'Opens the secure bidding request'
-                : 'Opens the free vehicle request form'}
-              onPress={() => navigation.navigate('Checkout', { car })}
+              accessibilityHint="Choose an available contact method and review the direct-deal notice"
+              onPress={() => executeWithAuth(() => navigation.navigate('SellerContact', { car }))}
             />
           </View>
         </View>
@@ -599,7 +577,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
   },
   circleBtn: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 48, height: 48, borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -692,19 +670,6 @@ const styles = StyleSheet.create({
   sellerName: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   ratingText: { fontSize: 12, color: colors.textSecondary },
-  msgBtn: {
-    width: 44, height: 44, borderRadius: radius.md,
-    backgroundColor: colors.blueTint, alignItems: 'center', justifyContent: 'center',
-  },
-  waSmallBtn: {
-    width: 44, height: 44, borderRadius: radius.md,
-    backgroundColor: '#E9F9EF', alignItems: 'center', justifyContent: 'center',
-  },
-  waBtn: {
-    width: 54, height: 54, borderRadius: radius.lg,
-    backgroundColor: '#25D366', alignItems: 'center', justifyContent: 'center',
-  },
-  waBtnPressed: { opacity: 0.82, transform: [{ scale: 0.97 }] },
   inspectionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,

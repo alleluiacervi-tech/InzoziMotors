@@ -332,7 +332,7 @@ export default function SellerProfileScreen({ navigation, route }) {
           <View style={styles.reviews}>
             {profile.reviews.length === 0 && (
               <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted }}>
-                No reviews yet — reviews appear after completed handovers.
+                No reviews yet — verified platform feedback will appear here.
               </Text>
             )}
             {profile.reviews.map((review) => (

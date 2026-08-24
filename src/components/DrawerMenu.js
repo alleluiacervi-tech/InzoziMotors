@@ -28,7 +28,7 @@ const MENU_SECTIONS = [
     title: 'Rent',
     items: [
       { icon: 'key-outline', label: 'Browse Rentals', action: 'browseRentals' },
-      { icon: 'calendar-outline', label: 'My Rentals', screen: 'MyRentals' },
+      { icon: 'calendar-outline', label: 'Rental Inquiries', screen: 'MyRentals' },
     ],
   },
   {
@@ -47,14 +47,13 @@ const MENU_SECTIONS = [
       { icon: 'car-outline', label: 'Submit My Car', screen: 'CarSubmission', gated: true },
       { icon: 'time-outline', label: 'My Submissions', screen: 'SellerDashboard' },
       { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics' },
-      { icon: 'people-outline', label: 'Referral Program', screen: 'Referral' },
     ],
   },
   {
     title: 'Trust & Safety',
     items: [
       { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
-      { icon: 'shield-half-outline', label: 'My Disputes', screen: 'Disputes' },
+      { icon: 'shield-half-outline', label: 'Marketplace Safety', screen: 'SawaPromise' },
     ],
   },
 ];

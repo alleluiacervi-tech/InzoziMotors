@@ -142,6 +142,7 @@ export default function InspectionFormScreen({ navigation, route }) {
   const [results, setResults] = useState({});
   const [notes, setNotes] = useState('');
   const [expandedId, setExpandedId] = useState('engine');
+  const [submitting, setSubmitting] = useState(false);
 
   const totalScore = calcTotalScore(results);
   const totalAnswered = Object.keys(results).length;
@@ -166,9 +167,23 @@ export default function InspectionFormScreen({ navigation, route }) {
     }
   };
 
-  const proceed = () => {
-    submitInspectionForm({ inspection, results, notes, score: totalScore });
-    navigation.navigate('PhotoUpload', { inspection, score: totalScore, results, notes });
+  const proceed = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const completed = await submitInspectionForm({ inspection, results, notes, score: totalScore });
+      const targetCarId = completed?.car_id || inspection?.car_id;
+      if (!targetCarId) {
+        showToast('Inspection saved. Create or link the listing in the full admin console before uploading photos.', 'success');
+        navigation.navigate('Main');
+        return;
+      }
+      navigation.navigate('PhotoUpload', { inspection: { ...inspection, car_id: targetCarId }, carId: targetCarId, score: completed?.score ?? totalScore, results, notes });
+    } catch (error) {
+      showToast(error?.message || 'The inspection could not be saved. Please try again.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -273,9 +288,11 @@ export default function InspectionFormScreen({ navigation, route }) {
           title="Generate Report & Upload Photos"
           icon="document-text-outline"
           onPress={handleGenerate}
+          loading={submitting}
+          disabled={submitting}
         />
         <Text style={styles.ctaSub}>
-          Score: {totalScore}/150 · {pct}% · {totalScore >= 132 ? 'Eligible for Sawa Certified badge' : 'Below certified threshold (88%)'}
+          Score: {totalScore}/150 · {pct}% · Admin review is required before publication
         </Text>
       </StickyFooter>
     </Screen>

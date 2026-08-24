@@ -31,7 +31,6 @@ export default function FiltersScreen({ navigation, route }) {
   const [selected, setSelected] = useState(
     route.params?.filters || { make: null, body: null, fuel: null, maxPrice: null }
   );
-  const [inspectedOnly, setInspectedOnly] = useState(true);
 
   const toggle = (group, val) =>
     setSelected((s) => ({ ...s, [group]: s[group] === val ? null : val }));
@@ -87,20 +86,7 @@ export default function FiltersScreen({ navigation, route }) {
           {FUEL.map((f) => <Chip key={f} label={f} active={selected.fuel === f} onPress={() => toggle('fuel', f)} />)}
         </View>
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Sawa Cars guarantees</Text>
-        <Pressable style={styles.toggleRow} onPress={() => setInspectedOnly((v) => !v)}>
-          <Text style={styles.toggleLabel}>150-point inspected only</Text>
-          <View style={[styles.switchTrack, inspectedOnly && styles.switchTrackOn]}>
-            <View style={styles.switchKnob} />
-          </View>
-        </Pressable>
-        <View style={styles.toggleRow}>
-          <Text style={styles.toggleLabel}>7-day return guarantee</Text>
-          <View style={styles.includedChip}>
-            <Ionicons name="checkmark" size={12} color={colors.green} />
-            <Text style={styles.includedChipText}>All listings</Text>
-          </View>
-        </View>
+        <View style={styles.standardNote}><Ionicons name="shield-checkmark-outline" size={19} color={colors.primary} /><Text style={styles.standardText}>Public listings pass the configured seller, inspection and image publication checks. Inspection evidence is not a transaction warranty.</Text></View>
       </ScrollView>
 
       <StickyFooter style={styles.footer}>
@@ -128,17 +114,8 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, fontFamily: fonts.semiBold },
-  toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
-  toggleLabel: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.textPrimary },
-  switchTrack: { width: 46, height: 28, borderRadius: 14, backgroundColor: colors.border, padding: 3, alignItems: 'flex-start', justifyContent: 'center' },
-  switchTrackOn: { backgroundColor: colors.primary, alignItems: 'flex-end' },
-  switchKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
-  includedChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.greenTint, paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: radius.pill,
-  },
-  includedChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
+  standardNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 24, borderRadius: radius.xl, backgroundColor: colors.blueTint, padding: 14 },
+  standardText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   reset: { paddingHorizontal: 22, paddingVertical: 16, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border },
   resetText: { fontSize: 15, fontFamily: fonts.bold, color: colors.slate700 },

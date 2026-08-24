@@ -19,7 +19,7 @@ const FUEL_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
 const TRANSMISSIONS = ['Automatic', 'Manual'];
 const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Van'];
 const YEARS = Array.from({ length: 16 }, (_, i) => String(2026 - i));
-// Two optional reference shots — the 150-pt inspection and 36-angle shoot capture everything else
+// Two optional reference shots help the inspection team prepare.
 const PHOTO_SLOTS = [
   { key: 'front', label: 'Front' },
   { key: 'side', label: 'Side' },
@@ -293,7 +293,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
               )}
 
               {/* Optional reference photos — 2 shots max */}
-              <Field label="Reference Photos (optional)" hint="Helps our team prepare. Official 36-angle listing photos are taken by our photographer at inspection.">
+              <Field label="Reference Photos (optional)" hint="Helps our team prepare. The approved listing gallery is added after inspection.">
                 <View style={styles.photoGrid}>
                   {PHOTO_SLOTS.map((slot) => {
                     const asset = photos[slot.key];

@@ -57,8 +57,7 @@ export const auth = {
   },
 
   // Permanent, and required by both stores to be reachable from inside the app.
-  // The password is re-checked server-side; a 409 means an open handover has to
-  // be resolved first, which the caller should show rather than swallow.
+  // The password is re-checked server-side before destructive deletion.
   deleteAccount: async (password) => {
     const data = await api.delete('/auth/me', { body: JSON.stringify({ password }) });
     await removeToken();

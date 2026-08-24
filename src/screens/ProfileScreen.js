@@ -10,15 +10,16 @@ import { SAWA_WHATSAPP, SAWA_EMAIL, WHATSAPP_VERIFIED } from '../utils/whatsapp'
 
 const MENU_SELLER = [
   { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
+  { icon: 'call-outline', label: 'Contact Visibility', screen: 'ContactSettings' },
   { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
   { icon: 'trending-up-outline', label: "What's My Car Worth?", screen: 'CarValuation' },
 ];
 
 const MENU_ACCOUNT = [
-  { icon: 'key-outline', label: 'My Rentals', screen: 'MyRentals' },
+  { icon: 'key-outline', label: 'Rental Inquiries', screen: 'MyRentals' },
   { icon: 'boat-outline', label: 'My Vehicle Imports', screen: 'ImportOrders' },
   { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
-  { icon: 'shield-checkmark-outline', label: 'The Sawa Promise', screen: 'SawaPromise' },
+  { icon: 'shield-checkmark-outline', label: 'Marketplace Safety', screen: 'SawaPromise' },
   { icon: 'book-outline', label: 'How Buying Works', screen: 'BuyingGuide' },
   { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
   // This row was `screen: null` — it rendered a chevron and did nothing at all.
@@ -88,7 +89,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
           <Text style={styles.guestTitle}>You're browsing as a guest</Text>
           <Text style={styles.guestSub}>
-            Sign in to save cars, message sellers, track bookings, and sell your car.
+            Sign in to save cars, contact sellers, manage rental inquiries, and sell your car.
           </Text>
           <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
             <Text style={styles.guestBtnText}>Sign In</Text>

@@ -29,7 +29,7 @@ const SCORE_COMPONENTS = [
     color: colors.primary,
     getPts: (p) => Math.min(30, p.completedSales || 0),
     description: '1 point per completed sale, max 30',
-    improve: 'Each verified sale adds 1 point. Respond quickly and arrange smooth handovers.',
+    improve: 'Each verified sale adds 1 point. Respond quickly and keep listing information accurate.',
   },
   {
     id: 'response',
@@ -49,7 +49,7 @@ const SCORE_COMPONENTS = [
     color: colors.amberText,
     getPts: (p) => Math.round(((p.avgRating || 0) / 5) * 20),
     description: 'Average star rating × 4',
-    improve: 'Ask satisfied buyers to leave a review after handover. 5-star average = 20 pts.',
+    improve: 'Build a strong platform record through accurate listings and respectful communication.',
   },
 ];
 

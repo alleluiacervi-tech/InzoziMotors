@@ -23,10 +23,10 @@ export default function BackHeader({ title, onBack, right, tint = colors.slate70
           <Ionicons name="chevron-back" size={20} color={tint} />
         </Pressable>
       ) : (
-        <View style={{ width: 44 }} />
+        <View style={{ width: 48 }} />
       )}
       {title ? <Text style={[styles.title, { color: tint }]}>{title}</Text> : <View />}
-      <View style={styles.right}>{right || <View style={{ width: 44 }} />}</View>
+      <View style={styles.right}>{right || <View style={{ width: 48 }} />}</View>
     </View>
   );
 }
@@ -45,9 +45,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderSoft,
     ...shadows.header,
   },
-  iconBtn: { width: 44, height: 44, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 48, height: 48, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
   iconBtnFilled: { backgroundColor: colors.surfaceAlt },
   iconBtnPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
   title: { fontFamily: fonts.bold, fontSize: 17, letterSpacing: -0.2, color: colors.textPrimary },
-  right: { minWidth: 44, alignItems: 'flex-end' },
+  right: { minWidth: 48, alignItems: 'flex-end' },
 });

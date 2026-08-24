@@ -13,7 +13,7 @@ const { width, height } = Dimensions.get('window');
 const SLIDES = [
   { key: 'inspect', car: true, title: 'Every car, inspected', sub: '150-point certified check.' },
   { key: 'photos', icon: 'camera-outline', title: 'Real photos, real specs', sub: 'Shot by our own team.' },
-  { key: 'trust', icon: 'shield-checkmark-outline', title: 'Buy with confidence', sub: '7-day return, always.' },
+  { key: 'trust', icon: 'shield-checkmark-outline', title: 'Contact verified sellers', sub: 'Agree and transact directly.' },
 ];
 
 export default function OnboardingScreen({ navigation }) {

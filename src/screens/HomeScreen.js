@@ -51,13 +51,13 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalBookings, recentlyViewedIds, savedCarIds, backendReachable } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable } = useApp();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
   // dropped connection does not need a banner over the top of it.
   const catalogueEmpty = (homeMode === 'rent' ? rentalCars : cars).length === 0;
   const hasUnread = notifications.some((n) => !n.read);
-  const upcomingTrip = rentalBookings.find((b) => b.status === 'confirmed' || b.status === 'active');
+  const openInquiry = rentalInquiries.find((item) => item.status === 'new' || item.status === 'contacted');
   const [carouselIndex, setCarouselIndex] = useState(1);
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -255,17 +255,15 @@ export default function HomeScreen({ navigation }) {
         {homeMode === 'rent' ? (
           <>
             {/* ── RENT MODE ── */}
-            {upcomingTrip && (
+            {openInquiry && (
               <Pressable style={styles.tripCard} onPress={() => navigation.navigate('MyRentals')}>
                 <View style={styles.tripIcon}>
-                  <Ionicons name={upcomingTrip.status === 'active' ? 'car' : 'calendar'} size={18} color="#fff" />
+                  <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.tripTitle}>
-                    {upcomingTrip.status === 'active' ? 'Trip in progress' : 'Upcoming trip'}
-                  </Text>
+                  <Text style={styles.tripTitle}>Rental inquiry in progress</Text>
                   <Text style={styles.tripSub} numberOfLines={1}>
-                    {upcomingTrip.carTitle} · {upcomingTrip.startDate}
+                    {openInquiry.carTitle} · {openInquiry.status === 'contacted' ? 'provider contacted' : 'awaiting provider reply'}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />

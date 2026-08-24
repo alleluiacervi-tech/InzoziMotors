@@ -104,76 +104,6 @@ export const INSPECTION_CATEGORIES = [
   },
 ];
 
-// ─── 36-Angle Photo Slots ─────────────────────────────────────────────────────
-export const PHOTO_GROUPS = [
-  {
-    group: 'Exterior',
-    slots: [
-      { id: 'ext_front', label: 'Front' },
-      { id: 'ext_fl45', label: 'Front-Left 45°' },
-      { id: 'ext_left', label: 'Left Side' },
-      { id: 'ext_rl45', label: 'Rear-Left 45°' },
-      { id: 'ext_rear', label: 'Rear' },
-      { id: 'ext_rr45', label: 'Rear-Right 45°' },
-      { id: 'ext_right', label: 'Right Side' },
-      { id: 'ext_fr45', label: 'Front-Right 45°' },
-    ],
-  },
-  {
-    group: 'Details',
-    slots: [
-      { id: 'det_roof', label: 'Roof' },
-      { id: 'det_under', label: 'Underbody' },
-      { id: 'det_wfl', label: 'Wheel Front-Left' },
-      { id: 'det_wfr', label: 'Wheel Front-Right' },
-      { id: 'det_wrl', label: 'Wheel Rear-Left' },
-      { id: 'det_wrr', label: 'Wheel Rear-Right' },
-      { id: 'det_tfl', label: 'Tyre Tread Front-Left' },
-      { id: 'det_tfr', label: 'Tyre Tread Front-Right' },
-      { id: 'det_trl', label: 'Tyre Tread Rear-Left' },
-      { id: 'det_trr', label: 'Tyre Tread Rear-Right' },
-    ],
-  },
-  {
-    group: 'Under Hood',
-    slots: [
-      { id: 'hood_bay', label: 'Engine Bay' },
-      { id: 'hood_serial', label: 'Engine Serial No.' },
-    ],
-  },
-  {
-    group: 'Instruments',
-    slots: [
-      { id: 'inst_odo', label: 'Odometer Reading' },
-      { id: 'inst_vin', label: 'VIN Plate' },
-    ],
-  },
-  {
-    group: 'Interior',
-    slots: [
-      { id: 'int_dash', label: 'Dashboard (full)' },
-      { id: 'int_info', label: 'Infotainment Screen' },
-      { id: 'int_driver', label: 'Driver Seat' },
-      { id: 'int_rear', label: 'Rear Seats' },
-      { id: 'int_boot', label: 'Boot / Trunk' },
-      { id: 'int_head', label: 'Headliner' },
-    ],
-  },
-  {
-    group: 'Defects (if any)',
-    slots: [
-      { id: 'def1', label: 'Defect Close-up #1' },
-      { id: 'def2', label: 'Defect Close-up #2' },
-      { id: 'def3', label: 'Defect Close-up #3' },
-      { id: 'def4', label: 'Defect Close-up #4' },
-      { id: 'def5', label: 'Defect Close-up #5' },
-      { id: 'def6', label: 'Defect Close-up #6' },
-      { id: 'def7', label: 'Defect Close-up #7' },
-      { id: 'def8', label: 'Defect Close-up #8' },
-    ],
-  },
-];
-
 // ─── Mock completed inspection result (shown in InspectionReportScreen) ───────
 export const MOCK_INSPECTION_RESULT = {
   score: 143,
@@ -329,7 +259,7 @@ export const SELLER_PROFILES = {
     ],
     reviews: [
       { id: 'r1', buyer: 'Jean Pierre H.', rating: 5, text: 'Great BMW, very well maintained. Seller was helpful throughout.', date: 'Jun 2, 2026' },
-      { id: 'r2', buyer: 'Alice M.', rating: 4, text: 'Good communication, car was clean and ready for handover.', date: 'May 11, 2026' },
+      { id: 'r2', buyer: 'Alice M.', rating: 4, text: 'Good communication and accurate listing details.', date: 'May 11, 2026' },
     ],
   },
 };
