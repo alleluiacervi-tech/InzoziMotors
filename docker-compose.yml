@@ -54,6 +54,7 @@ services:
       PORT:                 3000
       NODE_ENV:             development
       CORS_ORIGINS:         "*"
+      PUBLIC_API_URL:       http://localhost:3000
       UPLOAD_DIR:           /app/uploads
       CLOUDINARY_URL:       ${CLOUDINARY_URL:-}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}

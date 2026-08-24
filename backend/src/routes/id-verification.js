@@ -11,6 +11,7 @@ const { uploadIdDocs, verifyImageContent } = require('../middleware/upload');
 const { recomputeTrustScore } = require('../lib/trust');
 const { notifyUser } = require('../lib/notify');
 const { recordAdminAction } = require('../lib/admin-audit');
+const { publicApiOrigin } = require('../lib/public-origin');
 
 const router = express.Router();
 
@@ -40,7 +41,7 @@ function signViewToken(filename) {
 function viewUrl(req, storedUrl) {
   if (!storedUrl) return null;
   const filename = path.basename(String(storedUrl).split('?')[0]);
-  const base = `${req.protocol}://${req.get('host')}`;
+  const base = publicApiOrigin(req);
   return `${base}/id-verification/doc/${encodeURIComponent(filename)}?sig=${signViewToken(filename)}`;
 }
 
@@ -109,7 +110,7 @@ router.post('/', requireAuth, uploadIdDocs.fields([
     return res.status(400).json({ error: 'id_front, id_back, and selfie are required' });
   }
   try {
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = publicApiOrigin(req);
     // Point at the admin-gated file route, never the public static path
     const url = (f) => `${baseUrl}/id-verification/doc/${f[0].filename}`;
 

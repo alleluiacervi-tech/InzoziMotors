@@ -1,6 +1,8 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { log } = require('../lib/log');
+const { publicApiOrigin } = require('../lib/public-origin');
 
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -132,33 +134,52 @@ function verifyImportDocument(req, res, next) {
 
 const { isConfigured: hasCloudinary, uploadToCloudinary } = require('../lib/cloudinary');
 
-// Public URL for an uploaded file — supports Cloudinary when configured, falls back to local disk.
-// Uses the resolved subdir (not string surgery on the OS path) so it works on Windows too.
+// Browser-reachable URL for the persistent uploads volume. Cloudinary is the
+// preferred production path, but this volume is deliberately retained and
+// backed up so a provider outage does not stop the inspection floor.
 const publicUploadUrl = (req, file) => {
   if (file.cloudinaryUrl) return file.cloudinaryUrl;
-  const base = `${req.protocol}://${req.get('host')}`;
+  const base = publicApiOrigin(req);
   return `${base}/uploads/${resolveSubdir(req)}/${file.filename}`;
 };
 
+function mediaStorageUnavailable(cause) {
+  const error = new Error('Photo storage is temporarily unavailable. No listing data was changed; try the upload again.');
+  error.status = 503;
+  error.code = 'MEDIA_STORAGE_UNAVAILABLE';
+  error.cause = cause;
+  return error;
+}
+
 const resolveUploadUrl = async (req, file) => {
   if (file.cloudinaryUrl) return file.cloudinaryUrl;
-  if (hasCloudinary && file.path) {
-    try {
-      const cUrl = await uploadToCloudinary(file.path, resolveSubdir(req));
-      if (cUrl) {
-        file.cloudinaryUrl = cUrl;
-        fs.unlink(file.path, () => {});
-        return cUrl;
-      }
-    } catch (err) {
-      console.error('[Cloudinary] Upload failed, falling back to local:', err.message);
+  if (!file?.path) throw mediaStorageUnavailable(new Error('Uploaded file is missing from temporary storage'));
+
+  if (!hasCloudinary) {
+    if (process.env.NODE_ENV === 'production') {
+      log.warn('Cloudinary is not configured; photo stored in the persistent uploads volume');
     }
+    return publicUploadUrl(req, file);
   }
-  return publicUploadUrl(req, file);
+
+  try {
+    const cUrl = await uploadToCloudinary(file.path, resolveSubdir(req));
+    if (!cUrl) throw new Error('Cloudinary is not configured');
+    file.cloudinaryUrl = cUrl;
+    fs.unlink(file.path, () => {});
+    return cUrl;
+  } catch (err) {
+    log.error('Cloudinary photo upload failed', { error: err.message, folder: resolveSubdir(req) });
+    // The local file still exists because it is removed only after a confirmed
+    // Cloudinary response. Returning its canonical public URL keeps the upload
+    // usable while leaving an operational error in the logs.
+    return publicUploadUrl(req, file);
+  }
 };
 
 exports.publicUploadUrl = publicUploadUrl;
 exports.resolveUploadUrl = resolveUploadUrl;
+exports.mediaStorageUnavailable = mediaStorageUnavailable;
 
 // files/fields caps matter as much as fileSize: without them a single request
 // can open an unbounded number of parts, and the per-file limit stops being a

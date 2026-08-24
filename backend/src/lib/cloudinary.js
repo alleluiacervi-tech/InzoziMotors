@@ -25,21 +25,20 @@ if (isConfigured) {
  * @param {string} filePath - Local absolute or relative path of the file.
  * @param {string} folder - Folder name in Cloudinary (e.g. 'cars', 'rentals').
  * @returns {Promise<string|null>} - Returns the secure CDN URL or null if not configured.
+ * @throws when Cloudinary rejects the upload or does not return a secure URL.
  */
 async function uploadToCloudinary(filePath, folder = 'general') {
   if (!isConfigured) return null;
-  try {
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder: `sawa/${folder}`,
-      resource_type: 'auto',
-      use_filename: true,
-      unique_filename: true,
-    });
-    return result.secure_url;
-  } catch (err) {
-    console.error('[Cloudinary] Upload error:', err.message);
-    return null;
+  const result = await cloudinary.uploader.upload(filePath, {
+    folder: `sawa/${folder}`,
+    resource_type: 'auto',
+    use_filename: true,
+    unique_filename: true,
+  });
+  if (!result?.secure_url || !/^https:\/\//i.test(result.secure_url)) {
+    throw new Error('Cloudinary did not return a secure media URL');
   }
+  return result.secure_url;
 }
 
 module.exports = {

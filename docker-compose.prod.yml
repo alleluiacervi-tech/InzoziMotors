@@ -60,6 +60,7 @@ services:
       JWT_SECRET:          ${JWT_SECRET:?set JWT_SECRET in .env}
       JWT_EXPIRES_IN:      30d
       CORS_ORIGINS:        ${CORS_ORIGINS:-https://sawacars.com,https://www.sawacars.com,https://admin.sawacars.com}
+      PUBLIC_API_URL:      ${PUBLIC_API_URL:-https://api.sawacars.com}
       UPLOAD_DIR:          /app/uploads
       CLOUDINARY_URL:      ${CLOUDINARY_URL:-}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
