@@ -2,6 +2,12 @@ const PDFDocument = require('pdfkit');
 const pool = require('../../db');
 const { FONTS, assertFontsPresent } = require('../contract/fonts');
 const { issuePdf, DocumentError } = require('./service');
+const {
+  CATEGORIES,
+  CHECKLIST_VERSION,
+  evaluateChecklist,
+  grade,
+} = require('../inspection-policy');
 
 const COMPANY = {
   legal_name: process.env.COMPANY_LEGAL_NAME || 'Sawa Cars Ltd',
@@ -11,18 +17,9 @@ const COMPANY = {
   email: process.env.COMPANY_EMAIL || 'contact@sawacars.com',
 };
 
-const CATEGORIES = [
-  ['Engine & Drivetrain', ['Engine oil level & condition','Coolant level','Timing belt condition','Air filter','Engine mounts','Transmission fluid']],
-  ['Brakes & Steering', ['Front brake pads','Rear brake pads','Brake fluid','Brake lines','Power steering fluid','Wheel alignment']],
-  ['Body & Exterior', ['Panel gaps & alignment','Paint condition','Windscreen integrity','Front lights','Rear lights','Rust / corrosion']],
-  ['Interior & Comfort', ['Seat condition','Dashboard instruments','Air conditioning','Windows & locks','Odometer reading','Boot / trunk']],
-  ['Electronics & Safety', ['Battery health','OBD scan (no fault codes)','Airbag system','Traction control','Seatbelts','Horn']],
-  ['Tyres & Wheels', ['Front-left tread','Front-right tread','Rear-left tread','Rear-right tread','Spare tyre','Wheel condition']],
-  ['Documentation', ['Registration / logbook','Service history','Import documents','Insurance valid','RRA duty paid stamp','VIN match']],
-];
-
 const INSPECTION_SQL = `
   SELECT i.id, i.status, i.center, i.score, i.notes, i.checklist_results,
+         i.checklist_version, i.passed, i.critical_failures,
          i.started_at, i.completed_at, i.inspector_id,
          s.id AS submission_id, s.seller_id, s.make AS sub_make, s.model AS sub_model,
          s.year AS sub_year, s.mileage AS sub_mileage, s.color AS sub_color,
@@ -37,16 +34,21 @@ const INSPECTION_SQL = `
     LEFT JOIN cars c ON c.id=i.car_id
    WHERE i.id=$1`;
 
-function grade(score) {
-  return score >= 128 ? 'A' : score >= 105 ? 'B' : score >= 83 ? 'C' : 'D';
-}
-
 async function snapshotForInspection(inspectionId) {
   const { rows } = await pool.query(INSPECTION_SQL, [inspectionId]);
   if (!rows.length) throw new DocumentError('Inspection not found', 404);
   const r = rows[0];
   if (r.status !== 'complete' || !r.checklist_results || r.score == null) {
     throw new DocumentError('Complete the inspection before generating its report', 409, 'INSPECTION_INCOMPLETE');
+  }
+  const evaluated = evaluateChecklist(r.checklist_results);
+  if (r.checklist_version !== CHECKLIST_VERSION || !evaluated.valid
+      || Boolean(r.passed) !== evaluated.passed || evaluated.score !== Number(r.score)) {
+    throw new DocumentError(
+      'This inspection does not contain a complete, internally consistent 150-point checklist.',
+      409,
+      'INSPECTION_EVIDENCE_INVALID'
+    );
   }
   return {
     company: COMPANY,
@@ -55,6 +57,9 @@ async function snapshotForInspection(inspectionId) {
       started_at: r.started_at, completed_at: r.completed_at,
       inspector_name: r.inspector_name || 'Sawa Cars inspection team',
       notes: r.notes || null, checklist: r.checklist_results,
+      checklist_version: CHECKLIST_VERSION, passed: evaluated.passed,
+      category_scores: evaluated.category_scores,
+      critical_failures: evaluated.critical_failures,
     },
     vehicle: {
       car_id: r.car_id, title: r.car_title || `${r.sub_year || ''} ${r.sub_make} ${r.sub_model}`.trim(),
@@ -101,7 +106,7 @@ function renderInspectionReport(snapshot, record = {}) {
     const counts={ pass:verdicts.filter(v=>v==='pass').length, flag:verdicts.filter(v=>v==='flag').length, fail:verdicts.filter(v=>v==='fail').length };
     const bandY=doc.y;
     doc.roundedRect(margin,bandY,width,82,6).fillColor('#F6F4F4').fill();
-    doc.font('heavy').fontSize(30).fillColor(score>=105?green:score>=83?amber:danger).text(`${score}/150`,margin+16,bandY+13,{lineBreak:false});
+    doc.font('heavy').fontSize(30).fillColor(snapshot.inspection.passed?green:score>=83?amber:danger).text(`${score}/150`,margin+16,bandY+13,{lineBreak:false});
     doc.font('brand').fontSize(11).fillColor(ink).text(`Grade ${snapshot.inspection.grade}`,margin+18,bandY+52,{lineBreak:false});
     doc.font('bold').fontSize(10).fillColor(ink).text(snapshot.vehicle.title,margin+145,bandY+14,{width:335});
     doc.font('body').fontSize(8.5).fillColor(muted).text([
@@ -117,15 +122,15 @@ function renderInspectionReport(snapshot, record = {}) {
     facts.forEach(([label,value],index)=>{ const y=doc.y+7; const x=margin+(index%2)*250; if(index%2===0&&index>0) doc.y+=30; doc.font('body').fontSize(6.5).fillColor(muted).text(String(label).toUpperCase(),x,y,{width:230}); doc.font('body').fontSize(9).fillColor(ink).text(String(value||'—'),x,y+10,{width:230}); });
     doc.y+=42;
 
-    for (const [category, items] of CATEGORIES) {
-      ensure(38 + items.length*21);
-      doc.font('brand').fontSize(10).fillColor(ink).text(category);
+    for (const category of CATEGORIES) {
+      ensure(38 + category.items.length*21);
+      doc.font('brand').fontSize(10).fillColor(ink).text(`${category.name} · ${category.max_points} points`);
       doc.moveDown(0.35);
-      for (const item of items) {
-        const verdict=snapshot.inspection.checklist[item]||'not recorded';
+      for (const item of category.items) {
+        const verdict=snapshot.inspection.checklist[item.id]||'not recorded';
         const color=verdict==='pass'?green:verdict==='flag'?amber:verdict==='fail'?danger:muted;
         const y=doc.y;
-        doc.font('body').fontSize(8.5).fillColor(ink).text(item,margin+8,y,{width:360});
+        doc.font('body').fontSize(8.5).fillColor(ink).text(item.label,margin+8,y,{width:360});
         doc.font('bold').fontSize(7.5).fillColor(color).text(String(verdict).toUpperCase(),margin+390,y,{width:100,align:'right'});
         doc.moveTo(margin+8,y+15).lineTo(margin+width,y+15).lineWidth(0.4).strokeColor(line).stroke();
         doc.y=y+21;

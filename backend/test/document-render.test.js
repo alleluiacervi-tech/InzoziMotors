@@ -4,8 +4,8 @@ const { renderInspectionReport, CATEGORIES } = require('../src/lib/documents/ins
 
 function snapshot() {
   const checklist = {};
-  CATEGORIES.flatMap(([, items]) => items).forEach((item, index) => {
-    checklist[item] = index === 4 ? 'fail' : index % 9 === 0 ? 'flag' : 'pass';
+  CATEGORIES.flatMap((category) => category.items).forEach((item, index) => {
+    checklist[item.id] = index === 4 ? 'fail' : index % 9 === 0 ? 'flag' : 'pass';
   });
   return {
     company: { legal_name: 'Sawa Cars Ltd', website: 'sawacars.com', phone: '+250 788 308 611' },
