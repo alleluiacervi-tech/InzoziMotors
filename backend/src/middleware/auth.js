@@ -67,7 +67,7 @@ function requireAdmin(req, res, next) {
 
 // One message per state so the app can show the user what to actually do next
 const VERIFICATION_MESSAGES = {
-  none:     'Verify your identity before submitting a car.',
+  none:     'Verify your identity before a listing or direct contact can become public.',
   pending:  'Your identity check is still under review.',
   rejected: 'Your identity check was not approved. Please re-submit your documents.',
 };

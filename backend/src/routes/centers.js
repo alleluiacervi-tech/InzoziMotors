@@ -78,6 +78,25 @@ async function liveInspectionCount(name) {
   return rows[0].n;
 }
 
+// GET /centers/active — canonical public center information and scheduling choices.
+// Clients must not ship a hard-coded center list: administrators can create,
+// rename, close, or reactivate centers and the scheduling UI has to reflect
+// that operational state immediately.
+router.get('/active', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, name, area, address, daily_capacity
+         FROM inspection_centers
+        WHERE active = TRUE AND daily_capacity > 0
+        ORDER BY name ASC`
+    );
+    res.json(rows);
+  } catch (err) {
+    log.error('active centers list error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /centers — every center, with today's load against its cap.
 //
 // The load figure is the point of the page: "capacity 8" means nothing without

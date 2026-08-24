@@ -5,6 +5,7 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
 const { screenUserText } = require('../lib/moderation');
+const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
 
 const router = express.Router();
 const { recordAdminAction } = require('../lib/admin-audit');
@@ -102,7 +103,25 @@ router.post('/conversations', requireAuth, async (req, res) => {
   const screened = screenUserText(message, 2000);
   if (!screened.ok) return res.status(400).json({ error: screened.error, code: screened.code });
   try {
-    const carRes = await pool.query('SELECT * FROM cars WHERE id = $1', [car_id]);
+    const carRes = await pool.query(
+      `SELECT c.* FROM cars c
+       JOIN users seller ON seller.id = c.seller_id
+       WHERE c.id = $1 AND c.status = 'live'
+         AND seller.role = 'seller' AND seller.id_verified = 'approved'
+         AND seller.account_status = 'active' AND seller.deleted_at IS NULL
+         AND (COALESCE(seller.seller_type, 'individual') <> 'showroom' OR seller.business_verified = TRUE)
+         AND EXISTS (
+           SELECT 1 FROM inspections i
+           JOIN submissions s ON s.id = i.submission_id
+           WHERE i.car_id = c.id AND s.seller_id = c.seller_id
+             AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model)
+             AND s.year = c.year
+             AND i.status = 'complete' AND i.checklist_version = $2
+             AND i.passed = TRUE AND i.score >= $3
+             AND jsonb_array_length(COALESCE(i.critical_failures, '[]'::jsonb)) = 0
+         )`,
+      [car_id, CHECKLIST_VERSION, PUBLISH_THRESHOLD]
+    );
     if (!carRes.rows.length) return res.status(404).json({ error: 'Car not found' });
     const car = carRes.rows[0];
 

@@ -191,13 +191,32 @@ router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) =
     if (!cur.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'User not found' }); }
     const wasApproved = cur.rows[0].id_verified === 'approved';
 
-    await client.query(`UPDATE users SET id_verified = $1 WHERE id = $2`, [decision, req.params.userId]);
+    await client.query(
+      `UPDATE users SET id_verified = $1,
+         token_version = token_version + CASE WHEN $1 = 'rejected' AND id_verified = 'approved' THEN 1 ELSE 0 END
+       WHERE id = $2`,
+      [decision, req.params.userId]
+    );
+
+    let affectedListings = 0;
+    let affectedRentals = 0;
+    if (decision === 'rejected' && wasApproved) {
+      await client.query('UPDATE users SET phone_visible=FALSE, whatsapp_visible=FALSE WHERE id=$1', [req.params.userId]);
+      affectedListings = (await client.query(
+        `UPDATE cars SET status='under_review',
+           review_notes=CONCAT_WS(E'\n', NULLIF(review_notes, ''), 'Seller identity approval was revoked; review is required before republication.')
+         WHERE seller_id=$1 AND status IN ('live','approved','paused')`, [req.params.userId]
+      )).rowCount;
+      affectedRentals = (await client.query(
+        "UPDATE rental_cars SET status='maintenance' WHERE provider_id=$1 AND status='active'", [req.params.userId]
+      )).rowCount;
+    }
 
     // Trust score is recomputed from components — no ad-hoc increments
     await recomputeTrustScore(req.params.userId, client);
 
     const msg = decision === 'approved'
-      ? 'Your ID has been verified. You can now submit cars for inspection.'
+      ? 'Your ID has been verified. Approved listings and contact options can now be activated after inspection.'
       : 'Your ID verification was not accepted. Please resubmit clearer photos.';
     await notifyUser(client, {
       user_id: req.params.userId,
@@ -209,7 +228,7 @@ router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) =
     await recordAdminAction(client, {
       actorId: req.user.id, action: `identity.${decision}`, targetType: 'user', targetId: req.params.userId,
       summary: `Identity verification ${decision}`,
-      metadata: { previous_status: cur.rows[0].id_verified, decision },
+      metadata: { previous_status: cur.rows[0].id_verified, decision, affected_listings: affectedListings, affected_rentals: affectedRentals },
     });
 
     await client.query('COMMIT');
