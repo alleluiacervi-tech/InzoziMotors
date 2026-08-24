@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Button, Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { PageHeader } from '@/components/marketing/PageHeader'
 import { CenterList } from '@/components/marketing/CenterList'
-import { CENTERS } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'About Sawa Cars',
@@ -154,7 +153,7 @@ export default function AboutPage() {
         <Container>
           <SectionHeading
             eyebrow="Where we work"
-            title={`${CENTERS.length} inspection centers in Kigali`}
+            title="Inspection centers in Kigali"
             description="These locations support platform inspection services. Users independently decide where and how to complete any later transaction."
           />
           <CenterList className="mt-12" />

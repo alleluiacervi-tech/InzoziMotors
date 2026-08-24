@@ -54,7 +54,7 @@ const CHANNELS = [
     label: 'Email',
     value: CONTACT.email,
     href: `mailto:${CONTACT.email}`,
-    note: 'For anything that needs an attachment: dealer accounts, partnerships, or documents for a return.',
+    note: 'For anything that needs an attachment: dealer accounts, partnerships, inspection records, or account support.',
     badge: null,
     external: false,
   },
@@ -66,12 +66,12 @@ const PROMISES = [
   {
     icon: 'clock' as const,
     title: 'Within 24 hours',
-    body: 'Every purchase request gets a call or a WhatsApp message from the team that runs the centers.',
+    body: 'Every marketplace support request gets a response from the team that runs the inspection centers.',
   },
   {
     icon: 'user' as const,
     title: 'A person, not a bot',
-    body: 'The line is answered by the people who inspect and hand over the cars. There is no phone tree.',
+    body: 'The line is answered by the people who inspect vehicles and support the marketplace. There is no phone tree.',
   },
   {
     icon: 'shield-check' as const,

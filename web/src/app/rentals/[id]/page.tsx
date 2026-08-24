@@ -10,6 +10,7 @@ import type { RentalCar } from '@/lib/types'
 import { Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
 import { Gallery } from '@/components/marketplace/Gallery'
 import { OpenInAppButton } from '@/components/marketplace/OpenInAppButton'
+import { InspectionReportCard } from '@/components/marketplace/InspectionReportCard'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { RENTAL_INCLUDES, RENTAL_REQUIREMENTS } from '@/components/marketplace/rental-copy'
 import { formatRating, tripCost } from '@/components/marketplace/rental-math'
@@ -75,7 +76,10 @@ export default async function RentalDetailPage({ params }: PageProps) {
 
   const car = await loadCar(id)
   if (!car) notFound()
-  const user = await getCurrentUser()
+  const [user, inspectionReport] = await Promise.all([
+    getCurrentUser(),
+    rentalsApi.inspectionReport(id).catch(() => null),
+  ])
 
   const images = (car.images ?? []).filter(Boolean)
   const tier = getCertTier(car)
@@ -224,6 +228,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
           </aside>
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
+            <InspectionReportCard report={inspectionReport} />
             <section aria-labelledby="availability-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7"><h2 id="availability-heading" className="text-title font-extrabold text-content">Availability is confirmed by the provider</h2><p className="mt-2 text-body leading-relaxed text-content-secondary">Send your dates as an inquiry. Sawa Cars does not block the calendar or confirm a rental on the provider&apos;s behalf.</p></section>
 
             <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">

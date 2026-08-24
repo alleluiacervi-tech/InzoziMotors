@@ -46,7 +46,7 @@ export function OneAccountNote({ className = '' }: { className?: string }) {
     <p className={`flex gap-2.5 text-caption leading-relaxed text-content-muted ${className}`}>
       <Icon name="phone" size={15} className="mt-px" />
       <span>
-        One account, every platform. Your saved cars, saved searches and purchase requests are
+        One account, every platform. Your saved cars, saved searches, vehicle enquiries and submissions are
         the same here and in the{' '}
         <Link href="/download" className="font-bold text-brand transition-colors hover:text-brand-deep">
           Sawa Cars app

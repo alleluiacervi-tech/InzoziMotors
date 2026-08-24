@@ -7,6 +7,7 @@ const { requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { sendShowroomInvite, sendResetCode, mailEnabled } = require('../lib/mailer');
+const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
 
 const router = express.Router();
 
@@ -62,7 +63,14 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                   WHERE c.status IN ('under_review','approved')
                      OR (c.status = 'live' AND (
                        u.id_verified <> 'approved' OR u.account_status <> 'active'
-                       OR NOT EXISTS (SELECT 1 FROM inspections i WHERE i.car_id=c.id AND i.status='complete')
+                       OR NOT EXISTS (
+                         SELECT 1 FROM inspections i JOIN submissions s ON s.id=i.submission_id
+                         WHERE i.car_id=c.id AND s.seller_id=c.seller_id
+                           AND lower(s.make)=lower(c.make) AND lower(s.model)=lower(c.model) AND s.year=c.year
+                           AND i.status='complete' AND i.checklist_version='${CHECKLIST_VERSION}'
+                           AND i.passed=TRUE AND i.score >= ${PUBLISH_THRESHOLD}
+                           AND jsonb_array_length(COALESCE(i.critical_failures, '[]'::jsonb))=0
+                       )
                        OR (COALESCE(cardinality(c.images),0) = 0
                            AND NOT EXISTS (SELECT 1 FROM car_photos p WHERE p.car_id=c.id))))
                   ORDER BY c.created_at ASC LIMIT 20`),
@@ -271,7 +279,14 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
               u.account_status AS seller_account_status,
               COALESCE(cardinality(c.images), 0)::int AS image_count,
               (SELECT COUNT(*)::int FROM car_photos p WHERE p.car_id = c.id) AS structured_photo_count,
-              EXISTS (SELECT 1 FROM inspections i WHERE i.car_id = c.id AND i.status = 'complete') AS has_completed_inspection
+              EXISTS (
+                SELECT 1 FROM inspections i JOIN submissions s ON s.id = i.submission_id
+                WHERE i.car_id = c.id AND s.seller_id = c.seller_id
+                  AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model) AND s.year = c.year
+                  AND i.status = 'complete' AND i.checklist_version = '${CHECKLIST_VERSION}'
+                  AND i.passed = TRUE AND i.score >= ${PUBLISH_THRESHOLD}
+                  AND jsonb_array_length(COALESCE(i.critical_failures, '[]'::jsonb)) = 0
+              ) AS has_completed_inspection
        FROM cars c
        JOIN users u ON u.id = c.seller_id
        WHERE ${conditions.join(' AND ')}
@@ -358,7 +373,7 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
     const finalWhatsapp = values.whatsapp_phone !== undefined ? values.whatsapp_phone : profile.whatsapp_phone;
     const finalPhoneVisible = values.phone_visible !== undefined ? values.phone_visible : profile.phone_visible;
     const finalWhatsappVisible = values.whatsapp_visible !== undefined ? values.whatsapp_visible : profile.whatsapp_visible;
-    if (finalPhoneVisible || finalWhatsappVisible) {
+    if (values.phone_visible === true || values.whatsapp_visible === true) {
       const eligible = finalRole === 'seller' && profile.id_verified === 'approved' &&
         profile.account_status === 'active' && !profile.deleted_at &&
         (finalSellerType !== 'showroom' || finalBusinessVerified === true);
@@ -379,10 +394,32 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
     if (values.role !== undefined && values.role !== before.rows[0].role) {
       await client.query('UPDATE users SET token_version=token_version+1 WHERE id=$1', [req.params.id]);
     }
+    const remainsEligible = finalRole === 'seller' && profile.id_verified === 'approved' &&
+      profile.account_status === 'active' && !profile.deleted_at &&
+      (finalSellerType !== 'showroom' || finalBusinessVerified === true);
+    let affectedListings = 0;
+    let affectedRentals = 0;
+    if (!remainsEligible) {
+      await client.query('UPDATE users SET phone_visible=FALSE, whatsapp_visible=FALSE WHERE id=$1', [req.params.id]);
+      affectedListings = (await client.query(
+        `UPDATE cars SET status='under_review',
+           review_notes=CONCAT_WS(E'\n', NULLIF(review_notes, ''), 'Seller eligibility changed; admin review is required before republication.')
+         WHERE seller_id=$1 AND status IN ('live','approved','paused')`, [req.params.id]
+      )).rowCount;
+      affectedRentals = (await client.query(
+        "UPDATE rental_cars SET status='maintenance' WHERE provider_id=$1 AND status='active'", [req.params.id]
+      )).rowCount;
+    }
     await recordAdminAction(client, { actorId: req.user.id, action: 'user.updated', targetType: 'user', targetId: req.params.id,
-      summary: `Updated account details for ${rows[0].email}`, metadata: { fields } });
+      summary: `Updated account details for ${rows[0].email}`, metadata: { fields, affected_listings: affectedListings, affected_rentals: affectedRentals } });
     await client.query('COMMIT');
-    res.json(rows[0]);
+    const response = await pool.query(
+      `SELECT id,name,email,phone,whatsapp_phone,phone_visible,whatsapp_visible,
+              contact_consent_at,role,id_verified,seller_type,business_name,
+              business_verified,account_status,created_at FROM users WHERE id=$1`,
+      [req.params.id]
+    );
+    res.json(response.rows[0]);
   } catch (err) {
     await client.query('ROLLBACK');
     log.error('admin user update error', { error: err.message });
@@ -434,8 +471,22 @@ router.patch('/users/:id/access', requireAdmin, requireUuid('id'), async (req, r
        RETURNING id,name,email,role,account_status,suspended_at,suspension_reason`,
       [status, action === 'suspend' ? reason : null, req.params.id]
     );
+    let affectedListings = 0;
+    let affectedRentals = 0;
+    if (action === 'suspend') {
+      await client.query('UPDATE users SET phone_visible=FALSE, whatsapp_visible=FALSE WHERE id=$1', [req.params.id]);
+      affectedListings = (await client.query(
+        "UPDATE cars SET status='paused' WHERE seller_id=$1 AND status='live'", [req.params.id]
+      )).rowCount;
+      affectedRentals = (await client.query(
+        "UPDATE rental_cars SET status='maintenance' WHERE provider_id=$1 AND status='active'", [req.params.id]
+      )).rowCount;
+    }
     await recordAdminAction(client, { actorId: req.user.id, action: action === 'suspend' ? 'user.suspended' : 'user.restored', targetType: 'user', targetId: req.params.id,
-      summary: `${action === 'suspend' ? 'Suspended' : 'Restored'} account ${user.rows[0].email}`, metadata: { previous_status: user.rows[0].account_status, reason: action === 'suspend' ? reason : undefined } });
+      summary: `${action === 'suspend' ? 'Suspended' : 'Restored'} account ${user.rows[0].email}`, metadata: {
+        previous_status: user.rows[0].account_status, reason: action === 'suspend' ? reason : undefined,
+        affected_listings: affectedListings, affected_rentals: affectedRentals,
+      } });
     await client.query('COMMIT');
     res.json(rows[0]);
   } catch (err) {

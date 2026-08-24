@@ -73,6 +73,8 @@ function resolve(sql) {
   return sql
     .replace(/\$\{MARKET_COLUMNS\}/g, ' 1 AS market_placeholder')
     .replace(/\$\{MARKET_LATERALS\}/g, ' LEFT JOIN LATERAL (SELECT 1 AS n) mkt ON TRUE')
+    .replace(/\$\{PROVIDER_COLUMNS\}/g, 'u.name AS provider_name')
+    .replace(/\$\{VALID_RENTAL_INSPECTION\}/g, 'JOIN inspections evidence ON evidence.id = rc.inspection_id')
     .replace(/\$\{MIN_COMPARABLES\}/g, '3')
     .replace(/\$\{conditions\.join\([^)]*\)\}/g, 'TRUE')
     .replace(/\$\{where\}/g, '')

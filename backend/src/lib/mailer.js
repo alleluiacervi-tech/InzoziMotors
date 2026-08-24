@@ -220,11 +220,12 @@ function sendWelcome(email, name) {
   return sendTemplate(email, 'Welcome to Sawa Cars', {
     title: `Welcome, ${name || 'there'}.`,
     lines: [
-      'Your Sawa Cars account is ready. Every car on the marketplace passed our 150-point inspection, and every purchase handed over at a Sawa center carries a 7-day guarantee.',
-      'Browse and save cars, message sellers, and track your purchases — all from this one account, in the app or on the website.',
+      'Your Sawa Cars account is ready. Public vehicle listings carry their recorded 150-point inspection information and come from eligible verified sellers.',
+      'Browse and save cars, contact sellers directly, or submit and track your own vehicle — all from this one account in the app or on the website.',
+      'Sawa Cars does not hold transaction funds, issue the users’ contract, or guarantee a vehicle, payment, delivery, rental, or external agreement.',
       `Questions? Write to ${CONTACT} or call ${PHONE} — a real person answers.`,
     ],
-    cta: { label: 'Browse certified cars', url: `${SITE}/cars` },
+    cta: { label: 'Browse reviewed cars', url: `${SITE}/cars` },
   });
 }
 
@@ -281,11 +282,11 @@ function sendAccountDeleted(email, name) {
 // ─── Business events — the paper trail ────────────────────────────────────────
 
 function sendPurchaseRequested(email, name, carTitle) {
-  return sendTemplate(email, 'Your purchase request is in — here’s what happens next', {
-    title: 'Purchase request received',
+  return sendTemplate(email, 'Your vehicle enquiry was recorded', {
+    title: 'Vehicle enquiry recorded',
     lines: [
-      `Hi ${name || 'there'} — your request for the ${carTitle} is in, and the car is now reserved: nobody else can book it while we arrange your handover.`,
-      'Our team will contact you to agree a time at a Sawa center. Payment and ownership transfer happen there, in person — never in the app.',
+      `Hi ${name || 'there'} — your historical enquiry about the ${carTitle} was recorded. An enquiry does not reserve the vehicle or create a contract.`,
+      'Contact the seller directly to arrange any viewing, independent checks, written terms, payment, transfer and delivery. Sawa Cars is not a party to that agreement.',
       `Need to reach us sooner? ${CONTACT} · ${PHONE}`,
     ],
   });
@@ -296,12 +297,12 @@ function sendHandoverConfirmed(email, name, carTitle, when) {
     title: 'Your handover is confirmed',
     lines: [
       `Hi ${name || 'there'} — the handover for the ${carTitle} is confirmed${when ? ` for ${when}` : ''}.`,
-      'Bring your ID. Payment and the ownership paperwork are completed at the center with our team present.',
+      'This is a historical service record only. The users remain responsible for their own contract, payment, ownership transfer and delivery arrangements.',
     ],
   });
 }
 
-/** The receipt. Starts the 7-day guarantee clock in writing. */
+/** Historical completion record. Current transaction writes are retired. */
 function sendHandoverComplete(email, name, carTitle, isBuyer) {
   return sendTemplate(email, `Completed — ${carTitle}`, {
     title: isBuyer ? 'The car is yours' : 'Your car is sold',
@@ -309,10 +310,8 @@ function sendHandoverComplete(email, name, carTitle, isBuyer) {
       isBuyer
         ? `Congratulations ${name || ''} — the handover of the ${carTitle} is complete and the sale is recorded.`
         : `Hi ${name || 'there'} — the handover of your ${carTitle} is complete and the sale is recorded.`,
-      ...(isBuyer
-        ? ['Your 7-day guarantee starts today: if the car does not match its inspection report, bring it back to the center within 7 days for a full refund.']
-        : []),
-      `This email is your record of the sale. Keep it — and if anything needs sorting out, ${CONTACT} is the address.`,
+      'Sawa Cars does not provide a transaction warranty, return promise, escrow or refund guarantee. Any rights or remedies come from the users’ agreement and applicable law.',
+      `This email is a historical platform record. Keep your own contract and payment records; for platform-content concerns, contact ${CONTACT}.`,
     ],
   });
 }
@@ -325,8 +324,8 @@ function sendIdDecision(email, name, approved, notes) {
       ? {
           title: 'Identity verified ✓',
           lines: [
-            `Hi ${name || 'there'} — your identity documents are approved. Your account now carries the Verified Seller badge and you can submit cars for inspection.`,
-            'Submit your first car from the Sell tab — no photos needed, our team shoots those after the inspection.',
+            `Hi ${name || 'there'} — your identity documents are approved. Your account now carries the Verified Seller badge, and eligible inspected listings can proceed toward publication.`,
+            'If you have not submitted a car yet, start from the Sell tab. If one is already in the inspection pipeline, you can continue tracking it.',
           ],
           cta: { label: 'Start selling', url: `${SITE}/sell` },
         }

@@ -1,7 +1,7 @@
 const express = require('express');
 const { log } = require('../lib/log');
 const pool = require('../db');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
 const fs = require('fs');
 const path = require('path');
@@ -12,6 +12,13 @@ const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 const { issueInspectionReport } = require('../lib/documents/inspection-report');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
+const {
+  CHECKLIST_VERSION,
+  PUBLISH_THRESHOLD,
+  evaluateChecklist,
+  grade,
+  publicDefinition,
+} = require('../lib/inspection-policy');
 
 const router = express.Router();
 const MAX_GALLERY_PHOTOS = 40;
@@ -28,70 +35,6 @@ function documentFailure(res, error) {
   return res.status(500).json({ error: 'Could not prepare the inspection report' });
 }
 
-// ─── 150-point scoring ────────────────────────────────────────────────────────
-// Blueprint category weights (sum 150). Items not in the map fall into a
-// default bucket weighted like an average category.
-const CATEGORY_WEIGHTS = {
-  'Engine & Drivetrain': { weight: 25, items: ['Engine oil level & condition', 'Coolant level', 'Timing belt condition', 'Air filter', 'Engine mounts', 'Transmission fluid'] },
-  'Brakes & Steering':   { weight: 25, items: ['Front brake pads', 'Rear brake pads', 'Brake fluid', 'Brake lines', 'Power steering fluid', 'Wheel alignment'] },
-  'Body & Exterior':     { weight: 20, items: ['Panel gaps & alignment', 'Paint condition', 'Windscreen integrity', 'Front lights', 'Rear lights', 'Rust / corrosion'] },
-  'Interior & Comfort':  { weight: 20, items: ['Seat condition', 'Dashboard instruments', 'Air conditioning', 'Windows & locks', 'Odometer reading', 'Boot / trunk'] },
-  'Electronics & Safety':{ weight: 20, items: ['Battery health', 'OBD scan (no fault codes)', 'Airbag system', 'Traction control', 'Seatbelts', 'Horn'] },
-  'Tyres & Wheels':      { weight: 15, items: ['Front-left tread', 'Front-right tread', 'Rear-left tread', 'Rear-right tread', 'Spare tyre', 'Wheel condition'] },
-  'Documentation':       { weight: 25, items: ['Registration / logbook', 'Service history', 'Import documents', 'Insurance valid', 'RRA duty paid stamp', 'VIN match'] },
-};
-const ITEM_TO_CATEGORY = {};
-for (const [cat, def] of Object.entries(CATEGORY_WEIGHTS)) {
-  for (const item of def.items) ITEM_TO_CATEGORY[item] = cat;
-}
-// Stable item ids used by the mobile checklist. Labels can improve without
-// silently changing category weights or turning every response into "other".
-for (const [category, ids] of Object.entries({
-  'Engine & Drivetrain': ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7'],
-  'Brakes & Steering': ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'],
-  'Body & Exterior': ['bo1', 'bo2', 'bo3', 'bo4', 'bo5', 'bo6'],
-  'Interior & Comfort': ['i1', 'i2', 'i3', 'i4', 'i5', 'i6'],
-  'Electronics & Safety': ['el1', 'el2', 'el3', 'el4', 'el5', 'el6'],
-  'Tyres & Wheels': ['t1', 't2', 't3', 't4', 't5'],
-  Documentation: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
-})) {
-  for (const id of ids) ITEM_TO_CATEGORY[id] = category;
-}
-// Canonical scale is the 150-point score used everywhere (app tiers, seeds,
-// display "/150"). 105/150 = 70% — below this, admin reviews before publish.
-const SCORE_MAX = 150;
-const PUBLISH_THRESHOLD = 105;
-
-function computeWeightedScore(checklistResults) {
-  const value = (v) => (v === 'pass' ? 1 : v === 'flag' ? 0.5 : 0);
-  const perCategory = {}; // cat -> { got, count }
-  const other = { got: 0, count: 0 };
-  for (const [item, verdict] of Object.entries(checklistResults)) {
-    const cat = ITEM_TO_CATEGORY[item];
-    if (cat) {
-      perCategory[cat] = perCategory[cat] || { got: 0, count: 0 };
-      perCategory[cat].got += value(verdict);
-      perCategory[cat].count += 1;
-    } else {
-      other.got += value(verdict);
-      other.count += 1;
-    }
-  }
-  let earned = 0, total = 0;
-  for (const [cat, agg] of Object.entries(perCategory)) {
-    const w = CATEGORY_WEIGHTS[cat].weight;
-    earned += (agg.got / agg.count) * w;
-    total += w;
-  }
-  if (other.count > 0) {
-    const w = 21; // ~average category weight for unmapped items
-    earned += (other.got / other.count) * w;
-    total += w;
-  }
-  return total > 0 ? Math.round((earned / total) * SCORE_MAX) : 0;
-}
-
-
 // GET /inspections — admin: all inspections
 router.get('/', requireAdmin, async (req, res) => {
   const { status, center, date } = req.query;
@@ -99,15 +42,16 @@ router.get('/', requireAdmin, async (req, res) => {
   const params = [];
 
   if (status) { params.push(status); conditions.push(`i.status = $${params.length}`); }
-  if (center) { params.push(center); conditions.push(`i.center = $${params.length}`); }
-  if (date)   { params.push(date);   conditions.push(`i.scheduled_date = $${params.length}`); }
+  if (center) { params.push(center); conditions.push(`lower(i.center) = lower($${params.length})`); }
+  if (date)   { params.push(date);   conditions.push(`i.scheduled_on = $${params.length}::date`); }
 
   const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
   try {
     const { rows } = await pool.query(
-      `SELECT i.*,
+      `SELECT i.*, s.seller_id,
               u.name  AS seller_name, u.email AS seller_email,
-              c.title AS car_title,  c.make, c.model, c.year
+              c.title AS car_title, c.make, c.model, c.year,
+              s.make AS submission_make, s.model AS submission_model, s.year AS submission_year
        FROM inspections i
        JOIN submissions s ON s.id = i.submission_id
        JOIN users u ON u.id = s.seller_id
@@ -123,8 +67,51 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
+// The server owns the checklist definition. Both admin clients render this
+// payload, so a release cannot accidentally score one set of checks while an
+// inspector is looking at another.
+router.get('/checklist', requireAdmin, (_req, res) => {
+  res.json(publicDefinition());
+});
+
 // GET /inspections/report/:carId — buyer-facing inspection report
 // Must come before /:id to avoid "report" being treated as an id
+router.get('/report/rental/:rentalCarId', requireUuid('rentalCarId'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.checklist_results, i.score, i.notes, i.completed_at,
+              inspector.name AS inspector_name,
+              rc.title, rc.make, rc.model, rc.year, rc.mileage, NULL::text AS vin
+         FROM rental_cars rc
+         JOIN inspections i ON i.id = rc.inspection_id
+         JOIN submissions s ON s.id = i.submission_id AND s.seller_id = rc.provider_id
+           AND lower(s.make) = lower(rc.make) AND lower(s.model) = lower(rc.model) AND s.year = rc.year
+         JOIN users provider ON provider.id = rc.provider_id
+         LEFT JOIN users inspector ON inspector.id = i.inspector_id
+        WHERE rc.id = $1 AND rc.status = 'active'
+          AND i.status = 'complete' AND i.passed = TRUE AND i.checklist_version = $2
+          AND provider.role = 'seller' AND provider.id_verified = 'approved'
+          AND provider.business_verified = TRUE AND provider.account_status = 'active'
+          AND provider.deleted_at IS NULL`,
+      [req.params.rentalCarId, CHECKLIST_VERSION]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'No rental inspection report found' });
+    const evaluated = evaluateChecklist(rows[0].checklist_results);
+    if (!evaluated.valid || !evaluated.passed || evaluated.score !== Number(rows[0].score)) {
+      return res.status(404).json({ error: 'No valid rental inspection report found' });
+    }
+    res.json({
+      ...rows[0], checklist_version: CHECKLIST_VERSION, max_score: 150,
+      passing_score: PUBLISH_THRESHOLD, passed: true,
+      category_scores: evaluated.category_scores,
+      critical_failures: evaluated.critical_failures,
+    });
+  } catch (err) {
+    log.error('rental inspection report error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -133,13 +120,33 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
               c.title, c.make, c.model, c.year, c.mileage, c.vin
        FROM inspections i
        JOIN cars c ON c.id = i.car_id
+       JOIN submissions s ON s.id = i.submission_id
        LEFT JOIN users u ON u.id = i.inspector_id
-       WHERE i.car_id = $1 AND i.status = 'complete'
+       JOIN users seller ON seller.id = c.seller_id
+       WHERE i.car_id = $1 AND i.status = 'complete' AND i.passed = TRUE
+         AND i.checklist_version = $2 AND c.status = 'live'
+         AND s.seller_id = c.seller_id
+         AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model) AND s.year = c.year
+         AND seller.role = 'seller' AND seller.id_verified = 'approved'
+         AND seller.account_status = 'active' AND seller.deleted_at IS NULL
+         AND (COALESCE(seller.seller_type, 'individual') <> 'showroom' OR seller.business_verified = TRUE)
        ORDER BY i.completed_at DESC LIMIT 1`,
-      [req.params.carId]
+      [req.params.carId, CHECKLIST_VERSION]
     );
     if (!rows.length) return res.status(404).json({ error: 'No inspection report found' });
-    res.json(rows[0]);
+    const evaluated = evaluateChecklist(rows[0].checklist_results);
+    if (!evaluated.valid || !evaluated.passed || evaluated.score !== Number(rows[0].score)) {
+      return res.status(404).json({ error: 'No valid inspection report found' });
+    }
+    res.json({
+      ...rows[0],
+      checklist_version: CHECKLIST_VERSION,
+      max_score: 150,
+      passing_score: PUBLISH_THRESHOLD,
+      passed: true,
+      category_scores: evaluated.category_scores,
+      critical_failures: evaluated.critical_failures,
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -276,6 +283,16 @@ router.delete('/cars/:carId/photos/:photoId', requireAdmin, requireUuid('carId')
   try {
     let removedUrl;
     const state = await withTransaction(async (client) => {
+      const car = await client.query('SELECT status FROM cars WHERE id = $1 FOR UPDATE', [req.params.carId]);
+      if (!car.rowCount) { const err = new Error('Car not found'); err.status = 404; throw err; }
+      const photoCount = await client.query('SELECT COUNT(*)::int AS count FROM car_photos WHERE car_id = $1', [req.params.carId]);
+      const setting = await client.query("SELECT value FROM platform_settings WHERE key = 'listing_min_photos'");
+      const minPhotos = Math.max(Number(setting.rows[0]?.value) || 1, 1);
+      if (['approved', 'live'].includes(car.rows[0].status) && photoCount.rows[0].count - 1 < minPhotos) {
+        const err = new Error(`Keep at least ${minPhotos} photo${minPhotos === 1 ? '' : 's'} on an approved or live listing.`);
+        err.status = 409;
+        throw err;
+      }
       const removed = await client.query(
         'DELETE FROM car_photos WHERE id = $1 AND car_id = $2 RETURNING url',
         [req.params.photoId, req.params.carId]
@@ -375,24 +392,30 @@ router.get('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 // POST /inspections/:id/start — mechanic begins the walkaround
 router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `UPDATE inspections
-       SET status = 'in_progress', started_at = NOW(), inspector_id = $1
-       WHERE id = $2 AND status = 'scheduled'
-       RETURNING *`,
-      [req.user.id, req.params.id]
-    );
-    if (!rows.length) return res.status(409).json({ error: 'Inspection not found or not in scheduled state' });
-    await pool.query(
-      `UPDATE submissions SET status = 'inspecting' WHERE id = $1`,
-      [rows[0].submission_id]
-    );
-    await recordAdminAction(pool, {
-      actorId: req.user.id, action: 'inspection.started', targetType: 'inspection', targetId: rows[0].id,
-      summary: 'Inspection checklist started', metadata: { submission_id: rows[0].submission_id },
+    const started = await withTransaction(async (client) => {
+      const current = await client.query('SELECT * FROM inspections WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!current.rowCount) { const error = new Error('Inspection not found'); error.status = 404; throw error; }
+      const inspection = current.rows[0];
+      if (inspection.status === 'in_progress' && inspection.inspector_id === req.user.id) return inspection;
+      if (inspection.status !== 'scheduled') {
+        const error = new Error(`A ${inspection.status} inspection cannot be started`); error.status = 409; throw error;
+      }
+      const { rows } = await client.query(
+        `UPDATE inspections
+         SET status = 'in_progress', started_at = NOW(), inspector_id = $1
+         WHERE id = $2 RETURNING *`,
+        [req.user.id, req.params.id]
+      );
+      await client.query("UPDATE submissions SET status = 'inspecting' WHERE id = $1 AND status = 'scheduled'", [inspection.submission_id]);
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'inspection.started', targetType: 'inspection', targetId: inspection.id,
+        summary: `Started ${CHECKLIST_VERSION}`, metadata: { submission_id: inspection.submission_id, checklist_version: CHECKLIST_VERSION },
+      });
+      return rows[0];
     });
-    res.json(rows[0]);
+    res.json(started);
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     log.error('start inspection error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
@@ -401,15 +424,20 @@ router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
 // POST /inspections/:id/complete — record checklist, weighted score, gated publish
 router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) => {
   const { checklist_results, notes } = req.body;
-  if (!checklist_results || typeof checklist_results !== 'object' || !Object.keys(checklist_results).length) {
-    return res.status(400).json({ error: 'checklist_results is required' });
-  }
-  const badVerdicts = Object.values(checklist_results).filter((v) => !['pass', 'flag', 'fail'].includes(v));
-  if (badVerdicts.length) {
-    return res.status(400).json({ error: 'checklist verdicts must be pass, flag, or fail' });
+  const evaluated = evaluateChecklist(checklist_results);
+  if (!evaluated.valid) {
+    return res.status(400).json({
+      error: `Complete the canonical ${CHECKLIST_VERSION} checklist before submitting.`,
+      code: 'INSPECTION_CHECKLIST_INCOMPLETE',
+      checklist_version: CHECKLIST_VERSION,
+      missing_count: evaluated.missing.length,
+      missing: evaluated.missing,
+      unknown: evaluated.unknown,
+      invalid: evaluated.invalid,
+    });
   }
 
-  const score = computeWeightedScore(checklist_results);
+  const score = evaluated.score;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -420,16 +448,47 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Inspection already completed' });
     }
+    if (insp.status !== 'in_progress' || !insp.started_at) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Start the scheduled inspection before completing its checklist.',
+        code: 'INSPECTION_NOT_STARTED',
+      });
+    }
+    if (insp.inspector_id && insp.inspector_id !== req.user.id) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'This inspection is assigned to another inspector. Reassignment must be recorded before completion.',
+        code: 'INSPECTION_ASSIGNED_TO_ANOTHER_ADMIN',
+      });
+    }
+    if (insp.car_id) {
+      const linkedVehicle = await client.query(
+        `SELECT 1 FROM cars c JOIN submissions s ON s.id = $2
+         WHERE c.id = $1 AND c.seller_id = s.seller_id
+           AND lower(c.make) = lower(s.make) AND lower(c.model) = lower(s.model) AND c.year = s.year`,
+        [insp.car_id, insp.submission_id]
+      );
+      if (!linkedVehicle.rowCount) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: 'This inspection is linked to a different seller or vehicle identity.',
+          code: 'INSPECTION_VEHICLE_MISMATCH',
+        });
+      }
+    }
 
     await client.query(
       `UPDATE inspections
        SET checklist_results = $1, notes = $2, score = $3,
-           status = 'complete', completed_at = NOW(), inspector_id = $4
-       WHERE id = $5`,
-      [JSON.stringify(checklist_results), notes, score, req.user.id, insp.id]
+           status = 'complete', completed_at = NOW(), inspector_id = $4,
+           checklist_version = $5, passed = $6, critical_failures = $7::jsonb
+       WHERE id = $8`,
+      [JSON.stringify(checklist_results), notes, score, req.user.id,
+       CHECKLIST_VERSION, evaluated.passed, JSON.stringify(evaluated.critical_failures), insp.id]
     );
 
-    const passed = score >= PUBLISH_THRESHOLD;
+    const passed = evaluated.passed;
 
     // Inspection is evidence, not publication and not a guarantee. Passing the
     // checklist makes the listing approval-ready; an administrator must still
@@ -437,14 +496,19 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
     if (insp.car_id && passed) {
       await client.query(
         `UPDATE cars
-         SET inspected = TRUE, inspection_score = $1, status = 'approved'
+         SET inspected = TRUE, inspection_score = $1
          WHERE id = $2`,
         [score, insp.car_id]
       );
     } else if (insp.car_id) {
       await client.query(
-        `UPDATE cars SET inspected = TRUE, inspection_score = $1 WHERE id = $2`,
-        [score, insp.car_id]
+        `UPDATE cars SET inspected = TRUE, inspection_score = $1,
+           status = CASE WHEN status IN ('live', 'approved') THEN 'under_review' ELSE status END,
+           review_notes = CONCAT_WS(E'\n', NULLIF(review_notes, ''), $3)
+         WHERE id = $2`,
+        [score, insp.car_id, evaluated.critical_failures.length
+          ? `Inspection failed critical checks: ${evaluated.critical_failures.map((failure) => failure.label).join('; ')}`
+          : `Inspection score ${score}/150 is below the ${PUBLISH_THRESHOLD}/150 publication threshold.`]
       );
     }
 
@@ -457,29 +521,46 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
     const subRes = await client.query('SELECT seller_id FROM submissions WHERE id = $1', [insp.submission_id]);
 
     if (subRes.rows.length) {
-      const grade = score >= 128 ? 'A' : score >= 105 ? 'B' : score >= 83 ? 'C' : 'D';
+      const inspectionGrade = grade(score);
       const body = insp.car_id && passed
-        ? `The inspection record for your car is complete with a score of ${score}/150 (Grade ${grade}). Our team will review the listing before publication.`
+        ? `The inspection record for your car is complete with a score of ${score}/150 (Grade ${inspectionGrade}). Our team will review the listing before publication.`
         : passed
-          ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team will prepare and review the listing before it becomes public.`
-          : `Your inspection report is ready (score ${score}/150, Grade ${grade}). Some items need attention — our team will contact you about next steps.`;
+          ? `Your car scored ${score}/150 (Grade ${inspectionGrade}) on the 150-point inspection. Our team will prepare and review the listing before it becomes public.`
+          : `Your inspection report is ready (score ${score}/150, Grade ${inspectionGrade}). Some items need attention — our team will contact you about next steps.`;
       await notifyUser(client, {
         user_id: subRes.rows[0].seller_id,
         type: 'listing_update',
         title: passed ? 'Inspection complete' : 'Inspection report ready',
         body,
-        meta: JSON.stringify({ inspectionId: insp.id, score, grade }),
+        meta: JSON.stringify({ inspectionId: insp.id, score, grade: inspectionGrade, passed }),
       });
     }
 
     await recordAdminAction(client, {
       actorId: req.user.id, action: 'inspection.completed', targetType: 'inspection', targetId: insp.id,
-      summary: `Inspection completed with ${score}/150`, metadata: { score, passed, published: false, submission_id: insp.submission_id, car_id: insp.car_id },
+      summary: `Inspection completed with ${score}/150`, metadata: {
+        score, passed, published: false, checklist_version: CHECKLIST_VERSION,
+        critical_failures: evaluated.critical_failures.map((failure) => failure.id),
+        submission_id: insp.submission_id, car_id: insp.car_id,
+      },
     });
 
     await client.query('COMMIT');
 
-    res.json({ success: true, score, car_id: insp.car_id, published: false, ready_for_review: !!(insp.car_id && passed) });
+    res.json({
+      success: true,
+      score,
+      max_score: 150,
+      passing_score: PUBLISH_THRESHOLD,
+      passed,
+      grade: grade(score),
+      checklist_version: CHECKLIST_VERSION,
+      critical_failures: evaluated.critical_failures,
+      category_scores: evaluated.category_scores,
+      car_id: insp.car_id,
+      published: false,
+      ready_for_review: !!(insp.car_id && passed),
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     log.error('complete inspection error', { error: err.message });

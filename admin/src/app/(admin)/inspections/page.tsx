@@ -2,20 +2,21 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { api } from '@/lib/api'
+import { api, type CenterRow } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useToast } from '@/components/feedback'
 
-const CENTERS = ['all', 'Nyarutarama', 'Kicukiro', 'Kimironko']
 const STATUS_COLORS: Record<string, string> = {
   scheduled:  'bg-info-tint text-info',
-  inspecting: 'bg-info-tint text-info',
+  in_progress: 'bg-info-tint text-info',
   complete:   'bg-success-tint text-success',
 }
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10)
+  const now = new Date()
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
 export default function InspectionsPage() {
@@ -24,6 +25,7 @@ export default function InspectionsPage() {
   const [date, setDate]       = useState(todayISO())
   const [status, setStatus]   = useState('scheduled')
   const [items, setItems]     = useState<any[]>([])
+  const [centers, setCenters] = useState<CenterRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError]             = useState<unknown>(null)
   const [query, setQuery]             = useState('')
@@ -46,6 +48,11 @@ export default function InspectionsPage() {
   }
 
   useEffect(() => { load() }, [center, date, status])
+  useEffect(() => {
+    api.centers()
+      .then((rows) => setCenters(rows.filter((row) => row.active)))
+      .catch((error) => toast(error instanceof Error ? error.message : 'Could not load inspection centers.', 'error'))
+  }, [toast])
   const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((insp) => !q || [insp.make, insp.model, insp.year, insp.seller_name, insp.center, insp.id, insp.submission_id].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
 
   async function downloadReport(inspectionId: string) {
@@ -79,7 +86,8 @@ export default function InspectionsPage() {
             onChange={(e) => setCenter(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
           >
-            {CENTERS.map((c) => <option key={c}>{c === 'all' ? 'All Centers' : c}</option>)}
+            <option value="all">All Centers</option>
+            {centers.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
           </select>
         </div>
         <div>
@@ -99,7 +107,7 @@ export default function InspectionsPage() {
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
           >
             <option value="scheduled">Scheduled</option>
-            <option value="inspecting">In Progress</option>
+            <option value="in_progress">In Progress</option>
             <option value="complete">Complete</option>
           </select>
         </div>

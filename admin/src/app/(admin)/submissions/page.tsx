@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { api } from '@/lib/api'
+import { api, type CenterRow } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 
@@ -25,7 +25,8 @@ export default function SubmissionsPage() {
   const [notes, setNotes]           = useState('')
   const [showNotesFor, setShowNotesFor] = useState<string | null>(null)
   const [showScheduleFor, setShowScheduleFor] = useState<string | null>(null)
-  const [schedCenter, setSchedCenter] = useState('Nyarutarama Center')
+  const [schedCenter, setSchedCenter] = useState('')
+  const [centers, setCenters] = useState<CenterRow[]>([])
   const [schedDate, setSchedDate]     = useState('')
   const [schedTime, setSchedTime]     = useState('10:00 AM')
   const [query, setQuery]             = useState('')
@@ -45,6 +46,15 @@ export default function SubmissionsPage() {
   }
 
   useEffect(() => { load(tab) }, [tab])
+  useEffect(() => {
+    api.centers()
+      .then((rows) => {
+        const active = rows.filter((row) => row.active && row.daily_capacity > 0)
+        setCenters(active)
+        setSchedCenter((current) => current || active[0]?.name || '')
+      })
+      .catch((e) => toast(e instanceof Error ? e.message : 'Could not load active inspection centers.', 'error'))
+  }, [toast])
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -185,13 +195,9 @@ export default function SubmissionsPage() {
                   </>
                 )}
                 {sub.status === 'scheduled' && (
-                  <button
-                    onClick={() => updateStatus(sub.id, 'inspecting')}
-                    disabled={actionId === sub.id}
-                    className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-                  >
-                    Mark Inspecting
-                  </button>
+                  <p className="text-xs font-medium text-gray-500">
+                    Start this appointment from Inspections so the assigned inspector and start time are recorded.
+                  </p>
                 )}
               </div>
 
@@ -205,9 +211,9 @@ export default function SubmissionsPage() {
                       onChange={(e) => setSchedCenter(e.target.value)}
                       className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
                     >
-                      <option>Nyarutarama Center</option>
-                      <option>Kicukiro Center</option>
-                      <option>Kimironko Center</option>
+                      {centers.length ? centers.map((center) => (
+                        <option key={center.id} value={center.name}>{center.name}</option>
+                      )) : <option value="">No active centers available</option>}
                     </select>
                   </label>
                   <label className="text-xs text-gray-600">
@@ -233,6 +239,7 @@ export default function SubmissionsPage() {
                   </label>
                   <button
                     onClick={() => {
+                      if (!schedCenter) { toast('No active inspection center is available.', 'error'); return }
                       if (!schedDate) { toast('Pick a date for the appointment first.', 'error'); return }
                       updateStatus(sub.id, 'scheduled', {
                         center: schedCenter,
@@ -241,7 +248,7 @@ export default function SubmissionsPage() {
                       })
                       setShowScheduleFor(null)
                     }}
-                    disabled={actionId === sub.id}
+                    disabled={actionId === sub.id || !schedCenter}
                     className="px-4 py-2 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
                   >
                     Book Appointment

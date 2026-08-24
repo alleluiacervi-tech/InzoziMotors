@@ -13,7 +13,8 @@ import {
   type IconName,
 } from '@/components/ui'
 import { cars } from '@/lib/api'
-import { CENTERS, FAQS, SITE } from '@/lib/site'
+import { FAQS, SITE } from '@/lib/site'
+import { getDisplayCenters } from '@/lib/centers'
 import { InkClose } from '@/components/layout/InkClose'
 import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
 import { JsonLd } from '@/components/JsonLd'
@@ -101,6 +102,7 @@ async function catalogueMakes(): Promise<string[]> {
 
 export default async function SellPage() {
   const makes = await catalogueMakes()
+  const centers = await getDisplayCenters()
   const currentYear = new Date().getFullYear()
   const sellerFaqs = FAQS.filter((faq) => SELLER_QUESTIONS.includes(faq.q))
 
@@ -261,10 +263,10 @@ export default async function SellPage() {
                 One step has to happen in the app
               </h2>
               <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
-                Submitting a car requires a one-time identity check: a photo of your national ID,
-                front and back, and a selfie. A browser cannot capture those reliably enough for us
-                to stand behind them, so this single step happens in the Sawa Cars app. It takes about
-                two minutes, and you never do it again.
+                You can submit the car first. Before the listing or your direct contact details can
+                become public, complete a one-time identity check: a photo of your national ID, front
+                and back, and a selfie. The capture happens in the Sawa Cars app, takes about two
+                minutes, and only needs to be approved once.
               </p>
               <p className="mt-4 text-body leading-relaxed text-content-secondary">
                 It is also the reason there are no fake listings on Sawa Cars. Every seller on this
@@ -316,12 +318,12 @@ export default async function SellPage() {
         <Container>
           <SectionHeading
             eyebrow="Where you bring it"
-            title="Three centers across Kigali"
+            title="Inspection centers across Kigali"
             description="Inspection services happen at the center you choose. Bring the car, your ID and any service records you have."
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {CENTERS.map((center) => (
+            {centers.map((center) => (
               <Card key={center.id} className="p-6">
                 <h3 className="text-title-sm font-extrabold text-content">{center.name}</h3>
                 <p className="mt-3 flex items-start gap-2.5 text-caption leading-relaxed text-content-secondary">

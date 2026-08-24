@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { LogoMark } from '@/components/brand/Logo'
 import { Container, Icon, type IconName } from '@/components/ui'
-import { CENTERS } from '@/lib/site'
+import { getDisplayCenters } from '@/lib/centers'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shell for sign in / sign up / password reset.
@@ -41,7 +41,8 @@ const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
   },
 ]
 
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default async function AuthLayout({ children }: { children: ReactNode }) {
+  const centers = await getDisplayCenters()
   return (
     <div className="bg-surface-page">
       {/* Phones are the majority in Rwanda, and below lg the ink aside
@@ -101,7 +102,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               Inspection centers
             </p>
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-caption text-white/70">
-              {CENTERS.map((center) => (
+              {centers.map((center) => (
                 <li key={center.id} className="flex items-center gap-1.5">
                   <Icon name="location" size={14} />
                   {center.name.replace(' Center', '')}

@@ -42,9 +42,9 @@ CREATE TABLE IF NOT EXISTS cars (
   description     TEXT,
   images          TEXT[],               -- array of image URLs / file paths
   inspected       BOOLEAN DEFAULT FALSE,
-  inspection_score INT,                 -- 0–100 overall percentage score
+  inspection_score INT,                 -- canonical 0–150 inspection score
   status          TEXT NOT NULL DEFAULT 'under_review',
-  -- under_review | scheduled | inspecting | live | reserved | sold | archived
+  -- draft | under_review | scheduled | inspecting | approved | live | paused | sold | rejected | archived
   views           INT NOT NULL DEFAULT 0,
   saves           INT NOT NULL DEFAULT 0,
   listed_at       TIMESTAMPTZ,
@@ -89,8 +89,11 @@ CREATE TABLE IF NOT EXISTS inspections (
   scheduled_at      TIMESTAMPTZ,          -- parsed datetime for ordering
   started_at        TIMESTAMPTZ,
   completed_at      TIMESTAMPTZ,
-  checklist_results JSONB,               -- { itemName: 'pass'|'flag'|'fail', ... }
-  score             INT,                 -- 0–100 percentage
+  checklist_results JSONB,               -- canonical item id -> pass|flag|fail
+  checklist_version TEXT,
+  score             INT CHECK (score IS NULL OR score BETWEEN 0 AND 150),
+  passed            BOOLEAN NOT NULL DEFAULT FALSE,
+  critical_failures JSONB NOT NULL DEFAULT '[]'::jsonb,
   notes             TEXT,
   status            TEXT NOT NULL DEFAULT 'scheduled'
   -- scheduled | in_progress | complete
@@ -463,8 +466,9 @@ CREATE TABLE IF NOT EXISTS rental_cars (
   weekly_rate      INT,
   deposit          INT NOT NULL DEFAULT 0,
   min_days         INT NOT NULL DEFAULT 1,
-  inspected        BOOLEAN NOT NULL DEFAULT TRUE,
+  inspected        BOOLEAN NOT NULL DEFAULT FALSE,
   inspection_score INT,
+  inspection_id    UUID REFERENCES inspections(id) ON DELETE RESTRICT,
   rating           NUMERIC(2,1),
   trips            INT NOT NULL DEFAULT 0,
   location         TEXT,                 -- neighbourhood the car is kept in
@@ -477,6 +481,8 @@ ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS safari_ready BOOLEAN NOT NULL D
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS provider_id UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retired_at TIMESTAMPTZ;
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retirement_reason TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_rental_cars_inspection
+  ON rental_cars(inspection_id) WHERE inspection_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS rental_bookings (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

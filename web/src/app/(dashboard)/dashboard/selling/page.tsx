@@ -54,13 +54,7 @@ export default async function SellingPage() {
       <PageHeader
         title="Selling"
         description="Where each of your cars has reached. Only the Sawa team publishes listings, and only after the 150-point inspection and the photo shoot — that is what makes every car on the marketplace real."
-        action={
-          verified ? (
-            <Button href="/sell" size="sm">
-              Submit a car
-            </Button>
-          ) : undefined
-        }
+        action={<Button href="/download" size="sm">Submit in the app</Button>}
       />
 
       {failed ? (
@@ -72,12 +66,12 @@ export default async function SellingPage() {
       {!verified ? (
         <Card className="mb-8 p-6">
           <h2 className="text-title-sm font-extrabold text-content">
-            Verify your identity to start selling
+            Complete identity verification before publication
           </h2>
           <p className="mt-2 max-w-prose text-caption leading-relaxed text-content-secondary">
-            Sellers are verified before a car can enter the pipeline. It is a one-time check —
-            a photo of your national ID and a selfie, captured in the Sawa Cars app — and it is the
-            reason buyers trust what they see here. Nothing else on your account is affected.
+            You may submit a car and book its inspection now. Before an administrator can publish it
+            or enable your direct contact details, complete the one-time check in the Sawa Cars app:
+            a photo of your national ID and a selfie. Nothing else on your account is affected.
           </p>
 
           <ol className="mt-5 space-y-4">
@@ -100,7 +94,7 @@ export default async function SellingPage() {
           </ol>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button href="/download">Get the app to verify</Button>
+            <Button href="/download">Open the seller app</Button>
             <Button href="/sell" variant="outline">
               How selling works
             </Button>

@@ -2,7 +2,7 @@ const express = require('express');
 const { log } = require('../lib/log');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, verifyLiveSession } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
@@ -13,8 +13,35 @@ const {
   contactAvailability,
   ensureMarketplaceAcknowledgement,
 } = require('../lib/marketplace');
+const {
+  CHECKLIST_VERSION,
+  PUBLISH_THRESHOLD,
+  evaluateChecklist,
+} = require('../lib/inspection-policy');
 
 const router = express.Router();
+
+// SQL-level fail-closed filter for public paths. publicationReadiness below
+// additionally recomputes the checklist in JavaScript before a state change;
+// this predicate prevents a stale or obviously inconsistent row from leaking
+// through catalogue, contact, save, history or messaging reads.
+function validInspectionExists(carAlias = 'c') {
+  return `EXISTS (
+    SELECT 1
+      FROM inspections evidence
+      JOIN submissions evidence_submission ON evidence_submission.id = evidence.submission_id
+     WHERE evidence.car_id = ${carAlias}.id
+       AND evidence_submission.seller_id = ${carAlias}.seller_id
+       AND lower(evidence_submission.make) = lower(${carAlias}.make)
+       AND lower(evidence_submission.model) = lower(${carAlias}.model)
+       AND evidence_submission.year = ${carAlias}.year
+       AND evidence.status = 'complete'
+       AND evidence.checklist_version = '${CHECKLIST_VERSION}'
+       AND evidence.passed = TRUE
+       AND evidence.score >= ${PUBLISH_THRESHOLD}
+       AND jsonb_array_length(COALESCE(evidence.critical_failures, '[]'::jsonb)) = 0
+  )`;
+}
 
 // ─── Market intelligence ──────────────────────────────────────────────────────
 // The app used to fabricate "below market %" / "listed N days ago" from a
@@ -121,6 +148,7 @@ router.get('/', async (req, res) => {
            AND eligible_seller.account_status = 'active'
            AND eligible_seller.deleted_at IS NULL
            AND (COALESCE(eligible_seller.seller_type, 'individual') <> 'showroom' OR eligible_seller.business_verified = TRUE)
+           AND ${validInspectionExists('c')}
          ORDER BY (c.featured_until IS NOT NULL AND c.featured_until > NOW()) DESC,
                   c.${safeSort} ${safeOrder}
          LIMIT $${params.length - 1} OFFSET $${params.length}
@@ -156,35 +184,48 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
               u.id_verified AS seller_id_verified
        FROM cars c
        JOIN users u ON u.id = c.seller_id
-       WHERE c.id = $1`,
+       WHERE c.id = $1 AND c.status = 'live'
+         AND u.role = 'seller' AND u.id_verified = 'approved'
+         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
+         AND ${validInspectionExists('c')}`,
       [req.params.id]
     );
     if (!carRes.rows.length) return res.status(404).json({ error: 'Car not found' });
     const car = carRes.rows[0];
 
     const inspRes = await pool.query(
-      `SELECT checklist_results, score, completed_at FROM inspections
-       WHERE car_id = $1 AND status = 'complete'
+      `SELECT i.checklist_results, i.score, i.completed_at FROM inspections i
+       JOIN submissions s ON s.id = i.submission_id
+       JOIN cars c ON c.id = i.car_id
+       WHERE i.car_id = $1 AND i.status = 'complete' AND i.passed = TRUE
+         AND i.checklist_version = $2 AND s.seller_id = c.seller_id
+         AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model) AND s.year = c.year
        ORDER BY completed_at DESC LIMIT 1`,
-      [req.params.id]
+      [req.params.id, CHECKLIST_VERSION]
     );
-    const checklist = inspRes.rows[0]?.checklist_results || null;
-    const docVerdict = (item) => (checklist ? checklist[item] || 'unknown' : 'unknown');
+    if (!inspRes.rowCount) return res.status(404).json({ error: 'Vehicle history not found' });
+    const checklist = inspRes.rows[0].checklist_results;
+    const evaluated = evaluateChecklist(checklist);
+    if (!evaluated.valid || !evaluated.passed || evaluated.score !== Number(inspRes.rows[0].score)) {
+      return res.status(404).json({ error: 'Vehicle history not found' });
+    }
+    const docVerdict = (itemId) => checklist[itemId] || 'unknown';
 
     res.json({
       vin: car.vin || null,
-      vin_verified: checklist ? docVerdict('VIN match') === 'pass' : false,
+      vin_verified: docVerdict('d06') === 'pass',
       make: car.make, model: car.model, year: car.year,
       drive_side: car.drive_side,
       import_origin: car.drive_side === 'RHD' ? 'Japan (typical for RHD)' : 'Unknown',
       mileage: car.mileage,
-      mileage_verified: checklist ? docVerdict('Odometer reading') === 'pass' : false,
-      rra_duty_paid: docVerdict('RRA duty paid stamp'),
-      registration: docVerdict('Registration / logbook'),
-      service_history: docVerdict('Service history'),
-      insurance_valid: docVerdict('Insurance valid'),
+      mileage_verified: docVerdict('i07') === 'pass' && docVerdict('d21') !== 'fail',
+      rra_duty_paid: docVerdict('d14'),
+      registration: docVerdict('d01'),
+      service_history: docVerdict('d20'),
+      insurance_valid: docVerdict('d18'),
       inspection_score: car.inspection_score,
-      inspected_at: inspRes.rows[0]?.completed_at || null,
+      inspected_at: inspRes.rows[0].completed_at,
       seller: {
         name: car.seller_name,
         id_verified: car.seller_id_verified === 'approved',
@@ -201,10 +242,14 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
 // Best-effort identity for otherwise-public routes: sets req.user when a valid
 // token is present, and simply carries on when one is not. Used where the
 // RESPONSE differs for a signed-in caller but the route itself stays public.
-function optionalAuth(req, _res, next) {
+async function optionalAuth(req, _res, next) {
   const header = req.headers.authorization;
   if (header && header.startsWith('Bearer ')) {
-    try { req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET); } catch { /* anonymous */ }
+    try {
+      const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+      const live = await verifyLiveSession(payload);
+      if (live.ok) req.user = payload;
+    } catch { /* invalid, revoked or unavailable optional identity is anonymous */ }
   }
   next();
 }
@@ -225,14 +270,16 @@ router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => 
               u.role, u.id_verified, u.account_status, u.deleted_at,
               u.seller_type, u.business_verified,
               buyer.marketplace_terms_accepted_at,
-              buyer.marketplace_terms_version
+              buyer.marketplace_terms_version,
+              ${validInspectionExists('c')} AS has_valid_inspection
        FROM cars c
        JOIN users u ON u.id = c.seller_id
        JOIN users buyer ON buyer.id = $2
        WHERE c.id = $1`,
       [req.params.id, req.user.id]
     );
-    if (!rows.length || (rows[0].status !== 'live' && req.user.role !== 'admin' && rows[0].seller_id !== req.user.id)) {
+    if (!rows.length || ((!rows[0].has_valid_inspection || rows[0].status !== 'live')
+        && req.user.role !== 'admin' && rows[0].seller_id !== req.user.id)) {
       return res.status(404).json({ error: 'Live listing not found' });
     }
     const car = rows[0];
@@ -311,6 +358,7 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
               u.seller_type AS seller_type,
               u.business_verified AS seller_business_verified,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
+              ${validInspectionExists('c')} AS has_valid_inspection,
               COALESCE((SELECT json_agg(json_build_object('price', ph.price, 'at', ph.changed_at) ORDER BY ph.changed_at)
                         FROM price_history ph WHERE ph.car_id = c.id), '[]') AS price_history,
 ${MARKET_COLUMNS}
@@ -336,7 +384,7 @@ ${MARKET_LATERALS}
     if (!sellerEligible && !isInsider) {
       return res.status(404).json({ error: 'Car not found' });
     }
-    if (!PUBLICLY_VISIBLE.includes(car.status) && !isInsider) {
+    if ((!PUBLICLY_VISIBLE.includes(car.status) || !car.has_valid_inspection) && !isInsider) {
       return res.status(404).json({ error: 'Car not found' });
     }
 
@@ -392,19 +440,36 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
   const user_id = req.user.id;
   try {
     const result = await withTransaction(async (client) => {
-      // ON CONFLICT DO NOTHING + rowCount tells us whether this was an insert
-      // or an existing row, without a separate SELECT to race against.
-      const ins = await client.query(
-        `INSERT INTO saved_cars (user_id, car_id) VALUES ($1, $2)
-         ON CONFLICT (user_id, car_id) DO NOTHING`,
+      const existing = await client.query(
+        'SELECT 1 FROM saved_cars WHERE user_id = $1 AND car_id = $2 FOR UPDATE',
         [user_id, car_id]
       );
-      const saved = ins.rowCount > 0;
-      if (!saved) {
+      let saved = false;
+      if (existing.rowCount) {
         await client.query(
           'DELETE FROM saved_cars WHERE user_id = $1 AND car_id = $2',
           [user_id, car_id]
         );
+      } else {
+        const eligible = await client.query(
+          `SELECT 1 FROM cars c JOIN users u ON u.id = c.seller_id
+           WHERE c.id = $1 AND c.status = 'live'
+             AND u.role = 'seller' AND u.id_verified = 'approved'
+             AND u.account_status = 'active' AND u.deleted_at IS NULL
+             AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
+             AND ${validInspectionExists('c')}`,
+          [car_id]
+        );
+        if (!eligible.rowCount) {
+          const error = new Error('Live listing not found');
+          error.status = 404;
+          throw error;
+        }
+        await client.query(
+          'INSERT INTO saved_cars (user_id, car_id) VALUES ($1, $2)',
+          [user_id, car_id]
+        );
+        saved = true;
       }
       await client.query(
         `UPDATE cars SET saves = (SELECT COUNT(*) FROM saved_cars WHERE car_id = $1)
@@ -415,6 +480,7 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
     });
     res.json(result);
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     // A car_id that does not exist violates the foreign key — a client error.
     if (err.code === '23503') {
       return res.status(404).json({ error: 'Car not found' });
@@ -432,7 +498,11 @@ router.get('/saved/list', requireAuth, paginate(), async (req, res) => {
        FROM saved_cars sc
        JOIN cars c ON c.id = sc.car_id
        JOIN users u ON u.id = c.seller_id
-       WHERE sc.user_id = $1
+       WHERE sc.user_id = $1 AND c.status = 'live'
+         AND u.role = 'seller' AND u.id_verified = 'approved'
+         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
+         AND ${validInspectionExists('c')}
        ORDER BY sc.saved_at DESC
        LIMIT $2 OFFSET $3`,
       [req.user.id, req.pagination.limit, req.pagination.offset]
@@ -489,13 +559,35 @@ router.post('/', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Showroom business verification is required' });
     }
     const car = await withTransaction(async (client) => {
+      let inspectionEvidence = null;
       if (submission_id) {
         const submission = await client.query(
-          'SELECT seller_id FROM submissions WHERE id = $1 FOR UPDATE', [submission_id]
+          'SELECT seller_id, make, model, year FROM submissions WHERE id = $1 FOR UPDATE', [submission_id]
         );
         if (!submission.rowCount) { const e = new Error('Submission not found'); e.status = 404; throw e; }
         if (submission.rows[0].seller_id !== seller_id) {
           const e = new Error('Submission belongs to a different seller'); e.status = 409; throw e;
+        }
+        if (String(submission.rows[0].make).toLowerCase() !== String(make).toLowerCase()
+            || String(submission.rows[0].model).toLowerCase() !== String(model).toLowerCase()
+            || Number(submission.rows[0].year) !== Number(year)) {
+          const e = new Error('Listing make, model and year must match the inspected submission'); e.status = 409; throw e;
+        }
+        const inspection = await client.query(
+          `SELECT id, score, checklist_results, checklist_version, passed
+             FROM inspections
+            WHERE submission_id = $1 AND status = 'complete'
+            ORDER BY completed_at DESC NULLS LAST, id DESC LIMIT 1`,
+          [submission_id]
+        );
+        if (!inspection.rowCount) {
+          const e = new Error('Complete the submission inspection before creating its listing'); e.status = 409; throw e;
+        }
+        inspectionEvidence = inspection.rows[0];
+        const evaluated = evaluateChecklist(inspectionEvidence.checklist_results);
+        if (inspectionEvidence.checklist_version !== CHECKLIST_VERSION || !inspectionEvidence.passed
+            || !evaluated.valid || !evaluated.passed || evaluated.score !== Number(inspectionEvidence.score)) {
+          const e = new Error('The submission does not have a valid, passing 150-point inspection'); e.status = 409; throw e;
         }
       }
       const { rows } = await client.query(
@@ -519,14 +611,12 @@ router.post('/', requireAdmin, async (req, res) => {
           [created.id, submission_id]
         );
         await client.query(
-          'UPDATE inspections SET car_id = $1 WHERE submission_id = $2',
-          [created.id, submission_id]
+          'UPDATE inspections SET car_id = $1 WHERE id = $2',
+          [created.id, inspectionEvidence.id]
         );
         await client.query(
-          `UPDATE cars c SET inspected = TRUE, inspection_score = i.score
-           FROM inspections i
-           WHERE c.id = $1 AND i.submission_id = $2 AND i.status = 'complete'`,
-          [created.id, submission_id]
+          'UPDATE cars SET inspected = TRUE, inspection_score = $2 WHERE id = $1',
+          [created.id, Number(inspectionEvidence.score)]
         );
       }
       await recordAdminAction(client, {
@@ -624,38 +714,53 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     }
   }
   try {
-    const before = await pool.query('SELECT * FROM cars WHERE id = $1', [req.params.id]);
-    if (!before.rows.length) return res.status(404).json({ error: 'Car not found' });
+    const result = await withTransaction(async (client) => {
+      const before = await client.query('SELECT * FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!before.rowCount) { const error = new Error('Car not found'); error.status = 404; throw error; }
 
-    if (req.body.seller_id !== undefined) {
-      const seller = await pool.query(
-        `SELECT 1 FROM users WHERE id = $1 AND role = 'seller' AND id_verified = 'approved'
-         AND account_status = 'active' AND deleted_at IS NULL
-         AND (COALESCE(seller_type, 'individual') <> 'showroom' OR business_verified = TRUE)`, [req.body.seller_id]
+      if (req.body.seller_id !== undefined) {
+        const seller = await client.query(
+          `SELECT 1 FROM users WHERE id = $1 AND role = 'seller' AND id_verified = 'approved'
+           AND account_status = 'active' AND deleted_at IS NULL
+           AND (COALESCE(seller_type, 'individual') <> 'showroom' OR business_verified = TRUE)`, [req.body.seller_id]
+        );
+        if (!seller.rowCount) {
+          const error = new Error('New seller must be active and identity-verified'); error.status = 400; throw error;
+        }
+      }
+
+      const updateParams = [...params, req.params.id];
+      const { rows } = await client.query(
+        `UPDATE cars SET ${updates.join(', ')} WHERE id = $${updateParams.length} RETURNING *`,
+        updateParams
       );
-      if (!seller.rowCount) return res.status(400).json({ error: 'New seller must be active and identity-verified' });
-    }
-
-    params.push(req.params.id);
-    const { rows } = await pool.query(
-      `UPDATE cars SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,
-      params
-    );
-
-    if (req.body.price !== undefined && Number(req.body.price) !== Number(before.rows[0].price)) {
-      await pool.query(
-        `INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)`,
-        [req.params.id, Number(req.body.price), req.user.id]
-      );
-      notifyPriceDrop(req.params.id, Number(before.rows[0].price), Number(req.body.price));
-    }
-    await recordAdminAction(pool, {
-      actorId: req.user.id, action: 'listing.updated', targetType: 'listing', targetId: req.params.id,
-      summary: `${rows[0].title} listing details updated`,
-      metadata: { changed_fields: updates.map((u) => u.split(' = ')[0]) },
+      let readiness = null;
+      if (['approved', 'live'].includes(rows[0].status)) {
+        readiness = await publicationReadiness(client, req.params.id);
+        if (!readiness?.ready) {
+          const error = new Error(`This edit would invalidate a public listing. Missing: ${readiness?.missing.join(', ') || 'requirements'}`);
+          error.status = 409; error.code = 'LISTING_NOT_READY'; error.readiness = readiness; throw error;
+        }
+      }
+      if (req.body.price !== undefined && Number(req.body.price) !== Number(before.rows[0].price)) {
+        await client.query(
+          'INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)',
+          [req.params.id, Number(req.body.price), req.user.id]
+        );
+      }
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'listing.updated', targetType: 'listing', targetId: req.params.id,
+        summary: `${rows[0].title} listing details updated`,
+        metadata: { changed_fields: updates.map((u) => u.split(' = ')[0]), readiness },
+      });
+      return { car: rows[0], oldPrice: Number(before.rows[0].price) };
     });
-    res.json(rows[0]);
+    if (req.body.price !== undefined && Number(req.body.price) !== result.oldPrice) {
+      notifyPriceDrop(req.params.id, result.oldPrice, Number(req.body.price), result.car.title);
+    }
+    res.json(result.car);
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, readiness: err.readiness });
     log.error('edit car error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
@@ -720,16 +825,27 @@ router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) =
 
 async function publicationReadiness(client, carId) {
   const { rows } = await client.query(
-    `SELECT c.id, c.title,
+    `SELECT c.id, c.title, c.make, c.model, c.year, c.price, c.seller_id,
             u.role, u.id_verified, u.account_status, u.deleted_at,
             u.seller_type, u.business_verified,
             COALESCE(cardinality(c.images), 0)::int AS legacy_photo_count,
             (SELECT COUNT(*)::int FROM car_photos p WHERE p.car_id = c.id) AS structured_photo_count,
-            EXISTS (
-              SELECT 1 FROM inspections i
-              WHERE i.car_id = c.id AND i.status = 'complete'
-            ) AS has_completed_inspection
+            evidence.id AS inspection_id, evidence.status AS inspection_status,
+            evidence.score AS inspection_score, evidence.checklist_results,
+            evidence.checklist_version, evidence.passed AS inspection_passed,
+            evidence.critical_failures, evidence.evidence_seller_id,
+            evidence.evidence_make, evidence.evidence_model, evidence.evidence_year
      FROM cars c JOIN users u ON u.id = c.seller_id
+     LEFT JOIN LATERAL (
+       SELECT i.id, i.status, i.score, i.checklist_results, i.checklist_version,
+              i.passed, i.critical_failures, s.seller_id AS evidence_seller_id,
+              s.make AS evidence_make, s.model AS evidence_model, s.year AS evidence_year
+         FROM inspections i
+         JOIN submissions s ON s.id = i.submission_id
+        WHERE i.car_id = c.id AND i.status = 'complete'
+        ORDER BY i.completed_at DESC NULLS LAST, i.id DESC
+        LIMIT 1
+     ) evidence ON TRUE
      WHERE c.id = $1`,
     [carId]
   );
@@ -744,20 +860,63 @@ async function publicationReadiness(client, carId) {
   const car = rows[0];
   const photoCount = Math.max(car.legacy_photo_count, car.structured_photo_count);
   const missing = [];
+  if (!String(car.title || '').trim()) missing.push('listing title');
+  if (!String(car.make || '').trim() || !String(car.model || '').trim()) missing.push('vehicle make and model');
+  if (!Number.isInteger(Number(car.year)) || Number(car.year) < 1900) missing.push('valid vehicle year');
+  if (!Number.isFinite(Number(car.price)) || Number(car.price) <= 0) missing.push('positive listing price');
   if (car.role !== 'seller') missing.push('seller account role');
   if (car.id_verified !== 'approved') missing.push('seller identity approval');
   if (car.account_status !== 'active' || car.deleted_at) missing.push('active seller account');
   if (car.seller_type === 'showroom' && car.business_verified !== true) missing.push('showroom business approval');
   if (photoCount < minPhotos) missing.push(`${minPhotos} valid listing photo${minPhotos === 1 ? '' : 's'}`);
-  if (inspectionRequired && !car.has_completed_inspection) missing.push('completed vehicle inspection');
-  return { ready: missing.length === 0, missing, photo_count: photoCount, inspection_required: inspectionRequired };
+  let evaluated = null;
+  if (inspectionRequired) {
+    if (!car.inspection_id) {
+      missing.push('completed 150-point vehicle inspection');
+    } else {
+      evaluated = evaluateChecklist(car.checklist_results);
+      if (car.checklist_version !== CHECKLIST_VERSION) missing.push('current inspection checklist version');
+      if (car.evidence_seller_id !== car.seller_id) missing.push('inspection linked to the current seller');
+      if (String(car.evidence_make).toLowerCase() !== String(car.make).toLowerCase()
+          || String(car.evidence_model).toLowerCase() !== String(car.model).toLowerCase()
+          || Number(car.evidence_year) !== Number(car.year)) missing.push('inspection linked to this vehicle make, model and year');
+      if (!evaluated.valid) missing.push('complete 150-point inspection checklist');
+      if (evaluated.score !== Number(car.inspection_score)) missing.push('consistent inspection score');
+      if (!car.inspection_passed || !evaluated.passed) missing.push(`passing inspection (${PUBLISH_THRESHOLD}/150 with no critical failures)`);
+    }
+  }
+  return {
+    ready: missing.length === 0,
+    missing: [...new Set(missing)],
+    photo_count: photoCount,
+    min_photos: minPhotos,
+    inspection_required: inspectionRequired,
+    inspection: car.inspection_id ? {
+      id: car.inspection_id,
+      version: car.checklist_version,
+      score: Number(car.inspection_score),
+      passed: Boolean(car.inspection_passed && evaluated?.passed),
+      critical_failures: evaluated?.critical_failures || [],
+    } : null,
+  };
 }
 
 router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) => {
   const status = req.body.status === 'removed' ? 'archived' : String(req.body.status || '');
   const reason = String(req.body.reason || '').trim().slice(0, 1000);
-  const allowed = ['draft', 'under_review', 'scheduled', 'inspecting', 'approved', 'live', 'paused', 'sold', 'rejected', 'archived'];
-  if (!allowed.includes(status)) {
+  const transitions = {
+    draft: ['under_review', 'rejected', 'archived'],
+    under_review: ['approved', 'rejected', 'archived'],
+    scheduled: ['under_review', 'rejected', 'archived'],
+    inspecting: ['under_review', 'rejected', 'archived'],
+    approved: ['live', 'under_review', 'rejected', 'archived'],
+    live: ['paused', 'sold', 'under_review', 'archived'],
+    paused: ['live', 'sold', 'under_review', 'archived'],
+    sold: ['archived'],
+    rejected: ['under_review', 'archived'],
+    archived: ['under_review'],
+  };
+  if (!Object.values(transitions).some((targets) => targets.includes(status))) {
     return res.status(400).json({ error: 'Invalid status' });
   }
   if (['rejected', 'archived'].includes(status) && !reason) {
@@ -768,6 +927,15 @@ router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) =>
     await client.query('BEGIN');
     const current = await client.query('SELECT status, seller_id FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
     if (!current.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Car not found' }); }
+    const previousStatus = current.rows[0].status;
+    if (status !== previousStatus && !(transitions[previousStatus] || []).includes(status)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: `A ${previousStatus} listing cannot move directly to ${status}.`,
+        code: 'INVALID_LISTING_TRANSITION',
+        allowed_transitions: transitions[previousStatus] || [],
+      });
+    }
     let readiness = null;
     if (status === 'approved' || status === 'live') {
       readiness = await publicationReadiness(client, req.params.id);

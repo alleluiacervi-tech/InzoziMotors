@@ -1,5 +1,5 @@
 import type {
-  AppNotification, Car, CarQuery, Conversation, InspectionReport,
+  AppNotification, Car, CarQuery, Conversation, InspectionCenter, InspectionReport,
   Message, RentalCar, RentalInquiry, Review, SavedSearch, Submission, TrustScore, User,
   Valuation, VehicleHistory,
 } from './types'
@@ -169,6 +169,8 @@ export const cars = {
 export const rentals = {
   list: () => request<RentalCar[]>('/rentals', { revalidate: CATALOGUE_REVALIDATE, tags: ['rentals'] }),
   get: (id: string) => request<RentalCar>(`/rentals/${id}`, { revalidate: CATALOGUE_REVALIDATE }),
+  inspectionReport: (id: string) =>
+    request<InspectionReport>(`/inspections/report/rental/${id}`, { revalidate: CATALOGUE_REVALIDATE }),
   inquire: (token: string, id: string, body: { start_date?: string; days?: number; pickup_location?: string; message?: string; preferred_channel: 'in_app' | 'phone' | 'whatsapp'; acknowledge: boolean }) =>
     request<RentalInquiry & { contact?: string | null; notice: string }>(`/rentals/${id}/inquire`, {
       token, method: 'POST', body: JSON.stringify(body), cache: 'no-store',
@@ -176,6 +178,13 @@ export const rentals = {
   myInquiries: (token: string) => request<RentalInquiry[]>('/rentals/inquiries/my', { token, cache: 'no-store' }),
   updateInquiry: (token: string, id: string, status: 'cancelled') =>
     request<RentalInquiry>(`/rentals/inquiries/${id}/status`, { token, method: 'PATCH', body: JSON.stringify({ status }) }),
+}
+
+export const inspectionCenters = {
+  active: () => request<InspectionCenter[]>('/centers/active', {
+    revalidate: 60,
+    tags: ['inspection-centers'],
+  }),
 }
 
 export const sellers = {
@@ -244,7 +253,7 @@ export const account = {
       body: JSON.stringify({ current_password, new_password }),
     }),
 
-  /** Permanent. 401 = wrong password, 409 = an open handover blocks it. */
+  /** Permanent. The API re-authenticates before anonymising the account. */
   deleteAccount: (token: string, password: string) =>
     request<{ success: true }>('/auth/me', {
       token,

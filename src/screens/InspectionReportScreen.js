@@ -104,7 +104,10 @@ export default function InspectionReportScreen({ navigation, route }) {
     if (!isApiCar) return;
     let alive = true;
     setFailed(false);
-    inspectionsApi.getReport(carId)
+    const loadReport = car?.listingType === 'rental'
+      ? inspectionsApi.getRentalReport(carId)
+      : inspectionsApi.getReport(carId);
+    loadReport
       .then((report) => {
         if (!alive) return;
         const mapped = buildReportFromApi(report);
@@ -113,7 +116,7 @@ export default function InspectionReportScreen({ navigation, route }) {
       })
       .catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [carId, isApiCar]);
+  }, [carId, isApiCar, car?.listingType]);
 
   // No report to draw — loading spinner while the fetch is in flight, an
   // honest unavailable state on 404/outage. All hooks stay above this return.

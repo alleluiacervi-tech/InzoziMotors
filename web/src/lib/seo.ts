@@ -108,8 +108,10 @@ export function websiteNode() {
  * time below is already printed on /how-it-works and /about for human readers;
  * this only restates it for machines.
  */
-export function autoDealerNodes() {
-  return CENTERS.map((center) => ({
+export function autoDealerNodes(
+  centers: ReadonlyArray<{ id: string; name: string; area: string; address: string; hours: string }> = CENTERS
+) {
+  return centers.map((center) => ({
     '@type': 'AutoDealer',
     '@id': `${SITE.url}/#center-${center.id}`,
     name: `${SITE.name} — ${center.name}`,

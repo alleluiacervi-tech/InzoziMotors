@@ -122,56 +122,28 @@ export const MOCK_INSPECTION_RESULT = {
   ],
 };
 
-// ─── API report → screen shape ────────────────────────────────────────────────
-// Mirrors backend CATEGORY_WEIGHTS (inspections.js): same names, weights, items.
-const API_CATEGORY_DEFS = [
-  { id: 'engine',      name: 'Engine & Drivetrain', weight: 25, items: ['Engine oil level & condition', 'Coolant level', 'Timing belt condition', 'Air filter', 'Engine mounts', 'Transmission fluid'] },
-  { id: 'brakes',      name: 'Brakes & Steering',   weight: 25, items: ['Front brake pads', 'Rear brake pads', 'Brake fluid', 'Brake lines', 'Power steering fluid', 'Wheel alignment'] },
-  { id: 'body',        name: 'Body & Exterior',     weight: 20, items: ['Panel gaps & alignment', 'Paint condition', 'Windscreen integrity', 'Front lights', 'Rear lights', 'Rust / corrosion'] },
-  { id: 'interior',    name: 'Interior & Comfort',  weight: 20, items: ['Seat condition', 'Dashboard instruments', 'Air conditioning', 'Windows & locks', 'Odometer reading', 'Boot / trunk'] },
-  { id: 'electronics', name: 'Electronics & Safety', weight: 20, items: ['Battery health', 'OBD scan (no fault codes)', 'Airbag system', 'Traction control', 'Seatbelts', 'Horn'] },
-  { id: 'tyres',       name: 'Tyres & Wheels',      weight: 15, items: ['Front-left tread', 'Front-right tread', 'Rear-left tread', 'Rear-right tread', 'Spare tyre', 'Wheel condition'] },
-  { id: 'docs',        name: 'Documentation',       weight: 25, items: ['Registration / logbook', 'Service history', 'Import documents', 'Insurance valid', 'RRA duty paid stamp', 'VIN match'] },
-];
-
 // Convert GET /inspections/report/:carId into the shape the report screen renders.
-// Returns null when the payload has no usable checklist.
+// Category scores are recomputed by the backend from the versioned canonical
+// checklist. The app never fills a missing category with a fabricated pass.
 export function buildReportFromApi(report) {
-  if (!report) return null;
-  let checklist = report.checklist_results;
-  if (typeof checklist === 'string') {
-    try { checklist = JSON.parse(checklist); } catch { checklist = null; }
-  }
-  if (!checklist || typeof checklist !== 'object' || !Object.keys(checklist).length) return null;
-
-  const value = (v) => (v === 'pass' ? 1 : v === 'flag' ? 0.5 : 0);
-  const categories = API_CATEGORY_DEFS.map((def) => {
-    const present = def.items.filter((item) => checklist[item] !== undefined);
-    if (!present.length) {
-      return { id: def.id, name: def.name, maxPts: def.weight, earned: def.weight, flags: [] };
-    }
-    const got = present.reduce((sum, item) => sum + value(checklist[item]), 0);
-    const flags = present
-      .filter((item) => checklist[item] !== 'pass')
-      .map((item) => `${item} — ${checklist[item] === 'flag' ? 'flagged for attention' : 'failed inspection'}`);
-    return {
-      id: def.id,
-      name: def.name,
-      maxPts: def.weight,
-      earned: Math.round((got / present.length) * def.weight),
-      flags,
-    };
-  });
-
-  const score = Number(report.score) || categories.reduce((s, c) => s + c.earned, 0);
+  if (!report?.passed || !Array.isArray(report.category_scores) || !report.category_scores.length) return null;
+  const categories = report.category_scores.map((category) => ({
+    id: category.id,
+    name: category.name,
+    maxPts: Number(category.max_points),
+    earned: Number(category.earned),
+    flags: (category.flags || []).map((flag) => `${flag.label} — ${flag.verdict === 'flag' ? 'flagged for attention' : 'failed inspection'}`),
+  }));
+  const score = Number(report.score);
+  if (!Number.isFinite(score)) return null;
   return {
     score,
-    maxScore: 150,
+    maxScore: Number(report.max_score) || 150,
     date: report.completed_at
       ? new Date(report.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : 'Recently',
-    inspector: 'Sawa Inspection Team',
-    certified: score >= 132,
+    inspector: report.inspector_name || 'Sawa Inspection Team',
+    certified: report.passed === true,
     categories,
   };
 }

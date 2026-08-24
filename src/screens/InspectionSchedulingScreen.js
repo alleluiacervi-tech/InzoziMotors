@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,32 +6,30 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
-import { showToast, showConfirm } from '../components/Feedback';
+import { showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
+import inspectionsApi from '../api/inspections';
 
-const CENTERS = [
+const DEMO_CENTERS = [
   {
     id: 'nyarutarama',
     name: 'Nyarutarama Center',
     address: 'KG 9 Ave, Nyarutarama, Kigali',
-    hours: 'Mon–Sat, 8:00 AM – 5:00 PM',
-    slots: 12,
+    daily_capacity: 12,
     icon: 'business-outline',
   },
   {
     id: 'kicukiro',
     name: 'Kicukiro Center',
     address: 'KN 5 Rd, Kicukiro, Kigali',
-    hours: 'Mon–Sat, 8:00 AM – 5:00 PM',
-    slots: 8,
+    daily_capacity: 8,
     icon: 'business-outline',
   },
   {
     id: 'kimironko',
     name: 'Kimironko Center',
     address: 'KG 28 St, Kimironko, Kigali',
-    hours: 'Mon–Fri, 9:00 AM – 4:00 PM',
-    slots: 5,
+    daily_capacity: 5,
     icon: 'business-outline',
   },
 ];
@@ -45,13 +43,12 @@ const getDates = () => {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const dow = d.getDay();
-    const available = dow !== 0; // No Sundays
     const pad = (n) => String(n).padStart(2, '0');
     dates.push({
       label: days[dow],
       date: d.getDate(),
       month: months[d.getMonth()],
-      available,
+      available: true,
       // Zero-padded ISO. The server parses this as a real date — the old
       // unpadded `2026-8-5` and the `"Aug 12"` string that used to be sent
       // instead were neither sortable nor comparable, which is how the
@@ -65,10 +62,10 @@ const getDates = () => {
 const TIME_SLOTS = [
   { label: '8:00 AM', available: true },
   { label: '9:00 AM', available: true },
-  { label: '10:00 AM', available: false },
+  { label: '10:00 AM', available: true },
   { label: '11:00 AM', available: true },
   { label: '12:00 PM', available: true },
-  { label: '1:00 PM', available: false },
+  { label: '1:00 PM', available: true },
   { label: '2:00 PM', available: true },
   { label: '3:00 PM', available: true },
   { label: '4:00 PM', available: true },
@@ -79,28 +76,56 @@ const DATES = getDates();
 export default function InspectionSchedulingScreen({ navigation, route }) {
   const carName = route?.params?.carName || 'Your Car';
   const submissionId = route?.params?.submissionId || null;
-  const { scheduleInspection } = useApp();
+  const { scheduleInspection, demoMode } = useApp();
+  const [centers, setCenters] = useState(demoMode ? DEMO_CENTERS : []);
+  const [centersError, setCentersError] = useState('');
+  const [booking, setBooking] = useState(false);
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
 
   const canBook = selectedCenter && selectedDate && selectedTime;
 
-  const handleBook = () => {
-    const center = CENTERS.find((c) => c.id === selectedCenter);
+  useEffect(() => {
+    let current = true;
+    inspectionsApi.activeCenters()
+      .then((rows) => {
+        if (!current) return;
+        setCenters(rows);
+        setCentersError(rows.length ? '' : 'No inspection centers are currently accepting bookings.');
+        setSelectedCenter((value) => rows.some((center) => center.id === value) ? value : null);
+      })
+      .catch((error) => {
+        if (!current || demoMode) return;
+        setCenters([]);
+        setCentersError(error.message || 'Could not load inspection centers. Try again.');
+      });
+    return () => { current = false; };
+  }, [demoMode]);
+
+  const handleBook = async () => {
+    const center = centers.find((c) => c.id === selectedCenter);
     const date = DATES.find((d) => d.key === selectedDate);
-    // Write the booking back to the submission (API when reachable, local otherwise)
-    if (submissionId) {
-      scheduleInspection(submissionId, {
+    if (!submissionId || !center || !date || !selectedTime) {
+      showToast('Choose a center, date, and time before confirming.', 'error');
+      return;
+    }
+    setBooking(true);
+    try {
+      await scheduleInspection(submissionId, {
         center: center.name,
         // ISO, not "Aug 12" — the server stores the real date and derives the
         // display string, so a booking can never be ambiguous about its year.
         date: date.key,
         time: selectedTime,
       });
+      showToast(`Inspection booked — ${date.month} ${date.date} at ${selectedTime}, ${center.name}.`, 'success');
+      navigation.navigate('SellerDashboard');
+    } catch (error) {
+      showToast(error.message || 'The appointment could not be booked. Try another slot.', 'error');
+    } finally {
+      setBooking(false);
     }
-    showToast(`Inspection booked — ${date.month} ${date.date} at ${selectedTime}, ${center.name}.`, 'success');
-    navigation.navigate('SellerDashboard');
   };
 
   return (
@@ -113,10 +138,10 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
           <Ionicons name="checkmark-circle" size={28} color={colors.blueLight} />
           <View style={{ flex: 1 }}>
             <Text style={styles.heroLabel}>
-              {submissionId ? 'Your submission was approved!' : 'Book a 150-point inspection'}
+              {submissionId ? 'Your submission is ready to schedule' : 'Book a 150-point inspection'}
             </Text>
             <Text style={styles.heroTitle}>{carName}</Text>
-            <Text style={styles.heroSub}>Book a 150-point inspection to go live on the platform.</Text>
+            <Text style={styles.heroSub}>The completed report is required before admin approval and publication.</Text>
           </View>
         </LinearGradient>
 
@@ -124,23 +149,22 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Choose Inspection Center</Text>
           <View style={styles.centerList}>
-            {CENTERS.map((c) => (
+            {centersError ? <Text style={styles.centerError}>{centersError}</Text> : null}
+            {centers.map((c) => (
               <Pressable
                 key={c.id}
                 style={[styles.centerCard, selectedCenter === c.id && styles.centerCardActive]}
                 onPress={() => setSelectedCenter(c.id)}
               >
                 <View style={[styles.centerIcon, { backgroundColor: selectedCenter === c.id ? colors.primary : colors.surfaceAlt }]}>
-                  <Ionicons name={c.icon} size={22} color={selectedCenter === c.id ? '#fff' : colors.textMuted} />
+                  <Ionicons name="business-outline" size={22} color={selectedCenter === c.id ? '#fff' : colors.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.centerName, selectedCenter === c.id && { color: colors.primary }]}>{c.name}</Text>
                   <Text style={styles.centerAddress}>{c.address}</Text>
                   <View style={styles.centerMeta}>
                     <Ionicons name="time-outline" size={12} color={colors.textMuted} />
-                    <Text style={styles.centerMetaText}>{c.hours}</Text>
-                    <View style={styles.dot} />
-                    <Text style={[styles.centerMetaText, { color: colors.primary }]}>{c.slots} slots left</Text>
+                    <Text style={styles.centerMetaText}>Capacity {c.daily_capacity} inspections per day</Text>
                   </View>
                 </View>
                 {selectedCenter === c.id && (
@@ -220,7 +244,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
           <View style={styles.confirmCard}>
             <Text style={styles.confirmTitle}>Booking Summary</Text>
             <View style={styles.confirmRows}>
-              <ConfirmRow icon="business-outline" label="Center" value={CENTERS.find((c) => c.id === selectedCenter)?.name} />
+              <ConfirmRow icon="business-outline" label="Center" value={centers.find((c) => c.id === selectedCenter)?.name} />
               {(() => {
                 const d = DATES.find((x) => x.key === selectedDate);
                 return d ? <ConfirmRow icon="calendar-outline" label="Date" value={`${d.label}, ${d.month} ${d.date}`} /> : null;
@@ -238,7 +262,8 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
           <Button
             title="Confirm Booking"
             onPress={handleBook}
-            style={{ opacity: canBook ? 1 : 0.4 }}
+            disabled={!canBook}
+            loading={booking}
           />
           {!canBook && <Text style={styles.footerHint}>Select center, date, and time to confirm</Text>}
         </View>
@@ -289,7 +314,7 @@ const styles = StyleSheet.create({
   centerAddress: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   centerMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   centerMetaText: { fontSize: 11, color: colors.textMuted },
-  dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.border, marginHorizontal: 2 },
+  centerError: { fontSize: 13, lineHeight: 19, fontFamily: fonts.medium, color: colors.danger, paddingVertical: 8 },
   dateScroll: { paddingLeft: 0, gap: 8, paddingRight: 8 },
   dateCard: {
     width: 64, alignItems: 'center', paddingVertical: 12,

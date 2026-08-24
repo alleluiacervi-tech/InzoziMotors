@@ -123,10 +123,33 @@ export type ChecklistVerdict = 'pass' | 'flag' | 'fail'
 export interface InspectionReport {
   car_id?: string
   score: number
+  max_score: number
+  passing_score: number
+  passed: boolean
+  checklist_version: string
   checklist_results: Record<string, ChecklistVerdict>
+  category_scores: Array<{
+    id: string
+    name: string
+    max_points: number
+    earned: number
+    checked: number
+    pass_count: number
+    flag_count: number
+    fail_count: number
+    flags: Array<{ id: string; label: string; verdict: 'flag' | 'fail'; critical: boolean }>
+  }>
   notes?: string | null
   completed_at?: string | null
   center?: string
+}
+
+export interface InspectionCenter {
+  id: string
+  name: string
+  area: string | null
+  address: string | null
+  daily_capacity: number
 }
 
 export interface RentalCar {

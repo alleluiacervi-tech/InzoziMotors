@@ -1,12 +1,12 @@
 import { Icon } from '@/components/ui'
-import { CENTERS } from '@/lib/site'
 import { JsonLd } from '@/components/JsonLd'
 import { autoDealerNodes, graph } from '@/lib/seo'
+import { getDisplayCenters } from '@/lib/centers'
 
-// The three centers, from the same constant the booking flow reads. Every
-// inspection, every handover and every return happens at one of these — which is
-// why they appear on the About page and the Contact page rather than only in a
-// footer.
+// Public center information for inspection visitors. The authenticated mobile
+// booking flow reads the active list from the API so operational changes are
+// enforced immediately; this marketing list supplies stable address and hours
+// content for visitors and search engines.
 //
 // The AutoDealer markup lives here rather than on the pages, so the addresses
 // and hours a crawler is told are, by construction, the same strings a visitor
@@ -14,12 +14,14 @@ import { autoDealerNodes, graph } from '@/lib/seo'
 // one cannot appear in local results — "car dealer Kigali" is the search that
 // matters most and the site was invisible to it.
 
-export function CenterList({ className = '' }: { className?: string }) {
+export async function CenterList({ className = '' }: { className?: string }) {
+  const centers = await getDisplayCenters()
+
   return (
     <>
-    <JsonLd data={graph(...autoDealerNodes())} />
+    <JsonLd data={graph(...autoDealerNodes(centers))} />
     <ul className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
-      {CENTERS.map((center) => (
+      {centers.map((center) => (
         <li
           key={center.id}
           className="rounded-2xl border border-line-soft bg-surface p-6 shadow-card"

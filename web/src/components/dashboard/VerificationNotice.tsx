@@ -13,15 +13,15 @@ const COPY: Record<
 > = {
   none: {
     tone: 'info',
-    title: 'Selling starts with a one-time identity check',
+    title: 'Complete your identity check before publication',
     body:
-      'Buying, saving cars and making requests all work without it. To submit a car for inspection we first confirm who you are — a photo of your national ID and a selfie in the Sawa Cars app. Our team reviews it within 24 hours.',
+      'Buying, saving cars and making requests all work without it, and you may submit a car for inspection now. Before a listing or direct contact details become public, send a photo of your national ID and a selfie in the Sawa Cars app. Our team reviews them within 24 hours.',
   },
   pending: {
     tone: 'info',
     title: 'Your identity check is with our team',
     body:
-      'Reviews are completed within 24 hours. You will get a notification here the moment it is done, and your seller tools unlock automatically.',
+      'Reviews are completed within 24 hours. You may continue tracking an existing submission while we review it; publication and direct contact stay locked until approval.',
   },
   rejected: {
     tone: 'warning',
