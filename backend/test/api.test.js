@@ -230,6 +230,12 @@ test('a stranger cannot read a seller phone number off a listing', async () => {
     })
     .expect(201);
 
+  // Admin-created listings start under review and are deliberately invisible
+  // to the public. Publish this fixture so the assertions below test contact
+  // privacy on a real catalogue listing rather than the unpublished-listing
+  // access rule.
+  await pool.query("UPDATE cars SET status = 'live' WHERE id = $1", [car.body.id]);
+
   const anon = await api().get(`/cars/${car.body.id}`).expect(200);
   assert.equal(anon.body.seller_phone, null, 'anonymous callers must not see it');
 
