@@ -1,198 +1,198 @@
-# Store submission pack — Data Safety, App Privacy, rating, listing copy
+# Store submission pack
 
-Pre-written answers for the store console forms, derived from what the code
-actually does (verified in the pre-submission audit) and from the privacy
-policy at https://sawacars.com/legal/privacy. Copy these in; don't guess in
-the console.
+Use these answers for the current direct-deal build. Replace every bracketed
+placeholder with live reviewer information. Do not mention checkout, escrow,
+Sawa-managed handover, transaction protection or a seven-day guarantee: none is
+part of this version.
 
-Ground truth the forms rest on:
+## Product summary
 
-- The app collects: name, email, phone (account); password (bcrypt hash);
-  national-ID photos + selfie (sellers only, KYC); vehicle submissions;
-  saved cars and searches; messages; reviews; purchase/handover requests;
-  Expo push token (device identifier); basic technical logs.
-- Everything is first-party: one backend (api.sawacars.com), no analytics
-  SDK, no ads SDK, no third-party tracking of any kind. Cross-app tracking
-  does not exist in this app → **Apple's ATT prompt is NOT required**.
-- All transport is HTTPS (enforced at boot in a release build).
-- Account deletion is in-app (Settings → Danger zone) and documented at
-  https://sawacars.com/account/delete.
-- **Cars are never paid for in the app**: they are physical goods paid for in
-  person at the handover center. No in-app purchases, no subscriptions.
-- **Rentals** (physical service) can optionally be paid online: the app opens
-  Pesapal's hosted checkout **in the browser** (cards + MTN MoMo + Airtel
-  Money). The app itself never collects card or mobile-money numbers; it
-  stores the booking's payment status and reference. Physical services must
-  not use IAP (App Store 3.1.3(e) / Play "physical goods"), so an external
-  processor is the compliant route on both stores.
+Sawa Cars is a Rwanda-focused vehicle marketplace for inspected listings and
+verified sellers. Individuals submit vehicles for staff inspection and approval;
+rental companies list inventory after identity and business verification.
+Buyers and renters browse inspection/listing information, send in-app messages,
+request opted-in phone/WhatsApp contact, or send a non-binding rental availability
+inquiry. Users independently agree and perform any contract, payment, deposit,
+delivery, ownership transfer, pickup, return or dispute outside Sawa Cars.
 
----
+Target audience: adults in Rwanda seeking used vehicles, individual vehicle
+sellers, and verified vehicle-rental companies. The value is reviewed inventory,
+clear inspection information, accountable identities and safer communication—not
+transaction intermediation or a vehicle/payment warranty.
 
-## 1. Google Play — Data Safety form
+## App Review Information — paste into Notes
 
-**Does your app collect or share any of the required user data types?** Yes.
-
-**Is all of the user data collected by your app encrypted in transit?** Yes.
-
-**Do you provide a way for users to request that their data is deleted?** Yes
-→ deletion URL: `https://sawacars.com/account/delete`
-
-Data types (everything is **Collected**, nothing is **Shared**; nothing is
-processed ephemerally; everything is **required** unless marked optional):
-
-| Category | Type | Purpose | Notes |
-|---|---|---|---|
-| Personal info | Name | App functionality, Account management | |
-| Personal info | Email address | App functionality, Account management | |
-| Personal info | Phone number | App functionality, Account management | contact for handover |
-| Personal info | Other info | App functionality | national-ID details, **optional** (sellers only) |
-| Photos and videos | Photos | App functionality | **optional**: seller ID photos + selfie, vehicle photos |
-| Messages | Other in-app messages | App functionality | buyer↔seller chat |
-| App activity | Other user-generated content | App functionality | reviews, saved searches, car submissions |
-| App info and performance | Crash logs | Analytics | server request logs only; no crash SDK |
-| Device or other IDs | Device or other IDs | App functionality | Expo push token, **optional** (only if push granted) |
-
-Add for the rental payment feature:
-
-| Category | Data type | Purpose | Notes |
-|---|---|---|---|
-| Financial info | Purchase history | App functionality | rental bookings + their payment status/reference |
-
-**User payment info stays NO** — card and mobile-money details are entered on
-Pesapal's page in the browser, never in the app.
-
-Answer **No** to: location, financial info → *user payment info / credit
-score / salary*, health, contacts, calendar, audio, files/docs, browsing
-history, installed apps.
-
-**Photo and Video Permissions declaration**: not required — the app declares
-no `READ_MEDIA_*` permission (it uses the Android system photo picker; the
-legacy storage permissions are scoped to Android ≤ 12 by the OS itself).
-
-## 2. Apple — App Privacy (nutrition label)
-
-**Data used to track you: NONE.** (No tracking, no ATT prompt.)
-
-**Data linked to you** (all "App Functionality" unless noted):
-
-- Contact Info → Name, Email Address, Phone Number
-- User Content → Photos or Videos (seller KYC + vehicle photos), Emails or
-  Text Messages (in-app chat), Other User Content (reviews, submissions,
-  saved searches)
-- Identifiers → User ID, Device ID (push token)
-- Purchases → Purchase History (rental bookings and their payment status;
-  card/MoMo details never touch the app — Pesapal's browser checkout takes
-  them)
-- Sensitive Info → **only if the reviewer asks**: government-ID photos are
-  collected from sellers for identity verification; they are admin-visible
-  only and deleted with the account
-
-**Data not linked to you:** none claimed (server logs are keyed by request,
-but conservatively declare everything as linked — the account owns it).
-
-## 3. Age rating
-
-- **Google Play (IARC questionnaire):** no violence, no sexual content, no
-  profanity, no drugs, no gambling, no scary content. **Users can interact**
-  (chat) → yes. **Shares location** → no. **Digital purchases** → no
-  (rental payment is for a physical service and happens in the browser via
-  Pesapal — not a digital-goods purchase).
-  Expected outcome: *Everyone / PEGI 3* with the "Users Interact" notice.
-- **Apple:** all content questionnaire answers "None"; unrestricted web
-  access → No; gambling → No. Expected outcome: **4+**. UGC is moderated
-  (report + block + takedown are in-app, which is what guideline 1.2 asks).
-
-## 4. App Review notes (paste into both consoles)
-
-> Sawa Cars is a certified used-car marketplace for Rwanda. Only our staff
-> can publish listings, after physically inspecting each car (150-point
-> report attached to every listing). Buyers browse free; a "purchase
-> request" reserves a car — payment happens in person at our handover
-> center, so buying a car involves no payment flow in the app (physical
-> goods, offline settlement). Car RENTALS can optionally be paid online:
-> the app opens Pesapal's hosted checkout in the device browser (physical
-> service — external payment is the compliant route); the app never
-> collects card or mobile-money details.
+> Sawa Cars is a verified vehicle-classifieds and communication platform for
+> Rwanda. Our staff reviews seller identity, physically inspects sale vehicles,
+> reviews their images and explicitly approves each listing before publication.
+> Verified rental-company accounts may have active rental inventory managed by
+> our staff.
 >
-> Test accounts (all flows): BUYER — email: `<fill in>` password: `<fill in>`;
-> SELLER (ID-verified) — email: `<fill in>` password: `<fill in>`.
+> Buyers can browse listings and inspection reports, save vehicles, compare
+> vehicles, view financing estimates, and contact an opted-in seller by in-app
+> chat, phone or WhatsApp after accepting the direct-deal notice. Renters send a
+> non-binding availability inquiry to an independent rental provider. Sawa Cars
+> does not offer checkout, collect or hold transaction funds, create the users'
+> contract, manage delivery/transfer/pickup/return, guarantee a vehicle/payment,
+> or decide disputes arising from an external transaction.
 >
-> The binary contains a staff-only operations screen (Team Portal) gated on
-> an admin server role; the test accounts above cannot reach it. Happy to
-> provide an admin demo account on request.
+> Reviewer accounts:
+> BUYER — username: [BUYER EMAIL] / password: [PASSWORD]
+> VERIFIED SELLER — username: [SELLER EMAIL] / password: [PASSWORD]
+> RENTAL COMPANY — username: [RENTAL EMAIL] / password: [PASSWORD]
+> ADMIN, if requested — username: [ADMIN EMAIL] / password: [PASSWORD]
 >
-> UGC moderation: every chat and review can be reported in-app, users can be
-> blocked, and our operations dashboard has takedown queues for both.
-
-## 5. Listing copy — Google Play
-
-- **Title (max 30):** `Sawa Cars: Certified Used Cars`
-- **Short description (max 80):**
-  `150-point inspected cars, verified sellers, 7-day guarantee. Kigali, Rwanda.`
-- **Full description:**
-
-> **Every car inspected. Every seller verified.**
+> Typical flow: launch → sign in → browse Buy or Rent → open a listing → view
+> inspection/details → Contact verified seller or Request availability → accept
+> the direct-deal notice → use in-app chat or an available contact channel.
+> Seller flow: Profile → Seller tools → submit vehicle / contact settings.
+> Account deletion: Profile → Settings → Delete account.
 >
-> Sawa Cars is Rwanda's certified used-car marketplace. Unlike classifieds,
-> nobody can post a listing here: our own team inspects every car on 150
-> points, photographs it from 36 standard angles, and publishes the full
-> report — flags included — with the listing.
+> The attached physical-device recording starts at launch and demonstrates
+> registration/sign-in, the buyer journey, inspection information, seller
+> contact, rental inquiry, report/block controls, permission prompts, and account
+> deletion. Recording link if the attachment cannot be opened: [VIEW-ONLY URL].
 >
-> **Buy with confidence**
-> • Browse certified cars with full inspection reports
-> • Verified history: ownership, mileage and RRA duty status
-> • Honest market pricing based on real comparables
-> • 7-day drive-it guarantee on every handover at a Sawa center
-> • Buyers pay nothing — every fee on the platform is the seller's
+> Tested devices/OS: [IPHONE MODEL + IOS], [SECOND DEVICE/OS], [ANDROID
+> MODEL + ANDROID]. Build: [BUILD NUMBER].
 >
-> **Sell without the hassle**
-> • Submit your car online — no photos needed
-> • We inspect, shoot and publish it for you
-> • Track every step from submission to handover
-> • Get paid in person at our center, safely
+> External services used: Sawa API and PostgreSQL (accounts/listings/messages),
+> Expo/EAS (builds, updates and push notifications), Cloudinary or managed upload
+> storage (vehicle/identity images), and configured SMTP/Resend (transactional
+> account email). There is no advertising SDK, analytics SDK, tracking SDK,
+> payment processor or AI service in the core marketplace flow.
 >
-> **Also on Sawa Cars**
-> • Rent inspected cars with documented condition photos
-> • Import duty calculator for the true landed cost
-> • Financing estimates from Kigali banks
+> The app functions consistently across supported regions. Inventory, phone
+> formats, inspection centres, bank estimates and service availability are
+> Rwanda-focused; no region has a separate paid or restricted feature set.
 >
-> Cars are paid for in person at our handover centers in Kigali — never in
-> the app. Rentals can optionally be paid online through a secure checkout
-> (card or mobile money). Questions? contact@sawacars.com · +250 788 308 611
+> Sawa Cars owns/operates the marketplace and publishes only vehicle material
+> supplied by authorized sellers/providers and reviewed by staff. It does not
+> provide banking, insurance, legal, escrow or regulated payment services.
 
-## 6. Listing copy — App Store
+Contact for review:
 
-- **Name (max 30):** `Sawa Cars: Certified Used Cars`
-- **Subtitle (max 30):** `Inspected. Verified. Yours.`
-- **Keywords (max 100 chars):**
-  `used cars,rwanda,kigali,buy car,sell car,car rental,toyota,rav4,certified,inspection,marketplace`
-- **Promotional text (max 170):**
-  `Every car on Sawa passed the same 150-point inspection — there is no uninspected tier. Browse certified cars in Kigali with full reports and a 7-day guarantee.`
-- **Description:** reuse the Play full description (drop the bullet-point
-  `•` glyphs if the formatting looks off in preview).
+- First/last name: `[REVIEW CONTACT]`
+- Phone: `[REVIEW PHONE WITH COUNTRY CODE]`
+- Email: `[MONITORED REVIEW EMAIL]`
+- Support URL: `https://sawacars.com/contact`
+- Privacy policy: `https://sawacars.com/legal/privacy`
+- Terms/direct-deal notice: `https://sawacars.com/legal/guarantee`
 
-## 7. Screenshot shot list (when the preview build exists)
+## Recording checklist
 
-Required sizes: Play — phone, min 2, up to 8 (16:9–9:16, ≥1080 px);
-Apple — 6.9″ (1320×2868) and 6.5″ (1242×2688). No iPad set (supportsTablet
-is false).
+Record one continuous video on a physical iPhone running the latest iOS. Begin
+with the app closed, then show:
 
-Suggested order (same story on both stores):
-1. Home feed with certified listings — "Every car inspected"
-2. A listing with the inspection report open — "150 points, published in full"
-3. Vehicle history card — "Verified history, never guessed"
-4. Chat with a seller — "Talk directly, safely"
-5. Purchase request confirmation — "Reserve it, pay at handover"
-6. Seller submission flow — "Sell it without the hassle"
+1. Launch and sign-in/registration.
+2. Buy catalogue, vehicle detail, images and inspection report.
+3. Contact seller, direct-deal acknowledgement and in-app message.
+4. Rent catalogue and a non-binding availability inquiry.
+5. Phone/WhatsApp only if the reviewer account has opted-in contact.
+6. Report/block controls in chat.
+7. Seller contact settings and any camera/photo permission prompt.
+8. Settings and in-app account deletion.
 
-## 8. What must exist before pressing Submit (cross-reference)
+Keep passwords, real identity documents, private phone numbers and unrelated
+notifications out of the recording. Attach the file in App Review Information
+or the review-message reply; also provide a stable view-only link in Notes.
 
-- [ ] EAS project created (`eas init`) — blocks any build
-- [ ] `google-services.json` + FCM V1 key uploaded — Android push
-- [ ] ASC app record + real `ascAppId` in eas.json — iOS submit
-- [ ] Real inventory live in production — the reviewer must not meet an
-      empty marketplace
-- [ ] Test accounts created and pasted into the review notes above
-- [ ] Privacy policy "Draft" banner resolved (legal review or removal)
-- [ ] After first AAB: Play App Signing SHA-256 → `assetlinks.json`;
-      Apple Team ID → `apple-app-site-association`
+## Google Play Data Safety
+
+- Data is encrypted in transit: **Yes**.
+- Account/data deletion is available: **Yes** —
+  `https://sawacars.com/account/delete` and in-app Settings.
+- Data sold: **No**. Data used for advertising/tracking: **No**.
+- Declare collection for app functionality/account management:
+  - name, email and optional phone/WhatsApp number;
+  - user ID and optional Expo push-token/device identifier;
+  - identity-document photos and selfie for sellers;
+  - vehicle photos/submissions, saved items/searches and rental inquiries;
+  - in-app messages and user reports.
+- Do **not** declare payment information or purchase history for this build. No
+  marketplace transaction or rental payment is processed or recorded.
+- The app uses the system photo picker and camera for user-requested identity and
+  vehicle images; it does not request contacts, location, microphone or tracking.
+
+## Apple App Privacy
+
+Data used to track the user: **None**.
+
+Data linked to the user for App Functionality/Account Management:
+
+- Contact Info: name, email, optional phone number.
+- Identifiers: user ID; device ID/push token when notifications are enabled.
+- User Content: vehicle/identity photos, in-app messages, submissions, saved
+  searches and reports.
+- Sensitive Info: government-ID images/selfie for seller verification.
+
+Do not select Purchases or Payment Information for this build. There is no ATT
+prompt because the app performs no cross-app tracking.
+
+## Age rating
+
+- User interaction/chat: **Yes**.
+- User-generated content: **Yes**, with report, block and admin moderation.
+- Gambling, violence, sexual content, drugs, unrestricted web access: **No**.
+- Digital purchases: **No**.
+- Expected result: Apple 4+ and Google Play Everyone/PEGI 3, subject to the
+  stores' final questionnaire calculation.
+
+## Store listing copy
+
+Name: `Sawa Cars: Inspected Vehicles`
+
+Subtitle: `Verified sellers. Direct deals.`
+
+Short description (Play):
+
+`Browse inspected cars and rentals, then contact verified providers directly.`
+
+Promotional text (Apple):
+
+`Browse staff-reviewed vehicle listings, read inspection details, and contact verified sellers or rental providers directly in Rwanda.`
+
+Keywords:
+
+`used cars,rwanda,kigali,buy car,sell car,car rental,verified seller,inspection,marketplace`
+
+Description:
+
+> Find your next vehicle with clearer information and accountable sellers.
+> Sawa Cars is a Rwanda-focused marketplace where sale vehicles are reviewed and
+> inspected before publication and rental inventory comes from verified company
+> accounts.
+>
+> Browse vehicle galleries and inspection details, save and compare listings,
+> explore financing estimates, and speak directly with a seller through Sawa
+> chat, phone or WhatsApp when that seller has enabled the channel. For rentals,
+> send your dates to the provider and let them confirm availability and terms.
+>
+> Sawa Cars does not process marketplace payments or act as a party to a sale or
+> rental. Users independently verify the vehicle and documents and agree their
+> own contract, payment, delivery, transfer, pickup and return arrangements.
+>
+> Support: contact@sawacars.com · +250 788 308 611
+
+## Screenshot order
+
+Use actual app screens, not splash/login-only art:
+
+1. Buy catalogue — “Inspected vehicles in Rwanda”.
+2. Vehicle details/gallery — “Clear listing information”.
+3. Inspection report — “See what our team found”.
+4. Direct contact screen — “Choose how to contact a verified seller”.
+5. Rental inquiry — “Ask the provider about your dates”.
+6. Seller flow — “Submit for review and inspection”.
+
+## Final console gate
+
+- [ ] Accurate screenshots for required iPhone/Play sizes.
+- [ ] Build selected and export-compliance answer completed.
+- [ ] Reviewer credentials tested immediately before submission.
+- [ ] Physical-device recording attached and view-only link tested logged out.
+- [ ] Device/OS list and external-services list pasted into Notes.
+- [ ] Privacy/Data Safety answers match this binary.
+- [ ] Play App Signing fingerprint deployed in `assetlinks.json`.
+- [ ] `npm run release:check` passes.
+- [ ] Manual release selected until production smoke tests are complete.

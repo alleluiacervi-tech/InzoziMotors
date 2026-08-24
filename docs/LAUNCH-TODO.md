@@ -13,22 +13,23 @@ fails while store identity placeholders remain.
 - [ ] Replace development inventory, rental fleet, profiles, messages and
   claims with reviewed production content before opening the marketplace.
 - [ ] Resolve and test production dependency upgrades from `npm audit`.
-- [ ] Add the final store identifiers to `eas.json` and both domain-association
-  files, then enable the preflight as a required release workflow.
+- [ ] Add the Play App Signing fingerprint to `assetlinks.json`, deploy both
+  domain-association files, and make the preflight a required release workflow.
 
 ## Complete outside the repository
 
-- [ ] Initialise the EAS project and provide production build credentials.
+- [ ] Verify EAS/App Store/Play production signing credentials and access.
 - [ ] Create App Store Connect and Google Play Console listings, including
   accurate privacy, support and review-contact information.
 - [ ] Configure live environment variables and secrets (database, JWT,
-  SMTP, storage, Sentry, Pesapal) in the deployment platform; never commit
-  them to this repository.
+  SMTP/Resend, storage, Expo and error reporting) in the deployment platform;
+  never commit them to this repository. No payment-provider secret is required.
 - [ ] Configure production TLS, domain DNS, database backups and a tested
   restore procedure.
 - [ ] Run a complete physical-device test of signup, email reset, listings,
-  image upload, messages, reporting/blocking, account deletion and rental
-  payment/cancellation.
+  flexible image upload, direct seller contact, messages, reporting/blocking,
+  account deletion and rental inquiry/cancellation. Confirm that no marketplace
+  checkout or payment flow is exposed.
 - [ ] Complete Apple review access and Google Play testing requirements, then
   submit the final signed builds.
 
