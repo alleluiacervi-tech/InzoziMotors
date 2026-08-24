@@ -73,10 +73,22 @@ run_pg pg_restore -U "$DB_USER" -d "$RESTORE_DB" --clean --if-exists --no-owner 
   --exit-on-error < "$DUMP" || die "pg_restore failed — previous state is at $SAFETY"
 
 log "verifying"
-for table in users cars handovers platform_fees rental_bookings payments; do
+# Core tables must come back, or the restore did not restore this product.
+for table in users cars inspections submissions rental_cars; do
   COUNT="$(run_pg psql -U "$DB_USER" -d "$RESTORE_DB" -t -A -c "SELECT COUNT(*) FROM $table" 2>/dev/null || echo 'ERROR')"
   [ "$COUNT" = "ERROR" ] && die "table '$table' missing after restore"
   log "  $table: $COUNT rows"
+done
+
+# Retired-transaction tables: counted when the dump carried them, noted when it
+# did not. A dump taken after one of these is dropped is still a valid dump.
+for table in handovers platform_fees rental_bookings payments; do
+  COUNT="$(run_pg psql -U "$DB_USER" -d "$RESTORE_DB" -t -A -c "SELECT COUNT(*) FROM $table" 2>/dev/null || echo 'ABSENT')"
+  if [ "$COUNT" = "ABSENT" ]; then
+    log "  $table: not in this dump (retired)"
+  else
+    log "  $table: $COUNT rows"
+  fi
 done
 
 log "restore complete. Previous state kept at $SAFETY"
