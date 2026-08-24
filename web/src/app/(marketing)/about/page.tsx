@@ -7,7 +7,7 @@ import { CENTERS } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'About Sawa Cars',
   description:
-    'Sawa Cars is the middleman in Rwanda’s used-car market: we inspect every car on a 150-point check, photograph it ourselves and publish the listing under our own name. Three inspection centers in Kigali.',
+    'Sawa Cars is a verified vehicle marketplace in Rwanda: our team reviews sellers, inspections and listing evidence before publication, then users communicate directly.',
   alternates: { canonical: '/about' },
 }
 
@@ -17,7 +17,7 @@ const PIPELINE = [
   { title: 'Submitted', desc: 'A verified seller sends us the car’s details and asking price.' },
   { title: 'Reviewed', desc: 'Our team reads the submission and books an inspection slot.' },
   { title: 'Inspected', desc: 'A mechanic runs the 150-point check at the center.' },
-  { title: 'Photographed', desc: 'Our photographer shoots the standard 36 angles.' },
+  { title: 'Documented', desc: 'A clear, truthful gallery is added with as many useful images as the vehicle needs.' },
   { title: 'Published', desc: 'We create the listing, report attached, and it goes live.' },
 ]
 
@@ -26,7 +26,7 @@ const PIPELINE = [
 const WE_DO_NOT = [
   {
     title: 'We do not take payments',
-    desc: 'There is no checkout in the app or on this website, and there never has been. Money changes hands in person at a center, where both parties and our team are present.',
+    desc: 'There is no checkout, payment gateway or escrow in the app or website. Buyers, sellers and rental providers decide payment directly at their own risk.',
   },
   {
     title: 'We do not let sellers publish',
@@ -37,8 +37,8 @@ const WE_DO_NOT = [
     desc: 'Every live listing has a 150-point report behind it. Cars that fall below our threshold are not published.',
   },
   {
-    title: 'We do not charge buyers',
-    desc: 'Our fees come from the seller: a certification fee for the inspection and photography, and a commission when a handover completes.',
+    title: 'We do not manage user contracts',
+    desc: 'We do not confirm the sale or rental, take custody of a deposit, write the parties’ contract, process ownership transfer or decide an external transaction dispute.',
   },
 ]
 
@@ -47,8 +47,8 @@ export default function AboutPage() {
     <>
       <PageHeader
         eyebrow="About"
-        title="The middleman, on purpose."
-        lede="Buying a used car in Kigali usually means trusting a stranger about a vehicle that arrived from another continent with a history nobody can check. Sawa Cars exists to be the party in the middle who has actually seen the car."
+        title="A stronger marketplace, with clear boundaries."
+        lede="Buying a used car in Kigali can mean trusting information that is difficult to verify. Sawa Cars adds seller checks, inspection evidence and controlled publication while leaving the final decision and transaction with the users."
         actions={
           <>
             <Button href="/cars" trailingIcon={<Icon name="arrow-right" size={18} />}>
@@ -86,7 +86,7 @@ export default function AboutPage() {
               <p>
                 So Sawa Cars took the opposite position. We take the car in, run a 150-point check
                 across its mechanics, body, electronics and documents, photograph it in a fixed
-                set of 36 angles, and publish the listing ourselves with the report attached. The
+                useful photo gallery, and publish the listing only after an admin review. The
                 seller keeps control of the price. We keep control of the truth.
               </p>
             </div>
@@ -155,7 +155,7 @@ export default function AboutPage() {
           <SectionHeading
             eyebrow="Where we work"
             title={`${CENTERS.length} inspection centers in Kigali`}
-            description="Every inspection, every handover and every return happens at one of these. Nothing is done in a car park."
+            description="These locations support platform inspection services. Users independently decide where and how to complete any later transaction."
           />
           <CenterList className="mt-12" />
 

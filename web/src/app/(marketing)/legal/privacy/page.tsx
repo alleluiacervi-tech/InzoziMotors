@@ -45,7 +45,7 @@ const SECTIONS: LegalSection[] = [
         <h3>When you use the marketplace</h3>
         <ul>
           <li>Cars you save, searches you save, and the alerts you switch on.</li>
-          <li>Purchase requests, handover bookings and their outcomes.</li>
+          <li>Seller-contact disclosures and rental availability inquiries.</li>
           <li>Messages you exchange with sellers, buyers or our team.</li>
           <li>Vehicle details you submit, and the inspection results our mechanics record.</li>
         </ul>
@@ -69,10 +69,10 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li>To verify that a seller is a real, identifiable person — the basis of the whole marketplace.</li>
           <li>To publish accurate listings and inspection reports.</li>
-          <li>To arrange handovers, and to contact you about a car you requested.</li>
+          <li>To enable direct marketplace communications and provider responses to rental inquiries.</li>
           <li>To send the alerts you asked for: price drops, saved-search matches, messages.</li>
-          <li>To investigate disputes and prevent fraud.</li>
-          <li>To meet record-keeping obligations on completed vehicle transfers.</li>
+          <li>To investigate reports about platform content or conduct and prevent fraud.</li>
+          <li>To maintain security, consent and administrative audit records.</li>
         </ul>
         <p>
           We do not build advertising profiles, and we do not sell personal information to anyone.
@@ -116,16 +116,16 @@ const SECTIONS: LegalSection[] = [
         <ul>
           <li>
             <strong>Buyers see</strong> a seller’s display name, verification status, trust score,
-            completed sales and reviews. A phone number is exchanged when a handover is being
-            arranged.
+            seller profile information and contact-channel availability. A phone or WhatsApp
+            number is disclosed only after seller consent and buyer acknowledgement.
           </li>
           <li>
-            <strong>Sellers see</strong> the name of a buyer who has requested their car, and the
-            contact number needed for the handover.
+            <strong>Sellers and rental providers see</strong> the information needed to answer
+            messages or availability inquiries sent to them.
           </li>
           <li>
             <strong>Our team sees</strong> what is required to run the pipeline: submissions,
-            inspections, bookings, and — where safety or a dispute requires it — conversations.
+            inspections, listings, inquiries, contact disclosures and — where platform safety or a report requires it — conversations.
           </li>
           <li>
             <strong>Nobody sees</strong> your password, your ID documents or your saved searches

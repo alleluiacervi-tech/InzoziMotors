@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { BarChart, Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney, fmtMoneyShort, type IconName } from '@/components/ui'
+import { BarChart, Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoneyShort, type IconName } from '@/components/ui'
 
-const FUNNEL_ORDER = ['under_review', 'pending', 'scheduled', 'inspecting', 'inspected', 'live', 'sold', 'rejected']
-const FUNNEL_LABELS: Record<string, string> = { under_review: 'Under review', pending: 'Pending', scheduled: 'Inspection booked', inspecting: 'Being inspected', inspected: 'Inspected', live: 'Live', sold: 'Sold', rejected: 'Rejected' }
+const FUNNEL_ORDER = ['draft', 'under_review', 'scheduled', 'inspecting', 'approved', 'live', 'paused', 'sold', 'rejected', 'archived']
+const FUNNEL_LABELS: Record<string, string> = { draft: 'Draft', under_review: 'Under review', scheduled: 'Inspection booked', inspecting: 'Being inspected', approved: 'Approved', live: 'Live', paused: 'Paused', sold: 'Marked sold', rejected: 'Rejected', archived: 'Archived' }
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const monthLabel = (ym: string) => `${MONTHS[Number(ym.slice(5)) - 1] || ym} ’${ym.slice(2, 4)}`
 
@@ -48,32 +48,26 @@ export default function AnalyticsPage() {
   const funnel = FUNNEL_ORDER.filter((s) => funnelRaw.has(s)).map((s) => ({ label: FUNNEL_LABELS[s] || s, value: Number(funnelRaw.get(s)) }))
   const makes = (data?.topMakes || []).map((m: any) => ({ label: m.make, value: Number(m.count) || 0 }))
   const centers = data?.centers || []
-  const feeRows = data?.feesByCurrency || []
-  const rwfFees = feeRows.find((f: any) => f.currency === 'RWF') || feeRows[0] || { paid: 0, due: 0, due_count: 0, currency: 'RWF' }
-  const paid = Number(rwfFees.paid) || 0, due = Number(rwfFees.due) || 0
-  const collection = paid + due ? Math.round(paid / (paid + due) * 100) : 100
-
   return <div>
-    <PageHeader title="Business intelligence" description="Marketplace performance, operational health, and the exceptions that need attention." action={<button type="button" onClick={load} className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-label font-bold text-content hover:bg-surface-alt"><Icon name="refresh" size={16} />Refresh</button>} />
+    <PageHeader title="Marketplace intelligence" description="Inventory, review throughput and seller-reported outcomes. Transaction value is never represented as Sawa revenue." action={<button type="button" onClick={load} className="inline-flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-label font-bold text-content hover:bg-surface-alt"><Icon name="refresh" size={16} />Refresh</button>} />
 
-    <section aria-labelledby="pulse-title" className="mb-7"><div className="mb-3 flex items-center justify-between"><div><h2 id="pulse-title" className="text-section font-extrabold text-content">Executive pulse</h2><p className="mt-0.5 text-caption text-content-muted">A fast read on growth, conversion, cash collection, and service quality.</p></div><span className="rounded-pill bg-success-tint px-3 py-1 text-caption font-bold text-success-text">Live data</span></div>
+    <section aria-labelledby="pulse-title" className="mb-7"><div className="mb-3 flex items-center justify-between"><div><h2 id="pulse-title" className="text-section font-extrabold text-content">Executive pulse</h2><p className="mt-0.5 text-caption text-content-muted">A fast read on inventory outcomes, conversion and service quality.</p></div><span className="rounded-pill bg-success-tint px-3 py-1 text-caption font-bold text-success-text">Live data</span></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Sales this month" value={fmtMoneyShort(current?.value || 0, salesCurrency)} detail={`${current?.sold || 0} sold${trend == null ? '' : ` · ${trend >= 0 ? '+' : ''}${trend}% vs prior month`}`} icon="trending-up" tone={trend != null && trend < 0 ? 'warn' : 'good'} />
+        <Metric label="Listings marked sold" value={String(current?.sold || 0)} detail="A seller-reported outcome, not a transaction processed by Sawa" icon="trending-up" tone="neutral" />
+        <Metric label="Reported listing value" value={fmtMoneyShort(current?.value || 0, salesCurrency)} detail="Sum of asking prices on listings marked sold; not verified sale proceeds" icon="chart" tone="neutral" />
         <Metric label="Market conversion" value={`${conversion}%`} detail={`${reached} of ${total} submissions reached live or sold`} icon="gauge" tone={conversion >= 60 ? 'good' : conversion >= 35 ? 'warn' : 'danger'} />
-        <Metric label="Fee collection" value={`${collection}%`} detail={`${fmtMoney(due, rwfFees.currency)} still due across ${Number(rwfFees.due_count) || 0} fees`} icon="cash" tone={due ? 'warn' : 'good'} href="/fees" />
         <Metric label="Review response" value={avgHours ? `${avgHours}h` : '—'} detail={`${overdue} overdue of ${awaiting} awaiting review`} icon="clock" tone={overdue ? 'danger' : 'good'} href="/submissions" />
       </div>
     </section>
 
-    {(overdue > 0 || rejectionRate >= 25 || due > 0) ? <section aria-labelledby="attention-title" className="mb-7"><h2 id="attention-title" className="mb-3 text-section font-extrabold text-content">Needs attention</h2><div className="grid gap-3 lg:grid-cols-3">
+    {(overdue > 0 || rejectionRate >= 25) ? <section aria-labelledby="attention-title" className="mb-7"><h2 id="attention-title" className="mb-3 text-section font-extrabold text-content">Needs attention</h2><div className="grid gap-3 lg:grid-cols-2">
       {overdue > 0 ? <Link href="/submissions" className="flex gap-3 rounded-2xl border border-danger/20 bg-danger-tint p-4"><span className="text-danger-strong"><Icon name="alert" size={20} /></span><span><strong className="block text-label text-danger-strong">{overdue} overdue review{overdue === 1 ? '' : 's'}</strong><span className="text-caption text-danger-strong/80">Past the 24-hour seller promise. Open oldest first.</span></span></Link> : null}
-      {due > 0 ? <Link href="/fees" className="flex gap-3 rounded-2xl border border-warning-border bg-warning-tint p-4"><span className="text-warning-text"><Icon name="cash" size={20} /></span><span><strong className="block text-label text-warning-text">Outstanding revenue</strong><span className="text-caption text-warning-text/80">{fmtMoney(due, rwfFees.currency)} requires reconciliation.</span></span></Link> : null}
       {rejectionRate >= 25 ? <Link href="/submissions" className="flex gap-3 rounded-2xl border border-warning-border bg-warning-tint p-4"><span className="text-warning-text"><Icon name="trending-down" size={20} /></span><span><strong className="block text-label text-warning-text">{rejectionRate}% rejection rate</strong><span className="text-caption text-warning-text/80">Review reasons for recurring seller friction.</span></span></Link> : null}
     </div></section> : null}
 
     <section aria-labelledby="performance-title" className="mb-7"><div className="mb-3"><h2 id="performance-title" className="text-section font-extrabold text-content">Performance</h2><p className="mt-0.5 text-caption text-content-muted">Volume and value over the last six months.</p></div><div className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-      <Card className="p-5"><div className="mb-5 flex items-start justify-between gap-4"><div><h3 className="text-label font-extrabold text-content">Sales value</h3><p className="mt-1 text-caption text-content-muted">Completed vehicle sales · {salesCurrency}</p></div>{trend != null ? <span className={`rounded-pill px-3 py-1 text-caption font-bold ${trend >= 0 ? 'bg-success-tint text-success-text' : 'bg-danger-tint text-danger-strong'}`}>{trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%</span> : null}</div><BarChart data={monthly} height={210} formatValue={(v) => fmtMoneyShort(v, salesCurrency)} emptyLabel="No completed sales yet" /></Card>
-      <Card className="p-5"><div className="mb-5"><h3 className="text-label font-extrabold text-content">Vehicles sold</h3><p className="mt-1 text-caption text-content-muted">Completed handovers by month</p></div><BarChart data={monthly.map((m: any) => ({ label: m.label, value: m.sold }))} height={210} emptyLabel="No completed sales yet" /></Card>
+      <Card className="p-5"><div className="mb-5 flex items-start justify-between gap-4"><div><h3 className="text-label font-extrabold text-content">Seller-reported listing value</h3><p className="mt-1 text-caption text-content-muted">Asking prices on listings marked sold · {salesCurrency}</p></div>{trend != null ? <span className={`rounded-pill px-3 py-1 text-caption font-bold ${trend >= 0 ? 'bg-success-tint text-success-text' : 'bg-danger-tint text-danger-strong'}`}>{trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%</span> : null}</div><BarChart data={monthly} height={210} formatValue={(v) => fmtMoneyShort(v, salesCurrency)} emptyLabel="No listings marked sold yet" /></Card>
+      <Card className="p-5"><div className="mb-5"><h3 className="text-label font-extrabold text-content">Listings marked sold</h3><p className="mt-1 text-caption text-content-muted">Reported status changes by month</p></div><BarChart data={monthly.map((m: any) => ({ label: m.label, value: m.sold }))} height={210} emptyLabel="No listings marked sold yet" /></Card>
     </div></section>
 
     <section aria-labelledby="operations-title"><div className="mb-3"><h2 id="operations-title" className="text-section font-extrabold text-content">Marketplace operations</h2><p className="mt-0.5 text-caption text-content-muted">Where inventory sits, what customers prefer, and center throughput.</p></div><div className="grid gap-4 lg:grid-cols-2">

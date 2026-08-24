@@ -279,8 +279,11 @@ router.post('/reset-password', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, email, role, id_verified, trust_score,
-              response_rate, completed_sales, avatar_url, created_at
+      `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
+              whatsapp_visible, contact_consent_at, role, id_verified, account_status,
+              seller_type, business_name, business_verified, trust_score,
+              response_rate, completed_sales, avatar_url,
+              marketplace_terms_accepted_at, marketplace_terms_version, created_at
        FROM users WHERE id = $1`,
       [req.user.id]
     );
@@ -293,24 +296,77 @@ router.get('/me', requireAuth, async (req, res) => {
 
 // PATCH /auth/me — update own profile
 router.patch('/me', requireAuth, async (req, res) => {
-  const { name, phone, avatar_url } = req.body;
-  if (name !== undefined && !String(name).trim()) {
+  const EDITABLE = ['name', 'phone', 'whatsapp_phone', 'phone_visible', 'whatsapp_visible', 'avatar_url'];
+  const fields = EDITABLE.filter((field) => req.body[field] !== undefined);
+  if (!fields.length) return res.status(400).json({ error: 'No editable profile fields provided' });
+  if (req.body.name !== undefined && !String(req.body.name).trim()) {
     return res.status(400).json({ error: 'name cannot be empty' });
   }
-  if (phone !== undefined && phone && !/^\+?[0-9 ]{9,16}$/.test(phone)) {
-    return res.status(400).json({ error: 'phone is not a valid phone number' });
+  for (const field of ['phone', 'whatsapp_phone']) {
+    const value = req.body[field];
+    if (value !== undefined && value !== null && value !== '' && !/^\+?[0-9 ()-]{9,24}$/.test(String(value))) {
+      return res.status(400).json({ error: `${field} is not a valid phone number` });
+    }
   }
+  for (const field of ['phone_visible', 'whatsapp_visible']) {
+    if (req.body[field] !== undefined && typeof req.body[field] !== 'boolean') {
+      return res.status(400).json({ error: `${field} must be true or false` });
+    }
+  }
+  const values = Object.fromEntries(fields.map((field) => {
+    if (['phone_visible', 'whatsapp_visible'].includes(field)) return [field, req.body[field]];
+    const value = req.body[field];
+    return [field, value == null || value === '' ? null : String(value).trim()];
+  }));
   try {
-    const { rows } = await pool.query(
-      `UPDATE users
-       SET name = COALESCE($1, name), phone = COALESCE($2, phone),
-           avatar_url = COALESCE($3, avatar_url)
-       WHERE id = $4
-       RETURNING id, name, email, phone, role, id_verified, trust_score, avatar_url`,
-      [name || null, phone || null, avatar_url || null, req.user.id]
-    );
-    res.json(rows[0]);
+    const result = await withTransaction(async (client) => {
+      const current = await client.query(
+        `SELECT id, role, id_verified, account_status, deleted_at, seller_type,
+                business_verified, phone, whatsapp_phone, phone_visible, whatsapp_visible
+         FROM users WHERE id = $1 FOR UPDATE`,
+        [req.user.id]
+      );
+      if (!current.rowCount) return { status: 404, body: { error: 'User not found' } };
+      const before = current.rows[0];
+      const finalPhone = values.phone !== undefined ? values.phone : before.phone;
+      const finalWhatsapp = values.whatsapp_phone !== undefined ? values.whatsapp_phone : before.whatsapp_phone;
+      const finalPhoneVisible = values.phone_visible !== undefined ? values.phone_visible : before.phone_visible;
+      const finalWhatsappVisible = values.whatsapp_visible !== undefined ? values.whatsapp_visible : before.whatsapp_visible;
+      if (finalPhoneVisible || finalWhatsappVisible) {
+        const eligible = before.role === 'seller' && before.id_verified === 'approved' &&
+          before.account_status === 'active' && !before.deleted_at &&
+          (before.seller_type !== 'showroom' || before.business_verified === true);
+        if (!eligible) {
+          return { status: 403, body: { error: 'Only an active, verified seller may publish contact details' } };
+        }
+        if (finalPhoneVisible && !finalPhone) {
+          return { status: 400, body: { error: 'Add a phone number before making it visible' } };
+        }
+        if (finalWhatsappVisible && !finalWhatsapp) {
+          return { status: 400, body: { error: 'Add a WhatsApp number before making it visible' } };
+        }
+      }
+
+      const params = fields.map((field) => values[field]);
+      const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
+      if (values.phone_visible === true || values.whatsapp_visible === true) {
+        assignments.push('contact_consent_at = NOW()');
+      }
+      params.push(req.user.id);
+      const { rows } = await client.query(
+        `UPDATE users
+         SET ${assignments.join(', ')}
+         WHERE id = $${params.length}
+         RETURNING id, name, email, phone, whatsapp_phone, phone_visible,
+                   whatsapp_visible, contact_consent_at, role, id_verified, account_status,
+                   seller_type, business_name, business_verified, trust_score, avatar_url`,
+        params
+      );
+      return { status: 200, body: rows[0] };
+    });
+    res.status(result.status).json(result.body);
   } catch (err) {
+    log.error('profile update error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -361,12 +417,8 @@ router.post('/change-password', requireAuth, async (req, res) => {
 // people create an account: deletion must be initiable from inside the app, not
 // only by emailing support.
 //
-// Soft delete, not DELETE FROM users. Completed handovers, the reviews written
-// about them, and the platform_fees ledger all reference this row, and a
-// business record of a car that changed hands is not the user's to erase — nor
-// is the counterparty's review of them. So the row survives with every piece of
-// personal data overwritten, which satisfies the deletion obligation while
-// keeping the transaction history referentially intact.
+// Soft delete, not DELETE FROM users. Historical records and moderation events
+// retain foreign keys, while all identifying data is overwritten.
 //
 // What is actively removed rather than anonymised: identity documents (the most
 // sensitive thing held, and nothing depends on them once the account is gone),
@@ -393,27 +445,11 @@ router.delete('/me', requireAuth, async (req, res) => {
         if (!ok) return { status: 401, body: { error: 'That password is not correct' } };
       }
 
-      // An open sale is a commitment to a counterparty who is still expecting to
-      // meet at a center. Deleting mid-handover would strand them.
-      const { rows: open } = await client.query(
-        `SELECT COUNT(*)::int AS n FROM handovers
-         WHERE (buyer_id = $1 OR seller_id = $1) AND status IN ('pending', 'confirmed')`,
-        [user.id]
-      );
-      if (open[0].n > 0) {
-        return {
-          status: 409,
-          body: {
-            error: 'You have a handover in progress. Cancel or complete it before deleting your account.',
-            code: 'OPEN_HANDOVER',
-          },
-        };
-      }
-
       // Any listing still on the marketplace comes down with the account.
       await client.query(
-        `UPDATE cars SET status = 'archived'
-         WHERE seller_id = $1 AND status IN ('live', 'under_review', 'scheduled', 'inspecting')`,
+        `UPDATE cars SET status = 'archived', archived_at = NOW(),
+                         archive_reason = 'Seller account deleted'
+         WHERE seller_id = $1 AND status IN ('live', 'paused', 'approved', 'under_review', 'scheduled', 'inspecting')`,
         [user.id]
       );
 
@@ -429,7 +465,9 @@ router.delete('/me', requireAuth, async (req, res) => {
         `UPDATE users SET
            name = 'Deleted user',
            email = 'deleted+' || id || '@deleted.sawacars.com',
-           phone = NULL,
+           phone = NULL, whatsapp_phone = NULL,
+           phone_visible = FALSE, whatsapp_visible = FALSE,
+           contact_consent_at = NULL,
            password_hash = NULL,
            avatar_url = NULL,
            id_front_url = NULL, id_back_url = NULL, selfie_url = NULL,

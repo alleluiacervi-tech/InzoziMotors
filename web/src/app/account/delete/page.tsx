@@ -117,10 +117,9 @@ export default async function DeleteAccountPage() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-line-soft bg-surface-alt p-6">
-          <h2 className="text-title-sm font-extrabold text-content">If you have a sale in progress</h2>
+          <h2 className="text-title-sm font-extrabold text-content">Direct deals are not managed by Sawa Cars</h2>
           <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-            An account with a handover still being arranged cannot be deleted — someone is expecting
-            to meet you at a center. Cancel or complete it first, then deletion goes through.
+            Account deletion archives your listings and ends your platform access. It does not cancel, change or erase any independent agreement you made with another user; keep the records you need before deleting.
           </p>
         </div>
 

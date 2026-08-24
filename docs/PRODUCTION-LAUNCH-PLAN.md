@@ -1,8 +1,9 @@
 # Sawa — Production Deployment & Release Plan
 
 > Historical implementation plan. Use [PRODUCTION-READINESS.md](./PRODUCTION-READINESS.md)
-> for the current release gate, acceptance matrix and recovery procedure. Statements
-> below describe the state when this audit was written and may already be implemented.
+> for the current release gate, acceptance matrix and recovery procedure. This
+> document predates the verified-classifieds/no-payment decision: do not execute
+> its checkout, handover, booking, guarantee or fixed-angle-photo instructions.
 
 > **Version:** 1.0 · **Date:** August 1, 2026 · **Status:** Pre-launch planning
 >
@@ -199,11 +200,10 @@ services; Nginx server blocks → `nginx -t` → reload; Certbot on all four
 hostnames; `certbot renew --dry-run`; rotate seed admin.
 
 **Phase C — Operations (day 2–3):** Backups (§6), monitoring (§7), systemd
-unit for compose-on-boot. Then a **full staging pass**: register seller → KYC
-upload → submission → admin approve/schedule → 150-pt checklist → 36-photo
-upload → publish → purchase request → handover confirm → review. This single
-pass closes three open items at once: the admin click-test, the untested
-multipart uploads, and Socket.io over wss.
+unit for compose-on-boot. Then use the current acceptance matrix in
+`PRODUCTION-READINESS.md`: verify seller KYC, inspection, flexible gallery,
+explicit publication, direct contact/chat, rental inquiry, suspension and
+account deletion. Confirm there is no checkout, handover or booking write path.
 
 **Phase D — Point clients (day 3):** `eas build --profile preview` → install
 the APK → verify against the production API over HTTPS, including a real push

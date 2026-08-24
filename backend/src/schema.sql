@@ -217,6 +217,13 @@ ALTER TABLE users       ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NO
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS invite_token_hash TEXT;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS invite_expires_at TIMESTAMPTZ;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS invited_by        UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS whatsapp_phone    TEXT;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS phone_visible     BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS whatsapp_visible  BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS business_verified BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS contact_consent_at TIMESTAMPTZ;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS marketplace_terms_accepted_at TIMESTAMPTZ;
+ALTER TABLE users       ADD COLUMN IF NOT EXISTS marketplace_terms_version TEXT;
 
 -- Account lifecycle (Apple 5.1.1(v) / Google Play deletion requirements).
 -- Soft delete: the row survives so completed handovers, reviews and platform
@@ -246,6 +253,31 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
 CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON admin_audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_target ON admin_audit_log(target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_actor ON admin_audit_log(actor_id, created_at DESC);
+
+-- Verified-classifieds policy (migration 0018).
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS archive_reason TEXT;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS review_notes TEXT;
+
+CREATE TABLE IF NOT EXISTS listing_contact_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  car_id UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
+  buyer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  seller_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL CHECK (channel IN ('phone','whatsapp','in_app')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS platform_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  description TEXT NOT NULL,
+  editable BOOLEAN NOT NULL DEFAULT TRUE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by UUID REFERENCES users(id) ON DELETE SET NULL
+);
 
 -- Generated-document registry. Production is migrated by
 -- migrations/0016_document_registry.sql; this mirror keeps fresh schema users
@@ -442,6 +474,9 @@ CREATE TABLE IF NOT EXISTS rental_cars (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS safari_ready BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS provider_id UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retired_at TIMESTAMPTZ;
+ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retirement_reason TEXT;
 
 CREATE TABLE IF NOT EXISTS rental_bookings (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -465,6 +500,23 @@ CREATE TABLE IF NOT EXISTS rental_bookings (
 
 CREATE INDEX IF NOT EXISTS idx_rental_bookings_car    ON rental_bookings(rental_car_id);
 CREATE INDEX IF NOT EXISTS idx_rental_bookings_renter ON rental_bookings(renter_id);
+
+CREATE TABLE IF NOT EXISTS rental_inquiries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inquiry_ref TEXT UNIQUE NOT NULL,
+  rental_car_id UUID NOT NULL REFERENCES rental_cars(id) ON DELETE CASCADE,
+  renter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  start_date DATE,
+  days INT CHECK (days IS NULL OR days BETWEEN 1 AND 365),
+  pickup_location TEXT,
+  message TEXT,
+  preferred_channel TEXT NOT NULL DEFAULT 'in_app' CHECK (preferred_channel IN ('in_app','phone','whatsapp')),
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','contacted','closed','cancelled')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  closed_at TIMESTAMPTZ
+);
 
 -- ─── Price history — one row per price change on a listing ───────────────────
 CREATE TABLE IF NOT EXISTS price_history (

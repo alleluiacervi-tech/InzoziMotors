@@ -21,8 +21,8 @@ import { HERO_SLIDES } from '@/lib/imagery'
 
 const TRUST_STRIP: { icon: IconName; label: string }[] = [
   { icon: 'shield-check', label: '150-point inspection' },
-  { icon: 'refresh', label: '7-day drive-it guarantee' },
-  { icon: 'cash', label: 'Buyers pay nothing' },
+  { icon: 'user', label: 'Verified sellers' },
+  { icon: 'mail', label: 'Direct contact, no checkout' },
 ]
 
 // One slide. The first entry of the curated set is the buy-side statement,
@@ -77,7 +77,7 @@ export function Hero() {
             className="mt-4 max-w-xl animate-fade-up text-title-sm leading-relaxed text-white/80"
             style={{ animationDelay: '260ms' }}
           >
-            Buy certified, rent inspected, or sell with our team handling every important step.
+            Compare reviewed listings, contact verified sellers and agree your own sale or rental with clear information upfront.
           </p>
 
           <nav

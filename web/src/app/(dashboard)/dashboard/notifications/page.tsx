@@ -59,7 +59,7 @@ export default async function NotificationsPage() {
     <>
       <PageHeader
         title="Notifications"
-        description="Price drops on cars you saved, handover updates, new messages and matches for your saved searches. The app adds push alerts for the same events."
+        description="Price drops on saved cars, listing updates, new messages, rental inquiry activity and saved-search matches. The app adds push alerts for the same events."
         action={unread > 0 ? <MarkAllReadButton unread={unread} /> : undefined}
       />
 

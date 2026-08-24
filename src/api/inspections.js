@@ -36,13 +36,14 @@ export const inspections = {
     });
   },
 
-  // Admin: named 36-angle listing photos. Re-uploading an angle replaces it.
+  // Admin: ordered flexible gallery (1–40 photos). Keys preserve display order.
   uploadCarPhotos: async (carId, assets) => {
     if (!assets?.length) throw new Error('No photos to upload');
     const formData = new FormData();
     assets.forEach((asset, i) => {
-      appendImage(formData, 'photos', asset, asset.angleKey || `photo-${i + 1}`);
-      formData.append('angle_keys', asset.angleKey);
+      const key = asset.angleKey || `gallery-${String(i + 1).padStart(3, '0')}`;
+      appendImage(formData, 'photos', asset, key);
+      formData.append('angle_keys', key);
     });
     return await api.upload(`/inspections/cars/${carId}/photos`, formData);
   },

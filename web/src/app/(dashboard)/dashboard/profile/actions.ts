@@ -19,21 +19,28 @@ export async function updateProfileAction(
 ): Promise<ActionState> {
   const name = String(formData.get('name') || '').trim()
   const phone = String(formData.get('phone') || '').trim()
+  const whatsapp = String(formData.get('whatsapp_phone') || '').trim()
+  const phoneVisible = formData.get('phone_visible') === 'on'
+  const whatsappVisible = formData.get('whatsapp_visible') === 'on'
 
   const fieldErrors: Record<string, string> = {}
   if (name.length < 2) fieldErrors.name = 'Enter the full name on your ID.'
   if (phone && !PHONE_PATTERN.test(phone)) {
     fieldErrors.phone = 'Use a Rwandan mobile number, for example +250 788 123 456.'
   }
+  if (whatsapp && !PHONE_PATTERN.test(whatsapp)) fieldErrors.whatsapp_phone = 'Use a full mobile number, for example +250 788 123 456.'
+  if (phoneVisible && !phone) fieldErrors.phone = 'Add a phone number before making it available.'
+  if (whatsappVisible && !whatsapp) fieldErrors.whatsapp_phone = 'Add a WhatsApp number before making it available.'
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 
   const token = await getToken()
   if (!token) return { error: 'Your session has expired. Sign in again.' }
 
   try {
-    // PATCH /auth/me COALESCEs, so an empty phone leaves the stored one alone
-    // rather than wiping it — send the field only when it has a value.
-    await account.updateProfile(token, phone ? { name, phone } : { name })
+    await account.updateProfile(token, {
+      name, phone, whatsapp_phone: whatsapp,
+      phone_visible: phoneVisible, whatsapp_visible: whatsappVisible,
+    })
   } catch (err) {
     return { error: describeError(err, 'We could not save those details.') }
   }
@@ -109,10 +116,7 @@ export async function deleteAccountAction(
       if (err.status === 401) {
         return { fieldErrors: { password: 'That password is not correct.' } }
       }
-      if (err.status === 409) {
-        // An open handover means a counterparty is still expecting to meet.
-        return { error: err.message }
-      }
+      if (err.status === 409) return { error: err.message }
     }
     return { error: describeError(err, 'We could not delete your account.') }
   }

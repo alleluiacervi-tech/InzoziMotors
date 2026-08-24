@@ -1,81 +1,101 @@
-# Sawa production readiness
+# Sawa Cars production readiness
 
-This is the release gate and operational handoff for the web, admin, mobile,
-API, database, mail, payments and VPS deployment. A green build proves the code
-can ship; it does not by itself prove credentials, off-site recovery, alerts or
-store accounts are configured.
+This is the release gate for the verified-classifieds platform. Sawa Cars
+inspects and publishes vehicles and provides communication tools. Buyers,
+sellers, renters and rental providers agree and perform contracts, payments,
+deposits, delivery, transfer and disputes independently. The platform has no
+sale/rental checkout, escrow, payment gateway or seven-day guarantee.
 
-## Automated evidence
+## Engineering completed on the feature branch
 
-- [x] CI validates backend source and SQL, applies the schema, runs API tests,
-  parses the Expo app, and type-checks/builds both Next.js apps.
-- [x] Deploys occur only after a trusted push to `main` passes CI.
-- [x] The VPS receives prebuilt images instead of resource-heavy app builds.
-- [x] Cleanup is restricted to images labelled `com.sawacars.managed=true`.
-  Global Docker prune is forbidden because the VPS hosts another project.
-- [x] API readiness and all three public surfaces are checked after deployment.
-- [x] A scheduled workflow checks all public surfaces every 15 minutes and
-  tolerates two transient failures before raising a failed run.
-- [x] Migration deploys take a verified database backup before schema changes.
-- [x] Rollback records the previous revision and never reverses migrations blindly.
-- [x] `ops/readiness-report.sh` checks services, disk, backup age and off-site
-  evidence without changing the host.
+- [x] Payment, handover, contract, transaction-dispute and guarantee write paths
+  return `410 Gone`; current mobile/web clients do not expose those workflows.
+- [x] A buyer must authenticate and accept the current direct-deal notice before
+  seller/provider contact is disclosed or a rental inquiry is created.
+- [x] Public contact requires seller consent, a usable number, an active account,
+  identity approval and showroom business approval where applicable.
+- [x] Sale publication requires an active verified seller, completed inspection,
+  a valid gallery and a separate audited admin publication decision.
+- [x] Galleries accept 1–40 images without mandatory 360-degree angle slots;
+  operators are guided toward 6–10 honest, useful images.
+- [x] Rental listings require an active identity- and business-verified provider
+  and at least one HTTPS image. Availability requests never create bookings.
+- [x] Suspended/unverified providers disappear from public sale/rental results
+  while their records remain available to administrators.
+- [x] Admin operations cover account correction, password-reset initiation,
+  suspension/restoration, verification, listing CRUD/status/gallery, rental
+  fleet/inquiries, immutable policy settings and audit history.
+- [x] Mobile uses the real inspection queue, audited start/completion endpoints,
+  server-weighted checklist IDs, flexible photo upload and 48-point primary
+  controls. The full web admin console remains the complete operations surface.
+- [x] CI checks backend syntax/SQL/API behavior, mobile Babel parsing/imports,
+  production builds for web/admin, and operations-script safety.
 
-## Production configuration gate
+## Release blockers owned outside source code
 
-- [ ] Schedule nightly backups with `REQUIRE_UPLOADS=1 REQUIRE_OFFSITE=1`.
-- [ ] Create root-readable `/etc/sawa/backup.env` with `BACKUP_REMOTE` pointing
-  to storage outside the VPS; restrict its credentials to Sawa's destination.
-- [ ] Run **Ops → backup-strict** once and retain the successful workflow URL.
-- [ ] Run **Ops → readiness-report** and retain the successful workflow URL.
-- [ ] Route GitHub Actions failure notifications to the on-call owner (or connect
-  a dedicated uptime provider) so scheduled-check failures create an alert.
-- [ ] Configure SMTP/IMAP and verify send, receive and reply with an external mailbox.
-- [ ] Configure production payment credentials and verify signed HTTPS webhooks.
-- [ ] Confirm production secrets are environment/repository secrets, never files.
+- [ ] Replace `REPLACE_WITH_PLAY_APP_SIGNING_SHA256_FINGERPRINT` in
+  `web/public/.well-known/assetlinks.json`, deploy the website, then run
+  `npm run release:check` successfully.
+- [ ] Configure local/test `DB_HOST`, `DB_NAME`, `DB_USER` and `DB_PASSWORD`,
+  apply all migrations through `0019_policy_guardrails.sql`, and retain the
+  passing database-backed API test output. PostgreSQL is reachable on this
+  workstation, but no usable credentials are currently configured.
+- [ ] Back up production, apply migrations in order, and verify `/health/ready`
+  before deploying the clients that depend on the new schema.
+- [ ] Rotate any previously exposed email/storage credentials and configure
+  production SMTP/Resend, Cloudinary and Expo secrets outside Git.
+- [ ] Verify password reset, showroom invitation and account lifecycle email
+  delivery to an external mailbox.
+- [ ] Create buyer, verified individual-seller, verified rental-company and admin
+  reviewer accounts. Store the credentials only in App Store Connect/Play review.
+- [ ] Record the Apple physical-device walkthrough and complete the device/OS
+  test matrix below.
+- [ ] Complete an off-site backup restore drill and retain the evidence.
+- [ ] Merge this branch only after review; require one green `main` CI run before
+  production deployment. Do not deploy the feature branch directly.
 
 ## End-to-end acceptance matrix
 
-Record tester, date and evidence for every row. Use test personal data and a
-provider sandbox or the smallest reversible transaction.
+Record tester, date, build number and evidence for every row.
 
 | Journey | Required result | Evidence |
 | --- | --- | --- |
-| Seller onboarding | Register, authenticate, verify identity and recover access | Screenshot + audit event |
-| Vehicle submission | Draft, upload photos, submit and schedule inspection | Submission ID + audit history |
-| Inspection to listing | Inspect, approve, publish and find via public search | Car ID + public URL |
-| Buyer handover | Request, approve, confirm, complete sale and calculate fee in RWF | Handover ID + receipt |
-| Rental lifecycle | Search, book, pay, pick up and return; totals remain RWF | Booking/payment IDs |
-| Dispute/moderation | Open, investigate and resolve with actor history | Audit-event IDs |
-| Admin inbox | Receive, assign, tag, search, reply and compose externally | Message IDs + delivered email |
-| Admin operations | Search, filters, bulk actions, exports and alerts at mobile/desktop widths | Screen recording |
-| Currency | Forms, notifications, receipts, charts, dashboards and exports show RWF | Sample set |
-| Accessibility | Keyboard navigation, focus, modal trap, labels and reduced motion | Test notes |
+| Buyer account | Register, sign in, recover password, sign out and delete account | Recording + email + audit/log ID |
+| Individual seller | Verify ID, submit vehicle, schedule inspection, manage approved contact visibility | User/submission IDs |
+| Inspection to publication | Start/complete checklist, create/link listing, upload gallery, approve and publish | Inspection/car IDs + public URL |
+| Direct sale contact | Accept notice, reveal opted-in phone/WhatsApp or start in-app chat; no checkout is offered | Contact event + conversation ID |
+| Rental provider | Verify identity/business, add active vehicle with images, edit/retire inventory | Provider/rental IDs + audit events |
+| Rental inquiry | Request future dates, provider receives lead, renter can cancel; no booking/payment row is created | Inquiry ID + database assertion |
+| Suspension/revocation | Revoke access and confirm sessions end and public inventory disappears; restore deliberately | Recording + audit events |
+| Admin consistency | Account/listing/rental/settings changes appear on web and mobile/public surfaces | Before/after evidence |
+| UGC safety | Report/block a chat participant and confirm admin moderation access | Report/block IDs |
+| Responsive/accessibility | iOS and Android small/large phones, large text, screen reader labels and all primary controls | Device matrix + notes |
 
-## Recovery drill (quarterly and before risky migrations)
+## Physical-device matrix
 
-1. Run `REQUIRE_UPLOADS=1 REQUIRE_OFFSITE=1 ops/backup.sh`.
-2. Copy the newest dump from off-site storage to an isolated host.
-3. Run `RESTORE_DB=sawa_rehearsal ops/restore.sh <dump>` against a scratch database.
-4. Apply migrations, start an isolated API and run its readiness probe.
-5. Compare row counts for users, cars, handovers, fees, bookings and payments.
-6. Sample vehicle and identity files from the matching uploads archive.
-7. Record duration, backup timestamp, row counts and corrective action.
+| Device | OS | Build | Buyer | Seller | Rental | Account deletion | Result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `<iPhone model>` | `<latest iOS>` | `<build>` | [ ] | [ ] | [ ] | [ ] | `<notes>` |
+| `<Android model>` | `<supported Android>` | `<build>` | [ ] | [ ] | [ ] | [ ] | `<notes>` |
+| `<older supported Android>` | `<version>` | `<build>` | [ ] | [ ] | [ ] | [ ] | `<notes>` |
 
-Never rehearse into the live `sawa` database.
+## Deployment order and smoke test
 
-## Incident decision guide
+1. Create and verify a database plus uploads backup.
+2. Deploy the API/database migration; verify liveness, readiness and migration
+   version before allowing client traffic.
+3. Deploy web and admin; verify login, catalogue, legal pages and full admin CRUD.
+4. Publish the mobile build to TestFlight/Play internal testing and run the
+   acceptance matrix on physical devices.
+5. Verify public links, password reset, direct contact, chat, rental inquiry,
+   suspension and account deletion against production-like data.
+6. Submit store metadata that exactly matches `docs/STORE-SUBMISSION.md`.
+7. Release manually after approval and monitor readiness, 5xxs, mail, database
+   capacity, storage and backup completion.
 
-- Public failure: run **status**, then restart only the failed service.
-- Bad code revision: use **rollback**. Destructive schema needs a reviewed restore.
-- Low disk: run **storage-report**, **list-stale**, then **cleanup-stale** or
-  **prune-sawa-images**. These cannot prune the other project.
-- SSH timeout: check public health, then inspect firewall/fail2ban via provider console.
-- Corrupt data: stop writes, preserve logs, select a verified off-site backup and
-  restore with a second reviewer.
+## Definition of ready
 
-## Definition of production-ready
-
-CI and deployment must be green, every configuration checkbox complete, every
-acceptance row evidenced, and a restore drill successful within the last quarter.
-Unchecked external items are launch risks the repository cannot certify itself.
+Ready means: all automated checks green on `main`, every external blocker above
+closed, every acceptance row evidenced, store copy consistent with the binary,
+and a recent restore drill proven. A successful build alone is not approval to
+release.

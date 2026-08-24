@@ -5,9 +5,9 @@
 
 export const SITE = {
   name: 'Sawa Cars',
-  tagline: 'Rwanda’s certified car marketplace',
+  tagline: 'Rwanda’s verified vehicle marketplace',
   description:
-    'Every car on Sawa Cars is physically inspected on a 150-point check, photographed by our team, and backed by a 7-day drive-it guarantee. Buy, sell or rent with confidence in Kigali.',
+    'Discover reviewed vehicle listings, inspection information and verified sellers in Rwanda. Buyers, sellers and rental providers communicate and transact directly.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://sawacars.com',
   locale: 'en_RW',
   themeColor: '#CC050F',
@@ -117,7 +117,7 @@ export const FOOTER_LINKS = [
     heading: 'Company',
     links: [
       { href: '/about', label: 'About Sawa Cars' },
-      { href: '/promise', label: 'The Sawa Promise' },
+      { href: '/promise', label: 'Marketplace safety' },
       { href: '/how-it-works', label: 'How buying works' },
       { href: '/contact', label: 'Contact & centers' },
     ],
@@ -136,7 +136,7 @@ export const FOOTER_LINKS = [
     links: [
       { href: '/legal/terms', label: 'Terms of service' },
       { href: '/legal/privacy', label: 'Privacy policy' },
-      { href: '/legal/guarantee', label: '7-day guarantee terms' },
+      { href: '/legal/guarantee', label: 'Direct-deal notice' },
       // Google Play requires this to be reachable without signing in, so it
       // belongs in the footer rather than only behind the dashboard.
       { href: '/account/delete', label: 'Delete your account' },
@@ -144,61 +144,57 @@ export const FOOTER_LINKS = [
   },
 ] as const
 
-/** The five guarantees — copy lifted verbatim from SawaPromiseScreen so the
- *  wording a customer reads on the site is the wording in the app. */
+/** Marketplace safety commitments. These describe platform controls, not a
+ * transaction warranty or promise about an agreement between users. */
 export const PROMISES = [
   {
     icon: 'shield',
-    title: '150-Point Certification',
-    desc: 'Every car — for sale or for rent — passes our full mechanical, body, electronics and documentation inspection before it appears on Sawa Cars. No exceptions, no seller shortcuts.',
+    title: 'Inspection Information',
+    desc: 'Where an inspection has been completed, the listing shows the recorded mechanical, body, electronics and document checks so buyers can make a better-informed decision.',
   },
   {
-    icon: 'refresh',
-    title: 'Drive It for 7 Days',
-    desc: 'Every certified purchase comes with a 7-day decision window. Drive it, live with it — if it doesn’t match its inspection report, return it at any Sawa center for a full refund.',
+    icon: 'user',
+    title: 'Verified Sellers',
+    desc: 'Seller identity and account status are reviewed before a vehicle can be published. Business providers receive a separate verification control.',
   },
   {
     icon: 'document',
-    title: 'Verified History',
-    desc: 'Ownership records, mileage verification and RRA duty status are checked and published on every listing. What you read is what we verified.',
+    title: 'Clear Evidence',
+    desc: 'Listings distinguish recorded checks from unknown information. Buyers should still verify the vehicle and original documents before agreeing a deal.',
   },
   {
-    icon: 'cash',
-    title: 'Deposit-Back Guarantee',
-    desc: 'Rental deposits are returned in full after the return check — same day, at the center. Documented condition photos protect both sides.',
+    icon: 'mail',
+    title: 'Consent-Based Contact',
+    desc: 'A seller’s phone or WhatsApp number is shared only when that seller enables it and a signed-in buyer acknowledges the direct-deal notice.',
   },
   {
     icon: 'eye-off',
-    title: 'Zero Fake Listings',
-    desc: 'Only the Sawa team can publish listings, and only after physically inspecting the car. Every photo is shot by our photographers. If it looks real, it is.',
+    title: 'Controlled Publication',
+    desc: 'Only authorized administrators can publish listings. Identity, inspection and photo requirements are checked again at publication time.',
   },
 ] as const
 
 /** Buyer journey — mirrors STEPS in BuyingGuideScreen. */
 export const BUYING_STEPS = [
   {
-    title: 'Request the car',
-    desc: 'One tap, no payment. The car is reserved for you while we confirm with the seller. Cancelling before handover is always free.',
+    title: 'Review the listing',
+    desc: 'Read the vehicle details, gallery, inspection information and any limitations before contacting the seller.',
   },
   {
-    title: 'We arrange everything',
-    desc: 'Sawa Cars contacts you on WhatsApp within 24 hours to set a handover time at the center that suits you.',
+    title: 'Contact the seller',
+    desc: 'Use in-app chat, phone or WhatsApp when the verified seller has enabled that channel.',
   },
   {
-    title: 'Handover at the center',
-    desc: 'Meet at a Sawa center. Payment happens there — in person, never in the app. We check documents with both of you.',
+    title: 'Inspect and verify',
+    desc: 'Arrange your own viewing or additional inspection and check the vehicle, VIN, original documents and ownership independently.',
   },
   {
-    title: 'Ownership transfer',
-    desc: 'We process the RRA transfer with you at the center. New registration documents typically complete within 2–3 working days.',
+    title: 'Agree written terms',
+    desc: 'Buyer and seller decide the price, payment method, delivery, ownership transfer and written contract directly.',
   },
   {
-    title: 'Insure before you drive',
-    desc: 'Third-party insurance is required before the car leaves the center. Bring a policy, or our team helps you arrange one on the spot.',
-  },
-  {
-    title: 'Drive it for 7 days',
-    desc: 'Your guarantee window. If the car doesn’t match its inspection report, bring it back for a full refund.',
+    title: 'Complete the deal independently',
+    desc: 'Sawa Cars does not receive or hold the purchase money and is not a party to the resulting contract or dispute.',
   },
 ] as const
 
@@ -207,42 +203,42 @@ export const SELLING_STEPS = [
   { title: 'Verify your identity', desc: 'A one-time ID check. It is what keeps every Sawa Cars listing real — and it takes about two minutes.' },
   { title: 'Submit your car', desc: 'Tell us the make, model, mileage and your asking price. We suggest a range from real comparable sales.' },
   { title: 'Book your inspection', desc: 'Pick a center and a slot. Bring the car and your service records.' },
-  { title: 'We inspect and photograph', desc: 'Our mechanics run the 150-point check; our photographers shoot the standard 36 angles.' },
-  { title: 'Your listing goes live', desc: 'We publish it with the full report attached. You keep control of the price.' },
-  { title: 'Handover and payment', desc: 'We arrange the meeting, verify the buyer, and process the RRA transfer at the center.' },
+  { title: 'We inspect and review', desc: 'Our team records the inspection and adds a clear, truthful image gallery. There is no fixed angle count.' },
+  { title: 'An admin publishes it', desc: 'Publication is gated by seller verification, inspection completion and a valid gallery. You keep control of the price.' },
+  { title: 'You manage buyer enquiries', desc: 'Talk, negotiate and agree any sale directly. Sawa Cars is not a party to your contract or payment.' },
 ] as const
 
 export const FAQS = [
   {
     q: 'Do I pay anything through the app or website?',
-    a: 'Not for buying a car — ever. Car payment happens physically at a Sawa center at handover, which is what protects both you and the seller. Rentals are the one exception: in the app you can choose to pay the rental fee online (card, MTN MoMo or Airtel Money) through a secure checkout — and even then the refundable deposit is handled at the center.',
+    a: 'No. Sawa Cars has no checkout or payment gateway for vehicle sales or rentals. Buyers, sellers and rental providers decide payment and contract arrangements directly and should document them carefully.',
   },
   {
     q: 'What does the 150-point inspection actually cover?',
     a: 'Seven categories: engine and drivetrain, brakes and steering, body and exterior, interior and comfort, electronics and safety, tyres and wheels, and documentation. Every item is graded pass, flag or fail, and the full report is published on the listing before you commit.',
   },
   {
-    q: 'How does the 7-day guarantee work?',
-    a: 'From the day of handover you have 7 days. If the car does not match its published inspection report, return it to any Sawa center for a full refund. Change-of-mind returns are accepted with a reconditioning fee, and a per-km charge applies beyond 300 km.',
+    q: 'Does Sawa Cars guarantee the transaction?',
+    a: 'No. Sawa Cars reviews listings and seller eligibility, but it does not guarantee a vehicle, payment, rental deposit, contract, delivery or outcome between users. Always inspect, verify and agree terms in writing.',
   },
   {
     q: 'Can sellers list cars themselves?',
-    a: 'No — and that is the point. Only the Sawa team publishes listings, and only after physically inspecting and photographing the car. Sellers submit a car for inspection; they never post directly.',
+    a: 'Sellers submit vehicle information and can manage approved listing details, but only an authorized administrator can make a listing public after the required checks.',
   },
   {
     q: 'What does it cost to sell?',
-    a: 'A certification fee covers the inspection, the professional photography and the listing. A small success commission applies only when the handover completes. Buyers pay nothing, ever.',
+    a: 'Any commercial service or listing charges are communicated separately by Sawa Cars and are not collected through a buyer–seller payment gateway. A vehicle transaction itself is always between the users.',
   },
   {
-    q: 'What if the seller sells the car to someone else?',
-    a: 'Once you request a car it is reserved and removed from the marketplace. Only you can complete or release that reservation.',
+    q: 'Does contacting a seller reserve a car?',
+    a: 'No. Contacting a seller starts a conversation only. Availability remains the seller’s responsibility until you and the seller make your own agreement.',
   },
   {
     q: 'Do I need the mobile app, or can I do everything on the web?',
-    a: 'Browsing, full inspection reports, saved cars and searches, purchase requests and your whole account work on the web. The app adds camera capture for ID verification and seller photos, plus push notifications for price drops and messages.',
+    a: 'Browsing, inspection information, saved cars, direct seller contact and your account work on the web. The app adds camera capture, push notifications and a more convenient messaging experience.',
   },
   {
     q: 'Which areas do you cover?',
-    a: 'We operate across Kigali with inspection and handover centers in Nyarutarama, Kicukiro and Kimironko. Listings show the neighbourhood the car is kept in.',
+    a: 'We operate inspection services across Kigali. Listings show the location supplied for each vehicle. Buyer and seller decide where to view or exchange a vehicle.',
   },
 ] as const

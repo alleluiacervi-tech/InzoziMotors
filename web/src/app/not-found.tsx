@@ -27,13 +27,13 @@ const ELSEWHERE: { href: string; label: string; description: string; icon: IconN
   {
     href: '/how-it-works',
     label: 'How buying works',
-    description: 'Request, handover at a center, RRA transfer, 7-day window.',
+    description: 'Review evidence, contact the seller, verify and agree directly.',
     icon: 'document',
   },
   {
     href: '/promise',
-    label: 'The Sawa Promise',
-    description: 'The five guarantees behind every car we publish.',
+    label: 'Marketplace safety',
+    description: 'The controls and limits behind verified listings.',
     icon: 'shield-check',
   },
   {

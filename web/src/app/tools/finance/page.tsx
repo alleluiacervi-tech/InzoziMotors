@@ -99,12 +99,10 @@ export default function FinancePage() {
         <Container>
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-headline font-extrabold text-white">
-              Payment still happens at the center
+              Finance is arranged outside Sawa Cars
             </h2>
             <p className="mt-4 text-title-sm leading-relaxed text-white/70">
-              However you fund it, money changes hands in person on handover day — never through
-              the app or the website. Your bank pays at the center, we complete the RRA transfer
-              with you, and the 7-day guarantee starts that day.
+              This calculator is informational. Confirm any loan directly with the bank and agree the payment recipient, ownership transfer, delivery and written sale terms directly with the seller. Sawa Cars does not receive the funds or guarantee the transaction.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button href="/cars" size="lg" trailingIcon={<Icon name="arrow-right" size={18} />}>

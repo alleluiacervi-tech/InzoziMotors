@@ -10,6 +10,9 @@ type UserRow = {
   name: string
   email: string
   phone?: string | null
+  whatsapp_phone?: string | null
+  phone_visible?: boolean
+  whatsapp_visible?: boolean
   role: string
   id_verified: 'pending' | 'approved' | 'rejected' | string
   trust_score?: number
@@ -21,6 +24,7 @@ type UserRow = {
   selfie_url?: string
   seller_type?: string | null
   business_name?: string | null
+  business_verified?: boolean
   must_change_password?: boolean
   account_status?: 'active' | 'suspended'
   suspended_at?: string | null
@@ -38,6 +42,10 @@ export default function UsersPage() {
   const [actionId, setActionId] = useState<string | null>(null)
   const [showroomOpen, setShowroomOpen] = useState(false)
   const [showroom, setShowroom] = useState({ name: '', business_name: '', email: '', phone: '' })
+  const [editing, setEditing] = useState<null | {
+    id: string; name: string; role: 'buyer' | 'seller'; phone: string; whatsapp_phone: string;
+    business_name: string; business_verified: boolean; phone_visible: boolean; whatsapp_visible: boolean
+  }>(null)
   const ask = useConfirm()
   const toast = useToast()
 
@@ -137,21 +145,31 @@ export default function UsersPage() {
     finally { setActionId(null) }
   }
 
-  async function editUser(user: UserRow) {
-    const name = window.prompt('Account name', user.name)
-    if (name === null) return
-    const phone = window.prompt('Phone number (leave blank to remove)', user.phone || '')
-    if (phone === null) return
-    const role = window.prompt('Role: buyer or seller', user.role)
-    if (role === null) return
-    if (!['buyer', 'seller'].includes(role.trim())) {
-      toast('Role must be buyer or seller', 'error')
+  function editUser(user: UserRow) {
+    setEditing({
+      id: user.id, name: user.name || '', role: user.role === 'seller' ? 'seller' : 'buyer',
+      phone: user.phone || '', whatsapp_phone: user.whatsapp_phone || '', business_name: user.business_name || '',
+      business_verified: !!user.business_verified, phone_visible: !!user.phone_visible, whatsapp_visible: !!user.whatsapp_visible,
+    })
+  }
+
+  async function saveUser(event: React.FormEvent) {
+    event.preventDefault()
+    if (!editing || !editing.name.trim()) return
+    if ((editing.phone_visible && !editing.phone.trim()) || (editing.whatsapp_visible && !editing.whatsapp_phone.trim())) {
+      toast('A contact channel cannot be visible without a number.', 'error')
       return
     }
-    setActionId(`edit-${user.id}`)
+    setActionId(`edit-${editing.id}`)
     try {
-      await api.updateUser(user.id, { name: name.trim(), phone: phone.trim() || null, role: role.trim() as 'buyer' | 'seller' })
+      await api.updateUser(editing.id, {
+        name: editing.name.trim(), role: editing.role, phone: editing.phone.trim() || null,
+        whatsapp_phone: editing.whatsapp_phone.trim() || null, business_name: editing.business_name.trim() || null,
+        business_verified: editing.business_verified, phone_visible: editing.phone_visible,
+        whatsapp_visible: editing.whatsapp_visible,
+      })
       toast('Account details updated', 'success')
+      setEditing(null)
       await load()
     } catch (e: any) { toast(e.message, 'error') }
     finally { setActionId(null) }
@@ -242,6 +260,46 @@ export default function UsersPage() {
         </div>
       )}
 
+      {editing ? (
+        <Card className="mb-5 p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div><h2 className="font-extrabold text-content">Edit account controls</h2><p className="mt-1 text-label text-content-muted">Manage identity, seller verification and consent-based public contact channels.</p></div>
+            <button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-line px-3 py-1.5 text-caption font-bold text-content">Cancel</button>
+          </div>
+          <form onSubmit={saveUser} className="grid gap-4 sm:grid-cols-2">
+            {([
+              ['name', 'Account name', 'text'], ['business_name', 'Business name', 'text'],
+              ['phone', 'Phone number', 'tel'], ['whatsapp_phone', 'WhatsApp number', 'tel'],
+            ] as const).map(([key, label, type]) => (
+              <label key={key} className="text-label font-semibold text-content">{label}
+                <input type={type} value={editing[key]} onChange={(e) => setEditing({ ...editing, [key]: e.target.value })}
+                  required={key === 'name'} className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+              </label>
+            ))}
+            <label className="text-label font-semibold text-content">Platform role
+              <select value={editing.role} onChange={(e) => setEditing({ ...editing, role: e.target.value as 'buyer' | 'seller' })}
+                className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:outline-none">
+                <option value="buyer">Buyer</option><option value="seller">Seller</option>
+              </select>
+            </label>
+            <div className="rounded-xl border border-line-soft bg-surface-alt p-3 text-caption text-content-muted">Contact information is revealed only after a buyer acknowledges the direct-deal notice. Visibility also requires the relevant number.</div>
+            {([
+              ['business_verified', 'Verified business', 'Allow this seller to operate provider inventory.'],
+              ['phone_visible', 'Share phone on request', 'Allow acknowledged buyers to request this phone number.'],
+              ['whatsapp_visible', 'Share WhatsApp on request', 'Allow acknowledged buyers to request this WhatsApp number.'],
+            ] as const).map(([key, label, sub]) => (
+              <label key={key} className="flex items-start gap-3 rounded-xl border border-line-soft p-3">
+                <input type="checkbox" checked={editing[key]} onChange={(e) => setEditing({ ...editing, [key]: e.target.checked })} className="mt-1 h-4 w-4 accent-brand" />
+                <span><span className="block text-label font-bold text-content">{label}</span><span className="text-caption text-content-muted">{sub}</span></span>
+              </label>
+            ))}
+            <button disabled={actionId === `edit-${editing.id}`} className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
+              {actionId === `edit-${editing.id}` ? 'Saving…' : 'Save account controls'}
+            </button>
+          </form>
+        </Card>
+      ) : null}
+
       {error ? <ErrorState error={error} onRetry={load} /> : loading ? <LoadingState /> : visible.length === 0 ? (
         <EmptyState icon="user" title={tab === 'verification' ? 'Queue is empty' : 'No users found'}
           description={tab === 'verification' ? 'No sellers are waiting on an ID check.' : 'Try a different search or role filter.'} />
@@ -254,8 +312,8 @@ export default function UsersPage() {
               </thead>
               <tbody className="divide-y divide-line-soft">
                 {visible.map((u) => <tr key={u.id} className="hover:bg-surface-alt">
-                  <td className="px-5 py-4"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</td>
-                  <td className="px-4 py-4"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'verified showroom' : u.role} /></td>
+                  <td className="px-5 py-4"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</td>
+                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'showroom' : u.role} />{u.business_verified ? <Pill status="approved" label="business verified" /> : null}</div></td>
                   <td className="px-4 py-4"><Pill status={u.id_verified} label={u.id_verified || 'not submitted'} /></td>
                   <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>

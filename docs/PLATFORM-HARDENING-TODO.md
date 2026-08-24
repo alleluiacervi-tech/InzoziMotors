@@ -6,8 +6,8 @@ customer/data risk, not by how visible the work is in the interface.
 
 ## P0 — release blockers and data protection
 
-- [x] Run migrations and the database-backed API workflow against a real local
-  PostgreSQL 16 instance.
+- [ ] Configure credentials, run migrations through `0019_policy_guardrails.sql`
+  and execute the database-backed API workflow against local PostgreSQL 16.
 - [x] Ensure admin suspension, restoration and password-reset initiation revoke
   active sessions and leave an audit trail.
 - [x] Remove the fixed 360-degree photo requirement; accept a bounded, managed
@@ -29,8 +29,8 @@ customer/data risk, not by how visible the work is in the interface.
 ## P1 — reliability and operations
 
 - [ ] Send structured API logs to a retained, searchable log service and alert
-  on readiness failures, sustained 5xxs, payment verification failures, and
-  backup failures.
+  on readiness failures, sustained 5xxs, inquiry/contact failures, and backup
+  failures.
 - [ ] Add an error-reporting provider through `setErrorReporter()` with source
   maps and release versions for API, web, admin, and mobile.
 - [ ] Add a database dashboard: connection pool saturation, slow queries,
@@ -39,23 +39,24 @@ customer/data risk, not by how visible the work is in the interface.
   scaling the API; the current in-memory limit is correct for one process only.
 - [ ] Define retention and deletion jobs for uploads, KYC documents, audit
   records, backups, and account-deletion data.
-- [ ] Add idempotency keys to every external-payment and high-value create
-  operation that can be retried by a client or proxy.
-- [ ] Introduce load testing for browsing, search, messaging, bookings, and
+- [ ] Add idempotency keys to contact disclosures, rental inquiries and other
+  high-value create operations that can be retried by a client or proxy.
+- [ ] Introduce load testing for browsing, search, messaging, inquiries and
   photo uploads with a documented capacity target.
 
 ## P1 — product consistency
 
 - [ ] Replace all demo inventory/content with reviewed production data and
   prohibit demo seeding in every release environment.
-- [ ] Complete the seller lifecycle in one explicit state model: account,
-  identity, inspection, fee/subscription, approval, publication, suspension.
-- [ ] Add admin settings for business-controlled policy values (fees,
-  inspection centres, contact/legal links, feature flags) with audit history.
+- [x] Enforce one seller/publication state model across account, identity,
+  business verification, inspection, gallery, approval and suspension.
+- [ ] Add admin settings for permitted business-controlled values (inspection
+  centres, contact/legal links and feature flags) with audit history. Direct-deal,
+  no-payment, no-guarantee and inspection-required rails remain immutable.
 - [ ] Make admin user editing a designed form/dialog rather than a browser
   prompt, with field validation and an activity preview.
-- [ ] Record a physical-device acceptance run for buyer, seller, rental,
-  moderation, account deletion, payment and recovery flows.
+- [ ] Record a physical-device acceptance run for buyer, seller, rental inquiry,
+  moderation, account deletion and recovery flows.
 
 ## P2 — scale and maintainability
 
@@ -67,8 +68,8 @@ customer/data risk, not by how visible the work is in the interface.
   traffic web/admin/mobile journeys.
 - [ ] Add pagination/cursor standards, query budgets, and indexes based on real
   production query plans before data volume makes them urgent.
-- [ ] Establish SLOs: availability, API latency, error rate, booking/payment
-  confirmation time, support-response time, and recovery-time objective.
+- [ ] Establish SLOs: availability, API latency, error rate, contact/inquiry
+  delivery time, support-response time, and recovery-time objective.
 
 ## Definition of done
 

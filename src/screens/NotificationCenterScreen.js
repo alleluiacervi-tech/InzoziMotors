@@ -111,7 +111,7 @@ export default function NotificationCenterScreen({ navigation }) {
     return acc;
   }, {});
 
-  // Server notifications carry meta: { carId, bookingId, disputeId, … }.
+  // Server notifications may include historical metadata from retired flows.
   // Route to the thing the notification is actually about.
   const handlePress = async (notification) => {
     if (!notification.read) markNotificationRead(notification.id);
@@ -134,14 +134,12 @@ export default function NotificationCenterScreen({ navigation }) {
     }
 
     if (meta.disputeId) {
-      navigation.navigate('Disputes');
+      navigation.navigate('SawaPromise');
       return;
     }
 
     if (meta.bookingId || notification.type === 'handover') {
-      // Pass the booking through — without it OrderTracking can only render
-      // its not-found state, and this notification KNOWS which order it means.
-      navigation.navigate('OrderTracking', meta.bookingId ? { bookingId: meta.bookingId } : undefined);
+      navigation.navigate('SawaPromise');
       return;
     }
 

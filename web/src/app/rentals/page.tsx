@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { rentals as rentalsApi } from '@/lib/api'
-import { CONTACT, SITE } from '@/lib/site'
+import { SITE } from '@/lib/site'
 import { Button, Card, Container, EmptyState, Icon, Section } from '@/components/ui'
 import { ChipLink } from '@/components/ui/Chip'
 import { PageIntro } from '@/components/marketplace/PageIntro'
@@ -24,9 +24,7 @@ import { RENTAL_INCLUDES } from '@/components/marketplace/rental-copy'
 export const metadata: Metadata = {
   title: 'Car rental in Kigali, Rwanda — inspected vehicles',
   description:
-    'Rent from a fleet that passes the same 150-point inspection as the cars we sell. ' +
-    'Insurance, roadside assistance and unlimited kilometres included. Deposits returned in ' +
-    'full after the return check, same day, at the center.',
+    'Browse verified rental-provider inventory in Kigali, compare provider-supplied rates and send direct availability inquiries through Sawa Cars.',
   alternates: { canonical: '/rentals' },
   openGraph: {
     title: `Rent a certified car in Kigali · ${SITE.name}`,
@@ -173,6 +171,7 @@ export default async function RentalsPage({ searchParams }: PageProps) {
         description="The same 150-point standard as the cars we sell. Deposits back in full after the return check."
       />
 
+      <span id="fleet" className="block scroll-mt-24" />
       <Container className="py-8 sm:py-12">
         <Suspense fallback={<FleetSkeleton />}>
           <FleetResults safariOnly={safariOnly} category={category} />
@@ -183,9 +182,9 @@ export default async function RentalsPage({ searchParams }: PageProps) {
         <Container>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
             <div>
-              <p className="text-eyebrow font-bold uppercase text-brand">Included as standard</p>
+              <p className="text-eyebrow font-bold uppercase text-brand">Provider-stated features</p>
               <h2 className="mt-2 text-headline font-extrabold text-content">
-                No line items, no surprises at the desk
+                 Compare the published terms, then confirm in writing
               </h2>
               <ul className="mt-8 grid gap-4 sm:grid-cols-2">
                 {RENTAL_INCLUDES.map((item) => (
@@ -198,43 +197,21 @@ export default async function RentalsPage({ searchParams }: PageProps) {
                 ))}
               </ul>
               <p className="mt-8 max-w-prose text-body leading-relaxed text-content-secondary">
-                Pay at the center when you collect the car, or pay the rental
-                online in the app — card, MTN MoMo or Airtel Money, through a
-                secure checkout. The refundable deposit is always handled at the
-                center. Bring your licence and ID, and we photograph the car with
-                you before you drive off.
+                 These features and rates are supplied by each rental provider. Before paying,
+                 confirm availability, insurance, mileage, taxes, deposit, pickup, return,
+                 cancellation and damage terms directly with that provider.
               </p>
             </div>
 
             <Card className="relative h-fit overflow-hidden rounded-3xl border-line p-7 shadow-float">
               <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-              <h3 className="text-title font-extrabold text-content">Booking a car</h3>
+              <h3 className="text-title font-extrabold text-content">Requesting availability</h3>
               <p className="mt-3 text-caption leading-relaxed text-content-secondary">
-                Tell us the dates and where you would like to collect. We confirm
-                availability and hold the car for you.
+                Open a vehicle, enter your dates and send an inquiry. The provider—not Sawa Cars—confirms availability and all rental terms.
               </p>
               <div className="mt-6 space-y-2">
-                {CONTACT.whatsappVerified ? (
-                  <Button
-                    href={`https://wa.me/${CONTACT.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
-                      'Hi Sawa Cars, I would like to rent a car. Here are my dates:'
-                    )}`}
-                    target="_blank"
-                    fullWidth
-                    leadingIcon={<Icon name="whatsapp" size={18} />}
-                  >
-                    Message us on WhatsApp
-                  </Button>
-                ) : (
-                  <Button href="/contact" fullWidth>
-                    Find a center
-                  </Button>
-                )}
-                {CONTACT.whatsappVerified ? (
-                  <Button href="/contact" variant="outline" fullWidth>
-                    Find a center
-                  </Button>
-                ) : null}
+                <Button href="#fleet" fullWidth>Choose a rental</Button>
+                <Button href="/how-it-works" variant="outline" fullWidth>Read the direct-deal process</Button>
               </div>
             </Card>
           </div>

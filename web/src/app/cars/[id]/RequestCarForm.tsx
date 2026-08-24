@@ -2,87 +2,66 @@
 
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { Alert, Button, Field, Icon, Input } from '@/components/ui'
-import { requestCarAction, type RequestState } from './actions'
+import { Alert, Button, Icon } from '@/components/ui'
+import { contactSellerAction, type ContactState } from './actions'
 
-/**
- * The buy CTA. Deliberately small: one optional phone number and one button,
- * because the request itself commits a buyer to nothing. Everything that
- * follows — the slot, the paperwork, the money — happens with a person at a
- * center, so this form's real job is to say that clearly.
- */
-export function RequestCarForm({ carId, phone }: { carId: string; phone?: string | null }) {
-  const [state, formAction] = useActionState<RequestState, FormData>(requestCarAction, {
-    status: 'idle',
-  })
+type Availability = { phone: boolean; whatsapp: boolean; in_app: boolean }
+
+export function RequestCarForm({ carId, available }: { carId: string; available?: Availability }) {
+  const [state, action] = useActionState<ContactState, FormData>(contactSellerAction, { status: 'idle' })
+  const channels = [
+    { id: 'in_app', label: 'Message seller', icon: 'mail' as const, enabled: available?.in_app !== false },
+    { id: 'whatsapp', label: 'WhatsApp', icon: 'whatsapp' as const, enabled: !!available?.whatsapp },
+    { id: 'phone', label: 'Phone', icon: 'phone' as const, enabled: !!available?.phone },
+  ].filter((item) => item.enabled)
 
   if (state.status === 'done') {
-    return (
-      <div className="space-y-4">
-        <Alert tone="success" title="Request received">
-          The car is reserved for you under booking {state.bookingId}. Sawa Cars will
-          contact you on WhatsApp within 24 hours to agree a handover time at the
-          center that suits you.
-        </Alert>
-        <Button href="/dashboard" variant="outline" fullWidth>
-          Track this request
-        </Button>
-        <p className="text-micro leading-relaxed text-content-muted">
-          Cancelling before handover is always free, and the car goes back on the
-          marketplace when you do.
-        </p>
-      </div>
-    )
+    const href = state.channel === 'whatsapp' && state.contact
+      ? `https://wa.me/${state.contact.replace(/\D/g, '')}`
+      : state.channel === 'phone' && state.contact ? `tel:${state.contact}` : null
+    return <div className="space-y-4">
+      <Alert tone="success" title={state.channel === 'in_app' ? 'Message sent' : 'Contact unlocked'}>
+        {state.channel === 'in_app'
+          ? 'Your message was sent to the verified seller. Continue the conversation in the Sawa Cars app.'
+          : 'The seller chose to make this contact channel available. You can now contact them directly.'}
+      </Alert>
+      {href ? <Button href={href} target={state.channel === 'whatsapp' ? '_blank' : undefined} size="lg" fullWidth leadingIcon={<Icon name={state.channel === 'whatsapp' ? 'whatsapp' : 'phone'} size={18} />}>
+        {state.channel === 'whatsapp' ? `Open WhatsApp${state.contact ? ` · ${state.contact}` : ''}` : `Call ${state.contact}`}
+      </Button> : <Button href="/download" variant="outline" fullWidth>Open the Sawa Cars app</Button>}
+      <p className="text-micro leading-relaxed text-content-muted">{state.notice}</p>
+    </div>
   }
 
-  return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="car_id" value={carId} />
-
-      <Field
-        label="Phone number"
-        htmlFor="contact_phone"
-        hint="We coordinate handovers on WhatsApp. Leave it blank to use the number on your account."
-      >
-        <Input
-          id="contact_phone"
-          name="contact_phone"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          defaultValue={phone ?? ''}
-          placeholder="+250 788 000 000"
-        />
-      </Field>
-
-      {state.status === 'error' ? <Alert tone="danger">{state.message}</Alert> : null}
-
-      <SubmitButton />
-
-      <div className="flex items-start gap-2.5 rounded-xl bg-surface-alt px-4 py-3">
-        <Icon name="shield" size={16} className="mt-0.5 shrink-0 text-content-secondary" />
-        <p className="text-micro leading-relaxed text-content-secondary">
-          <strong className="text-content">Free request. No card details.</strong>{' '}
-          Payment only happens at the Sawa center after you inspect the car and its documents.
-        </p>
+  return <form action={action} className="space-y-4">
+    <input type="hidden" name="car_id" value={carId} />
+    <fieldset>
+      <legend className="text-caption font-bold text-content">How would you like to contact the seller?</legend>
+      <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+        {channels.map((channel, index) => <label key={channel.id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-line-soft px-3 py-3 text-caption font-bold text-content has-[:checked]:border-brand has-[:checked]:bg-brand-tint">
+          <input type="radio" name="channel" value={channel.id} defaultChecked={index === 0} className="accent-brand" />
+          <Icon name={channel.icon} size={17} />{channel.label}
+        </label>)}
       </div>
-    </form>
-  )
+    </fieldset>
+    <label className="block text-caption font-bold text-content">Message
+      <textarea name="message" rows={3} defaultValue="Hi, is this vehicle still available?" maxLength={1000}
+        className="mt-1.5 w-full rounded-xl border border-line bg-surface px-3 py-2.5 font-normal outline-none focus:border-brand" />
+      <span className="mt-1 block text-micro font-normal text-content-muted">Used for in-app chat; ignored when you choose phone or WhatsApp.</span>
+    </label>
+    <label className="flex items-start gap-3 rounded-xl bg-surface-alt p-3 text-micro leading-relaxed text-content-secondary">
+      <input type="checkbox" name="acknowledge" value="yes" className="mt-0.5 h-4 w-4 shrink-0 accent-brand" />
+      <span>I understand Sawa Cars provides listing and inspection information but is not a party to any negotiation, contract, payment, delivery or dispute between me and the seller.</span>
+    </label>
+    {state.status === 'error' ? <Alert tone="danger">{state.message}</Alert> : null}
+    <SubmitButton />
+  </form>
 }
 
 function SubmitButton() {
   const { pending } = useFormStatus()
-  return (
-    <Button
-      type="submit"
-      size="lg"
-      fullWidth
-      disabled={pending}
-      trailingIcon={pending ? undefined : <Icon name="arrow-right" size={18} />}
-    >
-      {pending ? 'Sending your request…' : 'Request this car'}
-    </Button>
-  )
+  return <Button type="submit" size="lg" fullWidth disabled={pending} trailingIcon={pending ? undefined : <Icon name="arrow-right" size={18} />}>
+    {pending ? 'Connecting…' : 'Continue to seller'}
+  </Button>
 }
 
 export default RequestCarForm

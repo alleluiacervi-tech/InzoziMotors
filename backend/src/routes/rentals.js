@@ -4,74 +4,125 @@ const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
-const { uploadPhotos, publicUploadUrl, resolveUploadUrl, verifyImageContent } = require('../middleware/upload');
 const { withTransaction } = require('../lib/tx');
 const { notifyUser } = require('../lib/notify');
-
-const { sendRentalBooked } = require('../lib/mailer');
-const { paymentsEnabled, submitOrder, PaymentError } = require('../lib/pesapal');
+const { recordAdminAction } = require('../lib/admin-audit');
+const {
+  MARKETPLACE_TERMS_VERSION,
+  DIRECT_DEAL_NOTICE,
+  contactAvailability,
+  ensureMarketplaceAcknowledgement,
+} = require('../lib/marketplace');
 
 const router = express.Router();
-const { recordAdminAction } = require('../lib/admin-audit');
+const MAX_RENTAL_PHOTOS = 40;
 
-// One definition of "booked ranges" — used by list, detail, and (as the
-// overlap predicate below) the booking route itself.
-// A pending_payment row is a HOLD: it blocks the dates while the renter is
-// on the gateway page, and expires by simply ageing out of this predicate —
-// this backend has no scheduler on purpose, and a hold that dies by falling
-// out of a WHERE clause needs none. 35 minutes: Pesapal's session plus slack.
-const HOLD_MINUTES = 35;
-const ACTIVE_HOLD_SQL = `
-  (b.status IN ('upcoming', 'active')
-   OR (b.status = 'pending_payment' AND b.booked_at > NOW() - INTERVAL '${HOLD_MINUTES} minutes'))`;
-
-const BOOKED_RANGES_SQL = `
-  COALESCE(
-    (SELECT json_agg(json_build_object('start_date', b.start_date, 'days', b.days))
-     FROM rental_bookings b
-     WHERE b.rental_car_id = rc.id
-       AND ${ACTIVE_HOLD_SQL}
-       AND b.start_date + b.days >= CURRENT_DATE),
-    '[]'
-  ) AS booked_ranges`;
-
-// Weekly rate kicks in per full week; remainder at the daily rate.
-// Mirrors calcTripCost in the mobile app — the server is the authority.
-function tripCost(car, days) {
-  const weeks = Math.floor(days / 7);
-  const remainder = days % 7;
-  const subtotal = weeks * (car.weekly_rate || car.daily_rate * 7) + remainder * car.daily_rate;
-  return { subtotal, deposit: car.deposit, total: subtotal + car.deposit };
+function rentalGalleryError(images, required = false) {
+  if (!Array.isArray(images)) return 'images must be an array';
+  if (required && images.length < 1) return 'At least one vehicle image is required for an active rental listing';
+  if (images.length > MAX_RENTAL_PHOTOS) return `A rental listing may contain at most ${MAX_RENTAL_PHOTOS} images`;
+  if (images.some((url) => typeof url !== 'string' || !/^https:\/\//i.test(url.trim()))) {
+    return 'Every rental image must be a valid HTTPS URL';
+  }
+  return null;
 }
 
-const AIRPORT_FEE = 20;
+async function verifiedRentalProvider(db, providerId) {
+  const provider = await db.query(
+    `SELECT 1 FROM users WHERE id=$1 AND role='seller' AND id_verified='approved'
+     AND business_verified=TRUE AND account_status='active' AND deleted_at IS NULL`,
+    [providerId]
+  );
+  return provider.rowCount > 0;
+}
 
-// GET /rentals — active fleet, with each car's booked date ranges so the
-// app can grey out unavailable days
-router.get('/', async (req, res) => {
+const PROVIDER_COLUMNS = `
+  u.name AS provider_name,
+  u.business_name AS provider_business_name,
+  u.role AS provider_role,
+  u.seller_type AS provider_seller_type,
+  u.id_verified AS provider_id_verified,
+  u.business_verified AS provider_business_verified,
+  u.phone AS provider_phone,
+  u.whatsapp_phone AS provider_whatsapp,
+  u.phone_visible AS provider_phone_visible,
+  u.whatsapp_visible AS provider_whatsapp_visible,
+  u.account_status AS provider_account_status,
+  u.deleted_at AS provider_deleted_at`;
+
+function publicRental(row, includeContact = false) {
+  const available = contactAvailability({
+    id_verified: row.provider_id_verified,
+    role: row.provider_role,
+    seller_type: row.provider_seller_type,
+    business_verified: row.provider_business_verified,
+    account_status: row.provider_account_status,
+    deleted_at: row.provider_deleted_at,
+    phone: row.provider_phone,
+    whatsapp_phone: row.provider_whatsapp,
+    phone_visible: row.provider_phone_visible,
+    whatsapp_visible: row.provider_whatsapp_visible,
+  });
+  const result = {
+    ...row,
+    provider_contact_available: available,
+    direct_deal_notice: DIRECT_DEAL_NOTICE,
+    marketplace_terms_version: MARKETPLACE_TERMS_VERSION,
+  };
+  if (!includeContact) {
+    result.provider_phone = null;
+    result.provider_whatsapp = null;
+  }
+  delete result.provider_phone_visible;
+  delete result.provider_whatsapp_visible;
+  delete result.provider_account_status;
+  delete result.provider_deleted_at;
+  return result;
+}
+
+// Public rental catalogue. Rates are provider-supplied estimates; Sawa neither
+// blocks dates nor confirms a booking.
+router.get('/', async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT rc.*, ${BOOKED_RANGES_SQL}
-       FROM rental_cars rc
-       WHERE rc.status = 'active'
+      `SELECT rc.*, ${PROVIDER_COLUMNS}
+       FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
+       WHERE rc.status = 'active' AND u.role = 'seller'
+         AND u.id_verified = 'approved' AND u.business_verified = TRUE
+         AND u.account_status = 'active' AND u.deleted_at IS NULL
        ORDER BY rc.daily_rate ASC`
     );
-    res.json(rows);
+    res.json(rows.map((row) => publicRental(row)));
   } catch (err) {
     log.error('rentals list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// GET /rentals/bookings/my — renter's bookings
-router.get('/bookings/my', requireAuth, async (req, res) => {
+router.get('/admin/fleet', requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT b.*, rc.title AS car_title, rc.images AS car_images, rc.location AS car_location
-       FROM rental_bookings b
-       JOIN rental_cars rc ON rc.id = b.rental_car_id
-       WHERE b.renter_id = $1
-       ORDER BY b.booked_at DESC`,
+      `SELECT rc.*, ${PROVIDER_COLUMNS}
+       FROM rental_cars rc LEFT JOIN users u ON u.id = rc.provider_id
+       ORDER BY rc.created_at DESC`
+    );
+    res.json(rows.map((row) => publicRental(row, true)));
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.get('/inquiries/my', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT ri.*, rc.title AS car_title, rc.images AS car_images,
+              rc.location AS car_location, u.name AS provider_name,
+              u.business_name AS provider_business_name
+       FROM rental_inquiries ri
+       JOIN rental_cars rc ON rc.id = ri.rental_car_id
+       LEFT JOIN users u ON u.id = ri.provider_id
+       WHERE ri.renter_id = $1
+       ORDER BY ri.created_at DESC`,
       [req.user.id]
     );
     res.json(rows);
@@ -80,356 +131,329 @@ router.get('/bookings/my', requireAuth, async (req, res) => {
   }
 });
 
-// GET /rentals/bookings — admin overview
-router.get('/bookings', requireAdmin, async (req, res) => {
-  const { status } = req.query;
+// Provider accounts can see only their own leads; admins can see every lead.
+router.get('/inquiries', requireAuth, async (req, res) => {
+  const status = String(req.query.status || '');
+  if (status && !['new', 'contacted', 'closed', 'cancelled'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid inquiry status' });
+  }
   try {
     const params = [];
-    let where = '';
-    if (status) { params.push(status); where = 'WHERE b.status = $1'; }
+    const where = [];
+    if (req.user.role !== 'admin') {
+      params.push(req.user.id);
+      where.push(`ri.provider_id = $${params.length}`);
+    }
+    if (status) {
+      params.push(status);
+      where.push(`ri.status = $${params.length}`);
+    }
     const { rows } = await pool.query(
-      `SELECT b.*, rc.title AS car_title, u.name AS renter_name, u.phone AS renter_phone
-       FROM rental_bookings b
-       JOIN rental_cars rc ON rc.id = b.rental_car_id
-       JOIN users u ON u.id = b.renter_id
-       ${where}
-       ORDER BY b.start_date ASC`,
+      `SELECT ri.*, rc.title AS car_title,
+              renter.name AS renter_name, renter.phone AS renter_phone,
+              renter.whatsapp_phone AS renter_whatsapp,
+              provider.name AS provider_name,
+              provider.business_name AS provider_business_name
+       FROM rental_inquiries ri
+       JOIN rental_cars rc ON rc.id = ri.rental_car_id
+       JOIN users renter ON renter.id = ri.renter_id
+       LEFT JOIN users provider ON provider.id = ri.provider_id
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY ri.created_at DESC`,
       params
     );
     res.json(rows);
   } catch (err) {
+    log.error('rental inquiries error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// GET /rentals/:id — car detail with booked ranges
+router.patch('/inquiries/:id/status', requireAuth, requireUuid('id'), async (req, res) => {
+  const status = String(req.body.status || '');
+  if (!['contacted', 'closed', 'cancelled'].includes(status)) {
+    return res.status(400).json({ error: 'status must be contacted, closed, or cancelled' });
+  }
+  try {
+    const result = await withTransaction(async (client) => {
+      const current = await client.query('SELECT * FROM rental_inquiries WHERE id=$1 FOR UPDATE', [req.params.id]);
+      if (!current.rowCount) { const e = new Error('Inquiry not found'); e.status = 404; throw e; }
+      const inquiry = current.rows[0];
+      const isAdmin = req.user.role === 'admin';
+      const isProvider = inquiry.provider_id === req.user.id;
+      const isRenter = inquiry.renter_id === req.user.id;
+      if (!isAdmin && !isProvider && !isRenter) { const e = new Error('Forbidden'); e.status = 403; throw e; }
+      if (isRenter && !isAdmin && !isProvider && status !== 'cancelled') {
+        const e = new Error('Renters may only cancel their own inquiry'); e.status = 403; throw e;
+      }
+      if (['closed', 'cancelled'].includes(inquiry.status)) {
+        const e = new Error('This inquiry is already closed'); e.status = 409; throw e;
+      }
+      const { rows } = await client.query(
+        `UPDATE rental_inquiries SET status=$1, updated_at=NOW(),
+           closed_at=CASE WHEN $1 IN ('closed','cancelled') THEN NOW() ELSE NULL END
+         WHERE id=$2 RETURNING *`,
+        [status, req.params.id]
+      );
+      if (isAdmin) {
+        await recordAdminAction(client, {
+          actorId: req.user.id, action: 'rental_inquiry.status_changed',
+          targetType: 'rental_inquiry', targetId: inquiry.id,
+          summary: `${inquiry.inquiry_ref} moved to ${status}`,
+          metadata: { previous_status: inquiry.status, status },
+        });
+      }
+      return rows[0];
+    });
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental inquiry status error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Old clients must not silently create the transaction-style booking that was
+// removed. A 410 produces a clear upgrade path without accepting a deal.
+router.post('/:id/book', requireAuth, requireUuid('id'), (_req, res) => {
+  res.status(410).json({
+    error: 'Rental checkout has been replaced by direct provider inquiries. Update the app and use Request availability.',
+    code: 'RENTAL_BOOKING_RETIRED',
+  });
+});
+
+router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => {
+  const startDate = req.body.start_date ? String(req.body.start_date) : null;
+  const days = req.body.days == null || req.body.days === '' ? null : Number(req.body.days);
+  const preferredChannel = String(req.body.preferred_channel || 'in_app');
+  const message = String(req.body.message || '').trim().slice(0, 1500) || null;
+  const pickupLocation = String(req.body.pickup_location || '').trim().slice(0, 200) || null;
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return res.status(400).json({ error: 'start_date is required in YYYY-MM-DD format' });
+  const parsedStart = new Date(`${startDate}T00:00:00.000Z`);
+  const today = new Date().toISOString().slice(0, 10);
+  if (Number.isNaN(parsedStart.getTime()) || parsedStart.toISOString().slice(0, 10) !== startDate || startDate < today) {
+    return res.status(400).json({ error: 'start_date must be a valid date that is today or later' });
+  }
+  if (!Number.isInteger(days) || days < 1 || days > 365) return res.status(400).json({ error: 'days is required and must be between 1 and 365' });
+  if (!['in_app', 'phone', 'whatsapp'].includes(preferredChannel)) return res.status(400).json({ error: 'Invalid preferred channel' });
+  try {
+    const inquiry = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT rc.*, ${PROVIDER_COLUMNS},
+                buyer.marketplace_terms_accepted_at,
+                buyer.marketplace_terms_version
+         FROM rental_cars rc
+         JOIN users u ON u.id = rc.provider_id
+         JOIN users buyer ON buyer.id = $2
+         WHERE rc.id = $1 AND rc.status = 'active'
+           AND u.role = 'seller' AND u.id_verified = 'approved'
+           AND u.business_verified = TRUE AND u.account_status = 'active'
+           AND u.deleted_at IS NULL
+         FOR UPDATE OF rc`,
+        [req.params.id, req.user.id]
+      );
+      if (!rows.length) { const e = new Error('Active rental car not found'); e.status = 404; throw e; }
+      const car = rows[0];
+      if (car.provider_id === req.user.id) { const e = new Error('You cannot inquire about your own rental car'); e.status = 400; throw e; }
+      await ensureMarketplaceAcknowledgement(client, {
+        id: req.user.id,
+        marketplace_terms_accepted_at: car.marketplace_terms_accepted_at,
+        marketplace_terms_version: car.marketplace_terms_version,
+      }, req.body.acknowledge === true);
+
+      const available = contactAvailability({
+        id_verified: car.provider_id_verified,
+        role: car.provider_role,
+        seller_type: car.provider_seller_type,
+        business_verified: car.provider_business_verified,
+        account_status: car.provider_account_status,
+        deleted_at: car.provider_deleted_at,
+        phone: car.provider_phone,
+        whatsapp_phone: car.provider_whatsapp,
+        phone_visible: car.provider_phone_visible,
+        whatsapp_visible: car.provider_whatsapp_visible,
+      });
+      if (preferredChannel !== 'in_app' && !available[preferredChannel]) {
+        const e = new Error(`The provider has not made ${preferredChannel === 'whatsapp' ? 'WhatsApp' : 'phone'} contact available. Send an in-app inquiry instead.`);
+        e.status = 409; e.code = 'CONTACT_NOT_AVAILABLE'; e.available = available; throw e;
+      }
+
+      const ref = 'RI-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+      const inserted = await client.query(
+        `INSERT INTO rental_inquiries
+           (inquiry_ref, rental_car_id, renter_id, provider_id, start_date, days,
+            pickup_location, message, preferred_channel)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+        [ref, car.id, req.user.id, car.provider_id, startDate, days, pickupLocation, message, preferredChannel]
+      );
+      if (car.provider_id) {
+        await notifyUser(client, {
+          user_id: car.provider_id,
+          type: 'listing_update',
+          title: 'New rental inquiry',
+          body: `${car.title} has a new availability request (${ref}). Contact the renter directly to confirm terms.`,
+          meta: JSON.stringify({ inquiryId: inserted.rows[0].id, rentalCarId: car.id }),
+        });
+      }
+      return {
+        ...inserted.rows[0],
+        provider_name: car.provider_name,
+        provider_business_name: car.provider_business_name,
+        provider_contact_available: available,
+        contact: preferredChannel === 'phone' ? car.provider_phone
+          : preferredChannel === 'whatsapp' ? car.provider_whatsapp : null,
+      };
+    });
+    res.status(201).json({
+      ...inquiry,
+      notice: DIRECT_DEAL_NOTICE,
+      message: 'Inquiry sent. The rental provider—not Sawa—will confirm availability, price and terms.',
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({
+      error: err.message, code: err.code, available: err.available, notice: err.notice,
+    });
+    log.error('rental inquiry create error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /rentals/:id — public detail after fixed route names above.
 router.get('/:id', requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT rc.*, ${BOOKED_RANGES_SQL}
-       FROM rental_cars rc WHERE rc.id = $1`,
+      `SELECT rc.*, ${PROVIDER_COLUMNS}
+       FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
+       WHERE rc.id = $1 AND rc.status = 'active' AND u.role = 'seller'
+         AND u.id_verified = 'approved' AND u.business_verified = TRUE
+         AND u.account_status = 'active' AND u.deleted_at IS NULL`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
-    res.json(rows[0]);
+    res.json(publicRental(rows[0]));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST /rentals/:id/book — renter books; server computes cost + checks overlap
-router.post('/:id/book', requireAuth, requireUuid('id'), async (req, res) => {
-  const { start_date, days, pickup_window, airport_pickup, center } = req.body;
-  const numDays = parseInt(days);
-  if (!start_date || !numDays || numDays < 1) {
-    return res.status(400).json({ error: 'start_date and days are required' });
-  }
-  try {
-    // Row-lock the car so two concurrent requests can't both pass the overlap
-    // check — same pattern as handover booking.
-    const booking = await withTransaction(async (client) => {
-      const carRes = await client.query(
-        "SELECT * FROM rental_cars WHERE id = $1 AND status = 'active' FOR UPDATE",
-        [req.params.id]
-      );
-      if (!carRes.rows.length) {
-        const e = new Error('Rental car not found'); e.status = 404; throw e;
-      }
-      const car = carRes.rows[0];
-      if (numDays < car.min_days) {
-        const e = new Error(`Minimum rental is ${car.min_days} days`); e.status = 400; throw e;
-      }
-
-      // Overlap check: [start, start+days) against existing upcoming/active bookings
-      const overlap = await client.query(
-        `SELECT 1 FROM rental_bookings b
-         WHERE b.rental_car_id = $1
-           AND ${ACTIVE_HOLD_SQL}
-           AND b.start_date < $2::date + $3::int
-           AND b.start_date + b.days > $2::date
-         LIMIT 1`,
-        [car.id, start_date, numDays]
-      );
-      if (overlap.rows.length) {
-        const e = new Error('Selected dates are no longer available'); e.status = 409; throw e;
-      }
-
-      const cost = tripCost(car, numDays);
-      const pickupFee = airport_pickup ? AIRPORT_FEE : 0;
-      // Collision-safe: 4 random bytes, not a millisecond timestamp — two
-      // bookings in the same ms used to raise a bare unique violation.
-      const bookingRef = 'RB-' + crypto.randomBytes(4).toString('hex').toUpperCase();
-
-      // Online payment is opt-in per request, so app builds that predate the
-      // feature keep working unchanged. What is charged online is the RENTAL
-      // (subtotal + pickup fee) — the deposit stays physical at the center.
-      const payOnline = Boolean(req.body.pay_online) && paymentsEnabled();
-      if (Boolean(req.body.pay_online) && !paymentsEnabled()) {
-        const e = new Error('Online payment is not available right now — the booking can be paid at the center.');
-        e.status = 503; e.code = 'PAYMENTS_NOT_CONFIGURED'; throw e;
-      }
-      if (payOnline && car.currency !== 'RWF') {
-        // MoMo settles in RWF and one booking must not mix currencies. USD
-        // fleet rows are pre-conversion leftovers; refuse loudly rather than
-        // charge a mislabelled amount.
-        const e = new Error('This car is not priced in RWF yet — pay at the center instead.');
-        e.status = 409; e.code = 'PAYMENT_CURRENCY'; throw e;
-      }
-      const amountDueOnline = cost.subtotal + pickupFee;
-
-      const { rows } = await client.query(
-        `INSERT INTO rental_bookings
-           (booking_ref, rental_car_id, renter_id, start_date, days, pickup_window,
-            center, airport_pickup, subtotal, deposit, pickup_fee, total, currency,
-            status, amount_due_online)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-         RETURNING *`,
-        [bookingRef, car.id, req.user.id, start_date, numDays, pickup_window || null,
-         center || null, !!airport_pickup, cost.subtotal, cost.deposit, pickupFee,
-         cost.total + pickupFee,
-         // The booking states its own currency — inherited from the car, never
-         // silently defaulted while the amounts came from somewhere else.
-         car.currency,
-         payOnline ? 'pending_payment' : 'upcoming',
-         payOnline ? amountDueOnline : null]
-      );
-      const bookingRow = rows[0];
-
-      let paymentRow = null;
-      if (payOnline) {
-        const merchantRef = 'SP-' + crypto.randomBytes(6).toString('hex').toUpperCase();
-        const pay = await client.query(
-          `INSERT INTO payments (booking_id, merchant_ref, amount, currency)
-           VALUES ($1, $2, $3, $4) RETURNING *`,
-          [bookingRow.id, merchantRef, amountDueOnline, car.currency]
-        );
-        paymentRow = pay.rows[0];
-      }
-
-      await notifyUser(client, {
-        user_id: req.user.id,
-        type: 'listing_update',
-        title: payOnline ? 'Complete your rental payment' : 'Rental booking confirmed',
-        body: payOnline
-          ? `${car.title} is held for ${HOLD_MINUTES} minutes while you pay. The refundable deposit is paid at the center.`
-          : `${car.title} is reserved from ${start_date} for ${numDays} day${numDays > 1 ? 's' : ''}. Bring your driving licence and ID — payment is at the center.`,
-        meta: JSON.stringify({ bookingRef, rentalCarId: car.id }),
-      });
-
-      // car_title rides along for the confirmation email — RETURNING * only
-      // covers the bookings row, and "your rental car" is a poor receipt.
-      return { ...bookingRow, car_title: car.title, payment: paymentRow };
-    });
-
-    // The gateway call happens AFTER the commit — an external HTTP call
-    // inside a transaction would hold a row lock for up to ten seconds. If
-    // Pesapal refuses, the hold is released immediately rather than left to
-    // age out.
-    if (booking.payment) {
-      try {
-        const { rows: u } = await pool.query(
-          'SELECT email, name, phone FROM users WHERE id = $1', [req.user.id]
-        );
-        const order = await submitOrder({
-          merchantRef: booking.payment.merchant_ref,
-          amount: booking.payment.amount,
-          currency: booking.payment.currency,
-          description: `Sawa rental ${booking.booking_ref} — ${booking.car_title}`,
-          email: u[0]?.email,
-          phone: u[0]?.phone,
-          name: u[0]?.name,
-        });
-        await pool.query(
-          'UPDATE payments SET order_tracking_id = $1 WHERE id = $2',
-          [order.orderTrackingId, booking.payment.id]
-        );
-        booking.payment = {
-          merchant_ref: booking.payment.merchant_ref,
-          amount: booking.payment.amount,
-          currency: booking.payment.currency,
-          redirect_url: order.redirectUrl,
-        };
-      } catch (err) {
-        await pool.query(
-          "UPDATE payments SET status = 'failed' WHERE id = $1", [booking.payment.id]
-        ).catch(() => {});
-        await pool.query(
-          "UPDATE rental_bookings SET status = 'expired' WHERE id = $1 AND status = 'pending_payment'",
-          [booking.id]
-        ).catch(() => {});
-        log.error('pesapal order failed', { error: err.message, booking: booking.booking_ref });
-        const status = err instanceof PaymentError ? err.status : 502;
-        return res.status(status).json({
-          error: 'The payment service could not start this payment. Nothing was charged — try again, or book and pay at the center.',
-          code: err.code || 'GATEWAY_ERROR',
-        });
-      }
-    } else {
-      // Pay-at-center bookings keep their confirmation email; paid bookings
-      // get a receipt from the IPN instead, once money has actually moved.
-      pool.query('SELECT email, name FROM users WHERE id = $1', [req.user.id])
-        .then(({ rows: u }) => u[0] && sendRentalBooked(
-          u[0].email, u[0].name, booking.car_title || 'your rental car',
-          booking.start_date, booking.days, booking.booking_ref
-        ))
-        .catch(() => {});
-    }
-
-    res.status(201).json(booking);
-  } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, ...(err.code ? { code: err.code } : {}) });
-    log.error('rental booking error', { error: err.message });
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// PATCH /rentals/bookings/:id/status — check-in (active), return (completed), cancel
-// Renter can transition their own booking; center staff (admin) can transition any.
-router.patch('/bookings/:id/status', requireAuth, requireUuid('id'), async (req, res) => {
-  const { status, record } = req.body;
-  // pending_payment never advances through this route — only the verified
-  // payment path (routes/payments.js) can turn it into 'upcoming'. A renter
-  // abandoning checkout may cancel it.
-  const ALLOWED = {
-    pending_payment: ['cancelled'],
-    upcoming: ['active', 'cancelled'],
-    active: ['completed'],
-  };
-  if (!status) return res.status(400).json({ error: 'status is required' });
-  try {
-    const isAdmin = req.user.role === 'admin';
-    const cur = await pool.query(
-      `SELECT * FROM rental_bookings WHERE id = $1${isAdmin ? '' : ' AND renter_id = $2'}`,
-      isAdmin ? [req.params.id] : [req.params.id, req.user.id]
-    );
-    if (!cur.rows.length) return res.status(404).json({ error: 'Booking not found' });
-    const booking = cur.rows[0];
-    if (!(ALLOWED[booking.status] || []).includes(status)) {
-      return res.status(400).json({ error: `Cannot go from ${booking.status} to ${status}` });
-    }
-
-    const recordCol = status === 'active' ? 'pickup_record' : status === 'completed' ? 'return_record' : null;
-    // Cancellation finally leaves a record — who and when is the first
-    // question the moment a cancelled booking has money on it.
-    const cancelCols = status === 'cancelled' ? ', cancelled_at = NOW(), cancelled_by = $3' : '';
-    const { rows } = await pool.query(
-      `UPDATE rental_bookings
-       SET status = $1${recordCol ? `, ${recordCol} = COALESCE(${recordCol}, '{}'::jsonb) || $3` : ''}${cancelCols}
-       WHERE id = $2
-       RETURNING *`,
-      recordCol
-        ? [status, req.params.id, JSON.stringify(record || { agreed_at: new Date().toISOString() })]
-        : status === 'cancelled'
-          ? [status, req.params.id, req.user.id]
-          : [status, req.params.id]
-    );
-
-    if (status === 'completed') {
-      await pool.query('UPDATE rental_cars SET trips = trips + 1 WHERE id = $1', [booking.rental_car_id]);
-    }
-
-    if (isAdmin) {
-      await recordAdminAction(pool, {
-        actorId: req.user.id, action: 'rental.status_changed', targetType: 'rental_booking', targetId: booking.id,
-        summary: `Rental ${booking.booking_ref} moved to ${status}`, metadata: { previous_status: booking.status, status },
-      });
-    }
-
-    res.json(rows[0]);
-  } catch (err) {
-    log.error('rental status error', { error: err.message });
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// ── Admin fleet CRUD ──────────────────────────────────────────────────────────
-
-// POST /rentals — admin adds a car to the fleet
+// ── Admin rental-company inventory CRUD ─────────────────────────────────────
 router.post('/', requireAdmin, async (req, res) => {
-  const { title, make, model, year, category, seats, fuel, transmission, mileage,
-          daily_rate, weekly_rate, deposit, min_days, inspection_score, location, images } = req.body;
-  if (!title || !daily_rate) {
-    return res.status(400).json({ error: 'title and daily_rate are required' });
-  }
-  if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) {
-    return res.status(400).json({ error: 'daily_rate must be a positive number' });
-  }
+  const { provider_id, title, make, model, year, category, seats, fuel,
+          transmission, mileage, daily_rate, weekly_rate, deposit, min_days,
+          inspection_score, location, images } = req.body;
+  if (!provider_id || !title || !daily_rate) return res.status(400).json({ error: 'provider_id, title and daily_rate are required' });
+  if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) return res.status(400).json({ error: 'daily_rate must be a positive number' });
+  const galleryError = rentalGalleryError(images, true);
+  if (galleryError) return res.status(400).json({ error: galleryError });
   try {
-    const { rows } = await pool.query(
-      `INSERT INTO rental_cars
-         (title, make, model, year, category, seats, fuel, transmission, mileage,
-          daily_rate, weekly_rate, deposit, min_days, inspection_score, location, images)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-       RETURNING *`,
-      [title, make, model, year, category, seats || 5, fuel, transmission, mileage,
-       daily_rate, weekly_rate || daily_rate * 6, deposit || 0, min_days || 1,
-       inspection_score, location, images || []]
-    );
-    await recordAdminAction(pool, { actorId: req.user.id, action: 'rental_car.created', targetType: 'rental_car', targetId: rows[0].id, summary: `${rows[0].title} added to rental fleet`, metadata: { daily_rate: rows[0].daily_rate, currency: rows[0].currency } });
-    res.status(201).json(rows[0]);
+    const created = await withTransaction(async (client) => {
+      if (!await verifiedRentalProvider(client, provider_id)) {
+        const error = new Error('Provider must be an active, identity- and business-verified seller');
+        error.status = 400;
+        throw error;
+      }
+      const { rows } = await client.query(
+        `INSERT INTO rental_cars
+           (provider_id,title,make,model,year,category,seats,fuel,transmission,mileage,
+            daily_rate,weekly_rate,deposit,min_days,inspection_score,location,images)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+         RETURNING *`,
+        [provider_id, String(title).trim(), make, model, year, category, seats || 5, fuel,
+         transmission, mileage, daily_rate, weekly_rate || Number(daily_rate) * 6,
+         deposit || 0, min_days || 1, inspection_score, location, images.map((url) => url.trim())]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'rental_car.created', targetType: 'rental_car', targetId: rows[0].id,
+        summary: `${rows[0].title} added for a verified rental provider`, metadata: { provider_id, daily_rate: rows[0].daily_rate },
+      });
+      return rows[0];
+    });
+    res.status(201).json(created);
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
     log.error('rental create error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// PATCH /rentals/:id — admin edits fleet car (rates, status active|maintenance|retired)
 router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
-  const EDITABLE = ['title', 'daily_rate', 'weekly_rate', 'deposit', 'min_days',
-                    'location', 'images', 'status', 'mileage'];
-  const updates = [];
-  const params = [];
-  for (const field of EDITABLE) {
-    if (req.body[field] !== undefined) {
-      params.push(req.body[field]);
-      updates.push(`${field} = $${params.length}`);
+  const EDITABLE = ['provider_id', 'title', 'make', 'model', 'year', 'category',
+    'seats', 'fuel', 'transmission', 'mileage', 'daily_rate', 'weekly_rate',
+    'deposit', 'min_days', 'inspection_score', 'location', 'images', 'status'];
+  const fields = EDITABLE.filter((field) => req.body[field] !== undefined);
+  if (!fields.length) return res.status(400).json({ error: 'No editable fields provided' });
+  if (req.body.status && !['active', 'maintenance', 'retired'].includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
+  if (req.body.title !== undefined && !String(req.body.title).trim()) return res.status(400).json({ error: 'title cannot be empty' });
+  for (const field of ['daily_rate', 'weekly_rate', 'deposit', 'min_days']) {
+    if (req.body[field] !== undefined && (!Number.isFinite(Number(req.body[field])) || Number(req.body[field]) < (field === 'min_days' || field === 'daily_rate' ? 1 : 0))) {
+      return res.status(400).json({ error: `${field} has an invalid value` });
     }
   }
-  if (!updates.length) return res.status(400).json({ error: 'No editable fields provided' });
-  if (req.body.status && !['active', 'maintenance', 'retired'].includes(req.body.status)) {
-    return res.status(400).json({ error: 'Invalid status' });
+  if (req.body.images !== undefined) {
+    const galleryError = rentalGalleryError(req.body.images, false);
+    if (galleryError) return res.status(400).json({ error: galleryError });
   }
   try {
-    params.push(req.params.id);
-    const { rows } = await pool.query(
-      `UPDATE rental_cars SET ${updates.join(', ')} WHERE id = $${params.length} RETURNING *`,
-      params
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
-    await recordAdminAction(pool, { actorId: req.user.id, action: 'rental_car.updated', targetType: 'rental_car', targetId: rows[0].id, summary: `${rows[0].title} rental details updated`, metadata: { changed_fields: updates.map((u) => u.split(' = ')[0]), status: rows[0].status } });
-    res.json(rows[0]);
+    const updated = await withTransaction(async (client) => {
+      const current = await client.query('SELECT * FROM rental_cars WHERE id=$1 FOR UPDATE', [req.params.id]);
+      if (!current.rowCount) { const error = new Error('Rental car not found'); error.status = 404; throw error; }
+      const before = current.rows[0];
+      const providerId = req.body.provider_id !== undefined ? req.body.provider_id : before.provider_id;
+      const status = req.body.status !== undefined ? req.body.status : before.status;
+      const images = req.body.images !== undefined ? req.body.images : (before.images || []);
+      if (status === 'active') {
+        if (!await verifiedRentalProvider(client, providerId)) {
+          const error = new Error('An active rental listing requires an active, identity- and business-verified provider');
+          error.status = 409;
+          throw error;
+        }
+        const galleryError = rentalGalleryError(images, true);
+        if (galleryError) { const error = new Error(galleryError); error.status = 409; throw error; }
+      }
+      const normalized = { ...req.body };
+      if (normalized.title !== undefined) normalized.title = String(normalized.title).trim();
+      if (normalized.images !== undefined) normalized.images = normalized.images.map((url) => url.trim());
+      const params = fields.map((field) => normalized[field]);
+      const assignments = fields.map((field, index) => `${field}=$${index + 1}`);
+      if (req.body.status === 'retired') assignments.push('retired_at=NOW()');
+      if (req.body.status && req.body.status !== 'retired') assignments.push('retired_at=NULL', 'retirement_reason=NULL');
+      params.push(req.params.id);
+      const { rows } = await client.query(
+        `UPDATE rental_cars SET ${assignments.join(', ')} WHERE id=$${params.length} RETURNING *`, params
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'rental_car.updated', targetType: 'rental_car', targetId: rows[0].id,
+        summary: `${rows[0].title} rental listing updated`, metadata: { changed_fields: fields },
+      });
+      return rows[0];
+    });
+    res.json(updated);
   } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental update error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST /rentals/bookings/:bookingId/photos — condition photos at pickup/return
-// (:bookingId param name matters — the upload middleware keys the storage
-// folder on it, landing files in uploads/rentals/<bookingId>)
-router.post('/bookings/:bookingId/photos', requireAuth, requireUuid('bookingId'), uploadPhotos.array('photos', 12), verifyImageContent, async (req, res) => {
-  if (!req.files?.length) return res.status(400).json({ error: 'No photos uploaded' });
-  const { stage = 'pickup' } = req.body; // pickup | return
-  if (!['pickup', 'return'].includes(stage)) {
-    return res.status(400).json({ error: 'stage must be pickup or return' });
-  }
+router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
+  const reason = String(req.body?.reason || '').trim().slice(0, 1000);
+  if (!reason) return res.status(400).json({ error: 'A retirement reason is required' });
   try {
-    const owner = req.user.role === 'admin' ? '' : ' AND renter_id = $2';
-    const params = req.user.role === 'admin' ? [req.params.bookingId] : [req.params.bookingId, req.user.id];
-    const cur = await pool.query(`SELECT * FROM rental_bookings WHERE id = $1${owner}`, params);
-    if (!cur.rows.length) return res.status(404).json({ error: 'Booking not found' });
-
-    const urls = await Promise.all(req.files.map((f) => resolveUploadUrl(req, f)));
-    const col = stage === 'pickup' ? 'pickup_record' : 'return_record';
-    const { rows } = await pool.query(
-      `UPDATE rental_bookings
-       SET ${col} = COALESCE(${col}, '{}'::jsonb) || jsonb_build_object('photos', $1::jsonb)
-       WHERE id = $2
-       RETURNING *`,
-      [JSON.stringify(urls), req.params.bookingId]
-    );
-    res.json(rows[0]);
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `UPDATE rental_cars SET status='retired', retired_at=NOW(), retirement_reason=$1
+         WHERE id=$2 RETURNING *`, [reason, req.params.id]
+      );
+      if (!rows.length) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'rental_car.retired', targetType: 'rental_car', targetId: req.params.id,
+        summary: `${rows[0].title} retired`, metadata: { reason },
+      });
+      return rows[0];
+    });
+    res.json(result);
   } catch (err) {
-    log.error('booking photos error', { error: err.message });
+    if (err.status) return res.status(err.status).json({ error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

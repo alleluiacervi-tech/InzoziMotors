@@ -196,7 +196,6 @@ export function itemListNode(items: { path: string; name: string }[], listName: 
 export function offerAvailability(status?: string | null): string {
   switch (status) {
     case 'live':     return 'https://schema.org/InStock'
-    case 'reserved': return 'https://schema.org/LimitedAvailability'
     case 'sold':     return 'https://schema.org/SoldOut'
     default:         return 'https://schema.org/OutOfStock'
   }

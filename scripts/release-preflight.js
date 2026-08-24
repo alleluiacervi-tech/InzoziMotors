@@ -22,6 +22,10 @@ function forbidText(relative, pattern, message) {
   if (pattern.test(read(relative))) failures.push(message);
 }
 
+function forbidPath(relative, message) {
+  if (fs.existsSync(path.join(root, relative))) failures.push(message);
+}
+
 requireText('src/context/AppContext.js', /const DEMO_MODE = typeof __DEV__ !== 'undefined' && __DEV__;/,
   'Mobile demo data is no longer guarded exclusively by __DEV__.');
 requireText('backend/src/seed-cars.js', /NODE_ENV === 'production' && process\.env\.SEED_DEMO_DATA !== 'true'/,
@@ -36,8 +40,14 @@ forbidText('web/public/.well-known/assetlinks.json', /REPLACE_WITH_PLAY_APP_SIGN
   'assetlinks.json still contains the Play App Signing fingerprint placeholder.');
 forbidText('web/public/.well-known/apple-app-site-association', /REPLACE_WITH_APPLE_TEAM_ID/,
   'apple-app-site-association still contains the Apple Team ID placeholder.');
-forbidText('src/screens/RentalBookingScreen.js', /\$\$\{|\$\{car\.dailyRate\}|\$\{cost\.(?:subtotal|deposit|total)\}/,
-  'Rental booking still interpolates an unlabelled dollar amount.');
+requireText('src/screens/SellerContactScreen.js', /Direct-deal marketplace notice/,
+  'Mobile seller contact is missing the direct-deal acknowledgement.');
+requireText('src/screens/RentalInquiryScreen.js', /not a confirmed booking/,
+  'Mobile rental inquiries are missing the independent-provider notice.');
+forbidPath('src/screens/CheckoutScreen.js', 'The retired mobile purchase checkout still exists.');
+forbidPath('src/screens/RentalBookingScreen.js', 'The retired mobile rental booking/checkout still exists.');
+forbidPath('src/api/handovers.js', 'The retired mobile handover API still exists.');
+forbidPath('src/api/disputes.js', 'The retired transaction-dispute API still exists.');
 
 // Templates are committed, production credentials are not. Catch the two
 // provider formats that were accidentally added to environment examples so a

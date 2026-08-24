@@ -86,7 +86,7 @@ const buildGroups = (verificationValue) => [
     items: [
       { icon: 'lock-closed-outline', label: 'Privacy policy', link: LEGAL.privacy },
       { icon: 'document-text-outline', label: 'Terms of service', link: LEGAL.terms },
-      { icon: 'shield-checkmark-outline', label: '7-day guarantee terms', link: LEGAL.guarantee },
+      { icon: 'shield-checkmark-outline', label: 'Direct-deal notice', link: LEGAL.guarantee },
     ],
   },
 ];
@@ -129,9 +129,7 @@ export default function SettingsScreen({ navigation }) {
   const groups = buildGroups(VERIFICATION_LABELS[idVerificationStatus] || 'Not verified');
 
   // Deletion state. A dedicated modal rather than showConfirm(), because this
-  // needs a password field and needs to show the server's specific refusals —
-  // "wrong password" and "you have a handover open" call for different actions
-  // from the user, and a toast that says neither is useless.
+  // needs a password field and needs to show the server's specific refusal.
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -174,9 +172,8 @@ export default function SettingsScreen({ navigation }) {
       showToast('Your account has been deleted.', 'success');
       navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
     } catch (err) {
-      // 409 is the open-handover guard: actionable, so say what to do about it.
       if (err?.status === 409) {
-        setDeleteError(err.message || 'Finish or cancel your open handover first.');
+        setDeleteError(err.message || 'The account cannot be deleted while required records are still active.');
       } else if (err?.status === 401) {
         setDeleteError('That password is not correct.');
       } else if (err?.isNetworkError) {

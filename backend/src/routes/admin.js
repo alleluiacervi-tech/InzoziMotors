@@ -17,7 +17,7 @@ const router = express.Router();
 // is actionable, carries a stable destination, and explains why it is urgent.
 router.get('/action-center', requireAdmin, async (_req, res) => {
   try {
-    const [submissions, ids, handovers, inspections, disputes, reports, imports, payments, contracts] = await Promise.all([
+    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks] = await Promise.all([
       pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
                     EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
                   FROM submissions
@@ -27,12 +27,6 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                     EXTRACT(EPOCH FROM (NOW() - COALESCE(id_submitted_at, created_at))) / 3600 AS age_hours
                   FROM users WHERE id_verified = 'pending'
                   ORDER BY COALESCE(id_submitted_at, created_at) ASC LIMIT 20`),
-      pool.query(`SELECT h.id, h.booking_id, h.booked_at AS occurred_at,
-                    EXTRACT(EPOCH FROM (NOW() - h.booked_at)) / 3600 AS age_hours,
-                    c.title AS car_title
-                  FROM handovers h LEFT JOIN cars c ON c.id = h.car_id
-                  WHERE h.status = 'pending'
-                  ORDER BY h.booked_at ASC LIMIT 20`),
       pool.query(`SELECT i.id, i.scheduled_at AS occurred_at, c.title AS car_title,
                     CASE WHEN i.scheduled_at IS NULL THEN 0
                          ELSE EXTRACT(EPOCH FROM (NOW() - i.scheduled_at)) / 3600 END AS age_hours
@@ -40,10 +34,6 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                   WHERE i.status IN ('scheduled','in_progress')
                     AND (i.status = 'in_progress' OR i.scheduled_at <= NOW() + INTERVAL '24 hours')
                   ORDER BY i.scheduled_at ASC NULLS LAST LIMIT 20`),
-      pool.query(`SELECT d.id, d.created_at AS occurred_at, d.reason,
-                    EXTRACT(EPOCH FROM (NOW() - d.created_at)) / 3600 AS age_hours
-                  FROM disputes d WHERE d.status = 'open'
-                  ORDER BY d.created_at ASC LIMIT 20`),
       pool.query(`SELECT r.id, r.created_at AS occurred_at, r.reason,
                     EXTRACT(EPOCH FROM (NOW() - r.created_at)) / 3600 AS age_hours
                   FROM message_reports r WHERE r.status = 'open'
@@ -60,11 +50,22 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                   FROM import_payments p JOIN import_orders o ON o.id = p.import_order_id
                   WHERE p.status IN ('submitted','reviewed')
                   ORDER BY p.submitted_at ASC NULLS LAST LIMIT 20`),
-      pool.query(`SELECT c.id, c.handover_id, c.contract_number, c.status,
-                    c.generated_at AS occurred_at,
-                    EXTRACT(EPOCH FROM (NOW() - c.generated_at)) / 3600 AS age_hours
-                  FROM contracts c WHERE c.status IN ('draft','issued')
-                  ORDER BY c.generated_at ASC LIMIT 20`),
+      pool.query(`SELECT ri.id, ri.inquiry_ref, ri.created_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - ri.created_at)) / 3600 AS age_hours,
+                    rc.title AS car_title
+                  FROM rental_inquiries ri JOIN rental_cars rc ON rc.id = ri.rental_car_id
+                  WHERE ri.status = 'new'
+                  ORDER BY ri.created_at ASC LIMIT 20`),
+      pool.query(`SELECT c.id, c.title, c.created_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - c.created_at)) / 3600 AS age_hours
+                  FROM cars c JOIN users u ON u.id = c.seller_id
+                  WHERE c.status IN ('under_review','approved')
+                     OR (c.status = 'live' AND (
+                       u.id_verified <> 'approved' OR u.account_status <> 'active'
+                       OR NOT EXISTS (SELECT 1 FROM inspections i WHERE i.car_id=c.id AND i.status='complete')
+                       OR (COALESCE(cardinality(c.images),0) = 0
+                           AND NOT EXISTS (SELECT 1 FROM car_photos p WHERE p.car_id=c.id))))
+                  ORDER BY c.created_at ASC LIMIT 20`),
     ]);
 
     const item = (row, data) => ({
@@ -84,13 +85,12 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
     const items = [
       ...submissions.rows.map((r) => item(r, { id: `submission:${r.id}`, kind: 'Submission', priority: agedPriority(r, 24, 8), title: `Review ${r.make} ${r.model}`, detail: 'Seller submission is awaiting a decision', href: '/submissions' })),
       ...ids.rows.map((r) => item(r, { id: `identity:${r.id}`, kind: 'Identity', priority: agedPriority(r, 24, 8), title: `Verify ${r.name}`, detail: 'Identity documents are waiting for review', href: '/users' })),
-      ...handovers.rows.map((r) => item(r, { id: `handover:${r.id}`, kind: 'Handover', priority: agedPriority(r, 24, 4), title: `Confirm ${r.booking_id}`, detail: r.car_title || 'Vehicle handover is awaiting confirmation', href: '/handovers' })),
       ...inspections.rows.map((r) => item(r, { id: `inspection:${r.id}`, kind: 'Inspection', priority: Number(r.age_hours) > 0 ? 'urgent' : 'attention', title: Number(r.age_hours) > 0 ? 'Inspection is due' : 'Inspection within 24 hours', detail: r.car_title || 'Scheduled vehicle inspection', href: '/inspections' })),
-      ...disputes.rows.map((r) => item(r, { id: `dispute:${r.id}`, kind: 'Dispute', priority: 'urgent', title: 'Resolve open dispute', detail: r.reason, href: '/disputes' })),
       ...reports.rows.map((r) => item(r, { id: `report:${r.id}`, kind: 'Safety', priority: agedPriority(r, 12, 0), title: 'Review reported conversation', detail: r.reason, href: '/reports' })),
       ...imports.rows.map((r) => item(r, { id: `import:${r.id}`, kind: 'Import', priority: Number(r.age_hours) >= 72 ? 'urgent' : agedPriority(r, 24, 0), title: `${r.order_ref} needs attention`, detail: r.status === 'enquiry' ? 'New import enquiry needs a quotation' : r.status.replaceAll('_', ' '), href: `/imports/${r.id}` })),
-      ...payments.rows.map((r) => item(r, { id: `payment:${r.id}`, kind: 'Payment', priority: agedPriority(r, 8, 0), title: `Verify payment for ${r.order_ref}`, detail: `${r.milestone.replaceAll('_', ' ')} proof submitted`, href: `/imports/${r.import_order_id}` })),
-      ...contracts.rows.map((r) => item(r, { id: `contract:${r.id}`, kind: 'Contract', priority: agedPriority(r, 48, 12), title: `${r.contract_number} is ${r.status}`, detail: r.status === 'draft' ? 'Complete and issue the contract' : 'Collect and record signatures', href: '/contracts' })),
+      ...importPayments.rows.map((r) => item(r, { id: `import-payment:${r.id}`, kind: 'Import', priority: agedPriority(r, 8, 0), title: `Review offline record for ${r.order_ref}`, detail: `${r.milestone.replaceAll('_', ' ')} evidence submitted`, href: `/imports/${r.import_order_id}` })),
+      ...rentalInquiries.rows.map((r) => item(r, { id: `rental-inquiry:${r.id}`, kind: 'Rental inquiry', priority: agedPriority(r, 24, 4), title: `Follow up ${r.inquiry_ref}`, detail: r.car_title, href: '/rentals/inquiries' })),
+      ...listingRisks.rows.map((r) => item(r, { id: `listing-risk:${r.id}`, kind: 'Listing', priority: r.age_hours >= 24 ? 'urgent' : 'attention', title: `Review ${r.title}`, detail: 'Approval, inspection or gallery requirement needs attention', href: `/listings/${r.id}/edit` })),
     ];
     const rank = { urgent: 0, attention: 1, routine: 2 };
     items.sort((a, b) => rank[a.priority] - rank[b.priority] || b.age_hours - a.age_hours);
@@ -115,12 +115,12 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
 router.get('/stats', requireAdmin, async (req, res) => {
   try {
     const [
-      listingsRes, submissionsRes, handoversRes,
+      listingsRes, submissionsRes, inquiriesRes,
       idQueueRes, soldRes, gmvRes, feesRes,
     ] = await Promise.all([
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'live'"),
       pool.query("SELECT COUNT(*) FROM submissions WHERE status IN ('under_review','pending')"),
-      pool.query("SELECT COUNT(*) FROM handovers WHERE status = 'pending'"),
+      pool.query("SELECT COUNT(*) FROM rental_inquiries WHERE status = 'new'"),
       pool.query("SELECT COUNT(*) FROM users WHERE id_verified = 'pending'"),
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'sold'"),
       // GROUP BY currency, not a bare SUM. Migration 0006 makes mixed rows
@@ -151,7 +151,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
     res.json({
       liveListings:          parseInt(listingsRes.rows[0].count),
       pendingSubmissions:    parseInt(submissionsRes.rows[0].count),
-      pendingHandovers:      parseInt(handoversRes.rows[0].count),
+      pendingInquiries:      parseInt(inquiriesRes.rows[0].count),
       pendingIdVerifications: parseInt(idQueueRes.rows[0].count),
       totalSold:             parseInt(soldRes.rows[0].count),
       // GMV = value of cars sold; totalRevenue = Sawa's actual earnings.
@@ -249,7 +249,8 @@ router.get('/analytics', requireAdmin, async (req, res) => {
 
 // GET /admin/listings — all cars with any status (admin-only browse)
 const ALLOWED_STATUSES = new Set([
-  'under_review', 'scheduled', 'inspecting', 'live', 'reserved', 'sold', 'archived',
+  'draft', 'under_review', 'scheduled', 'inspecting', 'approved', 'live',
+  'paused', 'sold', 'rejected', 'archived',
 ]);
 router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200 }), async (req, res) => {
   const { status = 'live', make } = req.query;
@@ -266,7 +267,11 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
   params.push(req.pagination.limit, req.pagination.offset);
   try {
     const { rows } = await pool.query(
-      `SELECT c.*, u.name AS seller_name
+      `SELECT c.*, u.name AS seller_name, u.id_verified AS seller_id_verified,
+              u.account_status AS seller_account_status,
+              COALESCE(cardinality(c.images), 0)::int AS image_count,
+              (SELECT COUNT(*)::int FROM car_photos p WHERE p.car_id = c.id) AS structured_photo_count,
+              EXISTS (SELECT 1 FROM inspections i WHERE i.car_id = c.id AND i.status = 'complete') AS has_completed_inspection
        FROM cars c
        JOIN users u ON u.id = c.seller_id
        WHERE ${conditions.join(' AND ')}
@@ -286,12 +291,14 @@ router.get('/users', requireAdmin, async (req, res) => {
   const safeLimit = Math.min(Math.max(parseInt(limit) || 25, 1), 100);
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, email, phone, role, id_verified, seller_type,
-              business_name, admin_created, must_change_password, account_status,
+      `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
+              whatsapp_visible, contact_consent_at, role, id_verified, seller_type,
+              business_name, business_verified, admin_created, must_change_password, account_status,
               suspended_at, suspension_reason, trust_score,
               completed_sales, created_at
        FROM users
        WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
+          OR COALESCE(whatsapp_phone, '') ILIKE $1 OR COALESCE(business_name, '') ILIKE $1
        ORDER BY created_at DESC
        LIMIT $2`,
       [`%${q}%`, safeLimit]
@@ -308,14 +315,26 @@ router.get('/users', requireAdmin, async (req, res) => {
 // path. It is handled through the controlled deployment/database process.
 router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   if (req.params.id === req.user.id) return res.status(400).json({ error: 'Use your own profile settings to change your account.' });
-  const allowed = ['name', 'phone', 'business_name', 'seller_type', 'role'];
+  const allowed = [
+    'name', 'phone', 'whatsapp_phone', 'phone_visible', 'whatsapp_visible',
+    'business_name', 'business_verified', 'seller_type', 'role',
+  ];
   const fields = allowed.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable account fields provided' });
 
+  const booleanFields = new Set(['phone_visible', 'whatsapp_visible', 'business_verified']);
   const values = {};
-  for (const field of fields) values[field] = req.body[field] == null ? null : String(req.body[field]).trim();
+  for (const field of fields) {
+    if (booleanFields.has(field)) {
+      if (typeof req.body[field] !== 'boolean') return res.status(400).json({ error: `${field} must be true or false` });
+      values[field] = req.body[field];
+    } else {
+      values[field] = req.body[field] == null ? null : String(req.body[field]).trim();
+    }
+  }
   if (values.name !== undefined && (!values.name || values.name.length > 120)) return res.status(400).json({ error: 'name must be between 1 and 120 characters' });
   if (values.phone !== undefined && values.phone && values.phone.length > 40) return res.status(400).json({ error: 'phone is too long' });
+  if (values.whatsapp_phone !== undefined && values.whatsapp_phone && values.whatsapp_phone.length > 40) return res.status(400).json({ error: 'whatsapp_phone is too long' });
   if (values.business_name !== undefined && values.business_name && values.business_name.length > 160) return res.status(400).json({ error: 'business_name is too long' });
   if (values.seller_type !== undefined && values.seller_type && !['individual', 'showroom'].includes(values.seller_type)) return res.status(400).json({ error: 'seller_type must be individual or showroom' });
   if (values.role !== undefined && !['buyer', 'seller'].includes(values.role)) return res.status(400).json({ error: 'role must be buyer or seller' });
@@ -323,15 +342,39 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const before = await client.query('SELECT role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
+    const before = await client.query(
+      `SELECT role,id_verified,account_status,deleted_at,seller_type,business_verified,
+              phone,whatsapp_phone,phone_visible,whatsapp_visible
+       FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`,
+      [req.params.id]
+    );
     if (!before.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
     if (before.rows[0].role === 'admin') { await client.query('ROLLBACK'); return res.status(403).json({ error: 'Administrator accounts cannot be changed here' }); }
+    const profile = before.rows[0];
+    const finalRole = values.role !== undefined ? values.role : profile.role;
+    const finalSellerType = values.seller_type !== undefined ? values.seller_type : profile.seller_type;
+    const finalBusinessVerified = values.business_verified !== undefined ? values.business_verified : profile.business_verified;
+    const finalPhone = values.phone !== undefined ? values.phone : profile.phone;
+    const finalWhatsapp = values.whatsapp_phone !== undefined ? values.whatsapp_phone : profile.whatsapp_phone;
+    const finalPhoneVisible = values.phone_visible !== undefined ? values.phone_visible : profile.phone_visible;
+    const finalWhatsappVisible = values.whatsapp_visible !== undefined ? values.whatsapp_visible : profile.whatsapp_visible;
+    if (finalPhoneVisible || finalWhatsappVisible) {
+      const eligible = finalRole === 'seller' && profile.id_verified === 'approved' &&
+        profile.account_status === 'active' && !profile.deleted_at &&
+        (finalSellerType !== 'showroom' || finalBusinessVerified === true);
+      if (!eligible) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Public contact requires an active, verified seller account' }); }
+      if (finalPhoneVisible && !finalPhone) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Add a phone number before making it visible' }); }
+      if (finalWhatsappVisible && !finalWhatsapp) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Add a WhatsApp number before making it visible' }); }
+    }
     const params = fields.map((field) => values[field]);
     const assignments = fields.map((field, index) => `${field} = $${index + 1}`);
+    if (values.phone_visible === true || values.whatsapp_visible === true) assignments.push('contact_consent_at = NOW()');
     params.push(req.params.id);
     const { rows } = await client.query(
       `UPDATE users SET ${assignments.join(', ')} WHERE id=$${params.length}
-       RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,account_status,created_at`, params
+       RETURNING id,name,email,phone,whatsapp_phone,phone_visible,whatsapp_visible,
+                 contact_consent_at,role,id_verified,seller_type,business_name,
+                 business_verified,account_status,created_at`, params
     );
     if (values.role !== undefined && values.role !== before.rows[0].role) {
       await client.query('UPDATE users SET token_version=token_version+1 WHERE id=$1', [req.params.id]);
@@ -422,9 +465,9 @@ router.post('/showrooms', requireAdmin, async (req, res) => {
       const { rows } = await client.query(
         `INSERT INTO users
           (name,email,phone,role,id_verified,seller_type,business_name,admin_created,
-           must_change_password,invite_token_hash,invite_expires_at,invited_by)
-         VALUES ($1,$2,$3,'seller','approved','showroom',$4,TRUE,TRUE,$5,NOW()+INTERVAL '48 hours',$6)
-         RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,created_at`,
+           business_verified,must_change_password,invite_token_hash,invite_expires_at,invited_by)
+         VALUES ($1,$2,$3,'seller','approved','showroom',$4,TRUE,TRUE,TRUE,$5,NOW()+INTERVAL '48 hours',$6)
+         RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,business_verified,created_at`,
         [name, email, phone, businessName, tokenHash, req.user.id]
       );
       await recordAdminAction(client, { actorId: req.user.id, action: 'showroom.invite', targetType: 'user', targetId: rows[0].id, summary: `Created verified showroom account for ${businessName}`, metadata: { email } });
@@ -457,17 +500,17 @@ router.get('/search', requireAdmin, async (req, res) => {
       pool.query(`SELECT s.id, s.status, s.make, s.model, u.name AS seller_name
                   FROM submissions s JOIN users u ON u.id=s.seller_id
                   WHERE s.make ILIKE $1 OR s.model ILIKE $1 OR u.name ILIKE $1
-                  ORDER BY s.created_at DESC LIMIT 5`, [needle]),
-      pool.query(`SELECT rb.id, rb.booking_ref, u.name AS customer_name, rb.status
-                  FROM rental_bookings rb JOIN users u ON u.id=rb.renter_id
-                  WHERE rb.booking_ref ILIKE $1 OR u.name ILIKE $1 OR u.email ILIKE $1
-                  ORDER BY rb.booked_at DESC LIMIT 5`, [needle]),
+                  ORDER BY s.submitted_at DESC LIMIT 5`, [needle]),
+      pool.query(`SELECT ri.id, ri.inquiry_ref, u.name AS customer_name, ri.status
+                  FROM rental_inquiries ri JOIN users u ON u.id=ri.renter_id
+                  WHERE ri.inquiry_ref ILIKE $1 OR u.name ILIKE $1 OR u.email ILIKE $1
+                  ORDER BY ri.created_at DESC LIMIT 5`, [needle]),
     ]);
     res.json({ results: [
       ...users.rows.map((r) => ({ kind: 'User', id: r.id, title: r.name, detail: r.email, href: `/users?q=${encodeURIComponent(r.email)}` })),
       ...cars.rows.map((r) => ({ kind: 'Listing', id: r.id, title: r.title, detail: r.status, href: `/listings/${r.id}/edit` })),
       ...submissions.rows.map((r) => ({ kind: 'Submission', id: r.id, title: `${r.make} ${r.model}`, detail: `${r.seller_name} · ${r.status}`, href: '/submissions' })),
-      ...rentals.rows.map((r) => ({ kind: 'Rental', id: r.id, title: r.booking_ref, detail: `${r.customer_name} · ${r.status}`, href: '/rentals' })),
+      ...rentals.rows.map((r) => ({ kind: 'Rental inquiry', id: r.id, title: r.inquiry_ref, detail: `${r.customer_name} · ${r.status}`, href: '/rentals/inquiries' })),
     ] });
   } catch (err) {
     log.error('admin search error', { error: err.message });
@@ -488,19 +531,19 @@ router.get('/activity', requireAdmin, async (_req, res) => {
         FROM admin_audit_log a LEFT JOIN users u ON u.id = a.actor_id
         UNION ALL
         SELECT 'Submission' AS kind, CONCAT(make, ' ', model) AS title,
-               status AS detail, created_at AS happened_at, '/submissions' AS href
+               status AS detail, submitted_at AS happened_at, '/submissions' AS href
         FROM submissions
         UNION ALL
         SELECT 'Inspection', CONCAT('Inspection · ', center), status,
                scheduled_at, '/inspections'
         FROM inspections
         UNION ALL
-        SELECT 'Handover', booking_id, status, booked_at, '/handovers'
-        FROM handovers
+        SELECT 'Rental inquiry', inquiry_ref, status, created_at, '/rentals/inquiries'
+        FROM rental_inquiries
         UNION ALL
-        SELECT 'Fee', CONCAT(fee_type, ' · RWF ', amount::text), status,
-               created_at, '/fees'
-        FROM platform_fees WHERE currency = 'RWF'
+        SELECT 'Buyer contact', CONCAT('Contact · ', channel),
+               CONCAT('Listing ', car_id::text), created_at, '/activity'
+        FROM listing_contact_events
       ) activity
       WHERE happened_at IS NOT NULL
       ORDER BY happened_at DESC LIMIT 20
@@ -541,6 +584,68 @@ router.get('/audit-log', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 10
   } catch (err) {
     log.error('admin audit list error', { error: err.message });
     res.status(500).json({ error: 'Audit history unavailable' });
+  }
+});
+
+// GET/PATCH /admin/settings — operational controls with immutable policy rails.
+// Payments, guarantees and marketplace mode are intentionally read-only; an
+// administrator cannot turn regulated functionality back on with one click.
+router.get('/settings', requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT key, value, description, editable, updated_at, updated_by
+       FROM platform_settings ORDER BY key`
+    );
+    res.json(rows);
+  } catch (err) {
+    log.error('admin settings error', { error: err.message });
+    res.status(500).json({ error: 'Settings unavailable' });
+  }
+});
+
+router.patch('/settings/:key', requireAdmin, async (req, res) => {
+  const key = String(req.params.key || '');
+  const validators = {
+    listing_min_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 10,
+    listing_recommended_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 20,
+  };
+  if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
+  if (!validators[key](req.body.value)) return res.status(400).json({ error: `Invalid value for ${key}` });
+  try {
+    const result = await require('../lib/tx').withTransaction(async (client) => {
+      const before = await client.query('SELECT * FROM platform_settings WHERE key=$1 FOR UPDATE', [key]);
+      if (!before.rowCount || !before.rows[0].editable) {
+        const error = new Error('This setting is locked'); error.status = 403; throw error;
+      }
+      if (key === 'listing_recommended_photos') {
+        const min = await client.query("SELECT value FROM platform_settings WHERE key='listing_min_photos'");
+        if (Number(req.body.value) < Number(min.rows[0]?.value || 1)) {
+          const error = new Error('Recommended photos cannot be lower than the publishing minimum'); error.status = 400; throw error;
+        }
+      }
+      if (key === 'listing_min_photos') {
+        const recommended = await client.query("SELECT value FROM platform_settings WHERE key='listing_recommended_photos'");
+        if (Number(req.body.value) > Number(recommended.rows[0]?.value || 6)) {
+          const error = new Error('Publishing minimum cannot exceed the recommended gallery size'); error.status = 400; throw error;
+        }
+      }
+      const { rows } = await client.query(
+        `UPDATE platform_settings SET value=$1::jsonb, updated_at=NOW(), updated_by=$2
+         WHERE key=$3 RETURNING *`,
+        [JSON.stringify(req.body.value), req.user.id, key]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'setting.updated', targetType: 'platform_setting', targetId: key,
+        summary: `${key.replaceAll('_', ' ')} updated`,
+        metadata: { previous: before.rows[0].value, current: req.body.value },
+      });
+      return rows[0];
+    });
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('admin setting update error', { error: err.message });
+    res.status(500).json({ error: 'Could not update setting' });
   }
 });
 
@@ -605,32 +710,13 @@ router.get('/fees', requireAdmin, async (req, res) => {
   }
 });
 
-// PATCH /admin/fees/:id — mark a fee paid (collected at the center) or waived
-router.patch('/fees/:id', requireAdmin, requireUuid('id'), async (req, res) => {
-  const { status } = req.body;
-  if (!['paid', 'waived', 'due'].includes(status)) {
-    return res.status(400).json({ error: 'status must be paid, waived, or due' });
-  }
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const { rows } = await client.query(
-      'UPDATE platform_fees SET status = $1 WHERE id = $2 RETURNING *',
-      [status, req.params.id]
-    );
-    if (!rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Fee not found' }); }
-    await recordAdminAction(client, {
-      actorId: req.user.id, action: 'fee.status_changed', targetType: 'fee', targetId: req.params.id,
-      summary: `Fee marked ${status}`, metadata: { status, amount: rows[0].amount, currency: rows[0].currency },
-    });
-    await client.query('COMMIT');
-    res.json(rows[0]);
-  } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ error: 'Server error' });
-  } finally {
-    client.release();
-  }
+// Old fee rows are evidence only. The no-payment policy forbids turning them
+// into a current collection workflow from the dashboard.
+router.patch('/fees/:id', requireAdmin, requireUuid('id'), (_req, res) => {
+  res.status(410).json({
+    error: 'The platform fee workflow is retired. Historical records are read-only.',
+    code: 'PLATFORM_FEES_RETIRED',
+  });
 });
 
 module.exports = router;

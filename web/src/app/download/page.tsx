@@ -62,12 +62,12 @@ const APP_ONLY: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'car',
     title: 'Photos with your submission',
-    body: 'Shoot your car where it stands and attach the reference photos as you submit it. The 36 standard angles buyers see are still shot by our photographers at the center.',
+    body: 'Capture clear reference photos while submitting. The admin gallery supports a flexible set of truthful vehicle images rather than a fixed angle checklist.',
   },
   {
     icon: 'bell',
     title: 'Push notifications',
-    body: 'A price drop on a car you saved, a reply from the Sawa team, your inspection slot and your handover time — on your lock screen instead of buried in email.',
+    body: 'A price drop, seller message, rental inquiry update or inspection slot appears on your lock screen instead of being buried in email.',
   },
 ]
 
@@ -89,8 +89,8 @@ const ON_THE_WEB: { icon: IconName; title: string; body: string }[] = [
   },
   {
     icon: 'key',
-    title: 'Requests and handovers',
-    body: 'Request a car, then track it through to the handover date.',
+    title: 'Direct seller contact',
+    body: 'Message a verified seller or use an enabled phone or WhatsApp channel after acknowledging the direct-deal notice.',
   },
   {
     icon: 'user',
@@ -229,18 +229,16 @@ export default async function DownloadPage({
         <Container>
           <div className="max-w-2xl">
             <h2 className="text-headline font-extrabold tracking-[-0.025em] text-white">
-              A car is never paid for online
+              No checkout, escrow or platform contract
             </h2>
             <p className="mt-5 text-title-sm leading-relaxed text-white/70">
-              Buying a car through Sawa never involves paying in the app or on this site. Money
-              changes hands in person at a Sawa center on the day of handover, with our team
-              checking the documents alongside you. That is exactly what makes the 7-day
-              drive-it guarantee something we can honour. Rentals are the one exception — the
-              app offers a secure online checkout (card or mobile money) for the rental fee,
-              and even then the refundable deposit is handled at the center.
+              Sawa Cars never receives or holds sale or rental transaction funds. Users arrange
+              viewing, verification, price, written terms, payment, transfer, pickup, return and
+              delivery directly. The app provides information and communication—not a guarantee
+              of the external agreement.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button href="/promise">Read the Sawa Promise</Button>
+              <Button href="/promise">Read about marketplace safety</Button>
               <Button href="/how-it-works" variant="inverse" trailingIcon={<Icon name="arrow-right" size={17} />}>
                 How buying works
               </Button>

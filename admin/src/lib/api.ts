@@ -321,9 +321,6 @@ export const api = {
     request<any>(`/handovers/${id}/confirm`, { method: 'PATCH', body: JSON.stringify(data) }),
   completeHandover: (id: string) =>
     request<any>(`/handovers/${id}/complete`, { method: 'PATCH' }),
-  updateCar: (id: string, data: any) =>
-    request<any>(`/cars/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-
   // Contracts — the sale agreement. Every route is admin-only.
   //
   // The PDF itself is deliberately absent from this object: request() always
@@ -361,8 +358,12 @@ export const api = {
     return request<any[]>(`/admin/listings${q}`)
   },
   getCar: (id: string) => request<any>(`/cars/${id}`),
-  updateCarStatus: (id: string, status: string) =>
-    request<any>(`/cars/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateCarStatus: (id: string, status: string, reason?: string) =>
+    request<any>(`/cars/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
+  updateCar: (id: string, data: Record<string, unknown>) =>
+    request<any>(`/cars/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  archiveCar: (id: string, reason: string) =>
+    request<any>(`/cars/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
 
   // Users / ID verification
   searchUsers: (q: string, limit = 8) =>
@@ -374,7 +375,7 @@ export const api = {
     }),
   createShowroom: (data: { name: string; business_name: string; email: string; phone?: string }) =>
     request<any>('/admin/showrooms', { method: 'POST', body: JSON.stringify(data) }),
-  updateUser: (userId: string, data: { name?: string; phone?: string | null; business_name?: string | null; seller_type?: string | null; role?: 'buyer' | 'seller' }) =>
+  updateUser: (userId: string, data: { name?: string; phone?: string | null; whatsapp_phone?: string | null; phone_visible?: boolean; whatsapp_visible?: boolean; business_name?: string | null; business_verified?: boolean; seller_type?: string | null; role?: 'buyer' | 'seller' }) =>
     request<any>(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   initiateUserPasswordReset: (userId: string) =>
     request<{ success: boolean; delivery: 'email_sent' | 'email_not_configured' }>(`/admin/users/${userId}/password-reset`, { method: 'POST' }),
@@ -446,6 +447,12 @@ export const api = {
   /** Deactivates rather than deletes — see routes/centers.js. */
   deactivateCenter: (id: string) =>
     request<CenterRow & { pending_inspections: number }>(`/centers/${id}`, { method: 'DELETE' }),
+
+  settings: () => request<any[]>('/admin/settings'),
+  updateSetting: (key: string, value: boolean | number) =>
+    request<any>(`/admin/settings/${encodeURIComponent(key)}`, {
+      method: 'PATCH', body: JSON.stringify({ value }),
+    }),
 
   // ── Reported messages ──────────────────────────────────────────────────────
   reports: (status: 'open' | 'resolved' | 'dismissed' | 'all' = 'open') =>
@@ -540,18 +547,18 @@ export const api = {
   },
 
   // Rental fleet (rental_cars) — money fields are whole Rwandan francs
-  rentalCars:    () => request<any[]>('/rentals'),
+  rentalCars:    () => request<any[]>('/rentals/admin/fleet'),
   getRentalCar:  (id: string) => request<any>(`/rentals/${id}`),
   createRentalCar: (data: any) =>
     request<any>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
   updateRentalCar: (id: string, data: any) =>
     request<any>(`/rentals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  // Rental bookings
-  getRentalBookings: (status?: string) =>
-    request<any[]>(`/rentals/bookings${status ? `?status=${status}` : ''}`),
-  updateRentalBookingStatus: (id: string, status: 'active' | 'completed' | 'cancelled') =>
-    request<any>(`/rentals/bookings/${id}/status`, {
+  // Rental inquiries — providers own booking confirmation and payment.
+  getRentalInquiries: (status?: string) =>
+    request<any[]>(`/rentals/inquiries${status ? `?status=${status}` : ''}`),
+  updateRentalInquiryStatus: (id: string, status: 'contacted' | 'closed' | 'cancelled') =>
+    request<any>(`/rentals/inquiries/${id}/status`, {
       method: 'PATCH', body: JSON.stringify({ status }),
     }),
 }

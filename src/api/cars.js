@@ -21,6 +21,12 @@ export const cars = {
     return await api.get(`/cars/${id}`);
   },
 
+  // Contact details are disclosed only after authentication, explicit
+  // acknowledgement and the seller's visibility consent.
+  contactSeller: async (id, channel, acknowledge = false) => {
+    return await api.post(`/cars/${id}/contact`, { channel, acknowledge });
+  },
+
   // Seller's own listings with the counters the analytics screen needs
   getMyListings: async () => {
     return await api.get('/cars/seller/mine');

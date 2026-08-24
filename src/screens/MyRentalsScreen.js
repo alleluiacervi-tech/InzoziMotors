@@ -1,167 +1,65 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows, fonts } from '../theme';
+import { showConfirm, showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
-import { formatRWF } from '../data/marketData';
+import { colors, fonts, radius, shadows } from '../theme';
 
-const STATUS_CONFIG = {
-  // pending_payment: dates held while checkout completes; the hold expires on
-  // its own if the payment never lands.
-  pending_payment: { label: 'Awaiting Payment', color: colors.amber, bg: colors.statusPendingBg, icon: 'card-outline' },
-  confirmed: { label: 'Confirmed', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
-  active: { label: 'On Trip', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'car-outline' },
-  completed: { label: 'Completed', color: colors.statusSold, bg: colors.statusSoldBg, icon: 'checkmark-circle-outline' },
-  // Falling through to "Confirmed" used to give a CANCELLED booking a live
-  // check-in button.
-  cancelled: { label: 'Cancelled', color: colors.textMuted, bg: colors.surfaceAlt, icon: 'close-circle-outline' },
-  expired: { label: 'Expired', color: colors.textMuted, bg: colors.surfaceAlt, icon: 'time-outline' },
+const STATUS = {
+  new: { label: 'Sent', color: colors.primary, bg: colors.blueTint },
+  contacted: { label: 'Provider contacted', color: colors.green, bg: colors.greenTint },
+  closed: { label: 'Closed', color: colors.textSecondary, bg: colors.surfaceAlt },
+  cancelled: { label: 'Cancelled', color: colors.textMuted, bg: colors.surfaceAlt },
 };
 
 export default function MyRentalsScreen({ navigation }) {
-  const { rentalBookings, setHomeMode } = useApp();
+  const { rentalInquiries, cancelRentalInquiry, setHomeMode } = useApp();
+  const [busyId, setBusyId] = useState(null);
 
-  if (rentalBookings.length === 0) {
-    return (
-      <Screen background={colors.bg}>
-        <BackHeader title="My Rentals" onBack={() => navigation.goBack()} />
-        <View style={styles.empty}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="key-outline" size={40} color={colors.border} />
-          </View>
-          <Text style={styles.emptyTitle}>No rentals yet</Text>
-          <Text style={styles.emptySub}>
-            Browse our certified rental fleet — insurance and roadside assistance included.
-          </Text>
-          <Button
-            title="Browse Rentals"
-            icon="key-outline"
-            onPress={() => { setHomeMode('rent'); navigation.navigate('Main'); }}
-            style={{ marginTop: 20, alignSelf: 'stretch' }}
-          />
-        </View>
-      </Screen>
-    );
-  }
+  const browse = () => {
+    setHomeMode('rent');
+    navigation.navigate('Main', { screen: 'Home' });
+  };
 
-  return (
-    <Screen background={colors.bg}>
-      <BackHeader title="My Rentals" onBack={() => navigation.goBack()} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {rentalBookings.map((b) => {
-          const cfg = STATUS_CONFIG[b.status] || STATUS_CONFIG.confirmed;
-          return (
-            <View key={b.id} style={styles.card}>
-              <View style={styles.cardTop}>
-                <Image source={{ uri: b.carImage }} style={styles.thumb} resizeMode="contain" />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.carTitle} numberOfLines={1}>{b.carTitle}</Text>
-                  <Text style={styles.meta}>
-                    {b.startDate} · {b.days} day{b.days > 1 ? 's' : ''}
-                  </Text>
-                  <Text style={styles.meta}>{b.center}</Text>
-                </View>
-                <View style={[styles.statusPill, { backgroundColor: cfg.bg }]}>
-                  <Ionicons name={cfg.icon} size={11} color={cfg.color} />
-                  <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
-                </View>
-              </View>
+  const cancel = async (item) => {
+    const ok = await showConfirm({ title: 'Cancel this inquiry?', message: 'This closes the availability request. It does not cancel any separate agreement you may already have made with the provider.', confirmLabel: 'Cancel inquiry', cancelLabel: 'Keep inquiry', destructive: true });
+    if (!ok) return;
+    setBusyId(item.id);
+    try {
+      await cancelRentalInquiry(item.id);
+      showToast('Inquiry cancelled.', 'success');
+    } catch (err) {
+      showToast(err?.message || 'Could not cancel the inquiry.', 'error');
+    } finally { setBusyId(null); }
+  };
 
-              <View style={styles.cardBottom}>
-                <View>
-                  <Text style={styles.totalLabel}>Due at pickup</Text>
-                  <Text style={styles.totalValue}>{formatRWF(b.total)}</Text>
-                </View>
+  return <Screen background={colors.bg}><BackHeader title="Rental inquiries" onBack={() => navigation.goBack()} />
+    <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.info}><Ionicons name="information-circle-outline" size={21} color={colors.primary} /><Text style={styles.infoText}>These are availability requests—not bookings. The provider confirms dates and manages any contract, payment, deposit, pickup and return directly with you.</Text></View>
+      {rentalInquiries.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="calendar-outline" size={34} color={colors.primary} /></View><Text style={styles.emptyTitle}>No rental inquiries yet</Text><Text style={styles.emptyText}>Browse verified provider vehicles and request the dates you need.</Text><Button title="Browse rentals" icon="key-outline" onPress={browse} style={styles.emptyButton} /></View> : rentalInquiries.map((item) => {
+        const meta = STATUS[item.status] || STATUS.new;
+        return <View key={item.id} style={styles.card}><View style={styles.cardHead}><View style={{ flex: 1 }}><Text style={styles.carTitle}>{item.carTitle || 'Rental vehicle'}</Text><Text style={styles.reference}>{item.inquiryRef || 'Inquiry'} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'}</Text></View><View style={[styles.badge, { backgroundColor: meta.bg }]}><Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text></View></View>
+          <View style={styles.details}><Detail icon="calendar-outline" label="Requested" value={`${item.startDate || 'Flexible'}${item.days ? ` · ${item.days} days` : ''}`} /><Detail icon="business-outline" label="Provider" value={item.providerName || 'Rental provider'} /><Detail icon="chatbubble-outline" label="Preferred reply" value={(item.preferredChannel || 'in_app').replace('_', ' ')} /></View>
+          {!!item.message && <Text style={styles.message}>{item.message}</Text>}
+          <View style={styles.actions}><Button title="View vehicle" variant="outline" fullWidth={false} onPress={() => navigation.navigate('RentalDetail', { rentalId: item.carId })} style={styles.actionButton} />{['new', 'contacted'].includes(item.status) && <Button title="Cancel inquiry" variant="secondary" fullWidth={false} loading={busyId === item.id} onPress={() => cancel(item)} style={styles.actionButton} />}</View>
+        </View>;
+      })}
+    </ScrollView>
+  </Screen>;
+}
 
-                {b.status === 'confirmed' && (
-                  <Pressable
-                    style={styles.checkinBtn}
-                    onPress={() => navigation.navigate('RentalCheckIn', { booking: b })}
-                  >
-                    <Ionicons name="camera-outline" size={15} color="#fff" />
-                    <Text style={styles.checkinBtnText}>Digital Check-In</Text>
-                  </Pressable>
-                )}
-                {b.status === 'active' && (
-                  <Pressable
-                    style={styles.checkoutBtn}
-                    onPress={() => navigation.navigate('RentalCheckIn', { booking: b, mode: 'return' })}
-                  >
-                    <Ionicons name="camera-outline" size={15} color={colors.primary} />
-                    <Text style={styles.checkoutBtnText}>Return Check-Out</Text>
-                  </Pressable>
-                )}
-                {b.status === 'completed' && (
-                  <Text style={styles.completedNote}>Deposit refunded after center check ✓</Text>
-                )}
-              </View>
-            </View>
-          );
-        })}
-
-        <Text style={styles.hint}>
-          Complete the digital check-in at pickup — condition photos protect your deposit.
-        </Text>
-      </ScrollView>
-    </Screen>
-  );
+function Detail({ icon, label, value }) {
+  return <View style={styles.detail}><Ionicons name={icon} size={17} color={colors.textMuted} /><View style={{ flex: 1 }}><Text style={styles.detailLabel}>{label}</Text><Text style={styles.detailValue}>{value}</Text></View></View>;
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 60 },
-  emptyIcon: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-  },
-  emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  emptySub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted, textAlign: 'center', marginTop: 6, lineHeight: 19 },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.borderSoft,
-    borderRadius: radius.xl, padding: 14, marginTop: 12,
-    ...shadows.card,
-  },
-  cardTop: { flexDirection: 'row', gap: 12 },
-  thumb: { width: 76, height: 58, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
-  carTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  meta: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
-  statusPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 8, paddingVertical: 4,
-    borderRadius: radius.pill, alignSelf: 'flex-start',
-  },
-  statusText: { fontSize: 11, fontFamily: fonts.extraBold },
-  cardBottom: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderTopWidth: 1, borderTopColor: colors.borderSoft,
-    marginTop: 12, paddingTop: 12,
-  },
-  totalLabel: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted },
-  totalValue: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 1 },
-  checkinBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: radius.pill,
-  },
-  checkinBtnText: { fontSize: 12, fontFamily: fonts.extraBold, color: '#fff' },
-  checkoutBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5, borderColor: colors.primary,
-    paddingHorizontal: 14, paddingVertical: 10,
-    borderRadius: radius.pill,
-  },
-  checkoutBtnText: { fontSize: 12, fontFamily: fonts.extraBold, color: colors.primary },
-  completedNote: { flex: 1, fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, textAlign: 'right', marginLeft: 12 },
-  totalRwf: { fontSize: 11, fontFamily: fonts.medium, color: colors.textMuted, marginTop: 1 },
-  hint: {
-    fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted,
-    textAlign: 'center', marginTop: 16, lineHeight: 16,
-  },
+  content: { padding: 20, paddingTop: 8, paddingBottom: 40, gap: 14 },
+  info: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: colors.blueTint, borderRadius: radius.xl, padding: 14 }, infoText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
+  empty: { marginTop: 36, alignItems: 'center', padding: 24 }, emptyIcon: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueTint }, emptyTitle: { marginTop: 17, fontSize: 19, fontFamily: fonts.extraBold, color: colors.textPrimary }, emptyText: { marginTop: 7, maxWidth: 300, textAlign: 'center', fontSize: 13.5, lineHeight: 20, color: colors.textSecondary }, emptyButton: { marginTop: 20 },
+  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xl, padding: 16, ...shadows.card }, cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 }, carTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary }, reference: { marginTop: 4, fontSize: 11.5, color: colors.textMuted }, badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 }, badgeText: { fontSize: 11, fontFamily: fonts.extraBold },
+  details: { marginTop: 14, gap: 10 }, detail: { flexDirection: 'row', alignItems: 'center', gap: 10 }, detailLabel: { fontSize: 11, color: colors.textMuted }, detailValue: { marginTop: 1, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary, textTransform: 'capitalize' },
+  message: { marginTop: 13, borderRadius: radius.lg, backgroundColor: colors.surfaceAlt, padding: 12, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 15 }, actionButton: { minHeight: 48, flexGrow: 1 },
 });

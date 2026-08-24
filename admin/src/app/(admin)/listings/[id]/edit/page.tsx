@@ -19,12 +19,21 @@ export default function EditListingPage() {
 
   // Only the fields in the EDITABLE list of PATCH /cars/:id
   const [title, setTitle]             = useState('')
+  const [sellerId, setSellerId]       = useState('')
+  const [make, setMake]               = useState('')
+  const [model, setModel]             = useState('')
+  const [year, setYear]               = useState('')
   const [price, setPrice]             = useState('')
   const [mileage, setMileage]         = useState('')
+  const [fuelType, setFuelType]       = useState('')
+  const [transmission, setTransmission] = useState('')
+  const [bodyType, setBodyType]       = useState('')
   const [location, setLocation]       = useState('')
   const [color, setColor]             = useState('')
   const [driveSide, setDriveSide]     = useState('LHD')
+  const [vin, setVin]                 = useState('')
   const [description, setDescription] = useState('')
+  const [reviewNotes, setReviewNotes] = useState('')
   const [images, setImages]           = useState('')
 
   useEffect(() => {
@@ -32,12 +41,21 @@ export default function EditListingPage() {
       .then((data) => {
         setCar(data)
         setTitle(data.title || '')
+        setSellerId(data.seller_id || '')
+        setMake(data.make || '')
+        setModel(data.model || '')
+        setYear(String(data.year ?? ''))
         setPrice(String(data.price ?? ''))
         setMileage(String(data.mileage ?? ''))
+        setFuelType(data.fuel_type || '')
+        setTransmission(data.transmission || '')
+        setBodyType(data.body_type || '')
         setLocation(data.location || '')
         setColor(data.color || '')
         setDriveSide(data.drive_side || 'LHD')
+        setVin(data.vin || '')
         setDescription(data.description || '')
+        setReviewNotes(data.review_notes || '')
         setImages((data.images || []).join('\n'))
       })
       .catch((e) => setError(e.message))
@@ -54,16 +72,28 @@ export default function EditListingPage() {
     if (!Number.isFinite(newPrice) || newPrice < 0)     { setError('Price must be a whole number of Rwandan francs.'); return }
     const newMileage = parseInt(mileage, 10)
     if (!Number.isFinite(newMileage) || newMileage < 0) { setError('Mileage must be a whole number of km.'); return }
+    const newYear = parseInt(year, 10)
+    if (!Number.isFinite(newYear) || newYear < 1886 || newYear > new Date().getFullYear() + 1) { setError('Enter a valid vehicle year.'); return }
+    if (!make.trim() || !model.trim()) { setError('Make and model are required.'); return }
 
     // Send only what actually changed — an untouched price must not write price history.
     const payload: Record<string, any> = {}
     if (title.trim() !== (car.title || ''))               payload.title = title.trim()
+    if (sellerId.trim() !== (car.seller_id || ''))        payload.seller_id = sellerId.trim()
+    if (make.trim() !== (car.make || ''))                 payload.make = make.trim()
+    if (model.trim() !== (car.model || ''))               payload.model = model.trim()
+    if (newYear !== Number(car.year))                     payload.year = newYear
     if (newPrice !== Number(car.price))                   payload.price = newPrice
     if (newMileage !== Number(car.mileage))               payload.mileage = newMileage
+    if (fuelType.trim() !== (car.fuel_type || ''))        payload.fuel_type = fuelType.trim()
+    if (transmission.trim() !== (car.transmission || '')) payload.transmission = transmission.trim()
+    if (bodyType.trim() !== (car.body_type || ''))        payload.body_type = bodyType.trim()
     if (location.trim() !== (car.location || ''))         payload.location = location.trim()
     if (color.trim() !== (car.color || ''))               payload.color = color.trim()
     if (driveSide !== (car.drive_side || 'LHD'))          payload.drive_side = driveSide
+    if (vin.trim() !== (car.vin || ''))                   payload.vin = vin.trim()
     if (description !== (car.description || ''))          payload.description = description
+    if (reviewNotes !== (car.review_notes || ''))         payload.review_notes = reviewNotes
     if (imageList().join('\n') !== (car.images || []).join('\n')) payload.images = imageList()
 
     if (!Object.keys(payload).length) { setError('Nothing changed.'); return }
@@ -85,13 +115,19 @@ export default function EditListingPage() {
   if (!car)         return <div className="text-red-600 text-sm">Listing not found.</div>
 
   return (
-    <div className="max-w-2xl bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+    <div className="max-w-4xl bg-white rounded-xl border border-gray-100 shadow-sm p-6">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Edit Listing</h1>
           <p className="text-xs text-gray-500 mt-0.5">
             {car.year} {car.make} {car.model} · <span className="capitalize">{car.status}</span> · {car.views || 0} views
           </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div><label className={labelCls}>Make *</label><input value={make} onChange={(e) => setMake(e.target.value)} className={inputCls} /></div>
+          <div><label className={labelCls}>Model *</label><input value={model} onChange={(e) => setModel(e.target.value)} className={inputCls} /></div>
+          <div><label className={labelCls}>Year *</label><input type="number" value={year} onChange={(e) => setYear(e.target.value)} className={inputCls} /></div>
         </div>
         <Link
           href={`/listings/${id}/photos`}
@@ -179,6 +215,17 @@ export default function EditListingPage() {
           </div>
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div><label className={labelCls}>Fuel type</label><input value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol, diesel, hybrid…" className={inputCls} /></div>
+          <div><label className={labelCls}>Transmission</label><input value={transmission} onChange={(e) => setTransmission(e.target.value)} placeholder="Automatic or manual" className={inputCls} /></div>
+          <div><label className={labelCls}>Body type</label><input value={bodyType} onChange={(e) => setBodyType(e.target.value)} placeholder="SUV, saloon…" className={inputCls} /></div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div><label className={labelCls}>VIN</label><input value={vin} onChange={(e) => setVin(e.target.value)} className={inputCls} /></div>
+          <div><label className={labelCls}>Seller account ID</label><input value={sellerId} onChange={(e) => setSellerId(e.target.value)} className={inputCls} /><p className="mt-1 text-[11px] text-gray-400">Reassignment only succeeds for an active, ID-verified seller.</p></div>
+        </div>
+
         <div>
           <label className={labelCls}>Public Description</label>
           <textarea
@@ -187,6 +234,12 @@ export default function EditListingPage() {
             onChange={(e) => setDescription(e.target.value)}
             className={inputCls}
           />
+        </div>
+
+        <div>
+          <label className={labelCls}>Internal review notes</label>
+          <textarea rows={3} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} className={inputCls} />
+          <p className="mt-1 text-xs text-gray-400">Private operational notes for administrators. These are not shown to buyers.</p>
         </div>
 
         <div>

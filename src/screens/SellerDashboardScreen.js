@@ -133,7 +133,7 @@ export default function SellerDashboardScreen({ navigation }) {
     switch (status) {
       case 'live': return 'View Listing';
       case 'approved': return 'Book Inspection';
-      case 'scheduled': return 'View Booking';
+      case 'scheduled': return 'View Inspection';
       case 'rejected': return 'Update & Resubmit';
       default: return null;
     }
@@ -283,7 +283,7 @@ export default function SellerDashboardScreen({ navigation }) {
             { icon: 'shield-checkmark-outline', text: 'Submit your car — takes 5 minutes' },
             { icon: 'time-outline', text: 'Our team reviews in under 24 hours' },
             { icon: 'scan-outline', text: 'Professional 150-point inspection' },
-            { icon: 'camera-outline', text: '36-angle photos taken by our team' },
+            { icon: 'camera-outline', text: 'Clear listing gallery added by our team' },
             { icon: 'storefront-outline', text: 'Listed and matched with verified buyers' },
           ].map((item, i) => (
             <View key={i} style={styles.howRow}>

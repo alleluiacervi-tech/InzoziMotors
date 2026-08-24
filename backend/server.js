@@ -196,21 +196,35 @@ app.use('/reviews', postOnly(writeLimiter));
 app.use('/disputes', postOnly(writeLimiter));
 app.use('/id-verification', postOnly(writeLimiter));
 
+const transactionFeatureRetired = (req, res, next) => {
+  if (['GET', 'HEAD'].includes(req.method)) return next();
+  return res.status(410).json({
+    error: 'Sawa no longer creates or manages buyer-seller transactions. Contact the other party directly.',
+    code: 'DIRECT_DEAL_MARKETPLACE',
+  });
+};
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/auth',            require('./src/routes/auth'));
 app.use('/cars',            require('./src/routes/cars'));
 app.use('/submissions',     require('./src/routes/submissions'));
-app.use('/handovers',       require('./src/routes/handovers'));
-app.use('/contracts',       require('./src/routes/contracts'));
+// Historical records remain readable, but no new handover, sale contract or
+// transaction dispute can be created or advanced.
+app.use('/handovers', transactionFeatureRetired, require('./src/routes/handovers'));
+app.use('/contracts', transactionFeatureRetired, require('./src/routes/contracts'));
 app.use('/messages',        require('./src/routes/messages'));
 app.use('/notifications',   require('./src/routes/notifications'));
 app.use('/inspections',     require('./src/routes/inspections'));
 app.use('/id-verification', require('./src/routes/id-verification'));
 app.use('/saved-searches',  require('./src/routes/saved-searches'));
-app.use('/reviews',         require('./src/routes/reviews'));
+app.use('/reviews', (req, res, next) => {
+  if (req.method === 'POST' && req.path === '/') return transactionFeatureRetired(req, res, next);
+  next();
+}, require('./src/routes/reviews'));
 app.use('/rentals',         require('./src/routes/rentals'));
 app.use('/referrals',       require('./src/routes/referrals'));
-app.use('/disputes',        require('./src/routes/disputes'));
+app.use('/disputes', (req, res, next) => req.method === 'POST'
+  ? transactionFeatureRetired(req, res, next) : next(), require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));
 app.use('/admin',           require('./src/routes/admin'));
 app.use('/imports',         require('./src/routes/imports'));
@@ -219,10 +233,12 @@ app.use('/imports',         require('./src/routes/imports'));
 app.use('/centers',         require('./src/routes/centers'));
 // The platform USD/RWF rate — public display data, cached and provenance-
 // stamped. See src/lib/fx.js for the provider chain.
-// Payment confirmation: the IPN inside is public by necessity (Pesapal's
-// servers call it) and trusts nothing — every confirmation is verified
-// against the gateway's status API before any state moves.
-app.use('/payments', require('./src/routes/payments'));
+// Explicit retirement response for installed app versions that still contain
+// the old hosted-checkout screen. No payment provider is called or mounted.
+app.use('/payments', (_req, res) => res.status(410).json({
+  error: 'Payments are not processed by Sawa Cars. Buyers and providers arrange transactions independently.',
+  code: 'PAYMENTS_RETIRED',
+}));
 app.use('/fx',              require('./src/routes/fx'));
 // The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
 // see src/lib/mail/ for why it is a live read rather than a synced copy.

@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fullWidth: { width: '100%' },
-  sm: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.lg },
+  sm: { minHeight: 48, paddingHorizontal: 16, paddingVertical: 11, borderRadius: radius.lg },
   md: { minHeight: 52, paddingHorizontal: 20, paddingVertical: 14 },
   lg: { minHeight: 56, paddingHorizontal: 24, paddingVertical: 16 },
   content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, minWidth: 0 },

@@ -16,7 +16,7 @@ const DEALERS = {
   'Kigali Prime Motors': {
     name: 'Kigali Prime Motors',
     tagline: 'Premium certified vehicles · Kigali',
-    description: 'Kigali Prime Motors is an authorized Sawa partner dealer. Specializing in Japanese imports and certified EVs — every car covered by the Sawa 7-day return guarantee.',
+    description: 'Kigali Prime Motors is an authorized Sawa partner dealer specializing in Japanese imports and inspected EV listings.',
     since: '2023',
     responseTime: '< 1 hour',
     rating: 4.8,

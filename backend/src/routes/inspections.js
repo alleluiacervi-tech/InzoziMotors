@@ -6,15 +6,19 @@ const { requireUuid } = require('../middleware/validate');
 const fs = require('fs');
 const path = require('path');
 const { withTransaction } = require('../lib/tx');
-const { ALL_SLOTS, SLOT_POSITION } = require('../lib/photo-slots');
+const { SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
-const { matchSavedSearches } = require('../lib/alerts');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 const { issueInspectionReport } = require('../lib/documents/inspection-report');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
 
 const router = express.Router();
+const MAX_GALLERY_PHOTOS = 40;
+
+function validGalleryKey(key) {
+  return typeof key === 'string' && /^[a-z0-9][a-z0-9_-]{0,63}$/i.test(key);
+}
 
 function documentFailure(res, error) {
   if (error instanceof DocumentError) {
@@ -39,6 +43,19 @@ const CATEGORY_WEIGHTS = {
 const ITEM_TO_CATEGORY = {};
 for (const [cat, def] of Object.entries(CATEGORY_WEIGHTS)) {
   for (const item of def.items) ITEM_TO_CATEGORY[item] = cat;
+}
+// Stable item ids used by the mobile checklist. Labels can improve without
+// silently changing category weights or turning every response into "other".
+for (const [category, ids] of Object.entries({
+  'Engine & Drivetrain': ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7'],
+  'Brakes & Steering': ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'],
+  'Body & Exterior': ['bo1', 'bo2', 'bo3', 'bo4', 'bo5', 'bo6'],
+  'Interior & Comfort': ['i1', 'i2', 'i3', 'i4', 'i5', 'i6'],
+  'Electronics & Safety': ['el1', 'el2', 'el3', 'el4', 'el5', 'el6'],
+  'Tyres & Wheels': ['t1', 't2', 't3', 't4', 't5'],
+  Documentation: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
+})) {
+  for (const id of ids) ITEM_TO_CATEGORY[id] = category;
 }
 // Canonical scale is the 150-point score used everywhere (app tiers, seeds,
 // display "/150"). 105/150 = 70% — below this, admin reviews before publish.
@@ -164,28 +181,42 @@ router.get('/cars/:carId/photos', requireAdmin, requireUuid('carId'), async (req
 
 // POST /inspections/cars/:carId/photos — upload a flexible listing gallery.
 // Must come before /:id
-router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', 40), verifyImageContent, async (req, res) => {
+router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', MAX_GALLERY_PHOTOS), verifyImageContent, async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ error: 'No photos uploaded' });
     }
     const suppliedKeys = Array.isArray(req.body.angle_keys) ? req.body.angle_keys : [req.body.angle_keys].filter(Boolean);
-    if (suppliedKeys.length && (suppliedKeys.length !== req.files.length || suppliedKeys.some((key) => !ALL_SLOTS.includes(key)))) {
+    if (suppliedKeys.length && (suppliedKeys.length !== req.files.length || suppliedKeys.some((key) => !validGalleryKey(key)))) {
       removeUploadedFiles(req.files);
       return res.status(400).json({
-        error: 'If angle_keys are supplied, every photo needs one valid angle_keys value.',
-        valid_angle_keys: ALL_SLOTS,
+        error: 'If gallery keys are supplied, every photo needs one safe, unique key.',
       });
     }
     if (new Set(suppliedKeys).size !== suppliedKeys.length) {
       removeUploadedFiles(req.files);
-      return res.status(400).json({ error: 'Each angle may appear only once per upload.' });
+      return res.status(400).json({ error: 'Each gallery key may appear only once per upload.' });
     }
 
-    const nextPosition = await pool.query('SELECT COALESCE(MAX(position), -1) + 1 AS next FROM car_photos WHERE car_id = $1', [req.params.carId]);
+    const existing = await pool.query(
+      `SELECT angle_key, COALESCE(MAX(position) OVER (), -1) + 1 AS next
+       FROM car_photos WHERE car_id = $1`,
+      [req.params.carId]
+    );
+    const existingKeys = new Set(existing.rows.map((photo) => photo.angle_key).filter(Boolean));
+    const incomingNewCount = suppliedKeys.length
+      ? suppliedKeys.filter((key) => !existingKeys.has(key)).length
+      : req.files.length;
+    if (existing.rows.length + incomingNewCount > MAX_GALLERY_PHOTOS) {
+      removeUploadedFiles(req.files);
+      return res.status(409).json({ error: `A listing gallery may contain at most ${MAX_GALLERY_PHOTOS} photos.` });
+    }
+    const nextPosition = existing.rows.length ? Number(existing.rows[0].next) : 0;
     const incoming = await Promise.all(req.files.map(async (file, index) => ({
       angle_key: suppliedKeys[index] || `gallery_${Date.now()}_${index}`,
-      position: suppliedKeys[index] ? SLOT_POSITION.get(suppliedKeys[index]) : Number(nextPosition.rows[0].next) + index,
+      position: suppliedKeys[index] && SLOT_POSITION.has(suppliedKeys[index])
+        ? SLOT_POSITION.get(suppliedKeys[index])
+        : nextPosition + index,
       url: await resolveUploadUrl(req, file),
     })));
     const replaced = [];
@@ -400,16 +431,16 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
 
     const passed = score >= PUBLISH_THRESHOLD;
 
-    // Publish only when a listing exists AND the car clears the threshold.
-    let autoPublished = false;
+    // Inspection is evidence, not publication and not a guarantee. Passing the
+    // checklist makes the listing approval-ready; an administrator must still
+    // review the gallery and explicitly publish it.
     if (insp.car_id && passed) {
       await client.query(
         `UPDATE cars
-         SET inspected = TRUE, inspection_score = $1, status = 'live', listed_at = NOW()
+         SET inspected = TRUE, inspection_score = $1, status = 'approved'
          WHERE id = $2`,
         [score, insp.car_id]
       );
-      autoPublished = true;
     } else if (insp.car_id) {
       await client.query(
         `UPDATE cars SET inspected = TRUE, inspection_score = $1 WHERE id = $2`,
@@ -417,45 +448,20 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       );
     }
 
-    // Submission: 'live' only with a published listing; otherwise 'inspected'
-    // (report done — admin creates/publishes the listing, or follows up on a low score).
+    // The report is complete, but publication remains a separate decision.
     await client.query(
-      `UPDATE submissions SET status = $1 WHERE id = $2`,
-      [insp.car_id && passed ? 'live' : 'inspected', insp.submission_id]
+      `UPDATE submissions SET status = 'inspected' WHERE id = $1`,
+      [insp.submission_id]
     );
 
     const subRes = await client.query('SELECT seller_id FROM submissions WHERE id = $1', [insp.submission_id]);
 
-    // ── Certification fee ──────────────────────────────────────────────────
-    // The business model lists three revenue streams; platform_fees has always
-    // permitted fee_type='certification' and nothing ever inserted one, so
-    // /admin/fees under-reported by the entire upfront stream. Commission and
-    // featured were recorded; the fee that pays for the inspection itself was
-    // not.
-    //
-    // This is the moment it is earned: the 150-point check is done and the
-    // report exists, whether or not the car went live. Priced from the
-    // environment because the amount is a business decision — unset means no
-    // row, so nothing is invoiced until someone sets the real number.
-    const certificationFee = Math.max(parseInt(process.env.CERTIFICATION_FEE || '0', 10) || 0, 0);
-    if (certificationFee > 0 && subRes.rows.length) {
-      // ON CONFLICT against the partial unique index on submission_id: one
-      // certification per submission, so a re-inspection after remedial work
-      // cannot bill the seller twice for the same car.
-      await client.query(
-        `INSERT INTO platform_fees (seller_id, submission_id, fee_type, amount, status)
-         VALUES ($1, $2, 'certification', $3, 'due')
-         ON CONFLICT (submission_id) WHERE fee_type = 'certification' DO NOTHING`,
-        [subRes.rows[0].seller_id, insp.submission_id, certificationFee]
-      );
-    }
-
     if (subRes.rows.length) {
       const grade = score >= 128 ? 'A' : score >= 105 ? 'B' : score >= 83 ? 'C' : 'D';
       const body = insp.car_id && passed
-        ? `Your car passed the 150-point inspection with a score of ${score}/150 (Grade ${grade}). It is now live on the marketplace.`
+        ? `The inspection record for your car is complete with a score of ${score}/150 (Grade ${grade}). Our team will review the listing before publication.`
         : passed
-          ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team is preparing your listing — it goes live shortly.`
+          ? `Your car scored ${score}/150 (Grade ${grade}) on the 150-point inspection. Our team will prepare and review the listing before it becomes public.`
           : `Your inspection report is ready (score ${score}/150, Grade ${grade}). Some items need attention — our team will contact you about next steps.`;
       await notifyUser(client, {
         user_id: subRes.rows[0].seller_id,
@@ -468,20 +474,12 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
 
     await recordAdminAction(client, {
       actorId: req.user.id, action: 'inspection.completed', targetType: 'inspection', targetId: insp.id,
-      summary: `Inspection completed with ${score}/150`, metadata: { score, passed, published: autoPublished, submission_id: insp.submission_id, car_id: insp.car_id },
+      summary: `Inspection completed with ${score}/150`, metadata: { score, passed, published: false, submission_id: insp.submission_id, car_id: insp.car_id },
     });
 
     await client.query('COMMIT');
 
-    // Saved-search alerts fire on BOTH publish paths (manual POST /cars and
-    // this auto-publish). Fire-and-forget after commit.
-    if (autoPublished) {
-      pool.query('SELECT * FROM cars WHERE id = $1', [insp.car_id])
-        .then(({ rows }) => rows[0] && matchSavedSearches(rows[0]))
-        .catch(() => {});
-    }
-
-    res.json({ success: true, score, published: !!(insp.car_id && passed) });
+    res.json({ success: true, score, car_id: insp.car_id, published: false, ready_for_review: !!(insp.car_id && passed) });
   } catch (err) {
     await client.query('ROLLBACK');
     log.error('complete inspection error', { error: err.message });

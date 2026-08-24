@@ -1,7 +1,7 @@
 import api from './client';
 
 export const notifications = {
-  // Get active user's notifications (price updates, messages, appointment bookings)
+  // Get active user's notifications (price updates, messages and inspections)
   getNotifications: async () => {
     return await api.get('/notifications');
   },

@@ -101,8 +101,7 @@ export default function OpenGraphImage() {
               lineHeight: 1.45,
             }}
           >
-            Every car is physically inspected, photographed by our team, and backed by a 7-day
-            drive-it guarantee.
+            Reviewed vehicle listings, inspection evidence and verified sellers—with direct user-to-user agreements.
           </div>
         </div>
 

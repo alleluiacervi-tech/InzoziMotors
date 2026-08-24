@@ -8,10 +8,16 @@ import { Alert, Field, Input, LiveRegion } from '@/components/ui'
 export function ProfileForm({
   name,
   phone,
+  whatsapp,
+  phoneVisible,
+  whatsappVisible,
   email,
 }: {
   name: string
   phone: string
+  whatsapp: string
+  phoneVisible: boolean
+  whatsappVisible: boolean
   email: string
 }) {
   const [state, action] = useActionState(updateProfileAction, null)
@@ -33,7 +39,7 @@ export function ProfileForm({
       <Field
         label="Phone"
         htmlFor="profile-phone"
-        hint="How our team reaches you on WhatsApp to arrange a handover. Leave it blank to keep the number already on your account."
+        hint="Your account phone. Sellers can separately choose whether acknowledged buyers may request it."
         error={state?.fieldErrors?.phone}
       >
         <Input
@@ -47,6 +53,17 @@ export function ProfileForm({
           error={Boolean(state?.fieldErrors?.phone)}
         />
       </Field>
+
+      <Field label="WhatsApp" htmlFor="profile-whatsapp" hint="Optional. Enter the full international number before enabling WhatsApp contact." error={state?.fieldErrors?.whatsapp_phone}>
+        <Input id="profile-whatsapp" name="whatsapp_phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+250 788 123 456" defaultValue={whatsapp} error={Boolean(state?.fieldErrors?.whatsapp_phone)} />
+      </Field>
+
+      <fieldset className="space-y-3 rounded-xl border border-line-soft bg-surface-alt p-4">
+        <legend className="px-1 text-caption font-bold text-content">Seller contact consent</legend>
+        <p className="text-micro leading-relaxed text-content-muted">Enabled details are never placed in the public catalogue. They are disclosed only to a signed-in buyer who acknowledges the direct-deal notice, and the disclosure is recorded.</p>
+        <label className="flex items-center gap-3 text-caption font-semibold text-content"><input type="checkbox" name="phone_visible" defaultChecked={phoneVisible} className="h-4 w-4 accent-brand" />Allow buyers to request my phone number</label>
+        <label className="flex items-center gap-3 text-caption font-semibold text-content"><input type="checkbox" name="whatsapp_visible" defaultChecked={whatsappVisible} className="h-4 w-4 accent-brand" />Allow buyers to request my WhatsApp number</label>
+      </fieldset>
 
       <Field
         label="Email"

@@ -11,12 +11,10 @@ import { Icon, type IconName } from '@/components/ui'
 const ITEMS: { href: string; label: string; icon: IconName }[] = [
   { href: '/dashboard', label: 'Overview', icon: 'grid' },
   { href: '/dashboard/saved', label: 'Saved', icon: 'heart' },
-  { href: '/dashboard/requests', label: 'Requests', icon: 'key' },
+  { href: '/dashboard/rentals', label: 'Rental inquiries', icon: 'calendar' },
   { href: '/dashboard/imports', label: 'Imports', icon: 'clock' },
   { href: '/dashboard/notifications', label: 'Notifications', icon: 'bell' },
   { href: '/dashboard/selling', label: 'Selling', icon: 'car' },
-  { href: '/dashboard/disputes', label: 'Disputes', icon: 'shield' },
-  { href: '/dashboard/referrals', label: 'Referrals', icon: 'sparkles' },
   { href: '/dashboard/profile', label: 'Profile', icon: 'user' },
 ]
 

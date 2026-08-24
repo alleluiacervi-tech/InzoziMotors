@@ -7,10 +7,10 @@ import { setRwfRate } from '../data/marketData';
 import authApi from '../api/auth';
 import carsApi from '../api/cars';
 import submissionsApi from '../api/submissions';
-import handoversApi from '../api/handovers';
 import messagesApi from '../api/messages';
 import notificationsApi from '../api/notifications';
 import rentalsApi from '../api/rentals';
+import inspectionsApi from '../api/inspections';
 import api, { BASE_URL, getToken } from '../api/client';
 import io from 'socket.io-client';
 import { syncPushToken, unregisterPushToken } from '../utils/push';
@@ -20,7 +20,7 @@ const AppContext = createContext();
 
 // ─── Demo mode ────────────────────────────────────────────────────────────────
 // ONE switch for every fabrication in this file: the bundled catalogue, the
-// offline "login" that accepts any credentials, the local submissions, bookings
+// offline "login" that accepts any credentials, the local submissions, inquiries
 // and auto-replies the server never saw.
 //
 // All of it exists so the app is demoable before the backend is deployed. None
@@ -166,7 +166,7 @@ export function AppProvider({ children }) {
 
   // Admin data
   const [pendingVerifications, setPendingVerifications] = useState(demo(INITIAL_VERIFICATIONS));
-  const [adminInspections] = useState(demo(INITIAL_INSPECTIONS_ADMIN));
+  const [adminInspections, setAdminInspections] = useState(demo(INITIAL_INSPECTIONS_ADMIN));
 
   // Notifications
   const [notifications, setNotifications] = useState(demo(INITIAL_NOTIFICATIONS || []));
@@ -174,78 +174,49 @@ export function AppProvider({ children }) {
   // Submitted inspection forms (keyed by inspectionId)
   const [inspectionForms, setInspectionForms] = useState({});
 
-  // Purchase requests / handover bookings
-  const [purchaseRequests, setPurchaseRequests] = useState([]);
-  const [handovers, setHandovers] = useState([]);
-
   // Comparison (max 3 cars)
   const [comparisonCars, setComparisonCars] = useState([]);
 
-  // Rentals — separate fleet from sale inventory (mock, no backend yet)
+  // Rentals — verified provider inventory and non-binding availability inquiries.
   const [homeMode, setHomeMode] = useState('buy'); // 'buy' | 'rent'
   const [rentalCars, setRentalCars] = useState(demo(RENTAL_CARS));
-  const [rentalBookings, setRentalBookings] = useState([]);
-  const bookRental = useCallback(async (booking) => {
-    let bookingId;
-    let created = null;
+  const [rentalInquiries, setRentalInquiries] = useState([]);
+  const sendRentalInquiry = useCallback(async (inquiry) => {
     try {
-      created = await rentalsApi.bookRental(booking.carId, {
-        start_date: booking.startDateISO,
-        days: booking.days,
-        pickup_window: booking.time,
-        airport_pickup: !!booking.airportPickup,
-        center: booking.center,
-        ...(booking.payOnline ? { pay_online: true } : {}),
+      const created = await rentalsApi.inquire(inquiry.carId, {
+        start_date: inquiry.startDateISO,
+        days: inquiry.days,
+        pickup_location: inquiry.pickupLocation || undefined,
+        message: inquiry.message || undefined,
+        preferred_channel: inquiry.preferredChannel || 'in_app',
+        acknowledge: true,
       });
-      bookingId = created?.id || created?.booking_ref;
-      const mine = await rentalsApi.getMyBookings();
-      setRentalBookings(mine.map(mapRentalBooking));
+      const mine = await rentalsApi.getMyInquiries();
+      setRentalInquiries(mine.map(mapRentalInquiry));
+      return created;
     } catch (err) {
-      // A booking that only exists on this phone is not a booking — the car is
-      // still free for the next renter, and nobody at the center is expecting
-      // them. Surface the failure instead of inventing a reservation.
       if (!DEMO_MODE) throw err;
-      console.warn('Rental booking API unreachable — booking locally:', err.message);
-      const newBooking = {
-        id: 'rb' + Date.now(),
-        status: 'confirmed',
-        ...booking,
+      console.warn('Rental inquiry API unreachable — storing a demo inquiry:', err.message);
+      const localInquiry = {
+        id: 'ri' + Date.now(), inquiryRef: 'DEMO-' + String(Date.now()).slice(-6),
+        status: 'new', createdAt: new Date().toISOString(), ...inquiry,
       };
-      bookingId = newBooking.id;
-      setRentalBookings((prev) => [newBooking, ...prev]);
+      setRentalInquiries((prev) => [localInquiry, ...prev]);
+      return { ...localInquiry, notice: 'Demo inquiry only.' };
     }
-    setNotifications((prev) => [{
-      id: 'rental_' + Date.now(),
-      type: 'listing_update',
-      title: 'Rental booking confirmed',
-      body: `${booking.carTitle} is reserved from ${booking.startDate} for ${booking.days} day${booking.days > 1 ? 's' : ''}. Pick up at ${booking.center}.`,
-      time: 'Just now',
-      date: 'Today',
-      read: false,
-    }, ...prev]);
-    // The payment leg (redirect_url etc.) rides back to the caller — the
-    // booking screen decides whether a checkout page needs opening.
-    return { bookingId, payment: created?.payment || null };
   }, []);
-  const updateRentalBookingStatus = useCallback(async (id, status, record = null) => {
-    // Optimistic so the button responds — but a rejected transition ROLLS
-    // BACK. The old fire-and-forget left the phone showing a status the
-    // server never reached, which is unacceptable the moment money is
-    // involved in the machine.
-    let before;
-    setRentalBookings((prev) => {
-      before = prev;
-      return prev.map((b) => (b.id === id ? { ...b, status } : b));
-    });
+  const cancelRentalInquiry = useCallback(async (id) => {
+    const before = rentalInquiries;
+    setRentalInquiries((prev) => prev.map((item) => item.id === id ? { ...item, status: 'cancelled' } : item));
     try {
-      await rentalsApi.updateBookingStatus(id, status, record);
+      await rentalsApi.cancelInquiry(id);
       return true;
     } catch (err) {
-      if (DEMO_MODE) return true; // local fixtures have no server to disagree with
-      setRentalBookings(before);
+      if (DEMO_MODE) return true;
+      setRentalInquiries(before);
       throw err;
     }
-  }, []);
+  }, [rentalInquiries]);
 
   // Socket state
   const [socket, setSocket] = useState(null);
@@ -282,26 +253,24 @@ export function AppProvider({ children }) {
     setRecentlyViewedIds((prev) => [id, ...prev.filter((x) => x !== id)].slice(0, 10));
   }, []);
 
-  // --- Persistence: saved cars, saved searches, rental bookings, currency ---
+  // --- Persistence: local preferences and demo inquiries ---
   // Hydrate once on mount; only persist after hydration so defaults never
   // overwrite what the user already stored.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     (async () => {
-      const [ids, searches, bookings, cur, requests, mode, viewed, fxCached] = await Promise.all([
+      const [ids, searches, inquiries, cur, mode, viewed, fxCached] = await Promise.all([
         getJSON('savedCarIds'),
         getJSON('savedSearches'),
-        getJSON('rentalBookings'),
+        getJSON('rentalInquiries'),
         getJSON('currency'),
-        getJSON('purchaseRequests'),
         getJSON('homeMode'),
         getJSON('recentlyViewedIds'),
         getJSON('fxRate'),
       ]);
       if (ids) setSavedCarIds(ids);
       if (searches) setSavedSearches(searches);
-      if (bookings) setRentalBookings(bookings);
-      if (requests) setPurchaseRequests(requests);
+      if (inquiries) setRentalInquiries(inquiries);
       if (mode) setHomeMode(mode);
       if (viewed) setRecentlyViewedIds(viewed);
       // Last known exchange rate first (offline starts format correctly),
@@ -321,8 +290,7 @@ export function AppProvider({ children }) {
   }, []);
   useEffect(() => { if (hydrated) setJSON('savedCarIds', savedCarIds); }, [savedCarIds, hydrated]);
   useEffect(() => { if (hydrated) setJSON('savedSearches', savedSearches); }, [savedSearches, hydrated]);
-  useEffect(() => { if (hydrated) setJSON('rentalBookings', rentalBookings); }, [rentalBookings, hydrated]);
-  useEffect(() => { if (hydrated) setJSON('purchaseRequests', purchaseRequests); }, [purchaseRequests, hydrated]);
+  useEffect(() => { if (hydrated && DEMO_MODE) setJSON('rentalInquiries', rentalInquiries); }, [rentalInquiries, hydrated]);
   useEffect(() => { if (hydrated) setJSON('homeMode', homeMode); }, [homeMode, hydrated]);
   useEffect(() => { if (hydrated) setJSON('recentlyViewedIds', recentlyViewedIds); }, [recentlyViewedIds, hydrated]);
 
@@ -338,6 +306,9 @@ export function AppProvider({ children }) {
       id: c.id,
       title: c.title,
       sellerPhone: c.seller_phone || null,
+      sellerWhatsApp: c.seller_whatsapp || null,
+      sellerContactAvailable: c.seller_contact_available || { phone: false, whatsapp: false, in_app: true },
+      directDealNotice: c.direct_deal_notice || '',
       // The seller's user id — what SellerProfile/TrustScore need to fetch the
       // real trust breakdown instead of falling back to a canned profile.
       sellerId: c.seller_id || null,
@@ -362,7 +333,6 @@ export function AppProvider({ children }) {
       distance: 2.5,
       inspected: !!c.inspected,
       inspectionScore: c.inspection_score,
-      returnDays: 7,
       type: 'sale',
       image: c.images?.[0] || DEFAULT_CAR_IMAGE,
       images: c.images && c.images.length ? c.images : DEFAULT_CAR_IMAGES,
@@ -410,27 +380,6 @@ export function AppProvider({ children }) {
       center,
       listingId: sub.car_id,
       statusDetail: detail,
-    };
-  }, []);
-
-  const mapHandover = useCallback((h) => {
-    return {
-      id: h.id,                    // UUID — what the API routes match on
-      bookingRef: h.booking_id,    // 'BK-…' — display only
-      car: {
-        id: h.car_id,
-        title: h.car_title,
-        price: h.price,
-        image: h.car_images?.[0] || STUDIO.paintBlack,
-        seller: h.seller_name,
-      },
-      status: h.status === 'pending' ? 'reserved' : h.status === 'confirmed' ? 'booked' : h.status === 'complete' ? 'complete' : 'cancelled',
-      center: h.center,
-      date: h.handover_date,
-      time: h.handover_time,
-      bookedAt: h.booked_at,
-      bookedTime: new Date(h.booked_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-      completedAt: h.confirmed_at,
     };
   }, []);
 
@@ -553,18 +502,9 @@ export function AppProvider({ children }) {
     }
   }, [mapCar]);
 
-  // Rental fleet: API rows -> mobile shape; booked ranges -> greyed-out day indexes
+  // Rental fleet: API rows -> mobile shape. Availability is confirmed by the
+  // provider after an inquiry; the platform does not reserve dates.
   const mapRentalCar = useCallback((rc) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const unavailable = new Set();
-    (rc.booked_ranges || []).forEach((r) => {
-      const offset = Math.round((new Date(r.start_date) - today) / 86400000);
-      for (let i = 0; i < r.days; i++) {
-        const idx = offset + i;
-        if (idx >= 0 && idx < 14) unavailable.add(idx);
-      }
-    });
     return {
       id: rc.id, title: rc.title, make: rc.make, model: rc.model, year: rc.year,
       category: rc.category, seats: rc.seats, fuel: rc.fuel, transmission: rc.transmission,
@@ -575,29 +515,49 @@ export function AppProvider({ children }) {
       rating: Number(rc.rating) || 0, trips: rc.trips, location: rc.location,
       image: rc.images?.[0] || null, images: rc.images || [],
       safariReady: !!rc.safari_ready,
-      unavailableDays: [...unavailable],
+      providerId: rc.provider_id || null,
+      providerName: rc.provider_business_name || rc.provider_name || 'Verified rental provider',
+      providerContactAvailable: rc.provider_contact_available || { phone: false, whatsapp: false, in_app: true },
+      directDealNotice: rc.direct_deal_notice || '',
     };
   }, []);
 
-  const mapRentalBooking = useCallback((b) => ({
+  const mapRentalInquiry = useCallback((b) => ({
     id: b.id,
-    bookingRef: b.booking_ref,
+    inquiryRef: b.inquiry_ref,
     carId: b.rental_car_id,
     carTitle: b.car_title,
     carImage: b.car_images?.[0] || null,
     startDate: b.start_date,
-    time: b.pickup_window,
     days: b.days,
-    center: b.center || b.car_location,
-    subtotal: b.subtotal,
-    deposit: b.deposit,
-    pickupFee: b.pickup_fee,
-    total: b.total,
-    // Counter walkaround records — what check-in/return shows back to the renter
-    pickupRecord: b.pickup_record || null,
-    returnRecord: b.return_record || null,
-    status: b.status === 'upcoming' ? 'confirmed' : b.status,
+    pickupLocation: b.pickup_location,
+    message: b.message,
+    preferredChannel: b.preferred_channel,
+    providerName: b.provider_business_name || b.provider_name || 'Rental provider',
+    status: b.status,
+    createdAt: b.created_at,
   }), []);
+
+  const mapAdminInspection = useCallback((inspection) => {
+    const rawDate = inspection.scheduled_at || inspection.scheduled_date || null;
+    const when = rawDate ? new Date(rawDate) : null;
+    const validWhen = when && !Number.isNaN(when.getTime());
+    const todayKey = new Date().toLocaleDateString('en-CA');
+    const dateKey = validWhen ? when.toLocaleDateString('en-CA') : '';
+    const displayTime = validWhen
+      ? when.toLocaleString('en-US', { month: dateKey === todayKey ? undefined : 'short', day: dateKey === todayKey ? undefined : 'numeric', hour: 'numeric', minute: '2-digit' })
+      : [inspection.scheduled_date, inspection.scheduled_time].filter(Boolean).join(' · ') || 'Time not set';
+    return {
+      ...inspection,
+      seller: inspection.seller_name || 'Seller',
+      car: inspection.car_title || [inspection.year, inspection.make, inspection.model].filter(Boolean).join(' ') || 'Vehicle pending listing',
+      time: dateKey === todayKey ? `Today · ${displayTime}` : displayTime,
+      center: inspection.center || 'Center not set',
+      status: dateKey === todayKey ? 'today' : 'upcoming',
+      workflowStatus: inspection.status,
+      car_id: inspection.car_id || null,
+    };
+  }, []);
 
   const fetchRentalCars = useCallback(async () => {
     try {
@@ -639,9 +599,9 @@ export function AppProvider({ children }) {
     if (!user) return;
 
     const sections = [
-      ['your rentals', async () => {
-        const mine = await rentalsApi.getMyBookings();
-        setRentalBookings(mine.map(mapRentalBooking));
+      ['your rental inquiries', async () => {
+        const mine = await rentalsApi.getMyInquiries();
+        setRentalInquiries(mine.map(mapRentalInquiry));
       }],
       ['saved cars', async () => {
         const wishList = await carsApi.getSavedCars();
@@ -655,10 +615,6 @@ export function AppProvider({ children }) {
         const subList = await submissionsApi.getSubmissions();
         setSubmissions(subList.map(mapSubmission));
       }]]),
-      ['your requests', async () => {
-        const myHandovers = await handoversApi.getMyHandovers();
-        setPurchaseRequests(myHandovers.map(mapHandover));
-      }],
       ['conversations', async () => {
         const convList = await messagesApi.getConversations();
         setConversations(convList.map(mapConversation));
@@ -700,28 +656,19 @@ export function AppProvider({ children }) {
             status: v.id_verified,
           })));
         }],
-        ['pending handovers', async () => {
-          const adminHandovers = await handoversApi.getAdminHandovers('pending');
-          setHandovers(adminHandovers.map((h) => ({
-            id: h.id,
-            bookingId: h.booking_id,
-            buyer: h.buyer_name,
-            buyerInitials: String(h.buyer_name || '').split(' ').map((w) => w[0]).join('').toUpperCase(),
-            seller: h.seller_name,
-            car: h.car_title,
-            center: h.center,
-            date: h.handover_date,
-            time: h.handover_time,
-            status: h.status,
-          })));
+        ['the inspection queue', async () => {
+          const inspectionList = await inspectionsApi.list();
+          setAdminInspections(inspectionList
+            .filter((inspection) => ['scheduled', 'in_progress'].includes(inspection.status))
+            .map(mapAdminInspection));
         }],
       );
     }
 
     // Concurrent, and no rejection can escape: loadSection resolves either way.
     await Promise.all(sections.map(([label, run]) => loadSection(label, run)));
-  }, [fetchCars, fetchRentalCars, loadSection, mapRentalBooking, mapSubmission,
-      mapHandover, mapConversation, mapNotification]);
+  }, [fetchCars, fetchRentalCars, loadSection, mapRentalInquiry, mapSubmission,
+      mapConversation, mapNotification, mapAdminInspection]);
 
   // Check auth token and trigger load on app startup
   useEffect(() => {
@@ -1009,15 +956,14 @@ export function AppProvider({ children }) {
     setIsLoggedIn(false);
     setSavedCarIds([]);
     setSubmissions(demo(INITIAL_SUBMISSIONS));
-    setPurchaseRequests([]);
+    setRentalInquiries([]);
     setNotifications(demo(INITIAL_NOTIFICATIONS || []));
     setConversations(demo(initialConversations || []));
     setSavedSearches(demo(INITIAL_SAVED_SEARCHES));
   }, [pushToken]);
 
   // Permanent account deletion (Apple 5.1.1(v) / Google Play). Errors propagate
-  // so the screen can distinguish "wrong password" (401) and "you have a
-  // handover open" (409) from a genuine failure — each needs different words.
+  // so the screen can distinguish authentication, network and server failures.
   // Only on success is local state torn down, and it is torn down completely:
   // leaving a deleted user's saved cars in AsyncStorage would resurrect them on
   // the next sign-in on this handset.
@@ -1029,22 +975,25 @@ export function AppProvider({ children }) {
     setIsLoggedIn(false);
     setSavedCarIds([]);
     setSubmissions(demo(INITIAL_SUBMISSIONS));
-    setPurchaseRequests([]);
-    setHandovers([]);
     setNotifications(demo(INITIAL_NOTIFICATIONS || []));
     setConversations(demo(initialConversations || []));
     setChatMessages(DEMO_MODE ? INITIAL_MESSAGES : {});
     setSavedSearches(demo(INITIAL_SAVED_SEARCHES));
-    setRentalBookings([]);
+    setRentalInquiries([]);
     setRecentlyViewedIds([]);
     await Promise.all([
       setJSON('savedCarIds', []),
       setJSON('savedSearches', []),
-      setJSON('rentalBookings', []),
-      setJSON('purchaseRequests', []),
+      setJSON('rentalInquiries', []),
       setJSON('recentlyViewedIds', []),
     ]);
   }, [pushToken]);
+
+  const updateCurrentUserProfile = useCallback(async (fields) => {
+    const updated = await authApi.updateProfile(fields);
+    setCurrentUser(withInitials(updated));
+    return updated;
+  }, []);
 
   // --- Car wishlisting / bookmarking ---
 
@@ -1476,120 +1425,17 @@ export function AppProvider({ children }) {
 
   // --- Inspection Checklist Forms ---
 
-  const submitInspectionForm = useCallback(({ inspection, results, notes, score }) => {
+  const submitInspectionForm = useCallback(async ({ inspection, results, notes, score }) => {
     const key = inspection?.id || 'latest';
     setInspectionForms((prev) => ({ ...prev, [key]: { inspection, results, notes, score, submittedAt: new Date().toISOString() } }));
-    
-    if (inspection?.id) {
-      api.post(`/inspections/${inspection.id}/complete`, { checklist_results: results, notes })
-        .then(() => {
-          if (currentUser?.role === 'admin') {
-            api.get('/id-verification/queue').then((queueList) => {
-              setPendingVerifications(queueList.map((v) => ({
-                id: v.id,
-                name: v.name,
-                initials: withInitials({ name: v.name }).initials,
-                submitted: new Date(v.submitted_at).toLocaleDateString('en-US'),
-                status: v.id_verified,
-              })));
-            });
-          }
-        })
-        .catch((err) => console.warn('Error completing inspection form:', err));
+
+    if (!inspection?.id || (DEMO_MODE && !String(inspection.id).includes('-'))) {
+      return { success: true, score, car_id: inspection?.car_id || null, demo: true };
     }
-  }, [currentUser]);
-
-  // --- Handover Checkout Bookings ---
-
-  const bookHandover = useCallback(async (car, { center, date, time, contactPhone } = {}) => {
-    setLoading(true);
-    try {
-      const res = await handoversApi.bookHandover({
-        car_id: car.id,
-        center: center || null,
-        handover_date: date || null,
-        handover_time: time || null,
-        contact_phone: contactPhone || null,
-      });
-
-      const myHandovers = await handoversApi.getMyHandovers();
-      setPurchaseRequests(myHandovers.map(mapHandover));
-
-      const notifs = await notificationsApi.getNotifications();
-      setNotifications(notifs.map(mapNotification));
-
-      // The UUID is what routes match on; screens show bookingRef for display
-      return res.id || res.booking_id;
-    } catch (err) {
-      // Only fabricate a local booking when the backend is unreachable.
-      // A 4xx/409 is a real rejection (bad phone, car taken) — surface it.
-      // And never in a release build: the car is NOT reserved, so a second buyer
-      // can still take it while this one drives to the center expecting it.
-      if (!isNetworkError(err) || !DEMO_MODE) throw err;
-      console.warn('Handover API unreachable — booking locally:', err.message);
-      // Local fallback so checkout + order tracking work in the demo
-      const localId = 'HB' + String(Date.now()).slice(-6);
-      const localBooking = {
-        id: localId,
-        carId: car.id,
-        carTitle: car.title,
-        carImage: car.image,
-        price: car.price || car.currentBid,
-        center: center || 'To be arranged',
-        date: date || 'Pending confirmation',
-        time: time || '',
-        contactPhone: contactPhone || null,
-        status: 'reserved',
-        createdAt: new Date().toISOString(),
-      };
-      setPurchaseRequests((prev) => [localBooking, ...prev]);
-      setNotifications((prev) => [{
-        id: 'handover_' + Date.now(),
-        type: 'listing_update',
-        title: 'Handover booked',
-        body: `${car.title} is reserved for you — ${date} at ${time}, ${center}.`,
-        time: 'Just now',
-        date: 'Today',
-        read: false,
-      }, ...prev]);
-      return localId;
-    } finally {
-      setLoading(false);
-    }
-  }, [mapHandover, mapNotification]);
-
-  const cancelHandover = useCallback((bookingId) => {
-    handoversApi.cancelHandover?.(bookingId)?.catch?.(() => {});
-    setPurchaseRequests((prev) => prev.filter((r) => r.id !== bookingId));
+    const completed = await inspectionsApi.complete(inspection.id, { checklistResults: results, notes });
+    setAdminInspections((current) => current.filter((item) => item.id !== inspection.id));
+    return completed;
   }, []);
-
-  const addPurchaseRequest = bookHandover;
-
-  const confirmHandover = useCallback(async (handoverId) => {
-    try {
-      // The backend split confirm (pending → confirmed) from complete
-      // (car sold + commission + trust). "Confirm & Mark Sold" needs both.
-      await handoversApi.confirmHandover(handoverId).catch(() => {}); // no-op if already confirmed
-      await handoversApi.completeHandover(handoverId);
-      setHandovers((prev) =>
-        prev.map((h) => h.id === handoverId ? { ...h, status: 'complete' } : h)
-      );
-      if (currentUser) {
-        const myHandovers = await handoversApi.getMyHandovers();
-        setPurchaseRequests(myHandovers.map(mapHandover));
-      }
-    } catch (err) {
-      if (isNetworkError(err)) {
-        // Demo mode — local update only
-        setHandovers((prev) =>
-          prev.map((h) => h.id === handoverId ? { ...h, status: 'complete' } : h)
-        );
-        return;
-      }
-      console.warn('Error completing handover via API:', err);
-      throw err;
-    }
-  }, [currentUser, mapHandover]);
 
   // --- Saved Searches ---
 
@@ -1657,15 +1503,12 @@ export function AppProvider({ children }) {
     // Notifications
     notifications, markNotificationRead, markAllNotificationsRead,
     inspectionForms, submitInspectionForm,
-    // Handovers & checkout
-    purchaseRequests, bookHandover, addPurchaseRequest, cancelHandover,
-    handovers, confirmHandover,
     relistSubmission, updateSubmissionPrice,
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
     fetchCarDetail, searchCars,
-    homeMode, setHomeMode, rentalCars, rentalBookings, bookRental, updateRentalBookingStatus,
+    homeMode, setHomeMode, rentalCars, rentalInquiries, sendRentalInquiry, cancelRentalInquiry,
     recentlyViewedIds, recordCarView,
     currency, toggleCurrency,
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
@@ -1675,7 +1518,7 @@ export function AppProvider({ children }) {
     // Chat safety
     blockUser, reportConversation, getConversationMeta,
     // Authentication
-    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, loading, error,
+    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, updateCurrentUserProfile, loading, error,
     // Push preference (Settings toggle)
     setPushEnabled,
     // Connectivity — false once a read failed at the transport layer, so screens

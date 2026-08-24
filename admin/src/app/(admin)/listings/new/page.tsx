@@ -33,8 +33,6 @@ function ListingCreatorForm() {
   const [driveSide, setDriveSide] = useState('LHD')
   const [vin, setVin] = useState('')
   const [description, setDescription] = useState('')
-  const [inspected, setInspected] = useState(true)
-  const [inspectionScore, setInspectionScore] = useState('0')
 
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -56,8 +54,6 @@ function ListingCreatorForm() {
           setFuelType(data.sub_fuel_type || 'Petrol')
           setBodyType(data.sub_body_type || 'SUV')
           setPrice(String(data.sub_asking_price || ''))
-          setInspectionScore(String(data.score || '0'))
-          setInspected(true)
           
           // Generate draft title
           const generatedTitle = `${data.sub_year || ''} ${data.sub_make || ''} ${data.sub_model || ''}`.trim()
@@ -113,13 +109,11 @@ function ListingCreatorForm() {
         drive_side: driveSide,
         vin,
         description,
-        inspected,
-        inspection_score: parseInt(inspectionScore),
         submission_id: submissionId || undefined,
         images: [], // photographer will upload in the next step
       })
       
-      toast('Listing created — next, the 36-angle photo shoot.', 'success')
+      toast('Draft created — add a truthful gallery, then publish after every review check passes.', 'success')
       router.push(`/listings/${car.id}/photos`)
     } catch (e: any) {
       toast(e.message, 'error')
@@ -359,30 +353,8 @@ function ListingCreatorForm() {
           </div>
         </div>
 
-        {/* Inspection Details */}
-        <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-150">
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="inspected"
-              checked={inspected}
-              onChange={(e) => setInspected(e.target.checked)}
-              className="rounded text-brand focus:ring-brand h-4 w-4"
-            />
-            <label htmlFor="inspected" className="text-sm font-semibold text-gray-700">150-Point Inspected</label>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-750 mb-1">Inspection Score (%)</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              disabled={!inspected}
-              value={inspectionScore}
-              onChange={(e) => setInspectionScore(e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand bg-white disabled:opacity-50"
-            />
-          </div>
+        <div className="rounded-xl border border-info/20 bg-info-tint p-4 text-sm text-content-secondary">
+          Inspection state and score come only from a completed inspection record. Creating this listing keeps it under review until the gallery, seller verification and inspection checks pass.
         </div>
 
         {/* Description */}

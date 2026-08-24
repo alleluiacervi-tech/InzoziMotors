@@ -6,62 +6,13 @@ import { api } from '@/lib/api'
 import { Icon } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 
-// Same canonical slot ids as mobile and backend (28 required + 8 defects).
-const PHOTO_GUIDE_SLOTS = [
-  // Exterior
-  { id: 'ext_front',       label: 'Front Full View',      cat: 'Exterior' },
-  { id: 'ext_fl45',        label: 'Front-Left 45° Angle',  cat: 'Exterior' },
-  { id: 'ext_left',        label: 'Left Side Profile',    cat: 'Exterior' },
-  { id: 'ext_rl45',        label: 'Rear-Left 45° Angle',   cat: 'Exterior' },
-  { id: 'ext_rear',        label: 'Rear Full View',       cat: 'Exterior' },
-  { id: 'ext_rr45',        label: 'Rear-Right 45° Angle',  cat: 'Exterior' },
-  { id: 'ext_right',       label: 'Right Side Profile',   cat: 'Exterior' },
-  { id: 'ext_fr45',        label: 'Front-Right 45° Angle', cat: 'Exterior' },
-  
-  // Details
-  { id: 'det_roof',        label: 'Roof Panel',           cat: 'Details' },
-  { id: 'det_under',       label: 'Underbody / Chassis',  cat: 'Details' },
-  { id: 'det_wfl',         label: 'Front-Left Wheel',     cat: 'Details' },
-  { id: 'det_wfr',         label: 'Front-Right Wheel',    cat: 'Details' },
-  { id: 'det_wrl',         label: 'Rear-Left Wheel',      cat: 'Details' },
-  { id: 'det_wrr',         label: 'Rear-Right Wheel',     cat: 'Details' },
-  { id: 'det_tfl',         label: 'Front-Left Tyre Tread',cat: 'Details' },
-  { id: 'det_tfr',         label: 'Front-Right Tyre Tread',cat: 'Details' },
-  { id: 'det_trl',         label: 'Rear-Left Tyre Tread', cat: 'Details' },
-  { id: 'det_trr',         label: 'Rear-Right Tyre Tread',cat: 'Details' },
-
-  // Under Hood
-  { id: 'hood_bay',        label: 'Engine Bay Overall',   cat: 'Engine' },
-  { id: 'hood_serial',     label: 'Engine Block Serial',  cat: 'Engine' },
-
-  // Instruments
-  { id: 'inst_odo',        label: 'Odometer Reading',     cat: 'Instruments' },
-  { id: 'inst_vin',        label: 'VIN Plate / Stamp',    cat: 'Instruments' },
-
-  // Interior
-  { id: 'int_dash',        label: 'Dashboard Overview',   cat: 'Interior' },
-  { id: 'int_info',        label: 'Infotainment Console', cat: 'Interior' },
-  { id: 'int_driver',      label: 'Driver Seat Bolster',  cat: 'Interior' },
-  { id: 'int_rear',        label: 'Rear Passenger Bench', cat: 'Interior' },
-  { id: 'int_boot',        label: 'Boot / Trunk Space',   cat: 'Interior' },
-  { id: 'int_head',        label: 'Ceiling Headliner',    cat: 'Interior' },
-  { id: 'def1', label: 'Defect Close-up #1', cat: 'Defects', optional: true },
-  { id: 'def2', label: 'Defect Close-up #2', cat: 'Defects', optional: true },
-  { id: 'def3', label: 'Defect Close-up #3', cat: 'Defects', optional: true },
-  { id: 'def4', label: 'Defect Close-up #4', cat: 'Defects', optional: true },
-  { id: 'def5', label: 'Defect Close-up #5', cat: 'Defects', optional: true },
-  { id: 'def6', label: 'Defect Close-up #6', cat: 'Defects', optional: true },
-  { id: 'def7', label: 'Defect Close-up #7', cat: 'Defects', optional: true },
-  { id: 'def8', label: 'Defect Close-up #8', cat: 'Defects', optional: true },
-]
-
 export default function CarPhotosPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [car, setCar] = useState<any>(null)
-  const [gallery, setGallery] = useState<any>({ photos: [], missing_required: PHOTO_GUIDE_SLOTS.map((s) => s.id), complete: false })
+  const [gallery, setGallery] = useState<any>({ photos: [], missing_required: [], complete: false })
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -89,13 +40,12 @@ export default function CarPhotosPage() {
     setUploadProgress(`Uploading ${files.length} photo(s)...`)
     
     try {
+      if (gallery.photos.length + files.length > 40) {
+        throw new Error(`A listing can contain up to 40 photos. Select no more than ${40 - gallery.photos.length} additional photo(s).`)
+      }
       const formData = new FormData()
-      const present = new Set(gallery.photos.map((photo: any) => photo.angle_key))
-      const available = PHOTO_GUIDE_SLOTS.filter((slot) => !present.has(slot.id))
-      if (files.length > available.length) throw new Error(`Only ${available.length} empty slot(s) remain. Upload fewer files so every photo has an unambiguous angle.`)
       for (let i = 0; i < files.length; i++) {
         formData.append('photos', files[i])
-        formData.append('angle_keys', available[i].id)
       }
       
       const res = await api.uploadCarPhotos(id, formData)
@@ -158,7 +108,6 @@ export default function CarPhotosPage() {
   if (!car) return <div className="text-red-600 text-sm">Listing not found.</div>
 
   const currentCount = gallery.photos.length
-  const presentAngles = new Set(gallery.photos.map((p: any) => p.angle_key))
 
   return (
     <div className="space-y-6">
@@ -171,7 +120,7 @@ export default function CarPhotosPage() {
           onClick={() => router.push('/listings')}
           className="px-4 py-2 text-sm font-semibold bg-brand text-white rounded-lg hover:bg-brand-light transition-colors"
         >
-          Publish & Exit
+          Back to listings
         </button>
       </div>
 
@@ -199,7 +148,8 @@ export default function CarPhotosPage() {
             />
             <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500"><Icon name="camera" size={24} /></span>
             <p className="text-sm font-semibold text-gray-800">Drag and drop photos here</p>
-            <p className="text-xs text-gray-500 mt-1">or click to browse from files (Max 40 files, JPEG/PNG/WebP)</p>
+            <p className="text-xs text-gray-500 mt-1">or click to browse (up to 40 JPEG, PNG, or WebP images)</p>
+            <p className="mt-2 text-xs font-medium text-brand">Aim for 6–10 clear photos. More are welcome when they help a buyer understand the vehicle.</p>
             
             {uploading && (
               <div className="mt-4 flex flex-col items-center">
@@ -216,15 +166,15 @@ export default function CarPhotosPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 className="text-sm font-bold text-gray-900 mb-4">Uploaded Gallery ({currentCount} photos)</h2>
             {currentCount === 0 ? (
-              <p className="text-xs text-gray-400 italic py-4">No images uploaded yet. Dump files inside the upload zone to populate.</p>
+              <p className="text-xs text-gray-400 italic py-4">No images uploaded yet. Add at least one clear image before publishing.</p>
             ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {gallery.photos.map((photo: any) => (
                   <div key={photo.id} className="relative aspect-video rounded-lg overflow-hidden border border-gray-150 shadow-sm bg-gray-50 group">
-                    <img src={photo.url} alt={photo.angle_key} className="w-full h-full object-cover" />
+                    <img src={photo.url} alt={`${car.make} ${car.model}`} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="flex flex-col items-center gap-2">
-                        <span className="text-white text-[10px] font-bold">{photo.angle_key}{photo.is_cover ? ' · cover' : ''}</span>
+                        <span className="text-white text-[10px] font-bold">{photo.is_cover ? 'Cover photo' : 'Gallery photo'}</span>
                         <div className="flex gap-2">
                           {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-white px-2 py-1 text-[10px] font-bold text-gray-800">Make cover</button>}
                           <button type="button" onClick={() => removePhoto(photo.id)} className="rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white">Remove</button>
@@ -238,37 +188,19 @@ export default function CarPhotosPage() {
           </div>
         </div>
 
-        {/* Verification Checksheet Column */}
+        {/* Publication guidance */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 h-fit">
-          <h2 className="text-sm font-bold text-gray-900 mb-2">Encar Photography Guide</h2>
-          <p className="text-xs text-gray-500 mb-4">Files are assigned to the next empty slot in this guide. Upload them in guide order; all 28 required angles must be present.</p>
-
-          <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-            {['Exterior', 'Details', 'Engine', 'Instruments', 'Interior', 'Defects'].map((cat) => {
-              const slots = PHOTO_GUIDE_SLOTS.filter((s) => s.cat === cat)
-              return (
-                <div key={cat} className="space-y-1.5">
-                  <h3 className="text-xs font-bold text-gray-700 border-b border-gray-100 pb-1 uppercase tracking-wide">{cat}</h3>
-                  <ul className="space-y-1">
-                    {slots.map((s, idx) => {
-                      // Check if we have at least this number of photos uploaded
-                      const isMatched = presentAngles.has(s.id)
-
-                      return (
-                        <li key={s.id} className="flex items-center gap-2 text-xs py-0.5">
-                          <span className={isMatched ? 'text-green-600 font-bold' : 'text-gray-300'}>
-                            {isMatched ? '✓' : '○'}
-                          </span>
-                          <span className={isMatched ? 'text-gray-800 font-medium' : 'text-gray-400'}>
-                            {s.label}{'optional' in s && s.optional ? ' · optional' : ''}
-                          </span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              )
-            })}
+          <h2 className="text-sm font-bold text-gray-900 mb-2">Photo quality checklist</h2>
+          <p className="text-xs text-gray-500 mb-4">There is no fixed angle requirement. Use the images that best represent this vehicle.</p>
+          <ul className="space-y-3 text-xs text-gray-600">
+            <li className="flex gap-2"><span className="font-bold text-brand">1.</span><span>Choose a bright, sharp exterior image as the cover.</span></li>
+            <li className="flex gap-2"><span className="font-bold text-brand">2.</span><span>Include exterior, cabin, dashboard, boot, engine and visible defects where relevant.</span></li>
+            <li className="flex gap-2"><span className="font-bold text-brand">3.</span><span>Never hide damage, registration details that must be disclosed, or material differences.</span></li>
+            <li className="flex gap-2"><span className="font-bold text-brand">4.</span><span>Publishing remains a separate admin action and will run all verification checks.</span></li>
+          </ul>
+          <div className={`mt-5 rounded-lg border p-3 ${currentCount > 0 ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+            <p className="text-xs font-bold">{currentCount > 0 ? `${currentCount} photo${currentCount === 1 ? '' : 's'} ready` : 'Photo required'}</p>
+            <p className="mt-1 text-[11px]">{currentCount > 0 ? 'The gallery meets the minimum photo requirement.' : 'Upload at least one photo to make publication possible.'}</p>
           </div>
         </div>
       </div>

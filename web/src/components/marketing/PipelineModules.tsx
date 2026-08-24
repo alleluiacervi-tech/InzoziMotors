@@ -21,18 +21,18 @@ export interface PipelineStep {
 export const LISTING_PIPELINE: PipelineStep[] = [
   { title: 'Submit online', desc: 'The car and your price — no photos needed.' },
   { title: 'We inspect', desc: '150 points at our center, graded item by item.' },
-  { title: 'We shoot', desc: '36 standard angles by our photographers.' },
+  { title: 'We document', desc: 'A clear gallery with the useful views this vehicle needs.' },
   { title: 'It goes live', desc: 'Published with the full report attached.' },
-  { title: 'Handover at our center', desc: 'Payment in person. The 7-day guarantee starts here.' },
+  { title: 'Seller handles enquiries', desc: 'Users communicate and agree any transaction directly.' },
 ]
 
 /** The purchase journey, buyer-facing. /how-it-works uses it. */
 export const BUYING_PIPELINE: PipelineStep[] = [
   { title: 'Browse certified cars', desc: 'Every listing carries its full inspection report.' },
-  { title: 'Request the car', desc: 'One tap, no payment — it leaves the marketplace.' },
-  { title: 'We confirm on WhatsApp', desc: 'A handover time at the center that suits you.' },
-  { title: 'Handover at the center', desc: 'Check it against its report, then pay in person.' },
-  { title: '7 days to be sure', desc: 'Full refund if it doesn’t match its report.' },
+  { title: 'Contact the seller', desc: 'Use chat or an enabled direct contact channel.' },
+  { title: 'Verify independently', desc: 'Inspect the car, VIN, ownership and original documents.' },
+  { title: 'Agree written terms', desc: 'Price, payment, transfer and delivery are decided by the users.' },
+  { title: 'Complete independently', desc: 'Sawa Cars does not hold funds or become a party to the deal.' },
 ]
 
 export function PipelineModules({ steps }: { steps: PipelineStep[] }) {
