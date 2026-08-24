@@ -70,10 +70,23 @@ TOC="$($RESTORE_CMD --list < "$DB_FILE" 2>/dev/null)" || die "dump is unreadable
 
 # The tables whose loss would end the business. Their absence means the dump
 # ran against the wrong database, which a size check would never catch.
-for table in users cars handovers platform_fees inspections submissions rental_cars rental_bookings payments; do
+for table in users cars inspections submissions rental_cars; do
   echo "$TOC" | grep -q "TABLE DATA public $table" \
     || die "dump is missing table '$table' — wrong database?"
 done
+
+# Retired-transaction tables. They still hold real history, so a backup that
+# quietly skipped them would be a bad backup — but they belong to a layer the
+# product no longer operates, and dropping one is a legitimate future decision.
+# Hard-requiring them meant that decision would break every backup afterwards
+# with "wrong database?", which is both alarming and wrong. Verified when
+# present, reported when not.
+MISSING_LEGACY=""
+for table in handovers platform_fees rental_bookings payments; do
+  echo "$TOC" | grep -q "TABLE DATA public $table" || MISSING_LEGACY="$MISSING_LEGACY $table"
+done
+[ -n "$MISSING_LEGACY" ] && log "note: retired tables absent from this database:$MISSING_LEGACY"
+
 log "dump verified ($(du -h "$DB_FILE" | cut -f1), $(echo "$TOC" | grep -c 'TABLE DATA') tables)"
 
 # ─── Uploads ─────────────────────────────────────────────────────────────────
