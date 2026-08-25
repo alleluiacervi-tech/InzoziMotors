@@ -96,8 +96,21 @@ export default function InspectionDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold text-gray-900">150-Point Inspection</h1>
-            <p className="text-sm text-gray-500">{insp.year || insp.sub_year} {insp.make || insp.sub_make} {insp.model || insp.sub_model} · {insp.center}</p>
-            <p className="mt-0.5 text-xs text-gray-400">{insp.scheduled_date} at {insp.scheduled_time} · Seller: {insp.seller_name}</p>
+            <p className="text-sm text-gray-500">
+              {[insp.display_year ?? insp.year ?? insp.sub_year,
+                insp.display_make ?? insp.make ?? insp.sub_make,
+                insp.display_model ?? insp.model ?? insp.sub_model].filter(Boolean).join(' ') || 'Vehicle not recorded'} · {insp.center}
+            </p>
+            {/* A walk-in has a customer and no seller; the header must not
+                assume one, and should say plainly that no listing follows. */}
+            <p className="mt-0.5 text-xs text-gray-400">
+              {insp.scheduled_date} at {insp.scheduled_time} · {insp.kind === 'standalone' ? 'Customer' : 'Seller'}: {insp.party_name ?? insp.seller_name ?? '—'}
+            </p>
+            {insp.kind === 'standalone' ? (
+              <p className="mt-1 text-xs font-semibold text-gray-500">
+                Walk-in inspection — Sawa is not selling this vehicle and this check cannot publish a listing.
+              </p>
+            ) : null}
           </div>
           <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold capitalize text-gray-700">{String(insp.status).replace('_', ' ')}</span>
         </div>

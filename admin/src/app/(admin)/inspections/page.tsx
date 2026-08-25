@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api, type CenterRow } from '@/lib/api'
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
+import { Card, EmptyState, ErrorState, LoadingState } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
-import { useToast } from '@/components/feedback'
+import { useToast, useConfirm } from '@/components/feedback'
 import { useFocusRow } from '@/components/useFocusRow'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,6 +24,7 @@ export default function InspectionsPage() {
   // Arrives here from an Action Center item; marks the row it named.
   const { focusProps } = useFocusRow()
   const toast = useToast()
+  const confirm = useConfirm()
   const [center, setCenter]   = useState('all')
   const [date, setDate]       = useState(todayISO())
   const [status, setStatus]   = useState('scheduled')
@@ -33,6 +34,14 @@ export default function InspectionsPage() {
   const [error, setError]             = useState<unknown>(null)
   const [query, setQuery]             = useState('')
   const [preparingReport, setPreparingReport] = useState<string | null>(null)
+  const [walkInOpen, setWalkInOpen]   = useState(false)
+  const [booking, setBooking]         = useState(false)
+  const [cancelling, setCancelling]   = useState<string | null>(null)
+  const [walkIn, setWalkIn] = useState({
+    make: '', model: '', year: '', registration_plate: '', mileage: '',
+    center: '', scheduled_date: '', scheduled_time: '09:00 AM',
+    customer_name: '', customer_email: '', customer_phone: '',
+  })
 
   async function load() {
     setLoading(true)
@@ -56,7 +65,71 @@ export default function InspectionsPage() {
       .then((rows) => setCenters(rows.filter((row) => row.active)))
       .catch((error) => toast(error instanceof Error ? error.message : 'Could not load inspection centers.', 'error'))
   }, [toast])
-  const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((insp) => !q || [insp.make, insp.model, insp.year, insp.seller_name, insp.center, insp.id, insp.submission_id].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
+  const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((insp) => !q || [insp.display_make ?? insp.make, insp.display_model ?? insp.model, insp.display_year ?? insp.year, insp.party_name ?? insp.seller_name, insp.center, insp.id, insp.submission_id].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
+
+  async function bookWalkIn(event: React.FormEvent) {
+    event.preventDefault()
+    setBooking(true)
+    try {
+      const created = await api.bookWalkInInspection({
+        make: walkIn.make.trim(),
+        model: walkIn.model.trim(),
+        year: Number(walkIn.year),
+        registration_plate: walkIn.registration_plate.trim() || undefined,
+        mileage: walkIn.mileage ? Number(walkIn.mileage.replace(/[^0-9]/g, '')) : undefined,
+        center: walkIn.center,
+        scheduled_date: walkIn.scheduled_date,
+        scheduled_time: walkIn.scheduled_time,
+        customer: {
+          name: walkIn.customer_name.trim(),
+          email: walkIn.customer_email.trim(),
+          phone: walkIn.customer_phone.trim() || undefined,
+        },
+      })
+      toast(
+        created.invitation_sent
+          ? 'Walk-in booked. The customer has an activation link by email.'
+          : 'Walk-in booked. No activation email went out — send the link from Users if they need an account.',
+        'success',
+      )
+      setWalkIn({ make: '', model: '', year: '', registration_plate: '', mileage: '',
+        center: walkIn.center, scheduled_date: walkIn.scheduled_date, scheduled_time: walkIn.scheduled_time,
+        customer_name: '', customer_email: '', customer_phone: '' })
+      setWalkInOpen(false)
+      // Jump the filters to the booking so it is visible immediately rather
+      // than hidden behind whatever day the operator happened to be viewing.
+      setStatus('scheduled')
+      setCenter(walkIn.center)
+      setDate(walkIn.scheduled_date)
+      load()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not book the inspection.', 'error')
+    } finally {
+      setBooking(false)
+    }
+  }
+
+  async function cancelWalkIn(inspection: any) {
+    const vehicle = [inspection.display_year, inspection.display_make, inspection.display_model].filter(Boolean).join(' ')
+    const ok = await confirm({
+      title: 'Cancel this walk-in?',
+      message: `The booking for the ${vehicle || 'vehicle'} is removed and the bay frees up. Nothing has been inspected yet, and the audit log keeps the record.`,
+      confirmLabel: 'Cancel booking',
+      cancelLabel: 'Keep it',
+      tone: 'danger',
+    })
+    if (!ok) return
+    setCancelling(inspection.id)
+    try {
+      await api.cancelInspection(inspection.id)
+      toast('Walk-in cancelled. The bay is free again.', 'success')
+      load()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not cancel the inspection.', 'error')
+    } finally {
+      setCancelling(null)
+    }
+  }
 
   async function downloadReport(inspectionId: string) {
     setPreparingReport(inspectionId)
@@ -78,7 +151,78 @@ export default function InspectionsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Inspections</h1>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gray-900">Inspections</h1>
+        <button type="button" onClick={() => setWalkInOpen((open) => !open)}
+          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-white hover:bg-brand-bright">
+          {walkInOpen ? 'Close form' : 'Book a walk-in inspection'}
+        </button>
+      </div>
+
+      {walkInOpen ? (
+        <Card className="mb-6 p-5">
+          <div className="mb-4">
+            <h2 className="font-extrabold text-content">Walk-in inspection</h2>
+            <p className="mt-1 text-label text-content-muted">
+              A paid 150-point check on a vehicle Sawa is not selling — the same checklist, the same report.
+              It cannot be attached to a listing, and it never publishes anything. The customer gets an account
+              and a one-use link to set their own password; no password is ever emailed.
+            </p>
+          </div>
+          <form onSubmit={bookWalkIn} className="grid gap-3 sm:grid-cols-2">
+            {([
+              ['make', 'Make', 'Toyota', true],
+              ['model', 'Model', 'Land Cruiser', true],
+              ['year', 'Year', '2016', true],
+              ['registration_plate', 'Plate (optional)', 'RAD 123 X', false],
+              ['mileage', 'Mileage in km (optional)', '141000', false],
+            ] as const).map(([key, label, placeholder, required]) => (
+              <label key={key} className="text-label font-semibold text-content">{label}
+                <input required={required} inputMode={key === 'year' || key === 'mileage' ? 'numeric' : undefined}
+                  value={walkIn[key]} placeholder={placeholder}
+                  onChange={(e) => setWalkIn({ ...walkIn, [key]: e.target.value })}
+                  className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+              </label>
+            ))}
+            <label className="text-label font-semibold text-content">Center
+              <select required value={walkIn.center}
+                onChange={(e) => setWalkIn({ ...walkIn, center: e.target.value })}
+                className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none">
+                <option value="">Choose a center…</option>
+                {centers.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
+              </select>
+            </label>
+            <label className="text-label font-semibold text-content">Date
+              <input required type="date" value={walkIn.scheduled_date} min={todayISO()}
+                onChange={(e) => setWalkIn({ ...walkIn, scheduled_date: e.target.value })}
+                className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+            </label>
+            <label className="text-label font-semibold text-content">Time
+              <input value={walkIn.scheduled_time} placeholder="09:00 AM"
+                onChange={(e) => setWalkIn({ ...walkIn, scheduled_time: e.target.value })}
+                className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+            </label>
+            <fieldset className="sm:col-span-2 grid gap-3 sm:grid-cols-3 rounded-xl border border-line-soft p-3">
+              <legend className="px-1 text-label font-semibold text-content">Customer</legend>
+              {([
+                ['customer_name', 'Name', 'Jean Habimana', true],
+                ['customer_email', 'Email', 'jean@example.rw', true],
+                ['customer_phone', 'Phone (optional)', '+250 7…', false],
+              ] as const).map(([key, label, placeholder, required]) => (
+                <label key={key} className="text-label font-semibold text-content">{label}
+                  <input required={required} type={key === 'customer_email' ? 'email' : 'text'}
+                    value={walkIn[key]} placeholder={placeholder}
+                    onChange={(e) => setWalkIn({ ...walkIn, [key]: e.target.value })}
+                    className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+                </label>
+              ))}
+            </fieldset>
+            <button disabled={booking} className="rounded-xl bg-ink-900 px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
+              {booking ? 'Booking…' : 'Book the inspection'}
+            </button>
+          </form>
+        </Card>
+      ) : null}
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap gap-4 items-end">
@@ -130,15 +274,29 @@ export default function InspectionsPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-semibold text-gray-900 text-sm">
-                    {insp.year} {insp.make} {insp.model}
+                    {[insp.display_year ?? insp.year, insp.display_make ?? insp.make, insp.display_model ?? insp.model]
+                      .filter(Boolean).join(' ') || 'Vehicle not recorded'}
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[insp.status] || 'bg-gray-100 text-gray-600'}`}>
                     {insp.status}
                   </span>
+                  {insp.kind === 'standalone' ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
+                      Walk-in · not a listing
+                    </span>
+                  ) : null}
                 </div>
                 <p className="text-xs text-gray-500">{insp.center} · {insp.scheduled_date} at {insp.scheduled_time}</p>
-                <p className="text-xs text-gray-500">Seller: {insp.seller_name}</p>
+                <p className="text-xs text-gray-500">
+                  {insp.kind === 'standalone' ? 'Customer' : 'Seller'}: {insp.party_name ?? insp.seller_name ?? '—'}
+                </p>
               </div>
+              {insp.kind === 'standalone' && insp.status === 'scheduled' ? (
+                <button type="button" onClick={() => cancelWalkIn(insp)} disabled={cancelling === insp.id}
+                  className="flex-shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-content transition-colors hover:bg-surface-alt disabled:cursor-wait disabled:opacity-60">
+                  {cancelling === insp.id ? 'Cancelling…' : 'Cancel'}
+                </button>
+              ) : null}
               {insp.status !== 'complete' && (
                 <Link
                   href={`/inspections/${insp.id}`}
@@ -175,6 +333,14 @@ export default function InspectionsPage() {
                         : insp.car_status === 'archived' ? 'Archived'
                         : insp.car_status === 'rejected' ? 'Listing rejected'
                         : 'Listing under review'}
+                    </span>
+                  ) : insp.kind === 'standalone' ? (
+                    // A walk-in has no submission, so this link would have
+                    // emitted submissionId=undefined. It is also the wrong
+                    // offer: the customer owns the car, and Sawa is not
+                    // selling it.
+                    <span className="flex-shrink-0 text-xs font-semibold text-gray-500">
+                      Independent report — no listing
                     </span>
                   ) : (
                     <Link

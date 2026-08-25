@@ -326,6 +326,21 @@ export const api = {
   issueInspectionReport: (id: string) =>
     request<any>(`/inspections/${id}/report`, { method: 'POST' }),
 
+  // Walk-in ("standalone") inspections — a paid check on a vehicle Sawa does
+  // not list. The backend refuses to attach one to a submission or a car, so
+  // none of these can ever produce publication evidence.
+  bookWalkInInspection: (data: {
+    make: string; model: string; year: number
+    vin?: string; registration_plate?: string; mileage?: number
+    center: string; scheduled_date: string; scheduled_time?: string
+    customer_user_id?: string
+    customer?: { name: string; email: string; phone?: string }
+  }) => request<any>('/inspections/standalone', { method: 'POST', body: JSON.stringify(data) }),
+  rescheduleInspection: (id: string, data: { center?: string; scheduled_date: string; scheduled_time?: string }) =>
+    request<any>(`/inspections/${id}/schedule`, { method: 'PATCH', body: JSON.stringify(data) }),
+  cancelInspection: (id: string, reason?: string) =>
+    request<{ cancelled: boolean }>(`/inspections/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
+
   // Handovers
   handovers: (status = 'pending') =>
     request<any[]>(`/handovers?status=${status}`),

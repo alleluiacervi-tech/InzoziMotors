@@ -17,19 +17,26 @@ const COMPANY = {
   email: process.env.COMPANY_EMAIL || 'contact@sawacars.com',
 };
 
+// LEFT JOINs throughout: a walk-in inspection has neither a submission nor a
+// car, and its vehicle identity lives on the inspection row itself. The three
+// vehicle tiers below (car → submission → inspection) resolve in that order.
 const INSPECTION_SQL = `
   SELECT i.id, i.status, i.center, i.score, i.notes, i.checklist_results,
          i.checklist_version, i.passed, i.critical_failures,
-         i.started_at, i.completed_at, i.inspector_id,
+         i.started_at, i.completed_at, i.inspector_id, i.kind,
+         i.customer_user_id, i.vehicle_make, i.vehicle_model, i.vehicle_year,
+         i.vehicle_vin, i.vehicle_plate, i.vehicle_mileage,
          s.id AS submission_id, s.seller_id, s.make AS sub_make, s.model AS sub_model,
          s.year AS sub_year, s.mileage AS sub_mileage, s.color AS sub_color,
          s.transmission AS sub_transmission, s.fuel_type AS sub_fuel,
          c.id AS car_id, c.title AS car_title, c.make, c.model, c.year, c.mileage,
          c.vin, c.registration_plate, c.color, c.transmission, c.fuel_type,
-         seller.name AS seller_name, inspector.name AS inspector_name
+         seller.name AS seller_name, customer.name AS customer_name,
+         inspector.name AS inspector_name
     FROM inspections i
-    JOIN submissions s ON s.id=i.submission_id
-    JOIN users seller ON seller.id=s.seller_id
+    LEFT JOIN submissions s ON s.id=i.submission_id
+    LEFT JOIN users seller ON seller.id=s.seller_id
+    LEFT JOIN users customer ON customer.id=i.customer_user_id
     LEFT JOIN users inspector ON inspector.id=i.inspector_id
     LEFT JOIN cars c ON c.id=i.car_id
    WHERE i.id=$1`;
@@ -50,8 +57,20 @@ async function snapshotForInspection(inspectionId) {
       'INSPECTION_EVIDENCE_INVALID'
     );
   }
+  const standalone = r.kind === 'standalone';
+  const make = r.make || r.sub_make || r.vehicle_make;
+  const model = r.model || r.sub_model || r.vehicle_model;
+  const year = r.year || r.sub_year || r.vehicle_year;
   return {
     company: COMPANY,
+    // Who the report is for, and on what basis. A walk-in report is issued to
+    // the customer who paid for it and says plainly that Sawa is not selling
+    // the car — that independence is the whole point of the document.
+    subject: {
+      kind: standalone ? 'standalone' : 'listing',
+      party_user_id: standalone ? r.customer_user_id : r.seller_id,
+      party_name: standalone ? r.customer_name : r.seller_name,
+    },
     inspection: {
       id: r.id, center: r.center, score: Number(r.score), grade: grade(Number(r.score)),
       started_at: r.started_at, completed_at: r.completed_at,
@@ -62,14 +81,18 @@ async function snapshotForInspection(inspectionId) {
       critical_failures: evaluated.critical_failures,
     },
     vehicle: {
-      car_id: r.car_id, title: r.car_title || `${r.sub_year || ''} ${r.sub_make} ${r.sub_model}`.trim(),
-      make: r.make || r.sub_make, model: r.model || r.sub_model, year: r.year || r.sub_year,
-      mileage: r.mileage ?? r.sub_mileage, vin: r.vin || null,
-      registration_plate: r.registration_plate || null, color: r.color || r.sub_color || null,
+      car_id: r.car_id,
+      title: r.car_title || [year, make, model].filter(Boolean).join(' ').trim() || 'Vehicle',
+      make, model, year,
+      mileage: r.mileage ?? r.sub_mileage ?? r.vehicle_mileage,
+      vin: r.vin || r.vehicle_vin || null,
+      registration_plate: r.registration_plate || r.vehicle_plate || null,
+      color: r.color || r.sub_color || null,
       transmission: r.transmission || r.sub_transmission || null,
       fuel_type: r.fuel_type || r.sub_fuel || null,
     },
     seller: { user_id: r.seller_id, name: r.seller_name },
+    customer: standalone ? { user_id: r.customer_user_id, name: r.customer_name } : null,
     generated_at: new Date().toISOString(),
   };
 }
@@ -101,6 +124,9 @@ function renderInspectionReport(snapshot, record = {}) {
     doc.font('body').fontSize(9).fillColor(muted).text('Independent 150-point condition and documentation assessment', { lineGap:2 });
     doc.moveDown(1);
 
+    // issuePdf re-renders drafts from their stored snapshot, so a draft created
+    // before `subject` existed must still render. Default it, never assume it.
+    const subject = snapshot.subject || { kind: 'listing', party_name: (snapshot.seller || {}).name };
     const score=snapshot.inspection.score;
     const verdicts=Object.values(snapshot.inspection.checklist);
     const counts={ pass:verdicts.filter(v=>v==='pass').length, flag:verdicts.filter(v=>v==='flag').length, fail:verdicts.filter(v=>v==='fail').length };
@@ -118,7 +144,7 @@ function renderInspectionReport(snapshot, record = {}) {
     doc.y=bandY+100;
 
     doc.font('brand').fontSize(11).fillColor(ink).text('VEHICLE & INSPECTION DETAILS');
-    const facts=[['Make / model',`${snapshot.vehicle.make} ${snapshot.vehicle.model}`],['Year',snapshot.vehicle.year],['Registration',snapshot.vehicle.registration_plate||'Not recorded'],['Inspector',snapshot.inspection.inspector_name],['Completed',new Date(snapshot.inspection.completed_at).toLocaleString('en-RW',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Kigali'})],['Center',snapshot.inspection.center]];
+    const facts=[['Make / model',[snapshot.vehicle.make,snapshot.vehicle.model].filter(Boolean).join(' ')],['Year',snapshot.vehicle.year],['Registration',snapshot.vehicle.registration_plate||'Not recorded'],['Inspector',snapshot.inspection.inspector_name],['Completed',new Date(snapshot.inspection.completed_at).toLocaleString('en-RW',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Kigali'})],['Center',snapshot.inspection.center],[subject.kind==='standalone'?'Inspection requested by':'Vehicle presented by',subject.party_name||'Not recorded']];
     facts.forEach(([label,value],index)=>{ const y=doc.y+7; const x=margin+(index%2)*250; if(index%2===0&&index>0) doc.y+=30; doc.font('body').fontSize(6.5).fillColor(muted).text(String(label).toUpperCase(),x,y,{width:230}); doc.font('body').fontSize(9).fillColor(ink).text(String(value||'—'),x,y+10,{width:230}); });
     doc.y+=42;
 
@@ -140,7 +166,7 @@ function renderInspectionReport(snapshot, record = {}) {
     if(snapshot.inspection.notes){ ensure(70); doc.font('brand').fontSize(10).fillColor(ink).text('MECHANIC’S NOTES'); doc.moveDown(0.4); doc.font('body').fontSize(8.5).fillColor(ink).text(snapshot.inspection.notes,{width,lineGap:2}); }
     ensure(58); doc.moveDown(1); const noteY=doc.y; doc.roundedRect(margin,noteY,width,48,5).fillColor('#F6F4F4').fill();
     doc.font('bold').fontSize(8).fillColor(ink).text('How to read this report',margin+12,noteY,{width:475});
-    doc.font('body').fontSize(7.5).fillColor(muted).text('Pass means the item met the inspection standard. Flag means attention is recommended. Fail means the item did not meet the standard at inspection. This report records condition at the stated date; it is not a warranty.',margin+12,noteY+13,{width:475,lineGap:1});
+    doc.font('body').fontSize(7.5).fillColor(muted).text(`Pass means the item met the inspection standard. Flag means attention is recommended. Fail means the item did not meet the standard at inspection. This report records condition at the stated date; it is not a warranty.${subject.kind==='standalone'?' Sawa Cars is not selling this vehicle and has no interest in any sale of it; this is an independent assessment commissioned by the person named above.':''}`,margin+12,noteY+13,{width:475,lineGap:1});
 
     const range=doc.bufferedPageRange(); const pageCount=range.count;
     for(let i=0;i<pageCount;i++){ doc.switchToPage(i); doc.font('body').fontSize(7).fillColor(muted).text(`${record.document_number || `Inspection ${snapshot.inspection.id}`} · Page ${i+1} of ${pageCount}`,margin,doc.page.height-34,{width,align:'center',lineBreak:false}); }
@@ -151,7 +177,8 @@ function renderInspectionReport(snapshot, record = {}) {
 async function issueInspectionReport(inspectionId, adminId) {
   const snapshot=await snapshotForInspection(inspectionId);
   return issuePdf({ kind:'inspection_report', subjectType:'inspection', subjectId:inspectionId,
-    ownerUserId:snapshot.seller.user_id, title:`Inspection report — ${snapshot.vehicle.title}`,
+    ownerUserId:(snapshot.subject && snapshot.subject.party_user_id) || (snapshot.seller && snapshot.seller.user_id) || null,
+    title:`Inspection report — ${snapshot.vehicle.title}`,
     snapshot, generatedBy:adminId, render:renderInspectionReport });
 }
 
