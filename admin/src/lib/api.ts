@@ -55,6 +55,53 @@ export function onApiStatus(cb: (s: ApiStatus) => void): () => void {
   return () => statusListeners.delete(cb)
 }
 
+// ─── The vehicle journey ─────────────────────────────────────────────────────
+// Seven stages from an unverified seller to a public listing, computed on the
+// server from the workflow tables. `state` is where the work is; `actor` is who
+// it waits on — and the second is what the operator actually sorts by.
+export type JourneyActor = 'us' | 'seller' | 'clock' | 'none'
+export type JourneyState = 'done' | 'active' | 'blocked' | 'locked'
+
+export type JourneyBlocker = { label: string; fix: string | null }
+
+export type JourneyStage = {
+  key: string
+  index: number
+  label: string
+  state: JourneyState
+  actor: JourneyActor
+  at: string | null
+  age_hours: number | null
+  detail: string
+  blockers: JourneyBlocker[]
+  href: string | null
+}
+
+export type Journey = {
+  subject: { submission_id: string | null; inspection_id: string | null; car_id: string | null; seller_id: string | null }
+  vehicle: { make: string | null; model: string | null; year: number | null; title: string }
+  seller: { id: string; name: string; email: string; seller_type: string | null } | null
+  complete: boolean
+  stages_done: number
+  stages_total: number
+  current_stage: string | null
+  actor: JourneyActor
+  blocked: boolean
+  age_hours: number | null
+  stages: JourneyStage[]
+}
+
+export type JourneyBoard = {
+  generated_at: string
+  stages: { key: string; index: number; label: string }[]
+  summary: {
+    in_flight: number; waiting_on_us: number; waiting_on_seller: number
+    blocked: number; live: number; published_this_week: number
+  }
+  truncated: boolean
+  vehicles: Journey[]
+}
+
 export type Readiness = {
   ready: boolean
   missing: string[]
@@ -325,6 +372,11 @@ export const api = {
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
   issueInspectionReport: (id: string) =>
     request<any>(`/inspections/${id}/report`, { method: 'POST' }),
+
+  // Journey. Resolves from whichever id the page happens to be holding.
+  journey: (subjectType: 'submission' | 'inspection' | 'car', id: string) =>
+    request<Journey>(`/admin/journey/${subjectType}/${id}`),
+  journeyBoard: () => request<JourneyBoard>('/admin/journey'),
 
   // Walk-in ("standalone") inspections — a paid check on a vehicle Sawa does
   // not list. The backend refuses to attach one to a submission or a car, so

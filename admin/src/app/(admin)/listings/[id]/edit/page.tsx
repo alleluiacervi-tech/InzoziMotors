@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
 
 const inputCls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand'
@@ -115,7 +116,12 @@ export default function EditListingPage() {
   if (!car)         return <div className="text-red-600 text-sm">Listing not found.</div>
 
   return (
-    <div className="max-w-4xl bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+    <div className="max-w-4xl">
+      {/* Where this listing sits in the pipeline, and what is still blocking it.
+          Server-computed — this page renders the verdict, it does not form one. */}
+      <JourneyRail subjectType="car" id={id} className="mb-5" />
+
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Edit Listing</h1>
@@ -274,6 +280,7 @@ export default function EditListingPage() {
           </button>
         </div>
       </form>
+    </div>
     </div>
   )
 }
