@@ -201,6 +201,7 @@ app.use('/auth/login', authLimiter);
 app.use('/auth/register', authLimiter);
 app.use('/auth/change-password', authLimiter);
 app.use('/auth/accept-showroom-invite', authLimiter);
+app.use('/auth/accept-invite', authLimiter);
 app.use('/auth/forgot-password', resetLimiter);
 app.use('/auth/reset-password', resetLimiter);
 app.use('/messages', postOnly(writeLimiter));

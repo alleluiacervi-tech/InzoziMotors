@@ -6,7 +6,7 @@ const pool = require('../db');
 const { requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { recordAdminAction } = require('../lib/admin-audit');
-const { sendShowroomInvite, sendResetCode, mailEnabled } = require('../lib/mailer');
+const { sendAccountInvite, sendResetCode, mailEnabled } = require('../lib/mailer');
 const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
 
 const router = express.Router();
@@ -499,33 +499,118 @@ router.patch('/users/:id/access', requireAdmin, requireUuid('id'), async (req, r
 // POST /admin/showrooms — commercial seller accounts are created and verified
 // by Sawa, never self-selected at public registration. The recipient receives
 // a one-use setup link; admins and email logs never contain a password.
-router.post('/showrooms', requireAdmin, async (req, res) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin-created accounts.
+//
+// Some customers will not create their own account — a walk-in at the office,
+// a showroom being onboarded, a seller who would rather we did it for them. So
+// the admin creates it and the person receives a one-use link to set their own
+// password.
+//
+// Deliberately NOT an emailed random password: e-mail is not a secure channel,
+// a password sits in an inbox forever, a link expires in 48 hours, and there is
+// nothing to "please change" because the person chose it themselves. The
+// account is unusable until then because password_hash stays NULL, which is
+// what POST /auth/login actually refuses on.
+//
+// What each kind of account is allowed to start life as:
+//
+//   buyer            role=buyer                                     nothing granted
+//   individual_seller role=seller  seller_type=individual            nothing granted
+//   showroom         role=seller  seller_type=showroom  id_verified=approved
+//                                                       business_verified=TRUE
+//
+// A buyer or individual seller does NOT get id_verified='approved'. That flag
+// is a seller-eligibility gate (invariant 4) and it means a human checked a
+// document; granting it from a dashboard button would quietly hollow out the
+// verification promise for exactly the accounts most likely to abuse it. The
+// showroom exception is older and narrower: business verification is its own
+// deliberate admin judgement, made when the company is onboarded in person.
+const ACCOUNT_KINDS = {
+  buyer:             { role: 'buyer',  sellerType: null,         idVerified: 'none',     businessVerified: false, needsBusiness: false },
+  individual_seller: { role: 'seller', sellerType: 'individual', idVerified: 'none',     businessVerified: false, needsBusiness: false },
+  showroom:          { role: 'seller', sellerType: 'showroom',   idVerified: 'approved', businessVerified: true,  needsBusiness: true },
+};
+
+/** Creates the account and returns the plaintext invite token, which is never
+ *  stored — only its sha256 hash is, so a database leak cannot activate it. */
+async function createInvitedAccount(client, { accountType, name, email, phone, businessName, invitedBy }) {
+  const kind = ACCOUNT_KINDS[accountType];
+  const token = crypto.randomBytes(32).toString('base64url');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  const exists = await client.query('SELECT id FROM users WHERE email=$1', [email]);
+  if (exists.rows.length) return { conflict: true };
+
+  const { rows } = await client.query(
+    `INSERT INTO users
+      (name,email,phone,role,id_verified,seller_type,business_name,admin_created,
+       business_verified,must_change_password,invite_token_hash,invite_expires_at,invited_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,TRUE,$8,TRUE,$9,NOW()+INTERVAL '48 hours',$10)
+     RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,business_verified,created_at`,
+    [name, email, phone, kind.role, kind.idVerified, kind.sellerType,
+     businessName, kind.businessVerified, tokenHash, invitedBy]
+  );
+  await recordAdminAction(client, {
+    actorId: invitedBy, action: 'account.invited', targetType: 'user', targetId: rows[0].id,
+    summary: `Created ${accountType.replace('_', ' ')} account for ${businessName || name}`,
+    metadata: { email, account_type: accountType },
+  });
+  return { user: rows[0], token };
+}
+
+function readAccountBody(req) {
   const name = String(req.body.name || '').trim().slice(0, 120);
-  const businessName = String(req.body.business_name || '').trim().slice(0, 160);
+  const businessName = String(req.body.business_name || '').trim().slice(0, 160) || null;
   const email = String(req.body.email || '').trim().toLowerCase();
   const phone = String(req.body.phone || '').trim().slice(0, 40) || null;
+  return { name, businessName, email, phone };
+}
+
+// POST /admin/accounts — create any kind of account and send the invite.
+router.post('/accounts', requireAdmin, async (req, res) => {
+  const accountType = String(req.body.account_type || '');
+  const kind = ACCOUNT_KINDS[accountType];
+  if (!kind) {
+    return res.status(400).json({ error: `account_type must be one of: ${Object.keys(ACCOUNT_KINDS).join(', ')}` });
+  }
+  const { name, businessName, email, phone } = readAccountBody(req);
+  if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return res.status(400).json({ error: 'A contact name and a valid email address are required' });
+  }
+  if (kind.needsBusiness && !businessName) {
+    return res.status(400).json({ error: 'A showroom account needs its business name' });
+  }
+  try {
+    const result = await require('../lib/tx').withTransaction((client) => createInvitedAccount(client, {
+      accountType, name, email, phone, businessName, invitedBy: req.user.id,
+    }));
+    if (result.conflict) return res.status(409).json({ error: 'An account already uses this email' });
+    const delivered = await sendAccountInvite(email, name, {
+      accountType, businessName, token: result.token,
+    });
+    res.status(201).json({ ...result.user, invitation_sent: delivered });
+  } catch (err) {
+    log.error('account invite error', { error: err.message, accountType });
+    res.status(500).json({ error: 'Could not create the account' });
+  }
+});
+
+// POST /admin/showrooms — the original route, kept because invite emails and
+// shipped clients point at it. Delegates to the generalised path above.
+router.post('/showrooms', requireAdmin, async (req, res) => {
+  const { name, businessName, email, phone } = readAccountBody(req);
   if (!name || !businessName || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return res.status(400).json({ error: 'Contact name, showroom name and a valid email are required' });
   }
-  const token = crypto.randomBytes(32).toString('base64url');
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   try {
-    const result = await require('../lib/tx').withTransaction(async (client) => {
-      const exists = await client.query('SELECT id FROM users WHERE email=$1', [email]);
-      if (exists.rows.length) return { conflict: true };
-      const { rows } = await client.query(
-        `INSERT INTO users
-          (name,email,phone,role,id_verified,seller_type,business_name,admin_created,
-           business_verified,must_change_password,invite_token_hash,invite_expires_at,invited_by)
-         VALUES ($1,$2,$3,'seller','approved','showroom',$4,TRUE,TRUE,TRUE,$5,NOW()+INTERVAL '48 hours',$6)
-         RETURNING id,name,email,phone,role,id_verified,seller_type,business_name,business_verified,created_at`,
-        [name, email, phone, businessName, tokenHash, req.user.id]
-      );
-      await recordAdminAction(client, { actorId: req.user.id, action: 'showroom.invite', targetType: 'user', targetId: rows[0].id, summary: `Created verified showroom account for ${businessName}`, metadata: { email } });
-      return { user: rows[0] };
-    });
+    const result = await require('../lib/tx').withTransaction((client) => createInvitedAccount(client, {
+      accountType: 'showroom', name, email, phone, businessName, invitedBy: req.user.id,
+    }));
     if (result.conflict) return res.status(409).json({ error: 'An account already uses this email' });
-    const delivered = await sendShowroomInvite(email, name, businessName, token);
+    const delivered = await sendAccountInvite(email, name, {
+      accountType: 'showroom', businessName, token: result.token,
+    });
     res.status(201).json({ ...result.user, invitation_sent: delivered });
   } catch (err) {
     log.error('showroom invite error', { error: err.message });

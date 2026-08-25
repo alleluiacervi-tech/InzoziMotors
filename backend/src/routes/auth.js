@@ -126,9 +126,15 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /auth/accept-showroom-invite — one-use, time-limited password setup.
-// This replaces the common but unsafe pattern of emailing a temporary password.
-router.post('/accept-showroom-invite', async (req, res) => {
+// POST /auth/accept-invite — one-use, time-limited password setup for any
+// admin-created account. This replaces the common but unsafe pattern of
+// emailing a temporary password.
+//
+// The predicate deliberately keeps `admin_created=TRUE`: only an account the
+// team created can be claimed this way, so a self-registered user's row can
+// never be taken over with a guessed token. It no longer requires
+// seller_type='showroom', which is what previously limited this to showrooms.
+async function acceptInvite(req, res) {
   const token = String(req.body.token || '');
   const password = String(req.body.password || '');
   if (token.length < 32 || password.length < 8) {
@@ -139,7 +145,7 @@ router.post('/accept-showroom-invite', async (req, res) => {
     const result = await withTransaction(async (client) => {
       const { rows } = await client.query(
         `SELECT * FROM users WHERE invite_token_hash=$1 AND invite_expires_at>NOW()
-          AND admin_created=TRUE AND seller_type='showroom' FOR UPDATE`, [tokenHash]
+          AND admin_created=TRUE FOR UPDATE`, [tokenHash]
       );
       if (!rows.length) return null;
       const passwordHash = await bcrypt.hash(password, 12);
@@ -154,10 +160,15 @@ router.post('/accept-showroom-invite', async (req, res) => {
     if (!result) return res.status(410).json({ error: 'This invitation is invalid, expired, or already used' });
     res.json({ user: result, token: makeToken(result) });
   } catch (err) {
-    log.error('accept showroom invite error', { error: err.message });
-    res.status(500).json({ error: 'Could not activate showroom account' });
+    log.error('accept invite error', { error: err.message });
+    res.status(500).json({ error: 'Could not activate the account' });
   }
-});
+}
+
+router.post('/accept-invite', acceptInvite);
+// The original path, kept alive because invite links already sitting in
+// inboxes point at it and a 404 there loses the account.
+router.post('/accept-showroom-invite', acceptInvite);
 
 // ─── Password reset ───────────────────────────────────────────────────────────
 // No email/SMS provider is wired yet, so the 6-digit code is logged server-side.

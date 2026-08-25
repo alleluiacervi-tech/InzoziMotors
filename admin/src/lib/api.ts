@@ -389,6 +389,10 @@ export const api = {
     request<any>(`/id-verification/${userId}`, {
       method: 'PATCH', body: JSON.stringify({ decision }),
     }),
+  /** Create any kind of account. The recipient sets their own password from a
+   *  one-use link — nothing here emails a password. */
+  createAccount: (data: { account_type: 'buyer' | 'individual_seller' | 'showroom'; name: string; email: string; phone?: string; business_name?: string }) =>
+    request<any>('/admin/accounts', { method: 'POST', body: JSON.stringify(data) }),
   createShowroom: (data: { name: string; business_name: string; email: string; phone?: string }) =>
     request<any>('/admin/showrooms', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (userId: string, data: { name?: string; phone?: string | null; whatsapp_phone?: string | null; phone_visible?: boolean; whatsapp_visible?: boolean; business_name?: string | null; business_verified?: boolean; seller_type?: string | null; role?: 'buyer' | 'seller' }) =>

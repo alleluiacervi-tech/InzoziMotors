@@ -229,18 +229,48 @@ function sendWelcome(email, name) {
   });
 }
 
-function sendShowroomInvite(email, name, businessName, token) {
-  const url = `${SITE}/activate-showroom?token=${encodeURIComponent(token)}`;
-  return sendTemplate(email, `Activate your ${businessName} showroom account`, {
+// Every admin-created account activates the same way: a one-use link, never a
+// password in an email. The wording changes with the kind of account so the
+// recipient recognises why they are hearing from us.
+const INVITE_COPY = {
+  buyer: {
+    subject: () => 'Activate your Sawa Cars account',
+    title: 'Your Sawa Cars account is ready',
+    opening: (name) => `Hi ${name || 'there'} — a Sawa Cars team member created an account for you.`,
+    closing: 'Once activated you can save vehicles, message verified sellers and collect any inspection report we prepare for you.',
+  },
+  individual_seller: {
+    subject: () => 'Activate your Sawa Cars seller account',
+    title: 'Your seller account is ready',
+    opening: (name) => `Hi ${name || 'there'} — a Sawa Cars team member created a seller account for you.`,
+    closing: 'After activation you can submit a vehicle for inspection. Publication happens after our team has inspected the vehicle and verified your identity.',
+  },
+  showroom: {
+    subject: (businessName) => `Activate your ${businessName} showroom account`,
     title: 'Your showroom account is ready',
+    opening: (name, businessName) => `Hi ${name || 'there'} — a Sawa Cars administrator created a verified showroom account for ${businessName}.`,
+    closing: 'After activation, you can manage your showroom vehicles through Sawa Cars. Never share your password or verification codes with anyone.',
+  },
+};
+
+function sendAccountInvite(email, name, { accountType, businessName, token }) {
+  const copy = INVITE_COPY[accountType] || INVITE_COPY.buyer;
+  const url = `${SITE}/activate?token=${encodeURIComponent(token)}`;
+  return sendTemplate(email, copy.subject(businessName), {
+    title: copy.title,
     preheader: 'Create your private password to activate the account.',
     lines: [
-      `Hi ${name || 'there'} — a Sawa Cars administrator created a verified showroom account for ${businessName}.`,
+      copy.opening(name, businessName),
       'For security, no reusable password is included in this email. Use the private link below to create your password. The link expires in 48 hours and can only be used once.',
-      'After activation, you can manage your showroom vehicles through Sawa Cars. Never share your password or verification codes with anyone.',
+      copy.closing,
     ],
     cta: { label: 'Create my password', url },
   });
+}
+
+/** @deprecated Kept so older call sites keep working; delegates to the above. */
+function sendShowroomInvite(email, name, businessName, token) {
+  return sendAccountInvite(email, name, { accountType: 'showroom', businessName, token });
 }
 
 function sendImportUpdate(email, name, orderRef, title, detail) {
@@ -392,6 +422,7 @@ module.exports = {
   sendMail,
   sendResetCode,
   sendWelcome,
+  sendAccountInvite,
   sendShowroomInvite,
   sendImportUpdate,
   sendPasswordChanged,

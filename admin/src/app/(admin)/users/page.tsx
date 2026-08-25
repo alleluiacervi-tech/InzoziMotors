@@ -33,6 +33,15 @@ type UserRow = {
   suspension_reason?: string | null
 }
 
+// What an admin can create. Only a showroom starts out verified — a buyer or
+// an individual seller has to go through the ID check like anyone else, because
+// id_verified gates seller eligibility and contact disclosure.
+const ACCOUNT_KINDS = [
+  { value: 'buyer' as const, noun: 'Buyer account', hint: 'Browses, saves and messages. No verification granted.' },
+  { value: 'individual_seller' as const, noun: 'Seller account', hint: 'Can submit a vehicle. Still needs an ID check before anything publishes.' },
+  { value: 'showroom' as const, noun: 'Verified showroom', hint: 'Business-verified on creation, and may hold rental inventory.' },
+]
+
 export default function UsersPage() {
   // The Action Center links straight to the identity queue with the person it
   // named, so the tab is part of the destination, not a thing to find again.
@@ -49,6 +58,7 @@ export default function UsersPage() {
   const [role, setRole] = useState('all')
   const [actionId, setActionId] = useState<string | null>(null)
   const [showroomOpen, setShowroomOpen] = useState(false)
+  const [accountType, setAccountType] = useState<'buyer' | 'individual_seller' | 'showroom'>('showroom')
   const [showroom, setShowroom] = useState({ name: '', business_name: '', email: '', phone: '' })
   const [editing, setEditing] = useState<null | {
     id: string; name: string; role: 'buyer' | 'seller'; phone: string; whatsapp_phone: string;
@@ -105,10 +115,11 @@ export default function UsersPage() {
     event.preventDefault()
     setActionId('new-showroom')
     try {
-      const created = await api.createShowroom(showroom)
+      const created = await api.createAccount({ ...showroom, account_type: accountType })
+      const label = ACCOUNT_KINDS.find((k) => k.value === accountType)?.noun ?? 'Account'
       toast(created.invitation_sent
-        ? 'Verified showroom created and activation email sent'
-        : 'Showroom created, but email delivery is not configured', created.invitation_sent ? 'success' : 'error')
+        ? `${label} created and activation email sent`
+        : `${label} created, but email delivery is not configured`, created.invitation_sent ? 'success' : 'error')
       setShowroom({ name: '', business_name: '', email: '', phone: '' })
       setShowroomOpen(false)
       await load()
@@ -224,20 +235,39 @@ export default function UsersPage() {
       <div className="mb-5 flex justify-end">
         <button type="button" onClick={() => setShowroomOpen((v) => !v)}
           className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-white hover:bg-brand-bright">
-          {showroomOpen ? 'Close form' : 'Create showroom account'}
+          {showroomOpen ? 'Close form' : 'Create an account'}
         </button>
       </div>
 
       {showroomOpen ? (
         <Card className="mb-5 p-5">
-          <div className="mb-4"><h2 className="font-extrabold text-content">Invite a verified showroom</h2><p className="mt-1 text-label text-content-muted">The account is verified by Sawa. The recipient creates their own password from a one-use 48-hour email link.</p></div>
+          <div className="mb-4"><h2 className="font-extrabold text-content">Create an account</h2><p className="mt-1 text-label text-content-muted">For someone who would rather we set it up — a walk-in, or a showroom being onboarded. They create their own password from a one-use 48-hour email link; no password is ever emailed.</p></div>
           <form onSubmit={createShowroom} className="grid gap-3 sm:grid-cols-2">
+            <fieldset className="sm:col-span-2">
+              <legend className="text-label font-semibold text-content">Account type</legend>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                {ACCOUNT_KINDS.map((kind) => (
+                  <label key={kind.value} className={`cursor-pointer rounded-xl border p-3 ${accountType === kind.value ? 'border-brand bg-brand-tint' : 'border-line hover:border-content-muted'}`}>
+                    <span className="flex items-center gap-2">
+                      <input type="radio" name="account_type" value={kind.value}
+                        checked={accountType === kind.value}
+                        onChange={() => setAccountType(kind.value)} />
+                      <span className="text-label font-bold text-content">{kind.noun}</span>
+                    </span>
+                    <span className="mt-1 block text-caption text-content-muted">{kind.hint}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             {([
               ['business_name', 'Showroom name', 'Kigali Prime Motors'],
-              ['name', 'Account contact', 'Jean Habimana'],
-              ['email', 'Business email', 'sales@example.rw'],
+              ['name', 'Contact name', 'Jean Habimana'],
+              ['email', 'Email address', 'sales@example.rw'],
               ['phone', 'Phone (optional)', '+250 7…'],
-            ] as const).map(([key, label, placeholder]) => (
+            ] as const)
+              // A business name only means something for a showroom.
+              .filter(([key]) => key !== 'business_name' || accountType === 'showroom')
+              .map(([key, label, placeholder]) => (
               <label key={key} className="text-label font-semibold text-content">{label}
                 <input required={key !== 'phone'} type={key === 'email' ? 'email' : 'text'} value={showroom[key]}
                   onChange={(e) => setShowroom({ ...showroom, [key]: e.target.value })} placeholder={placeholder}
@@ -245,7 +275,7 @@ export default function UsersPage() {
               </label>
             ))}
             <button disabled={actionId === 'new-showroom'} className="rounded-xl bg-ink-900 px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
-              {actionId === 'new-showroom' ? 'Creating…' : 'Create verified account and send activation'}
+              {actionId === 'new-showroom' ? 'Creating…' : 'Create account and send activation link'}
             </button>
           </form>
         </Card>

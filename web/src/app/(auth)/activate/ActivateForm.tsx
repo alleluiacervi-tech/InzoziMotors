@@ -1,12 +1,12 @@
 'use client'
 
 import { useActionState } from 'react'
-import { activateShowroom } from './actions'
+import { activateAccount } from './actions'
 import { Alert, Button } from '@/components/ui'
 import { PasswordField } from '../_components/PasswordField'
 
 export function ActivateForm({ token }: { token: string }) {
-  const [state, action, pending] = useActionState(activateShowroom, null)
+  const [state, action, pending] = useActionState(activateAccount, null)
   return <form action={action} className="space-y-5">
     <input type="hidden" name="token" value={token} />
     {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
