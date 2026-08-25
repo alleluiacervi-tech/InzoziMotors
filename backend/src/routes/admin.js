@@ -8,6 +8,11 @@ const { recordAdminAction } = require('../lib/admin-audit');
 const { sendAccountInvite, sendResetCode, mailEnabled } = require('../lib/mailer');
 const { ACCOUNT_KINDS, createInvitedAccount } = require('../lib/accounts');
 const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
+const {
+  SETTING_KEY: DUTY_RATES_KEY,
+  validateRates: validateDutyRates,
+  invalidateDutyRates,
+} = require('../lib/duty-rates');
 
 const router = express.Router();
 
@@ -685,9 +690,19 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
   const validators = {
     listing_min_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 10,
     listing_recommended_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 20,
+    // The first setting that is an object rather than an integer. A form of
+    // twenty numbers cannot be corrected from "Invalid value for
+    // import_duty_rates", so this one reports which field is wrong.
+    [DUTY_RATES_KEY]: (value) => validateDutyRates(value).length === 0,
   };
   if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
-  if (!validators[key](req.body.value)) return res.status(400).json({ error: `Invalid value for ${key}` });
+  if (!validators[key](req.body.value)) {
+    if (key === DUTY_RATES_KEY) {
+      const problems = validateDutyRates(req.body.value);
+      return res.status(400).json({ error: problems[0], code: 'INVALID_DUTY_RATES', problems });
+    }
+    return res.status(400).json({ error: `Invalid value for ${key}` });
+  }
   try {
     const result = await require('../lib/tx').withTransaction(async (client) => {
       const before = await client.query('SELECT * FROM platform_settings WHERE key=$1 FOR UPDATE', [key]);
@@ -718,6 +733,9 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
       });
       return rows[0];
     });
+    // Otherwise the public calculator keeps serving the old rates for up to the
+    // cache TTL, and the operator reasonably concludes their edit did not save.
+    if (key === DUTY_RATES_KEY) invalidateDutyRates();
     res.json(result);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
