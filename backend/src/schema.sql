@@ -564,8 +564,13 @@ CREATE INDEX IF NOT EXISTS idx_price_history_car ON price_history(car_id);
 CREATE TABLE IF NOT EXISTS platform_fees (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   handover_id  UUID REFERENCES handovers(id),
-  seller_id    UUID NOT NULL REFERENCES users(id),
-  fee_type     TEXT NOT NULL CHECK (fee_type IN ('commission', 'certification', 'featured')),
+  -- Nullable only for 'inspection': a walk-in customer is not a seller.
+  -- platform_fees_seller_shape_check (0023) still requires it everywhere else.
+  seller_id    UUID REFERENCES users(id),
+  -- 'rental' was added by migration 0009 and never mirrored here, so a database
+  -- built from this file disagreed with one built from migrations. Repaired in
+  -- 0023 along with 'inspection'.
+  fee_type     TEXT NOT NULL CHECK (fee_type IN ('commission', 'certification', 'featured', 'rental', 'inspection')),
   amount       INT NOT NULL CHECK (amount >= 0),
   status       TEXT NOT NULL DEFAULT 'due' CHECK (status IN ('due', 'paid', 'waived')),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -579,6 +584,35 @@ CREATE INDEX IF NOT EXISTS idx_platform_fees_seller ON platform_fees(seller_id);
 ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS submission_id UUID REFERENCES submissions(id);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_certification
   ON platform_fees(submission_id) WHERE fee_type = 'certification';
+
+-- ── Walk-in inspection fees (migration 0023) ─────────────────────────────────
+-- Collected offline and recorded here. A correction is void-and-re-record, so
+-- the original row and the reason it was wrong both survive; 'waived' is the
+-- voided state, and excluding it from the unique index frees the slot.
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS inspection_id UUID REFERENCES inspections(id) ON DELETE CASCADE;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS payer_user_id UUID REFERENCES users(id);
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS method       TEXT;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS reference    TEXT;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS collected_at TIMESTAMPTZ;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS recorded_by  UUID REFERENCES users(id);
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS voided_at    TIMESTAMPTZ;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS voided_by    UUID REFERENCES users(id);
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS void_reason  TEXT;
+
+ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_seller_shape_check;
+ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_seller_shape_check
+  CHECK (fee_type = 'inspection' OR seller_id IS NOT NULL);
+ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_method_check;
+ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_method_check
+  CHECK (method IS NULL OR method IN ('cash', 'mobile_money', 'bank_transfer'));
+ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_inspection_shape_check;
+ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_inspection_shape_check
+  CHECK (fee_type <> 'inspection'
+         OR (inspection_id IS NOT NULL AND payer_user_id IS NOT NULL AND seller_id IS NULL));
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_inspection
+  ON platform_fees(inspection_id) WHERE fee_type = 'inspection' AND status <> 'waived';
+CREATE INDEX IF NOT EXISTS idx_platform_fees_payer ON platform_fees(payer_user_id);
 
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
 

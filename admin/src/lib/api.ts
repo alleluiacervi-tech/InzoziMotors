@@ -393,6 +393,16 @@ export const api = {
   cancelInspection: (id: string, reason?: string) =>
     request<{ cancelled: boolean }>(`/inspections/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
 
+  // The walk-in fee is collected at the counter and recorded here — nothing on
+  // this path moves money. A correction is a void plus a fresh record, never an
+  // edit, so the original entry and the reason it was wrong both survive.
+  recordInspectionFee: (id: string, data: { amount: number; method: 'cash' | 'mobile_money' | 'bank_transfer'; reference?: string }) =>
+    request<any>(`/inspections/${id}/fee`, { method: 'POST', body: JSON.stringify(data) }),
+  voidInspectionFee: (id: string, reason: string) =>
+    request<any>(`/inspections/${id}/fee`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
+  notifyReportReady: (id: string) =>
+    request<{ sent: boolean }>(`/inspections/${id}/report/notify`, { method: 'POST' }),
+
   // Handovers
   handovers: (status = 'pending') =>
     request<any[]>(`/handovers?status=${status}`),

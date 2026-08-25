@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { InspectionFee } from '@/components/InspectionFee'
 import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
@@ -35,6 +36,15 @@ export default function InspectionDetailPage() {
       })
       .catch((error) => toast(error.message, 'error'))
       .finally(() => setLoading(false))
+  }, [id, toast])
+
+  /** Re-read just the inspection after a fee is recorded or voided. The
+   *  checklist definition is static, and refetching the whole page would
+   *  discard verdicts the inspector has entered but not yet submitted. */
+  const reload = useCallback(() => {
+    api.getInspection(id)
+      .then((inspection) => setInsp((current: any) => ({ ...current, ...inspection })))
+      .catch((error) => toast(error.message, 'error'))
   }, [id, toast])
 
   const allItems = useMemo(
@@ -96,6 +106,12 @@ export default function InspectionDetailPage() {
       {/* A walk-in has no publication pipeline, so the rail hides itself there
           rather than drawing seven stages that can never complete. */}
       <JourneyRail subjectType="inspection" id={String(id)} className="mb-5" />
+
+      {/* Bookkeeping for a walk-in, and a deliberate non-gate: the report can
+          be issued and collected whether or not this has been filled in. */}
+      {insp.kind === 'standalone' ? (
+        <InspectionFee inspectionId={String(id)} fee={insp.fee ?? null} onChange={reload} />
+      ) : null}
 
       <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
