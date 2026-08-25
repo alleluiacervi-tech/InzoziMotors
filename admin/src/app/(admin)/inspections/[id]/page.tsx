@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
 
@@ -92,6 +93,10 @@ export default function InspectionDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
+      {/* A walk-in has no publication pipeline, so the rail hides itself there
+          rather than drawing seven stages that can never complete. */}
+      <JourneyRail subjectType="inspection" id={String(id)} className="mb-5" />
+
       <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

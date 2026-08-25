@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
+import { NextStep } from '@/components/dashboard/NextStep'
 import { Pipeline, stageIndex } from '@/components/dashboard/Pipeline'
 import { PriceEditor } from '@/components/dashboard/PriceEditor'
 import { settled } from '@/components/dashboard/data'
@@ -38,12 +39,15 @@ export default async function SellingPage() {
 
   const verified = user.id_verified === 'approved'
 
-  const [submissionResult, listingResult] = await Promise.allSettled([
+  const [submissionResult, listingResult, progressResult] = await Promise.allSettled([
     submissions.mine(token),
     sellerListings.mine(token),
+    submissions.progress(token),
   ])
   const mySubmissions = settled(submissionResult, [])
   const myListings = settled(listingResult, [])
+  // Progress is additive: if it fails the cards still render, minus one line.
+  const progress = settled(progressResult, {})
   const failed = submissionResult.status === 'rejected' || listingResult.status === 'rejected'
 
   const live = myListings.filter((car) => car.status === 'live')
@@ -151,6 +155,8 @@ export default async function SellingPage() {
                     ) : (
                       <div className="mt-5">
                         <Pipeline current={stageIndex(submission)} />
+                        {/* How far, then what now. */}
+                        <NextStep progress={progress[submission.id]} />
                       </div>
                     )}
 

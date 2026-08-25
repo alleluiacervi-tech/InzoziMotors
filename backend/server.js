@@ -239,6 +239,9 @@ app.use('/referrals',       require('./src/routes/referrals'));
 app.use('/disputes', (req, res, next) => req.method === 'POST'
   ? transactionFeatureRetired(req, res, next) : next(), require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));
+// Mounted ahead of /admin so the pipeline reads keep their own module rather
+// than growing the admin router further. Both are admin-gated identically.
+app.use('/admin/journey',   require('./src/routes/journey'));
 app.use('/admin',           require('./src/routes/admin'));
 app.use('/imports',         require('./src/routes/imports'));
 // Inspection centers. Admin-only CRUD over the table submissions.js already

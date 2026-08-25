@@ -4,6 +4,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
+const { vehicleJourney, sellerProgress } = require('../lib/vehicle-journey');
 const { notifyUser } = require('../lib/notify');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { withTransaction } = require('../lib/tx');
@@ -98,6 +99,32 @@ router.get('/', requireAuth, paginate(), async (req, res) => {
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /submissions/progress — where each of MY cars has reached.
+//
+// One call for the whole page rather than one per submission, and a projection
+// rather than the admin journey: see sellerProgress() in lib/vehicle-journey.js
+// for why the seller's sentences are an allowlist instead of a filter.
+router.get('/progress', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id FROM submissions WHERE seller_id = $1 ORDER BY submitted_at DESC LIMIT 50',
+      [req.user.id]
+    );
+    const progress = {};
+    for (const row of rows) {
+      const journey = await vehicleJourney(pool, 'submission', row.id);
+      const view = sellerProgress(journey);
+      if (view) progress[row.id] = view;
+    }
+    res.json(progress);
+  } catch (err) {
+    log.error('seller progress error', { error: err.message, userId: req.user.id });
+    // The selling page must render without this. A seller who cannot see the
+    // next step is inconvenienced; one who cannot see their cars is not.
+    res.json({});
   }
 });
 
