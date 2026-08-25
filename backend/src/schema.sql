@@ -95,8 +95,34 @@ CREATE TABLE IF NOT EXISTS inspections (
   passed            BOOLEAN NOT NULL DEFAULT FALSE,
   critical_failures JSONB NOT NULL DEFAULT '[]'::jsonb,
   notes             TEXT,
-  status            TEXT NOT NULL DEFAULT 'scheduled'
+  status            TEXT NOT NULL DEFAULT 'scheduled',
   -- scheduled | in_progress | complete
+
+  -- 'listing'    — evidence for a Sawa listing, always tied to a submission.
+  -- 'standalone' — a paid walk-in check on a vehicle Sawa does not list.
+  kind              TEXT NOT NULL DEFAULT 'listing',
+  customer_user_id  UUID REFERENCES users(id) ON DELETE SET NULL,
+  -- A walk-in carries its own vehicle identity; a listing inspection reads
+  -- these from its submission or its car.
+  vehicle_make      TEXT,
+  vehicle_model     TEXT,
+  vehicle_year      INT,
+  vehicle_vin       TEXT,
+  vehicle_plate     TEXT,
+  vehicle_mileage   INT,
+
+  CONSTRAINT inspections_kind_check CHECK (kind IN ('listing', 'standalone')),
+  -- The safety property, in the database rather than in seven gate queries: a
+  -- standalone inspection can never hold a submission_id or a car_id, and
+  -- every publication/contact/rental gate requires both. See migration 0022.
+  CONSTRAINT inspections_kind_shape_check CHECK (
+    (kind = 'listing' AND submission_id IS NOT NULL)
+    OR
+    (kind = 'standalone'
+       AND submission_id IS NULL AND car_id IS NULL
+       AND customer_user_id IS NOT NULL AND vehicle_make IS NOT NULL
+       AND vehicle_model IS NOT NULL AND vehicle_year IS NOT NULL)
+  )
 );
 
 -- ─── Handovers ───────────────────────────────────────────────────────────────

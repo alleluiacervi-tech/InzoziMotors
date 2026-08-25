@@ -3,7 +3,7 @@ const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
-const { parseIsoDate, isNotInPast, toTimestamp, toDisplayDate } = require('../lib/dates');
+const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
 const { notifyUser } = require('../lib/notify');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { withTransaction } = require('../lib/tx');
@@ -127,58 +127,10 @@ router.get('/admin/all', requireAdmin, async (req, res) => {
 const SUBMISSION_STATUSES = ['under_review', 'approved', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected'];
 
 // Resolve a scheduling choice against live operational data. Both the stable
-// center id and its display name are accepted, but the canonical name is what
-// gets stored on the inspection/report.
-//
-// Counts on scheduled_on (DATE), not the old scheduled_date text column. That
-// column held "2026-08-12" from the admin dashboard and "Aug 12" from the app,
-// compared as strings — so two bookings for the same day never matched each
-// other and daily_capacity did not hold at all. See migrations/0002.
-async function activeCenter(db, value) {
-  const normalized = String(value || '').trim();
-  if (!normalized) return null;
-  const centerRes = await db.query(
-    `SELECT id, name, daily_capacity
-       FROM inspection_centers
-      WHERE active = TRUE AND daily_capacity > 0
-        AND (lower(id) = lower($1) OR lower(name) = lower($1))
-      LIMIT 1`,
-    [normalized]
-  );
-  return centerRes.rows[0] || null;
-}
-
-// Returns an error string when the center's daily capacity is exhausted.
-async function centerCapacityError(db, center, isoDate, excludeSubmissionId = null) {
-  const cntRes = await db.query(
-    `SELECT COUNT(*) FROM inspections
-     WHERE lower(center) = lower($1) AND scheduled_on = $2::date
-       AND status IN ('scheduled', 'in_progress')
-       AND ($3::uuid IS NULL OR submission_id <> $3::uuid)`,
-    [center.name, isoDate, excludeSubmissionId]
-  );
-  if (Number(cntRes.rows[0].count) >= center.daily_capacity) {
-    return `${center.name} is fully booked on ${toDisplayDate(isoDate)} — choose another day or center`;
-  }
-  return null;
-}
-
-// One validation path for both scheduling routes. Returns { isoDate, display,
-// at } or an { error } the caller turns into a 400.
-function readSlot({ scheduled_date, scheduled_time }) {
-  const isoDate = parseIsoDate(scheduled_date);
-  if (!isoDate) {
-    return { error: 'scheduled_date must be an ISO date, for example 2026-08-12' };
-  }
-  if (!isNotInPast(isoDate)) {
-    return { error: 'That date has already passed — choose an upcoming day' };
-  }
-  const at = toTimestamp(isoDate, scheduled_time);
-  if (!at) {
-    return { error: 'scheduled_time must look like "10:00 AM"' };
-  }
-  return { isoDate, display: toDisplayDate(isoDate), at };
-}
+// Center lookup, capacity and slot validation are shared with the walk-in
+// inspection path — see lib/inspection-scheduling.js. scheduleInspection below
+// stays here because its ON CONFLICT (submission_id) upsert only makes sense
+// for a submission.
 
 const SUBMISSION_TRANSITIONS = {
   under_review: ['approved', 'scheduled', 'rejected'],

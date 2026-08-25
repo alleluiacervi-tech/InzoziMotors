@@ -230,6 +230,12 @@ export const auth = {
     request<{ user: User; token: string }>('/auth/accept-showroom-invite', {
       method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store',
     }),
+
+  /** Activate any admin-created account from its one-use invite link. */
+  acceptInvite: (token: string, password: string) =>
+    request<{ user: User; token: string }>('/auth/accept-invite', {
+      method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store',
+    }),
 }
 
 // ─── Authenticated ───────────────────────────────────────────────────────────
