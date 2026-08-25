@@ -397,3 +397,77 @@ async function vehicleJourney(db, subjectType, id) {
 }
 
 module.exports = { vehicleJourney, buildJourney, resolveAnchor, STAGE_KEYS, LABELS };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The seller's view of the same journey.
+//
+// Deliberately an ALLOWLIST of sentences rather than a filter over the admin
+// ones. The internal blockers carry operational phrasing and admin hrefs
+// ("Review the identity documents", "/users?tab=verification&focus=…"), and a
+// filter is a thing you can forget to update when a new blocker is added. A
+// lookup table can only ever emit what is written here.
+//
+// It is also a promise. Once a seller can read "waiting on Sawa · 6 days", that
+// number is something we are answerable for — so nothing here states a
+// timescale we have not committed to keeping.
+// ─────────────────────────────────────────────────────────────────────────────
+const SELLER_COPY = {
+  seller_verified: {
+    active_seller: 'Upload your identity documents so we can verify your account.',
+    active_us: 'We are reviewing your identity documents.',
+    blocked: 'Your identity documents were not accepted. Please upload clear photographs of a valid document.',
+  },
+  submitted: {
+    blocked: 'This submission was not accepted. The reason is on the submission itself.',
+  },
+  booked: {
+    active_us: 'We are arranging an inspection slot for your car.',
+  },
+  inspected: {
+    active_clock: 'Your inspection is booked. Bring the car and its papers to the centre.',
+    active_us: 'The inspection appointment was missed. We will be in touch to rebook it.',
+    blocked: 'The 150-point inspection found problems that need attention before the car can be listed.',
+  },
+  listing_created: {
+    active_us: 'Your car passed the inspection. We are preparing the listing.',
+  },
+  ready: {
+    active_us: 'We are finishing the listing — photographs and pricing.',
+  },
+  live: {
+    active_us: 'The listing is ready and will be published shortly.',
+  },
+};
+
+const WAITING_ON = { us: 'sawa', seller: 'you', clock: 'schedule', none: 'nobody' };
+
+/** Strip a journey down to what its own seller may see. */
+function sellerProgress(journey) {
+  if (!journey || journey.standalone) return null;
+  const stage = journey.stages.find((entry) => entry.key === journey.current_stage) || null;
+
+  let message = null;
+  if (stage) {
+    const copy = SELLER_COPY[stage.key] || {};
+    message = stage.state === 'blocked'
+      ? copy.blocked || null
+      : copy[`active_${stage.actor}`] || null;
+  } else if (journey.complete) {
+    message = 'Your car is live on the marketplace.';
+  }
+
+  return {
+    submission_id: journey.subject.submission_id,
+    car_id: journey.subject.car_id,
+    stages_done: journey.stages_done,
+    stages_total: journey.stages_total,
+    complete: journey.complete,
+    blocked: journey.blocked,
+    // 'you' is the only value that asks the seller to do something.
+    waiting_on: WAITING_ON[journey.actor] || 'nobody',
+    stage: stage ? { key: stage.key, label: stage.label } : null,
+    message,
+  };
+}
+
+module.exports.sellerProgress = sellerProgress;

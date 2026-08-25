@@ -318,3 +318,50 @@ test('the journey reads are admin-only and validate what they are given', async 
   await api().get('/admin/journey/car/not-a-uuid').set(auth).expect(400);
   await api().get('/admin/journey/car/00000000-0000-0000-0000-000000000000').set(auth).expect(404);
 });
+
+// ─── The seller's view ───────────────────────────────────────────────────────
+
+test('a seller sees their own progress and none of the operational detail', async () => {
+  const admin = await makeAdmin(await register());
+  const blocked = await pipeline(admin, { upTo: 'listing' });
+
+  const mine = await api().get('/submissions/progress')
+    .set('Authorization', `Bearer ${blocked.seller.token}`).expect(200);
+  const progress = mine.body[blocked.submissionId];
+  assert.ok(progress, 'the seller must see their own submission');
+  assert.equal(progress.waiting_on, 'sawa');
+  assert.equal(progress.complete, false);
+  assert.equal(progress.stage.key, 'ready');
+
+  // The allowlist is the point: no admin phrasing, no admin URLs, no blocker
+  // list, and nothing that names another party's record.
+  const serialised = JSON.stringify(progress);
+  assert.equal(progress.blockers, undefined);
+  assert.doesNotMatch(serialised, /\/users\?|\/listings\/|\/inspections\/|\/submissions\?/);
+  assert.doesNotMatch(serialised, /admin/i);
+  assert.match(progress.message, /we are finishing the listing/i);
+
+  // And a seller sees only their own.
+  const stranger = await register({ role: 'seller' });
+  const theirs = await api().get('/submissions/progress')
+    .set('Authorization', `Bearer ${stranger.token}`).expect(200);
+  assert.equal(theirs.body[blocked.submissionId], undefined);
+  await api().get('/submissions/progress').expect(401);
+});
+
+test('the seller is told plainly when the ball is in their court', async () => {
+  const admin = await makeAdmin(await register());
+  const seller = await register({ role: 'seller' });
+  const submission = await api().post('/submissions').set('Authorization', `Bearer ${seller.token}`)
+    .send({ make: 'Toyota', model: 'Yaris', year: 2017, mileage: 55000, asking_price: 8000000 })
+    .expect(201);
+
+  // No identity documents uploaded: the first stage is waiting on them.
+  const mine = await api().get('/submissions/progress')
+    .set('Authorization', `Bearer ${seller.token}`).expect(200);
+  const progress = mine.body[submission.body.id];
+  assert.equal(progress.waiting_on, 'you');
+  assert.match(progress.message, /upload your identity documents/i);
+  assert.equal(progress.stage.key, 'seller_verified');
+  void admin;
+});

@@ -296,8 +296,31 @@ export const saved = {
     request<{ success: true }>(`/saved-searches/${id}`, { token, method: 'DELETE' }),
 }
 
+/**
+ * Where one of my cars has reached, and who is holding it up.
+ *
+ * A projection of the same computation the Sawa team sees — not a second one —
+ * reduced on the server to what a seller may read. `waiting_on: 'you'` is the
+ * only value that asks the seller to do something.
+ */
+export type SellerProgress = {
+  submission_id: string | null
+  car_id: string | null
+  stages_done: number
+  stages_total: number
+  complete: boolean
+  blocked: boolean
+  waiting_on: 'sawa' | 'you' | 'schedule' | 'nobody'
+  stage: { key: string; label: string } | null
+  message: string | null
+}
+
 export const submissions = {
   mine: (token: string) => request<Submission[]>('/submissions', { token }),
+
+  /** Keyed by submission id. Answers {} rather than throwing — the selling page
+   *  must render without it. */
+  progress: (token: string) => request<Record<string, SellerProgress>>('/submissions/progress', { token }),
 
   /** Gated by requireVerified server-side — a 403 carries ID_VERIFICATION_REQUIRED. */
   create: (token: string, body: Record<string, unknown>) =>
