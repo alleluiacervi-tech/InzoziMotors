@@ -57,6 +57,12 @@ async function pipeline(admin, { upTo = 'live', verdict = 'pass', vehicle = {} }
   if (upTo === 'submitted') return { seller, submissionId };
 
   const day = nextDay();
+  // The database persists between runs, so a fixture day fills its centre after
+  // enough of them and the booking starts failing on capacity rather than on
+  // anything this test is about. Same guard the capacity tests already use.
+  await pool.query(
+    "DELETE FROM inspections WHERE lower(center)='nyarutarama center' AND scheduled_on=$1::date", [day]
+  );
   await api().patch(`/submissions/${submissionId}`).set(auth)
     .send({ status: 'scheduled', center: 'Nyarutarama Center', scheduled_date: day, scheduled_time: '10:00 AM' })
     .expect(200);

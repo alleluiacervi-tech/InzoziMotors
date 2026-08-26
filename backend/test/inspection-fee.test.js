@@ -42,9 +42,14 @@ async function makeAdmin(user) {
 }
 async function walkIn(admin, { complete = false } = {}) {
   const auth = { Authorization: `Bearer ${admin}` };
+  const day = nextDay();
+  // Fixture days repeat across runs and would eventually fill the centre.
+  await pool.query(
+    "DELETE FROM inspections WHERE lower(center)='nyarutarama center' AND scheduled_on=$1::date", [day]
+  );
   const booked = await api().post('/inspections/standalone').set(auth).send({
     make: 'Toyota', model: 'Prado', year: 2014,
-    center: 'Nyarutarama Center', scheduled_date: nextDay(), scheduled_time: '10:00 AM',
+    center: 'Nyarutarama Center', scheduled_date: day, scheduled_time: '10:00 AM',
     customer: { name: 'Paying Customer', email: unique('payer') },
   }).expect(201);
   if (complete) {

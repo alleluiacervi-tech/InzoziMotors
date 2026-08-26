@@ -171,21 +171,106 @@ export function formatRWF(amount) {
   return `RWF ${Math.round(value).toLocaleString('en-RW')}`;
 }
 
-// Rwanda RRA import duty calculation (2026 simplified rates)
-// ccBracket: 'small' (<1500cc), 'medium' (1500-2000cc), 'large' (2000-3000cc), 'xl' (>3000cc)
-export function calcRwandaDuty(vehicleValueUSD, ccBracket = 'medium') {
-  const EXCISE_RATES = { small: 0.10, medium: 0.20, large: 0.25, xl: 0.35 };
+// ─── Rwanda import duty ── mirrors calcRwandaDuty in web/src/lib/business.ts ──
+//
+// This block and its web twin must change together, or the app and the website
+// quote different landed costs for the same car.
+//
+// The RATES come from the server (GET /settings/duty-rates, pushed in by
+// AppContext) so a correction is data entry rather than an app release — which
+// matters more here than on the web, because a shipped build cannot be fixed
+// by a deploy. The BASES stay in code: a wrong base is a modelling error, not
+// a typo.
+//
+// What this replaced was wrong three times over: excise hardcoded at
+// 10/20/25/35% against an actual 5/10/15%, no withholding tax, and no EAC
+// depreciation allowance at all.
 
-  const cif = vehicleValueUSD * 1.12;              // add 12% freight + insurance
-  const customs = cif * 0.25;                      // 25% customs duty
-  const excise = cif * (EXCISE_RATES[ccBracket]);  // excise by displacement
-  const subtotal = cif + customs + excise;
-  const vat = subtotal * 0.18;                     // 18% VAT
-  const infra = cif * 0.015;                       // 1.5% infrastructure levy
+/** The last schedule a person reviewed. Used until the server answers, and
+ *  again if it never does — including offline, which is a normal state here. */
+export const FALLBACK_DUTY_RATES = {
+  freight_insurance_pct: 12,
+  customs_pct: 25,
+  vat_pct: 18,
+  withholding_pct: 5,
+  infrastructure_pct: 1.5,
+  excise_brackets: [
+    { max_cc: 1500, rate_pct: 5, label: 'Under 1500cc' },
+    { max_cc: 2500, rate_pct: 10, label: '1500 – 2500cc' },
+    { max_cc: null, rate_pct: 15, label: 'Over 2500cc' },
+  ],
+  depreciation: [
+    { min_age_years: 0, allowance_pct: 0 },
+    { min_age_years: 2, allowance_pct: 20 },
+    { min_age_years: 4, allowance_pct: 30 },
+    { min_age_years: 6, allowance_pct: 40 },
+    { min_age_years: 8, allowance_pct: 50 },
+    { min_age_years: 10, allowance_pct: 80 },
+  ],
+  reviewed_on: '2026-08-25',
+};
 
-  const totalDuties = customs + excise + vat + infra;
-  const grandTotal = vehicleValueUSD + totalDuties;
-  const effectiveRate = Math.round((totalDuties / vehicleValueUSD) * 100);
+let dutyRates = FALLBACK_DUTY_RATES;
 
-  return { cif, customs, excise, vat, infra, totalDuties, grandTotal, effectiveRate };
+export function setDutyRates(rates) {
+  if (rates && Array.isArray(rates.excise_brackets) && rates.excise_brackets.length) {
+    dutyRates = { ...FALLBACK_DUTY_RATES, ...rates };
+  }
+}
+
+export function getDutyRates() {
+  return dutyRates;
+}
+
+/** The final bracket is open-ended, so an engine larger than every stated
+ *  limit lands there rather than nowhere. */
+export function exciseBracketFor(cc, rates = dutyRates) {
+  return (
+    rates.excise_brackets.find((b) => b.max_cc === null || cc <= b.max_cc)
+    || rates.excise_brackets[rates.excise_brackets.length - 1]
+  );
+}
+
+/** EAC depreciation allowance for a vehicle of this age, in percent. */
+export function depreciationFor(ageYears, rates = dutyRates) {
+  let allowance = 0;
+  for (const band of rates.depreciation) {
+    if (ageYears >= band.min_age_years) allowance = band.allowance_pct;
+  }
+  return allowance;
+}
+
+/**
+ * Estimated landed cost in RWF.
+ *
+ * @param vehicleValueRwf value in RWF. The parameter was named
+ *        `vehicleValueUSD` while the arithmetic was pure percentages, so the
+ *        name was wrong rather than the maths.
+ */
+export function calcRwandaDuty(vehicleValueRwf, cc = 1800, ageYears = 0, rates = dutyRates) {
+  const pct = (n) => n / 100;
+  const bracket = exciseBracketFor(cc, rates);
+  const depreciationPct = depreciationFor(ageYears, rates);
+
+  const dutiableValue = vehicleValueRwf * (1 - pct(depreciationPct));
+  const cif = dutiableValue * (1 + pct(rates.freight_insurance_pct));
+
+  const customs = cif * pct(rates.customs_pct);
+  const excise = (cif + customs) * pct(bracket.rate_pct);
+  const vat = (cif + customs + excise) * pct(rates.vat_pct);
+  const withholding = cif * pct(rates.withholding_pct);
+  const infra = cif * pct(rates.infrastructure_pct);
+
+  const totalDuties = customs + excise + vat + withholding + infra;
+  const grandTotal = vehicleValueRwf + totalDuties;
+  // Guard the divide. An empty input field is zero, and this used to return NaN
+  // and render "NaN%" on the results card.
+  const effectiveRate = vehicleValueRwf > 0 ? Math.round((totalDuties / vehicleValueRwf) * 100) : 0;
+
+  return {
+    vehicleValue: vehicleValueRwf, dutiableValue, depreciationPct,
+    cif, customs, excise, exciseRatePct: bracket.rate_pct,
+    vat, withholding, infra, totalDuties, grandTotal, effectiveRate,
+    reviewedOn: rates.reviewed_on || null,
+  };
 }
