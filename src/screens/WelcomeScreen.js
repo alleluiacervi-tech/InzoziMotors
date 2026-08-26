@@ -46,8 +46,13 @@ export default function WelcomeScreen({ navigation }) {
   };
 
   const sell = () => {
-    navigation.replace('Main');
-    navigation.navigate('Sell');
+    // Replace the welcome route and add Sell in one transaction. The old
+    // replace-then-navigate pair raced on slower iPads, leaving the second
+    // action unhandled and making the button look broken to reviewers.
+    navigation.reset({
+      index: 1,
+      routes: [{ name: 'Main' }, { name: 'Sell' }],
+    });
   };
 
   return (
