@@ -268,6 +268,30 @@ function sendAccountInvite(email, name, { accountType, businessName, token }) {
   });
 }
 
+/**
+ * The walk-in report is ready to collect.
+ *
+ * Deliberately says what the report is and what it is not. Someone about to
+ * hand over several million francs is reading this, and the value of an
+ * independent inspection is precisely that it records condition on a date
+ * rather than promising anything about the car or the seller.
+ */
+function sendInspectionReportReady(email, name, { vehicle, score, grade, documentNumber }) {
+  return sendTemplate(email, `Your inspection report for the ${vehicle} is ready`, {
+    title: 'Your inspection report is ready',
+    preheader: `${score}/150 · collect it from the Sawa Cars office.`,
+    lines: [
+      `Hi ${name || 'there'} — we have finished the 150-point inspection on the ${vehicle}.`,
+      { strong: `${score}/150 · Grade ${grade}` },
+      'The full report lists every check and its result, including anything we flagged. Collect it at the office, where a member of the team can walk you through the findings.',
+      'This is an independent record of the vehicle’s condition on the day we inspected it. It is not a warranty, a valuation, or a recommendation to buy — and Sawa Cars has no interest in any sale of this vehicle.',
+      documentNumber
+        ? `Quote reference ${documentNumber} when you collect it. Questions about a finding? Write to ${CONTACT} or call ${PHONE}.`
+        : `Questions about a finding? Write to ${CONTACT} or call ${PHONE}.`,
+    ],
+  });
+}
+
 /** @deprecated Kept so older call sites keep working; delegates to the above. */
 function sendShowroomInvite(email, name, businessName, token) {
   return sendAccountInvite(email, name, { accountType: 'showroom', businessName, token });
@@ -423,6 +447,7 @@ module.exports = {
   sendResetCode,
   sendWelcome,
   sendAccountInvite,
+  sendInspectionReportReady,
   sendShowroomInvite,
   sendImportUpdate,
   sendPasswordChanged,

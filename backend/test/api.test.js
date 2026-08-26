@@ -410,6 +410,16 @@ test('rental inquiries only reach active verified providers and never create a b
       daily_rate: 65000,
       inspection_id: evidence.inspectionId,
       images: ['https://example.test/rental.jpg'],
+      // A rental car is only in the public catalogue while a listing
+      // subscription covers today (migration 0025). Created without one it is
+      // deliberately 'maintenance', so this inline period is what makes the
+      // inquiry below reachable at all — and it exercises inline creation.
+      subscription: {
+        amount_rwf: 50000,
+        method: 'cash',
+        starts_on: new Date().toISOString().slice(0, 10),
+        ends_on: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
+      },
     })
     .expect(201);
 

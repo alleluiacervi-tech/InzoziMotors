@@ -393,6 +393,16 @@ export const api = {
   cancelInspection: (id: string, reason?: string) =>
     request<{ cancelled: boolean }>(`/inspections/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
 
+  // The walk-in fee is collected at the counter and recorded here — nothing on
+  // this path moves money. A correction is a void plus a fresh record, never an
+  // edit, so the original entry and the reason it was wrong both survive.
+  recordInspectionFee: (id: string, data: { amount: number; method: 'cash' | 'mobile_money' | 'bank_transfer'; reference?: string }) =>
+    request<any>(`/inspections/${id}/fee`, { method: 'POST', body: JSON.stringify(data) }),
+  voidInspectionFee: (id: string, reason: string) =>
+    request<any>(`/inspections/${id}/fee`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
+  notifyReportReady: (id: string) =>
+    request<{ sent: boolean }>(`/inspections/${id}/report/notify`, { method: 'POST' }),
+
   // Handovers
   handovers: (status = 'pending') =>
     request<any[]>(`/handovers?status=${status}`),
@@ -638,6 +648,17 @@ export const api = {
   getRentalCar:  (id: string) => request<any>(`/rentals/${id}`),
   createRentalCar: (data: any) =>
     request<any>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
+  // Listing subscriptions. A lapse hides a car by falling out of the public
+  // predicates — nothing here sweeps or schedules anything, and a renewal takes
+  // effect on the next request.
+  rentalSubscriptions: (id: string) => request<any[]>(`/rentals/${id}/subscriptions`),
+  recordRentalSubscription: (id: string, data: {
+    amount_rwf: number; method?: 'cash' | 'mobile_money' | 'bank_transfer'
+    reference?: string; starts_on: string; ends_on: string; note?: string
+  }) => request<any>(`/rentals/${id}/subscriptions`, { method: 'POST', body: JSON.stringify(data) }),
+  voidRentalSubscription: (subId: string, reason: string) =>
+    request<any>(`/rentals/subscriptions/${subId}/void`, { method: 'POST', body: JSON.stringify({ reason }) }),
+
   updateRentalCar: (id: string, data: any) =>
     request<any>(`/rentals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 

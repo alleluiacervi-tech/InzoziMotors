@@ -1,7 +1,7 @@
 const express = require('express');
 const { log } = require('../lib/log');
 const pool = require('../db');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireAuth } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +12,7 @@ const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
 const { createInvitedAccount } = require('../lib/accounts');
-const { sendAccountInvite } = require('../lib/mailer');
+const { sendAccountInvite, sendInspectionReportReady } = require('../lib/mailer');
 const { issueInspectionReport } = require('../lib/documents/inspection-report');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
 const {
@@ -587,12 +587,21 @@ router.get('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
               COALESCE(c.model,   s.model,   i.vehicle_model)   AS display_model,
               COALESCE(c.year,    s.year,    i.vehicle_year)    AS display_year,
               COALESCE(c.mileage, s.mileage, i.vehicle_mileage) AS display_mileage,
-              COALESCE(c.vin, i.vehicle_vin)                    AS display_vin
+              COALESCE(c.vin, i.vehicle_vin)                    AS display_vin,
+              -- The live fee, so the detail page can say plainly whether this
+              -- walk-in has been paid for. A voided fee is 'waived' and does
+              -- not count, which is the same rule the unique index applies.
+              to_jsonb(fee.*) AS fee
        FROM inspections i
        LEFT JOIN submissions s ON s.id = i.submission_id
        LEFT JOIN users u ON u.id = s.seller_id
        LEFT JOIN users cust ON cust.id = i.customer_user_id
        LEFT JOIN cars c ON c.id = i.car_id
+       LEFT JOIN LATERAL (
+         SELECT * FROM platform_fees f
+          WHERE f.inspection_id = i.id AND f.fee_type = 'inspection' AND f.status <> 'waived'
+          LIMIT 1
+       ) fee ON TRUE
        WHERE i.id = $1`,
       [req.params.id]
     );
@@ -806,6 +815,204 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The inspection fee.
+//
+// Collected OFFLINE — cash, mobile money or a bank transfer at the counter —
+// and merely recorded here. Nothing in this file moves money; payments_enabled
+// stays false and locked, and there is no provider client in the tree to call.
+//
+// There is deliberately NO fee gate on issuing the report. A customer who has
+// paid at the desk and is standing there waiting must not be blocked because
+// somebody has not yet typed the receipt in; the admin sees a prominent "fee
+// not recorded" banner instead. Gating the PDF would turn a data-entry omission
+// into an argument at the counter.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FEE_METHODS = new Set(['cash', 'mobile_money', 'bank_transfer']);
+
+/** The one live fee for an inspection. A voided fee is 'waived' and excluded,
+ *  which is also what frees the unique index for a replacement. */
+async function liveFee(db, inspectionId) {
+  const { rows } = await db.query(
+    `SELECT * FROM platform_fees
+      WHERE inspection_id = $1 AND fee_type = 'inspection' AND status <> 'waived'`,
+    [inspectionId]
+  );
+  return rows[0] || null;
+}
+
+// POST /inspections/:id/fee — record what the customer paid.
+router.post('/:id/fee', requireAdmin, requireUuid('id'), async (req, res) => {
+  const amount = parseInt(req.body.amount, 10);
+  const method = String(req.body.method || '').trim();
+  if (!Number.isInteger(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'Enter the amount collected, in Rwandan francs' });
+  }
+  if (!FEE_METHODS.has(method)) {
+    return res.status(400).json({ error: `Method must be one of: ${[...FEE_METHODS].join(', ')}` });
+  }
+  try {
+    const fee = await withTransaction(async (client) => {
+      const found = await client.query('SELECT * FROM inspections WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!found.rows.length) { const e = new Error('Inspection not found'); e.status = 404; throw e; }
+      const inspection = found.rows[0];
+      // A listing inspection is part of what a seller already pays for through
+      // the certification fee; billing it again here would double-charge.
+      if (inspection.kind !== 'standalone') {
+        const e = new Error('Only a walk-in inspection is billed to a customer'); e.status = 409; throw e;
+      }
+      if (await liveFee(client, inspection.id)) {
+        const e = new Error('A fee is already recorded for this inspection. Void it before recording a different one.');
+        e.status = 409; e.code = 'FEE_ALREADY_RECORDED'; throw e;
+      }
+
+      const { rows } = await client.query(
+        `INSERT INTO platform_fees
+           (fee_type, inspection_id, payer_user_id, amount, status, method, reference,
+            collected_at, recorded_by)
+         VALUES ('inspection', $1, $2, $3, 'paid', $4, $5, COALESCE($6::timestamptz, NOW()), $7)
+         RETURNING *`,
+        [inspection.id, inspection.customer_user_id, amount, method,
+         String(req.body.reference || '').trim().slice(0, 120) || null,
+         req.body.collected_at || null, req.user.id]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'inspection.fee_recorded',
+        targetType: 'inspection', targetId: inspection.id,
+        summary: `Recorded RWF ${amount.toLocaleString('en-RW')} by ${method.replace('_', ' ')}`,
+        metadata: { amount_rwf: amount, method, fee_id: rows[0].id, payer_user_id: inspection.customer_user_id },
+      });
+      return rows[0];
+    });
+    res.status(201).json(fee);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    log.error('record inspection fee failed', { error: err.message });
+    res.status(500).json({ error: 'Could not record the fee' });
+  }
+});
+
+// DELETE /inspections/:id/fee — void a mistake.
+//
+// Not an edit: PATCH /admin/fees/:id is a deliberate 410 stub, and for good
+// reason — a recorded receipt that can be silently rewritten is not a record.
+// Voiding keeps the original row and the reason it was wrong, and frees the
+// unique index so the correct amount can be entered.
+router.delete('/:id/fee', requireAdmin, requireUuid('id'), async (req, res) => {
+  const reason = String((req.body && req.body.reason) || '').trim();
+  if (reason.length < 4) {
+    return res.status(400).json({ error: 'Say why the fee is being voided — it stays on the record' });
+  }
+  try {
+    const voided = await withTransaction(async (client) => {
+      const fee = await liveFee(client, req.params.id);
+      if (!fee) { const e = new Error('No fee is recorded for this inspection'); e.status = 404; throw e; }
+      const { rows } = await client.query(
+        `UPDATE platform_fees
+            SET status = 'waived', voided_at = NOW(), voided_by = $1, void_reason = $2
+          WHERE id = $3 RETURNING *`,
+        [req.user.id, reason.slice(0, 500), fee.id]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'inspection.fee_voided',
+        targetType: 'inspection', targetId: req.params.id,
+        summary: `Voided RWF ${Number(fee.amount).toLocaleString('en-RW')}: ${reason.slice(0, 120)}`,
+        metadata: { fee_id: fee.id, amount_rwf: Number(fee.amount), reason: reason.slice(0, 500) },
+      });
+      return rows[0];
+    });
+    res.json(voided);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('void inspection fee failed', { error: err.message });
+    res.status(500).json({ error: 'Could not void the fee' });
+  }
+});
+
+// GET /inspections/:id/report/customer-file — the customer collects what they
+// paid for.
+//
+// Owner-or-admin, and a mismatch answers 404 rather than 403: a stranger
+// guessing ids should not be able to learn that an inspection exists, let alone
+// whose it is. Same pattern as the import document routes.
+router.get('/:id/report/customer-file', requireAuth, requireUuid('id'), async (req, res) => {
+  try {
+    const owner = await pool.query(
+      "SELECT customer_user_id FROM inspections WHERE id = $1 AND kind = 'standalone'",
+      [req.params.id]
+    );
+    if (!owner.rows.length
+        || (req.user.role !== 'admin' && owner.rows[0].customer_user_id !== req.user.id)) {
+      throw new DocumentError('Report not found', 404);
+    }
+    const document = await downloadableDocument(
+      await documentForSubject('inspection_report', 'inspection', req.params.id)
+    );
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition',
+      `${req.query.download === '1' ? 'attachment' : 'inline'}; filename="${document.filename}"`);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (document.file_size) res.setHeader('Content-Length', String(document.file_size));
+    const stream = fs.createReadStream(document.absolutePath);
+    stream.on('error', (error) => {
+      log.error('customer report stream error', { id: req.params.id, error: error.message });
+      if (!res.headersSent) res.status(500).json({ error: 'Could not read the inspection report' });
+      else res.destroy();
+    });
+    stream.pipe(res);
+  } catch (error) { documentFailure(res, error); }
+});
+
+// POST /inspections/:id/report/notify — tell the customer it is ready.
+//
+// Separate from issuing the PDF on purpose: issuing is idempotent and may be
+// retried, and nobody should receive four emails because a download failed
+// three times.
+router.post('/:id/report/notify', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.id, i.score, i.status, i.vehicle_make, i.vehicle_model, i.vehicle_year,
+              u.name AS customer_name, u.email AS customer_email
+         FROM inspections i
+         LEFT JOIN users u ON u.id = i.customer_user_id
+        WHERE i.id = $1 AND i.kind = 'standalone'`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Walk-in inspection not found' });
+    const inspection = rows[0];
+    if (inspection.status !== 'complete') {
+      return res.status(409).json({ error: 'Complete the inspection before telling the customer it is ready' });
+    }
+    if (!inspection.customer_email) {
+      return res.status(409).json({ error: 'This inspection has no customer account to notify' });
+    }
+
+    let documentNumber = null;
+    try {
+      documentNumber = (await documentForSubject('inspection_report', 'inspection', inspection.id)).document_number;
+    } catch { /* The report may not be issued yet; the email still stands. */ }
+
+    const score = Number(inspection.score);
+    const sent = await sendInspectionReportReady(inspection.customer_email, inspection.customer_name, {
+      vehicle: [inspection.vehicle_year, inspection.vehicle_make, inspection.vehicle_model].filter(Boolean).join(' '),
+      score, grade: grade(score), documentNumber,
+    });
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'inspection.report_notified',
+      targetType: 'inspection', targetId: inspection.id,
+      summary: sent ? 'Told the customer their report is ready' : 'Report-ready email could not be sent',
+      metadata: { sent, document_number: documentNumber },
+    });
+    res.json({ sent });
+  } catch (err) {
+    log.error('notify report ready failed', { error: err.message });
+    res.status(500).json({ error: 'Could not send the notification' });
   }
 });
 

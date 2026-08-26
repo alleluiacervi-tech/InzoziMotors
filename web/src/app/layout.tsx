@@ -4,8 +4,9 @@ import { BrandSplash } from '@/components/layout/BrandSplash'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { getCurrentUser } from '@/lib/session'
-import { fx } from '@/lib/api'
-import { setRwfRate } from '@/lib/business'
+import { duty, fx } from '@/lib/api'
+import { setDutyRates, setRwfRate } from '@/lib/business'
+import { DutySync } from '@/components/DutySync'
 import { FxSync } from '@/components/FxSync'
 import { SITE } from '@/lib/site'
 import './globals.css'
@@ -104,6 +105,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const rate = await fx.get()
   setRwfRate(rate.rate)
 
+  // The import duty schedule, on the same pattern: pushed in for server
+  // components here, repeated by <DutySync/> for the client bundle. Answers
+  // null rather than throwing, and lib/business keeps the reviewed fallback.
+  const dutyRates = await duty.rates()
+  setDutyRates(dutyRates)
+
   return (
     // The inline splash script below may add `splash-done` before React
     // hydrates. That difference is intentional (it prevents a repeat-visit
@@ -125,6 +132,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to main content
         </a>
         <FxSync rate={rate.rate} />
+        <DutySync rates={dutyRates} />
         <Header user={user} />
         <main id="main" className="flex-1">
           {children}

@@ -3,7 +3,7 @@ import { DEFAULT_CAR_IMAGE, DEFAULT_CAR_IMAGES, STUDIO } from '../data/carImageA
 import { categories, formatPrice, formatMiles, cars as mockCars, conversations as initialConversations, sellerListings as initialSellerListings } from '../data/cars';
 import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
 import { RENTAL_CARS } from '../data/rentals';
-import { setRwfRate } from '../data/marketData';
+import { setRwfRate, setDutyRates } from '../data/marketData';
 import authApi from '../api/auth';
 import carsApi from '../api/cars';
 import submissionsApi from '../api/submissions';
@@ -259,7 +259,7 @@ export function AppProvider({ children }) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     (async () => {
-      const [ids, searches, inquiries, cur, mode, viewed, fxCached] = await Promise.all([
+      const [ids, searches, inquiries, cur, mode, viewed, fxCached, dutyCached] = await Promise.all([
         getJSON('savedCarIds'),
         getJSON('savedSearches'),
         getJSON('rentalInquiries'),
@@ -267,6 +267,7 @@ export function AppProvider({ children }) {
         getJSON('homeMode'),
         getJSON('recentlyViewedIds'),
         getJSON('fxRate'),
+        getJSON('dutyRates'),
       ]);
       if (ids) setSavedCarIds(ids);
       if (searches) setSavedSearches(searches);
@@ -282,6 +283,22 @@ export function AppProvider({ children }) {
           if (fx?.rate) {
             setRwfRate(fx.rate);
             setJSON('fxRate', { rate: fx.rate, fetched_at: fx.fetched_at });
+          }
+        })
+        .catch(() => {});
+
+      // The import duty schedule, on exactly the same footing: cached copy
+      // first so an offline start still calculates, then the live one. It
+      // matters more here than on the web — a shipped build cannot be corrected
+      // by a deploy, so a wrong rate would live in people's pockets until they
+      // updated. Best-effort throughout; marketData keeps the reviewed
+      // fallback and boot never waits on this.
+      if (dutyCached) setDutyRates(dutyCached);
+      api.get('/settings/duty-rates')
+        .then((rates) => {
+          if (rates?.excise_brackets?.length) {
+            setDutyRates(rates);
+            setJSON('dutyRates', rates);
           }
         })
         .catch(() => {});

@@ -85,7 +85,10 @@ export function NumberField({
   )
 }
 
-export type ChipOption<T extends string> = {
+// Numbers as well as strings: the duty calculator's brackets are keyed by
+// engine displacement and vehicle age, and mapping those through string keys
+// only to parse them back is exactly the kind of round trip that loses a value.
+export type ChipOption<T extends string | number> = {
   value: T
   label: string
   hint?: string
@@ -96,7 +99,7 @@ export type ChipOption<T extends string> = {
  * correct group semantics for free, which a div-with-role never quite matches.
  * Selected state is one of the few places brand red is allowed.
  */
-export function ChipGroup<T extends string>({
+export function ChipGroup<T extends string | number>({
   name,
   legend,
   options,

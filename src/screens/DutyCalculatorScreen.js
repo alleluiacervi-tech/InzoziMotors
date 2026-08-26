@@ -6,13 +6,25 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
-import { calcRwandaDuty, formatRWF } from '../data/marketData';
+import { calcRwandaDuty, formatRWF, getDutyRates } from '../data/marketData';
 
-const CC_OPTIONS = [
-  { id: 'small', label: '< 1,500 cc', rate: '10%', desc: 'City cars, small hatchbacks' },
-  { id: 'medium', label: '1,500 – 2,000 cc', rate: '20%', desc: 'Most sedans, crossovers' },
-  { id: 'large', label: '2,000 – 3,000 cc', rate: '25%', desc: 'Mid-size SUVs, V6 engines' },
-  { id: 'xl', label: '> 3,000 cc', rate: '35%', desc: 'Large SUVs, luxury, V8+' },
+// The brackets, their labels AND their percentages all come from the schedule
+// the server holds. They used to be hardcoded here — including the rate badge —
+// so a label could disagree with the arithmetic behind it, and the label is the
+// part a reader believes.
+const CC_DESCRIPTIONS = [
+  'City cars, small hatchbacks',
+  'Most sedans, crossovers',
+  'Mid-size SUVs, luxury, V8+',
+];
+
+const AGE_OPTIONS = [
+  { years: 0, label: 'Under 2 years' },
+  { years: 3, label: '2 – 4 years' },
+  { years: 5, label: '4 – 6 years' },
+  { years: 7, label: '6 – 8 years' },
+  { years: 9, label: '8 – 10 years' },
+  { years: 11, label: 'Over 10 years' },
 ];
 
 function DutyRow({ label, amount, accent, bold }) {
@@ -29,8 +41,17 @@ function DutyRow({ label, amount, accent, bold }) {
 }
 
 export default function DutyCalculatorScreen({ navigation }) {
+  const rates = getDutyRates();
+  const ccOptions = rates.excise_brackets.map((bracket, index) => ({
+    id: bracket.max_cc ?? Number.MAX_SAFE_INTEGER,
+    label: bracket.label,
+    rate: `${bracket.rate_pct}%`,
+    desc: CC_DESCRIPTIONS[index] || '',
+  }));
+
   const [carValue, setCarValue] = useState('');
-  const [ccBracket, setCcBracket] = useState('medium');
+  const [ccBracket, setCcBracket] = useState(ccOptions[0]?.id ?? 1500);
+  const [ageYears, setAgeYears] = useState(0);
   const [showResult, setShowResult] = useState(false);
 
   const valueNum = parseFloat(carValue.replace(/,/g, '')) || 0;
@@ -40,7 +61,7 @@ export default function DutyCalculatorScreen({ navigation }) {
     setShowResult(true);
   };
 
-  const duty = valueNum > 0 ? calcRwandaDuty(valueNum, ccBracket) : null;
+  const duty = valueNum > 0 ? calcRwandaDuty(valueNum, ccBracket, ageYears, rates) : null;
 
   return (
     <Screen background={colors.bg}>
@@ -57,7 +78,7 @@ export default function DutyCalculatorScreen({ navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.introTitle}>Rwanda RRA Import Duty</Text>
             <Text style={styles.introSub}>
-              Most cars in Rwanda are imported. This calculator estimates the total duty payable to Rwanda Revenue Authority based on 2026 rates.
+              Most cars in Rwanda are imported. This calculator estimates the total duty payable to Rwanda Revenue Authority.{rates.reviewed_on ? ` Rates last reviewed ${rates.reviewed_on}.` : ''}
             </Text>
           </View>
         </View>
@@ -80,7 +101,7 @@ export default function DutyCalculatorScreen({ navigation }) {
         {/* Engine CC bracket */}
         <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Engine displacement</Text>
         <View style={styles.ccOptions}>
-          {CC_OPTIONS.map((opt) => (
+          {ccOptions.map((opt) => (
             <Pressable
               key={opt.id}
               style={[styles.ccOption, ccBracket === opt.id && styles.ccOptionActive]}
@@ -95,6 +116,23 @@ export default function DutyCalculatorScreen({ navigation }) {
                 </View>
               </View>
               <Text style={[styles.ccDesc, ccBracket === opt.id && styles.ccDescActive]}>{opt.desc}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Vehicle age — an older car is assessed on a reduced value under the
+            EAC depreciation schedule, which the old calculator ignored entirely. */}
+        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Vehicle age</Text>
+        <View style={styles.ccOptions}>
+          {AGE_OPTIONS.map((opt) => (
+            <Pressable
+              key={opt.years}
+              style={[styles.ccOption, ageYears === opt.years && styles.ccOptionActive]}
+              onPress={() => { setAgeYears(opt.years); setShowResult(false); }}
+            >
+              <View style={styles.ccTop}>
+                <Text style={[styles.ccLabel, ageYears === opt.years && styles.ccLabelActive]}>{opt.label}</Text>
+              </View>
             </Pressable>
           ))}
         </View>
@@ -118,15 +156,19 @@ export default function DutyCalculatorScreen({ navigation }) {
             </View>
 
             {/* CIF value */}
-            <DutyRow label="CIF Value (vehicle + freight + insurance)" amount={duty.cif} />
+            {duty.depreciationPct > 0 ? (
+              <DutyRow label={`Value assessed for duty (−${duty.depreciationPct}% for age)`} amount={duty.dutiableValue} />
+            ) : null}
+            <DutyRow label="CIF Value (assessed value + freight + insurance)" amount={duty.cif} />
 
             <View style={styles.resultDivider} />
 
             <Text style={styles.resultSectionLabel}>DUTIES APPLIED</Text>
             <DutyRow label="Customs Duty (25% of CIF)" amount={duty.customs} />
-            <DutyRow label={`Excise Duty (${CC_OPTIONS.find(o => o.id === ccBracket)?.rate} of CIF)`} amount={duty.excise} />
-            <DutyRow label="VAT — 18% (on CIF + duties)" amount={duty.vat} />
-            <DutyRow label="Infrastructure Levy (1.5% of CIF)" amount={duty.infra} />
+            <DutyRow label={`Excise Duty (${duty.exciseRatePct}% of CIF + customs)`} amount={duty.excise} />
+            <DutyRow label={`VAT — ${rates.vat_pct}% (on CIF + duties)`} amount={duty.vat} />
+            <DutyRow label={`Withholding Tax (${rates.withholding_pct}% of CIF)`} amount={duty.withholding} />
+            <DutyRow label={`Infrastructure Levy (${rates.infrastructure_pct}% of CIF)`} amount={duty.infra} />
 
             <View style={styles.resultDivider} />
 

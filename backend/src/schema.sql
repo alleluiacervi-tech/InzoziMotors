@@ -500,7 +500,9 @@ CREATE TABLE IF NOT EXISTS rental_cars (
   location         TEXT,                 -- neighbourhood the car is kept in
   images           TEXT[],
   safari_ready     BOOLEAN NOT NULL DEFAULT FALSE,  -- 4x4 fit for park trips
-  status           TEXT NOT NULL DEFAULT 'active',  -- active | maintenance | retired
+  -- rentals.js validated this set on write; migration 0025 finally constrains it.
+  status           TEXT NOT NULL DEFAULT 'active'
+                     CHECK (status IN ('active', 'maintenance', 'retired')),
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS safari_ready BOOLEAN NOT NULL DEFAULT FALSE;
@@ -564,8 +566,13 @@ CREATE INDEX IF NOT EXISTS idx_price_history_car ON price_history(car_id);
 CREATE TABLE IF NOT EXISTS platform_fees (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   handover_id  UUID REFERENCES handovers(id),
-  seller_id    UUID NOT NULL REFERENCES users(id),
-  fee_type     TEXT NOT NULL CHECK (fee_type IN ('commission', 'certification', 'featured')),
+  -- Nullable only for 'inspection': a walk-in customer is not a seller.
+  -- platform_fees_seller_shape_check (0023) still requires it everywhere else.
+  seller_id    UUID REFERENCES users(id),
+  -- 'rental' was added by migration 0009 and never mirrored here, so a database
+  -- built from this file disagreed with one built from migrations. Repaired in
+  -- 0023 along with 'inspection'.
+  fee_type     TEXT NOT NULL CHECK (fee_type IN ('commission', 'certification', 'featured', 'rental', 'inspection')),
   amount       INT NOT NULL CHECK (amount >= 0),
   status       TEXT NOT NULL DEFAULT 'due' CHECK (status IN ('due', 'paid', 'waived')),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -580,7 +587,64 @@ ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS submission_id UUID REFERENCES
 CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_certification
   ON platform_fees(submission_id) WHERE fee_type = 'certification';
 
+-- ── Walk-in inspection fees (migration 0023) ─────────────────────────────────
+-- Collected offline and recorded here. A correction is void-and-re-record, so
+-- the original row and the reason it was wrong both survive; 'waived' is the
+-- voided state, and excluding it from the unique index frees the slot.
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS inspection_id UUID REFERENCES inspections(id) ON DELETE CASCADE;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS payer_user_id UUID REFERENCES users(id);
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS method       TEXT;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS reference    TEXT;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS collected_at TIMESTAMPTZ;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS recorded_by  UUID REFERENCES users(id);
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS voided_at    TIMESTAMPTZ;
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS voided_by    UUID REFERENCES users(id);
+ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS void_reason  TEXT;
+
+ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_seller_shape_check;
+ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_seller_shape_check
+  CHECK (fee_type = 'inspection' OR seller_id IS NOT NULL);
+ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_method_check;
+ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_method_check
+  CHECK (method IS NULL OR method IN ('cash', 'mobile_money', 'bank_transfer'));
+ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_inspection_shape_check;
+ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_inspection_shape_check
+  CHECK (fee_type <> 'inspection'
+         OR (inspection_id IS NOT NULL AND payer_user_id IS NOT NULL AND seller_id IS NULL));
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_inspection
+  ON platform_fees(inspection_id) WHERE fee_type = 'inspection' AND status <> 'waived';
+CREATE INDEX IF NOT EXISTS idx_platform_fees_payer ON platform_fees(payer_user_id);
+
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
+
+-- ─── Rental listing subscriptions (migration 0025) ───────────────────────────
+-- A provider pays per vehicle to keep a car in the public catalogue. Collected
+-- offline and recorded here. A lapse hides the car by falling out of the three
+-- public predicates in routes/rentals.js — this backend has no scheduler, and
+-- expiry that needs one is expiry that eventually does not happen.
+--
+-- rental_cars.status is never touched on lapse: status is what the operator
+-- said about the vehicle, the subscription is what the business says about the
+-- listing, and a renewal must not republish a car somebody parked.
+CREATE TABLE IF NOT EXISTS rental_subscriptions (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rental_car_id  UUID NOT NULL REFERENCES rental_cars(id) ON DELETE CASCADE,
+  amount_rwf     INT NOT NULL CHECK (amount_rwf >= 0),
+  method         TEXT CHECK (method IS NULL OR method IN ('cash', 'mobile_money', 'bank_transfer')),
+  reference      TEXT,
+  starts_on      DATE NOT NULL,
+  ends_on        DATE NOT NULL,
+  note           TEXT,
+  recorded_by    UUID REFERENCES users(id),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  voided_at      TIMESTAMPTZ,
+  voided_by      UUID REFERENCES users(id),
+  void_reason    TEXT,
+  CONSTRAINT rental_subscriptions_period_check CHECK (ends_on >= starts_on)
+);
+CREATE INDEX IF NOT EXISTS idx_rental_subscriptions_car
+  ON rental_subscriptions(rental_car_id, ends_on DESC) WHERE voided_at IS NULL;
 
 -- ─── Inspection centers — capacity-aware scheduling ──────────────────────────
 CREATE TABLE IF NOT EXISTS inspection_centers (

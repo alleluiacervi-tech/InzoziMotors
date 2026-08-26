@@ -1,3 +1,4 @@
+import type { DutyRates } from '@/lib/business'
 import type {
   AppNotification, Car, CarQuery, Conversation, InspectionCenter, InspectionReport,
   Message, RentalCar, RentalInquiry, Review, SavedSearch, Submission, TrustScore, User,
@@ -136,6 +137,25 @@ export const fx = {
       return await request('/fx', { revalidate: 3600, cache: undefined, timeoutMs: 4000 })
     } catch {
       return { rate: 1470, source: 'client-fallback', fetched_at: null, stale: true }
+    }
+  },
+}
+
+export const duty = {
+  /**
+   * The import duty schedule the calculator runs on. Cached for an hour by
+   * Next; the rates change perhaps twice a year and a correction reaches the
+   * site within that.
+   *
+   * Returns null rather than throwing, so lib/business falls back to the last
+   * schedule a person reviewed — a calculator that renders nothing is worse
+   * than one that renders dated figures and dates them.
+   */
+  rates: async (): Promise<DutyRates | null> => {
+    try {
+      return await request<DutyRates>('/settings/duty-rates', { revalidate: 3600, cache: undefined, timeoutMs: 4000 })
+    } catch {
+      return null
     }
   },
 }

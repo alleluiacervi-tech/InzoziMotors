@@ -145,37 +145,163 @@ export const FINANCE_TERMS = {
   downPaymentPct: DOWN_PAYMENT * 100,
 }
 
-// ─── Rwanda RRA import duty ── mirrors calcRwandaDuty in marketData.js ───────
-export type CcBracket = 'small' | 'medium' | 'large' | 'xl'
+// ─── Rwanda import duty ── mirrors calcRwandaDuty in src/data/marketData.js ──
+//
+// This block and its mobile twin must change together, or the website and the
+// app quote different landed costs for the same car.
+//
+// The RATES arrive from the server (GET /settings/duty-rates) so a correction
+// is data entry rather than a release. The BASES below — what each percentage
+// is charged on, and in what order — stay here in code, because choosing the
+// wrong base is a modelling error rather than a typo.
+//
+// What this replaced was wrong three times over: excise hardcoded at
+// 10/20/25/35% against an actual 5/10/15%, no withholding tax, and no EAC
+// depreciation allowance at all. It therefore overstated excise while ignoring
+// relief, worst on the older cars most buyers here are pricing.
 
-export const CC_BRACKETS: { key: CcBracket; label: string; hint: string }[] = [
-  { key: 'small', label: 'Under 1500cc', hint: '10% excise' },
-  { key: 'medium', label: '1500 – 2000cc', hint: '20% excise' },
-  { key: 'large', label: '2000 – 3000cc', hint: '25% excise' },
-  { key: 'xl', label: 'Over 3000cc', hint: '35% excise' },
-]
+export type ExciseBracket = { max_cc: number | null; rate_pct: number; label: string }
+export type DepreciationBand = { min_age_years: number; allowance_pct: number }
+
+export type DutyRates = {
+  freight_insurance_pct: number
+  customs_pct: number
+  vat_pct: number
+  withholding_pct: number
+  infrastructure_pct: number
+  excise_brackets: ExciseBracket[]
+  depreciation: DepreciationBand[]
+  reviewed_on?: string
+  source?: string
+}
+
+/** The last schedule reviewed by a person. Used until the server answers, and
+ *  again if it never does — a calculator that renders nothing is worse than one
+ *  that renders dated figures and says so. */
+export const FALLBACK_DUTY_RATES: DutyRates = {
+  freight_insurance_pct: 12,
+  customs_pct: 25,
+  vat_pct: 18,
+  withholding_pct: 5,
+  infrastructure_pct: 1.5,
+  excise_brackets: [
+    { max_cc: 1500, rate_pct: 5, label: 'Under 1500cc' },
+    { max_cc: 2500, rate_pct: 10, label: '1500 – 2500cc' },
+    { max_cc: null, rate_pct: 15, label: 'Over 2500cc' },
+  ],
+  depreciation: [
+    { min_age_years: 0, allowance_pct: 0 },
+    { min_age_years: 2, allowance_pct: 20 },
+    { min_age_years: 4, allowance_pct: 30 },
+    { min_age_years: 6, allowance_pct: 40 },
+    { min_age_years: 8, allowance_pct: 50 },
+    { min_age_years: 10, allowance_pct: 80 },
+  ],
+  reviewed_on: '2026-08-25',
+}
+
+// Same module-variable pattern as the FX rate above: the root layout pushes the
+// server value in before rendering, and <DutySync/> repeats it for the client
+// bundle, which is a separate module instance.
+let dutyRates: DutyRates = FALLBACK_DUTY_RATES
+
+export function setDutyRates(rates: DutyRates | null | undefined): void {
+  if (rates && Array.isArray(rates.excise_brackets) && rates.excise_brackets.length) {
+    dutyRates = { ...FALLBACK_DUTY_RATES, ...rates }
+  }
+}
+
+export function getDutyRates(): DutyRates {
+  return dutyRates
+}
+
+/** The bracket a displacement falls into. The final bracket is open-ended, so
+ *  an engine larger than every stated limit lands there rather than nowhere. */
+export function exciseBracketFor(cc: number, rates: DutyRates = dutyRates): ExciseBracket {
+  return (
+    rates.excise_brackets.find((bracket) => bracket.max_cc === null || cc <= bracket.max_cc) ??
+    rates.excise_brackets[rates.excise_brackets.length - 1]
+  )
+}
+
+/** The EAC allowance for a vehicle of this age, in percent of dutiable value. */
+export function depreciationFor(ageYears: number, rates: DutyRates = dutyRates): number {
+  const bands = rates.depreciation
+  let allowance = 0
+  for (const band of bands) {
+    if (ageYears >= band.min_age_years) allowance = band.allowance_pct
+  }
+  return allowance
+}
+
+export type DutyBreakdown = {
+  vehicleValue: number
+  dutiableValue: number
+  depreciationPct: number
+  cif: number
+  customs: number
+  excise: number
+  exciseRatePct: number
+  vat: number
+  withholding: number
+  infra: number
+  totalDuties: number
+  grandTotal: number
+  effectiveRate: number
+  reviewedOn: string | null
+}
 
 /**
- * Estimated RRA landed cost. Most cars in Rwanda are imported, so total cost of
+ * Estimated landed cost in RWF. Most cars here are imported, so total cost of
  * ownership is the number buyers actually compare — not the sticker price.
+ *
+ * @param vehicleValueRwf the vehicle's value in RWF. It was called
+ *        `vehicleValueUSD` while the arithmetic was pure percentages, so the
+ *        name was simply wrong rather than the maths.
+ * @param cc engine displacement, which selects the excise bracket.
+ * @param ageYears vehicle age, which selects the EAC depreciation allowance.
  */
-export function calcRwandaDuty(vehicleValueUSD: number, ccBracket: CcBracket = 'medium') {
-  const EXCISE_RATES: Record<CcBracket, number> = {
-    small: 0.1, medium: 0.2, large: 0.25, xl: 0.35,
+export function calcRwandaDuty(
+  vehicleValueRwf: number,
+  cc = 1800,
+  ageYears = 0,
+  rates: DutyRates = dutyRates
+): DutyBreakdown {
+  const pct = (n: number) => n / 100
+  const bracket = exciseBracketFor(cc, rates)
+  const depreciationPct = depreciationFor(ageYears, rates)
+
+  // Depreciation reduces the value duty is assessed on, before anything else.
+  const dutiableValue = vehicleValueRwf * (1 - pct(depreciationPct))
+  const cif = dutiableValue * (1 + pct(rates.freight_insurance_pct))
+
+  const customs = cif * pct(rates.customs_pct)
+  const excise = (cif + customs) * pct(bracket.rate_pct)
+  const vat = (cif + customs + excise) * pct(rates.vat_pct)
+  const withholding = cif * pct(rates.withholding_pct)
+  const infra = cif * pct(rates.infrastructure_pct)
+
+  const totalDuties = customs + excise + vat + withholding + infra
+  const grandTotal = vehicleValueRwf + totalDuties
+  // Guard the divide: a zero value is what an empty input field produces.
+  const effectiveRate = vehicleValueRwf > 0 ? Math.round((totalDuties / vehicleValueRwf) * 100) : 0
+
+  return {
+    vehicleValue: vehicleValueRwf,
+    dutiableValue,
+    depreciationPct,
+    cif,
+    customs,
+    excise,
+    exciseRatePct: bracket.rate_pct,
+    vat,
+    withholding,
+    infra,
+    totalDuties,
+    grandTotal,
+    effectiveRate,
+    reviewedOn: rates.reviewed_on ?? null,
   }
-
-  const cif = vehicleValueUSD * 1.12 // + 12% freight and insurance
-  const customs = cif * 0.25
-  const excise = cif * EXCISE_RATES[ccBracket]
-  const subtotal = cif + customs + excise
-  const vat = subtotal * 0.18
-  const infra = cif * 0.015 // infrastructure levy
-
-  const totalDuties = customs + excise + vat + infra
-  const grandTotal = vehicleValueUSD + totalDuties
-  const effectiveRate = vehicleValueUSD > 0 ? Math.round((totalDuties / vehicleValueUSD) * 100) : 0
-
-  return { cif, customs, excise, vat, infra, totalDuties, grandTotal, effectiveRate }
 }
 
 // ─── Market position ── mirrors the real-data branch of marketData.js ────────
