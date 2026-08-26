@@ -75,6 +75,15 @@ function resolve(sql) {
     .replace(/\$\{MARKET_LATERALS\}/g, ' LEFT JOIN LATERAL (SELECT 1 AS n) mkt ON TRUE')
     .replace(/\$\{PROVIDER_COLUMNS\}/g, 'u.name AS provider_name')
     .replace(/\$\{VALID_RENTAL_INSPECTION\}/g, 'JOIN inspections evidence ON evidence.id = rc.inspection_id')
+    // The listing-subscription predicate (migration 0025). Substituted with the
+    // real join, not a placeholder, so the grammar actually checks it — an
+    // unknown fragment silently becomes a bare `1`, which is what made this
+    // step fail rather than pass vacuously.
+    .replace(
+      /\$\{ACTIVE_RENTAL_SUBSCRIPTION\}/g,
+      'JOIN rental_subscriptions sub ON sub.rental_car_id = rc.id'
+      + ' AND sub.voided_at IS NULL AND sub.starts_on <= CURRENT_DATE AND sub.ends_on >= CURRENT_DATE'
+    )
     .replace(/\$\{MIN_COMPARABLES\}/g, '3')
     .replace(/\$\{conditions\.join\([^)]*\)\}/g, 'TRUE')
     .replace(/\$\{where\}/g, '')
