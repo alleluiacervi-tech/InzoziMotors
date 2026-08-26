@@ -133,6 +133,16 @@ export default function HomeScreen({ navigation }) {
     cars: carsByListedDate.slice(0, 5),
   }), [carsByListedDate]);
 
+  // The production catalogue is allowed to be empty (for example during a
+  // first deployment or while the admin is preparing the first listing). Do
+  // not render a showroom card without a lead vehicle: reading
+  // `cars[0].image` used to throw and send the whole app to ErrorBoundary as
+  // soon as a user tapped Explore Cars.
+  const showroomWindows = useMemo(
+    () => [centerWindow, ...showrooms].filter((window) => window.cars?.[0]?.image),
+    [centerWindow, showrooms]
+  );
+
   // ── Personalization rails ──
   const allInventory = useMemo(() => [...cars, ...rentalCars], [cars, rentalCars]);
   const recentlyViewed = useMemo(() => recentlyViewedIds
@@ -385,40 +395,42 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* ── SHOWROOMS — walk past the glass ── */}
-        <View style={styles.sectionContainer}>
-          <SectionHeader title="Showrooms" />
-          <FlatList
-            horizontal
-            data={[centerWindow, ...showrooms]}
-            keyExtractor={(w) => w.brand}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListPadding}
-            snapToInterval={SCREEN_WIDTH * 0.78 + 12}
-            decelerationRate="fast"
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.showroomWindow}
-                onPress={() => navigation.navigate('Showroom', {
-                  title: item.brand,
-                  subtitle: item.subtitle || `${item.cars.length} cars in the showroom`,
-                  cars: item.cars,
-                })}
-              >
-                <Image source={{ uri: item.cars[0].image }} style={styles.showroomPhoto} resizeMode="contain" />
-                <LinearGradient
-                  colors={['transparent', 'rgba(12,10,10,0.88)']}
-                  style={styles.showroomFade}
-                />
-                <View style={styles.showroomCaption}>
-                  <Text style={styles.showroomBrand}>{item.brand}</Text>
-                  <Text style={styles.showroomCount}>
-                    {item.subtitle || `${item.cars.length} cars · view the collection`}
-                  </Text>
-                </View>
-              </Pressable>
-            )}
-          />
-        </View>
+        {showroomWindows.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader title="Showrooms" />
+            <FlatList
+              horizontal
+              data={showroomWindows}
+              keyExtractor={(w) => w.brand}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListPadding}
+              snapToInterval={SCREEN_WIDTH * 0.78 + 12}
+              decelerationRate="fast"
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.showroomWindow}
+                  onPress={() => navigation.navigate('Showroom', {
+                    title: item.brand,
+                    subtitle: item.subtitle || `${item.cars.length} cars in the showroom`,
+                    cars: item.cars,
+                  })}
+                >
+                  <Image source={{ uri: item.cars[0].image }} style={styles.showroomPhoto} resizeMode="contain" />
+                  <LinearGradient
+                    colors={['transparent', 'rgba(12,10,10,0.88)']}
+                    style={styles.showroomFade}
+                  />
+                  <View style={styles.showroomCaption}>
+                    <Text style={styles.showroomBrand}>{item.brand}</Text>
+                    <Text style={styles.showroomCount}>
+                      {item.subtitle || `${item.cars.length} cars · view the collection`}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+            />
+          </View>
+        )}
 
         {/* ── BROWSE BY ORIGIN (Encar-style) ── */}
         <ScrollView
