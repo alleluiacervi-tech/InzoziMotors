@@ -192,3 +192,47 @@ test('the original showroom route and activation path still work', async () => {
     .send({ token, password: 'chosen-password-1' }).expect(200);
   await api().post('/auth/login').send({ email, password: 'chosen-password-1' }).expect(200);
 });
+
+test('the dashboard can tell whether email is actually configured', async () => {
+  // Every sender is fire-and-forget so a mail outage cannot break a signup.
+  // The cost is that an UNCONFIGURED server looks exactly like a working one —
+  // production ran sending nothing at all, and no screen said so.
+  const operator = await admin();
+  const auth = { Authorization: `Bearer ${operator.token}` };
+
+  const status = await api().get('/admin/mail-status').set(auth).expect(200);
+  assert.equal(typeof status.body.configured, 'boolean');
+  assert.ok(status.body.from.includes('@'), 'the visible From header is reportable');
+  assert.ok(status.body.detail.length > 10, 'it must say what to do, not just that something is wrong');
+  // No credential may cross this boundary, whatever the environment holds.
+  const serialised = JSON.stringify(status.body);
+  assert.doesNotMatch(serialised, /re_[A-Za-z0-9]/, 'a Resend key must never be returned');
+  assert.equal(serialised.includes(process.env.SMTP_PASS || ' never '), false);
+
+  const outsider = await register();
+  await api().get('/admin/mail-status').set('Authorization', `Bearer ${outsider.token}`).expect(403);
+  await api().get('/admin/mail-status').expect(401);
+});
+
+test('a failed invitation hands the admin the link instead of a dead end', async () => {
+  // Mail is unconfigured under test, so this is the real failure path: the
+  // account exists, cannot be logged into, and its one-use token lived only in
+  // an email nobody received.
+  const operator = await admin();
+  const email = unique('undeliverable');
+  const made = await api().post('/admin/accounts')
+    .set('Authorization', `Bearer ${operator.token}`)
+    .send({ account_type: 'buyer', name: 'No Mail', email })
+    .expect(201);
+
+  assert.equal(made.body.invitation_sent, false);
+  assert.ok(made.body.activation_url, 'a failed send must return the link');
+  assert.match(made.body.activation_url, /\/activate\?token=/);
+
+  // And the link actually works — it is the same token the email would carry.
+  const token = decodeURIComponent(made.body.activation_url.split('token=')[1]);
+  const activated = await api().post('/auth/accept-invite')
+    .send({ token, password: 'chosen-password-1' }).expect(200);
+  assert.equal(activated.body.user.email, email);
+  await api().post('/auth/login').send({ email, password: 'chosen-password-1' }).expect(200);
+});

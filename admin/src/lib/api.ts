@@ -468,6 +468,15 @@ export const api = {
     }),
   /** Create any kind of account. The recipient sets their own password from a
    *  one-use link — nothing here emails a password. */
+  /** Whether outbound email is actually configured. Reports configuration
+   *  only — never a credential. */
+  mailStatus: () => request<{
+    configured: boolean
+    provider: 'resend' | 'smtp' | null
+    from: string
+    detail: string
+  }>('/admin/mail-status'),
+
   createAccount: (data: { account_type: 'buyer' | 'individual_seller' | 'showroom'; name: string; email: string; phone?: string; business_name?: string }) =>
     request<any>('/admin/accounts', { method: 'POST', body: JSON.stringify(data) }),
   createShowroom: (data: { name: string; business_name: string; email: string; phone?: string }) =>

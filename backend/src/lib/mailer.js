@@ -185,6 +185,10 @@ async function sendMail({ to, subject, text, html }) {
       text,
       ...(html ? { html } : {}),
     });
+    // Logged on success as well as failure, matching the Resend path above.
+    // Without this the SMTP route is silent either way, and "did that send?"
+    // has no answer in the logs.
+    log.info('email sent via smtp', { to, subject });
     return true;
   } catch (err) {
     log.error('mail send failed', { error: err.message });

@@ -58,6 +58,7 @@ export default function UsersPage() {
   const [role, setRole] = useState('all')
   const [actionId, setActionId] = useState<string | null>(null)
   const [showroomOpen, setShowroomOpen] = useState(false)
+  const [manualInvite, setManualInvite] = useState<{ email: string; url: string | null } | null>(null)
   const [accountType, setAccountType] = useState<'buyer' | 'individual_seller' | 'showroom'>('showroom')
   const [showroom, setShowroom] = useState({ name: '', business_name: '', email: '', phone: '' })
   const [editing, setEditing] = useState<null | {
@@ -117,9 +118,16 @@ export default function UsersPage() {
     try {
       const created = await api.createAccount({ ...showroom, account_type: accountType })
       const label = ACCOUNT_KINDS.find((k) => k.value === accountType)?.noun ?? 'Account'
-      toast(created.invitation_sent
-        ? `${label} created and activation email sent`
-        : `${label} created, but email delivery is not configured`, created.invitation_sent ? 'success' : 'error')
+      if (created.invitation_sent) {
+        toast(`${label} created and activation email sent`, 'success')
+        setManualInvite(null)
+      } else {
+        // The account exists, cannot be logged into, and its one-use link lived
+        // only in an email that did not arrive. Show the link so this is
+        // recoverable instead of a dead end.
+        toast(`${label} created, but the email did not send — copy the link below`, 'error')
+        setManualInvite({ email: showroom.email, url: created.activation_url ?? null })
+      }
       setShowroom({ name: '', business_name: '', email: '', phone: '' })
       setShowroomOpen(false)
       await load()
@@ -238,6 +246,40 @@ export default function UsersPage() {
           {showroomOpen ? 'Close form' : 'Create an account'}
         </button>
       </div>
+
+      {/* Only appears when the invite email failed. The link is a one-use
+          credential, so the API returns it in that case alone. */}
+      {manualInvite ? (
+        <Card className="mb-5 border-danger p-5">
+          <h2 className="text-label font-bold text-danger-strong">Send this activation link by hand</h2>
+          <p className="mt-1 text-label text-content-secondary">
+            The account for {manualInvite.email} exists but no email went out, so this link is the
+            only way in. It expires in 48 hours and works once. Send it over WhatsApp or read it out
+            — and fix email under Platform settings.
+          </p>
+          {manualInvite.url ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded-lg bg-surface-alt px-3 py-2 text-caption text-content">
+                {manualInvite.url}
+              </code>
+              <button type="button"
+                onClick={() => { navigator.clipboard?.writeText(manualInvite.url as string); toast('Link copied.', 'success') }}
+                className="rounded-lg bg-ink-900 px-3 py-2 text-caption font-bold text-white">
+                Copy link
+              </button>
+            </div>
+          ) : (
+            <p className="mt-3 text-label font-semibold text-content">
+              This build of the API did not return the link. Delete the account and recreate it once
+              email is working.
+            </p>
+          )}
+          <button type="button" onClick={() => setManualInvite(null)}
+            className="mt-3 text-caption font-semibold text-content-muted hover:text-content">
+            Dismiss
+          </button>
+        </Card>
+      ) : null}
 
       {showroomOpen ? (
         <Card className="mb-5 p-5">
