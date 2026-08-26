@@ -16,6 +16,9 @@ const {
 
 const router = express.Router();
 
+// The public site the activation link points at — same origin lib/mailer.js uses.
+const SITE_ORIGIN = process.env.PUBLIC_SITE_ORIGIN || 'https://sawacars.com';
+
 // GET /admin/action-center — one factual queue for the single Super Admin.
 //
 // This deliberately derives work from source-of-truth workflow tables instead
@@ -565,7 +568,19 @@ router.post('/accounts', requireAdmin, async (req, res) => {
     const delivered = await sendAccountInvite(email, name, {
       accountType, businessName, token: result.token,
     });
-    res.status(201).json({ ...result.user, invitation_sent: delivered });
+    // When the email did not go out, hand the admin the link so they can pass
+    // it on themselves. Without this a failed invite is an unrecoverable dead
+    // end: the account exists, cannot be logged into, and the only way in is a
+    // one-use token that lived solely in an email nobody received.
+    //
+    // Returned ONLY on failure. The link is a credential, and putting it in a
+    // successful response would leave it in browser memory and proxy logs for
+    // every account ever created, for no benefit.
+    res.status(201).json({
+      ...result.user,
+      invitation_sent: delivered,
+      ...(delivered ? {} : { activation_url: `${SITE_ORIGIN}/activate?token=${encodeURIComponent(result.token)}` }),
+    });
   } catch (err) {
     log.error('account invite error', { error: err.message, accountType });
     res.status(500).json({ error: 'Could not create the account' });
@@ -697,6 +712,32 @@ router.get('/audit-log', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 10
     log.error('admin audit list error', { error: err.message });
     res.status(500).json({ error: 'Audit history unavailable' });
   }
+});
+
+// GET /admin/mail-status — is outbound email actually configured?
+//
+// Every sender in lib/mailer.js is fire-and-forget so that a mail outage can
+// never break a signup. The cost of that choice is that an UNCONFIGURED server
+// is indistinguishable from a working one: registration returns 201, no email
+// is sent, and nothing anywhere complains. Production ran that way without it
+// being noticed, which is what this route exists to prevent.
+//
+// Reports configuration only. No credential is read, returned or logged; the
+// from-address is the visible From header on every message we send, not a
+// secret.
+router.get('/mail-status', requireAdmin, (_req, res) => {
+  const provider = process.env.RESEND_API_KEY ? 'resend'
+    : process.env.SMTP_HOST ? 'smtp'
+    : null;
+  res.json({
+    configured: mailEnabled(),
+    provider,
+    from: process.env.MAIL_FROM || 'Sawa Cars <no-reply@sawacars.com>',
+    // Named so the dashboard can say which one to set rather than "configure email".
+    detail: provider === 'resend' ? 'Sending through the Resend API.'
+      : provider === 'smtp' ? `Sending over SMTP via ${process.env.SMTP_HOST}.`
+      : 'No email is being sent. Registration, password reset and account invitations are all silently doing nothing. Set RESEND_API_KEY or SMTP_HOST on the API service.',
+  });
 });
 
 // GET/PATCH /admin/settings — operational controls with immutable policy rails.
