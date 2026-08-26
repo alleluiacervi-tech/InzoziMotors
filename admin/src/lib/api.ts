@@ -648,6 +648,17 @@ export const api = {
   getRentalCar:  (id: string) => request<any>(`/rentals/${id}`),
   createRentalCar: (data: any) =>
     request<any>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
+  // Listing subscriptions. A lapse hides a car by falling out of the public
+  // predicates — nothing here sweeps or schedules anything, and a renewal takes
+  // effect on the next request.
+  rentalSubscriptions: (id: string) => request<any[]>(`/rentals/${id}/subscriptions`),
+  recordRentalSubscription: (id: string, data: {
+    amount_rwf: number; method?: 'cash' | 'mobile_money' | 'bank_transfer'
+    reference?: string; starts_on: string; ends_on: string; note?: string
+  }) => request<any>(`/rentals/${id}/subscriptions`, { method: 'POST', body: JSON.stringify(data) }),
+  voidRentalSubscription: (subId: string, reason: string) =>
+    request<any>(`/rentals/subscriptions/${subId}/void`, { method: 'POST', body: JSON.stringify({ reason }) }),
+
   updateRentalCar: (id: string, data: any) =>
     request<any>(`/rentals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 

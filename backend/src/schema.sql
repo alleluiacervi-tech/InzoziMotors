@@ -500,7 +500,9 @@ CREATE TABLE IF NOT EXISTS rental_cars (
   location         TEXT,                 -- neighbourhood the car is kept in
   images           TEXT[],
   safari_ready     BOOLEAN NOT NULL DEFAULT FALSE,  -- 4x4 fit for park trips
-  status           TEXT NOT NULL DEFAULT 'active',  -- active | maintenance | retired
+  -- rentals.js validated this set on write; migration 0025 finally constrains it.
+  status           TEXT NOT NULL DEFAULT 'active'
+                     CHECK (status IN ('active', 'maintenance', 'retired')),
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS safari_ready BOOLEAN NOT NULL DEFAULT FALSE;
@@ -615,6 +617,34 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_inspection
 CREATE INDEX IF NOT EXISTS idx_platform_fees_payer ON platform_fees(payer_user_id);
 
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
+
+-- ─── Rental listing subscriptions (migration 0025) ───────────────────────────
+-- A provider pays per vehicle to keep a car in the public catalogue. Collected
+-- offline and recorded here. A lapse hides the car by falling out of the three
+-- public predicates in routes/rentals.js — this backend has no scheduler, and
+-- expiry that needs one is expiry that eventually does not happen.
+--
+-- rental_cars.status is never touched on lapse: status is what the operator
+-- said about the vehicle, the subscription is what the business says about the
+-- listing, and a renewal must not republish a car somebody parked.
+CREATE TABLE IF NOT EXISTS rental_subscriptions (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rental_car_id  UUID NOT NULL REFERENCES rental_cars(id) ON DELETE CASCADE,
+  amount_rwf     INT NOT NULL CHECK (amount_rwf >= 0),
+  method         TEXT CHECK (method IS NULL OR method IN ('cash', 'mobile_money', 'bank_transfer')),
+  reference      TEXT,
+  starts_on      DATE NOT NULL,
+  ends_on        DATE NOT NULL,
+  note           TEXT,
+  recorded_by    UUID REFERENCES users(id),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  voided_at      TIMESTAMPTZ,
+  voided_by      UUID REFERENCES users(id),
+  void_reason    TEXT,
+  CONSTRAINT rental_subscriptions_period_check CHECK (ends_on >= starts_on)
+);
+CREATE INDEX IF NOT EXISTS idx_rental_subscriptions_car
+  ON rental_subscriptions(rental_car_id, ends_on DESC) WHERE voided_at IS NULL;
 
 -- ─── Inspection centers — capacity-aware scheduling ──────────────────────────
 CREATE TABLE IF NOT EXISTS inspection_centers (

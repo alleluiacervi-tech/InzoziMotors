@@ -23,7 +23,7 @@ const router = express.Router();
 // is actionable, carries a stable destination, and explains why it is urgent.
 router.get('/action-center', requireAdmin, async (_req, res) => {
   try {
-    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks] = await Promise.all([
+    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks, lapsingRentals] = await Promise.all([
       pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
                     EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
                   FROM submissions
@@ -79,6 +79,27 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                        OR (COALESCE(cardinality(c.images),0) = 0
                            AND NOT EXISTS (SELECT 1 FROM car_photos p WHERE p.car_id=c.id))))
                   ORDER BY c.created_at ASC LIMIT 20`),
+      // Rental listing subscriptions that have run out or are about to.
+      //
+      // This backend has no scheduler, so nothing can email a warning on the
+      // day. Surfacing the window here is the substitute: a lapse is visible
+      // for a week before it happens and stays visible after, which is what
+      // stops it being noticed only when a provider asks where their car went.
+      pool.query(`SELECT rc.id, rc.title, sub.ends_on,
+                    sub.ends_on < CURRENT_DATE AS lapsed,
+                    CASE WHEN sub.ends_on < CURRENT_DATE
+                         THEN EXTRACT(EPOCH FROM (NOW() - sub.ends_on::timestamptz)) / 3600
+                         ELSE 0 END AS age_hours,
+                    sub.ends_on::timestamptz AS occurred_at
+                  FROM rental_cars rc
+                  JOIN LATERAL (
+                    SELECT * FROM rental_subscriptions s
+                     WHERE s.rental_car_id = rc.id AND s.voided_at IS NULL
+                     ORDER BY s.ends_on DESC LIMIT 1
+                  ) sub ON TRUE
+                  WHERE rc.status = 'active'
+                    AND sub.ends_on <= CURRENT_DATE + 7
+                  ORDER BY sub.ends_on ASC LIMIT 20`),
     ]);
 
     const item = (row, data) => ({
@@ -103,6 +124,15 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
       ...imports.rows.map((r) => item(r, { id: `import:${r.id}`, kind: 'Import', priority: Number(r.age_hours) >= 72 ? 'urgent' : agedPriority(r, 24, 0), title: `${r.order_ref} needs attention`, detail: r.status === 'enquiry' ? 'New import enquiry needs a quotation' : r.status.replaceAll('_', ' '), href: `/imports/${r.id}` })),
       ...importPayments.rows.map((r) => item(r, { id: `import-payment:${r.id}`, kind: 'Import', priority: agedPriority(r, 8, 0), title: `Review offline record for ${r.order_ref}`, detail: `${r.milestone.replaceAll('_', ' ')} evidence submitted`, href: `/imports/${r.import_order_id}` })),
       ...rentalInquiries.rows.map((r) => item(r, { id: `rental-inquiry:${r.id}`, kind: 'Rental inquiry', priority: agedPriority(r, 24, 4), title: `Follow up ${r.inquiry_ref}`, detail: r.car_title, href: `/rentals/inquiries?focus=${r.id}` })),
+      ...lapsingRentals.rows.map((r) => item(r, {
+        id: `rental-subscription:${r.id}`, kind: 'Rental listing',
+        priority: r.lapsed ? 'urgent' : 'routine',
+        title: r.lapsed ? `${r.title} has left the catalogue` : `${r.title} lapses soon`,
+        detail: r.lapsed
+          ? 'The listing subscription has expired and the car is no longer public'
+          : `The listing subscription runs out on ${String(r.ends_on).slice(0, 10)}`,
+        href: '/rentals/fleet',
+      })),
       ...listingRisks.rows.map((r) => item(r, { id: `listing-risk:${r.id}`, kind: 'Listing', priority: r.age_hours >= 24 ? 'urgent' : 'attention', title: `Review ${r.title}`, detail: 'Approval, inspection or gallery requirement needs attention', href: `/listings/${r.id}/edit` })),
     ];
     const rank = { urgent: 0, attention: 1, routine: 2 };

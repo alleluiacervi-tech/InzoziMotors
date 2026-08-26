@@ -79,6 +79,13 @@ router.get('/', requireAdmin, async (_req, res) => {
     );
     const truncated = anchors.length > BOARD_LIMIT;
     const page = anchors.slice(0, BOARD_LIMIT);
+    if (truncated) {
+      // Oldest-first is the right queue discipline — the most overdue work must
+      // never be the work that gets cut — but it does mean the newest arrivals
+      // are the ones dropped. Say so in the log as well as in the response, so
+      // "my car is not on the board" is diagnosable rather than mysterious.
+      log.error('pipeline board truncated', { shown: BOARD_LIMIT, in_flight: anchors.length });
+    }
 
     // Two queries for the whole board, then everything is assembled in memory.
     const ids = (key) => [...new Set(page.map((row) => row[key]).filter(Boolean))];

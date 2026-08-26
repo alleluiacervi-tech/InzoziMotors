@@ -45,7 +45,10 @@ async function walkIn(admin, { complete = false } = {}) {
   const day = nextDay();
   // Fixture days repeat across runs and would eventually fill the centre.
   await pool.query(
-    "DELETE FROM inspections WHERE lower(center)='nyarutarama center' AND scheduled_on=$1::date", [day]
+    // rental_cars.inspection_id is ON DELETE RESTRICT, so a fixture inspection a
+  // previous run turned into a rental car must be left alone.
+  "DELETE FROM inspections i WHERE lower(i.center)='nyarutarama center' AND i.scheduled_on=$1::date"
+    + " AND NOT EXISTS (SELECT 1 FROM rental_cars rc WHERE rc.inspection_id = i.id)", [day]
   );
   const booked = await api().post('/inspections/standalone').set(auth).send({
     make: 'Toyota', model: 'Prado', year: 2014,

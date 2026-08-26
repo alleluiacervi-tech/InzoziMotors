@@ -75,6 +75,21 @@ const VALID_RENTAL_INSPECTION = `
     AND evidence.score >= ${PUBLISH_THRESHOLD}
     AND jsonb_array_length(COALESCE(evidence.critical_failures, '[]'::jsonb)) = 0`;
 
+// A car is publicly listed only while a paid, un-voided subscription covers
+// today. This is EXPIRY BY PREDICATE: nothing sweeps rows, nothing has to run
+// on time, and a renewal restores visibility the moment it is recorded. See
+// migration 0025 and 0009_rental_payments.sql:41 — this backend has no
+// scheduler on purpose.
+//
+// Appended to ALL THREE public reads (catalogue, detail, inquire). Missing one
+// leaks a car the catalogue hides, which is the worst of both: invisible to
+// browse, reachable by link.
+const ACTIVE_RENTAL_SUBSCRIPTION = `
+  JOIN rental_subscriptions sub ON sub.rental_car_id = rc.id
+    AND sub.voided_at IS NULL
+    AND sub.starts_on <= CURRENT_DATE
+    AND sub.ends_on   >= CURRENT_DATE`;
+
 const PROVIDER_COLUMNS = `
   u.name AS provider_name,
   u.business_name AS provider_business_name,
@@ -127,6 +142,7 @@ router.get('/', async (_req, res) => {
       `SELECT rc.*, ${PROVIDER_COLUMNS}
        FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
        ${VALID_RENTAL_INSPECTION}
+       ${ACTIVE_RENTAL_SUBSCRIPTION}
        WHERE rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
          AND u.account_status = 'active' AND u.deleted_at IS NULL
@@ -141,12 +157,34 @@ router.get('/', async (_req, res) => {
 
 router.get('/admin/fleet', requireAdmin, async (_req, res) => {
   try {
+    // Deliberately unfiltered. An operator must see the lapsed cars — they are
+    // the ones needing a conversation — so the subscription is reported here,
+    // never used to hide anything.
     const { rows } = await pool.query(
-      `SELECT rc.*, ${PROVIDER_COLUMNS}
-       FROM rental_cars rc LEFT JOIN users u ON u.id = rc.provider_id
+      `SELECT rc.*, ${PROVIDER_COLUMNS},
+              sub.ends_on AS subscription_ends_on,
+              sub.amount_rwf AS subscription_amount_rwf,
+              CASE
+                WHEN sub.id IS NULL THEN 'none'
+                WHEN sub.ends_on < CURRENT_DATE THEN 'lapsed'
+                WHEN sub.ends_on <= CURRENT_DATE + 7 THEN 'lapsing'
+                ELSE 'active'
+              END AS subscription_status
+       FROM rental_cars rc
+       LEFT JOIN users u ON u.id = rc.provider_id
+       LEFT JOIN LATERAL (
+         SELECT * FROM rental_subscriptions s
+          WHERE s.rental_car_id = rc.id AND s.voided_at IS NULL
+          ORDER BY s.ends_on DESC LIMIT 1
+       ) sub ON TRUE
        ORDER BY rc.created_at DESC`
     );
-    res.json(rows.map((row) => publicRental(row, true)));
+    res.json(rows.map((row) => ({
+      ...publicRental(row, true),
+      subscription_status: row.subscription_status,
+      subscription_ends_on: row.subscription_ends_on,
+      subscription_amount_rwf: row.subscription_amount_rwf,
+    })));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -285,6 +323,7 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
          FROM rental_cars rc
          JOIN users u ON u.id = rc.provider_id
          ${VALID_RENTAL_INSPECTION}
+         ${ACTIVE_RENTAL_SUBSCRIPTION}
          JOIN users buyer ON buyer.id = $2
          WHERE rc.id = $1 AND rc.status = 'active'
            AND u.role = 'seller' AND u.id_verified = 'approved'
@@ -366,6 +405,7 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
       `SELECT rc.*, ${PROVIDER_COLUMNS}
        FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
        ${VALID_RENTAL_INSPECTION}
+       ${ACTIVE_RENTAL_SUBSCRIPTION}
        WHERE rc.id = $1 AND rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
          AND u.account_status = 'active' AND u.deleted_at IS NULL`,
@@ -375,6 +415,143 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
     res.json(publicRental(rows[0]));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rental listing subscriptions.
+//
+// Recorded, not collected — the money changes hands at the office. What these
+// routes control is only whether a car appears in the public catalogue, and
+// they do that by writing a row the three public predicates read. No job runs,
+// nothing expires on a timer, and a renewal takes effect on the next request.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SUB_METHODS = new Set(['cash', 'mobile_money', 'bank_transfer']);
+
+const isoDay = (value) => {
+  if (!value) return null;
+  const text = String(value).slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+};
+
+/** Reads and validates a subscription period from a request body. */
+function readSubscription(body) {
+  const amount = parseInt(body.amount_rwf, 10);
+  if (!Number.isInteger(amount) || amount < 0) return { error: 'Enter the amount collected, in Rwandan francs' };
+  const startsOn = isoDay(body.starts_on);
+  const endsOn = isoDay(body.ends_on);
+  if (!startsOn || !endsOn) return { error: 'Give the period as starts_on and ends_on dates' };
+  if (endsOn < startsOn) return { error: 'The period cannot end before it starts' };
+  const method = body.method ? String(body.method) : null;
+  if (method && !SUB_METHODS.has(method)) {
+    return { error: `Method must be one of: ${[...SUB_METHODS].join(', ')}` };
+  }
+  return {
+    amount, startsOn, endsOn, method,
+    reference: String(body.reference || '').trim().slice(0, 120) || null,
+    note: String(body.note || '').trim().slice(0, 500) || null,
+  };
+}
+
+/** Records one subscription period, refusing an overlap with a live one. */
+async function insertSubscription(client, { rentalCarId, period, actorId }) {
+  const clash = await client.query(
+    `SELECT id, starts_on, ends_on FROM rental_subscriptions
+      WHERE rental_car_id = $1 AND voided_at IS NULL
+        AND starts_on <= $3::date AND ends_on >= $2::date
+      LIMIT 1`,
+    [rentalCarId, period.startsOn, period.endsOn]
+  );
+  if (clash.rows.length) {
+    const e = new Error('That period overlaps a subscription this car already has. Void it first, or choose a later start.');
+    e.status = 409; e.code = 'SUBSCRIPTION_OVERLAP'; throw e;
+  }
+  const { rows } = await client.query(
+    `INSERT INTO rental_subscriptions
+       (rental_car_id, amount_rwf, method, reference, starts_on, ends_on, note, recorded_by)
+     VALUES ($1,$2,$3,$4,$5::date,$6::date,$7,$8) RETURNING *`,
+    [rentalCarId, period.amount, period.method, period.reference,
+     period.startsOn, period.endsOn, period.note, actorId]
+  );
+  await recordAdminAction(client, {
+    actorId, action: 'rental_subscription.recorded',
+    targetType: 'rental_car', targetId: rentalCarId,
+    summary: `Listing paid to ${period.endsOn} (RWF ${period.amount.toLocaleString('en-RW')})`,
+    metadata: { amount_rwf: period.amount, starts_on: period.startsOn, ends_on: period.endsOn, method: period.method },
+  });
+  return rows[0];
+}
+
+// GET /rentals/:id/subscriptions — the full history, newest first.
+router.get('/:id/subscriptions', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM rental_subscriptions WHERE rental_car_id = $1
+        ORDER BY starts_on DESC, created_at DESC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    log.error('rental subscriptions read error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /rentals/:id/subscriptions — record a period.
+router.post('/:id/subscriptions', requireAdmin, requireUuid('id'), async (req, res) => {
+  const period = readSubscription(req.body);
+  if (period.error) return res.status(400).json({ error: period.error });
+  try {
+    const created = await withTransaction(async (client) => {
+      const car = await client.query('SELECT id FROM rental_cars WHERE id=$1 FOR UPDATE', [req.params.id]);
+      if (!car.rowCount) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
+      return insertSubscription(client, { rentalCarId: req.params.id, period, actorId: req.user.id });
+    });
+    res.status(201).json(created);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    log.error('rental subscription create error', { error: err.message });
+    res.status(500).json({ error: 'Could not record the subscription' });
+  }
+});
+
+// POST /rentals/subscriptions/:subId/void — undo a mistake.
+//
+// Void rather than delete, and a reason is required, for the same reason as the
+// inspection fee: a record that can be quietly removed is not a record. Voiding
+// takes the car out of the catalogue immediately if nothing else covers today.
+router.post('/subscriptions/:subId/void', requireAdmin, requireUuid('subId'), async (req, res) => {
+  const reason = String((req.body && req.body.reason) || '').trim();
+  if (reason.length < 4) {
+    return res.status(400).json({ error: 'Say why it is being voided — it stays on the record' });
+  }
+  try {
+    const voided = await withTransaction(async (client) => {
+      const current = await client.query(
+        'SELECT * FROM rental_subscriptions WHERE id=$1 FOR UPDATE', [req.params.subId]
+      );
+      if (!current.rowCount) { const e = new Error('Subscription not found'); e.status = 404; throw e; }
+      if (current.rows[0].voided_at) { const e = new Error('That subscription is already voided'); e.status = 409; throw e; }
+      const { rows } = await client.query(
+        `UPDATE rental_subscriptions
+            SET voided_at = NOW(), voided_by = $1, void_reason = $2
+          WHERE id = $3 RETURNING *`,
+        [req.user.id, reason.slice(0, 500), req.params.subId]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'rental_subscription.voided',
+        targetType: 'rental_car', targetId: current.rows[0].rental_car_id,
+        summary: `Voided a listing subscription: ${reason.slice(0, 120)}`,
+        metadata: { subscription_id: req.params.subId, reason: reason.slice(0, 500) },
+      });
+      return rows[0];
+    });
+    res.json(voided);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental subscription void error', { error: err.message });
+    res.status(500).json({ error: 'Could not void the subscription' });
   }
 });
 
@@ -405,16 +582,28 @@ router.post('/', requireAdmin, async (req, res) => {
         error.status = 409;
         throw error;
       }
+      // A car with no paid subscription would be created 'active' and then be
+      // invisible to every public read — an operator would reasonably conclude
+      // the listing was broken. So it is created in maintenance instead, which
+      // is what it actually is: present, not published.
+      const period = req.body.subscription ? readSubscription(req.body.subscription) : null;
+      if (period && period.error) { const e = new Error(period.error); e.status = 400; throw e; }
+      const initialStatus = period ? 'active' : 'maintenance';
+
       const { rows } = await client.query(
         `INSERT INTO rental_cars
            (provider_id,title,make,model,year,category,seats,fuel,transmission,mileage,
-            daily_rate,weekly_rate,deposit,min_days,inspection_id,inspected,inspection_score,location,images)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TRUE,$16,$17,$18)
+            daily_rate,weekly_rate,deposit,min_days,inspection_id,inspected,inspection_score,location,images,status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TRUE,$16,$17,$18,$19)
          RETURNING *`,
         [provider_id, String(title).trim(), make, model, year, category, seats || 5, fuel,
          transmission, mileage, daily_rate, weekly_rate || Number(daily_rate) * 6,
-         deposit || 0, min_days || 1, inspection_id, Number(evidence.score), location, images.map((url) => url.trim())]
+         deposit || 0, min_days || 1, inspection_id, Number(evidence.score), location,
+         images.map((url) => url.trim()), initialStatus]
       );
+      if (period) {
+        await insertSubscription(client, { rentalCarId: rows[0].id, period, actorId: req.user.id });
+      }
       await recordAdminAction(client, {
         actorId: req.user.id, action: 'rental_car.created', targetType: 'rental_car', targetId: rows[0].id,
         summary: `${rows[0].title} added for a verified rental provider`, metadata: {
@@ -458,6 +647,22 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       const status = req.body.status !== undefined ? req.body.status : before.status;
       const images = req.body.images !== undefined ? req.body.images : (before.images || []);
       const inspectionId = req.body.inspection_id !== undefined ? req.body.inspection_id : before.inspection_id;
+
+      // Only on an explicit transition to 'active' — deliberately NOT inherited
+      // like the assertions around it. Inheriting would 409 on editing a lapsed
+      // car's location or rate, which is exactly when an operator needs to.
+      if (req.body.status === 'active' && before.status !== 'active') {
+        const live = await client.query(
+          `SELECT 1 FROM rental_subscriptions
+            WHERE rental_car_id = $1 AND voided_at IS NULL
+              AND starts_on <= CURRENT_DATE AND ends_on >= CURRENT_DATE`,
+          [req.params.id]
+        );
+        if (!live.rowCount) {
+          const error = new Error('Record a listing subscription before putting this car back in the catalogue');
+          error.status = 409; error.code = 'SUBSCRIPTION_REQUIRED'; throw error;
+        }
+      }
       const evidence = await inspectionEvidenceForProvider(client, inspectionId, providerId);
       if (inspectionId && !evidence) {
         const error = new Error('The selected inspection must be complete, passing, and belong to this provider');
@@ -509,7 +714,9 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message });
+    // The code matters here: a client needs to tell SUBSCRIPTION_REQUIRED apart
+    // from the other 409s this route raises.
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle' });
     log.error('rental update error', { error: err.message });
     res.status(500).json({ error: 'Server error' });

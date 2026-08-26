@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
-import { EmptyState, ErrorState, LoadingState, fmtMoney } from '@/components/ui'
+import { EmptyState, ErrorState, LoadingState, fmtMoney, formatRwfInput, parseRwfInput } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useToast } from '@/components/feedback'
 
@@ -20,6 +20,8 @@ export default function RentalFleetPage() {
   const [cars, setCars] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
+  const [renewAmount, setRenewAmount] = useState<Record<string, string>>({})
+  const [renewing, setRenewing] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [editing, setEditing] = useState<any | null>(null)
@@ -102,6 +104,31 @@ export default function RentalFleetPage() {
     finally { setSaving(false) }
   }
 
+  // Recording a period is the whole interaction: it is what puts a car in the
+  // public catalogue and what keeps it there. Deliberately inline on the card
+  // rather than behind the edit form, because it is a different job — the form
+  // describes the vehicle, this pays for the listing.
+  async function renew(car: any) {
+    const amount = parseRwfInput(renewAmount[car.id] || '')
+    if (!amount) { toast('Enter the amount collected, in Rwandan francs.', 'error'); return }
+    const today = new Date()
+    const ends = new Date(today.getTime() + 30 * 86_400_000)
+    setRenewing(car.id)
+    try {
+      await api.recordRentalSubscription(car.id, {
+        amount_rwf: amount,
+        method: 'cash',
+        starts_on: today.toISOString().slice(0, 10),
+        ends_on: ends.toISOString().slice(0, 10),
+      })
+      toast('Listing paid for 30 days. The car is public again immediately.', 'success')
+      setRenewAmount({ ...renewAmount, [car.id]: '' })
+      load()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not record the subscription.', 'error')
+    } finally { setRenewing(null) }
+  }
+
   if (error) return <ErrorState error={error} onRetry={load} />
 
   return (
@@ -121,7 +148,42 @@ export default function RentalFleetPage() {
               <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-gray-900">{car.title}</h2><p className="mt-1 text-xs text-gray-500">{car.provider_business_name || car.provider_name || 'Provider not assigned'}</p></div><span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold capitalize text-gray-600">{car.status}</span></div>
               <p className="mt-4 text-lg font-extrabold text-gray-900">{fmtMoney(car.daily_rate, car.currency || 'RWF')} <span className="text-xs font-medium text-gray-500">provider rate / day</span></p>
               <p className="mt-2 text-xs text-gray-500">Rates and availability are confirmed directly by the provider.</p>
-              <button onClick={() => begin(car)} className="mt-4 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-brand">Edit inventory</button>
+
+              {/* Whether this car is actually in the catalogue. A lapsed car is
+                  shown, never hidden — these are the ones needing a call. */}
+              <div className={`mt-3 rounded-lg px-3 py-2 text-xs ${
+                car.subscription_status === 'lapsed' || car.subscription_status === 'none'
+                  ? 'bg-danger-tint text-danger-strong'
+                  : car.subscription_status === 'lapsing' ? 'bg-warning-tint text-warning-text'
+                  : 'bg-success-tint text-success-text'
+              }`}>
+                <span className="font-bold">
+                  {car.subscription_status === 'none' ? 'No listing subscription'
+                    : car.subscription_status === 'lapsed' ? 'Listing lapsed — not public'
+                    : car.subscription_status === 'lapsing' ? 'Lapses within 7 days'
+                    : 'Listing paid'}
+                </span>
+                {car.subscription_ends_on ? (
+                  <span className="ml-1 font-medium">· to {String(car.subscription_ends_on).slice(0, 10)}</span>
+                ) : null}
+              </div>
+
+              {car.subscription_status !== 'active' ? (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    inputMode="numeric" placeholder="Amount (RWF)"
+                    value={renewAmount[car.id] || ''}
+                    onChange={(e) => setRenewAmount({ ...renewAmount, [car.id]: formatRwfInput(e.target.value) })}
+                    className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 px-3 text-sm tabular-nums focus:border-brand focus:outline-none"
+                  />
+                  <button onClick={() => renew(car)} disabled={renewing === car.id}
+                    className="whitespace-nowrap rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                    {renewing === car.id ? 'Saving…' : 'Pay 30 days'}
+                  </button>
+                </div>
+              ) : null}
+
+              <button onClick={() => begin(car)} className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-brand">Edit inventory</button>
             </div>
           </article>
         ))}</div>
