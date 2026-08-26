@@ -3,6 +3,8 @@ import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'sawa_auth_token';
+const IS_DEV = typeof __DEV__ !== 'undefined' && __DEV__;
+const PRODUCTION_API_URL = 'https://api.sawacars.com';
 
 // Resolution order, most explicit first:
 //   1. extra.apiUrl        — set per build profile in eas.json (production/preview)
@@ -13,7 +15,12 @@ const TOKEN_KEY = 'sawa_auth_token';
 // phone, which is exactly why it must not be a hardcoded constant.
 const getBaseUrl = () => {
   const configured = Constants.expoConfig?.extra?.apiUrl;
-  if (configured) return String(configured).replace(/\/+$/, '');
+  // Expo serializes a null extra value as an object in some standalone
+  // builds. Only accept a non-empty string here; treating `{}` as a URL made
+  // fetch construct an invalid request and could fail the whole app at boot.
+  if (typeof configured === 'string' && configured.trim()) {
+    return configured.trim().replace(/\/+$/, '');
+  }
 
   const hostUri =
     Constants.expoConfig?.hostUri ||
@@ -27,6 +34,11 @@ const getBaseUrl = () => {
     }
   }
 
+  // A store build can be produced outside EAS (for example from Xcode). Keep
+  // that path functional even when the shell did not provide the public API
+  // variable; local development still uses Metro host detection above.
+  if (!IS_DEV) return PRODUCTION_API_URL;
+
   if (Platform.OS === 'android') return 'http://10.0.2.2:3000';
   return 'http://localhost:3000';
 };
@@ -38,7 +50,6 @@ export const BASE_URL = getBaseUrl();
 // an app that installs, opens, and shows an empty marketplace forever. Failing
 // the boot makes the misconfiguration impossible to miss before submission.
 // (Expo web is exempt: the production website is the separate web/ app.)
-const IS_DEV = typeof __DEV__ !== 'undefined' && __DEV__;
 if (!IS_DEV && Platform.OS !== 'web' && !/^https:\/\//.test(BASE_URL)) {
   throw new Error(
     `Refusing to start a release build against a non-HTTPS API (“${BASE_URL}”). ` +
