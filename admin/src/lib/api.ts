@@ -368,6 +368,31 @@ export const api = {
   inspectionChecklist: () => request<any>('/inspections/checklist'),
   startInspection: (id: string) =>
     request<any>(`/inspections/${id}/start`, { method: 'POST' }),
+  /** Save the work so far. Scores nothing, passes nothing, cannot touch a
+   *  completed inspection — losing forty minutes to a dropped connection is
+   *  what teaches an inspector to hurry. */
+  saveChecklistDraft: (id: string, checklist_results: Record<string, string>) =>
+    request<{ saved: true; recorded: number; remaining: number }>(
+      `/inspections/${id}/checklist`,
+      { method: 'PATCH', body: JSON.stringify({ checklist_results }) },
+    ),
+  inspectorStats: () => request<any[]>('/admin/inspectors'),
+
+  /** Everything recorded about one vehicle, joined on the normalised VIN key.
+   *  Refuses an identifier too short to join on rather than merging unrelated
+   *  cars into one record. */
+  vehicleHistory: (vin: string) =>
+    request<{
+      vin: { key: string | null; kind: 'iso' | 'chassis' | 'short' | 'none'; confident: boolean; note: string }
+      inspections: any[]
+      listings: any[]
+      summary: {
+        inspections: number; first_seen: string | null; last_seen: string | null
+        best_score: number | null; latest_score: number | null
+        passing_threshold: number; odometer_inconsistent: boolean
+      }
+    }>(`/admin/vehicles/history?vin=${encodeURIComponent(vin)}`),
+
   completeInspection: (id: string, data: any) =>
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
   issueInspectionReport: (id: string) =>

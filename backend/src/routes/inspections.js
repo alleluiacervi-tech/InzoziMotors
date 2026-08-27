@@ -11,6 +11,7 @@ const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middl
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
+const { elapsedMinutes, integrityFlags } = require('../lib/inspection-integrity');
 const { createInvitedAccount } = require('../lib/accounts');
 const { sendAccountInvite, sendInspectionReportReady } = require('../lib/mailer');
 const { issueInspectionReport } = require('../lib/documents/inspection-report');
@@ -21,7 +22,23 @@ const {
   evaluateChecklist,
   grade,
   publicDefinition,
+  REQUIRED_ITEM_IDS,
+  ITEM_BY_ID,
+  VERDICTS,
 } = require('../lib/inspection-policy');
+
+/** Names every entry a draft may not contain. Empty means the draft is safe to
+ *  store — not that it is complete, which only the completion route judges.
+ *  Both checks read the policy module's own vocabulary, so a draft can never
+ *  hold something the completion would later reject. */
+function validateChecklistDraft(results) {
+  const problems = [];
+  for (const [id, verdict] of Object.entries(results)) {
+    if (!ITEM_BY_ID.has(id)) problems.push(id);
+    else if (!VERDICTS.has(verdict)) problems.push(`${id}=${verdict}`);
+  }
+  return problems;
+}
 
 const router = express.Router();
 const MAX_GALLERY_PHOTOS = 40;
@@ -648,6 +665,76 @@ router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
   }
 });
 
+// PATCH /inspections/:id/checklist — save the work so far.
+//
+// The whole 150-item checklist used to be submitted in one request, so a
+// dropped connection at item 140 lost forty minutes of work. That is not just
+// an inconvenience: losing the work twice is exactly what teaches an inspector
+// to hurry, and hurrying is the thing the checklist cannot survive.
+//
+// This writes partial results and NOTHING else. It cannot score, cannot pass,
+// cannot publish and cannot touch a completed inspection — POST /:id/complete
+// remains the single place any of that happens, and it still demands the full
+// canonical checklist. A draft is a notebook, not a verdict.
+router.patch('/:id/checklist', requireAdmin, requireUuid('id'), async (req, res) => {
+  const results = req.body && req.body.checklist_results;
+  if (!results || typeof results !== 'object' || Array.isArray(results)) {
+    return res.status(400).json({ error: 'Send checklist_results as an object of item id to verdict' });
+  }
+  // Partial is expected; malformed is not. Unknown ids and invalid verdicts are
+  // refused here rather than silently stored, so a draft can never carry
+  // something the completion would later reject.
+  const invalid = validateChecklistDraft(results);
+  if (invalid.length) {
+    return res.status(400).json({
+      error: `Unrecognised checklist entries: ${invalid.slice(0, 5).join(', ')}`,
+      code: 'INSPECTION_CHECKLIST_INVALID',
+      invalid,
+    });
+  }
+
+  try {
+    const saved = await withTransaction(async (client) => {
+      const current = await client.query('SELECT * FROM inspections WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!current.rowCount) { const e = new Error('Inspection not found'); e.status = 404; throw e; }
+      const inspection = current.rows[0];
+      if (inspection.status === 'complete') {
+        // A completed inspection is evidence. It is not editable, by anyone,
+        // through this route or any other.
+        const e = new Error('A completed inspection cannot be edited'); e.status = 409;
+        e.code = 'INSPECTION_ALREADY_COMPLETE'; throw e;
+      }
+      if (inspection.status !== 'in_progress') {
+        const e = new Error('Start the inspection before recording checks'); e.status = 409;
+        e.code = 'INSPECTION_NOT_STARTED'; throw e;
+      }
+      if (inspection.inspector_id && inspection.inspector_id !== req.user.id) {
+        const e = new Error('This inspection is assigned to another inspector'); e.status = 409;
+        e.code = 'INSPECTION_ASSIGNED_TO_ANOTHER_ADMIN'; throw e;
+      }
+
+      // Merged, not replaced: two tabs or a flaky connection must not be able
+      // to erase verdicts already recorded by sending a smaller object.
+      const { rows } = await client.query(
+        `UPDATE inspections
+            SET checklist_results = COALESCE(checklist_results, '{}'::jsonb) || $1::jsonb
+          WHERE id = $2 RETURNING checklist_results`,
+        [JSON.stringify(results), req.params.id]
+      );
+      return rows[0].checklist_results;
+    });
+
+    // No audit entry: a draft is not a decision, and one row per tap would bury
+    // the log that records the decisions.
+    const recorded = Object.keys(saved).length;
+    res.json({ saved: true, recorded, remaining: Math.max(0, REQUIRED_ITEM_IDS.length - recorded) });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    log.error('checklist draft save failed', { error: err.message });
+    res.status(500).json({ error: 'Could not save the checklist' });
+  }
+});
+
 // POST /inspections/:id/complete — record checklist, weighted score, gated publish
 router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) => {
   const { checklist_results, notes } = req.body;
@@ -665,6 +752,16 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
   }
 
   const score = evaluated.score;
+  // The floor below which a completed checklist is not credible, read once up
+  // front. Absent or unreadable falls back to the shipped default rather than
+  // failing the completion — a settings problem must never cost an inspector
+  // forty minutes of work.
+  let minMinutes = 20;
+  try {
+    const setting = await pool.query("SELECT value FROM platform_settings WHERE key='inspection_min_minutes'");
+    if (setting.rows.length) minMinutes = Number(setting.rows[0].value) || 20;
+  } catch { /* the default stands */ }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -782,9 +879,20 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       });
     }
 
+    // The clock and the shape of the result, written permanently into the audit
+    // log at the moment of completion. Everything else derives these on read,
+    // but the threshold may change later and this is the contemporaneous fact:
+    // how long it actually took, on the day.
+    const closed = { ...insp, status: 'complete', completed_at: new Date(), checklist_results };
+    const minutes = elapsedMinutes(closed);
+    const flags = integrityFlags(closed, { minMinutes });
+
     await recordAdminAction(client, {
       actorId: req.user.id, action: 'inspection.completed', targetType: 'inspection', targetId: insp.id,
-      summary: `Inspection completed with ${score}/150`, metadata: {
+      summary: `Inspection completed with ${score}/150${minutes !== null ? ` in ${minutes} min` : ''}`,
+      metadata: {
+        elapsed_minutes: minutes,
+        integrity_flags: flags.map((flag) => flag.id),
         score, passed, published: false, checklist_version: CHECKLIST_VERSION,
         critical_failures: evaluated.critical_failures.map((failure) => failure.id),
         kind: insp.kind, submission_id: insp.submission_id, car_id: insp.car_id,
@@ -806,6 +914,8 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       category_scores: evaluated.category_scores,
       car_id: insp.car_id,
       kind: insp.kind,
+      elapsed_minutes: minutes,
+      integrity_flags: flags,
       published: false,
       ready_for_review: !!(insp.car_id && passed),
     });

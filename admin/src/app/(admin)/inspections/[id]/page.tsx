@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { InspectionFee } from '@/components/InspectionFee'
 import { JourneyRail } from '@/components/JourneyRail'
@@ -31,12 +31,50 @@ export default function InspectionDetailPage() {
       .then(([inspection, checklist]) => {
         setInsp(inspection)
         setDefinition(checklist)
-        if (inspection.checklist_results) setResults(inspection.checklist_results)
+        if (inspection.checklist_results) {
+          setResults(inspection.checklist_results)
+          // Already on the server — not a pending change.
+          savedRef.current = { ...inspection.checklist_results }
+        }
         if (inspection.notes) setNotes(inspection.notes)
       })
       .catch((error) => toast(error.message, 'error'))
       .finally(() => setLoading(false))
   }, [id, toast])
+
+  // ─── Autosave ──────────────────────────────────────────────────────────────
+  // A 150-item checklist is forty minutes of work. Losing it to a dropped
+  // connection once teaches an inspector to hurry, and hurrying is the one
+  // thing this checklist cannot survive. So verdicts are pushed to the server
+  // as they are entered.
+  //
+  // Only the DELTA is sent — the server merges, so a smaller payload can never
+  // erase what is already recorded. Debounced, because an inspector working
+  // quickly through a category would otherwise fire one request per tap.
+  const savedRef = useRef<Record<string, string>>({})
+  const [draftState, setDraftState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  useEffect(() => {
+    if (!insp || insp.status !== 'in_progress') return
+    const pending = Object.fromEntries(
+      Object.entries(results).filter(([id, verdict]) => savedRef.current[id] !== verdict),
+    )
+    if (!Object.keys(pending).length) return
+
+    const timer = window.setTimeout(() => {
+      setDraftState('saving')
+      api.saveChecklistDraft(String(id), pending)
+        .then(() => {
+          savedRef.current = { ...savedRef.current, ...pending }
+          setDraftState('saved')
+        })
+        // Deliberately quiet: the inspector keeps working and the next save
+        // retries the same delta. A toast per hiccup would train them to
+        // ignore toasts.
+        .catch(() => setDraftState('error'))
+    }, 1200)
+    return () => window.clearTimeout(timer)
+  }, [results, insp, id])
 
   /** Re-read just the inspection after a fee is recorded or voided. The
    *  checklist definition is static, and refetching the whole page would
@@ -137,7 +175,17 @@ export default function InspectionDetailPage() {
         </div>
         <div className="mt-4">
           <div className="mb-1 flex justify-between text-xs text-gray-500">
-            <span>{counts.answered} / {definition.item_count} checks recorded</span>
+            <span>
+              {counts.answered} / {definition.item_count} checks recorded
+              {insp.status === 'in_progress' ? (
+                <span className={`ml-2 font-semibold ${draftState === 'error' ? 'text-red-600' : 'text-gray-400'}`}>
+                  {draftState === 'saving' ? '· saving…'
+                    : draftState === 'saved' ? '· saved'
+                    : draftState === 'error' ? '· not saved — check your connection'
+                    : ''}
+                </span>
+              ) : null}
+            </span>
             <span className={`font-semibold ${predictedPass ? 'text-green-600' : 'text-gray-700'}`}>Score: {score}/{definition.max_score}</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full bg-brand transition-all" style={{ width: `${(counts.answered / definition.item_count) * 100}%` }} /></div>

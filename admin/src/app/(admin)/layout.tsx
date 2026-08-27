@@ -36,6 +36,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     title: 'People & Oversight',
     items: [
       { href: '/users', icon: 'user', label: 'Users & ID checks' },
+      { href: '/vehicles', icon: 'search', label: 'Vehicle history' },
       { href: '/analytics', icon: 'chart', label: 'Analytics' },
       { href: '/centers', icon: 'location', label: 'Centers' },
     ],

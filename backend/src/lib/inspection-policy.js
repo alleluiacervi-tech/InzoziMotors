@@ -275,6 +275,9 @@ function publicDefinition() {
 }
 
 module.exports = {
+  // The verdict vocabulary is part of the contract, not a private detail:
+  // the draft-save route has to refuse anything the completion would reject.
+  VERDICTS,
   CHECKLIST_VERSION,
   SCORE_MAX,
   PUBLISH_THRESHOLD,

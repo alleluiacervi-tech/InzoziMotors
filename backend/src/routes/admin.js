@@ -8,6 +8,7 @@ const { recordAdminAction } = require('../lib/admin-audit');
 const { sendAccountInvite, sendResetCode, mailEnabled } = require('../lib/mailer');
 const { ACCOUNT_KINDS, createInvitedAccount } = require('../lib/accounts');
 const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
+const { integrityFlags, integrityPriority } = require('../lib/inspection-integrity');
 const {
   SETTING_KEY: DUTY_RATES_KEY,
   validateRates: validateDutyRates,
@@ -24,9 +25,22 @@ const SITE_ORIGIN = process.env.PUBLIC_SITE_ORIGIN || 'https://sawacars.com';
 // This deliberately derives work from source-of-truth workflow tables instead
 // of maintaining a second "tasks" table that can drift out of sync. Every item
 // is actionable, carries a stable destination, and explains why it is urgent.
+/** The floor below which a completed 150-point checklist is not credible.
+ *  A missing or unreadable row falls back to the shipped default: a settings
+ *  problem must not take the Action Center down with it. */
+async function minInspectionMinutes() {
+  try {
+    const { rows } = await pool.query("SELECT value FROM platform_settings WHERE key='inspection_min_minutes'");
+    const value = Number(rows[0]?.value);
+    return Number.isFinite(value) && value >= 0 ? value : 20;
+  } catch {
+    return 20;
+  }
+}
+
 router.get('/action-center', requireAdmin, async (_req, res) => {
   try {
-    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks, lapsingRentals] = await Promise.all([
+    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks, lapsingRentals, suspectInspections] = await Promise.all([
       pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
                     EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
                   FROM submissions
@@ -103,7 +117,43 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                   WHERE rc.status = 'active'
                     AND sub.ends_on <= CURRENT_DATE + 7
                   ORDER BY sub.ends_on ASC LIMIT 20`),
+      // Completed inspections whose record does not look plausible.
+      //
+      // SQL narrows to CANDIDATES; lib/inspection-integrity.js still decides.
+      // The first version fetched the hundred most recent and judged them all,
+      // which quietly broke: this queue surfaces the OLDEST unreviewed work, so
+      // an old suspect record fell outside the fetch window while being exactly
+      // what the queue exists to show. Narrowing first lets the fetch be
+      // ordered the same way the queue is.
+      //
+      // ⚠ The predicate below must stay a SUPERSET of every flag that is not
+      // 'no_exceptions'. Both current ones are about the clock. Add a flag that
+      // is not, and widen this or it will never be seen.
+      pool.query(`SELECT i.id, i.started_at, i.completed_at, i.status, i.checklist_results,
+                    i.score, i.kind, i.completed_at AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - i.completed_at)) / 3600 AS age_hours,
+                    u.name AS inspector_name,
+                    COALESCE(c.title, s.make || ' ' || s.model,
+                             i.vehicle_make || ' ' || i.vehicle_model) AS vehicle
+                  FROM inspections i
+                  LEFT JOIN users u ON u.id = i.inspector_id
+                  LEFT JOIN cars c ON c.id = i.car_id
+                  LEFT JOIN submissions s ON s.id = i.submission_id
+                  WHERE i.status = 'complete'
+                    AND i.completed_at > NOW() - INTERVAL '30 days'
+                    AND (i.started_at IS NULL
+                         OR (i.completed_at - i.started_at) < ($1 || ' minutes')::interval)
+                  ORDER BY i.completed_at ASC LIMIT 40`,
+                 [String(await minInspectionMinutes())]),
     ]);
+
+    const minMinutes = await minInspectionMinutes();
+    const suspect = suspectInspections.rows
+      .map((row) => ({ row, flags: integrityFlags(row, { minMinutes }) }))
+      // 'no_exceptions' alone is not a finding — a genuinely good car passes
+      // everything. It only earns attention next to a clock that does not add up.
+      .filter((entry) => entry.flags.some((flag) => flag.id !== 'no_exceptions'))
+      .slice(0, 20);
 
     const item = (row, data) => ({
       id: data.id,
@@ -127,6 +177,13 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
       ...imports.rows.map((r) => item(r, { id: `import:${r.id}`, kind: 'Import', priority: Number(r.age_hours) >= 72 ? 'urgent' : agedPriority(r, 24, 0), title: `${r.order_ref} needs attention`, detail: r.status === 'enquiry' ? 'New import enquiry needs a quotation' : r.status.replaceAll('_', ' '), href: `/imports/${r.id}` })),
       ...importPayments.rows.map((r) => item(r, { id: `import-payment:${r.id}`, kind: 'Import', priority: agedPriority(r, 8, 0), title: `Review offline record for ${r.order_ref}`, detail: `${r.milestone.replaceAll('_', ' ')} evidence submitted`, href: `/imports/${r.import_order_id}` })),
       ...rentalInquiries.rows.map((r) => item(r, { id: `rental-inquiry:${r.id}`, kind: 'Rental inquiry', priority: agedPriority(r, 24, 4), title: `Follow up ${r.inquiry_ref}`, detail: r.car_title, href: `/rentals/inquiries?focus=${r.id}` })),
+      ...suspect.map(({ row, flags }) => item(row, {
+        id: `inspection-integrity:${row.id}`, kind: 'Inspection',
+        priority: integrityPriority(flags),
+        title: `Review the record for ${row.vehicle || 'an inspected vehicle'}`,
+        detail: `${flags.map((flag) => flag.label).join('. ')}${row.inspector_name ? ` — ${row.inspector_name}` : ''}`,
+        href: `/inspections/${row.id}`,
+      })),
       ...lapsingRentals.rows.map((r) => item(r, {
         id: `rental-subscription:${r.id}`, kind: 'Rental listing',
         priority: r.lapsed ? 'urgent' : 'routine',
@@ -714,6 +771,57 @@ router.get('/audit-log', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 10
   }
 });
 
+// GET /admin/inspectors — how each inspector's work actually looks.
+//
+// You do not prevent a rubber-stamped checklist with form design; you make it
+// observable and then a human has a conversation. This is that screen: volume,
+// median time on the clock, and how often the answer is "everything passed".
+//
+// Median rather than mean on purpose — one abandoned-and-restarted inspection
+// sitting open for six hours would drag an average into meaninglessness and
+// hide exactly the pattern this exists to show.
+router.get('/inspectors', requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.inspector_id, u.name, u.email,
+              COUNT(*)::int AS completed,
+              PERCENTILE_CONT(0.5) WITHIN GROUP (
+                ORDER BY EXTRACT(EPOCH FROM (i.completed_at - i.started_at)) / 60
+              ) AS median_minutes,
+              MIN(EXTRACT(EPOCH FROM (i.completed_at - i.started_at)) / 60) AS fastest_minutes,
+              AVG(i.score)::numeric(6,2) AS mean_score,
+              COUNT(*) FILTER (WHERE i.passed)::int AS passed,
+              COUNT(*) FILTER (
+                WHERE jsonb_array_length(COALESCE(i.critical_failures, '[]'::jsonb)) > 0
+              )::int AS with_critical_failures
+         FROM inspections i
+         LEFT JOIN users u ON u.id = i.inspector_id
+        WHERE i.status = 'complete' AND i.started_at IS NOT NULL AND i.inspector_id IS NOT NULL
+        GROUP BY i.inspector_id, u.name, u.email
+        ORDER BY COUNT(*) DESC`
+    );
+    res.json(rows.map((row) => ({
+      inspector_id: row.inspector_id,
+      name: row.name,
+      email: row.email,
+      completed: row.completed,
+      median_minutes: row.median_minutes === null ? null : Math.round(Number(row.median_minutes) * 10) / 10,
+      fastest_minutes: row.fastest_minutes === null ? null : Math.round(Number(row.fastest_minutes) * 10) / 10,
+      mean_score: row.mean_score === null ? null : Number(row.mean_score),
+      // Deliberately a rate rather than a verdict. A high pass rate is what a
+      // careful inspector working on good cars produces, and also what someone
+      // who is not looking produces. The number invites the question; it does
+      // not answer it.
+      pass_rate: row.completed ? Math.round((row.passed / row.completed) * 100) : null,
+      critical_failure_rate: row.completed
+        ? Math.round((row.with_critical_failures / row.completed) * 100) : null,
+    })));
+  } catch (err) {
+    log.error('inspector stats error', { error: err.message });
+    res.status(500).json({ error: 'Could not load inspector statistics' });
+  }
+});
+
 // GET /admin/mail-status — is outbound email actually configured?
 //
 // Every sender in lib/mailer.js is fire-and-forget so that a mail outage can
@@ -761,6 +869,9 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
   const validators = {
     listing_min_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 10,
     listing_recommended_photos: (value) => Number.isInteger(value) && value >= 1 && value <= 20,
+    // A floor for review, not a target. Zero would disable the signal entirely,
+    // which is a choice an operator is allowed to make explicitly.
+    inspection_min_minutes: (value) => Number.isInteger(value) && value >= 0 && value <= 480,
     // The first setting that is an object rather than an integer. A form of
     // twenty numbers cannot be corrected from "Invalid value for
     // import_duty_rates", so this one reports which field is wrong.
