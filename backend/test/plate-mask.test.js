@@ -208,9 +208,12 @@ test('a photo with no plate is cleared as a decision, not left unreviewed', asyn
   const auth = { Authorization: `Bearer ${admin}` };
   const { carId, photo } = await listingWithPhoto(admin);
 
+  // Returns the whole gallery, like every other photo mutation on this router:
+  // clearing can now restore a file and reorder cars.images, so a single row is
+  // no longer a complete answer.
   const cleared = await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
     .set(auth).send({ plate_state: 'none' }).expect(200);
-  assert.equal(cleared.body.plate_state, 'none');
+  assert.equal(cleared.body.photos.find((p) => p.id === photo.id).plate_state, 'none');
 
   const row = (await pool.query('SELECT url, plate_state, plate_mask FROM car_photos WHERE id=$1', [photo.id])).rows[0];
   assert.equal(row.plate_state, 'none');
@@ -221,6 +224,142 @@ test('a photo with no plate is cleared as a decision, not left unreviewed', asyn
     "SELECT action FROM admin_audit_log WHERE target_id=$1 AND action='listing.photo_plate_cleared'", [carId]
   );
   assert.equal(rows.length, 1, 'the decision is on the record');
+});
+
+// ─── Getting it wrong, and fixing it ─────────────────────────────────────────
+//
+// The first version of this feature could place a cover and nothing else. If it
+// landed in the wrong spot there was no way back: the editor opened on the
+// already-masked file, so the plate being covered was invisible, and the gallery
+// payload never reported plate_state, so the dashboard could not even tell a
+// masked photo from an unreviewed one.
+
+test('the gallery reports what has actually been decided about each plate', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const { carId, photo } = await listingWithPhoto(admin);
+
+  // Fresh upload: undecided, and honest about it.
+  const fresh = await api().get(`/inspections/cars/${carId}/photos`).set(auth).expect(200);
+  const before = fresh.body.photos.find((p) => p.id === photo.id);
+  assert.equal(before.plate_state, 'unreviewed');
+  assert.equal(before.has_original, false);
+  assert.equal(before.plate_mask, null);
+
+  await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
+    .set(auth).send({ quad: quadOverPlate() }).expect(200);
+
+  const after = await api().get(`/inspections/cars/${carId}/photos`).set(auth).expect(200);
+  const masked = after.body.photos.find((p) => p.id === photo.id);
+  assert.equal(masked.plate_state, 'masked');
+  assert.equal(masked.has_original, true, 'the editor needs to know a clean copy exists');
+  // The four points, not just a bounding box: the rotation lives in them, and
+  // reopening the editor has to put the badge back where it was left.
+  assert.equal(masked.plate_mask.points.length, 4);
+  assert.ok(masked.plate_mask.bounds.width > 0);
+  // The address of the original is never handed out — the path is denied.
+  assert.equal(masked.original_url, undefined);
+});
+
+test('the editor is served the unmasked photograph, and only to an admin', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const { carId, photo } = await listingWithPhoto(admin);
+
+  // Before any mask there is no kept original, so the route points at the
+  // published file rather than 404ing — one source for both cases.
+  const passthrough = await api().get(`/inspections/cars/${carId}/photos/${photo.id}/original`)
+    .set(auth).expect(302);
+  assert.equal(passthrough.headers.location, photo.url);
+
+  await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
+    .set(auth).send({ quad: quadOverPlate() }).expect(200);
+
+  const original = await api().get(`/inspections/cars/${carId}/photos/${photo.id}/original`)
+    .set(auth).expect(200).buffer(true).parse((res, cb) => {
+      const chunks = []; res.on('data', (c) => chunks.push(c)); res.on('end', () => cb(null, Buffer.concat(chunks)));
+    });
+  // This is the whole point of the route: the plate is READABLE here, which is
+  // what makes placing a cover over it possible.
+  assert.ok(await whiteShareOverPlate(original.body) > 0.9, 'the editor sees the real plate');
+
+  // And the file it comes from is still unreachable without an admin session.
+  const outsider = await register();
+  await api().get(`/inspections/cars/${carId}/photos/${photo.id}/original`)
+    .set('Authorization', `Bearer ${outsider.token}`).expect(403);
+  await api().get(`/inspections/cars/${carId}/photos/${photo.id}/original`).expect(401);
+});
+
+test('a cover placed wrong can be taken off, and the original comes back', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const { carId, photo } = await listingWithPhoto(admin);
+
+  // Somewhere useless — the sky, not the plate.
+  const wrong = [
+    { x: 0.05, y: 0.05 }, { x: 0.35, y: 0.05 },
+    { x: 0.35, y: 0.16 }, { x: 0.05, y: 0.16 },
+  ];
+  const maskedState = await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
+    .set(auth).send({ quad: wrong }).expect(200);
+  const maskedUrl = maskedState.body.photos.find((p) => p.id === photo.id).url;
+  assert.notEqual(maskedUrl, photo.url);
+
+  const removed = await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
+    .set(auth).send({ plate_state: 'none' }).expect(200);
+  const restored = removed.body.photos.find((p) => p.id === photo.id);
+
+  assert.equal(restored.plate_state, 'none');
+  assert.equal(restored.plate_mask, null);
+  assert.equal(restored.has_original, false, 'nothing is masked, so nothing is being kept back');
+  assert.notEqual(restored.url, maskedUrl, 'a new address, so no cache serves the badged file');
+
+  // The published pixels are the original again — badge gone, plate back.
+  const served = await api().get(new URL(restored.url).pathname).expect(200)
+    .buffer(true).parse((res, cb) => {
+      const chunks = []; res.on('data', (c) => chunks.push(c)); res.on('end', () => cb(null, Buffer.concat(chunks)));
+    });
+  assert.ok(await whiteShareOverPlate(served.body) > 0.9, 'the original photograph is public again');
+
+  // cars.images has to move with it or the site keeps serving the old file.
+  const images = (await pool.query('SELECT images FROM cars WHERE id=$1', [carId])).rows[0].images;
+  assert.ok(images.includes(restored.url));
+  assert.equal(images.includes(maskedUrl), false);
+
+  const { rows } = await pool.query(
+    "SELECT action FROM admin_audit_log WHERE target_id=$1 AND action='listing.photo_plate_cover_removed'", [carId]
+  );
+  assert.equal(rows.length, 1, 'taking a cover off is a recorded act, not a silent one');
+});
+
+test('removing a cover and re-covering correctly leaves one badge, over the plate', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const { carId, photo } = await listingWithPhoto(admin);
+  const wrong = [
+    { x: 0.05, y: 0.05 }, { x: 0.35, y: 0.05 },
+    { x: 0.35, y: 0.16 }, { x: 0.05, y: 0.16 },
+  ];
+
+  await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`).set(auth).send({ quad: wrong }).expect(200);
+  await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`).set(auth).send({ plate_state: 'none' }).expect(200);
+  const fixed = await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
+    .set(auth).send({ quad: quadOverPlate() }).expect(200);
+
+  const row = fixed.body.photos.find((p) => p.id === photo.id);
+  assert.equal(row.plate_state, 'masked');
+
+  const served = await api().get(new URL(row.url).pathname).expect(200)
+    .buffer(true).parse((res, cb) => {
+      const chunks = []; res.on('data', (c) => chunks.push(c)); res.on('end', () => cb(null, Buffer.concat(chunks)));
+    });
+  // The plate is covered...
+  assert.ok(await whiteShareOverPlate(served.body) < 0.25, 'the plate is hidden after the correction');
+  // ...and the first, wrong badge is not still sitting in the sky, which is what
+  // would happen if the round trip had masked a masked file.
+  const sky = await sharp(served.body)
+    .extract({ left: 80, top: 60, width: 300, height: 60 }).stats();
+  assert.ok(sky.channels[0].max > 60, 'the discarded cover is not baked into the corner');
 });
 
 test('the plate routes validate their input and their caller', async () => {

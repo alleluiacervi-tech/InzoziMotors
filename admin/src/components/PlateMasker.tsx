@@ -45,15 +45,49 @@ function corners(box: Box): { x: number; y: number }[] {
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 
+/** The inverse of `corners()`. The server stores the four points, which carry
+ *  the rotation that a bounding box throws away — so reopening a mask puts the
+ *  badge back exactly where it was left, and repositioning is a nudge rather
+ *  than starting over. Returns null for anything it cannot read, and the editor
+ *  falls back to INITIAL. */
+function boxFromPoints(points: unknown): Box | null {
+  if (!Array.isArray(points) || points.length !== 4) return null
+  const p = points.map((q: any) => ({ x: Number(q?.x), y: Number(q?.y) }))
+  if (p.some((q) => !Number.isFinite(q.x) || !Number.isFinite(q.y))) return null
+  const [tl, tr, br] = p
+  const w = Math.hypot(tr.x - tl.x, tr.y - tl.y)
+  const h = Math.hypot(br.x - tr.x, br.y - tr.y)
+  if (!(w > 0) || !(h > 0)) return null
+  const cx = p.reduce((sum, q) => sum + q.x, 0) / 4
+  const cy = p.reduce((sum, q) => sum + q.y, 0) / 4
+  const angle = (Math.atan2(tr.y - tl.y, tr.x - tl.x) * 180) / Math.PI
+  return {
+    x: clamp01(cx - w / 2),
+    y: clamp01(cy - h / 2),
+    w: Math.min(1, w),
+    h: Math.min(1, h),
+    // The editor's own slider range, so a stored value outside it cannot
+    // produce a handle the operator can see but not move.
+    angle: Math.max(-30, Math.min(30, Number(angle.toFixed(1)))) || 0,
+  }
+}
+
 export function PlateMasker({ carId, photo, onDone, onCancel }: {
   carId: string
-  photo: { id: string; url: string; plate_state?: string }
+  photo: { id: string; url: string; plate_state?: string; plate_mask?: any; has_original?: boolean }
   onDone: () => void
   onCancel: () => void
 }) {
   const toast = useToast()
   const frame = useRef<HTMLDivElement>(null)
-  const [box, setBox] = useState<Box>(INITIAL)
+  const masked = photo.plate_state === 'masked'
+  // Always edit against the unmasked photograph. `photo.url` on a masked photo
+  // is the file with the badge already burned in, so placing a cover on it meant
+  // aiming at a plate you could not see — and a badge dropped in the wrong place
+  // could never be corrected, only stacked on. The route redirects to the
+  // published file when no original was kept, so one source serves both cases.
+  const sourceUrl = `/api/backend/inspections/cars/${carId}/photos/${photo.id}/original`
+  const [box, setBox] = useState<Box>(() => boxFromPoints(photo.plate_mask?.points) || INITIAL)
   const [drag, setDrag] = useState<null | { mode: 'move' | 'resize'; ox: number; oy: number; start: Box }>(null)
   const [saving, setSaving] = useState(false)
 
@@ -130,11 +164,16 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
     } finally { setSaving(false) }
   }
 
+  // One call, two meanings, and the server picks between them: on an unmasked
+  // photo it records a decision, and on a masked one it also puts the original
+  // photograph back. That is the undo for a cover placed somewhere wrong enough
+  // that moving it is not the answer.
   async function noPlate() {
     setSaving(true)
     try {
       await api.clearPlate(carId, photo.id)
-      toast('Recorded: no plate visible in this photo.', 'success')
+      toast(masked ? 'Cover removed — the original photo is published again.'
+                   : 'Recorded: no plate visible in this photo.', 'success')
       onDone()
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save.', 'error')
@@ -146,7 +185,9 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
          role="dialog" aria-modal="true" aria-label="Hide the registration plate">
       <div className="max-h-full w-full max-w-4xl overflow-y-auto rounded-xl bg-surface p-5 shadow-card-lg">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-section font-extrabold text-content">Hide the registration plate</h2>
+          <h2 className="text-section font-extrabold text-content">
+            {masked ? 'Move the plate cover' : 'Hide the registration plate'}
+          </h2>
           <p className="text-caption text-content-muted">
             Drag the badge over the plate · corner handle to resize · arrow keys to nudge
           </p>
@@ -158,7 +199,7 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
              onPointerUp={() => setDrag(null)}
              onPointerCancel={() => setDrag(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo.url} alt="" className="block w-full" draggable={false} />
+          <img src={sourceUrl} alt="" className="block w-full" draggable={false} />
 
           <div
             onPointerDown={begin('move')}
@@ -196,19 +237,19 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
         </label>
 
         <p className="mt-3 rounded-lg bg-surface-alt px-4 py-3 text-caption leading-relaxed text-content-secondary">
-          Saving replaces the published photo and moves the original to a private
-          location only the team can reach. Cover the plate generously — a sliver of a
-          character at the corner is still a readable plate.
+          {masked
+            ? 'You are working on the original photograph, with the badge where you last left it. Saving re-cuts the published photo from that original, so moving a cover never stacks one badge on another. Cover the plate generously — a sliver of a character at the corner is still a readable plate.'
+            : 'Saving replaces the published photo and keeps the original in a private location only the team can reach, so this can be moved or removed later. Cover the plate generously — a sliver of a character at the corner is still a readable plate.'}
         </p>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={save} disabled={saving}
             className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-white hover:bg-brand-bright disabled:opacity-50">
-            {saving ? 'Hiding…' : 'Hide the plate'}
+            {saving ? 'Saving…' : masked ? 'Save new position' : 'Hide the plate'}
           </button>
           <button onClick={noPlate} disabled={saving}
             className="rounded-xl border border-line px-4 py-3 text-label font-bold text-content hover:bg-surface-alt disabled:opacity-50">
-            No plate in this photo
+            {masked ? 'Remove the cover' : 'No plate in this photo'}
           </button>
           <button onClick={onCancel} disabled={saving}
             className="ml-auto rounded-xl px-4 py-3 text-label font-semibold text-content-muted hover:text-content">

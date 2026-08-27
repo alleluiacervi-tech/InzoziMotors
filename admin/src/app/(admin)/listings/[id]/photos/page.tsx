@@ -138,6 +138,20 @@ export default function CarPhotosPage() {
         </button>
       </div>
 
+      {/* Photos on a published listing are editable — add, remove, re-cover a
+          plate — but every save is immediately public. Saying so is the
+          difference between an operator working confidently and one who avoids
+          touching a live car at all. */}
+      {car.status === 'live' ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-xs font-bold text-amber-900">This listing is live on the website and in the app.</p>
+          <p className="mt-1 text-[11px] text-amber-800">
+            Adding, removing or re-covering a photo takes effect immediately for buyers.
+            The gallery cannot be taken below {minPhotos} photo{minPhotos === 1 ? '' : 's'} while the listing is public — remove the listing from the public feed first if you need to strip it back.
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upload Column */}
         <div className="lg:col-span-2 space-y-6">
