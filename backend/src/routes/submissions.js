@@ -13,6 +13,42 @@ const router = express.Router();
 
 const MAX_REFERENCE_IMAGES = 12;
 
+const PURPOSES = ['sale', 'rental', 'both'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Field validation shared by the seller route and the admin intake route
+ *  below. One copy: a second would drift, and the drift would show up as an
+ *  admin-filed submission the seller's own dashboard refuses to render. Returns
+ *  an error string, or null when the body is acceptable. */
+function submissionFieldError(body) {
+  const { make, model, year, mileage, asking_price, reference_images, purpose } = body;
+  if (!make || !model || !year) return 'make, model, and year are required';
+  if (!Number.isInteger(Number(year)) || Number(year) < 1900 || Number(year) > new Date().getFullYear() + 1) {
+    return 'year must be a valid vehicle model year';
+  }
+  if (mileage != null && (!Number.isFinite(Number(mileage)) || Number(mileage) < 0)) {
+    return 'mileage must be a non-negative number';
+  }
+  if (asking_price != null && (!Number.isFinite(Number(asking_price)) || Number(asking_price) < 0)) {
+    return 'asking_price must be a non-negative number';
+  }
+  if (purpose !== undefined && !PURPOSES.includes(purpose)) {
+    return `purpose must be one of: ${PURPOSES.join(', ')}`;
+  }
+  // reference_images lands in a TEXT[] column — anything but strings would
+  // either crash the insert or store garbage the app then renders as an <img>.
+  if (reference_images !== undefined && reference_images !== null) {
+    if (!Array.isArray(reference_images)) return 'reference_images must be an array of image URLs';
+    if (reference_images.length > MAX_REFERENCE_IMAGES) {
+      return `reference_images is limited to ${MAX_REFERENCE_IMAGES} images`;
+    }
+    if (reference_images.some((img) => typeof img !== 'string' || !/^https:\/\//i.test(img.trim()))) {
+      return 'Each reference image must use a secure HTTPS URL';
+    }
+  }
+  return null;
+}
+
 // POST /submissions — seller submits a car for inspection.
 // Identity approval happens during the team's inspection/onboarding workflow.
 // Requiring it before submission made that workflow impossible for new sellers.
@@ -21,31 +57,8 @@ router.post('/', requireAuth, async (req, res) => {
     make, model, year, mileage, condition, fuel_type, transmission,
     body_type, color, asking_price, notes, reference_images,
   } = req.body;
-  if (!make || !model || !year) {
-    return res.status(400).json({ error: 'make, model, and year are required' });
-  }
-  if (!Number.isInteger(Number(year)) || Number(year) < 1900 || Number(year) > new Date().getFullYear() + 1) {
-    return res.status(400).json({ error: 'year must be a valid vehicle model year' });
-  }
-  if (mileage != null && (!Number.isFinite(Number(mileage)) || Number(mileage) < 0)) {
-    return res.status(400).json({ error: 'mileage must be a non-negative number' });
-  }
-  if (asking_price != null && (!Number.isFinite(Number(asking_price)) || Number(asking_price) < 0)) {
-    return res.status(400).json({ error: 'asking_price must be a non-negative number' });
-  }
-  // reference_images lands in a TEXT[] column — anything but strings would
-  // either crash the insert or store garbage the app then renders as an <img>.
-  if (reference_images !== undefined && reference_images !== null) {
-    if (!Array.isArray(reference_images)) {
-      return res.status(400).json({ error: 'reference_images must be an array of image URLs' });
-    }
-    if (reference_images.length > MAX_REFERENCE_IMAGES) {
-      return res.status(400).json({ error: `reference_images is limited to ${MAX_REFERENCE_IMAGES} images` });
-    }
-    if (reference_images.some((img) => typeof img !== 'string' || !/^https:\/\//i.test(img.trim()))) {
-      return res.status(400).json({ error: 'Each reference image must use a secure HTTPS URL' });
-    }
-  }
+  const fieldError = submissionFieldError(req.body);
+  if (fieldError) return res.status(400).json({ error: fieldError });
   try {
     const seller = await pool.query(
       `SELECT role, account_status, deleted_at FROM users WHERE id = $1`,
@@ -60,12 +73,13 @@ router.post('/', requireAuth, async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO submissions
          (seller_id, make, model, year, mileage, condition, fuel_type,
-          transmission, body_type, color, asking_price, notes, reference_images, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'under_review')
+          transmission, body_type, color, asking_price, notes, reference_images, status, purpose)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'under_review',$14)
        RETURNING *`,
       [req.user.id, make, model, year, mileage, condition, fuel_type,
        transmission, body_type, color, asking_price || 0, notes,
-       Array.isArray(reference_images) ? reference_images : null]
+       Array.isArray(reference_images) ? reference_images : null,
+       PURPOSES.includes(req.body.purpose) ? req.body.purpose : 'sale']
     );
     const sub = rows[0];
 
@@ -80,6 +94,112 @@ router.post('/', requireAuth, async (req, res) => {
     res.status(201).json(sub);
   } catch (err) {
     log.error('submission error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /submissions/admin — the team files an intake on a provider's behalf.
+//
+// This is the missing rental intake. Until now the only way to reach an
+// inspection was POST /submissions, which is requireAuth: the vehicle's owner
+// had to sign in and file it themselves, and the record said "I want to sell
+// this car". A rental operator with ten vans therefore had to file ten sale
+// submissions for vehicles never intended for sale, and every screen downstream
+// described them as cars awaiting publication as listings.
+//
+// The submission stays the right record — routes/rentals.js requires one as
+// evidence, and that is a real safety property. What was missing was somewhere
+// to say what the vehicle is FOR, and someone other than the owner being able
+// to file it. Both are here; no gate changed.
+//
+// The seller still has to be a real, active seller account. An admin may file
+// the paperwork; they may not invent the counterparty.
+router.post('/admin', requireAdmin, async (req, res) => {
+  const {
+    seller_id, make, model, year, mileage, condition, fuel_type, transmission,
+    body_type, color, asking_price, notes, reference_images,
+  } = req.body;
+  // Shape-checked before it reaches Postgres. `WHERE id = $1` against a
+  // non-UUID raises SQLSTATE 22P02, which surfaces as a 500 — a server error
+  // reported for what is plainly a bad request, and one an operator cannot act
+  // on. requireUuid only guards path params, so the body needs this here.
+  if (!seller_id || !UUID_RE.test(String(seller_id))) {
+    return res.status(400).json({ error: 'seller_id must be a valid account id', field: 'seller_id' });
+  }
+  const fieldError = submissionFieldError(req.body);
+  if (fieldError) return res.status(400).json({ error: fieldError });
+  const purpose = PURPOSES.includes(req.body.purpose) ? req.body.purpose : 'sale';
+
+  try {
+    const created = await withTransaction(async (client) => {
+      const seller = await client.query(
+        `SELECT id, name, role, account_status, deleted_at, business_verified, seller_type
+           FROM users WHERE id = $1`,
+        [seller_id]
+      );
+      if (!seller.rowCount) { const e = new Error('Seller not found'); e.status = 404; throw e; }
+      const profile = seller.rows[0];
+      if (profile.role !== 'seller') {
+        const e = new Error('That account is not a seller. Change the role in the user directory first.');
+        e.status = 400; throw e;
+      }
+      if (profile.account_status !== 'active' || profile.deleted_at) {
+        const e = new Error('That seller account is suspended or deleted.');
+        e.status = 400; throw e;
+      }
+      // Named here, not enforced here. A rental intake can be filed for a
+      // seller who is not yet business-verified — the inspection is worth doing
+      // either way, and the flag can be granted while the car is at the centre.
+      // What must not happen is the operator discovering the requirement only
+      // when POST /rentals refuses, three steps later.
+      const rentalBlocked = ['rental', 'both'].includes(purpose) && profile.business_verified !== true;
+
+      const { rows } = await client.query(
+        `INSERT INTO submissions
+           (seller_id, make, model, year, mileage, condition, fuel_type,
+            transmission, body_type, color, asking_price, notes, reference_images,
+            status, purpose, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'under_review',$14,$15)
+         RETURNING *`,
+        [seller_id, make, model, year, mileage, condition, fuel_type,
+         transmission, body_type, color, asking_price || 0, notes,
+         Array.isArray(reference_images) ? reference_images : null,
+         purpose, req.user.id]
+      );
+      const sub = rows[0];
+
+      await notifyUser(client, {
+        user_id: seller_id,
+        type: 'listing_update',
+        title: 'Vehicle submitted by our team',
+        body: purpose === 'rental'
+          ? 'Our team has registered your vehicle for rental listing. The next step is its 150-point inspection.'
+          : 'Our team has submitted your vehicle on your behalf. The next step is its 150-point inspection.',
+        meta: JSON.stringify({ submissionId: sub.id }),
+      });
+
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'submission.created_by_admin',
+        targetType: 'submission', targetId: sub.id,
+        summary: `${make} ${model} ${year} filed for ${profile.name} (${purpose})`,
+        metadata: { seller_id, purpose, rental_provider_not_verified: rentalBlocked },
+      });
+
+      return { sub, rentalBlocked };
+    });
+
+    res.status(201).json({
+      ...created.sub,
+      // Surfaced at intake so the gap is fixed while the car is in the workshop,
+      // rather than discovered at the last step.
+      warnings: created.rentalBlocked
+        ? ['This seller is not business-verified, so a rental vehicle cannot be published for them yet. '
+           + 'Grant Verified business in the user directory before adding the car to the fleet.']
+        : [],
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('admin submission error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

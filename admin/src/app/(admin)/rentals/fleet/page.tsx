@@ -46,12 +46,25 @@ export default function RentalFleetPage() {
   }
   useEffect(() => { load() }, [])
 
+  // The eligible set used to be filtered out silently, so a seller who was
+  // simply missing a flag looked exactly like a typo: no results, no reason. A
+  // rental provider needs four things at once, and the operator has to be told
+  // which one is absent — with somewhere to go and fix it.
   useEffect(() => {
     const q = providerQuery.trim()
     if (q.length < 2) { setProviders([]); return }
     const timer = window.setTimeout(() => {
       api.searchUsers(q, 20)
-        .then((rows) => setProviders(rows.filter((row) => row.role === 'seller' && row.business_verified && row.id_verified === 'approved' && row.account_status === 'active')))
+        // Admins are never providers, so listing one with a blocker would be
+        // noise rather than help. Everyone else is shown WITH the reason.
+        .then((rows) => setProviders(rows.filter((row) => row.role !== 'admin').map((row) => {
+          const blockers: string[] = []
+          if (row.role !== 'seller') blockers.push('not a seller account')
+          if (row.id_verified !== 'approved') blockers.push('identity not verified')
+          if (row.business_verified !== true) blockers.push('not business-verified')
+          if (row.account_status !== 'active') blockers.push('account suspended')
+          return { ...row, blockers }
+        })))
         .catch(() => setProviders([]))
     }, 250)
     return () => window.clearTimeout(timer)
@@ -194,7 +207,20 @@ export default function RentalFleetPage() {
           <div className="mb-5 flex items-center justify-between"><div><h2 className="text-lg font-bold text-gray-900">{editing.id ? 'Edit rental vehicle' : 'Add rental vehicle'}</h2><p className="mt-1 text-xs text-gray-500">Every vehicle must belong to a verified rental company.</p></div><button type="button" onClick={() => setEditing(null)} className="text-gray-500">Close</button></div>
           <div className="mb-4"><label className={label}>Verified provider</label><input value={providerQuery} onChange={(e) => { setProviderQuery(e.target.value); setForm((old) => ({ ...old, provider_id: '', inspection_id: '' })) }} placeholder="Search showroom or contact" className={input} />
             {form.provider_id && <p className="mt-1 text-xs font-semibold text-success">Provider selected</p>}
-            {providers.length > 0 && <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white">{providers.map((provider) => <button key={provider.id} type="button" onClick={() => { setForm((old) => ({ ...old, provider_id: provider.id, inspection_id: '' })); setProviderQuery(provider.business_name || provider.name); setProviders([]) }} className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-0 hover:bg-gray-50"><span className="font-semibold">{provider.business_name || provider.name}</span><span className="ml-2 text-xs text-gray-500">{provider.email}</span></button>)}</div>}
+            {providers.length > 0 && <div className="mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-white">{providers.map((provider) => provider.blockers.length === 0 ? (
+              <button key={provider.id} type="button" onClick={() => { setForm((old) => ({ ...old, provider_id: provider.id, inspection_id: '' })); setProviderQuery(provider.business_name || provider.name); setProviders([]) }} className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-0 hover:bg-gray-50">
+                <span className="font-semibold">{provider.business_name || provider.name}</span><span className="ml-2 text-xs text-gray-500">{provider.email}</span>
+              </button>
+            ) : (
+              <div key={provider.id} className="border-b border-gray-100 px-3 py-2 text-sm last:border-0">
+                <span className="font-semibold text-gray-500">{provider.business_name || provider.name}</span>
+                <span className="ml-2 text-xs text-gray-400">{provider.email}</span>
+                <p className="mt-0.5 text-xs text-warning-text">
+                  Cannot be a rental provider — {provider.blockers.join(', ')}.{' '}
+                  <a href={`/users?q=${encodeURIComponent(provider.email)}`} className="font-bold underline">Fix in the user directory</a>
+                </p>
+              </div>
+            ))}</div>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2"><label className={label}>Passing 150-point inspection</label><select value={form.inspection_id} onChange={(e) => { const selected = inspections.find((inspection) => inspection.id === e.target.value); setForm({ ...form, inspection_id: e.target.value, make: selected ? String(selected.make || selected.submission_make || '') : form.make, model: selected ? String(selected.model || selected.submission_model || '') : form.model, year: selected ? String(selected.year || selected.submission_year || '') : form.year }) }} className={input} required disabled={!form.provider_id}><option value="">Select inspection evidence</option>{inspections.filter((inspection) => inspection.seller_id === form.provider_id && (!cars.some((car) => car.inspection_id === inspection.id) || inspection.id === editing?.inspection_id)).map((inspection) => <option key={inspection.id} value={inspection.id}>{inspection.year || inspection.submission_year} {inspection.make || inspection.submission_make} {inspection.model || inspection.submission_model} · {inspection.score}/150 · {new Date(inspection.completed_at).toLocaleDateString()}</option>)}</select><p className="mt-1 text-xs text-gray-500">Only a complete, passing inspection belonging to the selected provider can activate this vehicle.</p></div>
