@@ -15,11 +15,28 @@ CREATE TABLE IF NOT EXISTS users (
   id_back_url     TEXT,
   selfie_url      TEXT,
   id_submitted_at TIMESTAMPTZ,
+  -- How identity was established. 'documents' means uploads were reviewed here;
+  -- the other three are off-platform and the note IS the evidence, enforced by
+  -- users_offline_identity_attested_check below (migration 0029).
+  id_verification_method TEXT,   -- documents | in_person | business_document | known_client
+  id_verification_note   TEXT,
+  id_verification_ref    TEXT,
+  id_verified_at         TIMESTAMPTZ,
+  id_verified_by         UUID REFERENCES users(id),
   trust_score     INT NOT NULL DEFAULT 0,
   response_rate   INT NOT NULL DEFAULT 100,      -- % messages replied within 24h
   completed_sales INT NOT NULL DEFAULT 0,
   avatar_url      TEXT,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT users_id_verification_method_check CHECK (
+    id_verification_method IS NULL
+    OR id_verification_method IN ('documents', 'in_person', 'business_document', 'known_client')
+  ),
+  CONSTRAINT users_offline_identity_attested_check CHECK (
+    id_verification_method IS NULL
+    OR id_verification_method = 'documents'
+    OR (id_verification_note IS NOT NULL AND length(btrim(id_verification_note)) >= 10)
+  )
 );
 
 -- ─── Cars ────────────────────────────────────────────────────────────────────

@@ -7,7 +7,15 @@ import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/componen
 import { useConfirm, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
 
-const STATUSES = ['under_review', 'approved', 'live', 'paused', 'sold', 'rejected', 'scheduled', 'inspecting', 'archived']
+// 'needs_action' is a server-side view over under_review + approved — every car
+// whose next step belongs to an administrator — and it is the default because
+// the old default was 'live'. A vehicle that had just passed its inspection was
+// therefore never on screen when this page opened: the operator saw the cars
+// already published and reasonably concluded nothing was waiting. Opening on
+// the work rather than on the archive is the whole point.
+const NEEDS_ACTION = 'needs_action'
+const STATUSES = [NEEDS_ACTION, 'under_review', 'approved', 'live', 'paused', 'sold', 'rejected', 'scheduled', 'inspecting', 'archived']
+const STATUS_LABELS: Record<string, string> = { [NEEDS_ACTION]: 'Waiting on you' }
 const STATUS_COLORS: Record<string, string> = {
   live:         'bg-success-tint text-success',
   approved:     'bg-info-tint text-info',
@@ -20,7 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function ListingsPage() {
-  const [statusFilter, setStatusFilter] = useState('live')
+  const [statusFilter, setStatusFilter] = useState(NEEDS_ACTION)
   const [items, setItems]               = useState<any[]>([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]             = useState<unknown>(null)
@@ -28,19 +36,25 @@ export default function ListingsPage() {
   const ask = useConfirm()
   const toast = useToast()
   const [query, setQuery] = useState('')
-  // Readiness is fetched per listing on demand rather than for every row: the
-  // verdict costs a query each, and a list of fifty would mean fifty of them
-  // to answer a question the operator only asks about the one they are
-  // working on.
+  // Readiness used to be fetched only when the operator pressed "see what's
+  // missing", on the reasoning that fifty verdicts is fifty queries to answer a
+  // question about one car. That reasoning holds for a browse and fails for a
+  // queue: on the waiting-on-you view, "what is missing?" is the question being
+  // asked about every row at once, and hiding the answer behind a click is what
+  // let a fully-ready vehicle read as a stuck one. So it is fetched up front
+  // for the decision views, bounded, and still on demand everywhere else.
   const [readiness, setReadiness] = useState<Record<string, Readiness | 'loading' | 'error'>>({})
+  const AUTO_READINESS_LIMIT = 24
 
   async function checkReadiness(id: string) {
     setReadiness((prev) => ({ ...prev, [id]: 'loading' }))
     try {
       const verdict = await api.listingReadiness(id)
       setReadiness((prev) => ({ ...prev, [id]: verdict }))
+      return verdict
     } catch {
       setReadiness((prev) => ({ ...prev, [id]: 'error' }))
+      return null
     }
   }
 
@@ -58,6 +72,32 @@ export default function ListingsPage() {
   }
 
   useEffect(() => { load(statusFilter) }, [statusFilter])
+
+  // Sequential rather than parallel: this is a background courtesy, and firing
+  // twenty-four requests at once to fill in labels would compete with whatever
+  // the operator is actually clicking. `cancelled` stops the walk when the
+  // filter changes mid-flight, so switching tabs does not keep loading rows
+  // that are no longer on screen.
+  useEffect(() => {
+    if (![NEEDS_ACTION, 'under_review', 'approved'].includes(statusFilter)) return
+    const pending = items
+      .filter((car) => ['under_review', 'approved'].includes(car.status))
+      .slice(0, AUTO_READINESS_LIMIT)
+      .filter((car) => readiness[car.id] === undefined)
+    if (!pending.length) return
+    let cancelled = false
+    ;(async () => {
+      for (const car of pending) {
+        if (cancelled) return
+        await checkReadiness(car.id)
+      }
+    })()
+    return () => { cancelled = true }
+    // `readiness` is deliberately not a dependency: it is written by the loop
+    // below, and depending on it would restart the walk on every verdict.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, statusFilter])
+
   const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((car) => !q || [car.title, car.make, car.model, car.year, car.location, car.seller_name, car.id, car.vin].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
 
   async function updateStatus(id: string, status: string, reason?: string) {
@@ -69,6 +109,36 @@ export default function ListingsPage() {
       toast(e.message, 'error')
     } finally {
       setActionId(null)
+    }
+  }
+
+  // Approving moved a car out of 'under_review' and into 'approved' — a
+  // different tab — so from the operator's side the vehicle they were working on
+  // disappeared and nothing appeared to have happened. They would go looking for
+  // it in the wrong place, or approve it a second time. Two server transitions
+  // are still the right model (approve records the editorial decision, publish
+  // enacts it), but they are one intention, so they get one button. The server
+  // re-checks readiness on both, so a race that invalidates the car between them
+  // fails at the second call rather than publishing something unready.
+  async function approveAndPublish(car: any) {
+    const ok = await ask({
+      title: `Publish the ${car.year} ${car.make} ${car.model}?`,
+      message: 'It is approved and made public in one step, and appears on the website and in the app immediately. Seller verification, gallery and completed inspection are re-checked by the API before it goes live.',
+      confirmLabel: 'Approve and publish',
+    })
+    if (!ok) return
+    setActionId(car.id)
+    try {
+      await api.updateCarStatus(car.id, 'approved')
+      await api.updateCarStatus(car.id, 'live')
+      toast(`${car.year} ${car.make} ${car.model} is live`, 'success')
+    } catch (e: any) {
+      // A failure between the two leaves the car at 'approved', which is a
+      // legitimate resting state — say so, so the next step is obvious.
+      toast(`${e.message} — the listing is approved but not yet published; use Publish to finish.`, 'error')
+    } finally {
+      setActionId(null)
+      load(statusFilter)
     }
   }
 
@@ -93,10 +163,31 @@ export default function ListingsPage() {
   const isFeatured = (car: any) =>
     car.featured_until && new Date(car.featured_until).getTime() > Date.now()
 
+  // The row flags are a summary of four of the checks; publicationReadiness on
+  // the server is all of them. Prefer the real verdict wherever it has arrived
+  // and fall back to the summary otherwise, so a button is never enabled on
+  // less information than is available — and never disabled on more caution
+  // than is warranted once the verdict says yes.
+  const coarseReady = (car: any) =>
+    Boolean(car.has_completed_inspection)
+    && Math.max(car.image_count || 0, car.structured_photo_count || 0) >= 1
+    && car.seller_id_verified === 'approved'
+    && car.seller_account_status === 'active'
+  const verdictOf = (car: any) => {
+    const r = readiness[car.id]
+    return r && r !== 'loading' && r !== 'error' ? (r as Readiness) : null
+  }
+  const mayPublish = (car: any) => verdictOf(car)?.ready ?? coarseReady(car)
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Listings</h1>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Listings</h1>
+          {statusFilter === NEEDS_ACTION ? (
+            <p className="mt-0.5 text-xs text-content-muted">Vehicles whose next step is an approval or a publication by you. Oldest first.</p>
+          ) : null}
+        </div>
         <Link
           href="/listings/new"
           className="px-4 py-2 text-sm font-semibold bg-brand text-white rounded-lg hover:bg-brand-light transition-colors"
@@ -116,7 +207,8 @@ export default function ListingsPage() {
               statusFilter === s ? 'bg-brand text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-brand'
             }`}
           >
-            {s.replace('_', ' ')}
+            {STATUS_LABELS[s] || s.replace('_', ' ')}
+            {s === NEEDS_ACTION && statusFilter === NEEDS_ACTION && items.length ? ` (${items.length})` : ''}
           </button>
         ))}
       </div>
@@ -126,7 +218,11 @@ export default function ListingsPage() {
       ) : loading ? (
         <LoadingState />
       ) : visible.length === 0 ? (
-        <EmptyState icon="car" title={items.length ? 'No listings match' : 'No listings here'} description={items.length ? 'Try a different vehicle, seller, location, VIN, or ID.' : `Nothing on the floor with status “${statusFilter}”.`} />
+        <EmptyState icon="car"
+          title={items.length ? 'No listings match' : statusFilter === NEEDS_ACTION ? 'Nothing is waiting on you' : 'No listings here'}
+          description={items.length ? 'Try a different vehicle, seller, location, VIN, or ID.'
+            : statusFilter === NEEDS_ACTION ? 'Every submitted vehicle has been decided. New submissions appear here once their inspection is complete — check Submissions and Inspections for vehicles still earlier in the process.'
+            : `Nothing on the floor with status “${statusFilter}”.`} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((car) => (
@@ -198,15 +294,23 @@ export default function ListingsPage() {
                   {['approved', 'paused'].includes(car.status) && (
                     <button
                       onClick={async () => {
-                        const ok = await ask({ title: 'Publish this listing?', message: 'The API will re-check seller verification, gallery and completed inspection before making it public.', confirmLabel: 'Publish listing' })
+                        const ok = await ask({ title: `Publish the ${car.year} ${car.make} ${car.model}?`, message: 'It appears on the website and in the app immediately. The API re-checks seller verification, gallery and completed inspection before making it public.', confirmLabel: 'Publish listing' })
                         if (ok) updateStatus(car.id, 'live')
                       }}
-                      disabled={actionId === car.id || !car.has_completed_inspection || Math.max(car.image_count || 0, car.structured_photo_count || 0) < 1 || car.seller_id_verified !== 'approved' || car.seller_account_status !== 'active'}
+                      disabled={actionId === car.id || !mayPublish(car)}
+                      title={mayPublish(car) ? undefined : 'Something below is still required before this can be published.'}
                       className="px-2 py-1 text-xs font-medium bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
                     >Publish</button>
                   )}
-                  {car.status === 'under_review' && car.has_completed_inspection && Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 && car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? (
-                    <button onClick={() => updateStatus(car.id, 'approved')} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-info-tint text-info rounded-lg disabled:opacity-50">Approve for publication</button>
+                  {car.status === 'under_review' && mayPublish(car) ? (
+                    <>
+                      <button onClick={() => approveAndPublish(car)} disabled={actionId === car.id} className="px-2 py-1 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50">
+                        {actionId === car.id ? 'Publishing…' : 'Approve & publish'}
+                      </button>
+                      {/* Kept for the case where the decision to publish is
+                          someone else's, or is not for today. */}
+                      <button onClick={() => updateStatus(car.id, 'approved')} disabled={actionId === car.id} title="Record the approval now and publish later. The listing moves to the Approved filter." className="px-2 py-1 text-xs font-medium bg-info-tint text-info rounded-lg disabled:opacity-50">Approve only</button>
+                    </>
                   ) : car.status === 'under_review' ? (
                     <button
                       type="button"
@@ -214,7 +318,7 @@ export default function ListingsPage() {
                       disabled={readiness[car.id] === 'loading'}
                       className="px-2 py-1 text-xs font-semibold text-warning-text underline underline-offset-2 hover:text-content disabled:opacity-50"
                     >
-                      {readiness[car.id] === 'loading' ? 'Checking…' : "Not ready — see what's missing"}
+                      {readiness[car.id] === 'loading' ? 'Checking…' : readiness[car.id] ? 'Re-check' : "See what's missing"}
                     </button>
                   ) : null}
                   {car.status === 'under_review' && (
@@ -260,7 +364,12 @@ export default function ListingsPage() {
                     {readiness[car.id] === 'error' ? (
                       <p className="text-xs text-danger-strong">Could not read the publication checks. Try again.</p>
                     ) : (readiness[car.id] as Readiness).ready ? (
-                      <p className="text-xs font-semibold text-success">Every publication check passes — ready to approve.</p>
+                      <p className="text-xs font-semibold text-success-text">
+                        Every publication check passes.{' '}
+                        {car.status === 'under_review' ? 'Use Approve & publish above to put it live.'
+                          : car.status === 'approved' ? 'Use Publish above to put it live.'
+                          : 'Nothing is blocking publication.'}
+                      </p>
                     ) : (
                       <>
                         <p className="text-xs font-bold text-content">Still required before publication</p>

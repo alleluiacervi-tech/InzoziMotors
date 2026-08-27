@@ -31,7 +31,33 @@ type UserRow = {
   account_status?: 'active' | 'suspended'
   suspended_at?: string | null
   suspension_reason?: string | null
+  id_verification_method?: string | null
+  id_verification_note?: string | null
+  id_verification_ref?: string | null
+  id_verified_at?: string | null
+  id_verified_by_name?: string | null
 }
+
+// How an identity can be established away from the dashboard. 'documents' is
+// deliberately absent: that path is the queue below, where the uploaded files
+// are the evidence. Each of these carries no file, so the written note IS the
+// evidence — the server rejects a short one and so does a CHECK constraint.
+const OFFLINE_METHODS = [
+  { value: 'in_person', label: 'National ID or passport seen in person',
+    hint: 'You or a colleague inspected the physical document.',
+    placeholder: 'e.g. Seller brought their national ID to the Kicukiro office; photo and name match the account.' },
+  { value: 'business_document', label: 'Business registration or TIN document seen',
+    hint: 'For a showroom or company, verified against its registration.',
+    placeholder: 'e.g. RDB certificate presented; company name and representative match the account.' },
+  { value: 'known_client', label: 'Established client, documents held off-platform',
+    hint: 'A relationship that predates the platform, with a file kept in the office.',
+    placeholder: 'e.g. Trading with us since 2024; ID copy is in the office file under their account name.' },
+] as const
+const METHOD_LABELS: Record<string, string> = {
+  documents: 'documents reviewed',
+  ...Object.fromEntries(OFFLINE_METHODS.map((m) => [m.value, m.label.toLowerCase()])),
+}
+const MIN_ATTESTATION = 10
 
 // What an admin can create. Only a showroom starts out verified — a buyer or
 // an individual seller has to go through the ID check like anyone else, because
@@ -64,6 +90,9 @@ export default function UsersPage() {
   const [editing, setEditing] = useState<null | {
     id: string; name: string; role: 'buyer' | 'seller'; phone: string; whatsapp_phone: string;
     business_name: string; business_verified: boolean; phone_visible: boolean; whatsapp_visible: boolean
+  }>(null)
+  const [verifying, setVerifying] = useState<null | {
+    user: UserRow; method: string; note: string; reference: string
   }>(null)
   const ask = useConfirm()
   const toast = useToast()
@@ -158,6 +187,37 @@ export default function UsersPage() {
     } finally {
       setActionId(null)
     }
+  }
+
+  // The counterpart to revocation, and the fix for a genuine dead end: the
+  // queue only ever listed people who had uploaded documents, so a seller
+  // verified at the counter appeared nowhere and there was no button at all.
+  // Approving them is a legitimate act; doing it without recording who checked
+  // what is not, which is why the note below is required rather than optional.
+  async function submitOfflineVerification(e: React.FormEvent) {
+    e.preventDefault()
+    if (!verifying) return
+    const note = verifying.note.trim()
+    if (note.length < MIN_ATTESTATION) {
+      toast(`Describe what you checked, in at least ${MIN_ATTESTATION} characters.`, 'error')
+      return
+    }
+    const ok = await ask({
+      title: `Verify ${verifying.user.name}'s identity?`,
+      message: 'This grants seller eligibility and public contact eligibility, and adds 30 trust-score points. Your name and your note are recorded permanently against this decision.',
+      confirmLabel: 'Record verification',
+    })
+    if (!ok) return
+    setActionId(`verify-${verifying.user.id}`)
+    try {
+      await api.verifyIdentityOffline(verifying.user.id, {
+        method: verifying.method, note, reference: verifying.reference.trim() || undefined,
+      })
+      toast(`${verifying.user.name} is verified — the reason you gave is on the record`, 'success')
+      setVerifying(null)
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
   }
 
   async function resetPassword(user: UserRow) {
@@ -289,7 +349,7 @@ export default function UsersPage() {
               <legend className="text-label font-semibold text-content">Account type</legend>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
                 {ACCOUNT_KINDS.map((kind) => (
-                  <label key={kind.value} className={`cursor-pointer rounded-xl border p-3 ${accountType === kind.value ? 'border-brand bg-brand-tint' : 'border-line hover:border-content-muted'}`}>
+                  <label key={kind.value} className={`cursor-pointer rounded-xl border p-3 ${accountType === kind.value ? 'border-brand bg-surface-alt' : 'border-line hover:border-content-muted'}`}>
                     <span className="flex items-center gap-2">
                       <input type="radio" name="account_type" value={kind.value}
                         checked={accountType === kind.value}
@@ -365,6 +425,57 @@ export default function UsersPage() {
         </div>
       )}
 
+      {verifying ? (
+        <Card className="mb-5 p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-extrabold text-content">Verify {verifying.user.name} without an upload</h2>
+              <p className="mt-1 text-label text-content-muted">
+                Use this when you checked the person&rsquo;s identity yourself — at the office, against a
+                business document, or on an established relationship. Your name and your reason are stored
+                against the decision, because &ldquo;verified by Sawa Cars&rdquo; has to mean something specific.
+              </p>
+            </div>
+            <button type="button" onClick={() => setVerifying(null)} className="rounded-lg border border-line px-3 py-1.5 text-caption font-bold text-content">Cancel</button>
+          </div>
+          <form onSubmit={submitOfflineVerification} className="grid gap-4">
+            <fieldset className="grid gap-2">
+              <legend className="text-label font-semibold text-content">How did you check?</legend>
+              {OFFLINE_METHODS.map((m) => (
+                <label key={m.value} className={`flex items-start gap-3 rounded-xl border p-3 ${verifying.method === m.value ? 'border-brand bg-surface-alt' : 'border-line-soft'}`}>
+                  <input type="radio" name="offline-method" value={m.value} checked={verifying.method === m.value}
+                    onChange={() => setVerifying({ ...verifying, method: m.value })} className="mt-1 h-4 w-4 accent-brand" />
+                  <span>
+                    <span className="block text-label font-bold text-content">{m.label}</span>
+                    <span className="text-caption text-content-muted">{m.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <label className="text-label font-semibold text-content">What did you see? <span className="font-normal text-content-muted">(required — this is the record)</span>
+              <textarea value={verifying.note} onChange={(e) => setVerifying({ ...verifying, note: e.target.value })}
+                rows={3} required minLength={MIN_ATTESTATION}
+                placeholder={OFFLINE_METHODS.find((m) => m.value === verifying.method)?.placeholder}
+                className="mt-1.5 w-full rounded-xl border border-line bg-surface p-3 font-normal focus:border-content-muted focus:outline-none" />
+              <span className="mt-1 block text-caption text-content-muted">
+                {verifying.note.trim().length < MIN_ATTESTATION
+                  ? `At least ${MIN_ATTESTATION} characters — a sentence, not a tick.`
+                  : 'Saved with your name and the time, and shown on this account from now on.'}
+              </span>
+            </label>
+            <label className="text-label font-semibold text-content">Document number <span className="font-normal text-content-muted">(optional)</span>
+              <input value={verifying.reference} onChange={(e) => setVerifying({ ...verifying, reference: e.target.value })}
+                maxLength={120} placeholder="National ID, RDB registration or TIN"
+                className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+            </label>
+            <button disabled={actionId === `verify-${verifying.user.id}` || verifying.note.trim().length < MIN_ATTESTATION}
+              className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50">
+              {actionId === `verify-${verifying.user.id}` ? 'Recording…' : 'Record verification'}
+            </button>
+          </form>
+        </Card>
+      ) : null}
+
       {editing ? (
         <Card className="mb-5 p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
@@ -419,11 +530,19 @@ export default function UsersPage() {
                 {visible.map((u) => <tr key={u.id} id={`row-${u.id}`} className={`hover:bg-surface-alt ${focusProps(u.id).className}`}>
                   <td className="px-5 py-4"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</td>
                   <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'showroom' : u.role} />{u.business_verified ? <Pill status="approved" label="business verified" /> : null}</div></td>
-                  <td className="px-4 py-4"><Pill status={u.id_verified} label={u.id_verified || 'not submitted'} /></td>
+                  <td className="px-4 py-4">
+                    <Pill status={u.id_verified} label={u.id_verified === 'none' || !u.id_verified ? 'not submitted' : u.id_verified} />
+                    {u.id_verified === 'approved' && u.id_verification_method ? (
+                      <span className="mt-1 block text-caption text-content-muted" title={u.id_verification_note || undefined}>
+                        {METHOD_LABELS[u.id_verification_method] || u.id_verification_method}
+                        {u.id_verified_by_name ? ` · ${u.id_verified_by_name}` : ''}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>
                   <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2"><Pill status={u.account_status === 'suspended' ? 'rejected' : 'approved'} label={u.account_status === 'suspended' ? 'suspended' : 'active'} />
-                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button>{u.id_verified === 'approved' ? <button type="button" onClick={() => revokeIdentity(u)} disabled={actionId === `revoke-${u.id}`} className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">{actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID'}</button> : null}<button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-white hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
+                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button>{u.id_verified === 'approved' ? <button type="button" onClick={() => revokeIdentity(u)} disabled={actionId === `revoke-${u.id}`} className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">{actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID'}</button> : <button type="button" onClick={() => setVerifying({ user: u, method: OFFLINE_METHODS[0].value, note: '', reference: '' })} className="rounded-lg border border-success px-2.5 py-1.5 text-caption font-bold text-success-text hover:bg-success-tint">Verify identity</button>}<button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-white hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
                   <td className="px-5 py-4 text-label text-content-muted">{new Date(u.created_at).toLocaleDateString()}</td>
                 </tr>)}
               </tbody>
