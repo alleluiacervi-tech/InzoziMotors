@@ -405,6 +405,9 @@ router.get('/users', requireAdmin, async (req, res) => {
               whatsapp_visible, contact_consent_at, role, id_verified, seller_type,
               business_name, business_verified, admin_created, must_change_password, account_status,
               suspended_at, suspension_reason, trust_score,
+              id_verification_method, id_verification_note, id_verification_ref,
+              id_verified_at,
+              (SELECT v.name FROM users v WHERE v.id = users.id_verified_by) AS id_verified_by_name,
               completed_sales, created_at
        FROM users
        WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1

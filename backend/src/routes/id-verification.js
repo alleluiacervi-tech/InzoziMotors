@@ -192,11 +192,24 @@ router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) =
     if (!cur.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'User not found' }); }
     const wasApproved = cur.rows[0].id_verified === 'approved';
 
+    // The method columns travel with the decision so the document path and the
+    // off-platform path below are told apart by data, not by inference. Both the
+    // note and the reference are cleared here: on a rejection there is no longer
+    // a verification to describe, and on an approval from documents the files
+    // themselves are the evidence, so keeping a note written for an earlier
+    // in-person check would describe this decision wrongly.
+    // (method='documents' is exempt from users_offline_identity_attested_check,
+    //  so clearing the note cannot violate it.)
     await client.query(
       `UPDATE users SET id_verified = $1,
+         id_verification_method = CASE WHEN $1 = 'approved' THEN 'documents' ELSE NULL END,
+         id_verification_note = NULL,
+         id_verification_ref  = NULL,
+         id_verified_at = CASE WHEN $1 = 'approved' THEN NOW() ELSE NULL END,
+         id_verified_by = CASE WHEN $1 = 'approved' THEN $3::uuid ELSE NULL END,
          token_version = token_version + CASE WHEN $1 = 'rejected' AND id_verified = 'approved' THEN 1 ELSE 0 END
        WHERE id = $2`,
-      [decision, req.params.userId]
+      [decision, req.params.userId, req.user.id]
     );
 
     let affectedListings = 0;
@@ -242,6 +255,129 @@ router.patch('/:userId', requireAdmin, requireUuid('userId'), async (req, res) =
   } catch (err) {
     await client.query('ROLLBACK');
     log.error('id-verification decision error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── Off-platform verification ───────────────────────────────────────────────
+// POST /id-verification/:userId/manual
+//
+// The dashboard queue only ever listed users sitting at 'pending' — people who
+// had uploaded documents. Someone verified at the counter, national ID in hand,
+// never entered that queue, so there was no button and no route: the operator
+// could either turn a real customer away or open psql. Neither is a workflow.
+//
+// This is that workflow. It does not weaken the gate — id_verified='approved'
+// still means a human at Sawa Cars attested to this person's identity, which is
+// exactly what it meant before. What changes is that the attestation is now
+// WRITTEN DOWN: who decided, when, by what means, and on what basis. A bare
+// boolean cannot answer "how do you know?" a year later; these columns can.
+//
+// Deliberately separate from PATCH /:userId rather than an optional flag on it.
+// The document-review path must never be able to accept "no evidence" through a
+// field somebody forgot to send, and the two decisions must be distinguishable
+// in the audit log without inspecting the payload.
+const OFFLINE_METHODS = {
+  in_person:         'National ID or passport inspected in person',
+  business_document: 'Business registration or TIN document inspected',
+  known_client:      'Established client; identity documents held off-platform',
+};
+const MIN_ATTESTATION = 10;   // matches users_offline_identity_attested_check
+
+router.post('/:userId/manual', requireAdmin, requireUuid('userId'), async (req, res) => {
+  const method = String(req.body?.method || '').trim();
+  const note = String(req.body?.note || '').trim();
+  const reference = req.body?.reference == null ? null : String(req.body.reference).trim();
+
+  if (!Object.hasOwn(OFFLINE_METHODS, method)) {
+    return res.status(400).json({
+      error: `method must be one of: ${Object.keys(OFFLINE_METHODS).join(', ')}`,
+      field: 'method',
+    });
+  }
+  // The note is the entire evidentiary record for this approval. The database
+  // refuses a short one too; failing here means a usable message instead of a
+  // 500 wrapped around SQLSTATE 23514.
+  if (note.length < MIN_ATTESTATION) {
+    return res.status(400).json({
+      error: `Describe what you checked, in at least ${MIN_ATTESTATION} characters. This note is the only record of how this identity was verified.`,
+      field: 'note',
+    });
+  }
+  if (note.length > 1000) return res.status(400).json({ error: 'note is too long', field: 'note' });
+  if (reference && reference.length > 120) return res.status(400).json({ error: 'reference is too long', field: 'reference' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const cur = await client.query(
+      `SELECT id, name, email, id_verified, id_verification_method, deleted_at
+         FROM users WHERE id = $1 FOR UPDATE`,
+      [req.params.userId]
+    );
+    if (!cur.rows.length || cur.rows[0].deleted_at) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const before = cur.rows[0];
+
+    // Approving never invalidates sessions — only revocation does (see the
+    // PATCH route above). A seller mid-session should gain the ability, not be
+    // signed out for having been verified.
+    await client.query(
+      `UPDATE users
+          SET id_verified = 'approved',
+              id_verification_method = $1,
+              id_verification_note = $2,
+              id_verification_ref = $3,
+              id_verified_at = NOW(),
+              id_verified_by = $4
+        WHERE id = $5`,
+      [method, note, reference || null, req.user.id, req.params.userId]
+    );
+
+    await recomputeTrustScore(req.params.userId, client);
+
+    await notifyUser(client, {
+      user_id: req.params.userId,
+      type: 'listing_update',
+      title: 'ID approved',
+      body: 'Your identity has been verified by our team. Approved listings and contact options can now be activated after inspection.',
+    });
+
+    await recordAdminAction(client, {
+      actorId: req.user.id,
+      action: 'identity.approved_offline',
+      targetType: 'user',
+      targetId: req.params.userId,
+      summary: `Identity verified off-platform — ${OFFLINE_METHODS[method]}`,
+      metadata: {
+        previous_status: before.id_verified,
+        previous_method: before.id_verification_method,
+        method,
+        note,
+        reference: reference || null,
+      },
+    });
+
+    await client.query('COMMIT');
+    sendIdDecision(before.email, before.name, true).catch(() => {});
+    res.json({
+      success: true,
+      decision: 'approved',
+      method,
+      method_label: OFFLINE_METHODS[method],
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    // The CHECK constraint is the backstop for any future caller that skips the
+    // validation above. Surface it as the client error it is, not a 500.
+    if (err.code === '23514') {
+      return res.status(400).json({ error: 'An off-platform approval requires a written attestation.', field: 'note' });
+    }
+    log.error('offline identity approval error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();
