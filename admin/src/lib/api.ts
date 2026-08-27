@@ -495,6 +495,19 @@ export const api = {
    *  one-use link — nothing here emails a password. */
   /** Whether outbound email is actually configured. Reports configuration
    *  only — never a credential. */
+  /** Change the signed-in operator's own password.
+   *
+   *  The backend already had this route; the dashboard had no way to reach it,
+   *  which is how a weak admin password survives — rotating it meant a shell
+   *  session and a hand-built request. Succeeding ends every OTHER session and
+   *  keeps this one, so an operator is not signed out of the screen they are
+   *  standing at. */
+  changeOwnPassword: (current_password: string, new_password: string) =>
+    request<{ user: { id: string; email: string } }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password, new_password }),
+    }),
+
   mailStatus: () => request<{
     configured: boolean
     provider: 'resend' | 'smtp' | null

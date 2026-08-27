@@ -259,6 +259,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p className="truncate text-micro text-white/60">{user?.email}</p>
             </div>
           </div>
+          {/* Reaching the password form used to require an SSH session, which is
+              how a weak admin password survives. It lives beside Sign out
+              because that is where someone looks for their own account. */}
+          <Link
+            href="/account"
+            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <Icon name="lock" size={15} />
+            My account
+          </Link>
           <button
             onClick={logout}
             className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
