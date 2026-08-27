@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api, type Readiness } from '@/lib/api'
+import { PlateMasker } from '@/components/PlateMasker'
 import { Icon } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 
@@ -13,6 +14,9 @@ export default function CarPhotosPage() {
 
   const [car, setCar] = useState<any>(null)
   const [gallery, setGallery] = useState<any>({ photos: [], missing_required: [], complete: false })
+  // The photo whose plate is being placed, or null. One at a time on purpose:
+  // masking replaces a published file, and that is not a bulk action.
+  const [masking, setMasking] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -182,10 +186,25 @@ export default function CarPhotosPage() {
                 {gallery.photos.map((photo: any) => (
                   <div key={photo.id} className="relative aspect-video rounded-lg overflow-hidden border border-gray-150 shadow-sm bg-gray-50 group">
                     <img src={photo.url} alt={`${car.make} ${car.model}`} className="w-full h-full object-cover" />
+                    {/* Plate state, always visible rather than on hover: an
+                        unreviewed photo is the one thing an operator must not
+                        have to go looking for. */}
+                    {photo.plate_state !== 'masked' && photo.plate_state !== 'none' ? (
+                      <span className="absolute left-1 top-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        Plate not checked
+                      </span>
+                    ) : photo.plate_state === 'masked' ? (
+                      <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        Plate hidden
+                      </span>
+                    ) : null}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="flex flex-col items-center gap-2">
                         <span className="text-white text-[10px] font-bold">{photo.is_cover ? 'Cover photo' : 'Gallery photo'}</span>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap justify-center gap-2">
+                          <button type="button" onClick={() => setMasking(photo)} className="rounded bg-brand px-2 py-1 text-[10px] font-bold text-white">
+                            {photo.plate_state === 'masked' ? 'Redo plate' : 'Hide plate'}
+                          </button>
                           {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-white px-2 py-1 text-[10px] font-bold text-gray-800">Make cover</button>}
                           <button type="button" onClick={() => removePhoto(photo.id)} className="rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white">Remove</button>
                         </div>
@@ -237,6 +256,17 @@ export default function CarPhotosPage() {
           )}
         </div>
       </div>
+
+      {/* One photo at a time, deliberately: masking replaces a published file
+          and moves the original, which is not a bulk action. */}
+      {masking ? (
+        <PlateMasker
+          carId={String(id)}
+          photo={masking}
+          onCancel={() => setMasking(null)}
+          onDone={() => { setMasking(null); loadCar() }}
+        />
+      ) : null}
     </div>
   )
 }

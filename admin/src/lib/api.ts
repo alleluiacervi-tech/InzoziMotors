@@ -555,6 +555,22 @@ export const api = {
     request<any>(`/inspections/cars/${carId}/photos`, { method: 'POST', body: formData }),
   getCarPhotos: (carId: string) =>
     request<any>(`/inspections/cars/${carId}/photos`),
+  /** Burn the badge into the published photo.
+   *
+   *  Four corners as fractions of the image, so the geometry survives a resize
+   *  and a perspective fit can be added later without changing the payload. The
+   *  server re-encodes and keeps the original on a denied path — nothing here is
+   *  a display-time overlay. */
+  maskPlate: (carId: string, photoId: string, quad: { x: number; y: number }[]) =>
+    request<any>(`/inspections/cars/${carId}/photos/${photoId}/plate`, {
+      method: 'PATCH', body: JSON.stringify({ quad }),
+    }),
+  /** Record that a photo shows no plate. Never touches the file. */
+  clearPlate: (carId: string, photoId: string) =>
+    request<any>(`/inspections/cars/${carId}/photos/${photoId}/plate`, {
+      method: 'PATCH', body: JSON.stringify({ plate_state: 'none' }),
+    }),
+
   setCarPhotoCover: (carId: string, photoId: string) =>
     request<any>(`/inspections/cars/${carId}/photos/${photoId}/cover`, { method: 'PATCH' }),
   deleteCarPhoto: (carId: string, photoId: string) =>
