@@ -495,6 +495,19 @@ export const api = {
    *  one-use link — nothing here emails a password. */
   /** Whether outbound email is actually configured. Reports configuration
    *  only — never a credential. */
+  /** Change the signed-in operator's own password.
+   *
+   *  The backend already had this route; the dashboard had no way to reach it,
+   *  which is how a weak admin password survives — rotating it meant a shell
+   *  session and a hand-built request. Succeeding ends every OTHER session and
+   *  keeps this one, so an operator is not signed out of the screen they are
+   *  standing at. */
+  changeOwnPassword: (current_password: string, new_password: string) =>
+    request<{ user: { id: string; email: string } }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password, new_password }),
+    }),
+
   mailStatus: () => request<{
     configured: boolean
     provider: 'resend' | 'smtp' | null
@@ -542,6 +555,22 @@ export const api = {
     request<any>(`/inspections/cars/${carId}/photos`, { method: 'POST', body: formData }),
   getCarPhotos: (carId: string) =>
     request<any>(`/inspections/cars/${carId}/photos`),
+  /** Burn the badge into the published photo.
+   *
+   *  Four corners as fractions of the image, so the geometry survives a resize
+   *  and a perspective fit can be added later without changing the payload. The
+   *  server re-encodes and keeps the original on a denied path — nothing here is
+   *  a display-time overlay. */
+  maskPlate: (carId: string, photoId: string, quad: { x: number; y: number }[]) =>
+    request<any>(`/inspections/cars/${carId}/photos/${photoId}/plate`, {
+      method: 'PATCH', body: JSON.stringify({ quad }),
+    }),
+  /** Record that a photo shows no plate. Never touches the file. */
+  clearPlate: (carId: string, photoId: string) =>
+    request<any>(`/inspections/cars/${carId}/photos/${photoId}/plate`, {
+      method: 'PATCH', body: JSON.stringify({ plate_state: 'none' }),
+    }),
+
   setCarPhotoCover: (carId: string, photoId: string) =>
     request<any>(`/inspections/cars/${carId}/photos/${photoId}/cover`, { method: 'PATCH' }),
   deleteCarPhoto: (carId: string, photoId: string) =>

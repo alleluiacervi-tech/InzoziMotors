@@ -4,10 +4,17 @@ const pool = require('../db');
 const { requireAdmin, requireAuth } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
 const fs = require('fs');
+const fsp = require('fs/promises');
 const path = require('path');
 const { withTransaction } = require('../lib/tx');
 const { SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const { publicApiOrigin } = require('../lib/public-origin');
+const { badgeSvg, readQuad, maskPlate } = require('../lib/plate-badge');
+
+// Where uploads live on disk. Same resolution middleware/upload.js uses, so a
+// stored URL can be mapped back to the file it came from.
+const UPLOAD_ROOT = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
@@ -307,6 +314,167 @@ router.patch('/cars/:carId/photos/:photoId/cover', requireAdmin, requireUuid('ca
     });
     res.json(state);
   } catch (err) { res.status(err.status || 500).json({ error: err.status ? err.message : 'Server error' }); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hiding the registration plate.
+//
+// A plate identifies a vehicle and, through the registry, a person. Masking it
+// is DESTRUCTIVE on purpose: the published file is re-encoded with the badge
+// burned in, and the untouched original moves to /uploads/plate-originals,
+// which server.js denies outright.
+//
+// Drawing the badge at display time instead would be theatre — the original URL
+// is one dev-tools click away — and it would claim a protection we do not
+// provide, which is the one thing nothing here is allowed to do.
+//
+// The original is kept rather than deleted because it is evidence: the
+// checklist has a "Registration plate matches the registration record" item,
+// and plate alongside VIN over years is a real history signal. Private, not
+// gone. It is also what makes the mask re-renderable when the badge changes.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Turn a stored public URL into the file on disk it came from, refusing
+ *  anything that tries to leave the uploads directory. */
+function localPathForUrl(url) {
+  const marker = '/uploads/';
+  const at = String(url || '').indexOf(marker);
+  if (at === -1) return null;                       // Cloudinary or external
+  const relative = String(url).slice(at + marker.length).split('?')[0];
+  const resolved = path.resolve(UPLOAD_ROOT, relative);
+  // Path traversal: a crafted stored URL must not be able to read /etc/passwd.
+  if (!resolved.startsWith(path.resolve(UPLOAD_ROOT) + path.sep)) return null;
+  return resolved;
+}
+
+// PATCH /inspections/cars/:carId/photos/:photoId/plate
+//
+// Body is either { quad: [{x,y} × 4] } to mask, or { plate_state: 'none' } to
+// record that this photo shows no plate.
+router.patch('/cars/:carId/photos/:photoId/plate', requireAdmin,
+  requireUuid('carId'), requireUuid('photoId'), async (req, res) => {
+  const declaringNone = req.body && req.body.plate_state === 'none';
+  const quad = declaringNone ? null : readQuad(req.body && req.body.quad);
+  if (!declaringNone && quad.error) {
+    return res.status(400).json({ error: quad.error, code: 'PLATE_QUAD_INVALID' });
+  }
+
+  try {
+    const found = await pool.query(
+      'SELECT id, url, original_url, plate_state FROM car_photos WHERE id = $1 AND car_id = $2',
+      [req.params.photoId, req.params.carId]
+    );
+    if (!found.rowCount) return res.status(404).json({ error: 'Photo not found' });
+    const photo = found.rows[0];
+
+    // "No plate here" is a decision, recorded so an unreviewed photo can never
+    // pass for a cleared one. It never touches the file.
+    if (declaringNone) {
+      const { rows } = await pool.query(
+        `UPDATE car_photos SET plate_state = 'none', plate_mask = NULL, updated_at = NOW()
+          WHERE id = $1 RETURNING id, url, plate_state`,
+        [photo.id]
+      );
+      await recordAdminAction(pool, {
+        actorId: req.user.id, action: 'listing.photo_plate_cleared',
+        targetType: 'listing', targetId: req.params.carId,
+        summary: 'Confirmed a photo shows no registration plate',
+        metadata: { photo_id: photo.id },
+      });
+      return res.json(rows[0]);
+    }
+
+    // Always mask from the ORIGINAL, never from an already-masked file.
+    // Re-masking a masked image would stack badges and, worse, would make a
+    // second attempt at a badly placed mask impossible to get right.
+    const sourceUrl = photo.original_url || photo.url;
+    const sourcePath = localPathForUrl(sourceUrl);
+    if (!sourcePath || !fs.existsSync(sourcePath)) {
+      return res.status(409).json({
+        error: 'The original photo file is not on this server, so it cannot be masked. '
+             + 'Re-upload the photo and try again.',
+        code: 'PLATE_SOURCE_MISSING',
+      });
+    }
+
+    const masked = await maskPlate(await fsp.readFile(sourcePath), quad);
+
+    // Keep the original once, on the denied path, before overwriting anything.
+    let originalUrl = photo.original_url;
+    if (!originalUrl) {
+      const dir = path.join(UPLOAD_ROOT, 'plate-originals', req.params.carId);
+      await fsp.mkdir(dir, { recursive: true });
+      const kept = path.join(dir, `${photo.id}${path.extname(sourcePath) || '.jpg'}`);
+      await fsp.copyFile(sourcePath, kept);
+      originalUrl = `${publicApiOrigin(req)}/uploads/plate-originals/${req.params.carId}/${path.basename(kept)}`;
+    }
+
+    // Written to a NEW filename rather than over the old one. Overwriting in
+    // place would leave every cached copy and CDN edge serving the plate.
+    //
+    // The destination is the car's PUBLIC photo directory — deliberately not
+    // "next to the source". On a re-mask the source is the kept original, which
+    // lives under plate-originals/, and writing the republished file beside it
+    // put the public photo inside the directory server.js denies. The listing
+    // then served a 403 where its picture should be.
+    const publicDir = path.join(UPLOAD_ROOT, 'cars', req.params.carId);
+    await fsp.mkdir(publicDir, { recursive: true });
+    const publicName = `masked-${photo.id}-${Date.now()}.jpg`;
+    await fsp.writeFile(path.join(publicDir, publicName), masked);
+    const relative = path.relative(path.resolve(UPLOAD_ROOT), path.join(publicDir, publicName))
+      .split(path.sep).join('/');
+    const publicUrl = `${publicApiOrigin(req)}/uploads/${relative}`;
+
+    const state = await withTransaction(async (client) => {
+      await client.query(
+        `UPDATE car_photos
+            SET url = $1, original_url = $2, plate_mask = $3::jsonb,
+                plate_state = 'masked', updated_at = NOW()
+          WHERE id = $4`,
+        [publicUrl, originalUrl, JSON.stringify({ points: quad.points, bounds: quad.bounds }), photo.id]
+      );
+      // cars.images is the denormalised gallery the public payload reads; it has
+      // to move with the file or the site keeps serving the unmasked URL.
+      const gallery = await photoState(client, req.params.carId);
+      const ordered = [...gallery.photos].sort(
+        (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.position - b.position
+      );
+      await client.query('UPDATE cars SET images = $1::text[] WHERE id = $2',
+        [ordered.map((p) => p.url), req.params.carId]);
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'listing.photo_plate_masked',
+        targetType: 'listing', targetId: req.params.carId,
+        summary: 'Masked the registration plate on a listing photo',
+        metadata: { photo_id: photo.id, bounds: quad.bounds },
+      });
+      return { ...gallery, photos: ordered };
+    });
+
+    res.json(state);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    log.error('plate mask failed', { error: err.message, photoId: req.params.photoId });
+    res.status(500).json({ error: 'Could not mask the plate on that photo' });
+  }
+});
+
+// GET /inspections/plate-badge/preview.png?w=&h=
+//
+// The exact artwork the compositor will burn in, so the editor previews the real
+// thing rather than a CSS approximation that could differ from the result.
+router.get('/plate-badge/preview.png', requireAdmin, async (req, res) => {
+  const w = Math.min(2000, Math.max(24, parseInt(req.query.w, 10) || 900));
+  const h = Math.min(2000, Math.max(12, parseInt(req.query.h, 10) || 240));
+  try {
+    const sharp = require('sharp');
+    const png = await sharp(badgeSvg(w, h)).png().toBuffer();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.send(png);
+  } catch (err) {
+    log.error('badge preview failed', { error: err.message });
+    res.status(503).json({ error: 'Image processing is not available on this server' });
+  }
 });
 
 router.delete('/cars/:carId/photos/:photoId', requireAdmin, requireUuid('carId'), requireUuid('photoId'), async (req, res) => {
