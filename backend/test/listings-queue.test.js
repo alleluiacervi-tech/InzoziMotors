@@ -99,6 +99,115 @@ test('the single-status views are unchanged, and still newest first', async () =
   for (const c of res.body) assert.equal(c.status, 'rejected');
 });
 
+// ─── Finding one specific car ────────────────────────────────────────────────
+//
+// The queue is oldest-first with a page limit, and the dashboard used to filter
+// the fetched page in the browser. Those two facts together mean the newest
+// vehicle — the one just worked on — falls off the end of the page, and typing
+// its name finds nothing. Indistinguishable, from the operator's chair, from the
+// car not existing. Search runs on the server for that reason.
+
+test('search covers the whole matching set, not just the page', async () => {
+  const a = await admin();
+  const seller = await register('Search Seller', 'seller');
+  // Deliberately the NEWEST row, which is where the page window does not reach.
+  const needle = await car(seller.id, 'under_review', 0);
+  await pool.query("UPDATE cars SET title='Findable Needle Coupe', model='Needle', vin='WVWZZZ1JZXW000001' WHERE id=$1", [needle.id]);
+
+  const bare = await api().get('/admin/listings?status=needs_action&limit=1')
+    .set('Authorization', `Bearer ${a.token}`).expect(200);
+  assert.equal(bare.body.length, 1, 'the page really is a window');
+  const total = Number(bare.headers['x-total-count']);
+  assert.ok(total > 1, `the total reports the whole queue (${total})`);
+
+  // Each of these is a thing an operator would actually type.
+  for (const [label, q] of [
+    ['listing id', needle.id],
+    ['model', 'Needle'],
+    ['title words', 'Findable'],
+    ['vin', 'WVWZZZ1JZXW000001'],
+    ['seller name', 'Search Seller'],
+    ['lowercase model', 'needle'],
+  ]) {
+    const res = await api().get(`/admin/listings?status=needs_action&limit=5&q=${encodeURIComponent(q)}`)
+      .set('Authorization', `Bearer ${a.token}`).expect(200);
+    assert.ok(res.body.some((c) => c.id === needle.id), `findable by ${label}`);
+  }
+
+  // And search narrows rather than merely reordering.
+  const narrow = await api().get('/admin/listings?status=needs_action&limit=200&q=Findable')
+    .set('Authorization', `Bearer ${a.token}`).expect(200);
+  assert.ok(Number(narrow.headers['x-total-count']) < total, 'the total reflects the search');
+  for (const c of narrow.body) {
+    assert.match(`${c.title} ${c.make} ${c.model}`, /Findable|Needle/i);
+  }
+});
+
+test('search cannot reach past its status filter, or be used for injection', async () => {
+  const a = await admin();
+  const auth = { Authorization: `Bearer ${a.token}` };
+  const seller = await register('Scoped Seller', 'seller');
+  const published = await car(seller.id, 'live', 0);
+  await pool.query("UPDATE cars SET title='Scoped Live Sedan' WHERE id=$1", [published.id]);
+
+  // A live car is not waiting on anyone, so it must not appear in that view
+  // however specifically it is searched for.
+  const scoped = await api().get(`/admin/listings?status=needs_action&limit=200&q=${published.id}`)
+    .set(auth).expect(200);
+  assert.equal(scoped.body.length, 0, 'search respects the status filter');
+  const found = await api().get(`/admin/listings?status=live&limit=200&q=${published.id}`)
+    .set(auth).expect(200);
+  assert.ok(found.body.some((c) => c.id === published.id), 'and finds it under the right one');
+
+  // Parameterised, so these are searched for literally rather than executed.
+  for (const q of ["'; DROP TABLE cars; --", '%', '100%', '_', 'a\\b', "''"]) {
+    const res = await api().get(`/admin/listings?status=needs_action&limit=5&q=${encodeURIComponent(q)}`)
+      .set(auth);
+    assert.equal(res.status, 200, `q=${q} is data, not SQL`);
+  }
+  assert.ok(Number((await pool.query('SELECT COUNT(*) AS n FROM cars')).rows[0].n) > 0,
+    'the cars table is still there');
+});
+
+test('the reported total honours every filter at once', async () => {
+  // The count query reuses the WHERE clause built for the page query, with the
+  // trailing limit/offset parameters sliced off. That is correct only while
+  // limit and offset are the LAST two pushed — `make` and `q` are pushed before
+  // them. If that ever stops holding, the count silently answers a different
+  // question than the list, and the page tells the operator a number that is
+  // not about the rows in front of them.
+  const a = await admin();
+  const auth = { Authorization: `Bearer ${a.token}` };
+  const seller = await register('Total Seller', 'seller');
+  const target = await car(seller.id, 'under_review', 0);
+  await pool.query("UPDATE cars SET title='Total Filter Bora' WHERE id=$1", [target.id]);
+
+  const totalOf = async (qs) => {
+    const res = await api().get(`/admin/listings?${qs}`).set(auth).expect(200);
+    const total = Number(res.headers['x-total-count']);
+    assert.ok(Number.isFinite(total), `a count came back for ${qs}`);
+    return { total, rows: res.body };
+  };
+
+  const all = await totalOf('status=under_review&limit=5');
+  const byMake = await totalOf('status=under_review&make=Volkswagen&limit=5');
+  const byBoth = await totalOf('status=under_review&make=Volkswagen&q=Total%20Filter&limit=5');
+
+  assert.ok(byMake.total <= all.total, `make narrows the total (${byMake.total} <= ${all.total})`);
+  assert.ok(byBoth.total <= byMake.total, `q narrows it further (${byBoth.total} <= ${byMake.total})`);
+  assert.ok(byBoth.total >= 1, 'and still finds the vehicle it should');
+  for (const row of byMake.rows) assert.match(row.make, /volkswagen/i);
+  for (const row of byBoth.rows) assert.match(`${row.title} ${row.model}`, /total filter|bora/i);
+
+  // The strongest form: when the page holds the entire result, the total must
+  // equal exactly what is on it.
+  const full = await api().get('/admin/listings?status=under_review&make=Volkswagen&q=Total%20Filter&limit=200')
+    .set(auth).expect(200);
+  assert.ok(full.body.length < 200, 'the narrow search fits in one page');
+  assert.equal(Number(full.headers['x-total-count']), full.body.length,
+    'the count and the list are answering the same question');
+});
+
 test('an unknown status is still rejected, and the view is still admin-only', async () => {
   const a = await admin();
   const outsider = await register('Outsider');

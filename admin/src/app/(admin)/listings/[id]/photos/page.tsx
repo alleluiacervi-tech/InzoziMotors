@@ -216,9 +216,19 @@ export default function CarPhotosPage() {
                       <div className="flex flex-col items-center gap-2">
                         <span className="text-white text-[10px] font-bold">{photo.is_cover ? 'Cover photo' : 'Gallery photo'}</span>
                         <div className="flex flex-wrap justify-center gap-2">
-                          <button type="button" onClick={() => setMasking(photo)} className="rounded bg-brand px-2 py-1 text-[10px] font-bold text-white">
-                            {photo.plate_state === 'masked' ? 'Redo plate' : 'Hide plate'}
-                          </button>
+                          {photo.can_mask === false ? (
+                            // Offering a button that cannot succeed is worse
+                            // than offering none: the operator presses it,
+                            // reads a failure, and tries again.
+                            <span title="This photo is held on external media storage. Plate masking rewrites the image file, which requires photos stored on the Sawa server."
+                              className="rounded bg-gray-200 px-2 py-1 text-[10px] font-bold text-gray-600">
+                              Masking unavailable
+                            </span>
+                          ) : (
+                            <button type="button" onClick={() => setMasking(photo)} className="rounded bg-brand px-2 py-1 text-[10px] font-bold text-white">
+                              {photo.plate_state === 'masked' ? 'Move cover' : 'Hide plate'}
+                            </button>
+                          )}
                           {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-white px-2 py-1 text-[10px] font-bold text-gray-800">Make cover</button>}
                           <button type="button" onClick={() => removePhoto(photo.id)} className="rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white">Remove</button>
                         </div>

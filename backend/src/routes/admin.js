@@ -371,6 +371,24 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
   }
   const conditions = [needsAction ? `c.status = ANY($1)` : `c.status = $1`];
   const params = [needsAction ? NEEDS_ACTION_STATUSES : status];
+
+  // Search has to happen HERE, not in the browser.
+  //
+  // The dashboard filtered the fetched page, which is fine until the page is a
+  // window onto something larger. This view is ordered oldest-first, so with a
+  // backlog past the page limit the NEWEST vehicle — the one just worked on, the
+  // one being looked for — is precisely the one off the end. Typing its name
+  // then returned nothing, which is indistinguishable from the car not existing.
+  const query = String(req.query.q || '').trim();
+  if (query) {
+    params.push(`%${query}%`);
+    const like = `$${params.length}`;
+    conditions.push(`(
+      c.title ILIKE ${like} OR c.make ILIKE ${like} OR c.model ILIKE ${like}
+      OR COALESCE(c.vin, '') ILIKE ${like} OR COALESCE(c.location, '') ILIKE ${like}
+      OR u.name ILIKE ${like} OR c.id::text ILIKE ${like}
+    )`);
+  }
   // A queue reads oldest-first — the car that has waited longest is the one to
   // deal with — while a browse reads newest-first. The whole clause is the
   // interpolated value rather than just the direction keyword, so the CI SQL
@@ -404,6 +422,16 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
+    // Total for the same predicate, minus the page window. Sent as a header so
+    // the response body stays the array every existing caller expects.
+    const totalParams = params.slice(0, params.length - 2);
+    const { rows: totals } = await pool.query(
+      `SELECT COUNT(*)::int AS total FROM cars c JOIN users u ON u.id = c.seller_id
+        WHERE ${conditions.join(' AND ')}`,
+      totalParams
+    );
+    res.set('X-Total-Count', String(totals[0].total));
+    res.set('Access-Control-Expose-Headers', 'X-Total-Count');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

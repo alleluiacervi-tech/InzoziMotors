@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api, type Readiness } from '@/lib/api'
 import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/components/ui'
@@ -58,12 +58,27 @@ export default function ListingsPage() {
     }
   }
 
-  async function load(s: string) {
+  // `total` is what the server says matches, which is not what is on screen:
+  // this view is oldest-first with a page limit, so a backlog longer than one
+  // page pushes the newest vehicle off the end. Admitting that is the difference
+  // between "there are 61 more" and an operator concluding their car vanished.
+  const [total, setTotal] = useState(0)
+
+  async function load(s: string, search = query) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.cars({ status: s })
-      setItems(data)
+      const params: Record<string, string> = { status: s, limit: '200' }
+      if (search.trim()) params.q = search.trim()
+      const page = await api.carsPage(params)
+      setItems(page.items)
+      setTotal(page.total)
+      // Drop the cached verdicts. A reload follows an action that changed a car
+      // — an approval, a photo, a rejection — so every held verdict is now
+      // potentially stale, and the auto-walk below skips anything already
+      // cached. Keeping them would leave the panel describing the car as it was
+      // before the operator's own last click.
+      setReadiness({})
     } catch (e: any) {
       setError(e)
     } finally {
@@ -72,6 +87,19 @@ export default function ListingsPage() {
   }
 
   useEffect(() => { load(statusFilter) }, [statusFilter])
+
+  // Search runs on the server, debounced. Filtering the fetched page in the
+  // browser could only ever find what had already been fetched.
+  const [searchedFor, setSearchedFor] = useState('')
+  useEffect(() => {
+    if (query.trim() === searchedFor) return
+    const timer = window.setTimeout(() => {
+      setSearchedFor(query.trim())
+      load(statusFilter, query)
+    }, 300)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, statusFilter])
 
   // Sequential rather than parallel: this is a background courtesy, and firing
   // twenty-four requests at once to fill in labels would compete with whatever
@@ -98,13 +126,16 @@ export default function ListingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, statusFilter])
 
-  const visible = useMemo(() => { const q = query.trim().toLowerCase(); return items.filter((car) => !q || [car.title, car.make, car.model, car.year, car.location, car.seller_name, car.id, car.vin].some((v) => String(v || '').toLowerCase().includes(q))) }, [items, query])
+  // No second filter here. The server already applied `q` across the whole
+  // matching set; re-filtering the page would only be able to hide rows the
+  // server deliberately found.
+  const visible = items
 
   async function updateStatus(id: string, status: string, reason?: string) {
     setActionId(id)
     try {
       await api.updateCarStatus(id, status, reason)
-      load(statusFilter)
+      load(statusFilter, query)
     } catch (e: any) {
       toast(e.message, 'error')
     } finally {
@@ -138,7 +169,7 @@ export default function ListingsPage() {
       toast(`${e.message} — the listing is approved but not yet published; use Publish to finish.`, 'error')
     } finally {
       setActionId(null)
-      load(statusFilter)
+      load(statusFilter, query)
     }
   }
 
@@ -152,7 +183,7 @@ export default function ListingsPage() {
     setActionId(id)
     try {
       await api.featureCar(id, 7)
-      load(statusFilter)
+      load(statusFilter, query)
     } catch (e: any) {
       toast(e.message, 'error')
     } finally {
@@ -195,7 +226,13 @@ export default function ListingsPage() {
           Create Listing
         </Link>
       </div>
-      <QueueSearch value={query} onChange={setQuery} resultCount={visible.length} placeholder="Search vehicle, seller, location, VIN, or listing ID" />
+      <QueueSearch value={query} onChange={setQuery} resultCount={total} placeholder="Search vehicle, seller, location, VIN, or listing ID" />
+      {total > visible.length ? (
+        <div className="-mt-3 mb-4 rounded-lg border border-line-soft bg-surface-alt px-4 py-2.5 text-caption text-content-secondary">
+          Showing the {visible.length} {statusFilter === NEEDS_ACTION ? 'longest-waiting' : 'most recent'} of <strong>{total}</strong>.
+          {' '}Search by make, model, seller, VIN or listing ID to find a specific vehicle — the search covers all {total}, not just this page.
+        </div>
+      ) : null}
 
       {/* Status filter pills */}
       <div className="flex flex-wrap gap-1 mb-6">
@@ -208,7 +245,7 @@ export default function ListingsPage() {
             }`}
           >
             {STATUS_LABELS[s] || s.replace('_', ' ')}
-            {s === NEEDS_ACTION && statusFilter === NEEDS_ACTION && items.length ? ` (${items.length})` : ''}
+            {s === statusFilter && total ? ` (${total})` : ''}
           </button>
         ))}
       </div>
@@ -219,8 +256,8 @@ export default function ListingsPage() {
         <LoadingState />
       ) : visible.length === 0 ? (
         <EmptyState icon="car"
-          title={items.length ? 'No listings match' : statusFilter === NEEDS_ACTION ? 'Nothing is waiting on you' : 'No listings here'}
-          description={items.length ? 'Try a different vehicle, seller, location, VIN, or ID.'
+          title={query.trim() ? 'No listings match' : statusFilter === NEEDS_ACTION ? 'Nothing is waiting on you' : 'No listings here'}
+          description={query.trim() ? `Nothing with status “${statusFilter === NEEDS_ACTION ? 'waiting on you' : statusFilter}” matches that. Try another status filter — the vehicle may already have moved on.`
             : statusFilter === NEEDS_ACTION ? 'Every submitted vehicle has been decided. New submissions appear here once their inspection is complete — check Submissions and Inspections for vehicles still earlier in the process.'
             : `Nothing on the floor with status “${statusFilter}”.`} />
       ) : (

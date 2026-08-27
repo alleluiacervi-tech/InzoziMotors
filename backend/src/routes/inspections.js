@@ -80,6 +80,10 @@ router.get('/', requireAdmin, async (req, res) => {
               cust.name AS customer_name, cust.email AS customer_email,
               c.title AS car_title, c.status AS car_status, c.make, c.model, c.year,
               s.make AS submission_make, s.model AS submission_model, s.year AS submission_year,
+              -- What the vehicle is here FOR (migration 0030). Without it the
+              -- inspections queue points every completed job at Create Listing,
+              -- including vans whose whole purpose is the rental fleet.
+              COALESCE(s.purpose, 'sale') AS submission_purpose,
               COALESCE(u.name, cust.name)   AS party_name,
               COALESCE(u.email, cust.email) AS party_email,
               COALESCE(c.make,  s.make,  i.vehicle_make)  AS display_make,
@@ -211,7 +215,13 @@ async function photoState(db, carId) {
   // exists, and the route below is how it is actually fetched.
   const { rows } = await db.query(
     `SELECT id, angle_key, url, position, is_cover, created_at, updated_at,
-            plate_state, plate_mask, (original_url IS NOT NULL) AS has_original
+            plate_state, plate_mask, (original_url IS NOT NULL) AS has_original,
+            -- Masking rewrites the file on disk, so it needs the file to BE on
+            -- this disk. When Cloudinary is configured the stored URL points at
+            -- their CDN and there is nothing local to re-encode. Reporting that
+            -- per photo lets the dashboard disable the control with a reason,
+            -- instead of offering a button that fails every time it is pressed.
+            (COALESCE(original_url, url) LIKE '%/uploads/%') AS can_mask
      FROM car_photos WHERE car_id = $1 ORDER BY is_cover DESC, position, created_at`, [carId]
   );
   // A real listing needs a truthful gallery, not a prescribed 36-angle shoot.
@@ -384,9 +394,15 @@ router.get('/cars/:carId/photos/:photoId/original', requireAdmin,
     if (!rows[0].original_url) return res.redirect(302, rows[0].url);
 
     const filePath = localPathForUrl(rows[0].original_url);
-    if (!filePath || !fs.existsSync(filePath)) {
+    if (!filePath) {
+      return res.status(409).json({
+        error: 'This photo is stored outside this server, so there is no kept original to edit against.',
+        code: 'PLATE_SOURCE_REMOTE',
+      });
+    }
+    if (!fs.existsSync(filePath)) {
       return res.status(404).json({
-        error: 'The kept original is not on this server.',
+        error: 'The kept original is missing from this server.',
         code: 'PLATE_SOURCE_MISSING',
       });
     }
@@ -436,9 +452,11 @@ router.patch('/cars/:carId/photos/:photoId/plate', requireAdmin,
         const originalPath = localPathForUrl(photo.original_url);
         if (!originalPath || !fs.existsSync(originalPath)) {
           return res.status(409).json({
-            error: 'The original photo is no longer on this server, so the cover cannot be removed. '
-                 + 'Delete this photo and re-upload it instead.',
-            code: 'PLATE_SOURCE_MISSING',
+            error: originalPath
+              ? 'The original photo is no longer on this server, so the cover cannot be removed. '
+                + 'Remove this photo and upload it again instead.'
+              : 'The original photo is held outside this server, so the cover cannot be removed here.',
+            code: originalPath ? 'PLATE_SOURCE_MISSING' : 'PLATE_SOURCE_REMOTE',
           });
         }
         // A new filename again, for the same reason masking uses one: caches and
@@ -492,10 +510,22 @@ router.patch('/cars/:carId/photos/:photoId/plate', requireAdmin,
     // second attempt at a badly placed mask impossible to get right.
     const sourceUrl = photo.original_url || photo.url;
     const sourcePath = localPathForUrl(sourceUrl);
-    if (!sourcePath || !fs.existsSync(sourcePath)) {
+    // Two different failures, and telling them apart matters: one is worth
+    // retrying and the other never is. A photo held on a CDN has no local file
+    // to re-encode and never will, so "re-upload and try again" would send an
+    // operator round a loop that cannot terminate — the new upload goes to the
+    // same CDN.
+    if (!sourcePath) {
       return res.status(409).json({
-        error: 'The original photo file is not on this server, so it cannot be masked. '
-             + 'Re-upload the photo and try again.',
+        error: 'This photo is stored outside this server (external media storage), so its plate cannot be '
+             + 'covered here. Plate masking requires photos held on the Sawa server.',
+        code: 'PLATE_SOURCE_REMOTE',
+      });
+    }
+    if (!fs.existsSync(sourcePath)) {
+      return res.status(409).json({
+        error: 'The original photo file is missing from this server, so it cannot be masked. '
+             + 'Remove this photo and upload it again.',
         code: 'PLATE_SOURCE_MISSING',
       });
     }

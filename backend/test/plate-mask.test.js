@@ -362,6 +362,47 @@ test('removing a cover and re-covering correctly leaves one badge, over the plat
   assert.ok(sky.channels[0].max > 60, 'the discarded cover is not baked into the corner');
 });
 
+test('a photo held off this server says so, instead of failing forever', async () => {
+  // If Cloudinary is ever configured, car_photos.url points at a CDN and there
+  // is no local file to re-encode. The old message told the operator to
+  // "re-upload the photo and try again" — advice that cannot ever work, because
+  // the new upload goes to the same CDN. That is an infinite loop with a
+  // helpful tone. The two failures are now distinct, and the gallery reports
+  // per photo whether masking is even possible.
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const { carId, photo } = await listingWithPhoto(admin);
+
+  const local = await api().get(`/inspections/cars/${carId}/photos`).set(auth).expect(200);
+  assert.equal(local.body.photos.find((p) => p.id === photo.id).can_mask, true,
+    'a locally stored photo is maskable');
+
+  await pool.query(
+    "UPDATE car_photos SET url = 'https://res.cloudinary.com/demo/image/upload/v1/cars/x.jpg' WHERE id = $1",
+    [photo.id]
+  );
+
+  const remote = await api().get(`/inspections/cars/${carId}/photos`).set(auth).expect(200);
+  assert.equal(remote.body.photos.find((p) => p.id === photo.id).can_mask, false,
+    'and the dashboard is told not to offer the control');
+
+  const refused = await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
+    .set(auth).send({ quad: quadOverPlate() }).expect(409);
+  assert.equal(refused.body.code, 'PLATE_SOURCE_REMOTE');
+  assert.doesNotMatch(refused.body.error, /try again|re-upload/i,
+    'and is not told to retry something that cannot succeed');
+
+  const original = await api().get(`/inspections/cars/${carId}/photos/${photo.id}/original`).set(auth);
+  // No kept original, so the route redirects to the published URL — which is
+  // the remote one. That is correct: the editor can still display it.
+  assert.equal(original.status, 302);
+
+  // Declaring "no plate" must still work — it touches no file.
+  const cleared = await api().patch(`/inspections/cars/${carId}/photos/${photo.id}/plate`)
+    .set(auth).send({ plate_state: 'none' }).expect(200);
+  assert.equal(cleared.body.photos.find((p) => p.id === photo.id).plate_state, 'none');
+});
+
 test('the plate routes validate their input and their caller', async () => {
   const admin = await makeAdmin(await register());
   const auth = { Authorization: `Bearer ${admin}` };
