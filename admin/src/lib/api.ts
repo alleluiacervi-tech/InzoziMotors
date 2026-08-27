@@ -491,6 +491,14 @@ export const api = {
     request<any>(`/id-verification/${userId}`, {
       method: 'PATCH', body: JSON.stringify({ decision }),
     }),
+  /** Approve an identity that was checked away from the dashboard — at the
+   *  counter, against a business document, or on an established relationship.
+   *  The note is the entire evidentiary record for that approval, so the server
+   *  and the database both refuse a short one. */
+  verifyIdentityOffline: (userId: string, body: { method: string; note: string; reference?: string }) =>
+    request<{ success: true; decision: 'approved'; method: string; method_label: string }>(
+      `/id-verification/${userId}/manual`, { method: 'POST', body: JSON.stringify(body) },
+    ),
   /** Create any kind of account. The recipient sets their own password from a
    *  one-use link — nothing here emails a password. */
   /** Whether outbound email is actually configured. Reports configuration
