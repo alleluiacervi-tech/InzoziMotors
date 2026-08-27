@@ -20,6 +20,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The API image is Alpine (musl), and `sharp` is a native dependency whose
+  # musl build is the fiddliest platform it ships. Worse, SVG text needs
+  # fontconfig installed or the plate badge composites with NO WORDMARK — a
+  # black panel that looks almost right.
+  #
+  # Neither failure is visible from `npm test` on the runner's glibc Node, so
+  # without this job both would surface for the first time during a deploy.
+  # Building the real image and rendering a real badge inside it moves that
+  # discovery onto the pull request, where it belongs.
+  api-image:
+    name: API image — native deps and fonts on Alpine
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the API image exactly as the deploy does
+        run: docker build -t sawa-api:ci ./backend
+
+      - name: The plate badge renders with its wordmark
+        run: |
+          docker run --rm sawa-api:ci node -e "
+            require('/app/src/lib/plate-badge').assertBadgeRenders()
+              .then(r => { console.log('badge ok, white share', r.white_share); })
+              .catch(e => { console.error('BADGE FAILED:', e.code, e.message); process.exit(1); });
+          "
+
   backend:
     name: Backend — syntax, SQL grammar, API tests
     runs-on: ubuntu-latest

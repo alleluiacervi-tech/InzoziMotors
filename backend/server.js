@@ -140,6 +140,10 @@ const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 app.use('/uploads/id-docs', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads/contracts', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads/documents', (req, res) => res.status(403).json({ error: 'Forbidden' }));
+// Unmasked listing photos. The whole point of burning the badge in is that the
+// file containing the plate is not reachable — a masked public image beside a
+// readable original is theatre.
+app.use('/uploads/plate-originals', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads', express.static(uploadDir));
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────

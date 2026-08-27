@@ -683,7 +683,19 @@ CREATE TABLE IF NOT EXISTS car_photos (
   angle_key TEXT,                      -- e.g. front, rear_left_45, wheel_fl
   url       TEXT NOT NULL,
   position  INT NOT NULL DEFAULT 0,
-  UNIQUE (car_id, position)
+  -- Plate masking (migration 0028). `url` is the PUBLIC file with the badge
+  -- burned in; `original_url` is the untouched photo on a path server.js
+  -- denies. Four corners as image fractions, so a perspective fit later needs
+  -- no migration and the geometry survives a resize.
+  original_url TEXT,
+  plate_mask   JSONB,
+  plate_state  TEXT NOT NULL DEFAULT 'unreviewed',
+  UNIQUE (car_id, position),
+  CONSTRAINT car_photos_plate_state_check CHECK (plate_state IN ('unreviewed', 'masked', 'none')),
+  -- A masked photo needs the geometry and the original, or it can never be
+  -- re-rendered when the badge design changes.
+  CONSTRAINT car_photos_mask_shape_check
+    CHECK (plate_state <> 'masked' OR (plate_mask IS NOT NULL AND original_url IS NOT NULL))
 );
 
 -- ─── Referrals ───────────────────────────────────────────────────────────────
