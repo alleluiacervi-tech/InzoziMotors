@@ -242,6 +242,10 @@ app.use('/devices',         require('./src/routes/devices'));
 // Mounted ahead of /admin so the pipeline reads keep their own module rather
 // than growing the admin router further. Both are admin-gated identically.
 app.use('/admin/journey',   require('./src/routes/journey'));
+// Everything recorded about one vehicle, joined on the normalised VIN key.
+// Admin-only: a buyer-facing history carries real privacy weight and must be a
+// deliberate decision, not something that arrives through this route.
+app.use('/admin/vehicles',  require('./src/routes/vehicle-history'));
 app.use('/admin',           require('./src/routes/admin'));
 app.use('/imports',         require('./src/routes/imports'));
 // Inspection centers. Admin-only CRUD over the table submissions.js already

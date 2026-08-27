@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS cars (
   location        TEXT,                  -- Kigali neighbourhood
   drive_side      TEXT DEFAULT 'RHD',   -- RHD (Japanese imports) | LHD (local)
   vin             TEXT,
+  vin_key         TEXT GENERATED ALWAYS AS
+    (NULLIF(regexp_replace(upper(vin), '[^A-Z0-9]', '', 'g'), '')) STORED,
   description     TEXT,
   images          TEXT[],               -- array of image URLs / file paths
   inspected       BOOLEAN DEFAULT FALSE,
@@ -108,6 +110,11 @@ CREATE TABLE IF NOT EXISTS inspections (
   vehicle_model     TEXT,
   vehicle_year      INT,
   vehicle_vin       TEXT,
+  -- Normalised by the database so no write path can forget (migration 0027).
+  -- Deliberately no 17-character rule: Rwanda's fleet is largely Japanese
+  -- imports carrying a chassis number, not an ISO VIN. See src/lib/vin.js.
+  vehicle_vin_key   TEXT GENERATED ALWAYS AS
+    (NULLIF(regexp_replace(upper(vehicle_vin), '[^A-Z0-9]', '', 'g'), '')) STORED,
   vehicle_plate     TEXT,
   vehicle_mileage   INT,
 
@@ -578,6 +585,13 @@ CREATE TABLE IF NOT EXISTS platform_fees (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_platform_fees_seller ON platform_fees(seller_id);
+
+-- Vehicle identity lookups (migration 0027). Partial: most rows carry no VIN
+-- and indexing their NULLs helps nobody.
+CREATE INDEX IF NOT EXISTS idx_inspections_vin_key
+  ON inspections(vehicle_vin_key) WHERE vehicle_vin_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_cars_vin_key
+  ON cars(vin_key) WHERE vin_key IS NOT NULL;
 
 -- Certification is billed per SUBMISSION (the car that was inspected), not per
 -- handover — it is earned when the 150-point check completes, whether or not

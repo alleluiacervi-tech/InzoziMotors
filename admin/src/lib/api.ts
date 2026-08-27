@@ -378,6 +378,21 @@ export const api = {
     ),
   inspectorStats: () => request<any[]>('/admin/inspectors'),
 
+  /** Everything recorded about one vehicle, joined on the normalised VIN key.
+   *  Refuses an identifier too short to join on rather than merging unrelated
+   *  cars into one record. */
+  vehicleHistory: (vin: string) =>
+    request<{
+      vin: { key: string | null; kind: 'iso' | 'chassis' | 'short' | 'none'; confident: boolean; note: string }
+      inspections: any[]
+      listings: any[]
+      summary: {
+        inspections: number; first_seen: string | null; last_seen: string | null
+        best_score: number | null; latest_score: number | null
+        passing_threshold: number; odometer_inconsistent: boolean
+      }
+    }>(`/admin/vehicles/history?vin=${encodeURIComponent(vin)}`),
+
   completeInspection: (id: string, data: any) =>
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
   issueInspectionReport: (id: string) =>
