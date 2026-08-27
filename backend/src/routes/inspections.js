@@ -11,6 +11,7 @@ const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middl
 const { recordAdminAction } = require('../lib/admin-audit');
 const { notifyUser } = require('../lib/notify');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
+const { elapsedMinutes, integrityFlags } = require('../lib/inspection-integrity');
 const { createInvitedAccount } = require('../lib/accounts');
 const { sendAccountInvite, sendInspectionReportReady } = require('../lib/mailer');
 const { issueInspectionReport } = require('../lib/documents/inspection-report');
@@ -665,6 +666,16 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
   }
 
   const score = evaluated.score;
+  // The floor below which a completed checklist is not credible, read once up
+  // front. Absent or unreadable falls back to the shipped default rather than
+  // failing the completion — a settings problem must never cost an inspector
+  // forty minutes of work.
+  let minMinutes = 20;
+  try {
+    const setting = await pool.query("SELECT value FROM platform_settings WHERE key='inspection_min_minutes'");
+    if (setting.rows.length) minMinutes = Number(setting.rows[0].value) || 20;
+  } catch { /* the default stands */ }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -782,9 +793,20 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       });
     }
 
+    // The clock and the shape of the result, written permanently into the audit
+    // log at the moment of completion. Everything else derives these on read,
+    // but the threshold may change later and this is the contemporaneous fact:
+    // how long it actually took, on the day.
+    const closed = { ...insp, status: 'complete', completed_at: new Date(), checklist_results };
+    const minutes = elapsedMinutes(closed);
+    const flags = integrityFlags(closed, { minMinutes });
+
     await recordAdminAction(client, {
       actorId: req.user.id, action: 'inspection.completed', targetType: 'inspection', targetId: insp.id,
-      summary: `Inspection completed with ${score}/150`, metadata: {
+      summary: `Inspection completed with ${score}/150${minutes !== null ? ` in ${minutes} min` : ''}`,
+      metadata: {
+        elapsed_minutes: minutes,
+        integrity_flags: flags.map((flag) => flag.id),
         score, passed, published: false, checklist_version: CHECKLIST_VERSION,
         critical_failures: evaluated.critical_failures.map((failure) => failure.id),
         kind: insp.kind, submission_id: insp.submission_id, car_id: insp.car_id,
@@ -806,6 +828,8 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       category_scores: evaluated.category_scores,
       car_id: insp.car_id,
       kind: insp.kind,
+      elapsed_minutes: minutes,
+      integrity_flags: flags,
       published: false,
       ready_for_review: !!(insp.car_id && passed),
     });
