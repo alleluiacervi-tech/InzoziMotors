@@ -211,3 +211,77 @@ test('the floor is an editable setting, not a constant', async () => {
 
   await pool.query("UPDATE platform_settings SET value='20'::jsonb WHERE key='inspection_min_minutes'");
 });
+
+// ─── Saving the work as it is done ───────────────────────────────────────────
+
+test('a checklist can be saved in pieces, and pieces never score anything', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const inspection = await booked(admin);
+
+  // Nothing can be recorded before the work starts.
+  await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: { [REQUIRED_ITEM_IDS[0]]: 'pass' } }).expect(409);
+
+  await api().post(`/inspections/${inspection.id}/start`).set(auth).expect(200);
+
+  const first = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: Object.fromEntries(REQUIRED_ITEM_IDS.slice(0, 40).map((id) => [id, 'pass'])) })
+    .expect(200);
+  assert.equal(first.body.recorded, 40);
+  assert.equal(first.body.remaining, REQUIRED_ITEM_IDS.length - 40);
+
+  // A second save MERGES. Two tabs, or a flaky connection resending a smaller
+  // object, must never be able to erase verdicts already recorded.
+  const second = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: { [REQUIRED_ITEM_IDS[40]]: 'flag' } }).expect(200);
+  assert.equal(second.body.recorded, 41, 'the earlier forty must survive');
+
+  // A draft is a notebook, not a verdict: nothing is scored or passed yet.
+  const { rows } = await pool.query(
+    'SELECT status, score, passed FROM inspections WHERE id=$1', [inspection.id]
+  );
+  assert.equal(rows[0].status, 'in_progress');
+  assert.equal(rows[0].score, null);
+  assert.equal(rows[0].passed, false);
+
+  // And the completion still demands the whole canonical checklist.
+  const short = await api().post(`/inspections/${inspection.id}/complete`).set(auth)
+    .send({ checklist_results: { [REQUIRED_ITEM_IDS[0]]: 'pass' } }).expect(400);
+  assert.equal(short.body.code, 'INSPECTION_CHECKLIST_INCOMPLETE');
+
+  const done = await api().post(`/inspections/${inspection.id}/complete`).set(auth)
+    .send({ checklist_results: checklist() }).expect(200);
+  assert.equal(done.body.score, 150);
+
+  // A completed inspection is evidence. It is not editable, by anyone.
+  const refused = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: { [REQUIRED_ITEM_IDS[0]]: 'fail' } }).expect(409);
+  assert.equal(refused.body.code, 'INSPECTION_ALREADY_COMPLETE');
+});
+
+test('a draft refuses anything the completion would reject', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const inspection = await booked(admin);
+  await api().post(`/inspections/${inspection.id}/start`).set(auth).expect(200);
+
+  await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: 'everything fine' }).expect(400);
+  const unknown = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: { not_a_real_item: 'pass' } }).expect(400);
+  assert.equal(unknown.body.code, 'INSPECTION_CHECKLIST_INVALID');
+  const badVerdict = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: { [REQUIRED_ITEM_IDS[0]]: 'probably ok' } }).expect(400);
+  assert.match(badVerdict.body.invalid.join(' '), /probably ok/);
+
+  // Storing a bad entry would let a draft carry something the completion later
+  // rejects, so nothing was written.
+  const { rows } = await pool.query('SELECT checklist_results FROM inspections WHERE id=$1', [inspection.id]);
+  assert.equal(rows[0].checklist_results, null);
+
+  const outsider = await register();
+  await api().patch(`/inspections/${inspection.id}/checklist`)
+    .set('Authorization', `Bearer ${outsider.token}`)
+    .send({ checklist_results: { [REQUIRED_ITEM_IDS[0]]: 'pass' } }).expect(403);
+});

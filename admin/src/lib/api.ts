@@ -368,6 +368,16 @@ export const api = {
   inspectionChecklist: () => request<any>('/inspections/checklist'),
   startInspection: (id: string) =>
     request<any>(`/inspections/${id}/start`, { method: 'POST' }),
+  /** Save the work so far. Scores nothing, passes nothing, cannot touch a
+   *  completed inspection — losing forty minutes to a dropped connection is
+   *  what teaches an inspector to hurry. */
+  saveChecklistDraft: (id: string, checklist_results: Record<string, string>) =>
+    request<{ saved: true; recorded: number; remaining: number }>(
+      `/inspections/${id}/checklist`,
+      { method: 'PATCH', body: JSON.stringify({ checklist_results }) },
+    ),
+  inspectorStats: () => request<any[]>('/admin/inspectors'),
+
   completeInspection: (id: string, data: any) =>
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
   issueInspectionReport: (id: string) =>
