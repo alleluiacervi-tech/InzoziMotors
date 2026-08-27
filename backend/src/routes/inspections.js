@@ -80,6 +80,10 @@ router.get('/', requireAdmin, async (req, res) => {
               cust.name AS customer_name, cust.email AS customer_email,
               c.title AS car_title, c.status AS car_status, c.make, c.model, c.year,
               s.make AS submission_make, s.model AS submission_model, s.year AS submission_year,
+              -- What the vehicle is here FOR (migration 0030). Without it the
+              -- inspections queue points every completed job at Create Listing,
+              -- including vans whose whole purpose is the rental fleet.
+              COALESCE(s.purpose, 'sale') AS submission_purpose,
               COALESCE(u.name, cust.name)   AS party_name,
               COALESCE(u.email, cust.email) AS party_email,
               COALESCE(c.make,  s.make,  i.vehicle_make)  AS display_make,
@@ -199,8 +203,25 @@ function removeStoredPhoto(url) {
 }
 
 async function photoState(db, carId) {
+  // plate_state and plate_mask were missing from this select, and the dashboard
+  // reads both. Every photo therefore rendered as "Plate not checked" whether or
+  // not it had been masked, and the Redo control — which keys off
+  // plate_state === 'masked' — could never appear. The columns existed and the
+  // writes were correct; only the read forgot them.
+  //
+  // original_url is reported as a boolean rather than a URL. The file lives on a
+  // path server.js denies, so handing out its address would only produce a 403
+  // in an <img>; `has_original` tells the client that the editable clean copy
+  // exists, and the route below is how it is actually fetched.
   const { rows } = await db.query(
-    `SELECT id, angle_key, url, position, is_cover, created_at, updated_at
+    `SELECT id, angle_key, url, position, is_cover, created_at, updated_at,
+            plate_state, plate_mask, (original_url IS NOT NULL) AS has_original,
+            -- Masking rewrites the file on disk, so it needs the file to BE on
+            -- this disk. When Cloudinary is configured the stored URL points at
+            -- their CDN and there is nothing local to re-encode. Reporting that
+            -- per photo lets the dashboard disable the control with a reason,
+            -- instead of offering a button that fails every time it is pressed.
+            (COALESCE(original_url, url) LIKE '%/uploads/%') AS can_mask
      FROM car_photos WHERE car_id = $1 ORDER BY is_cover DESC, position, created_at`, [carId]
   );
   // A real listing needs a truthful gallery, not a prescribed 36-angle shoot.
@@ -347,6 +368,53 @@ function localPathForUrl(url) {
   return resolved;
 }
 
+// GET /inspections/cars/:carId/photos/:photoId/original
+//
+// The unmasked photograph, for the one screen that has to see it: the editor
+// that places the badge. Once a photo is masked, its public URL is the masked
+// file, so opening the editor on `photo.url` meant dragging a badge across an
+// image that already had one burned in — the plate you were trying to cover was
+// invisible, and a mask placed slightly wrong could not be placed again.
+//
+// The file itself sits under /uploads/plate-originals, which server.js answers
+// 403 for. That stays true: this route is the only way in, it requires an admin,
+// and the dashboard reaches it through the same-origin proxy that attaches the
+// token server-side, so the browser never holds a credential to view it.
+router.get('/cars/:carId/photos/:photoId/original', requireAdmin,
+  requireUuid('carId'), requireUuid('photoId'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT original_url, url FROM car_photos WHERE id = $1 AND car_id = $2',
+      [req.params.photoId, req.params.carId]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Photo not found' });
+    // No original kept means the photo was never masked, so the published file
+    // IS the original. Redirecting rather than 404ing lets the editor use one
+    // source for both cases.
+    if (!rows[0].original_url) return res.redirect(302, rows[0].url);
+
+    const filePath = localPathForUrl(rows[0].original_url);
+    if (!filePath) {
+      return res.status(409).json({
+        error: 'This photo is stored outside this server, so there is no kept original to edit against.',
+        code: 'PLATE_SOURCE_REMOTE',
+      });
+    }
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        error: 'The kept original is missing from this server.',
+        code: 'PLATE_SOURCE_MISSING',
+      });
+    }
+    res.type(path.extname(filePath) || '.jpg');
+    res.setHeader('Cache-Control', 'private, no-store');
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    log.error('plate original read failed', { error: err.message, photoId: req.params.photoId });
+    res.status(500).json({ error: 'Could not read the original photo' });
+  }
+});
+
 // PATCH /inspections/cars/:carId/photos/:photoId/plate
 //
 // Body is either { quad: [{x,y} × 4] } to mask, or { plate_state: 'none' } to
@@ -368,20 +436,73 @@ router.patch('/cars/:carId/photos/:photoId/plate', requireAdmin,
     const photo = found.rows[0];
 
     // "No plate here" is a decision, recorded so an unreviewed photo can never
-    // pass for a cleared one. It never touches the file.
+    // pass for a cleared one.
+    //
+    // On a photo that has already been masked it is also the undo. Previously it
+    // set the flag and left the badge burned into the published file, so the
+    // record said "no plate in this photo" while the picture carried a cover
+    // over something — the state and the file disagreed, and there was no way at
+    // all to take a badly placed badge back off. Restoring the kept original is
+    // what makes it a real reversal rather than a relabelling.
     if (declaringNone) {
-      const { rows } = await pool.query(
-        `UPDATE car_photos SET plate_state = 'none', plate_mask = NULL, updated_at = NOW()
-          WHERE id = $1 RETURNING id, url, plate_state`,
-        [photo.id]
-      );
-      await recordAdminAction(pool, {
-        actorId: req.user.id, action: 'listing.photo_plate_cleared',
-        targetType: 'listing', targetId: req.params.carId,
-        summary: 'Confirmed a photo shows no registration plate',
-        metadata: { photo_id: photo.id },
+      let restoredUrl = null;
+      let supersededUrl = null;
+
+      if (photo.original_url) {
+        const originalPath = localPathForUrl(photo.original_url);
+        if (!originalPath || !fs.existsSync(originalPath)) {
+          return res.status(409).json({
+            error: originalPath
+              ? 'The original photo is no longer on this server, so the cover cannot be removed. '
+                + 'Remove this photo and upload it again instead.'
+              : 'The original photo is held outside this server, so the cover cannot be removed here.',
+            code: originalPath ? 'PLATE_SOURCE_MISSING' : 'PLATE_SOURCE_REMOTE',
+          });
+        }
+        // A new filename again, for the same reason masking uses one: caches and
+        // CDN edges keep serving whatever was at the old address.
+        const publicDir = path.join(UPLOAD_ROOT, 'cars', req.params.carId);
+        await fsp.mkdir(publicDir, { recursive: true });
+        const publicName = `restored-${photo.id}-${Date.now()}${path.extname(originalPath) || '.jpg'}`;
+        await fsp.copyFile(originalPath, path.join(publicDir, publicName));
+        const relative = path.relative(path.resolve(UPLOAD_ROOT), path.join(publicDir, publicName))
+          .split(path.sep).join('/');
+        restoredUrl = `${publicApiOrigin(req)}/uploads/${relative}`;
+        supersededUrl = photo.url;
+      }
+
+      const state = await withTransaction(async (client) => {
+        await client.query(
+          `UPDATE car_photos
+              SET plate_state = 'none', plate_mask = NULL,
+                  url = COALESCE($2, url),
+                  original_url = CASE WHEN $2::text IS NULL THEN original_url ELSE NULL END,
+                  updated_at = NOW()
+            WHERE id = $1`,
+          [photo.id, restoredUrl]
+        );
+        const gallery = await photoState(client, req.params.carId);
+        const ordered = [...gallery.photos].sort(
+          (a, b) => Number(b.is_cover) - Number(a.is_cover) || a.position - b.position
+        );
+        await client.query('UPDATE cars SET images = $1::text[] WHERE id = $2',
+          [ordered.map((p) => p.url), req.params.carId]);
+        await recordAdminAction(client, {
+          actorId: req.user.id,
+          action: restoredUrl ? 'listing.photo_plate_cover_removed' : 'listing.photo_plate_cleared',
+          targetType: 'listing', targetId: req.params.carId,
+          summary: restoredUrl
+            ? 'Removed a plate cover and restored the original photo'
+            : 'Confirmed a photo shows no registration plate',
+          metadata: { photo_id: photo.id, restored: Boolean(restoredUrl) },
+        });
+        return { ...gallery, photos: ordered };
       });
-      return res.json(rows[0]);
+
+      // Only after the transaction commits — a rollback must not have deleted
+      // the file the listing is still pointing at.
+      if (supersededUrl) removeStoredPhoto(supersededUrl);
+      return res.json(state);
     }
 
     // Always mask from the ORIGINAL, never from an already-masked file.
@@ -389,10 +510,22 @@ router.patch('/cars/:carId/photos/:photoId/plate', requireAdmin,
     // second attempt at a badly placed mask impossible to get right.
     const sourceUrl = photo.original_url || photo.url;
     const sourcePath = localPathForUrl(sourceUrl);
-    if (!sourcePath || !fs.existsSync(sourcePath)) {
+    // Two different failures, and telling them apart matters: one is worth
+    // retrying and the other never is. A photo held on a CDN has no local file
+    // to re-encode and never will, so "re-upload and try again" would send an
+    // operator round a loop that cannot terminate — the new upload goes to the
+    // same CDN.
+    if (!sourcePath) {
       return res.status(409).json({
-        error: 'The original photo file is not on this server, so it cannot be masked. '
-             + 'Re-upload the photo and try again.',
+        error: 'This photo is stored outside this server (external media storage), so its plate cannot be '
+             + 'covered here. Plate masking requires photos held on the Sawa server.',
+        code: 'PLATE_SOURCE_REMOTE',
+      });
+    }
+    if (!fs.existsSync(sourcePath)) {
+      return res.status(409).json({
+        error: 'The original photo file is missing from this server, so it cannot be masked. '
+             + 'Remove this photo and upload it again.',
         code: 'PLATE_SOURCE_MISSING',
       });
     }

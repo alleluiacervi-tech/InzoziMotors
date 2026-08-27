@@ -111,7 +111,14 @@ export type Readiness = {
   inspection: { id: string; version: string; score: number; passed: boolean; critical_failures: string[] } | null
 }
 
-async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
+/** The single place a dashboard request is made.
+ *
+ *  Returns the parsed body AND the Response, because a couple of endpoints put
+ *  part of their answer in a header (X-Total-Count on the listings queue). The
+ *  alternative — a hand-rolled fetch beside this one — silently loses the 401
+ *  handling that bounces an expired session to /login and the unreachable-API
+ *  banner, and loses them in precisely the circumstances they exist for. */
+async function requestFull<T>(path: string, opts: RequestInit = {}): Promise<{ data: T; res: Response }> {
   const headers: Record<string, string> = {
     ...(opts.headers as Record<string, string> | undefined),
   }
@@ -156,8 +163,17 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
     if (err.contract_number) error.contract_number = err.contract_number
     throw error
   }
-  return res.json()
+  // 204 and friends have no body; res.json() would throw on the empty string.
+  const data = res.status === 204 || res.headers.get('content-length') === '0'
+    ? (undefined as unknown as T)
+    : await res.json()
+  return { data, res }
 }
+
+async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  return (await requestFull<T>(path, opts)).data
+}
+
 
 // ─── Inspection centers ──────────────────────────────────────────────────────
 
@@ -356,6 +372,20 @@ export const api = {
   // Submissions
   submissions: (status?: string) =>
     request<any[]>(`/submissions/admin/all${status ? `?status=${status}` : ''}`),
+  /** File an intake on a seller's behalf. `purpose` is what the vehicle is FOR
+   *  — a rental operator should not have to file a sale submission for a van
+   *  they never intend to sell. Returns the submission plus any warnings (e.g.
+   *  the provider is not yet business-verified) so the gap gets closed while the
+   *  car is still in the workshop. */
+  createSubmission: (body: {
+    seller_id: string; make: string; model: string; year: number
+    purpose?: 'sale' | 'rental' | 'both'
+    mileage?: number | null; condition?: string | null; asking_price?: number | null
+    fuel_type?: string | null; transmission?: string | null; body_type?: string | null
+    color?: string | null; notes?: string | null
+  }) => request<any & { warnings: string[] }>('/submissions/admin', {
+    method: 'POST', body: JSON.stringify(body),
+  }),
   updateSubmission: (id: string, data: any) =>
     request<any>(`/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
@@ -470,6 +500,22 @@ export const api = {
   cars: (params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params).toString() : ''
     return request<any[]>(`/admin/listings${q}`)
+  },
+  /** The same view, plus how many rows match beyond the page.
+   *
+   *  The waiting-on-you queue is ordered oldest-first, so with a backlog longer
+   *  than one page the newest vehicle — the one just worked on, the one being
+   *  looked for — falls off the end. Filtering the fetched page in the browser
+   *  then finds nothing, which reads exactly like the car not existing. `q` is
+   *  passed to the server so a search covers the whole matching set, and `total`
+   *  lets the page admit when it is showing a window. */
+  carsPage: async (params: Record<string, string>): Promise<{ items: any[]; total: number }> => {
+    const { data, res } = await requestFull<any[]>(`/admin/listings?${new URLSearchParams(params)}`)
+    const items = data || []
+    const header = Number(res.headers.get('X-Total-Count'))
+    // Anything in the chain that drops the header must not make the page claim
+    // there are fewer rows than it is already showing.
+    return { items, total: Number.isFinite(header) && header > 0 ? header : items.length }
   },
   getCar: (id: string) => request<any>(`/cars/${id}`),
   /** Why a listing can (or cannot) be published — the same verdict the

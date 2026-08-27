@@ -342,13 +342,34 @@ export default function InspectionsPage() {
                     <span className="flex-shrink-0 text-xs font-semibold text-gray-500">
                       Independent report — no listing
                     </span>
-                  ) : (
+                  ) : insp.submission_purpose === 'rental' ? (
+                    // The vehicle was taken in for the rental fleet. Offering
+                    // Create Listing here is how a van intended for hire ends
+                    // up as a car for sale, or — more often — how an operator
+                    // concludes the rental side simply does not work.
                     <Link
-                      href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
+                      href={`/rentals/fleet?inspectionId=${insp.id}`}
                       className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
                     >
-                      Create Listing
+                      Add to rental fleet
                     </Link>
+                  ) : (
+                    <div className="flex flex-shrink-0 flex-wrap justify-end gap-2">
+                      <Link
+                        href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
+                        className="px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
+                      >
+                        Create Listing
+                      </Link>
+                      {insp.submission_purpose === 'both' ? (
+                        <Link
+                          href={`/rentals/fleet?inspectionId=${insp.id}`}
+                          className="px-3 py-1.5 text-xs font-semibold border border-line rounded-lg text-content hover:bg-surface-alt"
+                        >
+                          Add to rental fleet
+                        </Link>
+                      ) : null}
+                    </div>
                   )}
                 </div>
               )}

@@ -8,6 +8,21 @@ import { useFocusRow } from '@/components/useFocusRow'
 
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
+// What a vehicle is being taken in FOR. The rental fleet had no intake of its
+// own: POST /submissions is the seller's own "sell my car" route, so an operator
+// with ten vans to hire out had to ask the provider to file ten sale
+// submissions. This form is the intake, and `purpose` is what stops every screen
+// downstream from calling a hire van a car awaiting publication.
+const PURPOSES = [
+  { value: 'sale' as const, label: 'For sale', hint: 'Becomes a listing once inspected and approved.' },
+  { value: 'rental' as const, label: 'For rental', hint: 'Goes to the rental fleet once inspected. Provider must be business-verified.' },
+  { value: 'both' as const, label: 'Sale and rental', hint: 'One inspection covers both — it no longer has to be done twice.' },
+]
+const EMPTY_INTAKE = {
+  seller_id: '', seller_label: '', purpose: 'rental' as 'sale' | 'rental' | 'both',
+  make: '', model: '', year: '', mileage: '', asking_price: '', notes: '',
+}
+
 const STATUS_COLORS: Record<string, string> = {
   pending:      'bg-warning-tint text-warning-text',
   under_review: 'bg-warning-tint text-warning-text',
@@ -32,6 +47,9 @@ export default function SubmissionsPage() {
   const [centers, setCenters] = useState<CenterRow[]>([])
   const [schedDate, setSchedDate]     = useState('')
   const [schedTime, setSchedTime]     = useState('10:00 AM')
+  const [intake, setIntake]           = useState<null | typeof EMPTY_INTAKE>(null)
+  const [sellerQuery, setSellerQuery] = useState('')
+  const [sellerHits, setSellerHits]   = useState<any[]>([])
   const [query, setQuery]             = useState('')
   const [order, setOrder]             = useState<'oldest' | 'newest'>('oldest')
 
@@ -90,9 +108,132 @@ export default function SubmissionsPage() {
     }
   }
 
+  // Debounced, and deliberately NOT filtered to sellers: a buyer account that
+  // should be a seller is the commonest reason a real person cannot be found,
+  // and silently omitting them makes it look like they do not exist.
+  useEffect(() => {
+    if (!intake) return
+    const q = sellerQuery.trim()
+    if (q.length < 2 || intake.seller_id) { setSellerHits([]); return }
+    const timer = window.setTimeout(() => {
+      api.searchUsers(q, 20)
+        .then((rows) => setSellerHits(rows.filter((row) => row.role !== 'admin')))
+        .catch(() => setSellerHits([]))
+    }, 250)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sellerQuery, intake?.seller_id, Boolean(intake)])
+
+  const asNumber = (value: string) => {
+    const digits = String(value || '').replace(/[^0-9]/g, '')
+    return digits ? Number(digits) : null
+  }
+
+  async function submitIntake(event: React.FormEvent) {
+    event.preventDefault()
+    if (!intake?.seller_id) return
+    const year = asNumber(intake.year)
+    if (!year) { toast('Give the vehicle model year.', 'error'); return }
+    setActionId('intake')
+    try {
+      const created = await api.createSubmission({
+        seller_id: intake.seller_id,
+        purpose: intake.purpose,
+        make: intake.make.trim(),
+        model: intake.model.trim(),
+        year,
+        mileage: asNumber(intake.mileage),
+        asking_price: asNumber(intake.asking_price),
+        notes: intake.notes.trim() || null,
+      })
+      // Warnings are why this returns anything at all: a rental intake for a
+      // seller who is not business-verified will be refused three steps later by
+      // POST /rentals, and the operator needs to know now, while the car is
+      // still in the workshop.
+      if (created.warnings?.length) created.warnings.forEach((w: string) => toast(w, 'error'))
+      else toast('Submission filed. Book its inspection next.', 'success')
+      setIntake(null)
+      setSellerQuery('')
+      load(tab)
+    } catch (e: any) {
+      toast(e.message, 'error')
+    } finally { setActionId(null) }
+  }
+
   return (
     <div>
-      <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." />
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." />
+        <button type="button" onClick={() => { setIntake(intake ? null : { ...EMPTY_INTAKE }); setSellerQuery(''); setSellerHits([]) }}
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light">
+          {intake ? 'Cancel intake' : 'Take in a vehicle'}
+        </button>
+      </div>
+
+      {intake ? (
+        <Card className="mb-5 p-5">
+          <h2 className="font-extrabold text-content">Take in a vehicle for a seller</h2>
+          <p className="mt-1 text-label text-content-muted">
+            Files the submission the seller would otherwise have to file themselves, which is what the
+            rental fleet never had. The vehicle then follows the ordinary route: book its inspection,
+            complete the 150 points, and add it to the fleet or publish it as a listing.
+          </p>
+          <form onSubmit={submitIntake} className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="text-label font-semibold text-content">Seller or provider</label>
+              <input value={sellerQuery} onChange={(e) => { setSellerQuery(e.target.value); setIntake((old) => old && { ...old, seller_id: '', seller_label: '' }) }}
+                placeholder="Search by name, business or email"
+                className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 focus:border-content-muted focus:outline-none" />
+              {intake.seller_id ? (
+                <p className="mt-1 text-caption font-semibold text-success-text">{intake.seller_label} selected</p>
+              ) : null}
+              {sellerHits.length > 0 && !intake.seller_id ? (
+                <div className="mt-1 max-h-44 overflow-y-auto rounded-lg border border-line bg-surface">
+                  {sellerHits.map((row) => (
+                    <button key={row.id} type="button"
+                      onClick={() => { const label = row.business_name || row.name; setIntake((old) => old && { ...old, seller_id: row.id, seller_label: label }); setSellerQuery(label); setSellerHits([]) }}
+                      className="block w-full border-b border-line-soft px-3 py-2 text-left text-label last:border-0 hover:bg-surface-alt">
+                      <span className="font-semibold text-content">{row.business_name || row.name}</span>
+                      <span className="ml-2 text-caption text-content-muted">{row.email}</span>
+                      {row.role !== 'seller' ? <span className="ml-2 text-caption text-warning-text">buyer account — change the role first</span> : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <fieldset className="sm:col-span-2 grid gap-2 sm:grid-cols-3">
+              <legend className="mb-1 text-label font-semibold text-content">What is it for?</legend>
+              {PURPOSES.map((p) => (
+                <label key={p.value} className={`cursor-pointer rounded-xl border p-3 ${intake.purpose === p.value ? 'border-brand bg-surface-alt' : 'border-line hover:border-content-muted'}`}>
+                  <input type="radio" name="intake-purpose" className="sr-only" checked={intake.purpose === p.value}
+                    onChange={() => setIntake({ ...intake, purpose: p.value })} />
+                  <span className="block text-label font-bold text-content">{p.label}</span>
+                  <span className="text-caption text-content-muted">{p.hint}</span>
+                </label>
+              ))}
+            </fieldset>
+
+            {([['make', 'Make'], ['model', 'Model'], ['year', 'Model year'], ['mileage', 'Mileage (km)'], ['asking_price', 'Asking or valuation (RWF)']] as const).map(([key, label]) => (
+              <label key={key} className="text-label font-semibold text-content">{label}
+                <input value={intake[key]} onChange={(e) => setIntake({ ...intake, [key]: e.target.value })}
+                  required={['make', 'model', 'year'].includes(key)}
+                  inputMode={['year', 'mileage', 'asking_price'].includes(key) ? 'numeric' : 'text'}
+                  className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
+              </label>
+            ))}
+            <label className="text-label font-semibold text-content sm:col-span-2">Notes
+              <textarea value={intake.notes} onChange={(e) => setIntake({ ...intake, notes: e.target.value })} rows={2}
+                placeholder="Anything the inspection team should know before the vehicle arrives."
+                className="mt-1.5 w-full rounded-xl border border-line bg-surface p-3 font-normal focus:border-content-muted focus:outline-none" />
+            </label>
+            <button disabled={actionId === 'intake' || !intake.seller_id}
+              className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
+              {actionId === 'intake' ? 'Filing…' : 'File the submission'}
+            </button>
+          </form>
+        </Card>
+      ) : null}
 
       <Card className="mb-5 p-4">
         <div className="flex flex-col gap-3 sm:flex-row">

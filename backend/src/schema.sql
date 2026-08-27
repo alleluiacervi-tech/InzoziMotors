@@ -93,8 +93,18 @@ CREATE TABLE IF NOT EXISTS submissions (
   reference_images TEXT[],
   submitted_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   reviewed_at     TIMESTAMPTZ,
-  reviewer_id     UUID REFERENCES users(id)
+  reviewer_id     UUID REFERENCES users(id),
+  -- What the vehicle is being listed for (migration 0030). Affects no gate:
+  -- publication and rental visibility read the inspection evidence, not this.
+  -- It exists so a rental intake is not described everywhere as a car awaiting
+  -- sale, and so a provider does not have to file a sale submission for a van
+  -- they never intend to sell.
+  purpose         TEXT NOT NULL DEFAULT 'sale',
+  created_by      UUID REFERENCES users(id),   -- the admin who filed it, if any
+  CONSTRAINT submissions_purpose_check CHECK (purpose IN ('sale', 'rental', 'both'))
 );
+CREATE INDEX IF NOT EXISTS idx_submissions_purpose
+  ON submissions(purpose) WHERE purpose <> 'sale';
 
 -- ─── Inspections ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS inspections (
@@ -533,8 +543,12 @@ ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS safari_ready BOOLEAN NOT NULL D
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS provider_id UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retired_at TIMESTAMPTZ;
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retirement_reason TEXT;
+-- Partial on retired_at (migration 0030): one inspection may back a sale
+-- listing and a rental car at once — the evidence says the vehicle passed, which
+-- is true either way — and retiring a rental frees its evidence for a
+-- replacement row instead of burning it permanently.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_rental_cars_inspection
-  ON rental_cars(inspection_id) WHERE inspection_id IS NOT NULL;
+  ON rental_cars(inspection_id) WHERE inspection_id IS NOT NULL AND retired_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS rental_bookings (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

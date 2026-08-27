@@ -615,7 +615,7 @@ router.post('/', requireAdmin, async (req, res) => {
     res.status(201).json(created);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
-    if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle' });
+    if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle that is still in the fleet. Retire that vehicle first and the inspection becomes available again.', code: 'INSPECTION_IN_USE' });
     log.error('rental create error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
@@ -717,7 +717,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     // The code matters here: a client needs to tell SUBSCRIPTION_REQUIRED apart
     // from the other 409s this route raises.
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
-    if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle' });
+    if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle that is still in the fleet. Retire that vehicle first and the inspection becomes available again.', code: 'INSPECTION_IN_USE' });
     log.error('rental update error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
