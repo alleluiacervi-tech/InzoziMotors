@@ -355,13 +355,28 @@ const ALLOWED_STATUSES = new Set([
   'draft', 'under_review', 'scheduled', 'inspecting', 'approved', 'live',
   'paused', 'sold', 'rejected', 'archived',
 ]);
+// The one view where an admin decision is the next thing that has to happen.
+// A car in 'under_review' is waiting to be approved; a car in 'approved' is
+// waiting to be published. Both are stalled on us, and neither was visible on
+// the page's old default of 'live' — which is how a vehicle that had passed its
+// inspection at 150/150 could sit for a day looking, to the operator, as though
+// it had never been submitted at all.
+const NEEDS_ACTION_STATUSES = ['under_review', 'approved'];
+
 router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200 }), async (req, res) => {
   const { status = 'live', make } = req.query;
-  if (!ALLOWED_STATUSES.has(status)) {
+  const needsAction = status === 'needs_action';
+  if (!needsAction && !ALLOWED_STATUSES.has(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
-  const conditions = [`c.status = $1`];
-  const params = [status];
+  const conditions = [needsAction ? `c.status = ANY($1)` : `c.status = $1`];
+  const params = [needsAction ? NEEDS_ACTION_STATUSES : status];
+  // A queue reads oldest-first — the car that has waited longest is the one to
+  // deal with — while a browse reads newest-first. The whole clause is the
+  // interpolated value rather than just the direction keyword, so the CI SQL
+  // grammar step (which substitutes an unknown fragment with a bare `1`) sees
+  // the valid `ORDER BY 1` instead of `ORDER BY c.created_at 1`.
+  const listingOrder = needsAction ? 'c.created_at ASC' : 'c.created_at DESC';
 
   if (make) { params.push(make); conditions.push(`c.make ILIKE $${params.length}`); }
 
@@ -385,7 +400,7 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
        FROM cars c
        JOIN users u ON u.id = c.seller_id
        WHERE ${conditions.join(' AND ')}
-       ORDER BY c.created_at DESC
+       ORDER BY ${listingOrder}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
