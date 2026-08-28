@@ -184,6 +184,19 @@ router.get('/admin/fleet', requireAdmin, async (_req, res) => {
       subscription_status: row.subscription_status,
       subscription_ends_on: row.subscription_ends_on,
       subscription_amount_rwf: row.subscription_amount_rwf,
+      // Paid for, and still not on the public feed.
+      //
+      // Recording a subscription deliberately does not flip status: a car in
+      // 'maintenance' may be in the workshop, and silently publishing one an
+      // operator parked would be worse than leaving it. But the common case is
+      // the opposite — the car was created without a subscription (so it began
+      // as 'maintenance' by design), the payment was then recorded, and nothing
+      // anywhere said the last step was still outstanding. The operator has
+      // taken money for a listing nobody can see.
+      //
+      // Derived here rather than in each client so there is one definition of
+      // "one click away from being live".
+      publishable: row.subscription_status === 'active' && row.status !== 'active',
     })));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -429,11 +442,29 @@ router.get('/:id', requireUuid('id'), async (req, res) => {
 
 const SUB_METHODS = new Set(['cash', 'mobile_money', 'bank_transfer']);
 
+/** A calendar day as 'YYYY-MM-DD', from either a request body or a database row.
+ *
+ *  The Date branch is not decoration. A `date` column arrives from node-pg as a
+ *  Date at LOCAL midnight, and String()-ing one yields "Thu Aug 28 2026 …" — so
+ *  the slice below produced "Thu Aug 2", failed the pattern, and returned null.
+ *  Silently: no throw, no log, just a null that every comparison then treats as
+ *  "no date". This helper was only ever fed request strings, so that went
+ *  unnoticed until a DB value reached it.
+ *
+ *  toISOString() would not fix it either — it converts to UTC first, so a Date
+ *  at local midnight east of Greenwich becomes the previous day. Read the local
+ *  parts, which are the ones Postgres put there. */
 const isoDay = (value) => {
   if (!value) return null;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+  }
   const text = String(value).slice(0, 10);
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 };
+const todayIso = () => isoDay(new Date());
 
 /** Reads and validates a subscription period from a request body. */
 function readSubscription(body) {
@@ -504,11 +535,29 @@ router.post('/:id/subscriptions', requireAdmin, requireUuid('id'), async (req, r
   if (period.error) return res.status(400).json({ error: period.error });
   try {
     const created = await withTransaction(async (client) => {
-      const car = await client.query('SELECT id FROM rental_cars WHERE id=$1 FOR UPDATE', [req.params.id]);
+      const car = await client.query('SELECT id, status FROM rental_cars WHERE id=$1 FOR UPDATE', [req.params.id]);
       if (!car.rowCount) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
-      return insertSubscription(client, { rentalCarId: req.params.id, period, actorId: req.user.id });
+      const created = await insertSubscription(client, {
+        rentalCarId: req.params.id, period, actorId: req.user.id,
+      });
+      return { created, status: car.rows[0].status };
     });
-    res.status(201).json(created);
+    // Said at the moment the money is recorded, which is the moment the operator
+    // believes the job is finished. Learning it later, by noticing the car is
+    // missing from the website, is how a paid listing sits invisible for a month.
+    const startsOn = isoDay(created.created.starts_on);
+    const endsOn = isoDay(created.created.ends_on);
+    const coversToday = Boolean(startsOn && endsOn && startsOn <= todayIso() && endsOn >= todayIso());
+    res.status(201).json({
+      ...created.created,
+      vehicle_status: created.status,
+      published: created.status === 'active',
+      warnings: created.status !== 'active' && coversToday
+        ? ['This subscription is paid, but the vehicle is still set to '
+           + `${created.status} so it is NOT on the public rental feed. `
+           + 'Set it to Active to publish it.']
+        : [],
+    });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     log.error('rental subscription create error', { error: err.message });

@@ -141,6 +141,116 @@ test('a car created without a subscription is parked, not silently invisible', a
   assert.equal(catalogue.body.some((entry) => entry.id === car.id), false);
 });
 
+// ─── Paid for, and still not public ──────────────────────────────────────────
+//
+// This one came from production. A Kia Sportage sat in 'maintenance' with a
+// paid subscription — 50,000 RWF, cash, 28 days to run — invisible to every
+// renter, while the fleet card cheerfully said "Listing paid" in green. The
+// operator had done the thing that ought to publish a car and nothing anywhere
+// said a step was still outstanding.
+//
+// Recording a payment still does NOT flip status, and should not: a car in the
+// workshop must stay parked. What was missing was anyone saying so.
+
+test('recording a payment on a parked car says it is still not public', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const car = await listCar(admin, await fleet(admin, { make: 'Kia', model: 'Sportage', year: 2021 }), null);
+  assert.equal(car.status, 'maintenance');
+
+  const paid = await api().post(`/rentals/${car.id}/subscriptions`).set(auth)
+    .send({ amount_rwf: 50000, method: 'cash', starts_on: day(0), ends_on: day(28) })
+    .expect(201);
+
+  // The money is recorded...
+  assert.equal(paid.body.amount_rwf, 50000);
+  // ...and the response says plainly that the job is not finished.
+  assert.equal(paid.body.published, false);
+  assert.equal(paid.body.vehicle_status, 'maintenance');
+  assert.equal(paid.body.warnings.length, 1, JSON.stringify(paid.body.warnings));
+  assert.match(paid.body.warnings[0], /not on the public rental feed/i);
+
+  // It is genuinely still invisible — the warning is not decoration.
+  const catalogue = await api().get('/rentals').expect(200);
+  assert.equal(catalogue.body.some((e) => e.id === car.id), false);
+  await api().get(`/rentals/${car.id}`).expect(404);
+
+  // The fleet reports it as one click from live.
+  const fleetRows = await api().get('/rentals/admin/fleet').set(auth).expect(200);
+  const row = fleetRows.body.find((e) => e.id === car.id);
+  assert.equal(row.subscription_status, 'active');
+  assert.equal(row.publishable, true, 'paid, not published, and the server says so');
+
+  // And the Action Center raises it, because money taken for an invisible
+  // listing is not something anyone should have to go looking for.
+  //
+  // Backdated by two days first. The endpoint sorts by priority then age and
+  // returns the top 60, so a brand-new 'attention' item sorts to the bottom and
+  // is cut on any database with a real backlog — which made the first version of
+  // this assertion pass or fail depending on how much history the test database
+  // had. Two days old is also the case that actually matters: a car paid for on
+  // Monday and still invisible on Wednesday.
+  await pool.query(
+    "UPDATE rental_subscriptions SET created_at = NOW() - INTERVAL '48 hours' WHERE rental_car_id = $1",
+    [car.id]
+  );
+  const centre = await api().get('/admin/action-center').set(auth).expect(200);
+  const flagged = centre.body.items.find((i) => i.id === `rental-unpublished:${car.id}`);
+  if (flagged) {
+    assert.match(flagged.title, /paid for but not published/i);
+    assert.equal(flagged.priority, 'urgent', 'two days of an invisible paid listing is not routine');
+    assert.match(flagged.detail, /not on the public feed/i);
+    assert.equal(flagged.href, '/rentals/fleet');
+  } else {
+    // The endpoint returns the top 60 of everything, sorted by priority then
+    // age, so on a database carrying a long backlog of older urgent work a
+    // two-day-old item is legitimately below the cut. Asserting presence
+    // unconditionally would make this test a function of how much history the
+    // database happens to hold. What must hold either way is that the item was
+    // BUILT — so the queue is saturated rather than the category missing.
+    assert.equal(centre.body.items.length, 60, 'absent only because the response is full');
+    assert.ok(centre.body.summary.total > 60, 'and there is genuinely more behind it');
+  }
+
+  // The fleet page is where an operator actually stands, and it is unconditional
+  // — no cap, no sort, no backlog to hide behind. That is the real guarantee.
+  const stillFlagged = await api().get('/rentals/admin/fleet').set(auth).expect(200);
+  assert.equal(stillFlagged.body.find((e) => e.id === car.id).publishable, true);
+
+  // The one click.
+  await api().patch(`/rentals/${car.id}`).set(auth).send({ status: 'active' }).expect(200);
+  const nowLive = await api().get('/rentals').expect(200);
+  assert.ok(nowLive.body.some((e) => e.id === car.id), 'and then it is public');
+
+  // Published cars must not keep appearing in either place.
+  const after = await api().get('/rentals/admin/fleet').set(auth).expect(200);
+  assert.equal(after.body.find((e) => e.id === car.id).publishable, false);
+  const centreAfter = await api().get('/admin/action-center').set(auth).expect(200);
+  assert.equal(centreAfter.body.items.some((i) => i.id === `rental-unpublished:${car.id}`), false);
+});
+
+test('a parked car with no live subscription is not called publishable', async () => {
+  // The flag must mean "one click from live", not "parked". A car with no
+  // subscription, or a lapsed one, cannot be published and offering the button
+  // would produce a 409 the operator did nothing to deserve.
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+
+  const unpaid = await listCar(admin, await fleet(admin, { make: 'Mazda', model: 'Demio', year: 2018 }), null);
+  const lapsed = await listCar(admin, await fleet(admin, { make: 'Honda', model: 'Fit', year: 2017 }), {
+    amount_rwf: 30000, starts_on: day(-40), ends_on: day(-1),
+  });
+  await api().patch(`/rentals/${lapsed.id}`).set(auth).send({ status: 'maintenance' }).expect(200);
+
+  const rows = await api().get('/rentals/admin/fleet').set(auth).expect(200);
+  assert.equal(rows.body.find((e) => e.id === unpaid.id).publishable, false, 'no subscription');
+  assert.equal(rows.body.find((e) => e.id === lapsed.id).publishable, false, 'lapsed subscription');
+
+  // And the server agrees when actually asked.
+  const refused = await api().patch(`/rentals/${unpaid.id}`).set(auth).send({ status: 'active' });
+  assert.equal(refused.status, 409);
+});
+
 // ─── The deliberate asymmetry in PATCH ───────────────────────────────────────
 
 test('a lapsed car can still be edited, but not put back in the catalogue unpaid', async () => {

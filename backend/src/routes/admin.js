@@ -40,7 +40,7 @@ async function minInspectionMinutes() {
 
 router.get('/action-center', requireAdmin, async (_req, res) => {
   try {
-    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks, lapsingRentals, suspectInspections] = await Promise.all([
+    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks, lapsingRentals, paidUnpublishedRentals, suspectInspections] = await Promise.all([
       pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
                     EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
                   FROM submissions
@@ -117,6 +117,26 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                   WHERE rc.status = 'active'
                     AND sub.ends_on <= CURRENT_DATE + 7
                   ORDER BY sub.ends_on ASC LIMIT 20`),
+      // Paid for, and still not on the public feed.
+      //
+      // The lapsing queue above is scoped to rc.status = 'active', which is
+      // right for what it does — a parked car's lapse is not urgent — but it
+      // means this case appears nowhere at all. Recording a subscription does
+      // not flip status, deliberately, so a car created without one begins in
+      // 'maintenance' and STAYS there after it is paid for. The operator has
+      // taken money for a listing nobody can see, and nothing tells them.
+      pool.query(`SELECT rc.id, rc.title, rc.status, sub.amount_rwf, sub.ends_on,
+                    EXTRACT(EPOCH FROM (NOW() - sub.created_at)) / 3600 AS age_hours,
+                    sub.created_at AS occurred_at
+                  FROM rental_cars rc
+                  JOIN LATERAL (
+                    SELECT * FROM rental_subscriptions s
+                     WHERE s.rental_car_id = rc.id AND s.voided_at IS NULL
+                       AND s.starts_on <= CURRENT_DATE AND s.ends_on >= CURRENT_DATE
+                     ORDER BY s.ends_on DESC LIMIT 1
+                  ) sub ON TRUE
+                  WHERE rc.status <> 'active' AND rc.retired_at IS NULL
+                  ORDER BY sub.created_at ASC LIMIT 20`),
       // Completed inspections whose record does not look plausible.
       //
       // SQL narrows to CANDIDATES; lib/inspection-integrity.js still decides.
@@ -191,6 +211,17 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
         detail: r.lapsed
           ? 'The listing subscription has expired and the car is no longer public'
           : `The listing subscription runs out on ${String(r.ends_on).slice(0, 10)}`,
+        href: '/rentals/fleet',
+      })),
+      // Money taken for a listing nobody can see. Attention rather than routine:
+      // it is not an outage, but every day it sits there is a day the provider
+      // paid for nothing, and the fix is a single click.
+      ...paidUnpublishedRentals.rows.map((r) => item(r, {
+        id: `rental-unpublished:${r.id}`, kind: 'Rental listing',
+        priority: r.age_hours >= 24 ? 'urgent' : 'attention',
+        title: `${r.title} is paid for but not published`,
+        detail: `A subscription runs to ${String(r.ends_on).slice(0, 10)}, but the vehicle is set to `
+          + `${r.status} so it is not on the public feed. Set it to Active to publish it.`,
         href: '/rentals/fleet',
       })),
       ...listingRisks.rows.map((r) => item(r, { id: `listing-risk:${r.id}`, kind: 'Listing', priority: r.age_hours >= 24 ? 'urgent' : 'attention', title: `Review ${r.title}`, detail: 'Approval, inspection or gallery requirement needs attention', href: `/listings/${r.id}/edit` })),
