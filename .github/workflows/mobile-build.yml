@@ -1,0 +1,192 @@
+name: Mobile Build
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The other half of getting a change onto a phone.
+#
+# Everything else in this repo reaches users by itself. A backend commit goes
+# CI → deploy.yml → the VPS. A mobile JavaScript commit goes CI →
+# mobile-update.yml → an over-the-air bundle. But a commit that touches native
+# configuration — a new dependency, a permission, an SDK bump, a version change
+# — reached nobody at all: mobile-update.yml correctly refuses to publish it
+# (the bundle would reference a module the installed binary lacks and crash on
+# launch), and then nothing else happened. The change sat on main looking
+# shipped, and stayed there until somebody remembered to run `eas build` by
+# hand. Which is to say: until somebody noticed.
+#
+# This workflow is that missing step, and it triggers on EXACTLY the condition
+# under which mobile-update.yml declines. The two are complementary: for any
+# commit that reaches main, precisely one of them acts. Nothing falls between.
+#
+# ── What it does not do ──────────────────────────────────────────────────────
+# It does not submit to the App Store or Play Store. That stays a human act, as
+# docs/STORE-SUBMISSION.md and CLAUDE.md §9 record — a review submission is a
+# statement to Apple and Google about a release being ready, and a workflow is
+# not in a position to make it. Pass `submit: true` to workflow_dispatch when
+# you have decided that yourself.
+#
+# ── Cost ─────────────────────────────────────────────────────────────────────
+# An EAS build consumes build credits and takes 15–40 minutes on Expo's
+# infrastructure. `--no-wait` means this job finishes in seconds and the build
+# continues on Expo, so a queue of commits does not hold a runner. The
+# concurrency group below cancels a superseded build request rather than
+# stacking five builds for five commits pushed in a row.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        type: choice
+        options: [all, ios, android]
+        default: all
+        required: false
+      profile:
+        description: 'EAS build profile'
+        type: choice
+        options: [production, preview]
+        default: production
+        required: false
+      submit:
+        description: 'Submit to the stores after building (a deliberate human decision)'
+        type: boolean
+        default: false
+        required: false
+
+concurrency:
+  group: mobile-build-${{ github.event.inputs.profile || 'production' }}
+  # A newer commit supersedes an older build request. Building both wastes
+  # credits to produce a binary nobody wants.
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the app on EAS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout the commit CI validated
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Decide whether this commit needs a new binary
+        id: scope
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Manual build requested."
+            exit 0
+          fi
+
+          sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+          if git rev-parse --verify -q "${sha}^" >/dev/null; then
+            changed="$(git diff --name-only "${sha}^" "${sha}")"
+          else
+            changed="$(git ls-tree -r --name-only "${sha}")"
+          fi
+          echo "Changed files:"; echo "${changed}" | sed 's/^/  /'
+
+          # The same predicate mobile-update.yml refuses on, kept deliberately
+          # identical so no commit can satisfy neither. If you widen one, widen
+          # the other in the same commit.
+          if echo "${changed}" | grep -qE '^(package(-lock)?\.json|app\.config\.js|eas\.json|plugins/)'; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No native-sensitive change — mobile-update.yml handles this commit over the air."
+          fi
+
+      - name: Setup Node.js
+        if: steps.scope.outputs.needed == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        if: steps.scope.outputs.needed == 'true'
+        run: npm ci
+
+      - name: Release preflight
+        if: steps.scope.outputs.needed == 'true'
+        # CI runs this too. Repeated here because this is the last gate before a
+        # binary is cut, and a build carrying a leaked key or an unsubscribed
+        # update channel is far more expensive to withdraw than to not make.
+        run: npm run release:check
+
+      - name: Start the EAS build
+        if: steps.scope.outputs.needed == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          platform="${{ github.event.inputs.platform || 'all' }}"
+          profile="${{ github.event.inputs.profile || 'production' }}"
+          sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+
+          # --no-wait returns as soon as the build is queued. Holding a runner
+          # for forty minutes to watch a progress bar buys nothing.
+          if ! npx eas-cli build \
+                --platform "$platform" \
+                --profile "$profile" \
+                --message "${sha:0:8} automated build" \
+                --non-interactive \
+                --no-wait; then
+            cat <<'EOF'
+          The build could not be started.
+
+          The usual cause on a first run is missing signing credentials: an
+          Android keystore, or an Apple distribution certificate and profile.
+          EAS holds those once, and they cannot be generated non-interactively.
+          Run this once from a terminal and answer its prompts:
+
+              npx eas-cli build --platform all --profile production
+
+          After that, this workflow can build unattended. See CLAUDE.md §9 —
+          signing credentials are on the human-only list for this reason.
+          EOF
+            exit 1
+          fi
+
+      - name: Say where the build went
+        if: steps.scope.outputs.needed == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Build queued on EAS"
+            echo
+            echo "A native-sensitive change landed on main, so this commit needs a new"
+            echo "binary rather than an over-the-air update."
+            echo
+            echo '```'
+            npx eas-cli build:list --limit 3 --non-interactive 2>&1 || true
+            echo '```'
+            echo
+            echo "Submitting to the stores stays a separate, human decision."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Submit to the stores
+        if: steps.scope.outputs.needed == 'true' && github.event.inputs.submit == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx eas-cli submit \
+            --platform "${{ github.event.inputs.platform || 'all' }}" \
+            --profile "${{ github.event.inputs.profile || 'production' }}" \
+            --latest \
+            --non-interactive
