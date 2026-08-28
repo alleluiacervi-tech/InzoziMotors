@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 // Fictional storefronts for the two dealers in the bundled demo catalogue.
 // Dev builds only — a release build never renders these (see the demoMode
@@ -52,7 +54,7 @@ export const isDealerSeller = (name) => !!DEALERS[name];
 function ListingCard({ car, onPress }) {
   return (
     <Pressable style={styles.listingCard} onPress={onPress}>
-      <Image source={{ uri: car.image }} style={styles.listingThumb} resizeMode="contain" />
+      <Photo uri={car.image} width={PHOTO.THUMB} style={styles.listingThumb} resizeMode="contain" />
       {car.inspected && (
         <View style={styles.listingCert}>
           <Ionicons name="shield-checkmark" size={10} color={colors.green} />

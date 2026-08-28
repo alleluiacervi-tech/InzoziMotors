@@ -9,6 +9,8 @@ import Badge from '../components/Badge';
 import { colors, radius, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { getCertTier } from '../data/certification';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 // The showroom — a dark, immersive "walk past the glass" experience.
 // One car per page, wide photo, quiet caption. Deliberately the opposite
@@ -56,7 +58,7 @@ export default function ShowroomScreen({ navigation, route }) {
                 { car: item }
               )}
             >
-              <Image source={{ uri: item.image }} style={styles.photo} resizeMode="contain" />
+              <Photo uri={item.image} width={PHOTO.CARD} style={styles.photo} resizeMode="contain" />
             </Pressable>
           </View>
         )}

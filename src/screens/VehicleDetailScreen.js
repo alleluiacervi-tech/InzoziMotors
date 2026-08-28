@@ -19,6 +19,8 @@ import {
 } from '../data/marketData';
 import { monthlyEstimate } from '../data/finance';
 import { isDealerSeller } from './DealerProfileScreen';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 const SPECS = [
   { icon: 'speedometer-outline', label: 'Mileage', key: 'mileage' },
@@ -185,7 +187,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           >
             {imageList.map((img, index) => (
               <Pressable key={index} onPress={() => setViewerIdx(index)}>
-                <Image source={{ uri: img }} style={[styles.heroImage, { width }]} resizeMode="contain" />
+                <Photo uri={img} width={PHOTO.WIDE} style={[styles.heroImage, { width }]} resizeMode="contain" />
               </Pressable>
             ))}
           </ScrollView>
@@ -475,7 +477,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
                     style={styles.similarCard}
                     onPress={() => navigation.navigate('VehicleDetail', { car: item })}
                   >
-                    <Image source={{ uri: item.image }} style={styles.similarThumb} resizeMode="contain" />
+                    <Photo uri={item.image} width={PHOTO.CARD} style={styles.similarThumb} resizeMode="contain" />
                     <View style={styles.similarBody}>
                       <Text style={styles.similarTitle} numberOfLines={2}>{item.title}</Text>
                       <Text style={styles.similarPrice}>{formatPrice(item.type === 'auction' ? item.currentBid : item.price)}</Text>

@@ -22,6 +22,8 @@ const REPORT_REASONS = [
   { label: 'Something else', icon: 'chatbox-ellipses-outline' },
 ];
 import { useApp } from '../context/AppContext';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 function formatReviewDate(iso) {
   if (!iso) return '';
@@ -306,7 +308,7 @@ export default function SellerProfileScreen({ navigation, route }) {
                       /* navigate to car detail */
                     }}
                   >
-                    <Image source={{ uri: listing.image }} style={styles.listingImage} resizeMode="contain" />
+                    <Photo uri={listing.image} width={PHOTO.CARD} style={styles.listingImage} resizeMode="contain" />
                     <Text style={styles.listingTitle} numberOfLines={2}>{listing.title}</Text>
                     <Text style={styles.listingPrice}>{listing.price}</Text>
                     <View style={styles.listingBadge}>

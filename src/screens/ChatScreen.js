@@ -10,6 +10,8 @@ import { useApp } from '../context/AppContext';
 import { showToast, showConfirm, showActionSheet } from '../components/Feedback';
 import { colors, radius, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 const REPORT_REASONS = [
   { label: 'Scam or fraud', icon: 'warning-outline' },
@@ -36,7 +38,7 @@ function PinnedCarCard({ car, onViewListing }) {
       </View>
       <View style={styles.pinnedContent}>
         {car.image ? (
-          <Image source={{ uri: car.image }} style={styles.pinnedThumb} resizeMode="contain" />
+          <Photo uri={car.image} width={PHOTO.THUMB} style={styles.pinnedThumb} resizeMode="contain" />
         ) : null}
         <View style={{ flex: 1 }}>
           <Text style={styles.pinnedTitle} numberOfLines={1}>{car.title}</Text>

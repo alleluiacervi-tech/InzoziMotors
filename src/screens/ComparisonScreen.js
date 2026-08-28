@@ -8,6 +8,8 @@ import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 const SPEC_ROWS = [
   { key: 'price', label: 'Price', getValue: (car) => car.type === 'auction' ? car.currentBid : car.price, format: (v) => formatPrice(v), winner: 'lowest' },
@@ -37,7 +39,7 @@ function CarColumn({ car, onRemove, style }) {
       <Pressable style={styles.removeChip} onPress={onRemove} accessibilityRole="button" accessibilityLabel="Close">
         <Ionicons name="close" size={14} color={colors.textMuted} />
       </Pressable>
-      <Image source={{ uri: car.image }} style={styles.carThumb} resizeMode="contain" />
+      <Photo uri={car.image} width={PHOTO.CARD} style={styles.carThumb} resizeMode="contain" />
       <Text style={styles.carTitle} numberOfLines={2}>{car.title}</Text>
       {car.inspected && (
         <View style={styles.certPill}>
@@ -166,7 +168,7 @@ export default function ComparisonScreen({ navigation }) {
                 style={styles.suggestRow}
                 onPress={() => navigation.navigate('VehicleDetail', { car })}
               >
-                <Image source={{ uri: car.image }} style={styles.suggestThumb} />
+                <Photo uri={car.image} width={PHOTO.THUMB} style={styles.suggestThumb} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.suggestName} numberOfLines={1}>{car.title}</Text>
                   <Text style={styles.suggestPrice}>{formatPrice(car.price)}</Text>

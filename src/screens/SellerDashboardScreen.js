@@ -8,6 +8,8 @@ import { useApp } from '../context/AppContext';
 import { useSellerGate } from '../hooks/useSellerGate';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 const PIPELINE_STAGES = [
   { key: 'under_review', label: 'Review', icon: 'time-outline' },
@@ -194,7 +196,7 @@ export default function SellerDashboardScreen({ navigation }) {
             <View key={sub.id} style={styles.subCard}>
               {/* Card Header */}
               <View style={styles.subCardTop}>
-                <Image source={{ uri: sub.image }} style={styles.subThumb} resizeMode="contain" />
+                <Photo uri={sub.image} width={PHOTO.THUMB} style={styles.subThumb} resizeMode="contain" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.subTitle}>{sub.carTitle}</Text>
                   <Text style={styles.subDate}>Submitted {sub.submittedDate}</Text>

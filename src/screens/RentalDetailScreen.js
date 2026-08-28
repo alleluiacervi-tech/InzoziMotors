@@ -9,6 +9,8 @@ import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatRWF } from '../data/marketData';
 import { useApp } from '../context/AppContext';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 const SPEC_ITEMS = [
   { icon: 'people-outline', label: 'Seats', key: 'seats' },
@@ -74,7 +76,7 @@ export default function RentalDetailScreen({ navigation, route }) {
           >
             {imageList.map((img, index) => (
               <Pressable key={index} onPress={() => setViewerIdx(index)}>
-                <Image source={{ uri: img }} style={[styles.heroImage, { width }]} resizeMode="contain" />
+                <Photo uri={img} width={PHOTO.WIDE} style={[styles.heroImage, { width }]} resizeMode="contain" />
               </Pressable>
             ))}
           </ScrollView>

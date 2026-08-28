@@ -9,6 +9,8 @@ import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { KIGALI_NEIGHBORHOODS, getCarsInNeighborhood, getListedDaysAgo } from '../data/marketData';
+import Photo from '../components/Photo';
+import { PHOTO } from '../utils/photo';
 
 // Derived from the cars on the map, not hardcoded. The fixed list named 'EV'
 // and 'Truck' — categories Sawa has never listed — while a real Wagon or
@@ -53,7 +55,7 @@ function CarListingCard({ car, onPress }) {
   const daysAgo = getListedDaysAgo(car);
   return (
     <Pressable style={styles.listingCard} onPress={onPress}>
-      <Image source={{ uri: car.image }} style={styles.listingThumb} resizeMode="contain" />
+      <Photo uri={car.image} width={PHOTO.THUMB} style={styles.listingThumb} resizeMode="contain" />
       <View style={styles.listingBody}>
         <Text style={styles.listingTitle} numberOfLines={2}>{car.title}</Text>
         <View style={styles.listingMeta}>
