@@ -22,6 +22,7 @@ export default function RentalFleetPage() {
   const [error, setError] = useState<unknown>(null)
   const [renewAmount, setRenewAmount] = useState<Record<string, string>>({})
   const [renewing, setRenewing] = useState<string | null>(null)
+  const [publishing, setPublishing] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [editing, setEditing] = useState<any | null>(null)
@@ -121,6 +122,19 @@ export default function RentalFleetPage() {
   // public catalogue and what keeps it there. Deliberately inline on the card
   // rather than behind the edit form, because it is a different job — the form
   // describes the vehicle, this pays for the listing.
+  // PATCH {status:'active'} re-checks for a live subscription server-side, so
+  // this can only succeed exactly when the banner offering it is shown. No
+  // second copy of the rule.
+  async function publish(car: any) {
+    setPublishing(car.id)
+    try {
+      await api.updateRentalCar(car.id, { status: 'active' })
+      toast(`${car.title} is on the public rental feed.`, 'success')
+      await load()
+    } catch (e: any) { toast(e.message || 'Could not publish that vehicle.', 'error') }
+    finally { setPublishing(null) }
+  }
+
   async function renew(car: any) {
     const amount = parseRwfInput(renewAmount[car.id] || '')
     if (!amount) { toast('Enter the amount collected, in Rwandan francs.', 'error'); return }
@@ -180,6 +194,26 @@ export default function RentalFleetPage() {
                   <span className="ml-1 font-medium">· to {String(car.subscription_ends_on).slice(0, 10)}</span>
                 ) : null}
               </div>
+
+              {/* Paid for, and still not public. The card said "Listing paid"
+                  in green while the car sat in maintenance, invisible — which
+                  is the most reassuring possible way to show a problem. The
+                  server derives `publishable` so there is one definition of
+                  "one click from live". */}
+              {car.publishable ? (
+                <div className="mt-2 rounded-lg border border-warning-border bg-warning-tint px-3 py-2.5">
+                  <p className="text-xs font-bold text-warning-text">Paid, but not on the public feed</p>
+                  <p className="mt-0.5 text-[11px] text-warning-text">
+                    The subscription is live, but this vehicle is set to <strong>{car.status}</strong>, so
+                    renters cannot see it. Recording a payment never publishes a car on its own — a vehicle
+                    in the workshop should stay parked.
+                  </p>
+                  <button type="button" onClick={() => publish(car)} disabled={publishing === car.id}
+                    className="mt-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-light disabled:opacity-50">
+                    {publishing === car.id ? 'Publishing…' : 'Publish to the fleet'}
+                  </button>
+                </div>
+              ) : null}
 
               {car.subscription_status !== 'active' ? (
                 <div className="mt-2 flex gap-2">

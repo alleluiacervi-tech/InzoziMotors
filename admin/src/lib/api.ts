@@ -533,6 +533,23 @@ export const api = {
   searchUsers: (q: string, limit = 8) =>
     request<any[]>(`/admin/users?q=${encodeURIComponent(q)}&limit=${limit}`),
   idVerificationQueue: () => request<any[]>('/id-verification/queue'),
+  // ─── Report entitlements ───────────────────────────────────────────────────
+  // Who may read an inspection report. Access is a row, not a column on the
+  // inspection, so the same report can be sold to a second buyer rather than
+  // being bound forever to whoever commissioned it.
+  reportEntitlements: (inspectionId: string) =>
+    request<any[]>(`/inspections/${inspectionId}/entitlements`),
+  grantReportAccess: (inspectionId: string, body: {
+    user_id: string
+    source: 'purchased' | 'seller_copy' | 'admin_grant'
+    amount?: number; method?: string; reference?: string; note?: string
+  }) => request<any>(`/inspections/${inspectionId}/entitlements`, {
+    method: 'POST', body: JSON.stringify(body),
+  }),
+  revokeReportAccess: (inspectionId: string, entitlementId: string, reason: string) =>
+    request<any>(`/inspections/${inspectionId}/entitlements/${entitlementId}/revoke`, {
+      method: 'POST', body: JSON.stringify({ reason }),
+    }),
   decideVerification:  (userId: string, decision: string) =>
     request<any>(`/id-verification/${userId}`, {
       method: 'PATCH', body: JSON.stringify({ decision }),
