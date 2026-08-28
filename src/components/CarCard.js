@@ -7,6 +7,7 @@ import Badge from './Badge';
 import { getCertTier } from '../data/certification';
 import { monthlyEstimate } from '../data/finance';
 import { formatPrice } from '../data/cars';
+import { photoSource, PHOTO } from '../utils/photo';
 
 const getSawaYear = (car) => String(car.year);
 
@@ -39,7 +40,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
       accessibilityLabel={`${car.title}, ${getSawaPrice(car)}`}
     >
       <View style={styles.imageWrap}>
-        <Image source={{ uri: car.image }} style={styles.image} resizeMode="contain" />
+        <Image source={photoSource(car.image, PHOTO.CARD)} style={styles.image} resizeMode="contain" />
 
         {!hideOverlay && (
           <>

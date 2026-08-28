@@ -14,6 +14,7 @@ import DrawerMenu from '../components/DrawerMenu';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
+import { photoSource, PHOTO } from '../utils/photo';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -344,7 +345,7 @@ export default function HomeScreen({ navigation }) {
             {BANNER_SLIDES.map((slide) => (
               <ImageBackground
                 key={slide.id}
-                source={{ uri: slide.image }}
+                source={photoSource(slide.image, PHOTO.WIDE)}
                 style={styles.carouselSlide}
                 resizeMode="contain"
               >
@@ -415,7 +416,7 @@ export default function HomeScreen({ navigation }) {
                     cars: item.cars,
                   })}
                 >
-                  <Image source={{ uri: item.cars[0].image }} style={styles.showroomPhoto} resizeMode="contain" />
+                  <Image source={photoSource(item.cars[0].image, PHOTO.CARD)} style={styles.showroomPhoto} resizeMode="contain" />
                   <LinearGradient
                     colors={['transparent', 'rgba(12,10,10,0.88)']}
                     style={styles.showroomFade}
