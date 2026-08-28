@@ -610,7 +610,7 @@ CREATE TABLE IF NOT EXISTS platform_fees (
   -- 'rental' was added by migration 0009 and never mirrored here, so a database
   -- built from this file disagreed with one built from migrations. Repaired in
   -- 0023 along with 'inspection'.
-  fee_type     TEXT NOT NULL CHECK (fee_type IN ('commission', 'certification', 'featured', 'rental', 'inspection')),
+  fee_type     TEXT NOT NULL CHECK (fee_type IN ('commission', 'certification', 'featured', 'rental', 'inspection', 'report')),
   amount       INT NOT NULL CHECK (amount >= 0),
   status       TEXT NOT NULL DEFAULT 'due' CHECK (status IN ('due', 'paid', 'waived')),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -648,7 +648,16 @@ ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS void_reason  TEXT;
 
 ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_seller_shape_check;
 ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_seller_shape_check
-  CHECK (fee_type = 'inspection' OR seller_id IS NOT NULL);
+  CHECK (fee_type IN ('inspection', 'report') OR seller_id IS NOT NULL);
+
+-- A report sale names its inspection and its payer, and claims no seller
+-- (migration 0031). Deliberately NOT covered by uq_platform_fees_inspection:
+-- that index permits one live row per inspection, and selling a second copy of
+-- a report to a second buyer is the point of the entitlement model.
+ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_report_shape_check;
+ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_report_shape_check
+  CHECK (fee_type <> 'report'
+         OR (inspection_id IS NOT NULL AND payer_user_id IS NOT NULL AND seller_id IS NULL));
 ALTER TABLE platform_fees DROP CONSTRAINT IF EXISTS platform_fees_method_check;
 ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_method_check
   CHECK (method IS NULL OR method IN ('cash', 'mobile_money', 'bank_transfer'));
@@ -659,6 +668,38 @@ ALTER TABLE platform_fees ADD CONSTRAINT platform_fees_inspection_shape_check
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_inspection
   ON platform_fees(inspection_id) WHERE fee_type = 'inspection' AND status <> 'waived';
+
+-- ─── Report entitlements ─────────────────────────────────────────────────────
+-- Who may read an inspection report, and on what basis (migration 0031).
+-- Access is the existence of a live row here, not a column on the inspection —
+-- so the same report can be sold to a second buyer, given to the seller, or
+-- passed on when the vehicle changes hands. A sale must point at the money and
+-- a free grant must carry a written reason; both are CHECK constraints rather
+-- than rules a future route could forget.
+CREATE TABLE IF NOT EXISTS report_entitlements (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  inspection_id  UUID NOT NULL REFERENCES inspections(id) ON DELETE CASCADE,
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  source         TEXT NOT NULL,   -- paid_customer | purchased | seller_copy | admin_grant
+  fee_id         UUID REFERENCES platform_fees(id),
+  note           TEXT,
+  granted_by     UUID REFERENCES users(id),
+  granted_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  revoked_at     TIMESTAMPTZ,
+  revoked_by     UUID REFERENCES users(id),
+  revoke_reason  TEXT,
+  CONSTRAINT report_entitlements_source_check
+    CHECK (source IN ('paid_customer', 'purchased', 'seller_copy', 'admin_grant')),
+  CONSTRAINT report_entitlements_purchase_check
+    CHECK (source <> 'purchased' OR fee_id IS NOT NULL),
+  CONSTRAINT report_entitlements_grant_attested_check
+    CHECK (source <> 'admin_grant'
+           OR (note IS NOT NULL AND length(btrim(note)) >= 10))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_report_entitlements_live
+  ON report_entitlements(inspection_id, user_id) WHERE revoked_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_report_entitlements_user
+  ON report_entitlements(user_id) WHERE revoked_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_platform_fees_payer ON platform_fees(payer_user_id);
 
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;

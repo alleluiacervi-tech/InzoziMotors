@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { InspectionFee } from '@/components/InspectionFee'
+import { ReportAccess } from '@/components/ReportAccess'
 import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
@@ -148,7 +149,12 @@ export default function InspectionDetailPage() {
       {/* Bookkeeping for a walk-in, and a deliberate non-gate: the report can
           be issued and collected whether or not this has been filled in. */}
       {insp.kind === 'standalone' ? (
-        <InspectionFee inspectionId={String(id)} fee={insp.fee ?? null} onChange={reload} />
+        <>
+          <InspectionFee inspectionId={String(id)} fee={insp.fee ?? null} onChange={reload} />
+          {/* The second sale. A report is an asset, and until now it could only
+              ever be sold to the person who commissioned it. */}
+          <ReportAccess inspectionId={String(id)} complete={insp.status === 'complete'} />
+        </>
       ) : null}
 
       <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">

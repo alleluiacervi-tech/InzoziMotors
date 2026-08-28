@@ -230,6 +230,44 @@ async function photoState(db, carId) {
   return { photos: rows, missing_required: [], complete: rows.length > 0 };
 }
 
+// GET /inspections/my-reports — the reports this person may read.
+//
+// Declared here, above every `/:id` route, because Express matches in order and
+// `/my-reports` would otherwise be read as an id and rejected by requireUuid.
+//
+// An entitlement is worthless if its holder cannot find what it entitles them
+// to. Before this, the only way to reach a report was a link somebody had sent
+// you — fine for the one customer who commissioned it, useless for a second
+// buyer who bought a copy a week later.
+router.get('/my-reports', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT e.id AS entitlement_id, e.source, e.granted_at,
+              i.id AS inspection_id, i.score, i.completed_at,
+              i.vehicle_make, i.vehicle_model, i.vehicle_year, i.vehicle_vin,
+              f.amount AS paid_rwf
+         FROM report_entitlements e
+         JOIN inspections i ON i.id = e.inspection_id
+         LEFT JOIN platform_fees f ON f.id = e.fee_id AND f.status <> 'waived'
+        WHERE e.user_id = $1 AND e.revoked_at IS NULL
+          AND i.status = 'complete'
+        ORDER BY COALESCE(i.completed_at, e.granted_at) DESC
+        LIMIT 100`,
+      [req.user.id]
+    );
+    res.json(rows.map((row) => ({
+      ...row,
+      vehicle: [row.vehicle_year, row.vehicle_make, row.vehicle_model].filter(Boolean).join(' '),
+      // The route that actually serves the PDF, so a client never has to
+      // assemble it and get the shape wrong.
+      file_url: `/inspections/${row.inspection_id}/report/customer-file`,
+    })));
+  } catch (err) {
+    log.error('my-reports error', { error: err.message, userId: req.user.id });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /inspections/cars/:carId/photos — structured gallery + completeness.
 router.get('/cars/:carId/photos', requireAdmin, requireUuid('carId'), async (req, res) => {
   try {
@@ -776,6 +814,17 @@ router.post('/standalone', requireAdmin, async (req, res) => {
          req.body.scheduled_time || null, slot.at, make, model, year,
          cleanText(req.body.vin, 40), cleanText(req.body.registration_plate, 20),
          Number.isInteger(mileage) ? mileage : null]
+      );
+      // The customer who commissioned the inspection is entitled to its report,
+      // and that is now a row rather than a column comparison (migration 0031).
+      // Created HERE, in the same transaction as the booking: the migration
+      // backfilled the walk-ins that already existed, and without this every new
+      // one would be the only person unable to read the report they paid for.
+      await client.query(
+        `INSERT INTO report_entitlements (inspection_id, user_id, source, granted_by)
+         VALUES ($1, $2, 'paid_customer', $3)
+         ON CONFLICT DO NOTHING`,
+        [rows[0].id, resolved.customer.id, req.user.id]
       );
       await recordAdminAction(client, {
         actorId: req.user.id, action: 'inspection.standalone_booked',
@@ -1344,20 +1393,259 @@ router.delete('/:id/fee', requireAdmin, requireUuid('id'), async (req, res) => {
   }
 });
 
-// GET /inspections/:id/report/customer-file — the customer collects what they
-// paid for.
+// ─────────────────────────────────────────────────────────────────────────────
+// Report entitlements — who may read a report, and on what basis.
 //
-// Owner-or-admin, and a mismatch answers 404 rather than 403: a stranger
-// guessing ids should not be able to learn that an inspection exists, let alone
-// whose it is. Same pattern as the import document routes.
+// The asset Sawa sells is the verification, and until migration 0031 it could
+// only ever be sold once: access was `customer_user_id = me`. These routes are
+// the second sale, the seller's copy, and the handover to a new owner.
+// ─────────────────────────────────────────────────────────────────────────────
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ENTITLEMENT_SOURCES = {
+  purchased:   'Bought a copy of this report',
+  seller_copy: 'Given to the vehicle\'s seller',
+  admin_grant: 'Granted by the team',
+};
+const MIN_GRANT_REASON = 10;   // matches report_entitlements_grant_attested_check
+
+/** The live entitlements on a report, with who holds them and what was paid. */
+async function entitlementsFor(db, inspectionId) {
+  const { rows } = await db.query(
+    `SELECT e.id, e.source, e.note, e.granted_at, e.user_id,
+            u.name AS user_name, u.email AS user_email,
+            f.amount AS amount_rwf, f.method, f.reference,
+            g.name AS granted_by_name
+       FROM report_entitlements e
+       JOIN users u ON u.id = e.user_id
+       LEFT JOIN platform_fees f ON f.id = e.fee_id
+       LEFT JOIN users g ON g.id = e.granted_by
+      WHERE e.inspection_id = $1 AND e.revoked_at IS NULL
+      ORDER BY e.granted_at ASC`,
+    [inspectionId]
+  );
+  return rows;
+}
+
+// GET /inspections/:id/entitlements — who can read this report.
+router.get('/:id/entitlements', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const found = await pool.query('SELECT id FROM inspections WHERE id = $1', [req.params.id]);
+    if (!found.rowCount) return res.status(404).json({ error: 'Inspection not found' });
+    res.json(await entitlementsFor(pool, req.params.id));
+  } catch (err) {
+    log.error('entitlement list error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /inspections/:id/entitlements — sell a copy, or grant one.
+//
+// A purchase records the money in the same breath as the access, in one
+// transaction. Selling a report and recording its payment as two separate acts
+// is how a report gets handed over and never billed.
+router.post('/:id/entitlements', requireAdmin, requireUuid('id'), async (req, res) => {
+  const source = String(req.body?.source || '').trim();
+  const userId = String(req.body?.user_id || '').trim();
+  const note = String(req.body?.note || '').trim();
+
+  if (!Object.hasOwn(ENTITLEMENT_SOURCES, source)) {
+    return res.status(400).json({
+      error: `source must be one of: ${Object.keys(ENTITLEMENT_SOURCES).join(', ')}`,
+      field: 'source',
+    });
+  }
+  if (!UUID_RE.test(userId)) {
+    return res.status(400).json({ error: 'Choose the person this report is for', field: 'user_id' });
+  }
+  const amount = source === 'purchased' ? parseInt(req.body?.amount, 10) : null;
+  const method = source === 'purchased' ? String(req.body?.method || '').trim() : null;
+  if (source === 'purchased') {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Enter the amount collected, in Rwandan francs', field: 'amount' });
+    }
+    if (!FEE_METHODS.has(method)) {
+      return res.status(400).json({ error: `Method must be one of: ${[...FEE_METHODS].join(', ')}`, field: 'method' });
+    }
+  }
+  // The database refuses a short one too; failing here gives a usable message
+  // rather than a 500 wrapped around SQLSTATE 23514.
+  if (source === 'admin_grant' && note.length < MIN_GRANT_REASON) {
+    return res.status(400).json({
+      error: `Say why this report is being given away, in at least ${MIN_GRANT_REASON} characters. `
+           + 'It is the only record of the decision.',
+      field: 'note',
+    });
+  }
+  if (note.length > 1000) return res.status(400).json({ error: 'note is too long', field: 'note' });
+
+  try {
+    const created = await withTransaction(async (client) => {
+      const found = await client.query(
+        "SELECT id, status, kind, vehicle_make, vehicle_model, vehicle_year FROM inspections WHERE id = $1 FOR UPDATE",
+        [req.params.id]
+      );
+      if (!found.rowCount) { const e = new Error('Inspection not found'); e.status = 404; throw e; }
+      const inspection = found.rows[0];
+      // A report that does not exist yet cannot be sold. The customer would pay
+      // and then find nothing to download.
+      if (inspection.status !== 'complete') {
+        const e = new Error('That inspection is not complete, so there is no report to give out yet.');
+        e.status = 409; e.code = 'REPORT_NOT_READY'; throw e;
+      }
+
+      const person = await client.query(
+        'SELECT id, name, email, deleted_at FROM users WHERE id = $1', [userId]
+      );
+      if (!person.rowCount || person.rows[0].deleted_at) {
+        const e = new Error('That account was not found'); e.status = 404; throw e;
+      }
+
+      const existing = await client.query(
+        `SELECT id FROM report_entitlements
+          WHERE inspection_id = $1 AND user_id = $2 AND revoked_at IS NULL`,
+        [req.params.id, userId]
+      );
+      if (existing.rowCount) {
+        const e = new Error('That person can already read this report.');
+        e.status = 409; e.code = 'ENTITLEMENT_EXISTS'; throw e;
+      }
+
+      // The money and the access, in one transaction. A report fee is
+      // deliberately its own fee_type: 'inspection' is capped at one live row
+      // per inspection, and a second sale is the entire point.
+      let feeId = null;
+      if (source === 'purchased') {
+        const fee = await client.query(
+          `INSERT INTO platform_fees
+             (fee_type, inspection_id, payer_user_id, amount, status, method, reference,
+              collected_at, recorded_by)
+           VALUES ('report', $1, $2, $3, 'paid', $4, $5, NOW(), $6)
+           RETURNING id`,
+          [req.params.id, userId, amount, method,
+           String(req.body?.reference || '').trim().slice(0, 120) || null, req.user.id]
+        );
+        feeId = fee.rows[0].id;
+      }
+
+      const { rows } = await client.query(
+        `INSERT INTO report_entitlements
+           (inspection_id, user_id, source, fee_id, note, granted_by)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [req.params.id, userId, source, feeId, note || null, req.user.id]
+      );
+
+      await notifyUser(client, {
+        user_id: userId,
+        type: 'listing_update',
+        title: 'Inspection report available',
+        body: `The 150-point inspection report for the ${inspection.vehicle_year || ''} `
+            + `${inspection.vehicle_make || ''} ${inspection.vehicle_model || ''}`.trim()
+            + ' is now available in your account.',
+        meta: JSON.stringify({ inspectionId: req.params.id }),
+      });
+
+      await recordAdminAction(client, {
+        actorId: req.user.id,
+        action: source === 'purchased' ? 'report.sold' : 'report.granted',
+        targetType: 'inspection', targetId: req.params.id,
+        summary: `${ENTITLEMENT_SOURCES[source]} — ${person.rows[0].name}`
+          + (amount ? ` for RWF ${amount.toLocaleString('en-RW')}` : ''),
+        metadata: { user_id: userId, source, amount_rwf: amount, method, fee_id: feeId, note: note || null },
+      });
+
+      return { entitlement: rows[0], person: person.rows[0] };
+    });
+
+    res.status(201).json(created.entitlement);
+    // No email from here, deliberately. POST /:id/report/notify exists as a
+    // separate act for exactly this reason — issuing is idempotent and gets
+    // retried, and nobody should receive four emails because a download failed
+    // three times. The in-app notification above tells them; an admin sends the
+    // email when they mean to.
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'That person can already read this report.', code: 'ENTITLEMENT_EXISTS' });
+    }
+    if (err.code === '23514') {
+      return res.status(400).json({ error: 'A sale must record its payment, and a grant must give a reason.' });
+    }
+    log.error('entitlement create error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /inspections/:id/entitlements/:entId/revoke — take access back.
+//
+// Revoked rather than deleted, with a reason, for the same reason a fee is
+// voided rather than removed: a record that can be quietly erased is not a
+// record. Excluding revoked rows from the unique index is also what allows the
+// same person to be granted access again later.
+router.post('/:id/entitlements/:entId/revoke', requireAdmin,
+  requireUuid('id'), requireUuid('entId'), async (req, res) => {
+  const reason = String(req.body?.reason || '').trim();
+  if (reason.length < 4) {
+    return res.status(400).json({ error: 'Say why access is being withdrawn — it stays on the record' });
+  }
+  try {
+    const revoked = await withTransaction(async (client) => {
+      const found = await client.query(
+        'SELECT * FROM report_entitlements WHERE id = $1 AND inspection_id = $2 FOR UPDATE',
+        [req.params.entId, req.params.id]
+      );
+      if (!found.rowCount) { const e = new Error('Entitlement not found'); e.status = 404; throw e; }
+      if (found.rows[0].revoked_at) {
+        const e = new Error('That access was already withdrawn'); e.status = 409; throw e;
+      }
+      const { rows } = await client.query(
+        `UPDATE report_entitlements
+            SET revoked_at = NOW(), revoked_by = $1, revoke_reason = $2
+          WHERE id = $3 RETURNING *`,
+        [req.user.id, reason.slice(0, 500), req.params.entId]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'report.access_revoked',
+        targetType: 'inspection', targetId: req.params.id,
+        summary: `Withdrew report access — ${reason.slice(0, 120)}`,
+        metadata: { entitlement_id: req.params.entId, user_id: found.rows[0].user_id, reason },
+      });
+      return rows[0];
+    });
+    res.json(revoked);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('entitlement revoke error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /inspections/:id/report/customer-file — whoever is entitled to it collects
+// what they paid for.
+//
+// The rule used to be `customer_user_id = me`: one inspection, one reader,
+// forever. That made the thing Sawa actually sells sellable exactly once — the
+// seller of an inspected car could not get a copy, a second buyer could not buy
+// one, and a new owner could not receive the history. Access is now the
+// existence of a live entitlement, which is a question with more than one
+// possible answer. See migration 0031.
+//
+// A mismatch still answers 404 rather than 403: a stranger guessing ids should
+// not be able to learn that an inspection exists, let alone whose it is. Same
+// pattern as the import document routes.
 router.get('/:id/report/customer-file', requireAuth, requireUuid('id'), async (req, res) => {
   try {
-    const owner = await pool.query(
-      "SELECT customer_user_id FROM inspections WHERE id = $1 AND kind = 'standalone'",
-      [req.params.id]
+    const allowed = await pool.query(
+      `SELECT 1
+         FROM inspections i
+        WHERE i.id = $1 AND i.kind = 'standalone'
+          AND ($3::boolean
+               OR EXISTS (SELECT 1 FROM report_entitlements e
+                           WHERE e.inspection_id = i.id AND e.user_id = $2
+                             AND e.revoked_at IS NULL))`,
+      [req.params.id, req.user.id, req.user.role === 'admin']
     );
-    if (!owner.rows.length
-        || (req.user.role !== 'admin' && owner.rows[0].customer_user_id !== req.user.id)) {
+    if (!allowed.rowCount) {
       throw new DocumentError('Report not found', 404);
     }
     const document = await downloadableDocument(
