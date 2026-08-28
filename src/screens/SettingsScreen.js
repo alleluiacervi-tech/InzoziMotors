@@ -9,6 +9,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import { checkForUpdate, applyUpdate, runningBuild, UPDATE_STATUS } from '../utils/updates';
 import { useApp } from '../context/AppContext';
 import { getJSON } from '../storage';
 import {
@@ -39,7 +40,7 @@ async function openLink(url) {
 // next — a settings row whose only behaviour is announcing a future feature
 // is exactly what a store reviewer probes as non-functional (guideline 4.2).
 // Edit-profile, language and rate-us return WHEN they work.
-const buildGroups = (verificationValue) => [
+const buildGroups = (verificationValue, buildLabel) => [
   {
     title: 'Account',
     items: [
@@ -82,6 +83,16 @@ const buildGroups = (verificationValue) => [
     ],
   },
   {
+    // What is actually running, and the way to get what is newer. The version
+    // alone is useless for support — every install reports 1.0.0 — so the row
+    // shows the running bundle, which is what actually differs between two
+    // phones that were updated on different days.
+    title: 'App',
+    items: [
+      { icon: 'refresh-outline', label: 'Check for updates', action: 'checkUpdate', value: buildLabel },
+    ],
+  },
+  {
     title: 'Legal',
     items: [
       { icon: 'lock-closed-outline', label: 'Privacy policy', link: LEGAL.privacy },
@@ -104,6 +115,10 @@ export default function SettingsScreen({ navigation }) {
 
   // Persisted, and actually wired: off tells the server to forget this device.
   const [pushOn, setPushOn] = useState(true);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  // Read once: it describes the bundle currently running and cannot change
+  // without a relaunch.
+  const build = runningBuild();
   React.useEffect(() => {
     let alive = true;
     getJSON('pushEnabled', true).then((v) => { if (alive) setPushOn(v !== false); });
@@ -126,7 +141,12 @@ export default function SettingsScreen({ navigation }) {
     pending: 'Under review',
     rejected: 'Action needed',
   };
-  const groups = buildGroups(VERIFICATION_LABELS[idVerificationStatus] || 'Not verified');
+  const groups = buildGroups(
+    VERIFICATION_LABELS[idVerificationStatus] || 'Not verified',
+    // The row doubles as the progress indicator: a tap that changes nothing on
+    // screen is indistinguishable from a tap that missed.
+    checkingUpdate ? 'Checking…' : build.label,
+  );
 
   // Deletion state. A dedicated modal rather than showConfirm(), because this
   // needs a password field and needs to show the server's specific refusal.
@@ -136,10 +156,42 @@ export default function SettingsScreen({ navigation }) {
   const [deleteError, setDeleteError] = useState('');
 
   const handleItemPress = (item) => {
-    if (item.screen) {
+    if (item.action === 'checkUpdate') {
+      runUpdateCheck();
+    } else if (item.screen) {
       navigation.navigate(item.screen);
     } else if (item.link) {
       openLink(item.link);
+    }
+  };
+
+  // Every outcome says something. A button that goes quiet reads as broken, and
+  // "you are already up to date" is a useful answer, not a non-event.
+  const runUpdateCheck = async () => {
+    if (checkingUpdate) return;
+    setCheckingUpdate(true);
+    try {
+      const { status } = await checkForUpdate();
+      if (status === UPDATE_STATUS.AVAILABLE) {
+        const ok = await showConfirm({
+          title: 'A new version is ready',
+          message: 'It is downloaded already. Restarting takes a second and you will not be signed out.',
+          confirmLabel: 'Restart now',
+          cancelLabel: 'Later',
+        });
+        if (ok) await applyUpdate();
+      } else if (status === UPDATE_STATUS.CURRENT) {
+        showToast('You are on the latest version.', 'success');
+      } else if (status === UPDATE_STATUS.UNSUPPORTED) {
+        // Expo Go or a development build: the bundle comes from Metro, so
+        // there is nothing to fetch. Saying so beats a check that never
+        // succeeds and never explains why.
+        showToast('Updates apply to the installed app, not this development build.', 'info');
+      } else {
+        showToast('Could not reach the update server. Try again on a better connection.', 'error');
+      }
+    } finally {
+      setCheckingUpdate(false);
     }
   };
 

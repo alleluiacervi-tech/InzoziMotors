@@ -59,6 +59,47 @@ for (const relative of ['.env.production.template', 'backend/.env.example']) {
     `${relative} contains Cloudinary credentials; revoke them and keep the replacement outside Git.`);
 }
 
+// ─── Over-the-air updates actually reach somebody ───────────────────────────
+//
+// Publishing goes to an EAS Update BRANCH; an installed app subscribes to a
+// CHANNEL declared in its build profile. This repo shipped for months with the
+// workflow publishing to branch `production` and no build profile naming a
+// channel at all — so nothing was subscribed and every update went nowhere,
+// silently, with a green workflow each time.
+//
+// Nothing else would have caught it: the publish succeeds, the dashboard shows
+// the update, and only a user's phone knows it never arrived.
+{
+  const eas = JSON.parse(read('eas.json'));
+  for (const profile of ['production', 'preview']) {
+    const channel = eas.build?.[profile]?.channel;
+    if (!channel) {
+      failures.push(
+        `eas.json build.${profile} declares no "channel", so builds from it subscribe to no `
+        + 'update branch and published OTA updates will reach nobody.'
+      );
+    }
+  }
+
+  const config = read('app.config.js');
+  if (!/updates:\s*\{/.test(config) || !/u\.expo\.dev/.test(config)) {
+    failures.push('app.config.js has no updates.url, so the app has no update server to ask.');
+  }
+  if (!/policy:\s*'appVersion'/.test(config)) {
+    failures.push("app.config.js runtimeVersion policy is not 'appVersion'; OTA compatibility is undefined.");
+  }
+  // A published bundle referencing a module the installed binary lacks crashes
+  // on launch, so the runtime has to be able to check and apply updates itself.
+  const pkg = JSON.parse(read('package.json'));
+  if (!pkg.dependencies?.['expo-updates']) {
+    failures.push('expo-updates is not a dependency, so no build can receive an update.');
+  }
+  requireText('src/utils/updates.js', /checkForUpdateAsync/,
+    'src/utils/updates.js does not check for updates; the update pipeline has no runtime half.');
+  requireText('App.js', /UpdateBanner/,
+    'App.js does not mount UpdateBanner, so a downloaded update is never offered to the user.');
+}
+
 if (process.env.RELEASE_REQUIRE_ENV === '1') {
   for (const name of ['EAS_PROJECT_ID', 'EXPO_PUBLIC_API_URL', 'EXPO_PUBLIC_SITE_URL']) {
     if (!process.env[name]) failures.push(`${name} is not set for the production release environment.`);

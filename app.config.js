@@ -21,7 +21,22 @@ export default ({ config }) => ({
   newArchEnabled: true,
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+    // Never hold the splash screen waiting on the network. A launch on a weak
+    // connection must start the app from the bundle it already has; the new one
+    // downloads behind it and src/components/UpdateBanner offers to apply it.
+    // The default is already 0, but a launch-blocking timeout is the kind of
+    // thing that gets added later "just to be safe" and is then very hard to
+    // notice, so it is written down.
+    fallbackToCacheTimeout: 0,
+    checkAutomatically: 'ON_LOAD',
   },
+  // The OTA compatibility key. Every build of version 1.0.0 can receive any
+  // update published from a 1.0.0 tree, which is what makes shipping a fix
+  // without a store review possible. Bumping `version` above deliberately cuts
+  // that line: installs on the old version stop receiving updates and need a
+  // new build from the store, because a native change cannot travel over the
+  // air. src/utils/updates.js says exactly that to the user rather than
+  // offering a button that would do nothing.
   runtimeVersion: {
     policy: 'appVersion',
   },

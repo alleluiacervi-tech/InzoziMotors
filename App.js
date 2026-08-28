@@ -10,6 +10,7 @@ import { navigationRef, initPushNavigation, flushPendingPushNavigation } from '.
 import AnimatedSplash from './src/components/AnimatedSplash';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import FeedbackHost from './src/components/Feedback';
+import UpdateBanner from './src/components/UpdateBanner';
 import { getJSON } from './src/storage';
 
 export default function App() {
@@ -62,6 +63,9 @@ export default function App() {
             <RootNavigator initialRoute={initialRoute} />
           </NavigationContainer>
         )}
+        {/* Floats over the app when a downloaded update is waiting. Renders
+            nothing at all otherwise, and nothing ever in a dev build. */}
+        <UpdateBanner />
         <FeedbackHost />
         {(!splashDone || !initialRoute) && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
       </SafeAreaProvider>

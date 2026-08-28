@@ -127,6 +127,14 @@ jobs:
       - name: Every relative mobile import resolves
         run: npm run mobile:imports
 
+      # The release preflight was only ever run by hand, which is the same as
+      # not having it: it guards against leaked provider keys in committed
+      # templates, retired transaction APIs coming back, and — since the OTA
+      # channel fault — a build profile that subscribes to no update branch.
+      # None of those were being checked on any push.
+      - name: Release preflight
+        run: npm run release:check
+
   web:
     name: Website — typecheck + production build
     runs-on: ubuntu-latest

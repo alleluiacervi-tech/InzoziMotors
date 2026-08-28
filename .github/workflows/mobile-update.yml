@@ -1,33 +1,142 @@
 name: Mobile Over-The-Air Update
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Publishing a new JavaScript bundle to installed apps.
+#
+# This workflow used to run on every push to main that touched src/ — in
+# parallel with CI, not after it. So a bundle could reach every phone in Rwanda
+# before the tests that would have caught it had finished, and a syntax error
+# in a screen would ship to users and to the test report at the same moment.
+# It now runs only after CI is green on main, on the exact commit CI validated,
+# which is the same rule deploy.yml follows for the servers.
+#
+# ── What can travel this way, and what cannot ────────────────────────────────
+# runtimeVersion is `appVersion` (app.config.js), so an update reaches every
+# installed build of the same `version`. JavaScript, images, fonts, copy and
+# business rules all travel. A new native dependency does NOT: the bundle would
+# reference a module the installed binary does not contain and the app would
+# crash on launch — for everyone, with no way to roll back from the user's side.
+#
+# That is the one genuinely dangerous mistake available here, so the guard below
+# refuses to publish automatically when a native-sensitive file changes. Getting
+# a "skipped" in CI and having to think is the cheap outcome; the alternative is
+# a crash loop on every phone.
+#
+# ── The channel ──────────────────────────────────────────────────────────────
+# Publishing goes to a BRANCH; an installed app subscribes to a CHANNEL. For
+# months this workflow published to branch `production` while no build profile
+# in eas.json declared a channel, so nothing was subscribed and every update
+# went nowhere. eas.json now sets channel `production` and `preview`. A build
+# has to be made AFTER that change for it to carry the channel — an app built
+# before it will never receive updates, whatever this workflow publishes.
+# ─────────────────────────────────────────────────────────────────────────────
+
 on:
-  push:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'assets/**'
-      - 'App.js'
-      - 'index.js'
-      - 'babel.config.js'
-      - 'metro.config.js'
   workflow_dispatch:
     inputs:
       branch:
-        description: 'EAS Update branch to publish to (e.g. production, preview)'
+        description: 'EAS Update branch to publish to'
         required: false
         default: 'production'
+      allow_native_changes:
+        description: 'Publish even though native-sensitive files changed (only if you have already shipped a matching build)'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # One publish at a time per branch. Two overlapping runs would race to be the
+  # newest update, and which one won would depend on timing.
+  group: mobile-update-${{ github.event.inputs.branch || 'production' }}
+  cancel-in-progress: false
 
 jobs:
   update:
     name: Publish EAS OTA Update (iOS & Android)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # A red CI must never reach a phone. workflow_dispatch is the deliberate
+    # human override and is allowed through.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
-      - name: Checkout repository
+      - name: Checkout the commit CI validated
         uses: actions/checkout@v5
+        with:
+          # The triggering commit, not whatever main has moved on to — the whole
+          # point of gating on CI is publishing the tree that passed.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Needed to diff against the previous state of main below.
+          fetch-depth: 0
+
+      - name: Decide whether this commit should be published
+        id: scope
+        run: |
+          set -euo pipefail
+          sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+
+          # main advances by merge commit, so the first parent is the previous
+          # tip and this range is everything the merge brought in.
+          if git rev-parse --verify -q "${sha}^" >/dev/null; then
+            changed="$(git diff --name-only "${sha}^" "${sha}")"
+          else
+            changed="$(git ls-tree -r --name-only "${sha}")"
+          fi
+          echo "Changed files:"; echo "${changed}" | sed 's/^/  /'
+
+          # Does anything in the mobile bundle change? If a commit only touched
+          # the backend or the website there is nothing to publish, and a
+          # pointless update still makes every phone re-download a bundle.
+          if echo "${changed}" | grep -qE '^(src/|assets/|App\.js|index\.js|babel\.config\.js|metro\.config\.js|package(-lock)?\.json|app\.config\.js)'; then
+            echo "mobile=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "mobile=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No mobile files changed — nothing to publish."
+          fi
+
+          # Native-sensitive: a change here may mean the installed binary no
+          # longer matches the bundle. package-lock alone counts, because a
+          # transitive native dependency can move without package.json moving.
+          if echo "${changed}" | grep -qE '^(package(-lock)?\.json|app\.config\.js|eas\.json|plugins/)'; then
+            echo "native=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "native=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Refuse to auto-publish a native-sensitive change
+        if: >-
+          steps.scope.outputs.mobile == 'true' &&
+          steps.scope.outputs.native == 'true' &&
+          github.event.inputs.allow_native_changes != 'true'
+        run: |
+          cat <<'EOF'
+          This commit touches package.json, package-lock.json, app.config.js,
+          eas.json or plugins/, so the installed binary may no longer match the
+          bundle this would publish.
+
+          If the change is JavaScript-only (a pure JS dependency, a copy tweak in
+          app.config.js), re-run this workflow manually with
+          "allow_native_changes" ticked.
+
+          If it adds or upgrades a NATIVE module, changes a permission, or bumps
+          `version`, publishing an update would crash every installed app on
+          launch. Ship a new build instead:
+
+              npx eas-cli build --platform all --profile production
+              npx eas-cli submit --platform all --profile production
+
+          Nothing was published.
+          EOF
+          exit 1
 
       - name: Setup Node.js
+        if: steps.scope.outputs.mobile == 'true'
         uses: actions/setup-node@v5
         with:
           node-version: 20
@@ -35,11 +144,42 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
+        if: steps.scope.outputs.mobile == 'true'
         run: npm ci
 
       - name: Publish update to EAS (iOS and Android)
+        if: steps.scope.outputs.mobile == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          set -euo pipefail
           branch="${{ github.event.inputs.branch || 'production' }}"
-          npx eas-cli update --branch "$branch" --platform all --message "${{ github.event.head_commit.message || 'Automated update from GitHub' }}" --non-interactive
+          sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+          # The SHA is in the message so an update in the Expo dashboard can be
+          # traced back to a commit — "which code is on that phone" is otherwise
+          # unanswerable.
+          npx eas-cli update \
+            --branch "$branch" \
+            --platform all \
+            --message "${sha:0:8} ${{ github.event.workflow_run.head_commit.message || github.event.head_commit.message || 'manual publish' }}" \
+            --non-interactive
+
+      - name: Confirm the update is subscribed to by real builds
+        if: steps.scope.outputs.mobile == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          branch="${{ github.event.inputs.branch || 'production' }}"
+          echo "── Latest updates on branch ${branch} ──"
+          npx eas-cli update:list --branch "$branch" --limit 3 --non-interactive || true
+          echo
+          echo "── Channel → branch mapping ──"
+          # This is the step that would have caught the original fault: a channel
+          # with no branch, or no channel at all, means nothing is listening and
+          # the publish above reached nobody.
+          npx eas-cli channel:view "$branch" --non-interactive || {
+            echo "::warning::Channel '${branch}' does not exist yet. It is created by the first"
+            echo "::warning::build made with \"channel\": \"${branch}\" in eas.json. Until such a"
+            echo "::warning::build is installed, published updates reach no one."
+          }
