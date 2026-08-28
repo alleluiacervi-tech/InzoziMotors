@@ -98,6 +98,31 @@ for (const relative of ['.env.production.template', 'backend/.env.example']) {
     'src/utils/updates.js does not check for updates; the update pipeline has no runtime half.');
   requireText('App.js', /UpdateBanner/,
     'App.js does not mount UpdateBanner, so a downloaded update is never offered to the user.');
+
+  // mobile-update.yml and mobile-build.yml split every commit between them:
+  // one publishes over the air, the other cuts a binary, and each decides with
+  // the SAME native-sensitive predicate. If the two ever disagree, a commit can
+  // satisfy neither and reach nobody — silently, with both workflows green.
+  //
+  // A comment asking two files to stay in step is not a mechanism, so the
+  // predicates are compared here instead.
+  const predicateOf = (relative) => {
+    const found = read(relative).match(/grep -qE '(\^\(package[^']*)'/);
+    return found ? found[1] : null;
+  };
+  const publishes = predicateOf('.github/workflows/mobile-update.yml');
+  const builds = predicateOf('.github/workflows/mobile-build.yml');
+  if (!publishes || !builds) {
+    failures.push('Could not read the native-change predicate from both mobile workflows; '
+      + 'one of them may no longer route commits at all.');
+  } else if (publishes !== builds) {
+    failures.push(
+      'mobile-update.yml and mobile-build.yml disagree about what counts as a native change, '
+      + 'so some commits will be handled by neither and reach no user.\n'
+      + `    publish refuses on: ${publishes}\n`
+      + `    build triggers on:  ${builds}`
+    );
+  }
 }
 
 if (process.env.RELEASE_REQUIRE_ENV === '1') {

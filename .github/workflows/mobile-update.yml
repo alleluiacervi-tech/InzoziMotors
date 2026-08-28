@@ -18,9 +18,12 @@ name: Mobile Over-The-Air Update
 # crash on launch — for everyone, with no way to roll back from the user's side.
 #
 # That is the one genuinely dangerous mistake available here, so the guard below
-# refuses to publish automatically when a native-sensitive file changes. Getting
-# a "skipped" in CI and having to think is the cheap outcome; the alternative is
-# a crash loop on every phone.
+# refuses to publish when a native-sensitive file changes — and mobile-build.yml
+# picks that commit up instead, triggering on the identical predicate. Between
+# the two, every commit that reaches main reaches users by exactly one path:
+# over the air when it can travel that way, and as a new binary when it cannot.
+# If you widen the predicate in one file, widen it in the other in the same
+# commit, or a commit will satisfy neither and quietly reach nobody.
 #
 # ── The channel ──────────────────────────────────────────────────────────────
 # Publishing goes to a BRANCH; an installed app subscribes to a CHANNEL. For
@@ -126,12 +129,11 @@ jobs:
 
           If it adds or upgrades a NATIVE module, changes a permission, or bumps
           `version`, publishing an update would crash every installed app on
-          launch. Ship a new build instead:
+          launch — so nothing was published here, and nothing needed to be:
+          mobile-build.yml triggers on exactly this condition and has already
+          started a new binary for this commit. Check its run.
 
-              npx eas-cli build --platform all --profile production
-              npx eas-cli submit --platform all --profile production
-
-          Nothing was published.
+          Submitting that build to the stores remains a human decision.
           EOF
           exit 1
 

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { fonts } from '../theme';
+import { photoSource, PHOTO } from '../utils/photo';
 
 // Full-screen photo viewer — opens on the tapped photo, swipe left/right
 // through the set, tap ✕ (or the backdrop) to close.
@@ -35,7 +36,7 @@ export default function PhotoViewer({ visible, images = [], initialIndex = 0, on
           renderItem={({ item }) => (
             <Pressable style={{ width, height }} onPress={onClose}>
               <Image
-                source={{ uri: item }}
+                source={photoSource(item, PHOTO.ZOOM)}
                 style={{ width, height: height * 0.82, marginTop: height * 0.09 }}
                 resizeMode="contain"
               />

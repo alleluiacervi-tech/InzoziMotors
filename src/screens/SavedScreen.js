@@ -9,6 +9,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { formatPrice } from '../data/cars';
 import { getPriceDrop, getSavedCount, getListedDaysAgo } from '../data/marketData';
+import { photoSource, PHOTO } from '../utils/photo';
 
 function SavedCarRow({ car, onPress, onRemove }) {
   const drop = getPriceDrop(car);
@@ -17,7 +18,7 @@ function SavedCarRow({ car, onPress, onRemove }) {
 
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <Image source={{ uri: car.image }} style={styles.thumb} resizeMode="contain" />
+      <Image source={photoSource(car.image, PHOTO.THUMB)} style={styles.thumb} resizeMode="contain" />
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle} numberOfLines={2}>{car.title}</Text>
         <View style={styles.rowMeta}>

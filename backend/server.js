@@ -136,6 +136,7 @@ app.use(express.urlencoded({ extended: true }));
 // NEVER served here — they go through admin-gated routes
 // (GET /id-verification/doc/:filename and GET /contracts/:id/file).
 // Both 403s are mounted BEFORE the static handler so they win.
+const { imageVariants } = require('./src/middleware/image-variants');
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 app.use('/uploads/id-docs', (req, res) => res.status(403).json({ error: 'Forbidden' }));
 app.use('/uploads/contracts', (req, res) => res.status(403).json({ error: 'Forbidden' }));
@@ -144,7 +145,32 @@ app.use('/uploads/documents', (req, res) => res.status(403).json({ error: 'Forbi
 // file containing the plate is not reachable — a masked public image beside a
 // readable original is theatre.
 app.use('/uploads/plate-originals', (req, res) => res.status(403).json({ error: 'Forbidden' }));
-app.use('/uploads', express.static(uploadDir));
+// Listing photos at the width the client will actually draw them, ahead of the
+// static handler so `?w=400` is answered by a resized WebP rather than a
+// 1600x1200 JPEG. Falls through to the original for anything it cannot or
+// should not resize. The denied directories above are already answered before
+// this line, so no variant of an ID document or an unmasked plate can be made.
+app.use('/uploads', imageVariants(uploadDir));
+app.use('/uploads', express.static(uploadDir, {
+  // Uploaded filenames carry a timestamp and a random suffix, and nothing ever
+  // rewrites one in place — a re-masked plate is written to a NEW name so that
+  // caches cannot keep serving the readable original. That makes every one of
+  // these URLs immutable in the strict sense.
+  //
+  // The default was `max-age=0`, which asks every browser and every phone to
+  // revalidate every photo on every view. For a marketplace whose pages are
+  // mostly photographs, on mobile data, that is a round trip to Kigali per
+  // image per screen — and it also defeated the website's own image optimizer,
+  // which honours upstream cache headers when deciding how long to keep a
+  // re-encoded copy.
+  maxAge: '365d',
+  immutable: true,
+  // Serve pre-compressed .br/.gz siblings if any ever exist; harmless when none
+  // do, and correct for the SVG badge assets.
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.svg')) res.setHeader('Content-Type', 'image/svg+xml');
+  },
+}));
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 // Three tiers, because the endpoints differ in what abuse of them costs.
