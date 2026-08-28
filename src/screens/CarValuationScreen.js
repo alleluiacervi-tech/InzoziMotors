@@ -9,8 +9,13 @@ import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
 import { showToast } from '../components/Feedback';
 import carsApi from '../api/cars';
+import ChipSelect from '../components/ChipSelect';
 
-const MAKES = ['Toyota', 'Honda', 'Subaru', 'BMW', 'Mercedes', 'Hyundai', 'Kia', 'Mazda', 'Nissan', 'Volkswagen'];
+const MAKES = [
+  'Toyota', 'Honda', 'Nissan', 'Suzuki', 'Mitsubishi', 'Mazda', 'Subaru',
+  'Isuzu', 'Daihatsu', 'Hyundai', 'Kia', 'Volkswagen', 'Mercedes', 'BMW',
+  'Audi', 'Land Rover', 'Peugeot', 'Ford', 'Jeep', 'Lexus',
+];
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 
 export default function CarValuationScreen({ navigation }) {
@@ -127,18 +132,17 @@ export default function CarValuationScreen({ navigation }) {
           Get an instant market estimate — free, no account needed. Takes 30 seconds.
         </Text>
 
-        {/* Make */}
+        {/* Make. Same reasoning as the submission form: someone asking what
+            their Peugeot is worth must be able to say "Peugeot". */}
         <Text style={styles.label}>Make</Text>
-        <View style={styles.chipWrap}>
-          {MAKES.map((m) => {
-            const on = make === m;
-            return (
-              <Pressable key={m} style={[styles.chip, on && styles.chipOn]} onPress={() => setMake(m)}>
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{m}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <ChipSelect
+          options={MAKES}
+          selected={make}
+          onSelect={setMake}
+          allowOther
+          otherLabel="Other brand"
+          placeholder="Type the make, e.g. Peugeot"
+        />
 
         {/* Model */}
         <Text style={styles.label}>Model (optional)</Text>

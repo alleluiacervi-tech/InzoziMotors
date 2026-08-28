@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, FlatList, Image,
 } from 'react-native';
@@ -10,7 +10,11 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice } from '../data/cars';
 import { KIGALI_NEIGHBORHOODS, getCarsInNeighborhood, getListedDaysAgo } from '../data/marketData';
 
-const CATEGORY_FILTERS = ['All', 'SUV', 'Sedan', 'EV', 'Truck'];
+// Derived from the cars on the map, not hardcoded. The fixed list named 'EV'
+// and 'Truck' — categories Sawa has never listed — while a real Wagon or
+// Minibus fell under none of the chips and so could not be filtered to at all.
+// Same reasoning as screens/FiltersScreen: a filter that disagrees with the
+// inventory both offers nothing and hides something.
 
 const NEIGHBORHOOD_ICONS = {
   Nyarutarama: 'leaf-outline',
@@ -73,6 +77,12 @@ export default function MapScreen({ navigation }) {
   const [categoryFilter, setCategoryFilter] = useState('All');
 
   const activeHood = KIGALI_NEIGHBORHOODS.find((h) => h.id === selectedHood);
+
+  const CATEGORY_FILTERS = useMemo(() => ['All', ...new Set(
+    (cars || []).map((c) => c.category)
+      .filter((v) => typeof v === 'string' && v.trim())
+      .map((v) => v.trim())
+  )].slice(0, 12), [cars]);
 
   const filteredCars = getCarsInNeighborhood(cars, activeHood?.name || '').filter((car) => {
     if (categoryFilter === 'All') return true;

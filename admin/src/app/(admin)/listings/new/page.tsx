@@ -5,6 +5,14 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
+import { SelectOrType } from '@/components/SelectOrType'
+
+// The common answers, not the only permitted ones — each of these fields offers
+// an "Other" that reveals a text box. The old lists were four items long, so an
+// admin publishing a wagon or a plug-in hybrid had to record something untrue.
+// Nothing in the database constrains these columns.
+const FUEL_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'Electric'] as const
+const BODY_TYPES = ['SUV', 'Sedan', 'Hatchback', 'Pickup', 'Coupe', 'Van', 'Wagon', 'Minibus'] as const
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Choosing the inspection is step one, not an optional query string.
@@ -360,35 +368,15 @@ function ListingCreatorForm() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Fuel Type *</label>
-            <select
-              value={fuelType}
-              onChange={(e) => setFuelType(e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-            >
-              <option value="Petrol">Petrol</option>
-              <option value="Diesel">Diesel</option>
-              <option value="Hybrid">Hybrid</option>
-              <option value="Electric">Electric</option>
-            </select>
+            <SelectOrType label="Fuel Type" required value={fuelType} onChange={setFuelType}
+              options={FUEL_TYPES} placeholder="e.g. Plug-in hybrid, LPG" />
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Body Type *</label>
-            <select
-              value={bodyType}
-              onChange={(e) => setBodyType(e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-            >
-              <option value="SUV">SUV</option>
-              <option value="Sedan">Sedan</option>
-              <option value="Hatchback">Hatchback</option>
-              <option value="Truck">Truck</option>
-              <option value="Coupe">Coupe</option>
-              <option value="EV">EV</option>
-            </select>
+            <SelectOrType label="Body Type" required value={bodyType} onChange={setBodyType}
+              options={BODY_TYPES} placeholder="e.g. Wagon, Minibus, Convertible" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Drive Side *</label>
