@@ -13,11 +13,21 @@ import { showToast, showConfirm } from '../components/Feedback';
 import { captureImage } from '../utils/media';
 import { useApp } from '../context/AppContext';
 import { estimateValuation } from '../data/finance';
+import ChipSelect from '../components/ChipSelect';
 
-const MAKES = ['Toyota', 'Honda', 'Nissan', 'Subaru', 'Mercedes', 'BMW', 'Mazda', 'Hyundai', 'Kia', 'Volkswagen'];
+// The common answers, not the only permitted ones. Every one of these lists is
+// a shortcut past typing, and each has an "Other" chip beside it — a hardcoded
+// list of real-world things is wrong the day it is written, and a seller whose
+// car is not on it must still be able to submit. Transmission is the exception:
+// automatic and manual genuinely exhaust it.
+const MAKES = [
+  'Toyota', 'Honda', 'Nissan', 'Suzuki', 'Mitsubishi', 'Mazda', 'Subaru',
+  'Isuzu', 'Daihatsu', 'Hyundai', 'Kia', 'Volkswagen', 'Mercedes', 'BMW',
+  'Audi', 'Land Rover', 'Peugeot', 'Ford', 'Jeep', 'Lexus',
+];
 const FUEL_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
 const TRANSMISSIONS = ['Automatic', 'Manual'];
-const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Van'];
+const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Van', 'Wagon', 'Minibus'];
 const YEARS = Array.from({ length: 16 }, (_, i) => String(2026 - i));
 // Two optional reference shots help the inspection team prepare.
 const PHOTO_SLOTS = [
@@ -27,6 +37,9 @@ const PHOTO_SLOTS = [
 
 const STEP_LABELS = ['Vehicle', 'Price & Submit'];
 
+// Kept for the multi-select groups (the photo angles), which have a fixed and
+// genuinely complete set. Single-select pickers of real-world things use
+// ChipSelect instead, which offers a way past the list.
 function ChipGroup({ options, selected, onSelect, multi = false }) {
   return (
     <View style={styles.chipGroup}>
@@ -107,7 +120,12 @@ export default function CarSubmissionScreen({ navigation, route }) {
     ? Number(form.askingPrice) >= priceSuggestion.low && Number(form.askingPrice) <= priceSuggestion.high
     : false;
 
-  const canAdvanceStep0 = form.make && form.model && form.year && form.mileage && form.fuelType && form.transmission;
+  // Trimmed, because a free-text answer can be spaces. Tapping "Other brand"
+  // and moving on without typing would otherwise pass this check and submit a
+  // vehicle whose make is "   ".
+  const filled = (value) => String(value ?? '').trim().length > 0;
+  const canAdvanceStep0 = filled(form.make) && filled(form.model) && form.year
+    && form.mileage && filled(form.fuelType) && filled(form.transmission);
 
   const handlePhotoPress = async (slot) => {
     if (photos[slot.key]) {
@@ -136,19 +154,27 @@ export default function CarSubmissionScreen({ navigation, route }) {
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
-    const carTitle = `${form.year} ${form.make} ${form.model}`;
+    // What the seller typed, tidied but not corrected. Collapsing inner runs of
+    // whitespace and trimming the ends is safe; changing the casing is not —
+    // it would turn BMW into Bmw and MG into Mg. A team member reviews every
+    // submission before anything is published, and that is where a real typo is
+    // caught.
+    const tidy = (value) => String(value ?? '').trim().replace(/\s+/g, ' ');
+    const make = tidy(form.make);
+    const model = tidy(form.model);
+    const carTitle = `${form.year} ${make} ${model}`;
     try {
       const submissionId = await addSubmission({
         carTitle,
-        make: form.make,
-        model: form.model,
+        make,
+        model,
         year: Number(form.year),
         mileage: Number(form.mileage),
         askingPrice: Number(form.askingPrice) || 0,
-        fuelType: form.fuelType,
-        transmission: form.transmission,
-        bodyType: form.bodyType,
-        color: form.color,
+        fuelType: tidy(form.fuelType),
+        transmission: tidy(form.transmission),
+        bodyType: tidy(form.bodyType),
+        color: tidy(form.color),
         sellerNotes: form.sellerNotes,
         photos,
         image: STUDIO.paintWhite,
@@ -186,7 +212,8 @@ export default function CarSubmissionScreen({ navigation, route }) {
               </Text>
 
               <Field label="Make">
-                <ChipGroup options={MAKES} selected={form.make} onSelect={(v) => set('make', v)} />
+                <ChipSelect options={MAKES} selected={form.make} onSelect={(v) => set('make', v)}
+                  allowOther otherLabel="Other brand" placeholder="Type the make, e.g. Peugeot" />
               </Field>
               <Field label="Model">
                 <TextInput
@@ -213,13 +240,15 @@ export default function CarSubmissionScreen({ navigation, route }) {
                 />
               </Field>
               <Field label="Fuel Type">
-                <ChipGroup options={FUEL_TYPES} selected={form.fuelType} onSelect={(v) => set('fuelType', v)} />
+                <ChipSelect options={FUEL_TYPES} selected={form.fuelType} onSelect={(v) => set('fuelType', v)}
+                  allowOther placeholder="e.g. Plug-in hybrid, LPG" />
               </Field>
               <Field label="Transmission">
                 <ChipGroup options={TRANSMISSIONS} selected={form.transmission} onSelect={(v) => set('transmission', v)} />
               </Field>
               <Field label="Body Type">
-                <ChipGroup options={BODY_TYPES} selected={form.bodyType} onSelect={(v) => set('bodyType', v)} />
+                <ChipSelect options={BODY_TYPES} selected={form.bodyType} onSelect={(v) => set('bodyType', v)}
+                  allowOther placeholder="e.g. Convertible, Truck" />
               </Field>
               <Field label="Exterior Color">
                 <TextInput

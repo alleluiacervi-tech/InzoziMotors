@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -7,9 +7,18 @@ import StickyFooter from '../components/StickyFooter';
 import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
 
-const MAKES = ['Tesla', 'Toyota', 'BMW', 'Ford', 'Honda', 'Mercedes', 'Hyundai'];
-const BODY = ['SUV', 'Sedan', 'Truck', 'EV', 'Coupe', 'Van'];
-const FUEL = ['Gasoline', 'Hybrid', 'Electric', 'Diesel'];
+// The filter options are DERIVED from the cars actually on the marketplace, not
+// hardcoded. The old lists named Tesla and Ford — neither of which Sawa has ever
+// listed — while omitting Suzuki and Isuzu, which are everywhere on Kigali
+// roads. A filter list that does not match the inventory fails twice over: it
+// offers brands that return nothing, and it hides brands that are really there,
+// so a genuine Peugeot listing becomes unreachable by filtering.
+//
+// Deriving them also means the sellers' new freedom to type any make (see
+// components/ChipSelect) can never leave a car unfilterable.
+const distinct = (cars, pick) => [...new Set(
+  (cars || []).map(pick).filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim())
+)].sort((a, b) => a.localeCompare(b));
 const PRICE_PRESETS = [
   { label: 'Any price', value: null },
   { label: 'Under RWF 10M', value: 10000000 },
@@ -32,14 +41,22 @@ export default function FiltersScreen({ navigation, route }) {
     route.params?.filters || { make: null, body: null, fuel: null, maxPrice: null }
   );
 
+  const MAKES = useMemo(() => distinct(cars, (c) => c.make), [cars]);
+  const BODY = useMemo(() => distinct(cars, (c) => c.category), [cars]);
+  const FUEL = useMemo(() => distinct(cars, (c) => c.fuel), [cars]);
+
   const toggle = (group, val) =>
     setSelected((s) => ({ ...s, [group]: s[group] === val ? null : val }));
 
   const getMatchingCount = () => {
     let list = cars;
-    if (selected.make) list = list.filter(c => c.make.toLowerCase() === selected.make.toLowerCase());
-    if (selected.body) list = list.filter(c => c.category.toLowerCase() === selected.body.toLowerCase());
-    if (selected.fuel) list = list.filter(c => c.fuel.toLowerCase() === selected.fuel.toLowerCase());
+    // Lower-cased through a helper because any of these can be missing on a
+    // record — a car with no fuel type recorded used to crash this screen on
+    // `undefined.toLowerCase()` the moment anyone tapped a fuel chip.
+    const same = (value, want) => String(value || '').toLowerCase() === String(want).toLowerCase();
+    if (selected.make) list = list.filter((c) => same(c.make, selected.make));
+    if (selected.body) list = list.filter((c) => same(c.category, selected.body));
+    if (selected.fuel) list = list.filter((c) => same(c.fuel, selected.fuel));
     if (selected.maxPrice) {
       list = list.filter(c => {
         const price = c.type === 'auction' ? c.currentBid : c.price;
@@ -71,20 +88,34 @@ export default function FiltersScreen({ navigation, route }) {
           ))}
         </View>
 
-        <Text style={[styles.label, { marginTop: 24 }]}>Make</Text>
-        <View style={styles.chips}>
-          {MAKES.map((m) => <Chip key={m} label={m} active={selected.make === m} onPress={() => toggle('make', m)} />)}
-        </View>
+        {/* Each section is hidden when the marketplace holds nothing to put in
+            it. A heading above an empty row reads as a loading failure. */}
+        {MAKES.length ? (
+          <>
+            <Text style={[styles.label, { marginTop: 24 }]}>Make</Text>
+            <View style={styles.chips}>
+              {MAKES.map((m) => <Chip key={m} label={m} active={selected.make === m} onPress={() => toggle('make', m)} />)}
+            </View>
+          </>
+        ) : null}
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Body type</Text>
-        <View style={styles.chips}>
-          {BODY.map((b) => <Chip key={b} label={b} active={selected.body === b} onPress={() => toggle('body', b)} />)}
-        </View>
+        {BODY.length ? (
+          <>
+            <Text style={[styles.label, { marginTop: 22 }]}>Body type</Text>
+            <View style={styles.chips}>
+              {BODY.map((b) => <Chip key={b} label={b} active={selected.body === b} onPress={() => toggle('body', b)} />)}
+            </View>
+          </>
+        ) : null}
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Fuel type</Text>
-        <View style={styles.chips}>
-          {FUEL.map((f) => <Chip key={f} label={f} active={selected.fuel === f} onPress={() => toggle('fuel', f)} />)}
-        </View>
+        {FUEL.length ? (
+          <>
+            <Text style={[styles.label, { marginTop: 22 }]}>Fuel type</Text>
+            <View style={styles.chips}>
+              {FUEL.map((f) => <Chip key={f} label={f} active={selected.fuel === f} onPress={() => toggle('fuel', f)} />)}
+            </View>
+          </>
+        ) : null}
 
         <View style={styles.standardNote}><Ionicons name="shield-checkmark-outline" size={19} color={colors.primary} /><Text style={styles.standardText}>Public listings pass the configured seller, inspection and image publication checks. Inspection evidence is not a transaction warranty.</Text></View>
       </ScrollView>
