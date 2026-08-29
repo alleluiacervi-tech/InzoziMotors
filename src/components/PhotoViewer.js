@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { fonts } from '../theme';
-import { photoSource, PHOTO } from '../utils/photo';
+import { PHOTO } from '../utils/photo';
+import Photo from './Photo';
 
 // Full-screen photo viewer — opens on the tapped photo, swipe left/right
 // through the set, tap ✕ (or the backdrop) to close.
@@ -35,10 +36,14 @@ export default function PhotoViewer({ visible, images = [], initialIndex = 0, on
           onMomentumScrollEnd={(e) => setIdx(Math.round(e.nativeEvent.contentOffset.x / width))}
           renderItem={({ item }) => (
             <Pressable style={{ width, height }} onPress={onClose}>
-              <Image
-                source={photoSource(item, PHOTO.ZOOM)}
+              <Photo
+                uri={item}
+                width={PHOTO.ZOOM}
                 style={{ width, height: height * 0.82, marginTop: height * 0.09 }}
                 resizeMode="contain"
+                // Swiping back through a gallery must not re-fetch what was
+                // just shown, which is exactly what RN's Image did.
+                transition={120}
               />
             </Pressable>
           )}

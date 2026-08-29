@@ -307,39 +307,29 @@ function ListingCreatorForm() {
           </div>
         </div>
 
+        {/* Make, model and year come from the inspected submission and are shown,
+            not typed.
+
+            They used to be free-text inputs prefilled from that submission, so
+            fixing a typo, adding a trim level or changing a capital silently
+            broke the binding between the listing and its evidence — and the
+            only sign was "Listing make, model and year must match the inspected
+            submission" at the moment of publishing, an error whose fix lived in
+            a record this page never showed. Locking them here is not a
+            restriction on the admin; it removes a way to get stranded. A
+            genuine correction is on the listing's edit page and changes the
+            vehicle and its submission together. */}
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Make *</label>
-            <input
-              type="text"
-              required
-              value={make}
-              onChange={(e) => setMake(e.target.value)}
-              placeholder="e.g. Toyota"
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Model *</label>
-            <input
-              type="text"
-              required
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g. RAV4"
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Year *</label>
-            <input
-              type="number"
-              required
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              placeholder="e.g. 2020"
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-            />
+          <div className="col-span-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+            <p className="text-xs font-bold text-gray-900">Vehicle — from the inspection</p>
+            <p className="mt-1 text-sm font-semibold text-gray-900">
+              {[year, make, model].filter(Boolean).join(' ') || 'Select the inspection above'}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-500">
+              This is what was inspected, so it is what the listing must say. To correct it,
+              open the listing after creating it and use <strong>Correct vehicle details</strong>,
+              which changes the submission too so the two never disagree.
+            </p>
           </div>
         </div>
 

@@ -6,7 +6,8 @@ import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
 import { formatPrice } from '../data/cars';
-import { photoSource, PHOTO } from '../utils/photo';
+import { PHOTO } from '../utils/photo';
+import Photo from './Photo';
 
 // Encar-style horizontal list card: photo left, dense specs right.
 // Built for scanning many cars quickly in search results.
@@ -29,7 +30,7 @@ export default function CarListCard({ car, onPress }) {
     <Pressable style={styles.card} onPress={onPress}>
       {/* Photo */}
       <View style={styles.imageWrap}>
-        <Image source={photoSource(car.image, PHOTO.CARD)} style={styles.image} resizeMode="contain" />
+        <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="contain" />
         {tier && (
           <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
             <Ionicons name="shield-checkmark" size={9} color="#fff" />

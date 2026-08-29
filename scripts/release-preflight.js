@@ -125,6 +125,34 @@ for (const relative of ['.env.production.template', 'backend/.env.example']) {
   }
 }
 
+// ─── Photos are cached and right-sized ──────────────────────────────────────
+//
+// React Native's Image has no disk cache: a feed scrolled twice cost twice the
+// data. Combined with the old `max-age=0` on /uploads, and with every photo
+// stored only at 1600x1200, a twenty-car feed of covers came to 9.53 MB.
+//
+// Both halves have to stay in place for that to remain fixed, and either could
+// be undone by a plausible-looking edit — swapping expo-image back for the
+// react-native one, or dropping the cache policy — so both are asserted.
+{
+  const pkg = JSON.parse(read('package.json'));
+  if (!pkg.dependencies?.['expo-image']) {
+    failures.push('expo-image is not a dependency; listing photos would have no disk cache.');
+  }
+  requireText('src/components/Photo.js', /from 'expo-image'/,
+    'src/components/Photo.js no longer uses expo-image, so photos are uncached again.');
+  requireText('src/components/Photo.js', /cachePolicy="memory-disk"/,
+    'src/components/Photo.js does not set cachePolicy, so a photo is re-downloaded every time it scrolls back.');
+  requireText('src/utils/photo.js', /w=\$\{width\}/,
+    'src/utils/photo.js no longer requests a width, so every card downloads the full-size photo.');
+  requireText('backend/src/middleware/image-variants.js', /max-age=31536000/,
+    'image variants are not cacheable, so the resize work repeats on every request.');
+  requireText('backend/server.js', /imageVariants\(uploadDir\)/,
+    'server.js does not mount imageVariants, so ?w= is ignored and full-size photos are served.');
+  requireText('backend/server.js', /immutable: true/,
+    'server.js serves /uploads without a cache lifetime; every phone revalidates every photo.');
+}
+
 if (process.env.RELEASE_REQUIRE_ENV === '1') {
   for (const name of ['EAS_PROJECT_ID', 'EXPO_PUBLIC_API_URL', 'EXPO_PUBLIC_SITE_URL']) {
     if (!process.env[name]) failures.push(`${name} is not set for the production release environment.`);

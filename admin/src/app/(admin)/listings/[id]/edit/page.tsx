@@ -24,6 +24,8 @@ export default function EditListingPage() {
   const [make, setMake]               = useState('')
   const [model, setModel]             = useState('')
   const [year, setYear]               = useState('')
+  const [correcting, setCorrecting]   = useState(false)
+  const [correctionReason, setCorrectionReason] = useState('')
   const [price, setPrice]             = useState('')
   const [mileage, setMileage]         = useState('')
   const [fuelType, setFuelType]       = useState('')
@@ -66,24 +68,42 @@ export default function EditListingPage() {
   const imageList = () => images.split('\n').map((s) => s.trim()).filter(Boolean)
   const priceChanged = !!car && Number(price) !== Number(car.price)
 
-  async function save(e: React.FormEvent) {
+  // Its own request, not part of the ordinary save: this changes the listing AND
+  // the inspected submission in one server-side transaction, which is what keeps
+  // them from ever disagreeing. The reason is recorded against the vehicle.
+  async function correctIdentity() {
+    const newYear = parseInt(year, 10)
+    if (!make.trim() || !model.trim()) { setError('Give the make and the model.'); return }
+    if (!Number.isFinite(newYear) || newYear < 1900 || newYear > new Date().getFullYear() + 1) {
+      setError('Enter a valid vehicle year.'); return
+    }
+    setSaving(true); setError('')
+    try {
+      await api.correctVehicleIdentity(String(id), {
+        make: make.trim(), model: model.trim(), year: newYear, reason: correctionReason.trim(),
+      })
+      setCorrecting(false); setCorrectionReason('')
+      // The page reports through its own status line rather than a toast, which
+      // this route does not host.
+      setError('')
+      router.refresh()
+    } catch (e: any) {
+      setError(e.message)
+    } finally { setSaving(false) }
+  }
+
+    async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim())                                  { setError('Title is required.'); return }
     const newPrice = parseInt(price, 10)
     if (!Number.isFinite(newPrice) || newPrice < 0)     { setError('Price must be a whole number of Rwandan francs.'); return }
     const newMileage = parseInt(mileage, 10)
     if (!Number.isFinite(newMileage) || newMileage < 0) { setError('Mileage must be a whole number of km.'); return }
-    const newYear = parseInt(year, 10)
-    if (!Number.isFinite(newYear) || newYear < 1886 || newYear > new Date().getFullYear() + 1) { setError('Enter a valid vehicle year.'); return }
-    if (!make.trim() || !model.trim()) { setError('Make and model are required.'); return }
 
-    // Send only what actually changed — an untouched price must not write price history.
+  // Send only what actually changed — an untouched price must not write price history.
     const payload: Record<string, any> = {}
     if (title.trim() !== (car.title || ''))               payload.title = title.trim()
     if (sellerId.trim() !== (car.seller_id || ''))        payload.seller_id = sellerId.trim()
-    if (make.trim() !== (car.make || ''))                 payload.make = make.trim()
-    if (model.trim() !== (car.model || ''))               payload.model = model.trim()
-    if (newYear !== Number(car.year))                     payload.year = newYear
     if (newPrice !== Number(car.price))                   payload.price = newPrice
     if (newMileage !== Number(car.mileage))               payload.mileage = newMileage
     if (fuelType.trim() !== (car.fuel_type || ''))        payload.fuel_type = fuelType.trim()
@@ -131,9 +151,41 @@ export default function EditListingPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <div><label className={labelCls}>Make *</label><input value={make} onChange={(e) => setMake(e.target.value)} className={inputCls} /></div>
-          <div><label className={labelCls}>Model *</label><input value={model} onChange={(e) => setModel(e.target.value)} className={inputCls} /></div>
-          <div><label className={labelCls}>Year *</label><input type="number" value={year} onChange={(e) => setYear(e.target.value)} className={inputCls} /></div>
+          {/* Make, model and year are not listing copy — the inspection evidence
+              is bound to them. Editing them here alone used to be allowed and
+              then refused at publication with "Listing make, model and year
+              must match the inspected submission", an error whose fix lived in
+              a record this page never showed. Correcting them is its own act,
+              below, and changes the submission at the same time. */}
+          <div className="col-span-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-gray-900">Vehicle</p>
+                <p className="mt-0.5 text-sm font-semibold text-gray-900">{[year, make, model].filter(Boolean).join(' ')}</p>
+                <p className="mt-1 text-[11px] text-gray-500">
+                  Bound to the 150-point inspection. Correcting it here changes the inspected
+                  submission too, so the two can never disagree.
+                </p>
+              </div>
+              <button type="button" onClick={() => setCorrecting(!correcting)}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-bold text-gray-800 hover:bg-white">
+                {correcting ? 'Cancel' : 'Correct vehicle details'}
+              </button>
+            </div>
+            {correcting ? (
+              <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                <input value={make} onChange={(e) => setMake(e.target.value)} placeholder="Make" className={inputCls} />
+                <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Model" className={inputCls} />
+                <input type="number" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Year" className={inputCls} />
+                <input value={correctionReason} onChange={(e) => setCorrectionReason(e.target.value)}
+                  placeholder="What is being corrected?" className={inputCls} />
+                <button type="button" onClick={correctIdentity} disabled={saving || correctionReason.trim().length < 4}
+                  className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white disabled:opacity-50 sm:col-span-4">
+                  {saving ? 'Saving…' : 'Save the correction'}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
         <Link
           href={`/listings/${id}/photos`}

@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { STUDIO } from '../data/carImageAssets';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
-  FlatList, Dimensions, ImageBackground, Image,
+  FlatList, Dimensions, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,9 @@ import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
 import { photoSource, PHOTO } from '../utils/photo';
+import Photo from '../components/Photo';
+// expo-image's ImageBackground, for the same disk cache the cards now use.
+import { ImageBackground } from 'expo-image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -347,7 +350,8 @@ export default function HomeScreen({ navigation }) {
                 key={slide.id}
                 source={photoSource(slide.image, PHOTO.WIDE)}
                 style={styles.carouselSlide}
-                resizeMode="contain"
+                contentFit="contain"
+                cachePolicy="memory-disk"
               >
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.72)']}
@@ -416,7 +420,7 @@ export default function HomeScreen({ navigation }) {
                     cars: item.cars,
                   })}
                 >
-                  <Image source={photoSource(item.cars[0].image, PHOTO.CARD)} style={styles.showroomPhoto} resizeMode="contain" />
+                  <Photo uri={item.cars[0].image} width={PHOTO.CARD} style={styles.showroomPhoto} resizeMode="contain" />
                   <LinearGradient
                     colors={['transparent', 'rgba(12,10,10,0.88)']}
                     style={styles.showroomFade}

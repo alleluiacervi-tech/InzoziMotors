@@ -274,11 +274,17 @@ test('door to website: one vehicle, one inspection, a rental and a listing', asy
 
   const priced = await api().patch(`/cars/${carId}`).set(auth).send({ price: 23500000 });
   assert.equal(priced.status, 200, `live edit: ${JSON.stringify(priced.body)}`);
-  // An edit that breaks the evidence match must be refused, not silently applied.
+  // Retyping the model on the listing alone used to be allowed and then refused
+  // at publication, stranding the operator on an error whose fix was in a
+  // record the form never showed. It is now refused at the point of the edit,
+  // pointing at the route that changes the vehicle and its evidence together.
   const bad = await api().patch(`/cars/${carId}`).set(auth).send({ model: 'Passat' });
-  assert.equal(bad.status, 409);
-  assert.equal(bad.body.code, 'LISTING_NOT_READY');
-  assert.equal((await api().get(`/cars/${carId}`).expect(200)).body.model, 'Bora', 'and rolled back');
+  assert.equal(bad.status, 400);
+  assert.equal(bad.body.code, 'USE_VEHICLE_IDENTITY_ROUTE');
+  assert.deepEqual(bad.body.fields, ['model']);
+  assert.equal((await api().get(`/cars/${carId}`).expect(200)).body.model, 'Bora', 'nothing changed');
+
+
 
   // ── 10. Retiring the rental frees its evidence ──────────────────────────
   await pool.query("UPDATE rental_cars SET retired_at=NOW(), status='retired' WHERE id=$1", [rentalId]);
@@ -293,6 +299,18 @@ test('door to website: one vehicle, one inspection, a rental and a listing', asy
   const feed = await api().get('/rentals').expect(200);
   assert.equal(feed.body.some((r) => r.id === replacement.body.id), false,
     'and an unsubscribed car is never on the public feed');
+
+  // ── 11. Correcting what the vehicle is ──────────────────────────────────
+  // And the correction route does what the operator actually meant: the listing
+  // and the inspected submission move together, so the vehicle stays publishable.
+  const corrected = await api().patch(`/cars/${carId}/vehicle-identity`).set(auth)
+    .send({ make: 'Volkswagen', model: 'Bora Comfortline', year: 2025, reason: 'Trim level added at the seller\'s request.' });
+  assert.equal(corrected.status, 200, JSON.stringify(corrected.body));
+  assert.equal(corrected.body.readiness.ready, true, 'still publishable — that is the whole point');
+  assert.equal((await api().get(`/cars/${carId}`).expect(200)).body.model, 'Bora Comfortline');
+  const evidence = (await pool.query(
+    'SELECT model FROM submissions WHERE id = $1', [submissionId])).rows[0];
+  assert.equal(evidence.model, 'Bora Comfortline', 'the evidence moved with it');
 });
 
 test('the gates still refuse what they are there to refuse', async () => {
