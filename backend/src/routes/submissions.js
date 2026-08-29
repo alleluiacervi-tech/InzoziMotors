@@ -8,6 +8,8 @@ const { vehicleJourney, sellerProgress } = require('../lib/vehicle-journey');
 const { notifyUser } = require('../lib/notify');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { withTransaction } = require('../lib/tx');
+const { createInvitedAccount } = require('../lib/accounts');
+const { sendAccountInvite } = require('../lib/mailer');
 
 const router = express.Router();
 
@@ -123,8 +125,32 @@ router.post('/admin', requireAdmin, async (req, res) => {
   // non-UUID raises SQLSTATE 22P02, which surfaces as a 500 — a server error
   // reported for what is plainly a bad request, and one an operator cannot act
   // on. requireUuid only guards path params, so the body needs this here.
-  if (!seller_id || !UUID_RE.test(String(seller_id))) {
+  // Either an account that already exists, or enough to create one. A person who
+  // drives to the office with a car has never used the app and has no id to
+  // give; requiring one meant the operator had to leave the intake, create an
+  // account somewhere else, and come back — with a customer standing there.
+  const walkIn = req.body?.seller && typeof req.body.seller === 'object' ? req.body.seller : null;
+  if (!seller_id && !walkIn) {
+    return res.status(400).json({
+      error: 'Choose an existing seller, or give a name and email to create one.',
+      field: 'seller_id',
+    });
+  }
+  if (seller_id && !UUID_RE.test(String(seller_id))) {
     return res.status(400).json({ error: 'seller_id must be a valid account id', field: 'seller_id' });
+  }
+  const walkInName = walkIn ? String(walkIn.name || '').trim().replace(/\s+/g, ' ') : '';
+  const walkInEmail = walkIn ? String(walkIn.email || '').trim().toLowerCase() : '';
+  if (walkIn && !seller_id) {
+    if (!walkInName || walkInName.length > 120) {
+      return res.status(400).json({ error: 'Give the seller a name', field: 'seller.name' });
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(walkInEmail)) {
+      return res.status(400).json({
+        error: 'Give a valid email — it is how they receive the link to set a password and follow the car.',
+        field: 'seller.email',
+      });
+    }
   }
   const fieldError = submissionFieldError(req.body);
   if (fieldError) return res.status(400).json({ error: fieldError });
@@ -132,20 +158,47 @@ router.post('/admin', requireAdmin, async (req, res) => {
 
   try {
     const created = await withTransaction(async (client) => {
-      const seller = await client.query(
-        `SELECT id, name, role, account_status, deleted_at, business_verified, seller_type
-           FROM users WHERE id = $1`,
-        [seller_id]
-      );
-      if (!seller.rowCount) { const e = new Error('Seller not found'); e.status = 404; throw e; }
-      const profile = seller.rows[0];
-      if (profile.role !== 'seller') {
-        const e = new Error('That account is not a seller. Change the role in the user directory first.');
-        e.status = 400; throw e;
-      }
-      if (profile.account_status !== 'active' || profile.deleted_at) {
-        const e = new Error('That seller account is suspended or deleted.');
-        e.status = 400; throw e;
+      let profile;
+      let sellerUserId = seller_id;
+      let invite = null;
+
+      if (!sellerUserId) {
+        // The walk-in. Created exactly as the walk-in inspection creates its
+        // customer: no password is set, so nothing can be signed into until the
+        // person follows the emailed link and chooses one. A showroom is a
+        // deliberate onboarding decision made elsewhere, so this always makes an
+        // individual seller — an operator can promote it afterwards.
+        const created = await createInvitedAccount(client, {
+          accountType: 'individual_seller',
+          name: walkInName,
+          email: walkInEmail,
+          phone: walkIn?.phone ? String(walkIn.phone).trim().slice(0, 40) : null,
+          businessName: null,
+          invitedBy: req.user.id,
+        });
+        if (created.conflict) {
+          const e = new Error('An account already uses that email — search for it and select it instead.');
+          e.status = 409; e.code = 'ACCOUNT_EXISTS'; throw e;
+        }
+        profile = { ...created.user, business_verified: created.user.business_verified };
+        sellerUserId = created.user.id;
+        invite = created.token;
+      } else {
+        const seller = await client.query(
+          `SELECT id, name, email, role, account_status, deleted_at, business_verified, seller_type
+             FROM users WHERE id = $1`,
+          [sellerUserId]
+        );
+        if (!seller.rowCount) { const e = new Error('Seller not found'); e.status = 404; throw e; }
+        profile = seller.rows[0];
+        if (profile.role !== 'seller') {
+          const e = new Error('That account is not a seller. Change the role in the user directory first.');
+          e.status = 400; throw e;
+        }
+        if (profile.account_status !== 'active' || profile.deleted_at) {
+          const e = new Error('That seller account is suspended or deleted.');
+          e.status = 400; throw e;
+        }
       }
       // Named here, not enforced here. A rental intake can be filed for a
       // seller who is not yet business-verified — the inspection is worth doing
@@ -161,7 +214,7 @@ router.post('/admin', requireAdmin, async (req, res) => {
             status, purpose, created_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'under_review',$14,$15)
          RETURNING *`,
-        [seller_id, make, model, year, mileage, condition, fuel_type,
+        [sellerUserId, make, model, year, mileage, condition, fuel_type,
          transmission, body_type, color, asking_price || 0, notes,
          Array.isArray(reference_images) ? reference_images : null,
          purpose, req.user.id]
@@ -169,7 +222,7 @@ router.post('/admin', requireAdmin, async (req, res) => {
       const sub = rows[0];
 
       await notifyUser(client, {
-        user_id: seller_id,
+        user_id: sellerUserId,
         type: 'listing_update',
         title: 'Vehicle submitted by our team',
         body: purpose === 'rental'
@@ -182,23 +235,53 @@ router.post('/admin', requireAdmin, async (req, res) => {
         actorId: req.user.id, action: 'submission.created_by_admin',
         targetType: 'submission', targetId: sub.id,
         summary: `${make} ${model} ${year} filed for ${profile.name} (${purpose})`,
-        metadata: { seller_id, purpose, rental_provider_not_verified: rentalBlocked },
+        metadata: {
+          seller_id: sellerUserId, purpose,
+          rental_provider_not_verified: rentalBlocked,
+          walk_in: Boolean(invite),
+        },
       });
 
-      return { sub, rentalBlocked };
+      return { sub, rentalBlocked, profile, invite };
     });
+
+    // Mailed after the commit — a mail outage must never lose the intake, and
+    // the vehicle is already in the system either way.
+    let invitationSent = false;
+    if (created.invite) {
+      invitationSent = await sendAccountInvite(created.profile.email, created.profile.name, {
+        accountType: 'individual_seller', businessName: null, token: created.invite,
+      });
+    }
+
+    const warnings = [];
+    if (created.rentalBlocked) {
+      warnings.push('This seller is not business-verified, so a rental vehicle cannot be published for '
+        + 'them yet. Grant Verified business in the user directory before adding the car to the fleet.');
+    }
+    if (created.invite && !invitationSent) {
+      // The account exists and the car is booked in either way; what is missing
+      // is the person's way into it. Saying so beats a silent half-success.
+      warnings.push(`The account was created but the invitation email to ${created.profile.email} could `
+        + 'not be sent. Use Reset password in the user directory to send them a link.');
+    }
 
     res.status(201).json({
       ...created.sub,
-      // Surfaced at intake so the gap is fixed while the car is in the workshop,
+      seller: created.profile
+        ? { id: created.profile.id, name: created.profile.name, email: created.profile.email }
+        : null,
+      // True when this intake created the account as well as the submission.
+      seller_created: Boolean(created.invite),
+      invitation_sent: invitationSent,
+      // Surfaced at intake so a gap is fixed while the car is in the workshop,
       // rather than discovered at the last step.
-      warnings: created.rentalBlocked
-        ? ['This seller is not business-verified, so a rental vehicle cannot be published for them yet. '
-           + 'Grant Verified business in the user directory before adding the car to the fleet.']
-        : [],
+      warnings,
     });
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message });
+    // The code travels with the message: a client that must tell 'this email is
+    // taken' from any other 409 cannot do it by matching prose.
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
     log.error('admin submission error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
