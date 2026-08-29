@@ -96,28 +96,61 @@ jobs:
           # Does anything in the mobile bundle change? If a commit only touched
           # the backend or the website there is nothing to publish, and a
           # pointless update still makes every phone re-download a bundle.
+          mobile=false
           if echo "${changed}" | grep -qE '^(src/|assets/|App\.js|index\.js|babel\.config\.js|metro\.config\.js|package(-lock)?\.json|app\.config\.js)'; then
-            echo "mobile=true" >> "$GITHUB_OUTPUT"
+            mobile=true
           else
-            echo "mobile=false" >> "$GITHUB_OUTPUT"
             echo "::notice::No mobile files changed — nothing to publish."
           fi
+          echo "mobile=${mobile}" >> "$GITHUB_OUTPUT"
 
           # Native-sensitive: a change here may mean the installed binary no
           # longer matches the bundle. package-lock alone counts, because a
           # transitive native dependency can move without package.json moving.
+          native=false
           if echo "${changed}" | grep -qE '^(package(-lock)?\.json|app\.config\.js|eas\.json|plugins/)'; then
-            echo "native=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "native=false" >> "$GITHUB_OUTPUT"
+            native=true
           fi
+          echo "native=${native}" >> "$GITHUB_OUTPUT"
 
-      - name: Refuse to auto-publish a native-sensitive change
+          # The single answer every later step reads, so no step re-derives it and
+          # they cannot disagree about what this commit is.
+          allow="${{ github.event.inputs.allow_native_changes }}"
+          publish=false
+          if [ "${mobile}" = "true" ] && { [ "${native}" = "false" ] || [ "${allow}" = "true" ]; }; then
+            publish=true
+          fi
+          echo "publish=${publish}" >> "$GITHUB_OUTPUT"
+          echo "mobile=${mobile} native=${native} allow=${allow:-false} -> publish=${publish}"
+
+      # Exits 0, deliberately.
+      #
+      # The first version exited 1, so declining to ship a native change — the
+      # correct, designed outcome — showed up as a red failed run next to the
+      # genuine ones. A workflow that goes red when it is working teaches
+      # everybody to stop reading red, and the next real failure is the one
+      # nobody looks at. This is a decision, and it is reported as one.
+      - name: Decline to publish a native-sensitive change
         if: >-
           steps.scope.outputs.mobile == 'true' &&
-          steps.scope.outputs.native == 'true' &&
-          github.event.inputs.allow_native_changes != 'true'
+          steps.scope.outputs.publish != 'true'
         run: |
+          {
+            echo "### Not published over the air — and nothing is wrong"
+            echo
+            echo "This commit touches \`package.json\`, \`package-lock.json\`, \`app.config.js\`,"
+            echo "\`eas.json\` or \`plugins/\`, so the installed binary may no longer match the"
+            echo "bundle an update would carry. Publishing one could crash every installed"
+            echo "app on launch, so it was not published."
+            echo
+            echo "**\`mobile-build.yml\` handles this commit instead** — it triggers on exactly"
+            echo "this condition and has started a new binary. Check its run for the build links."
+            echo
+            echo "If the change is JavaScript-only — a pure JS dependency, a copy tweak in"
+            echo "\`app.config.js\` — re-run this workflow from the Actions tab with"
+            echo "**allow_native_changes** ticked, and it will publish."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=No OTA update::Native-sensitive change; mobile-build.yml is cutting a binary for this commit instead."
           cat <<'EOF'
           This commit touches package.json, package-lock.json, app.config.js,
           eas.json or plugins/, so the installed binary may no longer match the
@@ -135,10 +168,9 @@ jobs:
 
           Submitting that build to the stores remains a human decision.
           EOF
-          exit 1
 
       - name: Setup Node.js
-        if: steps.scope.outputs.mobile == 'true'
+        if: steps.scope.outputs.publish == 'true'
         uses: actions/setup-node@v5
         with:
           node-version: 20
@@ -146,11 +178,11 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        if: steps.scope.outputs.mobile == 'true'
+        if: steps.scope.outputs.publish == 'true'
         run: npm ci
 
       - name: Publish update to EAS (iOS and Android)
-        if: steps.scope.outputs.mobile == 'true'
+        if: steps.scope.outputs.publish == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
@@ -167,7 +199,7 @@ jobs:
             --non-interactive
 
       - name: Confirm the update is subscribed to by real builds
-        if: steps.scope.outputs.mobile == 'true'
+        if: steps.scope.outputs.publish == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
