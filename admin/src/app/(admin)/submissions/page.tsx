@@ -20,6 +20,10 @@ const PURPOSES = [
 ]
 const EMPTY_INTAKE = {
   seller_id: '', seller_label: '', purpose: 'rental' as 'sale' | 'rental' | 'both',
+  // A person who drove to the office has no account to search for. Filling
+  // these creates one as part of the intake, so the operator never has to leave
+  // the form with a customer standing at the desk.
+  new_name: '', new_email: '', new_phone: '',
   make: '', model: '', year: '', mileage: '', asking_price: '', notes: '',
 }
 
@@ -131,13 +135,23 @@ export default function SubmissionsPage() {
 
   async function submitIntake(event: React.FormEvent) {
     event.preventDefault()
-    if (!intake?.seller_id) return
+    const walkIn = !intake?.seller_id && intake?.new_name.trim() && intake?.new_email.trim()
+    if (!intake || (!intake.seller_id && !walkIn)) {
+      toast('Choose a seller, or fill in the name and email of a new one.', 'error'); return
+    }
     const year = asNumber(intake.year)
     if (!year) { toast('Give the vehicle model year.', 'error'); return }
     setActionId('intake')
     try {
       const created = await api.createSubmission({
-        seller_id: intake.seller_id,
+        // One or the other: an existing account, or enough to create one.
+        ...(intake.seller_id
+          ? { seller_id: intake.seller_id }
+          : { seller: {
+              name: intake.new_name.trim(),
+              email: intake.new_email.trim(),
+              phone: intake.new_phone.trim() || undefined,
+            } }),
         purpose: intake.purpose,
         make: intake.make.trim(),
         model: intake.model.trim(),
@@ -150,8 +164,15 @@ export default function SubmissionsPage() {
       // seller who is not business-verified will be refused three steps later by
       // POST /rentals, and the operator needs to know now, while the car is
       // still in the workshop.
+      if (created.seller_created) {
+        toast(`Account created for ${created.seller.name}${created.invitation_sent
+          ? ' and the sign-in link is on its way.' : '.'} Book the inspection next.`, 'success')
+      } else if (!created.warnings?.length) {
+        toast('Submission filed. Book its inspection next.', 'success')
+      }
+      // Warnings are errors on purpose: each one is something that will block
+      // this vehicle later if it is not dealt with now.
       if (created.warnings?.length) created.warnings.forEach((w: string) => toast(w, 'error'))
-      else toast('Submission filed. Book its inspection next.', 'success')
       setIntake(null)
       setSellerQuery('')
       load(tab)
@@ -200,6 +221,26 @@ export default function SubmissionsPage() {
                   ))}
                 </div>
               ) : null}
+              {/* Nobody found, and nothing selected: this is a walk-in. The account
+                  is created with no password, so nothing can be signed into
+                  until they follow the emailed link themselves. */}
+              {!intake.seller_id && sellerQuery.trim().length >= 2 && sellerHits.length === 0 ? (
+                <div className="mt-2 rounded-xl border border-line-soft bg-surface-alt p-3">
+                  <p className="text-label font-bold text-content">Nobody by that name — is this a walk-in?</p>
+                  <p className="mt-0.5 text-caption text-content-muted">
+                    Create the seller here and take the car in without leaving this form. They get an
+                    email with a link to set their own password and follow the vehicle.
+                  </p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <input value={intake.new_name} onChange={(e) => setIntake({ ...intake, new_name: e.target.value })}
+                      placeholder="Full name" className="h-10 rounded-lg border border-line bg-surface px-3 text-label" />
+                    <input value={intake.new_email} onChange={(e) => setIntake({ ...intake, new_email: e.target.value })}
+                      type="email" placeholder="Email" className="h-10 rounded-lg border border-line bg-surface px-3 text-label" />
+                    <input value={intake.new_phone} onChange={(e) => setIntake({ ...intake, new_phone: e.target.value })}
+                      type="tel" placeholder="Phone (optional)" className="h-10 rounded-lg border border-line bg-surface px-3 text-label" />
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <fieldset className="sm:col-span-2 grid gap-2 sm:grid-cols-3">
@@ -227,7 +268,8 @@ export default function SubmissionsPage() {
                 placeholder="Anything the inspection team should know before the vehicle arrives."
                 className="mt-1.5 w-full rounded-xl border border-line bg-surface p-3 font-normal focus:border-content-muted focus:outline-none" />
             </label>
-            <button disabled={actionId === 'intake' || !intake.seller_id}
+            <button disabled={actionId === 'intake'
+              || (!intake.seller_id && !(intake.new_name.trim() && intake.new_email.trim()))}
               className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
               {actionId === 'intake' ? 'Filing…' : 'File the submission'}
             </button>

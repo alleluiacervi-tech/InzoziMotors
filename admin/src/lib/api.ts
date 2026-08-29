@@ -378,7 +378,11 @@ export const api = {
    *  the provider is not yet business-verified) so the gap gets closed while the
    *  car is still in the workshop. */
   createSubmission: (body: {
-    seller_id: string; make: string; model: string; year: number
+    // Either an existing account, or enough to create one for a walk-in who has
+    // never used the app.
+    seller_id?: string
+    seller?: { name: string; email: string; phone?: string }
+    make: string; model: string; year: number
     purpose?: 'sale' | 'rental' | 'both'
     mileage?: number | null; condition?: string | null; asking_price?: number | null
     fuel_type?: string | null; transmission?: string | null; body_type?: string | null
