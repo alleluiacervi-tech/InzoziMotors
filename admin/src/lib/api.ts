@@ -522,6 +522,13 @@ export const api = {
    *  approve/publish transaction enforces, so the dashboard never has to
    *  re-derive the rules or guess which one is unmet. */
   listingReadiness: (id: string) => request<Readiness>(`/cars/${id}/readiness`),
+  /** Correct what the vehicle IS. Make, model and year are what the inspection
+   *  evidence is bound to, so this changes the listing AND its inspected
+   *  submission in one server-side transaction — the two cannot diverge, which
+   *  is what used to strand an admin on "Listing make, model and year must
+   *  match the inspected submission" with no way forward. */
+  correctVehicleIdentity: (id: string, body: { make: string; model: string; year: number; reason: string }) =>
+    request<any>(`/cars/${id}/vehicle-identity`, { method: 'PATCH', body: JSON.stringify(body) }),
   updateCarStatus: (id: string, status: string, reason?: string) =>
     request<any>(`/cars/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
   updateCar: (id: string, data: Record<string, unknown>) =>

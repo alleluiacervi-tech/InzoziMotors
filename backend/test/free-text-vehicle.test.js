@@ -42,6 +42,43 @@ async function admin() {
 
 // Deliberately none of them on any option list the app ships, and the last two
 // are shapes a naive validator would reject outright.
+
+/** A published-ready off-list vehicle with its inspected submission. */
+async function publishablePeugeot(a) {
+  const auth = { Authorization: `Bearer ${a.token}` };
+  const seller = await register('Correction Seller', 'seller');
+  await api().post(`/id-verification/${seller.id}/manual`).set(auth)
+    .send({ method: 'in_person', note: 'National ID seen at the Kicukiro office.' }).expect(200);
+
+  const vehicle = { make: 'Peugeot', model: '3008', year: 2019 };
+  const intake = await api().post('/submissions/admin').set(auth)
+    .send({ seller_id: seller.id, ...vehicle, mileage: 70000, asking_price: 14000000 });
+  assert.equal(intake.status, 201, JSON.stringify(intake.body));
+
+  const centreName = `Correction Centre ${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  await api().post('/centers').set(auth)
+    .send({ name: centreName, address: 'Kigali', daily_capacity: 20, active: true }).expect(201);
+  const day = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+  await api().patch(`/submissions/${intake.body.id}`).set(auth)
+    .send({ status: 'scheduled', center: centreName, scheduled_date: day, scheduled_time: '10:00 AM' })
+    .expect(200);
+
+  const inspectionId = (await pool.query(
+    'SELECT id FROM inspections WHERE submission_id = $1', [intake.body.id])).rows[0].id;
+  await api().post(`/inspections/${inspectionId}/start`).set(auth).expect(200);
+  await api().post(`/inspections/${inspectionId}/complete`).set(auth)
+    .send({ checklist_results: allPass() }).expect(200);
+
+  const car = await api().post('/cars').set(auth).send({
+    seller_id: seller.id, title: '2019 Peugeot 3008', ...vehicle,
+    mileage: 70000, price: 14000000, location: 'Kigali',
+    submission_id: intake.body.id, inspection_id: inspectionId,
+    images: ['https://example.test/a.jpg'],
+  });
+  assert.equal(car.status, 201, JSON.stringify(car.body));
+  return { carId: car.body.id, submissionId: intake.body.id, sellerId: seller.id, inspectionId };
+}
+
 const OFF_LIST = [
   { make: 'Peugeot', model: '3008', fuel_type: 'Plug-in hybrid', body_type: 'Wagon' },
   { make: 'Isuzu', model: 'D-Max', fuel_type: 'Diesel', body_type: 'Pickup' },
@@ -140,6 +177,103 @@ test('an off-list vehicle goes all the way to a public listing', async () => {
   const twoTerms = await api().get('/cars?q=Peugeot%20Wagon').expect(200);
   assert.ok(twoTerms.body.some((c) => c.id === car.body.id),
     'including across make and an off-list body type together');
+});
+
+// ─── Correcting what the vehicle is ─────────────────────────────────────────
+//
+// publicationReadiness refuses to publish a car whose make, model or year
+// differs from the submission that was inspected — which is what stops one
+// car's 150-point pass being used to publish a different car. But the forms let
+// an admin retype those three on the listing alone, so fixing a typo or adding
+// a trim level silently broke the binding, and the only sign was a 409 at
+// publication whose fix lived in a record the page never showed.
+//
+// The listing route now refuses the edit outright, and corrections go through
+// one transaction that moves the listing and its submission together.
+
+test('retyping the vehicle on the listing alone is refused, with somewhere to go', async () => {
+  const a = await admin();
+  const auth = { Authorization: `Bearer ${a.token}` };
+  const { carId } = await publishablePeugeot(a);
+
+  for (const body of [{ make: 'Renault' }, { model: '5008' }, { year: 2020 },
+                      { make: 'Renault', model: '5008', year: 2020 }]) {
+    const res = await api().patch(`/cars/${carId}`).set(auth).send(body);
+    assert.equal(res.status, 400, JSON.stringify(res.body));
+    assert.equal(res.body.code, 'USE_VEHICLE_IDENTITY_ROUTE');
+    assert.deepEqual(res.body.fields.sort(), Object.keys(body).sort());
+  }
+  // Read from the database, not GET /cars/:id — that is the PUBLIC route and an
+  // under_review car is correctly invisible there.
+  const unchanged = (await pool.query('SELECT make, model, year FROM cars WHERE id=$1', [carId])).rows[0];
+  assert.equal(unchanged.make, 'Peugeot', 'and nothing was written');
+  assert.equal(unchanged.model, '3008');
+  assert.equal(Number(unchanged.year), 2019);
+
+  // Ordinary listing copy still saves in the same request shape as before.
+  await api().patch(`/cars/${carId}`).set(auth)
+    .send({ price: 13500000, location: 'Musanze' }).expect(200);
+});
+
+test('a correction moves the listing and its evidence together, and stays publishable', async () => {
+  const a = await admin();
+  const auth = { Authorization: `Bearer ${a.token}` };
+  const { carId, submissionId } = await publishablePeugeot(a);
+
+  const res = await api().patch(`/cars/${carId}/vehicle-identity`).set(auth)
+    .send({ make: 'Peugeot', model: '3008 GT Line', year: 2019, reason: 'Trim level was missing from the intake.' });
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.readiness.ready, true, 'the whole point: still publishable');
+  assert.equal(res.body.submissions, 1, 'the evidence was updated too');
+
+  const car = (await pool.query('SELECT make, model, year FROM cars WHERE id=$1', [carId])).rows[0];
+  const sub = (await pool.query('SELECT make, model, year FROM submissions WHERE id=$1', [submissionId])).rows[0];
+  assert.deepEqual(
+    { make: car.make, model: car.model, year: Number(car.year) },
+    { make: sub.make, model: sub.model, year: Number(sub.year) },
+    'listing and evidence agree — which is the invariant, held by construction');
+  assert.equal(car.model, '3008 GT Line');
+
+  // And it can still be published afterwards, which is what the admin was
+  // actually trying to do when they got stuck.
+  await api().patch(`/cars/${carId}/status`).set(auth).send({ status: 'approved' }).expect(200);
+  await api().patch(`/cars/${carId}/status`).set(auth).send({ status: 'live' }).expect(200);
+  assert.equal((await api().get(`/cars/${carId}`).expect(200)).body.model, '3008 GT Line');
+
+  const { rows } = await pool.query(
+    "SELECT metadata FROM admin_audit_log WHERE target_id=$1 AND action='listing.vehicle_identity_corrected'", [carId]);
+  assert.equal(rows.length, 1, 'a correction is on the record');
+  assert.equal(rows[0].metadata.from.model, '3008');
+  assert.equal(rows[0].metadata.to.model, '3008 GT Line');
+  assert.match(rows[0].metadata.reason, /trim level/i);
+});
+
+test('a correction needs a reason, a valid year, and an administrator', async () => {
+  const a = await admin();
+  const auth = { Authorization: `Bearer ${a.token}` };
+  const { carId } = await publishablePeugeot(a);
+
+  for (const [body, field] of [
+    [{ make: '', model: '3008', year: 2019, reason: 'typo fix' }, 'make'],
+    [{ make: 'Peugeot', model: '', year: 2019, reason: 'typo fix' }, 'model'],
+    [{ make: 'Peugeot', model: '3008', year: 1800, reason: 'typo fix' }, 'year'],
+    [{ make: 'Peugeot', model: '3008', year: 'soon', reason: 'typo fix' }, 'year'],
+    [{ make: 'Peugeot', model: '3008', year: 2019 }, 'reason'],
+    [{ make: 'Peugeot', model: '3008', year: 2019, reason: 'x' }, 'reason'],
+  ]) {
+    const res = await api().patch(`/cars/${carId}/vehicle-identity`).set(auth).send(body);
+    assert.equal(res.status, 400, JSON.stringify(body));
+    assert.equal(res.body.field, field);
+  }
+
+  const outsider = await register('Outsider');
+  await api().patch(`/cars/${carId}/vehicle-identity`)
+    .set('Authorization', `Bearer ${outsider.token}`)
+    .send({ make: 'Peugeot', model: '3008', year: 2019, reason: 'not mine to change' }).expect(403);
+  await api().patch(`/cars/${carId}/vehicle-identity`)
+    .send({ make: 'Peugeot', model: '3008', year: 2019, reason: 'not mine to change' }).expect(401);
+
+  assert.equal((await pool.query('SELECT model FROM cars WHERE id=$1', [carId])).rows[0].model, '3008');
 });
 
 test('nothing in the schema constrains these columns to a fixed vocabulary', async () => {

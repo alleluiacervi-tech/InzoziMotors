@@ -694,12 +694,134 @@ router.get('/valuation/estimate', async (req, res) => {
 });
 
 // PATCH /cars/:id — admin edits listing fields; price changes are recorded
+// PATCH /cars/:id/vehicle-identity — correct what the vehicle IS.
+//
+// Make, model and year are not listing copy. They are the identity the
+// inspection evidence is bound to: publicationReadiness refuses to publish a
+// car whose make, model or year differs from the submission that was inspected,
+// which is what stops one car's 150-point pass being used to publish a
+// different car.
+//
+// The forms let an admin retype those three on the listing alone, so any edit
+// at all — fixing "Volkswagon", adding a trim level, changing a capital —
+// silently broke the binding and produced "Listing make, model and year must
+// match the inspected submission" with no way forward. The information needed
+// to fix it was not on the screen, and neither was the fix.
+//
+// Two changes make that unreachable. The listing forms no longer let those
+// three be typed; they are shown, sourced from the evidence. And a genuine
+// correction — the submission itself has the typo — comes here, where the
+// listing and the submission are updated in ONE transaction. They move together
+// or not at all, so they cannot diverge, and the invariant holds by
+// construction rather than by an administrator remembering it.
+//
+// This is a correction, not a re-identification. Changing a Corolla into an
+// S-Class would be fraud; it is recorded with a reason and an actor for exactly
+// that reason, and readiness is re-checked before it commits.
+router.patch('/:id/vehicle-identity', requireAdmin, requireUuid('id'), async (req, res) => {
+  const make = String(req.body?.make || '').trim().replace(/\s+/g, ' ');
+  const model = String(req.body?.model || '').trim().replace(/\s+/g, ' ');
+  const year = parseInt(req.body?.year, 10);
+  const reason = String(req.body?.reason || '').trim();
+
+  if (!make || make.length > 60) return res.status(400).json({ error: 'Give the make', field: 'make' });
+  if (!model || model.length > 60) return res.status(400).json({ error: 'Give the model', field: 'model' });
+  if (!Number.isInteger(year) || year < 1900 || year > new Date().getFullYear() + 1) {
+    return res.status(400).json({ error: 'Give a valid model year', field: 'year' });
+  }
+  if (reason.length < 4) {
+    return res.status(400).json({
+      error: 'Say what is being corrected — it is recorded against the vehicle.',
+      field: 'reason',
+    });
+  }
+
+  try {
+    const result = await withTransaction(async (client) => {
+      const before = await client.query('SELECT * FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!before.rowCount) { const e = new Error('Listing not found'); e.status = 404; throw e; }
+      const car = before.rows[0];
+
+      // Every submission whose evidence is bound to this car. Normally one; the
+      // loop is because `submissions.car_id` is the link and nothing guarantees
+      // a single row, and leaving one behind would recreate the mismatch.
+      const bound = await client.query(
+        `SELECT s.id FROM submissions s
+          WHERE s.car_id = $1
+             OR s.id IN (SELECT i.submission_id FROM inspections i
+                          WHERE i.car_id = $1 AND i.submission_id IS NOT NULL)
+          FOR UPDATE`,
+        [req.params.id]
+      );
+
+      await client.query(
+        'UPDATE cars SET make = $1, model = $2, year = $3 WHERE id = $4',
+        [make, model, year, req.params.id]
+      );
+      for (const row of bound.rows) {
+        await client.query(
+          'UPDATE submissions SET make = $1, model = $2, year = $3 WHERE id = $4',
+          [make, model, year, row.id]
+        );
+      }
+
+      // The point of doing both in one transaction is that this now passes. If
+      // it does not, something else is wrong and the correction is not the
+      // thing to force through — so it rolls back rather than leaving a live
+      // listing that cannot be republished.
+      const readiness = await publicationReadiness(client, req.params.id);
+      if (['approved', 'live'].includes(car.status) && !readiness?.ready) {
+        const e = new Error(`This correction would leave the listing unpublishable. Missing: ${readiness?.missing.join(', ')}`);
+        e.status = 409; e.code = 'LISTING_NOT_READY'; e.readiness = readiness; throw e;
+      }
+
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'listing.vehicle_identity_corrected',
+        targetType: 'listing', targetId: req.params.id,
+        summary: `${car.year} ${car.make} ${car.model} → ${year} ${make} ${model}`,
+        metadata: {
+          from: { make: car.make, model: car.model, year: car.year },
+          to: { make, model, year },
+          submissions_updated: bound.rows.map((r) => r.id),
+          reason,
+        },
+      });
+
+      const { rows } = await client.query('SELECT * FROM cars WHERE id = $1', [req.params.id]);
+      return { car: rows[0], readiness, submissions: bound.rowCount };
+    });
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, readiness: err.readiness });
+    log.error('vehicle identity correction failed', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
+  // make, model and year are NOT here, deliberately. They are the identity the
+  // inspection evidence is bound to, not listing copy, and editing them on the
+  // car alone is what produced "Listing make, model and year must match the
+  // inspected submission" — a refusal an administrator could not act on,
+  // because the fix was in a record the form never showed. Corrections go to
+  // PATCH /cars/:id/vehicle-identity, which updates the listing and its
+  // submission in one transaction so the two cannot diverge.
   const EDITABLE = [
-    'seller_id', 'title', 'make', 'model', 'year', 'mileage', 'fuel_type',
+    'seller_id', 'title', 'mileage', 'fuel_type',
     'transmission', 'body_type', 'color', 'price', 'location', 'drive_side',
     'vin', 'description', 'images', 'review_notes',
   ];
+  const IDENTITY = ['make', 'model', 'year'];
+  const attemptedIdentity = IDENTITY.filter((field) => req.body[field] !== undefined);
+  if (attemptedIdentity.length) {
+    return res.status(400).json({
+      error: 'Make, model and year describe what the vehicle IS, and the inspection evidence '
+           + 'is bound to them. Use "Correct vehicle details" so the listing and its inspected '
+           + 'submission are changed together.',
+      code: 'USE_VEHICLE_IDENTITY_ROUTE',
+      fields: attemptedIdentity,
+    });
+  }
   const updates = [];
   const params = [];
   for (const field of EDITABLE) {
