@@ -14,6 +14,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
 const fs = require('fs');
+const fsp = fs.promises;
+const os = require('os');
 const path = require('path');
 const sharp = require('sharp');
 
@@ -165,4 +167,77 @@ test('a re-masked photo does not keep serving the old derivative', async () => {
 test.after(async () => {
   await fs.promises.rm(DIR, { recursive: true, force: true });
   await pool.end();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The cache is bounded.
+//
+// The key includes the source file's mtime and size — which is what stops a
+// re-masked plate serving a stale derivative, and also means every re-mask
+// strands up to eight files under a key nothing will request again. Nothing
+// deleted them, so the directory could only ever grow.
+// ─────────────────────────────────────────────────────────────────────────────
+const { sweepCache, CACHE_LIMIT_BYTES } = require('../src/middleware/image-variants');
+
+test('the variant cache evicts least-recently-used files once it is over its limit', async () => {
+  const cacheRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'sawa-variants-'));
+  try {
+    // Comfortably over the limit, with distinct access times so "oldest first"
+    // is a real ordering rather than a coin toss.
+    const chunk = Math.ceil(CACHE_LIMIT_BYTES / 8);
+    const names = [];
+    for (let i = 0; i < 10; i++) {
+      const name = `${String(i).padStart(2, '0')}.jpeg`;
+      const file = path.join(cacheRoot, name);
+      await fsp.writeFile(file, Buffer.alloc(chunk, i));
+      // i = 0 is the oldest access, i = 9 the newest.
+      const when = new Date(Date.now() - (10 - i) * 3600_000);
+      await fsp.utimes(file, when, when);
+      names.push(name);
+    }
+
+    const before = await fsp.readdir(cacheRoot);
+    assert.equal(before.length, 10);
+
+    await sweepCache(cacheRoot);
+
+    const after = await fsp.readdir(cacheRoot);
+    assert.ok(after.length < before.length, 'something was actually evicted');
+
+    let total = 0;
+    for (const name of after) total += (await fsp.stat(path.join(cacheRoot, name))).size;
+    assert.ok(total <= CACHE_LIMIT_BYTES, `swept back under the limit: ${total}`);
+
+    // The survivors are the most recently used ones, not an arbitrary subset.
+    const survivorIndexes = after.map((n) => Number(n.slice(0, 2))).sort((a, b) => a - b);
+    const evictedIndexes = names.map((n) => Number(n.slice(0, 2)))
+      .filter((i) => !survivorIndexes.includes(i));
+    assert.ok(Math.max(...evictedIndexes) < Math.min(...survivorIndexes),
+      `evicted ${evictedIndexes} but kept ${survivorIndexes} — eviction must be oldest-first`);
+  } finally {
+    await fsp.rm(cacheRoot, { recursive: true, force: true });
+  }
+});
+
+test('a sweep of a cache that does not exist is not an error', async () => {
+  await sweepCache(path.join(os.tmpdir(), 'sawa-variants-never-created'));
+});
+
+test('a half-written derivative is never evicted out from under the request writing it', async () => {
+  const cacheRoot = await fsp.mkdtemp(path.join(os.tmpdir(), 'sawa-variants-tmp-'));
+  try {
+    const chunk = Math.ceil(CACHE_LIMIT_BYTES / 4);
+    for (let i = 0; i < 6; i++) {
+      await fsp.writeFile(path.join(cacheRoot, `${i}.jpeg`), Buffer.alloc(chunk, i));
+    }
+    const inFlight = path.join(cacheRoot, 'abc.jpeg.1234.tmp');
+    await fsp.writeFile(inFlight, Buffer.alloc(chunk, 9));
+
+    await sweepCache(cacheRoot);
+
+    assert.equal(fs.existsSync(inFlight), true,
+      'a .tmp file belongs to a request that has not finished writing it');
+  } finally {
+    await fsp.rm(cacheRoot, { recursive: true, force: true });
+  }
 });

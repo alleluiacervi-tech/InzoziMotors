@@ -125,12 +125,77 @@ function imageVariants(uploadRoot) {
       const temp = `${cached}.${process.pid}.tmp`;
       await fsp.writeFile(temp, buffer);
       await fsp.rename(temp, cached);
+      scheduleSweep(cacheRoot);
       return sendVariant(res, cached, format);
     } catch (error) {
       log.warn('image variant failed; serving the original', { relative, width, error: error.message });
       return next();
     }
   };
+}
+
+// ─── Keeping the cache bounded ────────────────────────────────────────────────
+// The cache key includes the source file's mtime and size, which is what stops
+// a re-masked plate serving a stale derivative — and it also means re-masking
+// ORPHANS the previous set of derivatives under a key nothing will ever ask for
+// again. With four widths and two formats that is up to eight files stranded
+// per re-mask, and nothing ever deleted any of them. The directory could only
+// grow, and the failure mode is a full disk at two in the morning.
+//
+// Least-recently-used, by access time, triggered by writes rather than by a
+// timer: this backend has no scheduler by design (see 0009_rental_payments.sql)
+// and adding one for a disk cache would be the wrong first exception.
+const CACHE_LIMIT_BYTES = Number(process.env.VARIANT_CACHE_BYTES || 512 * 1024 * 1024);
+// Sweeping on every write would stat the whole directory on every cache miss.
+const SWEEP_EVERY_WRITES = 200;
+
+let writesSinceSweep = 0;
+let sweeping = false;
+
+function scheduleSweep(cacheRoot) {
+  if (++writesSinceSweep < SWEEP_EVERY_WRITES || sweeping) return;
+  writesSinceSweep = 0;
+  sweeping = true;
+  // Detached: a request must never wait on housekeeping, and a failed sweep is
+  // not a failed response. Errors are logged and the cache simply stays large.
+  sweepCache(cacheRoot)
+    .catch((error) => log.warn('variant cache sweep failed', { error: error.message }))
+    .finally(() => { sweeping = false; });
+}
+
+async function sweepCache(cacheRoot) {
+  let names;
+  try { names = await fsp.readdir(cacheRoot); }
+  catch { return; }                                   // no cache yet, nothing to do
+
+  const entries = [];
+  let total = 0;
+  for (const name of names) {
+    if (name.endsWith('.tmp')) continue;              // another worker is mid-write
+    try {
+      const stat = await fsp.stat(path.join(cacheRoot, name));
+      if (!stat.isFile()) continue;
+      entries.push({ name, size: stat.size, atime: stat.atimeMs });
+      total += stat.size;
+    } catch { /* vanished under us; that is the outcome we wanted anyway */ }
+  }
+  if (total <= CACHE_LIMIT_BYTES) return;
+
+  // Oldest access first, deleting until comfortably under the limit so the next
+  // sweep is not immediate. Every file here is reproducible from its source in
+  // a few hundred milliseconds — this cache is an optimisation, not storage.
+  entries.sort((a, b) => a.atime - b.atime);
+  const target = CACHE_LIMIT_BYTES * 0.8;
+  let removed = 0;
+  for (const entry of entries) {
+    if (total <= target) break;
+    try {
+      await fsp.unlink(path.join(cacheRoot, entry.name));
+      total -= entry.size;
+      removed++;
+    } catch { /* already gone */ }
+  }
+  log.info('variant cache swept', { removed, remainingBytes: total });
 }
 
 function sendVariant(res, file, format) {
@@ -146,4 +211,4 @@ function sendVariant(res, file, format) {
   return res.sendFile(file);
 }
 
-module.exports = { imageVariants, WIDTHS, CACHE_DIR_NAME };
+module.exports = { imageVariants, WIDTHS, CACHE_DIR_NAME, sweepCache, CACHE_LIMIT_BYTES };

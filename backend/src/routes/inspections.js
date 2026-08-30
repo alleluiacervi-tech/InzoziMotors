@@ -9,6 +9,7 @@ const path = require('path');
 const { withTransaction } = require('../lib/tx');
 const { SLOT_POSITION } = require('../lib/photo-slots');
 const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const { compressUploads } = require('../middleware/image-compress');
 const { publicApiOrigin } = require('../lib/public-origin');
 const { badgeSvg, readQuad, maskPlate } = require('../lib/plate-badge');
 
@@ -281,7 +282,7 @@ router.get('/cars/:carId/photos', requireAdmin, requireUuid('carId'), async (req
 
 // POST /inspections/cars/:carId/photos — upload a flexible listing gallery.
 // Must come before /:id
-router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', MAX_GALLERY_PHOTOS), verifyImageContent, async (req, res) => {
+router.post('/cars/:carId/photos', requireAdmin, requireUuid('carId'), uploadPhotos.array('photos', MAX_GALLERY_PHOTOS), verifyImageContent, compressUploads, async (req, res) => {
   try {
     if (!req.files?.length) {
       return res.status(400).json({ error: 'No photos uploaded' });

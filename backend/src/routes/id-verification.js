@@ -104,6 +104,10 @@ router.post('/', requireAuth, uploadIdDocs.fields([
   { name: 'id_front', maxCount: 1 },
   { name: 'id_back',  maxCount: 1 },
   { name: 'selfie',   maxCount: 1 },
+// Deliberately NOT compressed. Listing photographs are illustrations and can
+// lose 92% of their bytes without a buyer noticing; an identity document is
+// evidence, and the thing being read off it is a line of small print. The
+// 5 MB per-file cap already bounds these, and there are three per person, once.
 ]), verifyImageContent, async (req, res) => {
   const files = req.files;
   if (!files?.id_front || !files?.id_back || !files?.selfie) {
