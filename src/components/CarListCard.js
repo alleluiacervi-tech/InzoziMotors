@@ -65,6 +65,14 @@ export default function CarListCard({ car, onPress }) {
           {car.fuel} · {getNeighborhood(car)}
         </Text>
 
+        {/* The row has room, and this is the differentiator. See CarCard. */}
+        {car.inspectionScore ? (
+          <View style={styles.scoreRow}>
+            <Ionicons name="shield-checkmark" size={11} color={colors.green} />
+            <Text style={styles.scoreText}>{car.inspectionScore}/150 inspected</Text>
+          </View>
+        ) : null}
+
         <View style={styles.bottomRow}>
           <View style={styles.tagsRow}>
             {/* Only when the server actually computed a market position from
@@ -126,6 +134,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', gap: 8, marginTop: 6,
   },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, flex: 1 },
+  scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  scoreText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
   tagGreen: {
     backgroundColor: colors.greenTint,
     paddingHorizontal: 6, paddingVertical: 2.5, borderRadius: 4,

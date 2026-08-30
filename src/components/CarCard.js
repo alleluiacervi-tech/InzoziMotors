@@ -5,7 +5,6 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
 import { getCertTier } from '../data/certification';
-import { monthlyEstimate } from '../data/finance';
 import { formatPrice } from '../data/cars';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
@@ -99,10 +98,19 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
           <>
             <Text style={styles.meta} numberOfLines={1}>{getSawaYear(car)}</Text>
             <Text style={styles.meta} numberOfLines={1}>{getSawaMileage(car)} · {getSawaLocation(car)}</Text>
-            <Text style={styles.price}>{getSawaPrice(car)}</Text>
-            {car.price ? (
-            <Text style={styles.monthly}>Finance from {formatPrice(monthlyEstimate(car.price))}/mo</Text>
+            {/* The 150-point score, at the size the price gets.
+                It was a 10px chip in the corner of the photograph, ranked below
+                a loan estimate Sawa does not underwrite — and it is the one
+                fact that separates a Sawa car from a WhatsApp-group car. A
+                buyer triaging a grid spends about a second per card; this is
+                what that second should be spent on. */}
+            {car.inspectionScore ? (
+              <View style={styles.scoreRow}>
+                <Ionicons name="shield-checkmark" size={12} color={colors.green} />
+                <Text style={styles.scoreText}>{car.inspectionScore}/150 inspected</Text>
+              </View>
             ) : null}
+            <Text style={styles.price}>{getSawaPrice(car)}</Text>
           </>
         )}
       </View>
@@ -134,6 +142,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(23,18,15,0.78)',
     paddingHorizontal: 7, paddingVertical: 3,
     borderRadius: 5,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  scoreText: {
+    fontSize: 11.5,
+    fontFamily: fonts.bold,
+    color: colors.green,
   },
   certBadgeText: { color: '#fff', fontSize: 10, fontFamily: fonts.extraBold },
   heart: {

@@ -29,7 +29,17 @@ export default async function SignUpPage({ searchParams }: { searchParams: Searc
 
       <SignUpForm next={next} />
 
-      <AuthSwitch prompt="Already have an account?" href="/signin" label="Sign in" />
+      {/* Carry `next` across the switch.
+          The contact panel sends people here with ?next=/cars/<id>, and the form
+          honoured it — but this link did not, so the ONE visitor it dropped was
+          the first-timer who taps "Create an account": exactly the person
+          organic search just sent, landing on an empty dashboard instead of
+          back on the car they came for. */}
+      <AuthSwitch
+        prompt="Already have an account?"
+        href={next && next !== '/dashboard' ? `/signin?next=${encodeURIComponent(next)}` : '/signin'}
+        label="Sign in"
+      />
 
       <OneAccountNote className="mt-8 border-t border-line-soft pt-6" />
     </>

@@ -57,8 +57,17 @@ export function BrandSplash() {
       id="brand-splash"
       aria-hidden="true"
       onTransitionEnd={() => leaving && setGone(true)}
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-surface-page
-                  transition-opacity duration-500 ease-brand ${leaving ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+      // pointer-events-none unconditionally.
+      //
+      // The overlay used to intercept taps until `leaving` flipped, so every
+      // new session — and the landing page for organic traffic is a listing
+      // page, not the homepage — paid a mandatory interaction block before it
+      // could scroll, open the gallery, or reach "Sign in to contact seller".
+      // The splash is decoration; it has no business swallowing the first tap.
+      // It still FADES on the same schedule, so nothing about how it looks
+      // changes — only whether it stands in the way while it does.
+      className={`pointer-events-none fixed inset-0 z-[100] flex flex-col items-center justify-center gap-5 bg-surface-page
+                  transition-opacity duration-500 ease-brand ${leaving ? 'opacity-0' : 'opacity-100'}`}
     >
       {/* One turn every 1.1s — brisk enough to read as motion, slow enough to
           read as the mark rather than a blur. Clockwise, like time. */}

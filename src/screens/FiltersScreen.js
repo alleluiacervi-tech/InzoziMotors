@@ -27,6 +27,49 @@ const PRICE_PRESETS = [
   { label: 'Under RWF 50M', value: 50000000 },
 ];
 
+// A ceiling with no floor is half a price filter. "Under RWF 10M" was the
+// tightest band available in a market where most of the inventory sits below
+// it, so the commonest search — "I have eight to twelve million" — could not be
+// expressed at all.
+const MIN_PRICE_PRESETS = [
+  { label: 'No minimum', value: null },
+  { label: 'RWF 5M+', value: 5000000 },
+  { label: 'RWF 10M+', value: 10000000 },
+  { label: 'RWF 20M+', value: 20000000 },
+  { label: 'RWF 35M+', value: 35000000 },
+];
+
+// Year and mileage are the two questions every used-car buyer asks before
+// price, and neither was on this screen — while the API has accepted min_year
+// and max_year the whole time.
+const YEAR_PRESETS = [
+  { label: 'Any year', value: null },
+  { label: '2020 or newer', value: 2020 },
+  { label: '2015 or newer', value: 2015 },
+  { label: '2010 or newer', value: 2010 },
+];
+
+const MILEAGE_PRESETS = [
+  { label: 'Any mileage', value: null },
+  { label: 'Under 50,000 km', value: 50000 },
+  { label: 'Under 100,000 km', value: 100000 },
+  { label: 'Under 150,000 km', value: 150000 },
+];
+
+// The one filter no competitor in this market can offer. It turns the 150-point
+// inspection from a badge a buyer looks at into a tool a buyer operates.
+const SCORE_PRESETS = [
+  { label: 'Any score', value: null },
+  { label: '140+ / 150', value: 140 },
+  { label: '130+ / 150', value: 130 },
+  { label: '120+ / 150', value: 120 },
+];
+
+const EMPTY = {
+  make: null, body: null, fuel: null, transmission: null,
+  maxPrice: null, minPrice: null, minYear: null, maxMileage: null, minScore: null,
+};
+
 function Chip({ label, active, onPress }) {
   return (
     <Pressable style={[styles.chip, active && styles.chipOn]} onPress={onPress}>
@@ -38,12 +81,13 @@ function Chip({ label, active, onPress }) {
 export default function FiltersScreen({ navigation, route }) {
   const { cars } = useApp();
   const [selected, setSelected] = useState(
-    route.params?.filters || { make: null, body: null, fuel: null, maxPrice: null }
+    route.params?.filters || EMPTY
   );
 
   const MAKES = useMemo(() => distinct(cars, (c) => c.make), [cars]);
   const BODY = useMemo(() => distinct(cars, (c) => c.category), [cars]);
   const FUEL = useMemo(() => distinct(cars, (c) => c.fuel), [cars]);
+  const TRANSMISSION = useMemo(() => distinct(cars, (c) => c.transmission), [cars]);
 
   const toggle = (group, val) =>
     setSelected((s) => ({ ...s, [group]: s[group] === val ? null : val }));
@@ -57,12 +101,13 @@ export default function FiltersScreen({ navigation, route }) {
     if (selected.make) list = list.filter((c) => same(c.make, selected.make));
     if (selected.body) list = list.filter((c) => same(c.category, selected.body));
     if (selected.fuel) list = list.filter((c) => same(c.fuel, selected.fuel));
-    if (selected.maxPrice) {
-      list = list.filter(c => {
-        const price = c.type === 'auction' ? c.currentBid : c.price;
-        return price <= selected.maxPrice;
-      });
-    }
+    if (selected.transmission) list = list.filter((c) => same(c.transmission, selected.transmission));
+    const priceOf = (c) => (c.type === 'auction' ? c.currentBid : c.price);
+    if (selected.maxPrice) list = list.filter((c) => priceOf(c) <= selected.maxPrice);
+    if (selected.minPrice) list = list.filter((c) => priceOf(c) >= selected.minPrice);
+    if (selected.minYear) list = list.filter((c) => Number(c.year) >= selected.minYear);
+    if (selected.maxMileage) list = list.filter((c) => Number(c.mileage ?? Infinity) <= selected.maxMileage);
+    if (selected.minScore) list = list.filter((c) => Number(c.inspectionScore || 0) >= selected.minScore);
     return list.length;
   };
 
@@ -85,6 +130,39 @@ export default function FiltersScreen({ navigation, route }) {
               active={selected.maxPrice === p.value}
               onPress={() => setSelected((s) => ({ ...s, maxPrice: p.value }))}
             />
+          ))}
+        </View>
+
+        <Text style={[styles.label, { marginTop: 22 }]}>Minimum price</Text>
+        <View style={styles.chips}>
+          {MIN_PRICE_PRESETS.map((p) => (
+            <Chip key={p.label} label={p.label} active={selected.minPrice === p.value}
+                  onPress={() => setSelected((s) => ({ ...s, minPrice: p.value }))} />
+          ))}
+        </View>
+
+        <Text style={[styles.label, { marginTop: 22 }]}>Year</Text>
+        <View style={styles.chips}>
+          {YEAR_PRESETS.map((p) => (
+            <Chip key={p.label} label={p.label} active={selected.minYear === p.value}
+                  onPress={() => setSelected((s) => ({ ...s, minYear: p.value }))} />
+          ))}
+        </View>
+
+        <Text style={[styles.label, { marginTop: 22 }]}>Mileage</Text>
+        <View style={styles.chips}>
+          {MILEAGE_PRESETS.map((p) => (
+            <Chip key={p.label} label={p.label} active={selected.maxMileage === p.value}
+                  onPress={() => setSelected((s) => ({ ...s, maxMileage: p.value }))} />
+          ))}
+        </View>
+
+        {/* Nobody else in this market can offer this one. */}
+        <Text style={[styles.label, { marginTop: 22 }]}>Inspection score</Text>
+        <View style={styles.chips}>
+          {SCORE_PRESETS.map((p) => (
+            <Chip key={p.label} label={p.label} active={selected.minScore === p.value}
+                  onPress={() => setSelected((s) => ({ ...s, minScore: p.value }))} />
           ))}
         </View>
 
@@ -117,11 +195,23 @@ export default function FiltersScreen({ navigation, route }) {
           </>
         ) : null}
 
+        {TRANSMISSION.length ? (
+          <>
+            <Text style={[styles.label, { marginTop: 22 }]}>Transmission</Text>
+            <View style={styles.chips}>
+              {TRANSMISSION.map((t) => (
+                <Chip key={t} label={t} active={selected.transmission === t}
+                      onPress={() => toggle('transmission', t)} />
+              ))}
+            </View>
+          </>
+        ) : null}
+
         <View style={styles.standardNote}><Ionicons name="shield-checkmark-outline" size={19} color={colors.primary} /><Text style={styles.standardText}>Public listings pass the configured seller, inspection and image publication checks. Inspection evidence is not a transaction warranty.</Text></View>
       </ScrollView>
 
       <StickyFooter style={styles.footer}>
-        <Pressable style={styles.reset} onPress={() => setSelected({ make: null, body: null, fuel: null, maxPrice: null })}>
+        <Pressable style={styles.reset} onPress={() => setSelected(EMPTY)}>
           <Text style={styles.resetText}>Reset</Text>
         </Pressable>
         <Button

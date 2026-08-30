@@ -105,6 +105,11 @@ export type JourneyBoard = {
 export type Readiness = {
   ready: boolean
   missing: string[]
+  /** Worth fixing, not worth refusing over — a thin description, a VIN of
+   *  "N/A", a title that never mentions its own make. Advisory by design: a
+   *  buyer cannot audit the 150-point rigour, but they can read a broken
+   *  description, and they price the company from it. */
+  warnings?: string[]
   photo_count: number
   min_photos: number
   inspection_required: boolean
