@@ -48,7 +48,6 @@ const BANNER_SLIDES = [
   },
 ];
 
-const CAROUSEL_INTERVAL = 6000;
 
 const TOOLS = [
   { label: 'Certify My Car', icon: 'car-outline', screen: 'CarSubmission' },
@@ -78,7 +77,6 @@ export default function HomeScreen({ navigation }) {
   }), [rentalCars, rentFilter]);
 
   const carouselRef = useRef(null);
-  const scrollTimerRef = useRef(null);
 
   // ── The banner ────────────────────────────────────────────────────────────
   // These three slides used to be a hardcoded constant over stock studio
@@ -104,19 +102,17 @@ export default function HomeScreen({ navigation }) {
     return () => clearTimeout(t);
   }, []);
 
-  React.useEffect(() => {
-    // A single slide has nowhere to advance to, and a timer that scrolls a
-    // one-item list just fights the user's thumb.
-    if (slides.length < 2) return undefined;
-    scrollTimerRef.current = setInterval(() => {
-      setCarouselIndex((prev) => {
-        const next = prev >= slides.length ? 1 : prev + 1;
-        carouselRef.current?.scrollTo({ x: (next - 1) * SCREEN_WIDTH, animated: true });
-        return next;
-      });
-    }, CAROUSEL_INTERVAL);
-    return () => { if (scrollTimerRef.current) clearInterval(scrollTimerRef.current); };
-  }, [slides.length]);
+  // The banner used to advance itself every six seconds.
+  //
+  // That is fine for three interchangeable marketing slides and wrong for a car
+  // somebody is looking at. It moved while a person was reading a price, it
+  // moved back under a thumb mid-swipe, and — now that these are real listings
+  // an operator placed, some of them paid for — it counted an impression
+  // nobody chose to look at. A rail that only moves when a person moves it is
+  // both more usable and more honest about what a placement is worth.
+  //
+  // The dots stay: they are what says "there is more here", which is the one
+  // job the timer was doing that was worth keeping.
 
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
@@ -404,7 +400,16 @@ export default function HomeScreen({ navigation }) {
           </>
         ) : (
         <>
-        {/* ── HERO BANNER CAROUSEL ── */}
+        {/* ── TOP DEALS ── */}
+        {/* Titled only when these are cars an operator actually placed. The
+            fallback slides are true statements about the service, not deals,
+            and calling them one would be the first dishonest label in the app. */}
+        {featured.length ? (
+          <View style={styles.topDealsHead}>
+            <Text style={styles.topDealsTitle}>Top deals</Text>
+            <Text style={styles.topDealsSub}>Chosen by our team · swipe for more</Text>
+          </View>
+        ) : null}
         <View style={styles.carouselContainer}>
           <ScrollView
             ref={carouselRef}
@@ -883,6 +888,9 @@ const styles = StyleSheet.create({
   searchPlaceholder: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted },
 
   // ── Carousel ──
+  topDealsHead: { paddingHorizontal: 16, marginBottom: 10 },
+  topDealsTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.4 },
+  topDealsSub: { marginTop: 2, fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted },
   carouselContainer: { height: 210, position: 'relative' },
   carouselSlide: { width: SCREEN_WIDTH, height: 210 },
   slideScrim: {

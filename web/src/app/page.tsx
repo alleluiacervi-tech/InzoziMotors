@@ -3,6 +3,7 @@ import { Container, Section, SectionHeading } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
 import { BrowseEntry } from '@/components/home/BrowseEntry'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
+import { TopDeals } from '@/components/home/TopDeals'
 import { HowItWorks } from '@/components/home/HowItWorks'
 import { TrustBand } from '@/components/home/TrustBand'
 import { FinalCta } from '@/components/home/FinalCta'
@@ -10,7 +11,7 @@ import { FaqAccordion } from '@/components/marketing/FaqAccordion'
 import { cars } from '@/lib/api'
 import { FAQS, SITE } from '@/lib/site'
 import { graph, organizationNode, websiteNode } from '@/lib/seo'
-import type { Car } from '@/lib/types'
+import type { Car, FeaturedPlacement } from '@/lib/types'
 
 // The homepage is a Server Component so the live inventory below the fold is in
 // the HTML a crawler receives, not fetched afterwards by the browser.
@@ -38,8 +39,25 @@ async function getFeatured(): Promise<Car[]> {
   }
 }
 
+/**
+ * The cars an operator placed at the top of the marketplace.
+ *
+ * Separate from getFeatured above, and separately failure-tolerant: a placement
+ * feed that cannot be read costs the page one section, never the page.
+ */
+async function getPlacements(): Promise<FeaturedPlacement[]> {
+  try {
+    return await cars.featured(6)
+  } catch (err) {
+    console.error('placements unavailable:', (err as Error).message)
+    return []
+  }
+}
+
 export default async function HomePage() {
-  const featured = await getFeatured()
+  // In parallel: neither read depends on the other, and the homepage should not
+  // wait for two round trips in series.
+  const [featured, placements] = await Promise.all([getFeatured(), getPlacements()])
 
   // Built from lib/seo so the homepage, every car page and every rental page
   // describe the same organisation with the same @id — one entity in Google's
@@ -54,6 +72,7 @@ export default async function HomePage() {
           says everything twice persuades half as well. */}
       <Hero />
       <BrowseEntry cars={featured} />
+      <TopDeals placements={placements} />
       <FeaturedCars cars={featured} />
       <HowItWorks />
       <TrustBand />

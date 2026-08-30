@@ -1,6 +1,7 @@
 import type { DutyRates } from '@/lib/business'
 import type {
-  AppNotification, Car, CarQuery, Conversation, InspectionCenter, InspectionReport,
+  AppNotification, Car, CarQuery, Conversation, FeaturedPlacement, InspectionCenter,
+  InspectionReport,
   Message, RentalCar, RentalInquiry, Review, SavedSearch, Submission, TrustScore, User,
   Valuation, VehicleHistory,
 } from './types'
@@ -165,6 +166,17 @@ export const cars = {
     request<Car[]>(`/cars${qs(query as Record<string, unknown>)}`, {
       revalidate: CATALOGUE_REVALIDATE,
       tags: ['cars'],
+    }),
+
+  /** The cars an operator placed at the top of the marketplace, in slot order.
+   *  The app has rendered these since the banner work; the website was still
+   *  showing "newest six live listings" and calling it featured, so a placement
+   *  an operator made — including one somebody paid for — appeared in exactly
+   *  one of the two places it was sold to appear. */
+  featured: (limit = 6) =>
+    request<FeaturedPlacement[]>(`/cars/featured?limit=${limit}`, {
+      revalidate: CATALOGUE_REVALIDATE,
+      tags: ['cars', 'featured'],
     }),
 
   get: (id: string) =>
