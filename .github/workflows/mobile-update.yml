@@ -48,7 +48,18 @@ name: Mobile Over-The-Air Update
 
 on:
   workflow_run:
-    workflows: ['CI']
+    # Deploy, not CI — and the difference is a bug this workflow already hit.
+    #
+    # deploy.yml and this file both used to trigger on CI completion, so they
+    # ran in PARALLEL. This workflow asks the API whether updates are paused;
+    # the deploy restarts that API. Every deploy therefore raced its own OTA
+    # publish, and on 2026-08-30 the stop-switch check timed out three times
+    # against an API that was mid-restart and failed the run.
+    #
+    # Chaining on Deploy fixes it by construction rather than by lock ordering,
+    # and it is the right order anyway: a JavaScript bundle that expects a new
+    # endpoint should not reach phones before the backend serving it is live.
+    workflows: ['Deploy']
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -69,9 +80,13 @@ on:
         default: false
 
 concurrency:
-  # One publish at a time per branch. Two overlapping runs would race to be the
-  # newest update, and which one won would depend on timing.
-  group: mobile-update-${{ github.event.inputs.branch || 'production' }}
+  # ONE production lane, shared with deploy.yml, ops.yml and mobile-rollback.yml.
+  #
+  # It serves two purposes at once: two overlapping publishes would race to be
+  # the newest update, with timing deciding the winner; and a restart-api lever
+  # pulled during a publish puts the stop-switch check back in the same race
+  # the trigger change above removes.
+  group: deploy-production
   cancel-in-progress: false
 
 jobs:
@@ -81,6 +96,9 @@ jobs:
     timeout-minutes: 15
     # A red CI must never reach a phone. workflow_dispatch is the deliberate
     # human override and is allowed through.
+    # A red CI never reaches a phone, and now neither does a failed or skipped
+    # deploy: a bundle built for a backend that did not ship is worse than no
+    # bundle. workflow_dispatch is the deliberate human override.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
@@ -197,14 +215,27 @@ jobs:
             exit 0
           fi
 
+          # Separate the two failures that curl -f used to flatten into one.
+          #
+          #   404  the API is up and has no stop switch — an older backend, or
+          #        one rolled back below migration 0034. That is a definite
+          #        answer meaning "nothing is paused", so publishing is right.
+          #   else no answer at all. Unknown, so refuse.
+          #
+          # Flattening these meant a backend rollback would have blocked every
+          # over-the-air update indefinitely, with no way to tell why.
           body=''
-          for attempt in 1 2 3; do
-            if body="$(curl -fsS --max-time 15 https://api.sawacars.com/settings/app-release)"; then
-              break
+          status=''
+          for attempt in 1 2 3 4 5; do
+            status="$(curl -sS -o /tmp/release.json -w '%{http_code}' --max-time 20 \
+                        https://api.sawacars.com/settings/app-release || echo '000')"
+            if [ "${status}" = "200" ]; then body="$(cat /tmp/release.json)"; break; fi
+            if [ "${status}" = "404" ]; then
+              echo "::warning title=No stop switch::The API has no /settings/app-release (pre-0034 backend). Treating updates as not paused."
+              exit 0
             fi
-            echo "Attempt ${attempt} failed."
-            body=''
-            sleep $((attempt * 4))
+            echo "Attempt ${attempt} got HTTP ${status}."
+            sleep $((attempt * 10))
           done
 
           if [ -z "${body}" ]; then
@@ -212,7 +243,7 @@ jobs:
             {
               echo "### Not published — the stop switch could not be read"
               echo
-              echo "\`https://api.sawacars.com/settings/app-release\` did not answer after three tries,"
+              echo "\`https://api.sawacars.com/settings/app-release\` did not answer after five tries,"
               echo "so this run cannot tell whether an operator has paused over-the-air updates."
               echo "It refused rather than guessed."
               echo
