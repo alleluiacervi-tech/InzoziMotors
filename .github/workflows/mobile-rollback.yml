@@ -51,9 +51,10 @@ on:
         type: string
 
 concurrency:
-  # Never race mobile-update.yml: a publish landing on top of a rollback would
-  # put the bad bundle straight back.
-  group: mobile-update-${{ inputs.branch }}
+  # The shared production lane — deploy.yml, ops.yml and mobile-update.yml use
+  # the same group. Never race a publish (one landing on top of a rollback puts
+  # the bad bundle straight back) and never race a deploy restarting the API.
+  group: deploy-production
   cancel-in-progress: false
 
 jobs:
