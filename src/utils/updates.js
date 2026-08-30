@@ -21,9 +21,11 @@
 // update check is not worth an error screen over. The worst outcome is the
 // user keeps running the perfectly good version they already have.
 // ─────────────────────────────────────────────────────────────────────────────
+import { Platform } from 'react-native';
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { getJSON, setJSON } from '../storage';
+import api from '../api/client';
 
 // ─── How an update gets applied ───────────────────────────────────────────────
 // Two honest options, and no third one that pretends to be both.
@@ -144,4 +146,94 @@ export async function applyUpdate() {
   } catch {
     return false;
   }
+}
+
+
+// ─── The other kind of update: a new BUILD ────────────────────────────────────
+//
+// Everything above ships JavaScript. None of it can ship a native module, a
+// permission, an SDK bump or a new `version` — those need a binary from a
+// store, and no code running inside the app can produce one. The app had no
+// concept of that at all, so somebody on a stale build was simply stuck, with
+// nothing to tell them a newer one existed.
+//
+// The server answers with what the newest build is per platform and what the
+// oldest still-allowed one is. Everything below is total and fails OPEN: a
+// launch that cannot reach the server, or gets something it does not
+// understand, carries on into the app. Refusing to start because the app could
+// not confirm it was allowed to start would be a self-inflicted outage, and it
+// would arrive on exactly the flaky connections this market runs on.
+
+const STORE_PROMPT_KEY = 'storeUpdatePromptedFor';
+
+/** -1, 0 or 1. Mirrors backend/src/lib/app-release.js — keep them in step. */
+export function compareVersions(a, b) {
+  const left = String(a || '0').split('.').map((n) => parseInt(n, 10) || 0);
+  const right = String(b || '0').split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const diff = (left[i] || 0) - (right[i] || 0);
+    if (diff !== 0) return diff > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
+export const STORE_ACTION = {
+  NONE: 'none',       // running something current enough
+  SUGGEST: 'suggest', // a newer build exists; a dismissable prompt
+  BLOCK: 'block',     // this build is below the supported floor
+};
+
+/**
+ * Decide what to do about the installed build. Pure, so it can be reasoned
+ * about and tested without a network or a device.
+ *
+ * The empty-url rule is the important one: with no store link there is nowhere
+ * to send anybody, so a block would be a dead end and a prompt would be a lie.
+ * Both collapse to NONE. That is also what makes it impossible to lock installs
+ * out before the app is really on a store — the same honesty gate as
+ * APP.storesLive elsewhere in the tree.
+ */
+export function evaluateRelease(release, { version, platform } = {}) {
+  const none = { action: STORE_ACTION.NONE };
+  if (!release || typeof release !== 'object') return none;
+  const block = release[platform === 'ios' ? 'ios' : 'android'];
+  if (!block || !block.url) return none;
+
+  const current = version || Constants.expoConfig?.version || '1.0.0';
+  const shared = {
+    latest: block.latest_version,
+    url: block.url,
+    notes: String(release.release_notes || '').trim(),
+    current,
+  };
+  if (compareVersions(current, block.min_supported_version) < 0) {
+    return { ...shared, action: STORE_ACTION.BLOCK };
+  }
+  if (compareVersions(current, block.latest_version) < 0) {
+    return { ...shared, action: STORE_ACTION.SUGGEST };
+  }
+  return none;
+}
+
+/** Ask the server, then decide. Never throws; NONE on any failure. */
+export async function checkStoreRelease() {
+  try {
+    const release = await api.get('/settings/app-release');
+    return evaluateRelease(release, {
+      version: Constants.expoConfig?.version,
+      platform: Platform.OS,
+    });
+  } catch {
+    return { action: STORE_ACTION.NONE };
+  }
+}
+
+/** Which version we last nagged about, so a dismissal sticks until a NEWER
+ *  build appears. "Not now" means not this one, not never. */
+export async function getStorePromptDismissal() {
+  try { return await getJSON(STORE_PROMPT_KEY, null); } catch { return null; }
+}
+
+export async function setStorePromptDismissal(version) {
+  try { await setJSON(STORE_PROMPT_KEY, String(version || '')); } catch { /* not worth failing over */ }
 }

@@ -70,6 +70,10 @@ export default function PlatformSettingsPage() {
                 <button disabled={!row.editable || working === row.key} onClick={() => update(row.key, !row.value)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${row.value ? 'bg-success text-white' : 'bg-gray-200 text-gray-700'} disabled:cursor-not-allowed disabled:opacity-60`}>{row.value ? 'Enabled' : 'Disabled'}</button>
               ) : typeof row.value === 'number' ? (
                 <input type="number" min="1" max={row.key === 'listing_min_photos' ? 10 : 20} defaultValue={row.value} disabled={!row.editable || working === row.key} onBlur={(event) => { const value = Number(event.target.value); if (value !== row.value) update(row.key, value) }} className="w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:bg-gray-100" />
+              ) : row.key === 'app_release' ? (
+                <Link href="/settings/app-release" className="rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
+                  Edit app release
+                </Link>
               ) : row.key === 'import_duty_rates' ? (
                 /* An object rendered through String() reads "[object Object]".
                    It gets a real form of its own instead. */

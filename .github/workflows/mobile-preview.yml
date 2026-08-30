@@ -1,0 +1,141 @@
+name: Mobile Preview Update
+
+# ─────────────────────────────────────────────────────────────────────────────
+# See a change on a real phone before it is anywhere near a user.
+#
+# eas.json has declared a `preview` profile on channel `preview` for months and
+# nothing has ever published to it, so the channel existed and stayed empty. The
+# only way to look at a branch on a device was to cut a whole new build.
+#
+# Now: push a branch, and within a couple of minutes the preview install picks
+# the bundle up. Production is untouched — `main` is excluded here, and the
+# production channel is fed only by mobile-update.yml after CI is green.
+#
+# ── What this deliberately does NOT do ───────────────────────────────────────
+# It does not wait for CI. CI runs on main and on open pull requests, and the
+# entire value of a preview channel is looking at work in progress. The bundle
+# reaches ONE phone that somebody deliberately installed a preview build on, and
+# a broken preview costs that person a re-push.
+#
+# It DOES keep the native-sensitive guard, because that failure is different in
+# kind: a bundle referencing a native module the installed preview binary does
+# not contain crashes on launch, and the preview install then has to be
+# reinstalled by hand. Same predicate as mobile-update.yml — widen one, widen
+# both.
+#
+# ── Installing a preview build ───────────────────────────────────────────────
+#   npx eas-cli build --profile preview --platform android
+# Install the APK it produces. That build subscribes to channel `preview`, and
+# every branch push after it arrives over the air.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - 'src/**'
+      - 'assets/**'
+      - 'App.js'
+      - 'index.js'
+      - 'app.config.js'
+      - 'babel.config.js'
+      - 'metro.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+concurrency:
+  # One publish at a time. Two branches pushed within a minute of each other
+  # would otherwise race, and which bundle the phone ended up on would be
+  # decided by whichever runner happened to finish second.
+  group: mobile-preview
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    name: Publish to the preview channel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Without a token there is nothing to publish with, and a red run on every
+    # branch push in a fork or a clone is noise, not information.
+    if: ${{ github.repository == 'alleluiacervi-tech/inzozimotors' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Refuse a native-sensitive change
+        id: scope
+        run: |
+          set -euo pipefail
+          if git rev-parse --verify -q HEAD^ >/dev/null; then
+            changed="$(git diff --name-only HEAD^ HEAD)"
+          else
+            changed="$(git ls-tree -r --name-only HEAD)"
+          fi
+          echo "Changed files:"; echo "${changed}" | sed 's/^/  /'
+
+          publish=true
+          if echo "${changed}" | grep -qE '^(package(-lock)?\.json|app\.config\.js|eas\.json|plugins/)'; then
+            publish=false
+            {
+              echo "### Not published to preview — and nothing is wrong"
+              echo
+              echo "This push touches a native-sensitive file, so the bundle may not match the"
+              echo "preview binary already installed. Publishing it could crash that install on"
+              echo "launch, which costs a reinstall to recover from."
+              echo
+              echo "Cut a fresh preview build instead:"
+              echo
+              echo '```'
+              echo "npx eas-cli build --profile preview --platform android"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=No preview update::Native-sensitive change; cut a new preview build instead."
+          fi
+          echo "publish=${publish}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        if: steps.scope.outputs.publish == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        if: steps.scope.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Publish
+        if: steps.scope.outputs.publish == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          # The git branch is in the message, not in the EAS branch name: the
+          # installed preview app subscribes to exactly one channel, so every
+          # git branch has to land on the same EAS branch to be seen at all.
+          # Which branch a bundle came from then has to be readable somewhere,
+          # and the message is that somewhere.
+          npx eas-cli update \
+            --branch preview \
+            --platform all \
+            --message "[${GITHUB_REF_NAME}] ${GITHUB_SHA:0:8} $(git log -1 --pretty=%s)" \
+            --non-interactive
+
+      - name: Say what is now on the preview channel
+        if: steps.scope.outputs.publish == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx eas-cli update:list --branch preview --limit 3 --non-interactive || true
+          npx eas-cli channel:view preview --non-interactive || {
+            echo "::warning::Channel 'preview' does not exist yet. It is created by the first"
+            echo "::warning::build made with the preview profile. Until one is installed, this"
+            echo "::warning::publish reaches nobody."
+          }

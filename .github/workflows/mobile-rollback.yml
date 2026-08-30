@@ -1,0 +1,123 @@
+name: Mobile Rollback
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Take a bad bundle back off people's phones.
+#
+# Every other way out of a bad over-the-air update is slow. Reverting the commit
+# means waiting for CI and a fresh publish; a store build means waiting for
+# review. Meanwhile the broken bundle is the newest one, so every launch fetches
+# it. This workflow is the fast path: it makes a KNOWN-GOOD update the newest
+# one again, and phones pick it up on their next launch like any other update.
+#
+# ── Republish, not delete ────────────────────────────────────────────────────
+# `eas update:republish` copies an earlier update to the top of the branch. The
+# bad update stays in the history where it can be read, and the rollback is
+# itself an update with a message saying what it undid — so the branch tells the
+# truth about what happened rather than quietly losing a version.
+#
+# ── This cannot fix a native crash ───────────────────────────────────────────
+# If the installed binary is missing a native module the bundle needs, the app
+# crashes before any JavaScript runs — including the JavaScript that would fetch
+# this rollback. Nothing published here reaches it. That is why mobile-update.yml
+# refuses native-sensitive commits in the first place, and the recovery for one
+# that slipped through is a store build, not this.
+#
+# ── Order of operations in a real incident ───────────────────────────────────
+#   1. Pause updates in the admin console (Settings → App release). That stops
+#      the next CI-green commit from publishing on top of your rollback.
+#   2. Run this workflow with the group id of the last good update.
+#   3. Fix forward on a branch, verify on the preview channel.
+#   4. Unpause.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'EAS Update branch to roll back'
+        required: true
+        type: choice
+        default: production
+        options:
+          - production
+          - preview
+      group:
+        description: 'Update group id to republish (leave empty to only LIST recent updates and change nothing)'
+        required: false
+        type: string
+      reason:
+        description: 'Why — recorded in the update message'
+        required: false
+        type: string
+
+concurrency:
+  # Never race mobile-update.yml: a publish landing on top of a rollback would
+  # put the bad bundle straight back.
+  group: mobile-update-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: ${{ inputs.group && format('Republish {0} on {1}', inputs.group, inputs.branch) || format('List recent updates on {0}', inputs.branch) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Always, before anything is changed. Running with no group is the
+      # supported way to find the id you need — a rollback that requires you to
+      # already know the id is useless at the moment you need it.
+      - name: What is on this branch now
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "── Recent updates on ${{ inputs.branch }} ──"
+          npx eas-cli update:list --branch "${{ inputs.branch }}" --limit 15 --non-interactive
+          {
+            echo "### Recent updates on \`${{ inputs.branch }}\`"
+            echo
+            echo "Copy the **group id** of the last known-good update and re-run this"
+            echo "workflow with it in the \`group\` field."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Republish the chosen update
+        if: ${{ inputs.group != '' }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          reason="${{ inputs.reason }}"
+          npx eas-cli update:republish \
+            --group "${{ inputs.group }}" \
+            --message "Rollback: republished ${{ inputs.group }}${reason:+ — ${reason}}" \
+            --non-interactive
+
+      - name: Confirm what is now newest
+        if: ${{ inputs.group != '' }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx eas-cli update:list --branch "${{ inputs.branch }}" --limit 3 --non-interactive
+          {
+            echo "### Rolled back"
+            echo
+            echo "Update group \`${{ inputs.group }}\` is now the newest on \`${{ inputs.branch }}\`."
+            echo "Installs pick it up on their next launch."
+            echo
+            echo "**Pause over-the-air updates in the admin console** if you have not already —"
+            echo "otherwise the next CI-green commit publishes straight back over this."
+          } >> "$GITHUB_STEP_SUMMARY"

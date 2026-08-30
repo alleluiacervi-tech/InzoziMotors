@@ -59,8 +59,10 @@ const buildGroups = (verificationValue, buildLabel) => [
   },
   {
     // The Support group used to offer no way to reach support: an intro replay
-    // and a coming-soon rating row. The three rows below are the same single
-    // business line and single mailbox the website publishes, and they are
+    // and a coming-soon rating row. Both are gone — replaying a first-run tour
+    // is not support, and it was the only thing in Settings that led BACKWARDS
+    // into the launch sequence. The rows below are the same single business
+    // line and single mailbox the website publishes, and they are
     // gated on WHATSAPP_VERIFIED for the same reason every other surface is —
     // a dead contact row is worse than none.
     title: 'Support',
@@ -82,7 +84,6 @@ const buildGroups = (verificationValue, buildLabel) => [
           ]
         : []),
       { icon: 'mail-outline', label: 'Email us', value: SAWA_EMAIL, link: `mailto:${SAWA_EMAIL}` },
-      { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
     ],
   },
   {

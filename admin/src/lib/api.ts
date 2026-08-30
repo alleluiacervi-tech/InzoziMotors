@@ -736,7 +736,9 @@ export const api = {
     request<CenterRow & { pending_inspections: number }>(`/centers/${id}`, { method: 'DELETE' }),
 
   settings: () => request<any[]>('/admin/settings'),
-  updateSetting: (key: string, value: boolean | number) =>
+  // `unknown`, not `boolean | number`: two settings are now objects, and a
+  // narrower type here would only be satisfied by casting at every call site.
+  updateSetting: (key: string, value: unknown) =>
     request<any>(`/admin/settings/${encodeURIComponent(key)}`, {
       method: 'PATCH', body: JSON.stringify({ value }),
     }),
