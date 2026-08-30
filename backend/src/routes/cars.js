@@ -86,6 +86,12 @@ const INTERNAL_CAR_COLUMNS = [
 const publicCarSelect = (alias, columns = PUBLIC_CAR_COLUMNS) =>
   columns.map((col) => `${alias}.${col}`).join(', ');
 
+// The statuses that occupy one of a seller's marketplace slots. `paused` counts
+// on purpose: a paused car is still that seller's listing, held back for a few
+// days, and exempting it would make any cap trivially avoidable. `sold` and
+// `archived` do not — the slot is genuinely free again.
+const OCCUPIES_A_SLOT = ['live', 'paused'];
+
 // ─── Market intelligence ──────────────────────────────────────────────────────
 // The app used to fabricate "below market %" / "listed N days ago" from a
 // hardcoded table; the server is the only honest source of these numbers.
@@ -1060,6 +1066,40 @@ router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) =>
           error: `Listing cannot be ${status === 'live' ? 'published' : 'approved'} yet. Missing: ${readiness?.missing.join(', ') || 'requirements'}.`,
           code: 'LISTING_NOT_READY',
           readiness,
+        });
+      }
+    }
+
+    // ── The seller's marketplace cap ────────────────────────────────────────
+    // Publication only, and only on the transition INTO an occupied slot. Two
+    // deliberate choices:
+    //
+    //  · Not at submission. Refusing a submission turns away a car we have not
+    //    inspected yet, and the inspection is what this business sells. Take
+    //    the car, inspect it, take the fee; refuse only the publish.
+    //  · Not inherited by other edits. An operator fixing the price or the
+    //    location of an over-cap seller's car must not be blocked — that is
+    //    exactly the moment they need to work on it.
+    //
+    // Counted inside the transaction, on a row already locked FOR UPDATE, so
+    // two admins publishing the same seller's cars at once cannot both pass.
+    if (OCCUPIES_A_SLOT.includes(status) && !OCCUPIES_A_SLOT.includes(previousStatus)) {
+      const cap = await client.query(
+        `SELECT u.max_active_listings AS cap, u.name,
+                (SELECT COUNT(*)::int FROM cars c
+                  WHERE c.seller_id = u.id AND c.status = ANY($2::text[]) AND c.id <> $1) AS occupied
+           FROM cars parent JOIN users u ON u.id = parent.seller_id
+          WHERE parent.id = $1`,
+        [req.params.id, OCCUPIES_A_SLOT]
+      );
+      const { cap: limit, occupied, name } = cap.rows[0] || {};
+      if (Number.isInteger(limit) && occupied >= limit) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: `${name || 'This seller'} already has ${occupied} of ${limit} listings on the marketplace. `
+               + `Raise their limit, or pause or sell one before publishing another.`,
+          code: 'SELLER_LISTING_CAP_REACHED',
+          cap: { limit, occupied, seller: name || null },
         });
       }
     }

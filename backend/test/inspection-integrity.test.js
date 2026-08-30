@@ -161,7 +161,11 @@ test('a suspect record reaches the Action Center, and honest work does not', asy
       WHERE id = $1`, [careful.id]
   );
 
-  const centre = await api().get('/admin/action-center').set(auth).expect(200);
+  // Filtered to this kind. The desk is capped at 60 items and every other test
+  // file writes to the same database, so asking the whole queue made this
+  // assertion a race against everyone else's backlog rather than a test of
+  // whether a rushed inspection surfaces.
+  const centre = await api().get('/admin/action-center?kind=Inspection').set(auth).expect(200);
   const ids = centre.body.items.map((entry) => entry.id);
   assert.ok(ids.includes(`inspection-integrity:${rushed.id}`), 'the rushed record must surface');
   assert.equal(ids.includes(`inspection-integrity:${careful.id}`), false, 'honest work must not');

@@ -608,6 +608,18 @@ export const api = {
   setUserAccess: (userId: string, action: 'suspend' | 'restore', reason?: string) =>
     request<any>(`/admin/users/${userId}/access`, { method: 'PATCH', body: JSON.stringify({ action, reason }) }),
 
+  /** How many cars this seller may hold live or paused at once. Pass null to
+   *  remove the cap. Lowering it below their current count NEVER unpublishes
+   *  anything — the response's `warning` says how far over they are. */
+  setListingCap: (userId: string, max_active_listings: number | null, note?: string) =>
+    request<{
+      id: string; name: string;
+      max_active_listings: number | null; listing_cap_note: string | null;
+      occupied: number; over_by: number; warning: string | null;
+    }>(`/admin/users/${userId}/listing-cap`, {
+      method: 'PUT', body: JSON.stringify({ max_active_listings, note }),
+    }),
+
   // Imports — a separate operation and ledger from local vehicle handovers.
   importOrders: (status?: string) =>
     request<any[]>(`/imports/admin/all${status ? `?status=${encodeURIComponent(status)}` : ''}`),

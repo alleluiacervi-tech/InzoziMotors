@@ -27,7 +27,28 @@ CREATE TABLE IF NOT EXISTS users (
   response_rate   INT NOT NULL DEFAULT 100,      -- % messages replied within 24h
   completed_sales INT NOT NULL DEFAULT 0,
   avatar_url      TEXT,
+  -- How many cars this seller may hold on the marketplace at once (live or
+  -- paused). NULL = no cap, which is what every seller had before migration
+  -- 0032. Enforced at PUBLICATION only, in PATCH /cars/:id/status: refusing a
+  -- submission would turn away a car we have not yet inspected, and the
+  -- inspection is what this business sells. Lowering a cap below a seller's
+  -- current count never unpublishes anything — they sit over cap, the Action
+  -- Center says so, and the next publish is refused until they are back under.
+  max_active_listings INT,
+  listing_cap_note    TEXT,
+  listing_cap_set_at  TIMESTAMPTZ,
+  listing_cap_set_by  UUID REFERENCES users(id),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- A cap of 0 is a suspension wearing a quota's clothes; account_status is
+  -- where an operator should say that, visibly.
+  CONSTRAINT users_max_active_listings_check CHECK (
+    max_active_listings IS NULL OR max_active_listings >= 1
+  ),
+  -- A commercial term with no author is one nobody can defend later. Same
+  -- discipline as id_verified_by on an offline identity attestation.
+  CONSTRAINT users_listing_cap_attributed_check CHECK (
+    max_active_listings IS NULL OR listing_cap_set_by IS NOT NULL
+  ),
   CONSTRAINT users_id_verification_method_check CHECK (
     id_verification_method IS NULL
     OR id_verification_method IN ('documents', 'in_person', 'business_document', 'known_client')
@@ -242,6 +263,9 @@ CREATE TABLE IF NOT EXISTS reviews (
 -- ─── Indexes ─────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_cars_status       ON cars(status);
 CREATE INDEX IF NOT EXISTS idx_cars_seller       ON cars(seller_id);
+-- Counting a seller's occupied marketplace slots runs on every publish.
+CREATE INDEX IF NOT EXISTS idx_cars_seller_active
+  ON cars(seller_id) WHERE status IN ('live', 'paused');
 CREATE INDEX IF NOT EXISTS idx_cars_make_model   ON cars(make, model);
 CREATE INDEX IF NOT EXISTS idx_cars_price        ON cars(price);
 CREATE INDEX IF NOT EXISTS idx_messages_conv     ON messages(conversation_id, created_at);
