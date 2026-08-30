@@ -686,8 +686,36 @@ export const api = {
     request<any>(`/admin/fees/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // Featured listings
-  featureCar: (id: string, days = 7) =>
-    request<any>(`/cars/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ days }) }),
+  /** Place a car in the home-screen banner.
+   *
+   *  `kind` is what separates "we chose this" from "they paid for this". A
+   *  sponsored placement is disclosed to buyers as Sponsored and must carry the
+   *  agreed amount — recorded here, collected the way money always is. */
+  featureCar: (
+    id: string,
+    opts: {
+      kind?: 'editorial' | 'hot_deal' | 'sponsored'
+      days?: number
+      slot?: number
+      headline?: string
+      starts_at?: string
+      amount_rwf?: number
+    } = {},
+  ) =>
+    request<any>(`/cars/${id}/feature`, {
+      method: 'PATCH',
+      body: JSON.stringify({ kind: 'editorial', days: 7, ...opts }),
+    }),
+
+  /** End a placement early. A reason is required: a paid slot that vanishes
+   *  without one is a customer conversation nobody can reconstruct. */
+  cancelFeature: (placementId: string, reason: string) =>
+    request<any>(`/cars/feature/${placementId}`, {
+      method: 'DELETE', body: JSON.stringify({ reason }),
+    }),
+
+  /** What is in the banner right now, in slot order. */
+  featuredBanner: (limit = 12) => request<any[]>(`/cars/featured?limit=${limit}`),
 
   // ── Inspection centers ─────────────────────────────────────────────────────
   // Booking capacity is enforced against daily_capacity on every scheduling

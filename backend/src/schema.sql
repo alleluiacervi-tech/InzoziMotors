@@ -92,6 +92,88 @@ CREATE TABLE IF NOT EXISTS cars (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ─── Featured placements (the home-screen banner) ────────────────────────────
+-- Admin-controlled merchandising. kind='sponsored' is PAID placement and must
+-- be disclosed to buyers as such — the whole product is independent
+-- verification, and a paid slot that looks like an editorial pick spends that.
+-- amount_rwf is RECORDED, never collected. See migration 0033.
+CREATE TABLE IF NOT EXISTS featured_placements (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  car_id        UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
+
+  -- editorial   we chose this car. Our judgement, our reputation.
+  -- hot_deal    we think the price is notable. Still our judgement.
+  -- sponsored   the seller paid for the placement. Disclosed to the buyer.
+  kind          TEXT NOT NULL,
+
+  -- Lower sorts first. Not unique: two cars may share a position and fall back
+  -- to the newest placement, which is friendlier than refusing an operator's
+  -- edit because a number collided.
+  slot          INT NOT NULL DEFAULT 100,
+
+  starts_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ends_at       TIMESTAMPTZ NOT NULL,
+
+  -- An operator's own line, shown on the banner in place of the car's title
+  -- when they want to say something specific ("Ex-embassy, one owner").
+  headline      TEXT,
+
+  -- What was agreed, in whole RWF, for a sponsored placement. RECORDED, never
+  -- collected: there is no gateway here and there is not going to be one. It
+  -- exists so the money side is legible, the same way inspection fees are.
+  amount_rwf    BIGINT,
+
+  created_by    UUID NOT NULL REFERENCES users(id),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  cancelled_at  TIMESTAMPTZ,
+  cancelled_by  UUID REFERENCES users(id),
+  cancel_reason TEXT,
+
+  CONSTRAINT featured_placements_kind_check
+    CHECK (kind IN ('editorial', 'hot_deal', 'sponsored')),
+
+  CONSTRAINT featured_placements_window_check
+    CHECK (ends_at > starts_at),
+
+  CONSTRAINT featured_placements_slot_check
+    CHECK (slot >= 1 AND slot <= 999),
+
+  -- Money is only meaningful on a paid placement, and a paid placement with no
+  -- amount is a favour nobody wrote down. Both directions are refused.
+  CONSTRAINT featured_placements_sponsorship_check CHECK (
+    (kind = 'sponsored' AND amount_rwf IS NOT NULL AND amount_rwf >= 0)
+    OR (kind <> 'sponsored' AND amount_rwf IS NULL)
+  ),
+
+  -- A cancellation with no author or no reason is an unexplained disappearance
+  -- from a paid campaign. Same discipline as a listing rejection.
+  CONSTRAINT featured_placements_cancellation_check CHECK (
+    cancelled_at IS NULL
+    OR (cancelled_by IS NOT NULL AND cancel_reason IS NOT NULL
+        AND length(btrim(cancel_reason)) >= 3)
+  )
+);
+
+-- One live placement per car — enforced in POST /cars/:id/feature with a 409,
+-- not here.
+--
+-- The obvious index is `UNIQUE(car_id) WHERE cancelled_at IS NULL AND ends_at >
+-- NOW()`, and Postgres refuses it: NOW() is not IMMUTABLE and a partial index
+-- predicate has to be. The alternative that WOULD work is an EXCLUDE over a
+-- tstzrange, which needs btree_gist — a dependency migration 0025 deliberately
+-- declined to take for the same shape of problem in rental subscriptions.
+-- Same answer here, for consistency: the route locks the car row and refuses an
+-- overlapping placement, and this index makes that check cheap.
+
+-- The banner read: in-window, not cancelled, ordered by slot. Also the index
+-- the overlap check above rides on.
+CREATE INDEX IF NOT EXISTS idx_featured_placements_window
+  ON featured_placements(car_id, starts_at, ends_at, slot)
+  WHERE cancelled_at IS NULL;
+
+COMMENT ON TABLE featured_placements IS
+  'Admin-controlled home-screen banner. kind=sponsored is paid placement and MUST be disclosed to buyers; amount_rwf is recorded, never collected.';
+
 -- ─── Submissions (seller pipeline) ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS submissions (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

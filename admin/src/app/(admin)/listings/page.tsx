@@ -182,7 +182,7 @@ export default function ListingsPage() {
     if (!ok) return
     setActionId(id)
     try {
-      await api.featureCar(id, 7)
+      await api.featureCar(id, { kind: 'editorial', days: 7 })
       load(statusFilter, query)
     } catch (e: any) {
       toast(e.message, 'error')
