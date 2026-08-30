@@ -207,7 +207,7 @@ router.get('/action-center', requireAdmin, async (req, res) => {
                     AND (i.started_at IS NULL
                          OR (i.completed_at - i.started_at) < ($1 || ' minutes')::interval)
                   ORDER BY i.completed_at ASC LIMIT 40`,
-                 [String(await minInspectionMinutes())]),,
+                 [String(await minInspectionMinutes())]),
       // Closed accounts whose thirty days are up.
       //
       // A closure needs nobody's approval — Guideline 5.1.1(v) means it cannot
