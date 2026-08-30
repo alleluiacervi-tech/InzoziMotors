@@ -78,6 +78,11 @@ on:
         type: boolean
         required: false
         default: false
+      publish_current_tree:
+        description: 'Publish what is on the branch NOW, ignoring which files this commit changed (use to recover a publish that was lost)'
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   # ONE production lane, shared with deploy.yml, ops.yml and mobile-rollback.yml.
@@ -134,6 +139,19 @@ jobs:
           mobile=false
           if echo "${changed}" | grep -qE '^(src/|assets/|App\.js|index\.js|babel\.config\.js|metro\.config\.js|package(-lock)?\.json|app\.config\.js)'; then
             mobile=true
+          elif [ "${{ github.event.inputs.publish_current_tree }}" = "true" ]; then
+            # "Publish what is on the branch now", regardless of this commit's
+            # own diff.
+            #
+            # Every other path here asks "did THIS commit change the bundle?",
+            # which is the right question for an automatic publish and the wrong
+            # one for recovery. On 2026-08-30 a publish was lost to an unrelated
+            # failure; the fix commit touched only .github/workflows, so the
+            # next automatic run correctly found no mobile files and published
+            # nothing — leaving a tree full of unshipped app changes and no way
+            # to ship them short of an empty commit. This is that way.
+            mobile=true
+            echo "::notice::publish_current_tree — publishing the branch as it stands, not this commit's diff."
           else
             echo "::notice::No mobile files changed — nothing to publish."
           fi
