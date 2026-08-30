@@ -20,9 +20,9 @@ import { Button, Container, Section } from '@/components/ui'
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const metadata = buildMetadata({
-  title: 'Delete your account',
+  title: 'Close your account',
   description:
-    'How to permanently delete your Sawa Cars account and what happens to your data, including identity documents and records of completed sales.',
+    'How to close and delete your Sawa Cars account, the thirty days you have to change your mind, and what happens to your data — including identity documents and records of completed sales.',
   path: '/account/delete',
 })
 
@@ -32,7 +32,7 @@ const REMOVED = [
   'Photographs of your national ID and your selfie',
   'Saved cars, saved searches and their alerts',
   'Notifications and registered devices',
-  'Any listing of yours still on the marketplace is taken down',
+  'Any listing of yours still on the marketplace — taken down the moment you close, not after 30 days',
 ]
 
 const KEPT = [
@@ -53,11 +53,17 @@ export default async function DeleteAccountPage() {
       <Container>
         <div className="mx-auto max-w-2xl">
         <h1 className="text-display font-extrabold tracking-tight text-content">
-          Delete your Sawa Cars account
+          Close your Sawa Cars account
         </h1>
         <p className="mt-4 text-body leading-relaxed text-content-secondary">
-          You can delete your account at any time, from the app or from this website. Deletion is
-          permanent — we cannot restore an account once it is gone.
+          You can close your account at any time, from the app or from this website. Closing takes
+          effect immediately and needs nobody&rsquo;s approval: your listings come down, your phone
+          number stops being shown, and you are signed out everywhere.
+        </p>
+        <p className="mt-3 text-body leading-relaxed text-content-secondary">
+          Nothing is erased for 30 days. Until then you can sign in with the same email and password
+          and choose to reopen the account, and everything comes back. After 30 days it is deleted
+          for good and cannot be restored.
         </p>
 
         <div className="mt-10 rounded-2xl border border-line-soft bg-surface p-6">
@@ -66,26 +72,28 @@ export default async function DeleteAccountPage() {
             <li>
               <strong className="text-content">On this website:</strong> sign in, then go to{' '}
               <Link href="/dashboard/profile" className="font-semibold text-content underline">
-                Profile → Delete account
+                Profile → Close account
               </Link>
               .
             </li>
             <li>
               <strong className="text-content">In the Sawa Cars app:</strong> open Settings, scroll to
-              &ldquo;Danger zone&rdquo; and tap <em>Delete my account</em>.
+              &ldquo;Danger zone&rdquo; and tap <em>Close my account</em>.
             </li>
           </ol>
           <p className="mt-4 text-caption leading-relaxed text-content-secondary">
-            Either way you will be asked for your password to confirm it is really you.
+            Either way you will be asked for your password to confirm it is really you, and for a
+            reason — which is optional to be honest about and genuinely does change what we fix
+            next.
           </p>
           <Button href="/signin?next=/dashboard/profile" variant="dark" size="md" className="mt-6">
-            Sign in to delete my account
+            Sign in to close my account
           </Button>
         </div>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-line-soft bg-surface p-6">
-            <h2 className="text-title-sm font-extrabold text-content">What is deleted</h2>
+            <h2 className="text-title-sm font-extrabold text-content">What is deleted after 30 days</h2>
             <ul className="mt-3 space-y-2 text-caption leading-relaxed text-content-secondary">
               {REMOVED.map((item) => (
                 <li key={item} className="flex gap-2">

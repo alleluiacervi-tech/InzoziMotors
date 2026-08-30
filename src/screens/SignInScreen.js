@@ -7,10 +7,10 @@ import Button from '../components/Button';
 import { LogoMark } from '../components/Logo';
 import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
-import { showToast } from '../components/Feedback';
+import { showToast, showConfirm } from '../components/Feedback';
 
 export default function SignInScreen({ navigation, route }) {
-  const { loginUser } = useApp();
+  const { loginUser, reopenAccount } = useApp();
   // Carried over from a completed password reset so the user isn't retyping it
   const [email, setEmail] = useState(route?.params?.email || '');
   const [password, setPassword] = useState('');
@@ -27,6 +27,30 @@ export default function SignInScreen({ navigation, route }) {
       await loginUser(email.trim(), password);
       navigation.replace('Main');
     } catch (err) {
+      // The password was right and the account is closed but not yet erased.
+      // This is the only moment the thirty-day window is worth anything: the
+      // person is here, holding the right credentials, and the alternative is
+      // telling them their own account does not exist.
+      if (err?.code === 'ACCOUNT_CLOSED') {
+        const until = err.reopen_until ? String(err.reopen_until).slice(0, 10) : null;
+        const ok = await showConfirm({
+          title: 'This account is closed',
+          message: until
+            ? `You closed it, and nothing has been erased. Reopen it and your saved cars, messages and listings come back.\n\nAfter ${until} it is deleted for good.`
+            : 'You closed it, and nothing has been erased yet. Reopen it and everything comes back.',
+          confirmLabel: 'Reopen my account',
+          cancelLabel: 'Not now',
+        });
+        if (!ok) return;
+        try {
+          await reopenAccount(email.trim(), password);
+          showToast('Welcome back. Your account is open again.', 'success');
+          navigation.replace('Main');
+        } catch (reopenErr) {
+          showToast(reopenErr.message || 'Could not reopen this account.', 'error');
+        }
+        return;
+      }
       showToast(err.message || 'Invalid email or password.', 'error');
     }
   };

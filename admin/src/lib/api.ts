@@ -180,6 +180,22 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
 }
 
 
+// ─── Account closures ────────────────────────────────────────────────────────
+
+export type ClosedAccount = {
+  id: string
+  name: string
+  email: string
+  role: string
+  closed_at: string
+  purge_after: string
+  closure_reason: string
+  reason_label: string
+  closure_note: string | null
+  /** The thirty days are up and this account is waiting to be erased. */
+  due_for_purge: boolean
+}
+
 // ─── Brands ──────────────────────────────────────────────────────────────────
 
 export type MakeRow = {
@@ -741,6 +757,28 @@ export const api = {
 
   /** What is in the banner right now, in slot order. */
   featuredBanner: (limit = 12) => request<any[]>(`/cars/featured?limit=${limit}`),
+
+  // ── Account closures ───────────────────────────────────────────────────────
+  // There is no approve or deny here on purpose. Guideline 5.1.1(v) requires
+  // deletion to complete inside the app, so a closure has already happened by
+  // the time it reaches this page. What an approval step was really wanted for
+  // — knowing who left and why — is what these return.
+
+  accountClosures: () => request<{
+    closures: ClosedAccount[]
+    reasons: { value: string; label: string }[]
+    recovery_days: number
+    tally: { closure_reason: string; label: string; n: number }[]
+    due_for_purge: number
+  }>('/admin/account-closures'),
+
+  /** Erases every account past its window. It never chooses WHICH — the
+   *  predicate does — so nobody can be purged early or skipped. */
+  purgeClosedAccounts: () =>
+    request<{ purged: number; attempted?: number; accounts?: unknown[] }>(
+      '/admin/account-closures/purge',
+      { method: 'POST' }
+    ),
 
   // ── Brands ─────────────────────────────────────────────────────────────────
   // The seller-facing brand list used to be a twenty-item array inside a mobile

@@ -232,6 +232,10 @@ app.use('/auth/register', authLimiter);
 app.use('/auth/change-password', authLimiter);
 app.use('/auth/accept-showroom-invite', authLimiter);
 app.use('/auth/accept-invite', authLimiter);
+// Reopen takes an email and a password and is unauthenticated by necessity —
+// closing bumped token_version, so there is no session left to present. That
+// makes it a credential endpoint, and it is limited like one.
+app.use('/auth/reopen', authLimiter);
 app.use('/auth/forgot-password', resetLimiter);
 app.use('/auth/reset-password', resetLimiter);
 app.use('/messages', postOnly(writeLimiter));

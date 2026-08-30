@@ -56,11 +56,31 @@ export const auth = {
     return data;
   },
 
-  // Permanent, and required by both stores to be reachable from inside the app.
-  // The password is re-checked server-side before destructive deletion.
-  deleteAccount: async (password) => {
-    const data = await api.delete('/auth/me', { body: JSON.stringify({ password }) });
+  // Required by both stores to be reachable from inside the app, and — since
+  // Guideline 5.1.1(v) — to complete here rather than wait for anybody's
+  // approval. It does: the account is closed the moment this returns.
+  //
+  // Nothing is erased for thirty days, and the response says when it will be.
+  // The password is re-checked server-side, because a token left open on a
+  // borrowed handset must not be enough to take somebody off the marketplace.
+  closeAccount: async (password, reason, note) => {
+    const data = await api.delete('/auth/me', {
+      body: JSON.stringify({ password, reason, note }),
+    });
     await removeToken();
+    return data;
+  },
+
+  // The fixed vocabulary the CHECK constraint accepts, fetched rather than
+  // duplicated, so the options on screen and the ones the server will store
+  // cannot drift apart.
+  closureReasons: async () => api.get('/auth/closure-reasons'),
+
+  // The way back. Unauthenticated by necessity — closing ended every session —
+  // so the password is the authentication.
+  reopenAccount: async (email, password) => {
+    const data = await api.post('/auth/reopen', { email, password });
+    if (data.token) await setToken(data.token);
     return data;
   },
 

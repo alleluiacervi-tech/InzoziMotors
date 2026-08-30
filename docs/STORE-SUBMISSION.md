@@ -46,7 +46,13 @@ transaction intermediation or a vehicle/payment warranty.
 > inspection/details → Contact verified seller or Request availability → accept
 > the direct-deal notice → use in-app chat or an available contact channel.
 > Seller flow: Profile → Seller tools → submit vehicle / contact settings.
-> Account deletion: Profile → Settings → Delete account.
+> Account deletion: Profile → Settings → Danger zone → Close my account.
+> Closing completes inside the app, immediately, with no review step on our
+> side (Guideline 5.1.1(v)): the session ends, listings come down and the phone
+> number stops being disclosed the moment it is confirmed. Data is erased 30
+> days later, and during those 30 days signing in with the same credentials
+> offers to reopen the account. The reviewer can demonstrate both halves with
+> the test account.
 >
 > The attached physical-device recording starts at launch and demonstrates
 > registration/sign-in, the buyer journey, inspection information, seller

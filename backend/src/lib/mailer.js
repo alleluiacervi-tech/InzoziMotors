@@ -326,6 +326,24 @@ function sendPasswordChanged(email, name) {
   });
 }
 
+/** The closure confirmation — and, more importantly, the way back.
+ *
+ *  The date is the whole message. A recovery window nobody is told about is a
+ *  database column, not a feature, and this email is the only place somebody
+ *  who closed their account will still see it. */
+function sendAccountClosed(email, name, reopenUntil) {
+  const date = new Date(reopenUntil).toISOString().slice(0, 10);
+  return sendTemplate(email, 'Your Sawa Cars account is closed', {
+    title: 'Your account is closed',
+    lines: [
+      `Hi ${name || 'there'} — your Sawa Cars account is closed, as you asked. You are signed out everywhere, any listings you had are off the marketplace, and your phone number can no longer be shown to anyone.`,
+      `Nothing is erased yet. Until ${date} you can sign in with the same email and password and choose to reopen the account, and everything comes back.`,
+      `After ${date} your profile, saved cars, saved searches and identity documents are deleted for good. Records of completed sales are kept as the law requires, without your name or contact details.`,
+      `Closed by mistake, or need a hand? ${CONTACT}`,
+    ],
+  });
+}
+
 function sendAccountDeleted(email, name) {
   return sendTemplate(email, 'Your Sawa Cars account has been deleted', {
     title: 'Your account is deleted',
@@ -455,6 +473,7 @@ module.exports = {
   sendShowroomInvite,
   sendImportUpdate,
   sendPasswordChanged,
+  sendAccountClosed,
   sendAccountDeleted,
   sendPurchaseRequested,
   sendHandoverConfirmed,

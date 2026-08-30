@@ -6,6 +6,7 @@ import { PasswordForm } from '@/components/dashboard/PasswordForm'
 import { ProfileForm } from '@/components/dashboard/ProfileForm'
 import { Badge, Button, Card, Icon } from '@/components/ui'
 import { formatDate } from '@/lib/business'
+import { account } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
 import type { IdVerificationStatus } from '@/lib/types'
 
@@ -53,6 +54,13 @@ export default async function ProfilePage() {
   if (!user) return null
 
   const verification = VERIFICATION[user.id_verified]
+
+  // Fetched rather than duplicated in the component: the same vocabulary is a
+  // CHECK constraint on the server, and a hardcoded copy here would eventually
+  // offer a reason the database refuses. The component keeps a bundled fallback
+  // for the case where this read fails — being unable to list reasons must not
+  // be what stops somebody closing their account.
+  const closure = await account.closureReasons().catch(() => null)
 
   return (
     <>
@@ -116,8 +124,8 @@ export default async function ProfilePage() {
           </section>
 
           <section aria-labelledby="delete-account">
-            <PanelHeading id="delete-account" title="Delete account" />
-            <DeleteAccountForm />
+            <PanelHeading id="delete-account" title="Close account" />
+            <DeleteAccountForm reasons={closure?.reasons} recoveryDays={closure?.recovery_days} />
           </section>
         </div>
       </div>

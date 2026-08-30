@@ -23,6 +23,11 @@ const {
   slugify, loadMakes, invalidateMakes,
 } = require('../lib/vehicle-makes');
 const { uploadBrandLogo, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const {
+  CLOSURE_REASONS, REASON_LABELS, RECOVERY_DAYS,
+  purgeAccount, removeIdDocuments, CLOSED_ACCOUNTS, DUE_FOR_PURGE,
+} = require('../lib/account-closure');
+const { sendAccountDeleted } = require('../lib/mailer');
 
 const router = express.Router();
 
@@ -59,7 +64,7 @@ router.get('/action-center', requireAdmin, async (req, res) => {
     const [
       submissions, ids, inspections, reports, imports, importPayments,
       rentalInquiries, listingRisks, lapsingRentals, paidUnpublishedRentals,
-      overCapSellers, suspectInspections,
+      overCapSellers, suspectInspections, purgeDue,
     ] = await Promise.all([
       pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
                     EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
@@ -202,7 +207,19 @@ router.get('/action-center', requireAdmin, async (req, res) => {
                     AND (i.started_at IS NULL
                          OR (i.completed_at - i.started_at) < ($1 || ' minutes')::interval)
                   ORDER BY i.completed_at ASC LIMIT 40`,
-                 [String(await minInspectionMinutes())]),
+                 [String(await minInspectionMinutes())]),,
+      // Closed accounts whose thirty days are up.
+      //
+      // A closure needs nobody's approval — Guideline 5.1.1(v) means it cannot
+      // — so this is the only place the work shows up at all. Without it the
+      // rows sit closed forever and the erasure the person was promised never
+      // happens, which is the failure mode of "purge by a person, not a
+      // scheduler". It nags here until somebody presses the button.
+      pool.query(`SELECT id, closure_reason, purge_after AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - purge_after)) / 3600 AS age_hours
+                  FROM users
+                  WHERE closed_at IS NOT NULL AND deleted_at IS NULL AND purge_after <= NOW()
+                  ORDER BY purge_after ASC LIMIT 20`)
     ]);
 
     const minMinutes = await minInspectionMinutes();
@@ -275,6 +292,17 @@ router.get('/action-center', requireAdmin, async (req, res) => {
           + 'Nothing was unpublished; they cannot publish another until they are back under.',
         href: `/users?q=${encodeURIComponent(r.name || '')}`,
       })),
+      // One item for the whole batch, not one per account. A name here would
+      // be the wrong thing to print — these are people who asked to be erased —
+      // and twenty rows saying "erase somebody" is a queue nobody reads.
+      ...(purgeDue.rows.length ? [item(purgeDue.rows[0], {
+        id: 'accounts-due-purge',
+        kind: 'Account',
+        priority: 'attention',
+        title: `${purgeDue.rows.length} closed account${purgeDue.rows.length === 1 ? '' : 's'} ready to be erased`,
+        detail: 'The thirty-day window has passed. Erasing is what these people were promised, and nothing does it automatically.',
+        href: '/account-closures',
+      })] : []),
       ...listingRisks.rows.map((r) => item(r, { id: `listing-risk:${r.id}`, kind: 'Listing', priority: r.age_hours >= 24 ? 'urgent' : 'attention', title: `Review ${r.title}`, detail: 'Approval, inspection or gallery requirement needs attention', href: `/listings/${r.id}/edit` })),
     ];
     const rank = { urgent: 0, attention: 1, routine: 2 };
@@ -1436,5 +1464,99 @@ router.post('/makes/:makeId/logo', requireAdmin, requireUuid('makeId'),
       res.status(500).json({ error: 'Could not save the logo' });
     }
   });
+
+
+// ─── Account closures ────────────────────────────────────────────────────────
+//
+// The queue an operator watches, and the button that finishes the job. There is
+// deliberately no approve or deny here.
+//
+// The obvious design — the person asks to leave, an operator confirms — is an
+// App Store rejection risk: Guideline 5.1.1(v) requires deletion to be
+// initiated AND completed from inside the app, and a request parked until
+// somebody in the office gets to it is not that. So a closure has already
+// happened by the time it appears on this page. What the business wanted from
+// an approval step was VISIBILITY — who left, and why — and that is what this
+// gives, without standing between a person and their own account.
+
+// GET /admin/account-closures — who closed, why, and who is due to be erased.
+router.get('/account-closures', requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(CLOSED_ACCOUNTS);
+    // Counted over everything closed, not just this page: "why are people
+    // leaving" is the question the reason vocabulary exists to answer, and it
+    // is worthless if it only describes the most recent two hundred.
+    const tally = await pool.query(
+      `SELECT closure_reason, COUNT(*)::int AS n
+         FROM users
+        WHERE closure_reason IS NOT NULL
+        GROUP BY closure_reason
+        ORDER BY n DESC`
+    );
+    res.json({
+      closures: rows.map((row) => ({ ...row, reason_label: REASON_LABELS.get(row.closure_reason) || row.closure_reason })),
+      reasons: CLOSURE_REASONS,
+      recovery_days: RECOVERY_DAYS,
+      // Includes accounts already purged, whose reason survives on purpose —
+      // it carries no personal data and it is the whole history of why people
+      // left. See lib/account-closure.js.
+      tally: tally.rows.map((row) => ({ ...row, label: REASON_LABELS.get(row.closure_reason) || row.closure_reason })),
+      due_for_purge: rows.filter((row) => row.due_for_purge).length,
+    });
+  } catch (err) {
+    log.error('account closures list error', { error: err.message });
+    res.status(500).json({ error: 'Could not load account closures' });
+  }
+});
+
+// POST /admin/account-closures/purge — erase everything past its thirty days.
+//
+// A person presses this rather than a scheduler running it. This backend has no
+// job runner, on purpose (0009 wrote that down), and a handful of rows a month
+// does not justify inventing one. The Action Center nags once anything is due.
+//
+// It never chooses WHICH accounts: the predicate does. An operator cannot purge
+// somebody early by picking them off a list, and cannot skip somebody either.
+router.post('/account-closures/purge', requireAdmin, async (req, res) => {
+  try {
+    const due = await pool.query(DUE_FOR_PURGE);
+    if (!due.rows.length) return res.json({ purged: 0, accounts: [] });
+
+    const purged = [];
+    // One transaction per account, not one for all of them. A single bad row
+    // must not roll back the erasure of the others, and each of these is an
+    // independent legal obligation rather than part of one atomic operation.
+    for (const candidate of due.rows) {
+      try {
+        const result = await require('../lib/tx').withTransaction(async (client) => {
+          const done = await purgeAccount(client, candidate.id);
+          if (!done) return null;
+          await recordAdminAction(client, {
+            actorId: req.user.id,
+            action: 'account.purged',
+            targetType: 'user',
+            targetId: candidate.id,
+            summary: `Erased a closed account after its ${RECOVERY_DAYS}-day window`,
+            // Deliberately no name and no email: this log is permanent, and
+            // writing the identity into it would undo the erasure it records.
+            metadata: { closure_reason: candidate.closure_reason, closed_at: candidate.closed_at },
+          });
+          return done;
+        });
+        if (!result) continue;
+        // After the commit, never inside it — there is no undelete for a file.
+        removeIdDocuments(result.files);
+        sendAccountDeleted(result.email, 'there');
+        purged.push({ id: result.id });
+      } catch (err) {
+        log.error('account purge failed', { user: candidate.id, error: err.message });
+      }
+    }
+    res.json({ purged: purged.length, attempted: due.rows.length });
+  } catch (err) {
+    log.error('account purge sweep error', { error: err.message });
+    res.status(500).json({ error: 'Could not purge closed accounts' });
+  }
+});
 
 module.exports = router;

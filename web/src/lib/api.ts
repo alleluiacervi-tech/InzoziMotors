@@ -292,12 +292,23 @@ export const account = {
     }),
 
   /** Permanent. The API re-authenticates before anonymising the account. */
-  deleteAccount: (token: string, password: string) =>
-    request<{ success: true }>('/auth/me', {
+  /** Closes the account immediately. Nothing is erased for thirty days, and
+   *  the response says the date it will be — see lib/account-closure.js on the
+   *  server for why an operator cannot approve or block this. */
+  closeAccount: (token: string, password: string, reason: string, note?: string) =>
+    request<{ success: true; reopen_until: string; recovery_days: number; listings_taken_down: number }>('/auth/me', {
       token,
       method: 'DELETE',
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password, reason, note }),
     }),
+
+  /** The fixed vocabulary the server's CHECK constraint accepts. Fetched, not
+   *  duplicated, so the radio buttons and the storable values cannot drift. */
+  closureReasons: () =>
+    request<{ reasons: { value: string; label: string }[]; recovery_days: number }>(
+      '/auth/closure-reasons',
+      { revalidate: 3600 }
+    ),
 }
 
 export const importOrders = {

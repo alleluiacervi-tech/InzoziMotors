@@ -19,6 +19,10 @@ async function verifyLiveSession(payload) {
   if (!rows.length) return { ok: false, error: 'Account no longer exists' };
   if (rows[0].deleted_at) return { ok: false, error: 'This account has been deleted' };
   if (rows[0].account_status === 'suspended') return { ok: false, error: 'This account has been suspended. Contact support if you believe this is an error.' };
+  // Closure is enforced here rather than at each route, so it inherits the
+  // invariant that already holds for suspension and deletion: it takes effect
+  // on the NEXT request from any device, not the next login.
+  if (rows[0].account_status === 'closed') return { ok: false, error: 'This account is closed. Sign in to reopen it.' };
   // Tokens minted before the column existed carry no tv; treat as version 0.
   if ((payload.tv || 0) !== rows[0].token_version) {
     return { ok: false, error: 'Session ended. Please sign in again.' };

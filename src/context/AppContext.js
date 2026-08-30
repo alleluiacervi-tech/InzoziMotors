@@ -1100,9 +1100,9 @@ export function AppProvider({ children }) {
   // Only on success is local state torn down, and it is torn down completely:
   // leaving a deleted user's saved cars in AsyncStorage would resurrect them on
   // the next sign-in on this handset.
-  const deleteAccount = useCallback(async (password) => {
+  const deleteAccount = useCallback(async (password, reason, note) => {
     await unregisterPushToken(pushToken);
-    await authApi.deleteAccount(password);
+    const result = await authApi.closeAccount(password, reason, note);
     setPushToken(null);
     setCurrentUser(SIGNED_OUT_USER);
     setIsLoggedIn(false);
@@ -1121,7 +1121,25 @@ export function AppProvider({ children }) {
       setJSON('recentlyViewedIds', []),
       setJSON('cachedProfile', null),
     ]);
+    // The reopen date, which the confirmation screen shows and the confirmation
+    // email repeats. A recovery window nobody is told about is a database
+    // column, not a feature.
+    return result;
   }, [pushToken]);
+
+  // Take a closed account back, inside its thirty days. Deliberately its own
+  // call rather than a flag on loginUser: reopening is a decision somebody
+  // makes on a screen that explains it, not something a sign-in should do
+  // silently because the password happened to be right.
+  const reopenAccount = useCallback(async (email, password) => {
+    const data = await authApi.reopenAccount(email, password);
+    const user = data.user;
+    setCurrentUser(withInitials(user));
+    setIsLoggedIn(true);
+    setJSON('cachedProfile', user);
+    await loadInitialData(user);
+    return user;
+  }, [loadInitialData]);
 
   const updateCurrentUserProfile = useCallback(async (fields) => {
     const updated = await authApi.updateProfile(fields);
@@ -1654,7 +1672,7 @@ export function AppProvider({ children }) {
     // Chat safety
     blockUser, reportConversation, getConversationMeta,
     // Authentication
-    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, updateCurrentUserProfile, loading, error,
+    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, reopenAccount, updateCurrentUserProfile, loading, error,
     // Push preference (Settings toggle)
     setPushEnabled,
     // Connectivity — false once a read failed at the transport layer, so screens
