@@ -835,6 +835,21 @@ router.patch('/users/:id/access', requireAdmin, requireUuid('id'), async (req, r
     const user = await client.query('SELECT email,role,account_status FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
     if (!user.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
     if (user.rows[0].role === 'admin') { await client.query('ROLLBACK'); return res.status(403).json({ error: 'Administrator accounts cannot be suspended here' }); }
+    // A CLOSED account is not this control's business, in either direction.
+    //
+    // Suspending one is meaningless — it is already signed out everywhere and
+    // off the marketplace. Restoring one is worse: this route would set
+    // account_status='active' while closed_at and purge_after stayed set, so
+    // the person would appear to have their account back and then be silently
+    // erased on the next purge sweep. Reopening is theirs to do, from the app,
+    // with their own password — which is the whole point of the window.
+    if (user.rows[0].account_status === 'closed') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'This person closed their own account. Only they can reopen it, by signing in with their password before it is erased.',
+        code: 'ACCOUNT_CLOSED',
+      });
+    }
     const status = action === 'suspend' ? 'suspended' : 'active';
     const { rows } = await client.query(
       `UPDATE users SET account_status=$1, suspended_at=${action === 'suspend' ? 'NOW()' : 'NULL'},

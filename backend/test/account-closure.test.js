@@ -271,6 +271,30 @@ test('the reason vocabulary the app renders is the one the database accepts', as
   }
 });
 
+test('an operator cannot suspend or restore a closed account', async () => {
+  // The trap: restoring would set account_status='active' while closed_at and
+  // purge_after stayed set, so the person would appear to have their account
+  // back and be silently erased on the next sweep. Reopening is theirs to do.
+  const user = await person();
+  await api().delete('/auth/me')
+    .set('Authorization', `Bearer ${user.token}`)
+    .send({ password: PASSWORD, reason: 'duplicate_account' }).expect(200);
+
+  const token = await admin();
+  for (const action of ['restore', 'suspend']) {
+    const res = await api().patch(`/admin/users/${user.id}/access`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ action, reason: 'testing' }).expect(409);
+    assert.equal(res.body.code, 'ACCOUNT_CLOSED');
+  }
+
+  const { rows } = await pool.query(
+    'SELECT account_status, closed_at, purge_after FROM users WHERE id=$1', [user.id]
+  );
+  assert.equal(rows[0].account_status, 'closed');
+  assert.ok(rows[0].closed_at && rows[0].purge_after, 'the closure must be intact');
+});
+
 test('the whole admin side is admin-only', async () => {
   const user = await person();
   await api().get('/admin/account-closures')
