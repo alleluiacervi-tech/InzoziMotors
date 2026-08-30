@@ -14,14 +14,16 @@ import { useSellerGate } from '../hooks/useSellerGate';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.78, 320);
 
+// `isNew` exists for a badge that is worth trusting. Nothing carries it right
+// now: a NEW pill that never expires stops meaning new and starts meaning
+// decoration, and both rows that had one had carried it since launch.
 const MENU_SECTIONS = [
   {
     title: 'Buy a Car',
     items: [
       { icon: 'search-outline', label: 'Browse All Cars', screen: 'SearchResults' },
       { icon: 'heart-outline', label: 'Saved Cars', screen: 'Saved' },
-      { icon: 'git-compare-outline', label: 'Compare Cars', screen: 'Comparison', isNew: true },
-      { icon: 'map-outline', label: 'Map View', screen: 'MapView', isNew: true },
+      { icon: 'git-compare-outline', label: 'Compare Cars', screen: 'Comparison' },
     ],
   },
   {
@@ -37,7 +39,6 @@ const MENU_SECTIONS = [
       { icon: 'calculator-outline', label: 'Financing Calculator', screen: 'Financing' },
       { icon: 'globe-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
       { icon: 'boat-outline', label: 'My Vehicle Imports', screen: 'ImportOrders' },
-      { icon: 'ribbon-outline', label: 'Trust Score', screen: 'TrustScore' },
     ],
   },
   {
@@ -47,6 +48,10 @@ const MENU_SECTIONS = [
       { icon: 'car-outline', label: 'Submit My Car', screen: 'CarSubmission', gated: true },
       { icon: 'time-outline', label: 'My Submissions', screen: 'SellerDashboard' },
       { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics' },
+      // Filed under selling because that is whose score it is. It used to sit
+      // under Finance & Services, where a buyer tapping it got their own empty
+      // score and no way to tell whose it was meant to be.
+      { icon: 'ribbon-outline', label: 'My Trust Score', screen: 'TrustScore' },
     ],
   },
   {

@@ -13,6 +13,10 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 //   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)
 const resolveSubdir = (req) => {
   if (req.params.carId) return `cars/${req.params.carId}`;
+  // Brand marks. A flat folder rather than one per brand: there is exactly one
+  // file per brand and a directory holding sixty files is easier to audit than
+  // sixty directories holding one.
+  if (req.params.makeId) return 'brands';
   if (req.params.bookingId) return `rentals/${req.params.bookingId}`;
   if (req.params.id && req.baseUrl === '/imports') return `imports/${req.params.id}`;
   return 'id-docs';
@@ -188,6 +192,14 @@ exports.uploadPhotos = multer({
   storage,
   fileFilter: imageFilter,
   limits: { fileSize: 10 * 1024 * 1024, files: 40, fields: 20 },
+});
+// A brand mark is a small flat graphic, not a photograph. The tight cap is the
+// point: anything approaching a megabyte here is somebody uploading a screenshot
+// of a website, and it would be served on every catalogue row.
+exports.uploadBrandLogo = multer({
+  storage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 512 * 1024, files: 1, fields: 5 },
 });
 exports.uploadIdDocs = multer({
   storage,

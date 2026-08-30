@@ -19,6 +19,10 @@ const {
   validateRelease: validateAppRelease,
   invalidateAppRelease,
 } = require('../lib/app-release');
+const {
+  slugify, loadMakes, invalidateMakes,
+} = require('../lib/vehicle-makes');
+const { uploadBrandLogo, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -1247,5 +1251,190 @@ router.patch('/fees/:id', requireAdmin, requireUuid('id'), (_req, res) => {
     code: 'PLATFORM_FEES_RETIRED',
   });
 });
+
+
+// ─── Brands ──────────────────────────────────────────────────────────────────
+//
+// The seller-facing brand list used to be a 20-item array inside a mobile
+// screen, so widening it needed an App Store release — and it contained no
+// Chinese marque while the catalogue already held Dongfeng, BYD and Denza.
+// These routes are how that list is maintained without a release.
+//
+// Logos are uploaded, never bundled: they are third-party trademarks, and a
+// binary carrying sixty of them is a binary shipping somebody else's assets to
+// two app stores. Every client falls back to a lettermark, so a brand with no
+// logo looks deliberate rather than broken.
+
+// GET /admin/makes — everything, inactive included. The public route serves
+// only active brands; an operator has to be able to see what they switched off.
+router.get('/makes', requireAdmin, async (_req, res) => {
+  try {
+    const makes = await loadMakes({ includeInactive: true });
+    const { rows } = await pool.query(
+      `SELECT make, COUNT(*)::int AS n FROM cars WHERE make IS NOT NULL GROUP BY make`
+    );
+    // How many listings each brand actually carries, so an operator can see at
+    // a glance which brands are worth a logo — and can spot a brand with stock
+    // that is not on the list at all.
+    const counts = new Map(rows.map((r) => [String(r.make || '').toLowerCase(), r.n]));
+    const matched = new Set();
+    const withCounts = makes.map((m) => {
+      const keys = [m.name, ...(m.aliases || [])].map((k) => String(k).toLowerCase());
+      let listings = 0;
+      for (const key of keys) {
+        if (counts.has(key)) { listings += counts.get(key); matched.add(key); }
+      }
+      return { ...m, listings };
+    });
+    const unrecognised = rows
+      .filter((r) => !matched.has(String(r.make || '').toLowerCase()))
+      .map((r) => ({ make: r.make, listings: r.n }));
+    res.json({ makes: withCounts, unrecognised });
+  } catch (err) {
+    log.error('admin makes list error', { error: err.message });
+    res.status(500).json({ error: 'Could not load brands' });
+  }
+});
+
+// POST /admin/makes — add a brand.
+router.post('/makes', requireAdmin, async (req, res) => {
+  const name = String(req.body.name || '').trim();
+  if (name.length < 1 || name.length > 60) {
+    return res.status(400).json({ error: 'A brand needs a name of 1 to 60 characters.' });
+  }
+  const slug = slugify(name);
+  if (!slug) return res.status(400).json({ error: 'That name has no letters or digits in it.' });
+  const aliases = Array.isArray(req.body.aliases)
+    ? [...new Set(req.body.aliases.map((a) => String(a).trim().toLowerCase()).filter(Boolean))].slice(0, 12)
+    : [];
+  const order = Number.isInteger(req.body.display_order) ? req.body.display_order : 500;
+  if (order < 0 || order > 9999) return res.status(400).json({ error: 'Display order must be between 0 and 9999.' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `INSERT INTO vehicle_makes (name, slug, aliases, display_order)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (slug) DO NOTHING
+       RETURNING *`,
+      [name, slug, aliases, order]
+    );
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: `${name} is already on the list.`, code: 'MAKE_EXISTS' });
+    }
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'make.created', targetType: 'vehicle_make', targetId: rows[0].id,
+      summary: `Added the brand ${name}`, metadata: { slug, aliases },
+    });
+    await client.query('COMMIT');
+    invalidateMakes();
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    // The unique index on lower(name) catches "BMW" against an existing "bmw",
+    // which slugify would not have collided on its own.
+    if (err.code === '23505') {
+      return res.status(409).json({ error: `${name} is already on the list.`, code: 'MAKE_EXISTS' });
+    }
+    log.error('admin make create error', { error: err.message });
+    res.status(500).json({ error: 'Could not add the brand' });
+  } finally { client.release(); }
+});
+
+// PATCH /admin/makes/:id — logo, aliases, ordering, and whether it is offered.
+//
+// Deactivating never touches a listing. A car recorded as a brand somebody
+// switched off keeps its make, keeps its title and stays live; the brand simply
+// stops being offered to the NEXT seller. Rewriting live listings from a toggle
+// on a settings screen is not something a settings screen should be able to do.
+router.patch('/makes/:id', requireAdmin, requireUuid('id'), async (req, res) => {
+  const sets = [];
+  const params = [req.params.id];
+  const push = (sql, value) => { params.push(value); sets.push(`${sql} = $${params.length}`); };
+
+  if (req.body.name !== undefined) {
+    const name = String(req.body.name).trim();
+    if (name.length < 1 || name.length > 60) return res.status(400).json({ error: 'A brand needs a name of 1 to 60 characters.' });
+    push('name', name);
+  }
+  if (req.body.aliases !== undefined) {
+    if (!Array.isArray(req.body.aliases)) return res.status(400).json({ error: 'Aliases must be a list.' });
+    push('aliases', [...new Set(req.body.aliases.map((a) => String(a).trim().toLowerCase()).filter(Boolean))].slice(0, 12));
+  }
+  if (req.body.display_order !== undefined) {
+    const order = Number(req.body.display_order);
+    if (!Number.isInteger(order) || order < 0 || order > 9999) {
+      return res.status(400).json({ error: 'Display order must be a whole number between 0 and 9999.' });
+    }
+    push('display_order', order);
+  }
+  if (req.body.active !== undefined) {
+    if (typeof req.body.active !== 'boolean') return res.status(400).json({ error: 'Active must be true or false.' });
+    push('active', req.body.active);
+  }
+  // Clearing a logo is `null`, which is different from not sending the field.
+  if (req.body.logo_url !== undefined) {
+    const url = req.body.logo_url === null ? null : String(req.body.logo_url).trim();
+    if (url && !/^https?:\/\//.test(url)) return res.status(400).json({ error: 'A logo URL must start with http:// or https://' });
+    push('logo_url', url || null);
+  }
+  if (!sets.length) return res.status(400).json({ error: 'Nothing to change.' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const before = await client.query('SELECT * FROM vehicle_makes WHERE id=$1 FOR UPDATE', [req.params.id]);
+    if (!before.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Brand not found' }); }
+    const { rows } = await client.query(
+      `UPDATE vehicle_makes SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      params
+    );
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'make.updated', targetType: 'vehicle_make', targetId: req.params.id,
+      summary: `Updated the brand ${rows[0].name}`,
+      metadata: { changed: Object.keys(req.body), previous: before.rows[0], current: rows[0] },
+    });
+    await client.query('COMMIT');
+    invalidateMakes();
+    res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err.code === '23505') return res.status(409).json({ error: 'Another brand already uses that name.', code: 'MAKE_EXISTS' });
+    log.error('admin make update error', { error: err.message });
+    res.status(500).json({ error: 'Could not update the brand' });
+  } finally { client.release(); }
+});
+
+// POST /admin/makes/:makeId/logo — upload the mark itself.
+//
+// Same pipeline every other image goes through: multer writes it, the bytes are
+// read to confirm it really is an image (the extension and content type are
+// both attacker-controlled), then Cloudinary if configured and the persistent
+// volume otherwise. `resolveUploadUrl` is what keeps a Docker-internal hostname
+// out of the stored URL — a bug that shipped once and needed migration 0021.
+router.post('/makes/:makeId/logo', requireAdmin, requireUuid('makeId'),
+  uploadBrandLogo.single('logo'), verifyImageContent, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No logo was uploaded.' });
+    try {
+      const url = await resolveUploadUrl(req, req.file);
+      const { rows } = await pool.query(
+        'UPDATE vehicle_makes SET logo_url=$2, updated_at=NOW() WHERE id=$1 RETURNING *',
+        [req.params.makeId, url]
+      );
+      if (!rows.length) return res.status(404).json({ error: 'Brand not found' });
+      await recordAdminAction(pool, {
+        actorId: req.user.id, action: 'make.logo_set', targetType: 'vehicle_make', targetId: req.params.makeId,
+        summary: `Set the ${rows[0].name} logo`, metadata: { logo_url: url },
+      });
+      invalidateMakes();
+      res.json(rows[0]);
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+      log.error('admin make logo error', { error: err.message });
+      res.status(500).json({ error: 'Could not save the logo' });
+    }
+  });
 
 module.exports = router;

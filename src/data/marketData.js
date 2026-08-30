@@ -25,15 +25,6 @@ const NEIGHBORHOOD_MAP = {
   '24': 'Kacyiru',    '25': 'Kacyiru',
 };
 
-export const KIGALI_NEIGHBORHOODS = [
-  { id: 'nyarutarama', name: 'Nyarutarama', area: 'Gasabo', description: 'Embassy quarter · upscale' },
-  { id: 'remera',      name: 'Remera',      area: 'Gasabo', description: 'Commercial hub · busy' },
-  { id: 'kicukiro',    name: 'Kicukiro',    area: 'Kicukiro', description: 'Mixed residential' },
-  { id: 'kimihurura',  name: 'Kimihurura',  area: 'Kicukiro', description: 'Diplomatic quarter' },
-  { id: 'gisozi',      name: 'Gisozi',      area: 'Gasabo', description: 'New residential zone' },
-  { id: 'kacyiru',     name: 'Kacyiru',     area: 'Gasabo', description: 'Government district' },
-];
-
 // How many days since listing went live
 const LISTED_DAYS_AGO = {
   '1': 12, '2': 3, '3': 8, '4': 25, '5': 1, '6': 47, '7': 15, '8': 5,
@@ -179,10 +170,6 @@ export function getPriceHistory(car) {
 }
 
 // All cars in a given neighborhood (pass full cars array)
-export function getCarsInNeighborhood(cars, neighborhoodName) {
-  return cars.filter((c) => (NEIGHBORHOOD_MAP[c.id] || 'Kigali') === neighborhoodName);
-}
-
 // Canonical money formatting. Product amounts already represent whole francs;
 // presentation must never silently convert or relabel them.
 export function formatRWF(amount) {

@@ -36,6 +36,12 @@ function filterLocally(list, { query, filters, sort }) {
     if (filters.transmission) {
       out = out.filter((c) => String(c.transmission || '').toLowerCase() === filters.transmission.toLowerCase());
     }
+    // `includes`, matching the server's ILIKE — sellers type this field
+    // themselves, so "Kicukiro" must still find "Kicukiro, Kigali".
+    if (filters.location) {
+      out = out.filter((c) => String(c.location || '').toLowerCase()
+        .includes(filters.location.toLowerCase()));
+    }
     if (filters.maxPrice) out = out.filter((c) => priceOf(c) <= filters.maxPrice);
     if (filters.minPrice) out = out.filter((c) => priceOf(c) >= filters.minPrice);
     if (filters.minYear) out = out.filter((c) => Number(c.year) >= filters.minYear);
@@ -226,10 +232,6 @@ export default function SearchResultsScreen({ navigation, route }) {
                 >
                   <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
                 </Pressable>
-                <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View results on a map">
-                  <Ionicons name="map-outline" size={16} color={colors.textSecondary} />
-                  <Text style={styles.mapText}>Map</Text>
-                </Pressable>
               </View>
             </View>
 
@@ -352,8 +354,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center',
   },
-  mapBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.blueTint, paddingHorizontal: 12, paddingVertical: 9, borderRadius: radius.pill },
-  mapText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   activeFiltersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   filterChip: {
     flexDirection: 'row',

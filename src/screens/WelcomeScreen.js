@@ -33,7 +33,11 @@ const ft = (n) => Math.round(n * Math.min(1.06, Math.max(0.88, RATIO)) * 10) / 1
 const TRIO = [
   { icon: 'shield-checkmark-outline', title: 'Trusted', sub: 'Every car is\ninspected' },
   { icon: 'pricetag-outline', title: 'Fair Prices', sub: 'Best value for\nyour money' },
-  { icon: 'people-outline', title: 'Happy Customers', sub: '2,000+ satisfied\ncustomers' },
+  // Was "2,000+ satisfied customers". Nobody counted them, no screen in the
+  // app can produce the figure, and it is the first claim a new user reads —
+  // on a product whose entire pitch is that its claims are checked. The
+  // replacement is the one thing here that is verifiable, on every listing.
+  { icon: 'people-outline', title: 'Direct Contact', sub: 'Deal with the\nseller yourself' },
 ];
 
 export default function WelcomeScreen({ navigation }) {

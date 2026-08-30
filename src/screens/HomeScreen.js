@@ -10,6 +10,7 @@ import Screen from '../components/Screen';
 import CarCard from '../components/CarCard';
 import SkeletonCard from '../components/SkeletonCard';
 import SectionHeader from '../components/SectionHeader';
+import BrandMark from '../components/BrandMark';
 import DrawerMenu from '../components/DrawerMenu';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
@@ -57,7 +58,7 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing, makes } = useApp();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
   // dropped connection does not need a banner over the top of it.
@@ -155,6 +156,21 @@ export default function HomeScreen({ navigation }) {
     }))
     .sort((a, b) => b.cars.length - a.cars.length)
     .slice(0, 6), [cars]);
+  // The served brand list, matched to the brands the catalogue actually holds.
+  // A window with a real mark on it reads as a brand's shopfront; one without
+  // still reads as a brand's shopfront, because BrandMark draws initials.
+  const brandRow = useMemo(() => {
+    const byName = new Map(makes.map((m) => [String(m.name).toLowerCase(), m]));
+    const byAlias = new Map();
+    for (const m of makes) {
+      for (const alias of m.aliases || []) byAlias.set(String(alias).toLowerCase(), m);
+    }
+    return (name) => {
+      const key = String(name || '').toLowerCase();
+      return byName.get(key) || byAlias.get(key) || null;
+    };
+  }, [makes]);
+
   const centerWindow = useMemo(() => ({
     brand: 'Sawa Center',
     subtitle: 'On display in Nyarutarama this week',
@@ -186,10 +202,19 @@ export default function HomeScreen({ navigation }) {
         ).slice(0, 6)
       : [];
   }, [cars, savedCarIds]);
-  const popularCars = useMemo(
-    () => [...cars].sort((a, b) => getSavedCount(b) - getSavedCount(a)).slice(0, 5),
-    [cars]
-  );
+  // "Popular" needs somebody to have actually done something. Sorting the whole
+  // catalogue by a save count that is zero everywhere just returns catalogue
+  // order, which is what Fresh This Week is already showing — so the two rails
+  // rendered the same cars under two different claims. Now: only cars with real
+  // saves, only ones Fresh did not already show, and the section disappears
+  // entirely below three. An empty rail is better than a false one.
+  const popularCars = useMemo(() => {
+    const alreadyShown = new Set(freshCars.map((c) => c.id));
+    const withInterest = cars
+      .filter((c) => getSavedCount(c) > 0 && !alreadyShown.has(c.id))
+      .sort((a, b) => getSavedCount(b) - getSavedCount(a));
+    return withInterest.length >= 3 ? withInterest.slice(0, 5) : [];
+  }, [cars, freshCars]);
 
   return (
     <Screen background={colors.bg}>
@@ -217,9 +242,6 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.topBarRight}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View cars on a map">
-            <Ionicons name="map-outline" size={20} color={colors.textSecondary} />
-          </Pressable>
           <Pressable style={({ pressed }) => [styles.bellBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel="Notifications">
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             {hasUnread && <View style={styles.bellBadge} />}
@@ -509,7 +531,14 @@ export default function HomeScreen({ navigation }) {
                     style={styles.showroomFade}
                   />
                   <View style={styles.showroomCaption}>
-                    <Text style={styles.showroomBrand}>{item.brand}</Text>
+                    <View style={styles.showroomBrandRow}>
+                      <BrandMark
+                        name={item.brand}
+                        logoUrl={brandRow(item.brand)?.logo_url}
+                        size={26}
+                      />
+                      <Text style={styles.showroomBrand}>{item.brand}</Text>
+                    </View>
                     <Text style={styles.showroomCount}>
                       {item.subtitle || `${item.cars.length} cars · view the collection`}
                     </Text>
@@ -633,6 +662,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* ── POPULAR IN KIGALI ── */}
+        {popularCars.length ? (
         <View style={styles.sectionContainer}>
           <SectionHeader
             title="Popular in Kigali"
@@ -656,6 +686,7 @@ export default function HomeScreen({ navigation }) {
             )}
           />
         </View>
+        ) : null}
         </>
         )}
         </>
@@ -957,6 +988,7 @@ const styles = StyleSheet.create({
   showroomPhoto: { width: '100%', height: '100%' },
   showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
   showroomCaption: { position: 'absolute', left: 16, right: 16, bottom: 14 },
+  showroomBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   showroomBrand: { fontSize: 19, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
   showroomCount: { fontSize: 12, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },

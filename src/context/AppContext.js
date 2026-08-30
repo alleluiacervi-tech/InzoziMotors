@@ -11,6 +11,7 @@ import messagesApi from '../api/messages';
 import notificationsApi from '../api/notifications';
 import rentalsApi from '../api/rentals';
 import inspectionsApi from '../api/inspections';
+import makesApi from '../api/makes';
 import api, { BASE_URL, getToken } from '../api/client';
 import io from 'socket.io-client';
 import { syncPushToken, unregisterPushToken } from '../utils/push';
@@ -249,6 +250,10 @@ export function AppProvider({ children }) {
 
   // Recently viewed — powers the Home personalization rail
   const [recentlyViewedIds, setRecentlyViewedIds] = useState([]);
+  // The brand list, served rather than bundled. Empty until the first fetch or
+  // cache read lands, and every consumer treats empty as "fall back to free
+  // text" rather than as "no brands exist".
+  const [makes, setMakes] = useState([]);
   const recordCarView = useCallback((id) => {
     setRecentlyViewedIds((prev) => [id, ...prev.filter((x) => x !== id)].slice(0, 10));
   }, []);
@@ -259,7 +264,21 @@ export function AppProvider({ children }) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     (async () => {
-      const [ids, searches, inquiries, cur, mode, viewed, fxCached, dutyCached] = await Promise.all([
+      // One name per line, destructured in the same order they are listed.
+      // Positional destructuring of a Promise.all is unchecked by anything —
+      // insert an entry in the middle and every name after it silently shifts
+      // onto the wrong value. That exact bug has shipped twice in this repo.
+      const [
+        ids,
+        searches,
+        inquiries,
+        cur,
+        mode,
+        viewed,
+        fxCached,
+        dutyCached,
+        makesCached,
+      ] = await Promise.all([
         getJSON('savedCarIds'),
         getJSON('savedSearches'),
         getJSON('rentalInquiries'),
@@ -268,6 +287,7 @@ export function AppProvider({ children }) {
         getJSON('recentlyViewedIds'),
         getJSON('fxRate'),
         getJSON('dutyRates'),
+        getJSON('vehicleMakes'),
       ]);
       if (ids) setSavedCarIds(ids);
       if (searches) setSavedSearches(searches);
@@ -299,6 +319,22 @@ export function AppProvider({ children }) {
           if (rates?.excise_brackets?.length) {
             setDutyRates(rates);
             setJSON('dutyRates', rates);
+          }
+        })
+        .catch(() => {});
+
+      // The brand list, cached the same way. It used to be a 20-item array
+      // frozen inside two screens — with no Chinese marque on it while the
+      // catalogue already held three — so a seller with a BYD had to pick the
+      // nearest wrong answer. Serving it means the list widens without a
+      // release. Cached copy first so an offline submission still offers
+      // brands, then the live one.
+      if (Array.isArray(makesCached) && makesCached.length) setMakes(makesCached);
+      makesApi.getMakes()
+        .then((rows) => {
+          if (Array.isArray(rows) && rows.length) {
+            setMakes(rows);
+            setJSON('vehicleMakes', rows);
           }
         })
         .catch(() => {});
@@ -494,6 +530,7 @@ export function AppProvider({ children }) {
     if (filters?.fuel) params.fuel_type = filters.fuel;
     if (filters?.transmission) params.transmission = filters.transmission;
     if (filters?.driveSide) params.drive_side = filters.driveSide;
+    if (filters?.location) params.location = filters.location;
     if (filters?.minPrice) params.min_price = filters.minPrice;
     if (filters?.maxPrice) params.max_price = filters.maxPrice;
     if (filters?.minYear) params.min_year = filters.minYear;
@@ -1606,7 +1643,7 @@ export function AppProvider({ children }) {
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
-    fetchCarDetail, searchCars,
+    fetchCarDetail, searchCars, makes,
     homeMode, setHomeMode, rentalCars, rentalInquiries, sendRentalInquiry, cancelRentalInquiry,
     recentlyViewedIds, recordCarView,
     currency, toggleCurrency,

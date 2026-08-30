@@ -293,6 +293,7 @@ app.use('/fx',              require('./src/routes/fx'));
 // Public display data from platform_settings — one handler per published key,
 // so nothing becomes public by being added to the table. See routes/settings.js.
 app.use('/settings',        require('./src/routes/settings'));
+app.use('/makes',           require('./src/routes/makes'));
 // The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
 // see src/lib/mail/ for why it is a live read rather than a synced copy.
 app.use('/mail',            require('./src/routes/mail'));

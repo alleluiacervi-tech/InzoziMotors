@@ -930,3 +930,31 @@ CREATE TABLE IF NOT EXISTS disputes (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   resolved_at  TIMESTAMPTZ
 );
+
+-- ─── Vehicle makes — one brand list, served rather than bundled (0035) ───────
+-- The seller-facing list used to be twenty names inside a mobile screen, so
+-- widening it needed an App Store release — and it carried no Chinese marque
+-- while the catalogue already held Dongfeng, BYD and Denza.
+--
+-- `aliases` is the working part: "Mercedes", "Mercedes-Benz", "benz" and "VW"
+-- are two companies written four ways, and without a canonical spelling a make
+-- filter splits one brand's stock across several buckets. `logo_url` is
+-- nullable and normally null — no brand mark is committed to this repository,
+-- because they are third-party trademarks and every client draws a lettermark
+-- until an operator uploads one.
+CREATE TABLE IF NOT EXISTS vehicle_makes (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name          TEXT NOT NULL,
+  slug          TEXT NOT NULL UNIQUE,
+  aliases       TEXT[] NOT NULL DEFAULT '{}',
+  logo_url      TEXT,
+  display_order INT NOT NULL DEFAULT 500,
+  active        BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT vehicle_makes_name_check CHECK (length(btrim(name)) BETWEEN 1 AND 60),
+  CONSTRAINT vehicle_makes_slug_check CHECK (slug ~ '^[a-z0-9-]{1,60}$'),
+  CONSTRAINT vehicle_makes_order_check CHECK (display_order BETWEEN 0 AND 9999)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_vehicle_makes_name ON vehicle_makes (lower(name));
+CREATE INDEX IF NOT EXISTS idx_vehicle_makes_active ON vehicle_makes (display_order, name) WHERE active;
