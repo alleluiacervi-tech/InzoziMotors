@@ -16,10 +16,64 @@ const {
   PUBLISH_THRESHOLD,
   evaluateChecklist,
 } = require('./inspection-policy');
+const { describeVin } = require('./vin');
+
+// ─── Content quality ──────────────────────────────────────────────────────────
+// Advisory, never blocking. A buyer cannot audit the 150-point rigour behind a
+// listing, but they can absolutely read a broken description — and they will
+// price the company's credibility from it. Production currently carries a
+// 23,000,000 RWF listing whose public description begins "AI Mode conversation:
+// who are the make of Dongfeng Aeolus E70 2022You said:", and VINs recorded as
+// "", "N/A" and "Mhbu".
+//
+// These are warnings rather than `missing` on purpose. Refusing to publish a
+// car over a short description would strand an operator at the counter with a
+// customer in front of them; the precedent is the unrecorded inspection fee,
+// which is a prominent banner and not a lock.
+const PASTED_CHAT = /\b(AI Mode|You said:|ChatGPT said|as an AI|I'm sorry, (?:but )?I)/i;
+const MIN_DESCRIPTION = 40;
+
+function contentWarnings(car) {
+  const warnings = [];
+
+  const description = String(car.description || '').trim();
+  if (!description) {
+    warnings.push('No description — buyers see an empty Overview.');
+  } else if (description.length < MIN_DESCRIPTION) {
+    warnings.push(`The description is ${description.length} characters. A buyer deciding on a car needs more than a line.`);
+  } else if (PASTED_CHAT.test(description)) {
+    warnings.push('The description looks like pasted chat or assistant output. Rewrite it in your own words before this goes public.');
+  }
+
+  // describeVin already knows that a Japanese import carries a chassis number
+  // rather than an ISO VIN, and never calls that a defect. It has existed,
+  // tested, since the vehicle-identity work, and was used in exactly one place.
+  const vin = describeVin(car.vin);
+  if (vin.kind === 'none') {
+    warnings.push('No VIN or chassis number recorded — vehicle history cannot be matched to this car.');
+  } else if (vin.kind === 'short') {
+    warnings.push(`"${String(car.vin).trim()}" is too short to identify a vehicle. Record the full VIN or chassis number.`);
+  }
+
+  // "KIA Sorento 2024" against "2025 Volkswagen Bora" — the same catalogue,
+  // two formats. A title that does not contain its own make is usually a
+  // placeholder somebody meant to come back to.
+  const title = String(car.title || '');
+  const make = String(car.make || '').trim();
+  if (make && !title.toLowerCase().includes(make.toLowerCase())) {
+    warnings.push(`The title does not mention ${make}. Buyers search by make.`);
+  }
+  if (/\s{2,}/.test(title)) {
+    warnings.push('The title has a double space — usually a missing make or model.');
+  }
+
+  return warnings;
+}
 
 async function publicationReadiness(client, carId) {
   const { rows } = await client.query(
     `SELECT c.id, c.title, c.make, c.model, c.year, c.price, c.seller_id,
+            c.description, c.vin,
             u.role, u.id_verified, u.account_status, u.deleted_at,
             u.seller_type, u.business_verified,
             COALESCE(cardinality(c.images), 0)::int AS legacy_photo_count,
@@ -82,6 +136,8 @@ async function publicationReadiness(client, carId) {
   return {
     ready: missing.length === 0,
     missing: [...new Set(missing)],
+    // Things worth fixing that are not worth refusing over.
+    warnings: contentWarnings(car),
     photo_count: photoCount,
     min_photos: minPhotos,
     inspection_required: inspectionRequired,

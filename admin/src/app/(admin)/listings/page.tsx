@@ -27,6 +27,28 @@ const STATUS_COLORS: Record<string, string> = {
   inspecting:   'bg-info-tint text-info',
 }
 
+/** Advisory content problems. Never a blocker — a car with a thin description
+ *  still publishes — but the operator sees it at the moment they could fix it,
+ *  which is the only moment it costs nothing. */
+function ContentWarnings({ items }: { items?: string[] }) {
+  if (!items?.length) return null
+  return (
+    <div className="mt-3 rounded-lg border border-warning-tint bg-warning-tint/40 p-2.5">
+      <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-warning-text">
+        Worth fixing before a buyer reads it
+      </p>
+      <ul className="mt-1.5 space-y-1">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2 text-xs text-content-secondary">
+            <span aria-hidden className="text-warning-text">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export default function ListingsPage() {
   const [statusFilter, setStatusFilter] = useState(NEEDS_ACTION)
   const [items, setItems]               = useState<any[]>([])
@@ -182,7 +204,7 @@ export default function ListingsPage() {
     if (!ok) return
     setActionId(id)
     try {
-      await api.featureCar(id, 7)
+      await api.featureCar(id, { kind: 'editorial', days: 7 })
       load(statusFilter, query)
     } catch (e: any) {
       toast(e.message, 'error')
@@ -401,12 +423,15 @@ export default function ListingsPage() {
                     {readiness[car.id] === 'error' ? (
                       <p className="text-xs text-danger-strong">Could not read the publication checks. Try again.</p>
                     ) : (readiness[car.id] as Readiness).ready ? (
-                      <p className="text-xs font-semibold text-success-text">
-                        Every publication check passes.{' '}
-                        {car.status === 'under_review' ? 'Use Approve & publish above to put it live.'
-                          : car.status === 'approved' ? 'Use Publish above to put it live.'
-                          : 'Nothing is blocking publication.'}
-                      </p>
+                      <>
+                        <p className="text-xs font-semibold text-success-text">
+                          Every publication check passes.{' '}
+                          {car.status === 'under_review' ? 'Use Approve & publish above to put it live.'
+                            : car.status === 'approved' ? 'Use Publish above to put it live.'
+                            : 'Nothing is blocking publication.'}
+                        </p>
+                        <ContentWarnings items={(readiness[car.id] as Readiness).warnings} />
+                      </>
                     ) : (
                       <>
                         <p className="text-xs font-bold text-content">Still required before publication</p>
@@ -422,6 +447,7 @@ export default function ListingsPage() {
                           {(readiness[car.id] as Readiness).photo_count} of {(readiness[car.id] as Readiness).min_photos} required photo
                           {(readiness[car.id] as Readiness).min_photos === 1 ? '' : 's'} uploaded.
                         </p>
+                        <ContentWarnings items={(readiness[car.id] as Readiness).warnings} />
                       </>
                     )}
                   </div>

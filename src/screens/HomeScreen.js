@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { STUDIO } from '../data/carImageAssets';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
-  FlatList, Dimensions, Image,
+  FlatList, Dimensions, Image, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +15,8 @@ import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
 import { photoSource, PHOTO } from '../utils/photo';
+import { cars as carsApi } from '../api/cars';
+import { formatPrice } from '../data/cars';
 import Photo from '../components/Photo';
 // expo-image's ImageBackground, for the same disk cache the cards now use.
 import { ImageBackground } from 'expo-image';
@@ -55,7 +57,7 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing } = useApp();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
   // dropped connection does not need a banner over the top of it.
@@ -77,21 +79,43 @@ export default function HomeScreen({ navigation }) {
   const carouselRef = useRef(null);
   const scrollTimerRef = useRef(null);
 
+  // ── The banner ────────────────────────────────────────────────────────────
+  // These three slides used to be a hardcoded constant over stock studio
+  // photography: the most valuable space in the app, showing no car anybody
+  // could buy. It now renders whatever an admin placed, in slot order.
+  //
+  // BANNER_SLIDES survives as the fallback for a first launch on a bad
+  // connection and for the days when nothing is placed — an empty hero is a
+  // worse answer than a true statement about the service.
+  const [featured, setFeatured] = useState([]);
+  React.useEffect(() => {
+    let alive = true;
+    carsApi.getFeatured(6)
+      .then((rows) => { if (alive && Array.isArray(rows)) setFeatured(rows); })
+      .catch(() => {});   // the fallback is already on screen; nothing to say
+    return () => { alive = false; };
+  }, []);
+
+  const slides = featured.length ? featured : BANNER_SLIDES;
+
   React.useEffect(() => {
     const t = setTimeout(() => setLoading(false), 700);
     return () => clearTimeout(t);
   }, []);
 
   React.useEffect(() => {
+    // A single slide has nowhere to advance to, and a timer that scrolls a
+    // one-item list just fights the user's thumb.
+    if (slides.length < 2) return undefined;
     scrollTimerRef.current = setInterval(() => {
       setCarouselIndex((prev) => {
-        const next = prev >= BANNER_SLIDES.length ? 1 : prev + 1;
+        const next = prev >= slides.length ? 1 : prev + 1;
         carouselRef.current?.scrollTo({ x: (next - 1) * SCREEN_WIDTH, animated: true });
         return next;
       });
     }, CAROUSEL_INTERVAL);
     return () => { if (scrollTimerRef.current) clearInterval(scrollTimerRef.current); };
-  }, []);
+  }, [slides.length]);
 
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
@@ -231,7 +255,18 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshCatalogue}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
 
         {/* Connection notice. The app used to paper over an unreachable API with
             25 bundled demo cars, which meant an outage looked like inventory.
@@ -244,9 +279,21 @@ export default function HomeScreen({ navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.offlineTitle}>We couldn&apos;t reach Sawa Cars</Text>
               <Text style={styles.offlineSub}>
-                Check your connection — listings will appear as soon as we&apos;re back.
+                Check your connection, then try again.
               </Text>
             </View>
+            {/* The recovery the notice used to promise but not provide. The
+                only line that marks the backend reachable again lives inside
+                the catalogue fetch, so without a way to re-run it the notice
+                was permanent for the life of the process. */}
+            <Pressable
+              accessibilityRole="button"
+              style={styles.offlineRetry}
+              disabled={refreshing}
+              onPress={refreshCatalogue}
+            >
+              <Text style={styles.offlineRetryText}>{refreshing ? 'Trying…' : 'Try again'}</Text>
+            </Pressable>
           </View>
         )}
 
@@ -345,36 +392,72 @@ export default function HomeScreen({ navigation }) {
             onScroll={handleCarouselScroll}
             scrollEventThrottle={16}
           >
-            {BANNER_SLIDES.map((slide) => (
-              <ImageBackground
-                key={slide.id}
-                source={photoSource(slide.image, PHOTO.WIDE)}
-                style={styles.carouselSlide}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              >
-                <LinearGradient
-                  colors={['transparent', 'rgba(0,0,0,0.72)']}
-                  style={styles.slideScrim}
-                />
+            {slides.map((slide) => {
+              // A placement from the server, or one of the fallback slides.
+              const isCar = Boolean(slide.placement_id);
+              const image = isCar ? slide.images?.[0] : slide.image;
+              const heading = isCar ? (slide.headline || slide.title) : slide.brand;
+              const sub = isCar
+                ? `${formatPrice(slide.price)}${slide.location ? ` · ${slide.location}` : ''}`
+                : slide.tagline;
+              const tag = isCar ? slide.label : slide.tag;
 
-                {/* Tag chip — top left */}
-                <View style={styles.slideTag}>
-                  <Text style={styles.slideTagText}>{slide.tag}</Text>
-                </View>
+              const Slide = (
+                <ImageBackground
+                  source={photoSource(image, PHOTO.WIDE)}
+                  style={styles.carouselSlide}
+                  contentFit={isCar ? 'cover' : 'contain'}
+                  cachePolicy="memory-disk"
+                >
+                  <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.72)']}
+                    style={styles.slideScrim}
+                  />
 
-                {/* Text — bottom left */}
-                <View style={styles.slideText}>
-                  <Text style={styles.slideBrand}>{slide.brand}</Text>
-                  <Text style={styles.slideTagline}>{slide.tagline}</Text>
-                </View>
-              </ImageBackground>
-            ))}
+                  {/* A paid placement says so. The server decides `sponsored`,
+                      so this cannot be got wrong by forgetting to check the
+                      kind — and for a company selling independent verification,
+                      an unlabelled paid slot is the one thing not to ship. */}
+                  <View style={[styles.slideTag, slide.sponsored && styles.slideTagSponsored]}>
+                    <Text style={[styles.slideTagText, slide.sponsored && styles.slideTagTextSponsored]}>
+                      {tag}
+                    </Text>
+                  </View>
+
+                  <View style={styles.slideText}>
+                    <Text style={styles.slideBrand} numberOfLines={1}>{heading}</Text>
+                    <Text style={styles.slideTagline} numberOfLines={2}>{sub}</Text>
+                    {isCar && slide.inspection_score ? (
+                      <View style={styles.slideScore}>
+                        <Ionicons name="shield-checkmark" size={11} color="#fff" />
+                        <Text style={styles.slideScoreText}>
+                          {slide.inspection_score}/150 inspected
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </ImageBackground>
+              );
+
+              // A banner nobody can tap is a poster. A placed car opens.
+              return isCar ? (
+                <Pressable
+                  key={slide.placement_id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${heading}. ${slide.sponsored ? 'Sponsored listing.' : ''}`}
+                  onPress={() => navigation.navigate('VehicleDetail', { carId: slide.id })}
+                >
+                  {Slide}
+                </Pressable>
+              ) : (
+                <View key={slide.id}>{Slide}</View>
+              );
+            })}
           </ScrollView>
 
           {/* Dot pagination */}
           <View style={styles.dotsRow}>
-            {BANNER_SLIDES.map((_, i) => (
+            {slides.map((_, i) => (
               <View
                 key={i}
                 style={[styles.dot, carouselIndex === i + 1 && styles.dotActive]}
@@ -673,6 +756,11 @@ const styles = StyleSheet.create({
   },
   offlineTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   offlineSub: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
+  offlineRetry: {
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: radius.pill, backgroundColor: colors.primary,
+  },
+  offlineRetryText: { fontSize: 12, fontFamily: fonts.bold, color: '#fff' },
 
   // ── Buy/Rent mode switch ──
   modeSwitchWrap: {
@@ -785,6 +873,32 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 11,
     letterSpacing: 0.5,
+  },
+  // A paid placement is marked differently from an editorial pick, not just
+  // worded differently — the two must not be mistakable at a glance, and the
+  // glance is all a banner gets.
+  slideTagSponsored: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
+  slideTagTextSponsored: {
+    letterSpacing: 0.8,
+  },
+  slideScore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  slideScoreText: {
+    color: colors.white,
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
   },
   slideText: {
     position: 'absolute',

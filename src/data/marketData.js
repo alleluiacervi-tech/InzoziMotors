@@ -109,20 +109,44 @@ export function getDriveType(carOrId) {
   return DRIVE_TYPES[idOf(carOrId)] || 'LHD';
 }
 
-// Market average — server-computed from real comparables when available.
+// ─────────────────────────────────────────────────────────────────────────────
+// Market position — server-computed from real comparables, or not stated at all.
+//
+// The backend withholds this number until a car has at least three comparables,
+// on its own stated grounds that "fewer than 3 comparables is noise, not a
+// market". It sends null.
+//
+// This module used to fill that gap with `price * 1.08`. That is not a market
+// average — it is the asking price multiplied by a constant, so the difference
+// it produced was ALWAYS −7%, on every listing, forever. Every card carried a
+// green "7% below market" pill and the detail screen printed the invented
+// average as fact. The website never did this (see hasRealMarketData in
+// web/src/lib/business.ts), so the two clients disagreed about the same car.
+//
+// Returning null is the whole fix: a surface that has no number omits the
+// claim. A market comparison that appears only sometimes reads as rigour; one
+// that appears on everything reads as decoration, and takes the inspection
+// score's credibility down with it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The market average in RWF, or null when nobody computed one. */
 export function getMarketAvg(car) {
   if (isNum(car?.marketAvg)) return car.marketAvg;
-  if (car.belowMarket) return car.price + car.belowMarket;
-  if (car.type === 'auction') return Math.round((car.currentBid || car.price) * 1.06);
-  return Math.round(car.price * 1.08);
+  // Bundled demo fixtures declare their own gap. That is fiction we authored
+  // and it is __DEV__-only, not a measurement passed off as one.
+  if (isNum(car?.belowMarket) && car.belowMarket > 0 && isNum(car?.price)) {
+    return car.price + car.belowMarket;
+  }
+  return null;
 }
 
-// % diff from market: negative = below, positive = above
+/** % from market — negative is below. Null when there is no real average. */
 export function getMarketDiff(car) {
   if (isNum(car?.marketDiff)) return car.marketDiff;
   const avg = getMarketAvg(car);
-  const price = car.type === 'auction' ? (car.currentBid || car.price) : car.price;
-  if (!avg) return 0;
+  if (!isNum(avg) || avg <= 0) return null;
+  const price = car?.type === 'auction' ? (car.currentBid || car.price) : car?.price;
+  if (!isNum(price)) return null;
   return Math.round(((price - avg) / avg) * 100);
 }
 
@@ -132,23 +156,26 @@ export function hasRealMarketData(car) {
   return isNum(car?.marketAvg) && (car?.comparables || 0) >= 3;
 }
 
-// Price points for the sparkline (oldest → newest). Real history when the
-// listing has any; otherwise a flat demo curve for the bundled cars.
+// Price points for the sparkline (oldest → newest), or null when this listing
+// has no price history.
+//
+// The old fallback returned [1.02p, 1.015p, 1.02p, 1.005p, 1.01p, p] — a shape
+// derived entirely from the current asking price and drawn under the heading
+// "Price history". Every car that had never changed price showed the same
+// invented decline. A listing with one price has no history, and the honest
+// rendering of no history is no chart.
 export function getPriceHistory(car) {
   const history = car?.priceHistory;
   if (Array.isArray(history) && history.length > 1) return history;
 
-  const drop = PRICE_DROPS[car.id] || 0;
-  const base = car.type === 'auction' ? (car.currentBid || car.price) : car.price;
-  if (drop > 0) {
+  // Bundled demo fixtures carry an authored drop; __DEV__-only.
+  const drop = PRICE_DROPS[idOf(car)] || 0;
+  const base = car?.type === 'auction' ? (car.currentBid || car.price) : car?.price;
+  if (drop > 0 && isNum(base)) {
     const orig = base + drop;
     return [orig, orig, Math.round(orig - drop * 0.4), Math.round(orig - drop * 0.7), Math.round(base + drop * 0.1), base];
   }
-  return [
-    Math.round(base * 1.02), Math.round(base * 1.015),
-    Math.round(base * 1.02), Math.round(base * 1.005),
-    Math.round(base * 1.01), base,
-  ];
+  return null;
 }
 
 // All cars in a given neighborhood (pass full cars array)

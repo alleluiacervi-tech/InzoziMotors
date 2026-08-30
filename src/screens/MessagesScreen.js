@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -7,7 +7,7 @@ import { useApp } from '../context/AppContext';
 import { colors, fonts } from '../theme';
 
 export default function MessagesScreen({ navigation }) {
-  const { conversations } = useApp();
+  const { conversations, refreshCatalogue, refreshing } = useApp();
   const canGoBack = navigation.canGoBack && navigation.canGoBack();
 
   return (
@@ -17,6 +17,10 @@ export default function MessagesScreen({ navigation }) {
         data={conversations}
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshCatalogue}
+            tintColor={colors.primary} colors={[colors.primary]} />
+        }
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4 }}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => navigation.navigate('Chat', { name: item.name, convId: item.id })}>

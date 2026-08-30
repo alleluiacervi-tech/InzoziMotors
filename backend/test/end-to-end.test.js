@@ -253,6 +253,36 @@ test('door to website: one vehicle, one inspection, a rental and a listing', asy
   assert.equal(publicCar.body.status, 'live');
   assert.equal(publicCar.body.registration_plate ?? null, null, 'no plate text in a public payload');
   assert.ok(!JSON.stringify(publicCar.body).includes('plate-originals'), 'the unmasked file is never addressed publicly');
+
+  // ── The public payload carries nothing the office wrote to itself ────────
+  // `SELECT c.*` published every column the cars table would ever grow. The
+  // worst of them was review_notes: revoking a seller's identity appends
+  // "Seller identity approval was revoked; review is required before
+  // republication." to that column, and it was being served to strangers.
+  const INTERNAL = ['review_notes', 'archive_reason', 'archived_at', 'approved_at',
+    'approved_by', 'registration_plate', 'vin_key'];
+  await pool.query(
+    `UPDATE cars SET review_notes='Seller identity approval was revoked.' WHERE id=$1`, [carId]);
+
+  const anonymous = await api().get(`/cars/${carId}`).expect(200);
+  for (const column of INTERNAL) {
+    assert.equal(column in anonymous.body, false,
+      `${column} is the office's own note — it must not be on a public payload`);
+  }
+
+  // ...but the people who are allowed to see them still do, because the admin
+  // listing editor reads review_notes from this very route.
+  const insider = await api().get(`/cars/${carId}`).set(auth).expect(200);
+  assert.equal(insider.body.review_notes, 'Seller identity approval was revoked.',
+    'an admin keeps the internal columns');
+
+  const browse = await api().get('/cars?limit=100').expect(200);
+  const listed = browse.body.find((c) => c.id === carId);
+  assert.ok(listed, 'the published car is in the public feed');
+  for (const column of [...INTERNAL, 'description']) {
+    assert.equal(column in listed, false,
+      `${column} has no business in a browse response`);
+  }
   const gone = await api().get(`/admin/listings?status=needs_action&limit=200&q=${carId}`)
     .set(auth).expect(200);
   assert.equal(gone.body.some((c) => c.id === carId), false, 'and it leaves the queue once published');

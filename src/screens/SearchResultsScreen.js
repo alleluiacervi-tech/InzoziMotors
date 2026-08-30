@@ -33,7 +33,18 @@ function filterLocally(list, { query, filters, sort }) {
     if (filters.make) out = out.filter((c) => c.make.toLowerCase() === filters.make.toLowerCase());
     if (filters.body) out = out.filter((c) => c.category.toLowerCase() === filters.body.toLowerCase());
     if (filters.fuel) out = out.filter((c) => c.fuel.toLowerCase() === filters.fuel.toLowerCase());
+    if (filters.transmission) {
+      out = out.filter((c) => String(c.transmission || '').toLowerCase() === filters.transmission.toLowerCase());
+    }
     if (filters.maxPrice) out = out.filter((c) => priceOf(c) <= filters.maxPrice);
+    if (filters.minPrice) out = out.filter((c) => priceOf(c) >= filters.minPrice);
+    if (filters.minYear) out = out.filter((c) => Number(c.year) >= filters.minYear);
+    // Mileage and inspection score are applied here only: the browse endpoint
+    // has no parameter for either, so a server round trip would silently ignore
+    // them. At this catalogue size filtering the fetched page is honest and
+    // exact; when the inventory outgrows a page, both need a query parameter.
+    if (filters.maxMileage) out = out.filter((c) => Number(c.mileage ?? Infinity) <= filters.maxMileage);
+    if (filters.minScore) out = out.filter((c) => Number(c.inspectionScore || 0) >= filters.minScore);
   }
   if (sort === 'Price ↑') out = [...out].sort((a, b) => priceOf(a) - priceOf(b));
   else if (sort === 'Price ↓') out = [...out].sort((a, b) => priceOf(b) - priceOf(a));
@@ -111,8 +122,27 @@ export default function SearchResultsScreen({ navigation, route }) {
   };
 
   const serverBacked = !isRentMode && results !== null;
+
+  // Two filters the browse endpoint has no parameter for. On the local path
+  // filterLocally already applies them; on the server path the results come
+  // back unfiltered by these, and returning them as-is would mean a chip the
+  // user tapped quietly did nothing. Narrowing the page here is exact at this
+  // catalogue size — when the inventory outgrows one page, both need a real
+  // query parameter rather than this.
+  const narrowUnsupported = (list) => {
+    if (!activeFilters) return list;
+    let out = list;
+    if (activeFilters.maxMileage) {
+      out = out.filter((c) => Number(c.mileage ?? Infinity) <= activeFilters.maxMileage);
+    }
+    if (activeFilters.minScore) {
+      out = out.filter((c) => Number(c.inspectionScore || 0) >= activeFilters.minScore);
+    }
+    return out;
+  };
+
   const filteredCars = serverBacked
-    ? results
+    ? narrowUnsupported(results)
     : filterLocally(isRentMode ? rentalCars : cars, {
         query: searchQuery, filters: activeFilters, sort,
       });

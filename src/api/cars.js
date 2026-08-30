@@ -15,6 +15,16 @@ export const cars = {
     return await api.get(endpoint);
   },
 
+  // The home-screen banner: admin-chosen cars, in slot order.
+  //
+  // Public and unauthenticated. Every row carries `sponsored` and a `label`
+  // decided by the server, so no screen can render a paid placement as an
+  // editorial pick by forgetting to check the kind — which for a business
+  // whose product is independent verification is the whole point.
+  getFeatured: async (limit = 6) => {
+    return await api.get(`/cars/featured?limit=${limit}`);
+  },
+
   // Retrieve details of a specific vehicle listing. Richer than the browse
   // payload — price history, seller phone, market position — and it counts a view.
   getCar: async (id) => {

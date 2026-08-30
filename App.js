@@ -26,10 +26,22 @@ export default function App() {
   const [splashDone, setSplashDone] = useState(false);
   const [initialRoute, setInitialRoute] = useState(null);
 
+  // Where a launch lands.
+  //
+  // Onboarding is a first-run explanation, and Welcome is a sign-in door. A
+  // person who has already seen both and closed the app should reopen it on the
+  // marketplace — not be walked past the pitch and the door again every single
+  // time. Browsing needs no account (contact is gated at the point of contact,
+  // not at the front of the app), and Profile carries a Sign in for anyone
+  // signed out, so nothing is unreachable by skipping Welcome.
+  //
+  // A storage failure lands on Main for the same reason: an existing user
+  // stranded on a marketing screen is a worse outcome than a brand-new user who
+  // misses the tour.
   useEffect(() => {
     getJSON('onboardingSeen', false)
-      .then((seen) => setInitialRoute(seen ? 'Welcome' : 'Onboarding'))
-      .catch(() => setInitialRoute('Welcome'));
+      .then((seen) => setInitialRoute(seen ? 'Main' : 'Onboarding'))
+      .catch(() => setInitialRoute('Main'));
   }, []);
 
   // Route push-notification taps to their subject (chat thread, car, order).

@@ -18,8 +18,12 @@ const SPEC_ROWS = [
   { key: 'fuel', label: 'Fuel Type', getValue: (car) => car.fuel, format: (v) => v, winner: 'none' },
   { key: 'transmission', label: 'Transmission', getValue: (car) => car.transmission, format: (v) => v, winner: 'none' },
   { key: 'category', label: 'Category', getValue: (car) => car.category, format: (v) => v, winner: 'none' },
-  { key: 'rating', label: 'Seller Rating', getValue: (car) => car.rating, format: (v) => `⭐ ${v}`, winner: 'highest' },
+  // Was "Seller Rating ⭐ {car.rating}", a trust score divided by 20. Buyers
+  // compare cars on evidence, and the evidence Sawa actually holds is the
+  // inspection score and whether the seller's identity was checked.
+  { key: 'inspectionScore', label: 'Inspection score', getValue: (car) => car.inspectionScore ?? 0, format: (v) => v ? `${v}/150` : '— Not inspected', winner: 'highest' },
   { key: 'inspected', label: 'Inspection', getValue: (car) => car.inspected ? 1 : 0, format: (v) => v ? '✓ 150-pt Certified' : '— Not inspected', winner: 'highest' },
+  { key: 'sellerIdVerified', label: 'Seller identity', getValue: (car) => car.sellerIdVerified ? 1 : 0, format: (v) => v ? '✓ ID verified' : '— Not verified', winner: 'highest' },
   { key: 'returnDays', label: 'Return Policy', getValue: (car) => car.returnDays || 0, format: (v) => v ? `${v}-day returns` : 'No return policy', winner: 'none' },
 ];
 

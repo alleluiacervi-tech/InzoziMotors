@@ -9,7 +9,10 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
-import { checkForUpdate, applyUpdate, runningBuild, UPDATE_STATUS } from '../utils/updates';
+import {
+  checkForUpdate, applyUpdate, runningBuild, UPDATE_STATUS,
+  getUpdateMode, setUpdateMode, UPDATE_MODE,
+} from '../utils/updates';
 import { useApp } from '../context/AppContext';
 import { getJSON } from '../storage';
 import {
@@ -51,7 +54,7 @@ const buildGroups = (verificationValue, buildLabel) => [
   {
     title: 'Preferences',
     items: [
-      { icon: 'notifications-outline', label: 'Push notifications', toggle: true },
+      { icon: 'notifications-outline', label: 'Push notifications', toggle: 'push' },
     ],
   },
   {
@@ -90,6 +93,10 @@ const buildGroups = (verificationValue, buildLabel) => [
     title: 'App',
     items: [
       { icon: 'refresh-outline', label: 'Check for updates', action: 'checkUpdate', value: buildLabel },
+      // Off by default. A first launch has no basis for assuming somebody
+      // consents to the app restarting itself, and an update that arrives
+      // without being asked for should still be announced rather than done.
+      { icon: 'cloud-download-outline', label: 'Install updates automatically', toggle: 'autoUpdate' },
     ],
   },
   {
@@ -115,6 +122,8 @@ export default function SettingsScreen({ navigation }) {
 
   // Persisted, and actually wired: off tells the server to forget this device.
   const [pushOn, setPushOn] = useState(true);
+  // Whether a downloaded update applies itself on the next return to the app.
+  const [autoUpdateOn, setAutoUpdateOn] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   // Read once: it describes the bundle currently running and cannot change
   // without a relaunch.
@@ -122,8 +131,27 @@ export default function SettingsScreen({ navigation }) {
   React.useEffect(() => {
     let alive = true;
     getJSON('pushEnabled', true).then((v) => { if (alive) setPushOn(v !== false); });
+    getUpdateMode().then((m) => { if (alive) setAutoUpdateOn(m === UPDATE_MODE.AUTOMATIC); });
     return () => { alive = false; };
   }, []);
+
+  // The auto-update preference. Purely local — nothing to register with a
+  // server, so unlike push it cannot fail and be left disagreeing with reality.
+  const handleAutoUpdateToggle = async () => {
+    const next = !autoUpdateOn;
+    setAutoUpdateOn(next);
+    await setUpdateMode(next ? UPDATE_MODE.AUTOMATIC : UPDATE_MODE.ASK);
+    showToast(
+      next
+        ? 'New versions will install themselves the next time you open the app.'
+        : 'You will be asked before a new version is installed.',
+      'success',
+    );
+  };
+
+  const handleToggle = (which) => (
+    which === 'autoUpdate' ? handleAutoUpdateToggle() : handlePushToggle()
+  );
 
   const handlePushToggle = async () => {
     const next = !pushOn;
@@ -253,14 +281,14 @@ export default function SettingsScreen({ navigation }) {
                   <Pressable
                     key={item.label}
                     style={[styles.item, i < g.items.length - 1 && styles.itemBorder]}
-                    onPress={() => (isToggle ? handlePushToggle() : handleItemPress(item))}
+                    onPress={() => (isToggle ? handleToggle(item.toggle) : handleItemPress(item))}
                   >
                     <View style={styles.itemIcon}>
                       <Ionicons name={item.icon} size={20} color={colors.slate700} />
                     </View>
                     <Text style={styles.itemLabel}>{item.label}</Text>
                     {isToggle ? (
-                      <Toggle on={pushOn} />
+                      <Toggle on={item.toggle === 'autoUpdate' ? autoUpdateOn : pushOn} />
                     ) : (
                       <View style={styles.itemRight}>
                         {item.value ? <Text style={styles.itemValue}>{item.value}</Text> : null}

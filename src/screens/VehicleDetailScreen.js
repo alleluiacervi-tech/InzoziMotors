@@ -132,6 +132,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   // Only a server-computed average backed by real comparables earns the count
   const realMarket = hasRealMarketData(car);
   const priceHistory = getPriceHistory(car);
+  const hasPriceHistory = Array.isArray(priceHistory) && priceHistory.length > 1;
   const priceDrop = getPriceDrop(car);
   const savedCount = getSavedCount(car);
   const listedDaysAgo = getListedDaysAgo(car);
@@ -261,7 +262,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
               {isAuction && <Text style={styles.bidLabel}>CURRENT BID</Text>}
               <Text style={styles.price}>{formatPrice(price)}</Text>
               {/* Market diff badge */}
-              {marketDiff !== 0 && (
+              {/* Null unless the server computed a position from real
+                  comparables — see getMarketDiff. */}
+              {typeof marketDiff === 'number' && marketDiff !== 0 && (
                 <View style={[styles.marketBadge, marketDiff < 0 ? styles.marketBadgeLow : styles.marketBadgeHigh]}>
                   <Ionicons
                     name={marketDiff < 0 ? 'trending-down' : 'trending-up'}
@@ -310,29 +313,42 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </Pressable>
           )}
 
-          {/* Price history sparkline */}
-          <View style={styles.sparklineCard}>
-            <View style={styles.sparklineLeft}>
-              <Text style={styles.sparklineTitle}>Price history</Text>
-              {priceDrop > 0 ? (
-                <View style={styles.priceDropRow}>
-                  <Ionicons name="arrow-down" size={12} color={colors.green} />
-                  <Text style={styles.priceDropText}>Dropped {formatPrice(priceDrop)} since listed</Text>
+          {/* Price history and market position.
+              The whole card is omitted unless at least one of the two is real.
+              A listing that has never changed price has no history, and a car
+              with fewer than three comparables has no market average — drawing
+              either from the asking price is how every car ended up "7% below
+              market". No data, no card. */}
+          {(hasPriceHistory || realMarket) && (
+            <View style={styles.sparklineCard}>
+              <View style={styles.sparklineLeft}>
+                <Text style={styles.sparklineTitle}>
+                  {hasPriceHistory ? 'Price history' : 'Market position'}
+                </Text>
+                {hasPriceHistory ? (
+                  priceDrop > 0 ? (
+                    <View style={styles.priceDropRow}>
+                      <Ionicons name="arrow-down" size={12} color={colors.green} />
+                      <Text style={styles.priceDropText}>Dropped {formatPrice(priceDrop)} since listed</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.sparklineStable}>Stable since listing</Text>
+                  )
+                ) : null}
+                {realMarket && (
+                  <Text style={styles.marketAvgText}>
+                    {`Market avg: ${formatPrice(marketAvg)} · ${car.comparables} similar listed`}
+                  </Text>
+                )}
+              </View>
+              {hasPriceHistory && (
+                <View style={styles.sparklineRight}>
+                  <Sparkline data={priceHistory} width={80} height={32} />
+                  <Text style={styles.sparklineNow}>Now</Text>
                 </View>
-              ) : (
-                <Text style={styles.sparklineStable}>Stable since listing</Text>
               )}
-              <Text style={styles.marketAvgText}>
-                {realMarket
-                  ? `Market avg: ${formatPrice(marketAvg)} · ${car.comparables} similar sold`
-                  : `Market avg: ${formatPrice(marketAvg)}`}
-              </Text>
             </View>
-            <View style={styles.sparklineRight}>
-              <Sparkline data={priceHistory} width={80} height={32} />
-              <Text style={styles.sparklineNow}>Now</Text>
-            </View>
-          </View>
+          )}
 
           {/* Specs grid */}
           <View style={styles.specs}>
@@ -382,10 +398,19 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.sellerName}>{car.seller}</Text>
+              {/* What is actually verified about this seller, not a star.
+                  A rating claims other buyers had an experience; none has been
+                  recorded, so saying so plainly is both truer and — for a
+                  platform whose product is verification — more persuasive. */}
               <View style={styles.ratingRow}>
-                <Ionicons name="star" size={13} color={colors.amber} />
+                <Ionicons
+                  name={car.sellerIdVerified ? 'shield-checkmark' : 'shield-outline'}
+                  size={13}
+                  color={car.sellerIdVerified ? colors.green : colors.textMuted}
+                />
                 <Text style={styles.ratingText}>
-                  {car.rating} · {isDealer ? 'Partner dealer' : 'Verified seller'} · View profile
+                  {car.sellerIdVerified ? 'ID verified' : 'Identity not verified'}
+                  {isDealer ? ' · Partner dealer' : ''} · View profile
                 </Text>
               </View>
             </View>
@@ -438,7 +463,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
             {car.inspected
               ? ' The published inspection records the checks completed by Sawa Cars on the inspection date.'
               : ' Inspection scheduled — the report must be completed before the listing can be published.'}
-            {marketDiff < 0 ? ` Priced ${Math.abs(marketDiff)}% below the Kigali market average for this model.` : ''}
+            {realMarket && typeof marketDiff === 'number' && marketDiff < 0
+              ? ` Priced ${Math.abs(marketDiff)}% below the average of ${car.comparables} comparable listings on Sawa Cars.`
+              : ''}
           </Text>
 
           {/* Inspection highlights — keyed off this car's data */}

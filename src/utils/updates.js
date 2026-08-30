@@ -23,6 +23,38 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
+import { getJSON, setJSON } from '../storage';
+
+// ─── How an update gets applied ───────────────────────────────────────────────
+// Two honest options, and no third one that pretends to be both.
+//
+//   ask       a banner appears when a new bundle is downloaded, and the person
+//             decides when to restart. Nothing ever interrupts them.
+//   automatic the update is applied for them — but only on a RETURN to the app,
+//             never mid-use. Restarting the runtime under someone who is
+//             reading a listing is not "automatic", it is rude.
+//
+// `ask` is the default because a first launch has no basis for assuming
+// consent to a restart. The choice lives in Settings and persists.
+export const UPDATE_MODE = { ASK: 'ask', AUTOMATIC: 'automatic' };
+const UPDATE_MODE_KEY = 'updateMode';
+
+/** The stored preference, defaulting to `ask`. Never throws. */
+export async function getUpdateMode() {
+  try {
+    const stored = await getJSON(UPDATE_MODE_KEY, UPDATE_MODE.ASK);
+    return stored === UPDATE_MODE.AUTOMATIC ? UPDATE_MODE.AUTOMATIC : UPDATE_MODE.ASK;
+  } catch {
+    return UPDATE_MODE.ASK;
+  }
+}
+
+/** Persist the preference. Returns the mode actually stored. */
+export async function setUpdateMode(mode) {
+  const next = mode === UPDATE_MODE.AUTOMATIC ? UPDATE_MODE.AUTOMATIC : UPDATE_MODE.ASK;
+  try { await setJSON(UPDATE_MODE_KEY, next); } catch { /* a lost preference is not a failure */ }
+  return next;
+}
 
 /** Whether over-the-air updates are live for this install.
  *

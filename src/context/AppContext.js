@@ -346,8 +346,20 @@ export function AppProvider({ children }) {
       transmission: c.transmission || 'Automatic',
       category: c.body_type || 'SUV',
       seller: c.seller_name || 'Verified Seller',
-      rating: parseFloat(c.seller_trust ? (c.seller_trust / 20).toFixed(1) : '4.5'),
-      distance: 2.5,
+      // The seller's trust score as the server computed it, 0-100, or null.
+      //
+      // This used to be `seller_trust / 20` rendered as a star rating, with
+      // '4.5' substituted when the server sent nothing. Both directions were
+      // wrong. POST /reviews is retired, so the review component of the score
+      // is permanently zero and 4.0 stars was the highest anyone could ever
+      // reach; a genuine ID-verified seller with no completed sales scores
+      // 30 + 0 + 20 + 0 = 50 and was shown to buyers as "★ 2.5". Meanwhile a
+      // seller the server knew nothing about was awarded a flattering 4.5.
+      // A star is a claim about other people's experience; nobody has had one
+      // yet, so the app states what is actually verified instead.
+      sellerTrust: Number.isFinite(c.seller_trust) ? c.seller_trust : null,
+      sellerIdVerified: c.seller_id_verified === 'approved',
+      sellerBusinessVerified: c.seller_business_verified === true,
       inspected: !!c.inspected,
       inspectionScore: c.inspection_score,
       type: 'sale',
@@ -687,21 +699,83 @@ export function AppProvider({ children }) {
   }, [fetchCars, fetchRentalCars, loadSection, mapRentalInquiry, mapSubmission,
       mapConversation, mapNotification, mapAdminInspection]);
 
-  // Check auth token and trigger load on app startup
+  // ─── Refresh, on demand ─────────────────────────────────────────────────────
+  // The catalogue was fetched exactly once, inside the mount-once effect below,
+  // and there was no way to ask for it again: no pull-to-refresh, no refetch on
+  // focus, and the single line that sets backendReachable back to true lives
+  // inside the fetch that never ran twice.
+  //
+  // On Rwandan mobile data a first request failing is routine, not exceptional,
+  // and it cost the whole session — an empty marketplace under a notice
+  // promising listings "as soon as we're back", and the gesture every phone
+  // user reaches for first doing nothing at all.
+  //
+  // Total by construction: fetchCars already resolves rather than rejecting on
+  // a network failure, so a refresh can be wired straight to a RefreshControl
+  // without a try/catch at every call site.
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshCatalogue = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const [nextCars, nextRentals] = await Promise.all([fetchCars(), fetchRentalCars()]);
+      setCars(nextCars);
+      setRentalCars(nextRentals);
+      // A signed-in person's own rows — saved cars, messages, submissions — are
+      // reloaded too, because the commonest reason to pull is "I did something
+      // on another device" or "the first load failed and I lost my saved list".
+      if (isLoggedIn && currentUser?.id) await loadInitialData(currentUser);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchCars, fetchRentalCars, isLoggedIn, currentUser, loadInitialData]);
+
+  // Restore the session on startup.
+  //
+  // The token outlives the process — src/api/client.js only clears the keychain
+  // on SESSION_EXPIRED or SESSION_REVOKED, so a wrong password or a dropped
+  // connection never signs anyone out. But the PROFILE was fetched fresh on
+  // every launch and nothing was cached, so a getMe() that failed on a weak
+  // connection left a perfectly valid session rendering as signed out until the
+  // next restart: no saved cars, no messages, a "Sign in" button on Profile.
+  //
+  // So: hydrate from the last known profile immediately, then reconcile with
+  // the server. A network failure now costs a slightly stale name, not the
+  // session. Only an actual auth answer signs anybody out, and that is the
+  // client's job (it clears the keychain), not this effect's.
   useEffect(() => {
     const initAuth = async () => {
       try {
         const token = await getToken();
         if (token) {
+          const cached = await getJSON('cachedProfile', null);
+          if (cached?.id) {
+            setCurrentUser(withInitials(cached));
+            setIsLoggedIn(true);
+          }
           const me = await authApi.getMe();
           setCurrentUser(withInitials(me));
           setIsLoggedIn(true);
+          setJSON('cachedProfile', me);
           await loadInitialData(me);
         } else {
           setCars(await fetchCars());
           setRentalCars(await fetchRentalCars());
         }
       } catch (err) {
+        // A dropped connection is not a logout. The optimistic session from the
+        // cached profile stands, and the catalogue below is what a signed-out
+        // browse would show anyway — pull-to-refresh retries the rest.
+        //
+        // Anything that is NOT a network failure is the server's answer about
+        // this token, so the optimistic session has to be given back. The API
+        // client has already cleared the keychain by this point on an expired or
+        // revoked session; leaving isLoggedIn true would show a signed-in shell
+        // over a session that no longer exists.
+        if (!err?.isNetworkError) {
+          setCurrentUser(SIGNED_OUT_USER);
+          setIsLoggedIn(false);
+          setJSON('cachedProfile', null);
+        }
         console.warn('Initial auth setup failed, falling back to public data:', err);
         setCars(await fetchCars());
         setRentalCars(await fetchRentalCars());
@@ -884,6 +958,7 @@ export function AppProvider({ children }) {
       // must not crash the sign-in it just succeeded at.
       setCurrentUser(withInitials(user));
       setIsLoggedIn(true);
+      setJSON('cachedProfile', user);
       await loadInitialData(user);
     } catch (err) {
       // A release build NEVER grants a session the server did not issue. Signing
@@ -934,6 +1009,7 @@ export function AppProvider({ children }) {
       const user = data.user;
       setCurrentUser(withInitials(user));
       setIsLoggedIn(true);
+      setJSON('cachedProfile', user);
       await loadInitialData(user);
     } catch (err) {
       // Same rule as sign-in: no server, no account. Pretending otherwise would
@@ -969,6 +1045,9 @@ export function AppProvider({ children }) {
     await unregisterPushToken(pushToken);
     setPushToken(null);
     try { await authApi.logout(); } catch {}
+    // The cached profile is what the next launch restores from. Leaving it
+    // behind would sign the handset's previous user back in on the next start.
+    setJSON('cachedProfile', null);
     setCurrentUser(SIGNED_OUT_USER);
     setIsLoggedIn(false);
     setSavedCarIds([]);
@@ -1003,12 +1082,14 @@ export function AppProvider({ children }) {
       setJSON('savedSearches', []),
       setJSON('rentalInquiries', []),
       setJSON('recentlyViewedIds', []),
+      setJSON('cachedProfile', null),
     ]);
   }, [pushToken]);
 
   const updateCurrentUserProfile = useCallback(async (fields) => {
     const updated = await authApi.updateProfile(fields);
     setCurrentUser(withInitials(updated));
+    setJSON('cachedProfile', updated);
     return updated;
   }, []);
 
@@ -1047,6 +1128,7 @@ export function AppProvider({ children }) {
       await authApi.submitIdVerification(docs);
       const me = await authApi.getMe();
       setCurrentUser(withInitials(me));
+      setJSON('cachedProfile', me);
     } catch (err) {
       if (!isNetworkError(err)) throw err;
       // Claiming "under review" for documents that never left the handset would
@@ -1541,6 +1623,8 @@ export function AppProvider({ children }) {
     // Connectivity — false once a read failed at the transport layer, so screens
     // can say "we couldn't reach Sawa" rather than showing an empty marketplace.
     backendReachable, demoMode: DEMO_MODE,
+    // Pull-to-refresh, and the "Try again" inside the offline notice.
+    refreshCatalogue, refreshing,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

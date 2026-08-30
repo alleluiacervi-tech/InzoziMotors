@@ -38,9 +38,20 @@ async function minInspectionMinutes() {
   }
 }
 
-router.get('/action-center', requireAdmin, async (_req, res) => {
+router.get('/action-center', requireAdmin, async (req, res) => {
   try {
-    const [submissions, ids, inspections, reports, imports, importPayments, rentalInquiries, listingRisks, lapsingRentals, paidUnpublishedRentals, suspectInspections] = await Promise.all([
+    // ⚠ This list is positional. Every name here binds to the query at the SAME
+    // index below, and nothing checks that they agree — a query inserted in the
+    // middle without moving its name silently hands one queue another queue's
+    // rows. That has now happened twice in this file: once swapping the rental
+    // and integrity queues, and once feeding the seller-cap queue a list of
+    // suspect inspections. Add new queries at the END, and add the name at the
+    // END, together.
+    const [
+      submissions, ids, inspections, reports, imports, importPayments,
+      rentalInquiries, listingRisks, lapsingRentals, paidUnpublishedRentals,
+      overCapSellers, suspectInspections,
+    ] = await Promise.all([
       pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
                     EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
                   FROM submissions
@@ -137,6 +148,24 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
                   ) sub ON TRUE
                   WHERE rc.status <> 'active' AND rc.retired_at IS NULL
                   ORDER BY sub.created_at ASC LIMIT 20`),
+      // Sellers holding more listings than their agreed cap.
+      //
+      // Lowering a cap deliberately does NOT unpublish anything — doing that
+      // from a number field would delete a paying customer's shopfront in bulk.
+      // So the over-cap state is real and has to be visible somewhere, or an
+      // operator sets a cap of 20 on a showroom with 34 cars and never learns
+      // that the number they typed is not the number in effect.
+      pool.query(`SELECT u.id, u.name, u.max_active_listings AS cap,
+                    COUNT(c.id)::int AS occupied,
+                    COUNT(c.id)::int - u.max_active_listings AS over_by,
+                    EXTRACT(EPOCH FROM (NOW() - u.listing_cap_set_at)) / 3600 AS age_hours,
+                    u.listing_cap_set_at AS occurred_at
+                  FROM users u
+                  JOIN cars c ON c.seller_id = u.id AND c.status IN ('live','paused')
+                  WHERE u.max_active_listings IS NOT NULL AND u.deleted_at IS NULL
+                  GROUP BY u.id, u.name, u.max_active_listings, u.listing_cap_set_at
+                  HAVING COUNT(c.id) > u.max_active_listings
+                  ORDER BY (COUNT(c.id)::int - u.max_active_listings) DESC LIMIT 20`),
       // Completed inspections whose record does not look plausible.
       //
       // SQL narrows to CANDIDATES; lib/inspection-integrity.js still decides.
@@ -224,20 +253,53 @@ router.get('/action-center', requireAdmin, async (_req, res) => {
           + `${r.status} so it is not on the public feed. Set it to Active to publish it.`,
         href: '/rentals/fleet',
       })),
+      // Attention, not routine. Nothing is broken and no buyer is affected, so
+      // it is not urgent — but it does not clear itself either: either the cap
+      // moves up or some cars come down, and both are decisions. 'routine'
+      // sorts to the bottom of the queue, which for an item that needs a human
+      // to choose something is the same as not showing it.
+      ...overCapSellers.rows.map((r) => item(r, {
+        id: `seller-over-cap:${r.id}`, kind: 'Seller',
+        priority: 'attention',
+        title: `${r.name} is over their listing cap`,
+        detail: `${r.occupied} live or paused against a cap of ${r.cap} — ${r.over_by} over. `
+          + 'Nothing was unpublished; they cannot publish another until they are back under.',
+        href: `/users?q=${encodeURIComponent(r.name || '')}`,
+      })),
       ...listingRisks.rows.map((r) => item(r, { id: `listing-risk:${r.id}`, kind: 'Listing', priority: r.age_hours >= 24 ? 'urgent' : 'attention', title: `Review ${r.title}`, detail: 'Approval, inspection or gallery requirement needs attention', href: `/listings/${r.id}/edit` })),
     ];
     const rank = { urgent: 0, attention: 1, routine: 2 };
     items.sort((a, b) => rank[a.priority] - rank[b.priority] || b.age_hours - a.age_hours);
 
+    // ?kind=Inspection — one queue rather than the whole desk.
+    //
+    // The response is capped at 60 items, which is right for a triage view but
+    // means a low-priority kind can be entirely invisible behind a backlog of
+    // urgent ones. An operator who wants to work through just the identity
+    // checks, or just the sellers over their cap, had no way to ask; their only
+    // option was to scroll a mixed list and hope. Matched case-insensitively
+    // because the kinds are display labels ('Rental listing'), not enum values.
+    const kinds = String(req.query.kind || '')
+      .split(',').map((k) => k.trim().toLowerCase()).filter(Boolean);
+    const visible = kinds.length
+      ? items.filter((i) => kinds.includes(String(i.kind).toLowerCase()))
+      : items;
+
     res.json({
       generated_at: new Date().toISOString(),
+      // The summary always describes the WHOLE desk, filtered or not — an
+      // operator narrowing to one kind must still see how much else is waiting,
+      // or the filter becomes a way to hide work from yourself.
       summary: {
         total: items.length,
         urgent: items.filter((i) => i.priority === 'urgent').length,
         attention: items.filter((i) => i.priority === 'attention').length,
         routine: items.filter((i) => i.priority === 'routine').length,
       },
-      items: items.slice(0, 60),
+      kinds: [...new Set(items.map((i) => i.kind))].sort(),
+      filtered_kinds: kinds.length ? kinds : null,
+      matching: visible.length,
+      items: visible.slice(0, 60),
     });
   } catch (err) {
     log.error('action center error', { error: err.message });
@@ -482,6 +544,12 @@ router.get('/users', requireAdmin, async (req, res) => {
               id_verification_method, id_verification_note, id_verification_ref,
               id_verified_at,
               (SELECT v.name FROM users v WHERE v.id = users.id_verified_by) AS id_verified_by_name,
+              max_active_listings, listing_cap_note, listing_cap_set_at,
+              -- What the cap is measured against, so the directory can show
+              -- "3 of 5" rather than a limit with no context, and so an
+              -- operator can see they are about to set one below the count.
+              (SELECT COUNT(*)::int FROM cars c
+                WHERE c.seller_id = users.id AND c.status IN ('live','paused')) AS active_listings,
               completed_sales, created_at
        FROM users
        WHERE name ILIKE $1 OR email ILIKE $1 OR COALESCE(phone, '') ILIKE $1
@@ -620,6 +688,100 @@ router.post('/users/:id/password-reset', requireAdmin, requireUuid('id'), async 
     await client.query('ROLLBACK');
     log.error('admin password reset error', { error: err.message });
     res.status(500).json({ error: 'Could not initiate password reset' });
+  } finally { client.release(); }
+});
+
+// PUT /admin/users/:id/listing-cap — how many cars this seller may hold live.
+//
+// A dedicated route rather than another field on PATCH /users/:id, because a
+// cap is a commercial term somebody agreed to: it needs an author and a date,
+// and the schema refuses a cap without one. Send `max_active_listings: null`
+// to remove the cap entirely.
+//
+// This never unpublishes anything. Lowering a cap below a showroom's current
+// count would otherwise delete a paying customer's shopfront in bulk, from a
+// number field — so instead the response says how far over they are, the
+// Action Center carries it, and their NEXT publish is the one that is refused.
+router.put('/users/:id/listing-cap', requireAdmin, requireUuid('id'), async (req, res) => {
+  const raw = req.body.max_active_listings;
+  const note = String(req.body.note || '').trim().slice(0, 500);
+
+  let cap = null;
+  if (raw !== null && raw !== undefined && raw !== '') {
+    cap = Number(raw);
+    if (!Number.isInteger(cap) || cap < 1) {
+      return res.status(400).json({
+        // A 0 cap is a suspension wearing a quota's clothes, and there is
+        // already a control for that which says so where people can see it.
+        error: 'A cap must be a whole number of 1 or more. To stop a seller publishing at all, suspend the account instead.',
+        code: 'INVALID_LISTING_CAP',
+      });
+    }
+    if (cap > 10000) return res.status(400).json({ error: 'That cap is not a limit.' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const before = await client.query(
+      `SELECT id, name, role, max_active_listings,
+              (SELECT COUNT(*)::int FROM cars c
+                WHERE c.seller_id = users.id AND c.status IN ('live','paused')) AS occupied
+         FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
+      [req.params.id]
+    );
+    if (!before.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'User not found' }); }
+    const seller = before.rows[0];
+    if (seller.role !== 'seller') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Only a seller can have a listing cap.',
+        code: 'NOT_A_SELLER',
+      });
+    }
+
+    const { rows } = await client.query(
+      // Every $2 is cast: when the value is NULL, Postgres has no other clue
+      // what type the column comparison in these CASE arms should be, and
+      // refuses the statement rather than guessing.
+      `UPDATE users SET max_active_listings = $2::int,
+              listing_cap_note   = CASE WHEN $2::int IS NULL THEN NULL ELSE NULLIF($3, '') END,
+              listing_cap_set_at = CASE WHEN $2::int IS NULL THEN NULL ELSE NOW() END,
+              listing_cap_set_by = CASE WHEN $2::int IS NULL THEN NULL ELSE $4::uuid END
+        WHERE id = $1
+        RETURNING id, name, max_active_listings, listing_cap_note, listing_cap_set_at`,
+      [req.params.id, cap, note, req.user.id]
+    );
+
+    await recordAdminAction(client, {
+      actorId: req.user.id,
+      action: 'user.listing_cap_set',
+      targetType: 'user',
+      targetId: req.params.id,
+      summary: cap === null
+        ? `Removed the listing cap on ${seller.name}`
+        : `Set ${seller.name}'s listing cap to ${cap}`,
+      metadata: { previous: seller.max_active_listings, cap, occupied: seller.occupied, note: note || undefined },
+    });
+    await client.query('COMMIT');
+
+    const overBy = Number.isInteger(cap) ? Math.max(0, seller.occupied - cap) : 0;
+    res.json({
+      ...rows[0],
+      occupied: seller.occupied,
+      // Said plainly rather than left for the operator to work out, because the
+      // number they just typed did NOT take anything down and they need to know
+      // that before they go looking for the cars they think they removed.
+      over_by: overBy,
+      warning: overBy > 0
+        ? `${seller.name} has ${seller.occupied} listings live, which is ${overBy} over this cap. `
+        + 'Nothing has been unpublished — they simply cannot publish another until they are back under.'
+        : null,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    log.error('listing cap error', { error: err.message });
+    res.status(500).json({ error: 'Could not set the listing cap' });
   } finally { client.release(); }
 });
 

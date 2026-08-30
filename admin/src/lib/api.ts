@@ -105,6 +105,11 @@ export type JourneyBoard = {
 export type Readiness = {
   ready: boolean
   missing: string[]
+  /** Worth fixing, not worth refusing over — a thin description, a VIN of
+   *  "N/A", a title that never mentions its own make. Advisory by design: a
+   *  buyer cannot audit the 150-point rigour, but they can read a broken
+   *  description, and they price the company from it. */
+  warnings?: string[]
   photo_count: number
   min_photos: number
   inspection_required: boolean
@@ -608,6 +613,18 @@ export const api = {
   setUserAccess: (userId: string, action: 'suspend' | 'restore', reason?: string) =>
     request<any>(`/admin/users/${userId}/access`, { method: 'PATCH', body: JSON.stringify({ action, reason }) }),
 
+  /** How many cars this seller may hold live or paused at once. Pass null to
+   *  remove the cap. Lowering it below their current count NEVER unpublishes
+   *  anything — the response's `warning` says how far over they are. */
+  setListingCap: (userId: string, max_active_listings: number | null, note?: string) =>
+    request<{
+      id: string; name: string;
+      max_active_listings: number | null; listing_cap_note: string | null;
+      occupied: number; over_by: number; warning: string | null;
+    }>(`/admin/users/${userId}/listing-cap`, {
+      method: 'PUT', body: JSON.stringify({ max_active_listings, note }),
+    }),
+
   // Imports — a separate operation and ledger from local vehicle handovers.
   importOrders: (status?: string) =>
     request<any[]>(`/imports/admin/all${status ? `?status=${encodeURIComponent(status)}` : ''}`),
@@ -674,8 +691,36 @@ export const api = {
     request<any>(`/admin/fees/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   // Featured listings
-  featureCar: (id: string, days = 7) =>
-    request<any>(`/cars/${id}/feature`, { method: 'PATCH', body: JSON.stringify({ days }) }),
+  /** Place a car in the home-screen banner.
+   *
+   *  `kind` is what separates "we chose this" from "they paid for this". A
+   *  sponsored placement is disclosed to buyers as Sponsored and must carry the
+   *  agreed amount — recorded here, collected the way money always is. */
+  featureCar: (
+    id: string,
+    opts: {
+      kind?: 'editorial' | 'hot_deal' | 'sponsored'
+      days?: number
+      slot?: number
+      headline?: string
+      starts_at?: string
+      amount_rwf?: number
+    } = {},
+  ) =>
+    request<any>(`/cars/${id}/feature`, {
+      method: 'PATCH',
+      body: JSON.stringify({ kind: 'editorial', days: 7, ...opts }),
+    }),
+
+  /** End a placement early. A reason is required: a paid slot that vanishes
+   *  without one is a customer conversation nobody can reconstruct. */
+  cancelFeature: (placementId: string, reason: string) =>
+    request<any>(`/cars/feature/${placementId}`, {
+      method: 'DELETE', body: JSON.stringify({ reason }),
+    }),
+
+  /** What is in the banner right now, in slot order. */
+  featuredBanner: (limit = 12) => request<any[]>(`/cars/featured?limit=${limit}`),
 
   // ── Inspection centers ─────────────────────────────────────────────────────
   // Booking capacity is enforced against daily_capacity on every scheduling

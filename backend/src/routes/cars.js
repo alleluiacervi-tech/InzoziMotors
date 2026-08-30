@@ -44,6 +44,58 @@ function validInspectionExists(carAlias = 'c') {
   )`;
 }
 
+// ─── What a stranger may read ─────────────────────────────────────────────────
+// The public browse and detail routes used to `SELECT c.*`, which meant every
+// column the cars table would ever grow was published the moment it was added.
+// Three of them should never have left the building:
+//
+//   review_notes       the admin's own words. On an ID revocation the server
+//                      appends "Seller identity approval was revoked; review is
+//                      required before republication." to this column — and
+//                      then served it to anyone who asked for /cars.
+//   approved_by        the internal user id of the admin who published.
+//   registration_plate the plate itself. This platform burns a badge over the
+//                      plate in every published photograph; shipping the string
+//                      in the JSON undid that work in the same response.
+//
+// Allow-list, never deny-list: a column added to `cars` tomorrow is private
+// until someone puts it here on purpose. `archive_reason` and `vin_key` are
+// omitted for the same reason — internal, and nothing renders them.
+const PUBLIC_CAR_COLUMNS = [
+  'id', 'seller_id', 'title', 'make', 'model', 'year', 'mileage',
+  'fuel_type', 'transmission', 'body_type', 'color', 'price', 'currency',
+  'location', 'drive_side', 'images', 'inspected', 'inspection_score',
+  'status', 'views', 'saves', 'listed_at', 'sold_at', 'created_at',
+  'featured_until', 'condition_grade',
+];
+
+// The feed does not render a description or a VIN, and shipping them cost
+// roughly half the payload on a 20-car page. The detail route adds them back.
+const PUBLIC_CAR_DETAIL_COLUMNS = [...PUBLIC_CAR_COLUMNS, 'description', 'vin'];
+
+// Columns the DETAIL route selects but strips before answering anyone who is
+// not the car's own seller or an admin. The admin listing editor reads
+// review_notes from this route, so they cannot simply be dropped — they have to
+// be gated the same way the seller's phone number already is, further down.
+const INTERNAL_CAR_COLUMNS = [
+  'review_notes', 'archive_reason', 'archived_at', 'approved_at', 'approved_by',
+  'registration_plate', 'vin_key',
+];
+
+/** `c.id, c.title, …` for a SELECT list. */
+const publicCarSelect = (alias, columns = PUBLIC_CAR_COLUMNS) =>
+  columns.map((col) => `${alias}.${col}`).join(', ');
+
+// The statuses that occupy one of a seller's marketplace slots. `paused` counts
+// on purpose: a paused car is still that seller's listing, held back for a few
+// days, and exempting it would make any cap trivially avoidable. `sold` and
+// `archived` do not — the slot is genuinely free again.
+const OCCUPIES_A_SLOT = ['live', 'paused'];
+
+// Why a car is in the banner. 'sponsored' is the only one the buyer is told
+// about, and it is the only one that carries money.
+const FEATURE_KINDS = ['editorial', 'hot_deal', 'sponsored'];
+
 // ─── Market intelligence ──────────────────────────────────────────────────────
 // The app used to fabricate "below market %" / "listed N days ago" from a
 // hardcoded table; the server is the only honest source of these numbers.
@@ -154,7 +206,8 @@ router.get('/', async (req, res) => {
                   c.${safeSort} ${safeOrder}
          LIMIT $${params.length - 1} OFFSET $${params.length}
        )
-       SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust,
+       SELECT ${publicCarSelect('c')},
+              u.name AS seller_name, u.trust_score AS seller_trust,
               u.id_verified AS seller_id_verified,
               u.business_verified AS seller_business_verified,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
@@ -173,6 +226,60 @@ ${MARKET_LATERALS}
   }
 });
 
+// GET /cars/featured — the home-screen banner.
+//
+// Public, unauthenticated, and deliberately narrow: id, photo, price, the
+// disclosure, and nothing else a card needs to render. It reuses the same
+// eligibility predicate as the browse list, so a car that is sold, paused,
+// demoted by a failed re-inspection, or whose seller's identity was revoked
+// leaves the banner the moment it leaves the marketplace — by falling out of a
+// WHERE clause, with no job to run and nothing to remember.
+router.get('/featured', async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 6, 1), 12);
+  try {
+    const { rows } = await pool.query(
+      `SELECT f.id AS placement_id, f.kind, f.slot, f.headline, f.ends_at,
+              ${publicCarSelect('c')},
+              u.name AS seller_name
+         FROM featured_placements f
+         JOIN cars c ON c.id = f.car_id
+         JOIN users u ON u.id = c.seller_id
+        WHERE f.cancelled_at IS NULL
+          AND f.starts_at <= NOW() AND f.ends_at > NOW()
+          AND c.status = 'live'
+          AND u.role = 'seller' AND u.id_verified = 'approved'
+          AND u.account_status = 'active' AND u.deleted_at IS NULL
+          AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
+          AND ${validInspectionExists('c')}
+        ORDER BY f.slot ASC, f.created_at DESC
+        LIMIT $1`,
+      [limit]
+    );
+    res.json(rows.map((row) => ({
+      ...row,
+      // Computed here rather than left to three clients to each decide. A paid
+      // placement is disclosed as paid, in the payload, so no surface can
+      // render it as an editorial pick by forgetting to check the kind.
+      sponsored: row.kind === 'sponsored',
+      label: row.kind === 'sponsored' ? 'Sponsored'
+           : row.kind === 'hot_deal' ? 'Hot deal'
+           : 'Featured',
+    })));
+  } catch (err) {
+    log.error('featured feed error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /cars/:id/readiness — admin: why is (or isn't) this listing publishable?
+//
+// The same verdict the approve/publish transactions enforce, offered BEFORE
+// the attempt instead of only inside a 409. The dashboard used to be able to
+// say no more than "inspection, seller approval and gallery are required" —
+// three categories, regardless of which one was actually wrong — so the only
+// way to learn the real reason was to try the action and read the error.
+// Publication stays exactly as gated as it was; the reasoning is just no
+// longer a secret from the person doing the work.
 // GET /cars/:id/history — vehicle history card (buyers + public).
 // Facts derive from real data where it exists (inspection checklist, price
 // history, verified seller); anything unknown is labelled unknown, not faked.
@@ -346,7 +453,8 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
     // listing price. A car with no recorded changes returns [] — nothing is
     // synthesised; the app renders an empty history rather than a fake one.
     const { rows } = await pool.query(
-      `SELECT c.*, u.name AS seller_name, u.phone AS seller_phone,
+      `SELECT ${publicCarSelect('c', [...PUBLIC_CAR_DETAIL_COLUMNS, ...INTERNAL_CAR_COLUMNS])},
+              u.name AS seller_name, u.phone AS seller_phone,
               u.whatsapp_phone AS seller_whatsapp,
               u.phone_visible AS seller_phone_visible,
               u.whatsapp_visible AS seller_whatsapp_visible,
@@ -404,6 +512,12 @@ ${MARKET_LATERALS}
     if (!isInsider) {
       car.seller_phone = null;
       car.seller_whatsapp = null;
+      // The admin's own notes, the plate string, and the internal audit
+      // columns. An admin or the car's own seller keeps them — the listing
+      // editor reads review_notes from this route — and nobody else ever
+      // sees them. Deleting rather than nulling keeps them off the wire
+      // entirely, so their absence is not itself a signal.
+      for (const column of INTERNAL_CAR_COLUMNS) delete car[column];
     }
     car.seller_contact_available = available;
     car.direct_deal_notice = DIRECT_DEAL_NOTICE;
@@ -927,34 +1041,134 @@ router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
 // PATCH /cars/:id/feature — editorial merchandising only. There is no paid
 // boost product and no fee is created from this action.
 router.patch('/:id/feature', requireAdmin, requireUuid('id'), async (req, res) => {
+  // kind is what separates "we chose this" from "they paid for this". It is
+  // not optional in spirit, but it defaults to editorial so the old
+  // single-argument call still means exactly what it always meant.
+  const kind = String(req.body.kind || 'editorial');
+  if (!FEATURE_KINDS.includes(kind)) {
+    return res.status(400).json({
+      error: `kind must be one of ${FEATURE_KINDS.join(', ')}`, code: 'INVALID_FEATURE_KIND',
+    });
+  }
   const days = Math.min(Math.max(parseInt(req.body.days) || 7, 1), 30);
+  const slot = Math.min(Math.max(parseInt(req.body.slot) || 100, 1), 999);
+  const headline = String(req.body.headline || '').trim().slice(0, 120) || null;
+  const startsAt = req.body.starts_at ? new Date(req.body.starts_at) : new Date();
+  if (Number.isNaN(startsAt.getTime())) {
+    return res.status(400).json({ error: 'starts_at is not a date' });
+  }
+
+  // Money is meaningful only on a paid placement, and a paid placement with no
+  // amount is a favour nobody wrote down. The schema refuses both; refuse them
+  // here too, so the operator gets a sentence rather than a constraint name.
+  let amount = null;
+  if (kind === 'sponsored') {
+    amount = Number(req.body.amount_rwf);
+    if (!Number.isInteger(amount) || amount < 0) {
+      return res.status(400).json({
+        error: 'A sponsored placement needs the agreed amount in whole RWF. '
+             + 'It is recorded here, not collected — take the money as you always do.',
+        code: 'SPONSORSHIP_AMOUNT_REQUIRED',
+      });
+    }
+  } else if (req.body.amount_rwf != null) {
+    return res.status(400).json({
+      error: 'Only a sponsored placement carries an amount. An editorial pick is not sold.',
+      code: 'AMOUNT_ON_UNPAID_PLACEMENT',
+    });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Locked, because the overlap check below is a read followed by a write and
+    // two operators featuring the same car would otherwise both pass it.
+    const car = await client.query(
+      "SELECT id, title, status FROM cars WHERE id = $1 FOR UPDATE", [req.params.id]);
+    if (!car.rows.length || car.rows[0].status !== 'live') {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Live listing not found' });
+    }
+
+    // A car in two banner slots at once is always a mistake. Enforced here
+    // rather than by a partial unique index because the predicate needs NOW(),
+    // which Postgres will not accept in one — see migration 0033.
+    const clash = await client.query(
+      `SELECT id, kind, ends_at FROM featured_placements
+        WHERE car_id = $1 AND cancelled_at IS NULL
+          AND ends_at > NOW() AND starts_at < $2::timestamptz`,
+      [req.params.id, new Date(startsAt.getTime() + days * 86400000).toISOString()]
+    );
+    if (clash.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: `${car.rows[0].title} already has a ${clash.rows[0].kind} placement running to `
+             + `${String(clash.rows[0].ends_at).slice(0, 10)}. Cancel it before booking another.`,
+        code: 'FEATURE_PLACEMENT_EXISTS',
+        placement_id: clash.rows[0].id,
+      });
+    }
+
+    const endsAt = new Date(startsAt.getTime() + days * 86400000);
+    const { rows } = await client.query(
+      `INSERT INTO featured_placements
+         (car_id, kind, slot, starts_at, ends_at, headline, amount_rwf, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [req.params.id, kind, slot, startsAt.toISOString(), endsAt.toISOString(),
+       headline, amount, req.user.id]
+    );
+
+    // featured_until is kept in step so the browse ORDER BY, the admin listings
+    // badge and every existing reader carry on working untouched.
+    await client.query(
+      'UPDATE cars SET featured_until = GREATEST(COALESCE(featured_until, $2), $2) WHERE id = $1',
+      [req.params.id, endsAt.toISOString()]
+    );
+
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'listing.featured', targetType: 'listing', targetId: req.params.id,
+      summary: `${car.rows[0].title} featured (${kind}) in slot ${slot} for ${days} days`,
+      metadata: { kind, slot, days, amount_rwf: amount, headline },
+    });
+    await client.query('COMMIT');
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    log.error('feature car error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  } finally { client.release(); }
+});
+
+// DELETE /cars/feature/:placementId — pull a car out of the banner.
+//
+// A reason is required for the same reason a listing rejection needs one: a
+// paid placement that vanishes without explanation is a conversation with a
+// customer that nobody can reconstruct.
+router.delete('/feature/:placementId', requireAdmin, requireUuid('placementId'), async (req, res) => {
+  const reason = String(req.body?.reason || '').trim().slice(0, 500);
+  if (reason.length < 3) {
+    return res.status(400).json({ error: 'Say why this placement is ending.', code: 'REASON_REQUIRED' });
+  }
   try {
     const { rows } = await pool.query(
-      `UPDATE cars SET featured_until = NOW() + ($1 || ' days')::interval
-       WHERE id = $2 AND status = 'live' RETURNING *`,
-      [String(days), req.params.id]
+      `UPDATE featured_placements
+          SET cancelled_at = NOW(), cancelled_by = $2, cancel_reason = $3
+        WHERE id = $1 AND cancelled_at IS NULL
+        RETURNING *`,
+      [req.params.placementId, req.user.id, reason]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Live listing not found' });
+    if (!rows.length) return res.status(404).json({ error: 'Placement not found, or already ended' });
     await recordAdminAction(pool, {
-      actorId: req.user.id, action: 'listing.featured', targetType: 'listing', targetId: req.params.id,
-      summary: `${rows[0].title} featured editorially for ${days} days`, metadata: { days },
+      actorId: req.user.id, action: 'listing.feature_cancelled', targetType: 'listing',
+      targetId: rows[0].car_id, summary: `Ended a ${rows[0].kind} placement`, metadata: { reason },
     });
     res.json(rows[0]);
   } catch (err) {
-    log.error('feature car error', { error: err.message });
+    log.error('cancel placement error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// GET /cars/:id/readiness — admin: why is (or isn't) this listing publishable?
-//
-// The same verdict the approve/publish transactions enforce, offered BEFORE
-// the attempt instead of only inside a 409. The dashboard used to be able to
-// say no more than "inspection, seller approval and gallery are required" —
-// three categories, regardless of which one was actually wrong — so the only
-// way to learn the real reason was to try the action and read the error.
-// Publication stays exactly as gated as it was; the reasoning is just no
-// longer a secret from the person doing the work.
 router.get('/:id/readiness', requireAdmin, requireUuid('id'), async (req, res) => {
   try {
     const readiness = await publicationReadiness(pool, req.params.id);
@@ -1010,6 +1224,40 @@ router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) =>
           error: `Listing cannot be ${status === 'live' ? 'published' : 'approved'} yet. Missing: ${readiness?.missing.join(', ') || 'requirements'}.`,
           code: 'LISTING_NOT_READY',
           readiness,
+        });
+      }
+    }
+
+    // ── The seller's marketplace cap ────────────────────────────────────────
+    // Publication only, and only on the transition INTO an occupied slot. Two
+    // deliberate choices:
+    //
+    //  · Not at submission. Refusing a submission turns away a car we have not
+    //    inspected yet, and the inspection is what this business sells. Take
+    //    the car, inspect it, take the fee; refuse only the publish.
+    //  · Not inherited by other edits. An operator fixing the price or the
+    //    location of an over-cap seller's car must not be blocked — that is
+    //    exactly the moment they need to work on it.
+    //
+    // Counted inside the transaction, on a row already locked FOR UPDATE, so
+    // two admins publishing the same seller's cars at once cannot both pass.
+    if (OCCUPIES_A_SLOT.includes(status) && !OCCUPIES_A_SLOT.includes(previousStatus)) {
+      const cap = await client.query(
+        `SELECT u.max_active_listings AS cap, u.name,
+                (SELECT COUNT(*)::int FROM cars c
+                  WHERE c.seller_id = u.id AND c.status = ANY($2::text[]) AND c.id <> $1) AS occupied
+           FROM cars parent JOIN users u ON u.id = parent.seller_id
+          WHERE parent.id = $1`,
+        [req.params.id, OCCUPIES_A_SLOT]
+      );
+      const { cap: limit, occupied, name } = cap.rows[0] || {};
+      if (Number.isInteger(limit) && occupied >= limit) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: `${name || 'This seller'} already has ${occupied} of ${limit} listings on the marketplace. `
+               + `Raise their limit, or pause or sell one before publishing another.`,
+          code: 'SELLER_LISTING_CAP_REACHED',
+          cap: { limit, occupied, seller: name || null },
         });
       }
     }
@@ -1126,3 +1374,10 @@ router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 });
 
 module.exports = router;
+// Exported for backend/test/public-payload.test.js, which checks both lists
+// against the real table: a name that is not a column, and a column that is in
+// neither list, both fail. That second half is the point — adding a column to
+// `cars` should force somebody to decide whether strangers may read it.
+module.exports.PUBLIC_CAR_COLUMNS = PUBLIC_CAR_COLUMNS;
+module.exports.PUBLIC_CAR_DETAIL_COLUMNS = PUBLIC_CAR_DETAIL_COLUMNS;
+module.exports.INTERNAL_CAR_COLUMNS = INTERNAL_CAR_COLUMNS;

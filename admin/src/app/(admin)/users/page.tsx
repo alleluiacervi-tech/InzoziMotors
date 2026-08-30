@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill } from '@/components/ui'
+import ListingCap from '@/components/ListingCap'
 import { useConfirm, useToast } from '@/components/feedback'
 import { useSearchParams } from 'next/navigation'
 import { useFocusRow } from '@/components/useFocusRow'
@@ -25,6 +26,9 @@ type UserRow = {
   id_back_url?: string
   selfie_url?: string
   seller_type?: string | null
+  max_active_listings?: number | null
+  listing_cap_note?: string | null
+  active_listings?: number
   business_name?: string | null
   business_verified?: boolean
   must_change_password?: boolean
@@ -96,6 +100,14 @@ export default function UsersPage() {
   }>(null)
   const ask = useConfirm()
   const toast = useToast()
+
+  // The edit modal keeps its own draft of the editable fields, but a cap is not
+  // one of them — it is saved by its own route. Read it from the loaded row so
+  // the panel always shows what is actually stored, not a stale draft.
+  const rowFor = (id: string) => items.find((u) => u.id === id)
+  const capFor = (id: string) => rowFor(id)?.max_active_listings ?? null
+  const capNoteFor = (id: string) => rowFor(id)?.listing_cap_note ?? null
+  const activeFor = (id: string) => rowFor(id)?.active_listings
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -512,6 +524,19 @@ export default function UsersPage() {
             <button disabled={actionId === `edit-${editing.id}`} className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
               {actionId === `edit-${editing.id}` ? 'Saving…' : 'Save account controls'}
             </button>
+            {/* Outside the form's own submit: a cap is set by its own route,
+                because it needs an author and a date recorded with it. */}
+            {editing.role === 'seller' ? (
+              <ListingCap
+                userId={editing.id}
+                name={editing.name}
+                cap={capFor(editing.id)}
+                note={capNoteFor(editing.id)}
+                occupied={activeFor(editing.id)}
+                onSaved={load}
+                toast={toast}
+              />
+            ) : null}
           </form>
         </Card>
       ) : null}

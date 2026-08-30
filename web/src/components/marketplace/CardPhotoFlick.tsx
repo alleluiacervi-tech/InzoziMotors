@@ -31,11 +31,27 @@ export function CardPhotoFlick({
    *  isDemoListing — the same honesty gate as the badges. */
   fit?: 'cover' | 'contain'
 }) {
-  const preview = images.slice(0, MAX_PREVIEW)
+  const available = images.slice(0, MAX_PREVIEW)
   const [index, setIndex] = useState(0)
+  // Frames 2-4 are not mounted until somebody could actually use them.
+  //
+  // They are stacked in the same box as frame 1, so they are inside the
+  // viewport whenever the card is and `loading=lazy` does not hold them back:
+  // every card cost four full-width downloads to power a hover effect a phone
+  // cannot perform. On the mobile listings page — the organic landing page, on
+  // Rwandan mobile data — that is a straight 4x multiplier on the heaviest
+  // thing the site ships.
+  const [armed, setArmed] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  const multi = preview.length > 1
+  const preview = armed ? available : available.slice(0, 1)
+  const multi = available.length > 1
+
+  // Arm on the first hover with a real pointer. A touch device never fires
+  // this, which is the point.
+  const onPointerEnter = (e: React.PointerEvent) => {
+    if (multi && e.pointerType !== 'touch') setArmed(true)
+  }
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!multi || e.pointerType === 'touch') return
@@ -49,13 +65,17 @@ export function CardPhotoFlick({
 
   const onTouchCycle = () => {
     if (!multi) return
-    setIndex((i) => (i + 1) % preview.length)
+    // A deliberate tap on the photo is somebody asking for the other angles,
+    // so fetch them then — not on every card that scrolls past.
+    if (!armed) { setArmed(true); return }
+    setIndex((i) => (i + 1) % available.length)
   }
 
   return (
     <div
       ref={ref}
       className="relative h-full w-full"
+      onPointerEnter={onPointerEnter}
       onPointerMove={onPointerMove}
       onPointerLeave={() => setIndex(0)}
       onTouchEnd={onTouchCycle}
@@ -84,7 +104,7 @@ export function CardPhotoFlick({
           aria-hidden="true"
           className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         >
-          {preview.map((src, i) => (
+          {available.map((src, i) => (
             <span
               key={src}
               className={`h-1 rounded-pill transition-all duration-200 ${
