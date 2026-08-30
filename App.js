@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -11,6 +12,7 @@ import AnimatedSplash from './src/components/AnimatedSplash';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import FeedbackHost from './src/components/Feedback';
 import UpdateBanner from './src/components/UpdateBanner';
+import StoreUpdateGate from './src/components/StoreUpdateGate';
 import { getJSON } from './src/storage';
 
 export default function App() {
@@ -25,6 +27,9 @@ export default function App() {
   });
   const [splashDone, setSplashDone] = useState(false);
   const [initialRoute, setInitialRoute] = useState(null);
+  // null while the storage read is in flight, then true only on the very first
+  // launch after an install.
+  const [firstRun, setFirstRun] = useState(null);
 
   // Where a launch lands.
   //
@@ -38,10 +43,17 @@ export default function App() {
   // A storage failure lands on Main for the same reason: an existing user
   // stranded on a marketing screen is a worse outcome than a brand-new user who
   // misses the tour.
+  //
+  // The same read decides whether the branded splash runs at all. It is a
+  // tap-through screen with no auto-dismiss — a genuine brand moment the first
+  // time, and a toll booth every time after that. Somebody opening the app to
+  // check one price should get the marketplace, not a logo animation and a
+  // Next button. So it plays once, on the launch that also shows the tour, and
+  // never again.
   useEffect(() => {
     getJSON('onboardingSeen', false)
-      .then((seen) => setInitialRoute(seen ? 'Main' : 'Onboarding'))
-      .catch(() => setInitialRoute('Main'));
+      .then((seen) => { setFirstRun(!seen); setInitialRoute(seen ? 'Main' : 'Onboarding'); })
+      .catch(() => { setFirstRun(false); setInitialRoute('Main'); });
   }, []);
 
   // Route push-notification taps to their subject (chat thread, car, order).
@@ -78,10 +90,23 @@ export default function App() {
         {/* Floats over the app when a downloaded update is waiting. Renders
             nothing at all otherwise, and nothing ever in a dev build. */}
         <UpdateBanner />
+        {/* The other kind of update: a new BINARY, which only a store can
+            give you. Silent unless the server says one exists. */}
+        <StoreUpdateGate />
         <FeedbackHost />
-        {(!splashDone || !initialRoute) && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
+        {firstRun && !splashDone && <AnimatedSplash onFinish={() => setSplashDone(true)} />}
+        {/* The storage read above takes a few milliseconds, and the native
+            splash has already handed over by the time it resolves. Without
+            this a returning launch flashes whatever is behind the tree before
+            the navigator mounts. Same white the native splash uses, so the
+            handover is invisible rather than a blink. */}
+        {!initialRoute && <View style={styles.launchCover} />}
       </SafeAreaProvider>
     </AppProvider>
     </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  launchCover: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FFFFFF', zIndex: 99 },
+});

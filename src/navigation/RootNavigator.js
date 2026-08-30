@@ -31,7 +31,6 @@ import NotificationCenterScreen from '../screens/NotificationCenterScreen';
 // Phase 4 — Buyer Power Tools
 import SavedScreen from '../screens/SavedScreen';
 import ComparisonScreen from '../screens/ComparisonScreen';
-import MapScreen from '../screens/MapScreen';
 import DutyCalculatorScreen from '../screens/DutyCalculatorScreen';
 // Phase 5 — Growth Features
 import SellerAnalyticsScreen from '../screens/SellerAnalyticsScreen';
@@ -95,7 +94,6 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       {/* Phase 4 */}
       <Stack.Screen name="Saved" component={SavedScreen} />
       <Stack.Screen name="Comparison" component={ComparisonScreen} />
-      <Stack.Screen name="MapView" component={MapScreen} />
       <Stack.Screen name="DutyCalculator" component={DutyCalculatorScreen} />
       {/* Phase 5 */}
       <Stack.Screen name="SellerAnalytics" component={SellerAnalyticsScreen} />

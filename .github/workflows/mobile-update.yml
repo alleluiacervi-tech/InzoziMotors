@@ -25,6 +25,18 @@ name: Mobile Over-The-Air Update
 # If you widen the predicate in one file, widen it in the other in the same
 # commit, or a commit will satisfy neither and quietly reach nobody.
 #
+# ── The stop switch ──────────────────────────────────────────────────────────
+# Before publishing, this workflow asks the API whether over-the-air updates are
+# paused (`ota_paused` on the `app_release` setting). An operator can therefore
+# halt every update from the admin console — no GitHub account, no laptop, no
+# deploy. It is checked here rather than enforced in the app because the point
+# is to stop a bad bundle from ever leaving, not to ask installs to ignore one
+# that already arrived.
+#
+# If the API cannot be reached the publish is REFUSED. A stop switch you cannot
+# read is not a stop switch, and the moment you most need it is exactly the
+# moment production is least healthy. Re-run with `ignore_pause` to override.
+#
 # ── The channel ──────────────────────────────────────────────────────────────
 # Publishing goes to a BRANCH; an installed app subscribes to a CHANNEL. For
 # months this workflow published to branch `production` while no build profile
@@ -47,6 +59,11 @@ on:
         default: 'production'
       allow_native_changes:
         description: 'Publish even though native-sensitive files changed (only if you have already shipped a matching build)'
+        type: boolean
+        required: false
+        default: false
+      ignore_pause:
+        description: 'Publish even though over-the-air updates are paused in the admin console'
         type: boolean
         required: false
         default: false
@@ -168,6 +185,63 @@ jobs:
 
           Submitting that build to the stores remains a human decision.
           EOF
+
+      # Read the admin console's stop switch. Three attempts, because a single
+      # transient blip should not look like a deliberate pause.
+      - name: Check the over-the-air stop switch
+        if: steps.scope.outputs.publish == 'true'
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event.inputs.ignore_pause }}" = "true" ]; then
+            echo "::warning title=Stop switch bypassed::Publishing with ignore_pause ticked."
+            exit 0
+          fi
+
+          body=''
+          for attempt in 1 2 3; do
+            if body="$(curl -fsS --max-time 15 https://api.sawacars.com/settings/app-release)"; then
+              break
+            fi
+            echo "Attempt ${attempt} failed."
+            body=''
+            sleep $((attempt * 4))
+          done
+
+          if [ -z "${body}" ]; then
+            echo "::error title=Could not read the stop switch::api.sawacars.com/settings/app-release did not answer."
+            {
+              echo "### Not published — the stop switch could not be read"
+              echo
+              echo "\`https://api.sawacars.com/settings/app-release\` did not answer after three tries,"
+              echo "so this run cannot tell whether an operator has paused over-the-air updates."
+              echo "It refused rather than guessed."
+              echo
+              echo "Check the API is healthy, then re-run this workflow. If you need to publish"
+              echo "regardless, re-run it from the Actions tab with **ignore_pause** ticked."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          paused="$(printf '%s' "${body}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).ota_paused===true))}catch{process.stdout.write("unreadable")}})')"
+          reason="$(printf '%s' "${body}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).ota_pause_reason||""))}catch{process.stdout.write("")}})')"
+
+          if [ "${paused}" = "unreadable" ]; then
+            echo "::error title=Stop switch unreadable::The endpoint answered but the payload was not JSON."
+            exit 1
+          fi
+          if [ "${paused}" = "true" ]; then
+            {
+              echo "### Not published — over-the-air updates are paused"
+              echo
+              echo "An operator has paused updates in the admin console."
+              [ -n "${reason}" ] && { echo; echo "> ${reason}"; }
+              echo
+              echo "Unpause under **Settings → App release**, then re-run this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Updates paused::${reason:-Paused in the admin console.}"
+            exit 1
+          fi
+          echo "Stop switch is off — publishing."
 
       - name: Setup Node.js
         if: steps.scope.outputs.publish == 'true'

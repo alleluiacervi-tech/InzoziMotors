@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -11,15 +11,28 @@ import { showToast } from '../components/Feedback';
 import carsApi from '../api/cars';
 import ChipSelect from '../components/ChipSelect';
 
-const MAKES = [
-  'Toyota', 'Honda', 'Nissan', 'Suzuki', 'Mitsubishi', 'Mazda', 'Subaru',
-  'Isuzu', 'Daihatsu', 'Hyundai', 'Kia', 'Volkswagen', 'Mercedes', 'BMW',
-  'Audi', 'Land Rover', 'Peugeot', 'Ford', 'Jeep', 'Lexus',
+// The list a seller picks from now comes from the server (GET /makes), so it
+// widens without an App Store release. This stays only as the offline floor —
+// what a submission started on a phone with no signal can still offer. It is
+// deliberately the SHORT list: the twenty everyday brands, no more, because a
+// stale bundled list that looks complete is worse than an obviously partial one
+// next to an "Other brand" field that has always worked.
+const FALLBACK_MAKES = [
+  'Toyota', 'Nissan', 'Mitsubishi', 'Suzuki', 'Isuzu', 'Honda', 'Mazda',
+  'Subaru', 'Daihatsu', 'Lexus', 'Hyundai', 'Kia', 'Volkswagen',
+  'Mercedes-Benz', 'BMW', 'Audi', 'Land Rover', 'Ford', 'Jeep', 'Toyota Hino',
 ];
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 
 export default function CarValuationScreen({ navigation }) {
-  const { cars } = useApp();
+  const { cars, makes } = useApp();
+  // Served list when it has arrived, bundled floor when it has not. Names only:
+  // ChipSelect takes strings, and its "Other brand" field means an unlisted
+  // brand has always been submittable either way.
+  const MAKES = useMemo(
+    () => (makes.length ? makes.map((m) => m.name) : FALLBACK_MAKES),
+    [makes]
+  );
   const [make, setMake] = useState(null);
   const [model, setModel] = useState('');
   const [year, setYear] = useState(null);

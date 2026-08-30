@@ -10,6 +10,7 @@ import Screen from '../components/Screen';
 import CarCard from '../components/CarCard';
 import SkeletonCard from '../components/SkeletonCard';
 import SectionHeader from '../components/SectionHeader';
+import BrandMark from '../components/BrandMark';
 import DrawerMenu from '../components/DrawerMenu';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
@@ -47,7 +48,6 @@ const BANNER_SLIDES = [
   },
 ];
 
-const CAROUSEL_INTERVAL = 6000;
 
 const TOOLS = [
   { label: 'Certify My Car', icon: 'car-outline', screen: 'CarSubmission' },
@@ -57,7 +57,7 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing, makes } = useApp();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
   // dropped connection does not need a banner over the top of it.
@@ -77,7 +77,6 @@ export default function HomeScreen({ navigation }) {
   }), [rentalCars, rentFilter]);
 
   const carouselRef = useRef(null);
-  const scrollTimerRef = useRef(null);
 
   // ── The banner ────────────────────────────────────────────────────────────
   // These three slides used to be a hardcoded constant over stock studio
@@ -103,19 +102,17 @@ export default function HomeScreen({ navigation }) {
     return () => clearTimeout(t);
   }, []);
 
-  React.useEffect(() => {
-    // A single slide has nowhere to advance to, and a timer that scrolls a
-    // one-item list just fights the user's thumb.
-    if (slides.length < 2) return undefined;
-    scrollTimerRef.current = setInterval(() => {
-      setCarouselIndex((prev) => {
-        const next = prev >= slides.length ? 1 : prev + 1;
-        carouselRef.current?.scrollTo({ x: (next - 1) * SCREEN_WIDTH, animated: true });
-        return next;
-      });
-    }, CAROUSEL_INTERVAL);
-    return () => { if (scrollTimerRef.current) clearInterval(scrollTimerRef.current); };
-  }, [slides.length]);
+  // The banner used to advance itself every six seconds.
+  //
+  // That is fine for three interchangeable marketing slides and wrong for a car
+  // somebody is looking at. It moved while a person was reading a price, it
+  // moved back under a thumb mid-swipe, and — now that these are real listings
+  // an operator placed, some of them paid for — it counted an impression
+  // nobody chose to look at. A rail that only moves when a person moves it is
+  // both more usable and more honest about what a placement is worth.
+  //
+  // The dots stay: they are what says "there is more here", which is the one
+  // job the timer was doing that was worth keeping.
 
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
@@ -155,6 +152,21 @@ export default function HomeScreen({ navigation }) {
     }))
     .sort((a, b) => b.cars.length - a.cars.length)
     .slice(0, 6), [cars]);
+  // The served brand list, matched to the brands the catalogue actually holds.
+  // A window with a real mark on it reads as a brand's shopfront; one without
+  // still reads as a brand's shopfront, because BrandMark draws initials.
+  const brandRow = useMemo(() => {
+    const byName = new Map(makes.map((m) => [String(m.name).toLowerCase(), m]));
+    const byAlias = new Map();
+    for (const m of makes) {
+      for (const alias of m.aliases || []) byAlias.set(String(alias).toLowerCase(), m);
+    }
+    return (name) => {
+      const key = String(name || '').toLowerCase();
+      return byName.get(key) || byAlias.get(key) || null;
+    };
+  }, [makes]);
+
   const centerWindow = useMemo(() => ({
     brand: 'Sawa Center',
     subtitle: 'On display in Nyarutarama this week',
@@ -186,10 +198,19 @@ export default function HomeScreen({ navigation }) {
         ).slice(0, 6)
       : [];
   }, [cars, savedCarIds]);
-  const popularCars = useMemo(
-    () => [...cars].sort((a, b) => getSavedCount(b) - getSavedCount(a)).slice(0, 5),
-    [cars]
-  );
+  // "Popular" needs somebody to have actually done something. Sorting the whole
+  // catalogue by a save count that is zero everywhere just returns catalogue
+  // order, which is what Fresh This Week is already showing — so the two rails
+  // rendered the same cars under two different claims. Now: only cars with real
+  // saves, only ones Fresh did not already show, and the section disappears
+  // entirely below three. An empty rail is better than a false one.
+  const popularCars = useMemo(() => {
+    const alreadyShown = new Set(freshCars.map((c) => c.id));
+    const withInterest = cars
+      .filter((c) => getSavedCount(c) > 0 && !alreadyShown.has(c.id))
+      .sort((a, b) => getSavedCount(b) - getSavedCount(a));
+    return withInterest.length >= 3 ? withInterest.slice(0, 5) : [];
+  }, [cars, freshCars]);
 
   return (
     <Screen background={colors.bg}>
@@ -217,9 +238,6 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.topBarRight}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View cars on a map">
-            <Ionicons name="map-outline" size={20} color={colors.textSecondary} />
-          </Pressable>
           <Pressable style={({ pressed }) => [styles.bellBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel="Notifications">
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             {hasUnread && <View style={styles.bellBadge} />}
@@ -382,7 +400,16 @@ export default function HomeScreen({ navigation }) {
           </>
         ) : (
         <>
-        {/* ── HERO BANNER CAROUSEL ── */}
+        {/* ── TOP DEALS ── */}
+        {/* Titled only when these are cars an operator actually placed. The
+            fallback slides are true statements about the service, not deals,
+            and calling them one would be the first dishonest label in the app. */}
+        {featured.length ? (
+          <View style={styles.topDealsHead}>
+            <Text style={styles.topDealsTitle}>Top deals</Text>
+            <Text style={styles.topDealsSub}>Chosen by our team · swipe for more</Text>
+          </View>
+        ) : null}
         <View style={styles.carouselContainer}>
           <ScrollView
             ref={carouselRef}
@@ -509,7 +536,14 @@ export default function HomeScreen({ navigation }) {
                     style={styles.showroomFade}
                   />
                   <View style={styles.showroomCaption}>
-                    <Text style={styles.showroomBrand}>{item.brand}</Text>
+                    <View style={styles.showroomBrandRow}>
+                      <BrandMark
+                        name={item.brand}
+                        logoUrl={brandRow(item.brand)?.logo_url}
+                        size={26}
+                      />
+                      <Text style={styles.showroomBrand}>{item.brand}</Text>
+                    </View>
                     <Text style={styles.showroomCount}>
                       {item.subtitle || `${item.cars.length} cars · view the collection`}
                     </Text>
@@ -633,6 +667,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         {/* ── POPULAR IN KIGALI ── */}
+        {popularCars.length ? (
         <View style={styles.sectionContainer}>
           <SectionHeader
             title="Popular in Kigali"
@@ -656,6 +691,7 @@ export default function HomeScreen({ navigation }) {
             )}
           />
         </View>
+        ) : null}
         </>
         )}
         </>
@@ -852,6 +888,9 @@ const styles = StyleSheet.create({
   searchPlaceholder: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted },
 
   // ── Carousel ──
+  topDealsHead: { paddingHorizontal: 16, marginBottom: 10 },
+  topDealsTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.4 },
+  topDealsSub: { marginTop: 2, fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted },
   carouselContainer: { height: 210, position: 'relative' },
   carouselSlide: { width: SCREEN_WIDTH, height: 210 },
   slideScrim: {
@@ -957,6 +996,7 @@ const styles = StyleSheet.create({
   showroomPhoto: { width: '100%', height: '100%' },
   showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
   showroomCaption: { position: 'absolute', left: 16, right: 16, bottom: 14 },
+  showroomBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   showroomBrand: { fontSize: 19, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
   showroomCount: { fontSize: 12, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },

@@ -145,7 +145,7 @@ const MARKET_COLUMNS = `
 // GET /cars — browse with optional filters
 router.get('/', async (req, res) => {
   const { q, make, model, min_price, max_price, min_year, max_year,
-          fuel_type, transmission, body_type, drive_side, status,
+          fuel_type, transmission, body_type, drive_side, location, status,
           sort = 'listed_at', order = 'desc', limit = 20, offset = 0 } = req.query;
 
   // Public browse is live listings only. No caller — admin included — can
@@ -164,6 +164,10 @@ router.get('/', async (req, res) => {
   if (transmission)  { params.push(transmission);  conditions.push(`transmission = $${params.length}`); }
   if (body_type)     { params.push(body_type);     conditions.push(`body_type = $${params.length}`); }
   if (drive_side)    { params.push(drive_side);    conditions.push(`drive_side = $${params.length}`); }
+  // Free text, and matched loosely on purpose. Sellers type this themselves, so
+  // the column holds "Kicukiro", "Kicukiro, Kigali" and "kicukiro" for the same
+  // place. Equality would filter most of them out and look like empty stock.
+  if (location)      { params.push(`%${location}%`); conditions.push(`location ILIKE $${params.length}`); }
 
   // Free-text box in the app. Every term must match somewhere across the
   // vehicle's identifying fields, so "toyota suv" narrows instead of widening.

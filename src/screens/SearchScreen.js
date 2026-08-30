@@ -97,10 +97,6 @@ export default function SearchScreen({ navigation }) {
                 >
                   <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
                 </Pressable>
-                <Pressable style={styles.mapBtn} onPress={() => navigation.navigate('MapView')} accessibilityRole="button" accessibilityLabel="View results on a map">
-                  <Ionicons name="map-outline" size={16} color={colors.textSecondary} />
-                  <Text style={styles.mapText}>Map</Text>
-                </Pressable>
               </View>
             </View>
 
@@ -167,8 +163,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center',
   },
-  mapBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.blueTint, paddingHorizontal: 12, paddingVertical: 9, borderRadius: radius.pill },
-  mapText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
   sortChip: { minHeight: 44, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   sortText: { fontSize: 13, fontFamily: fonts.semiBold },

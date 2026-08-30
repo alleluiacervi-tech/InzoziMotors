@@ -17,6 +17,7 @@ const {
   evaluateChecklist,
 } = require('./inspection-policy');
 const { describeVin } = require('./vin');
+const { loadMakes, resolveMake, makesMentionedIn } = require('./vehicle-makes');
 
 // ─── Content quality ──────────────────────────────────────────────────────────
 // Advisory, never blocking. A buyer cannot audit the 150-point rigour behind a
@@ -33,7 +34,7 @@ const { describeVin } = require('./vin');
 const PASTED_CHAT = /\b(AI Mode|You said:|ChatGPT said|as an AI|I'm sorry, (?:but )?I)/i;
 const MIN_DESCRIPTION = 40;
 
-function contentWarnings(car) {
+function contentWarnings(car, makes = []) {
   const warnings = [];
 
   const description = String(car.description || '').trim();
@@ -65,6 +66,36 @@ function contentWarnings(car) {
   }
   if (/\s{2,}/.test(title)) {
     warnings.push('The title has a double space — usually a missing make or model.');
+  }
+
+  // The listing's own words disagreeing with its own `make` column.
+  //
+  // This is not hypothetical. A BYD Qin Plus in the catalogue is recorded as a
+  // Hyundai, in a banner slot, with a description whose first sentence says
+  // "The 2023 BYD Qin Plus". It happened because the brand list a seller could
+  // pick from had no Chinese marque on it at all, so the nearest wrong answer
+  // was the only answer — and once recorded, the car is invisible to anybody
+  // filtering for the brand it actually is.
+  //
+  // Advisory, never blocking: a description can legitimately name another brand
+  // ("a better drive than the equivalent Toyota"), and this list is meant to be
+  // read by a person deciding, not enforced by a gate.
+  if (makes.length && (description || title)) {
+    const recorded = resolveMake(makes, car.make);
+    const named = makesMentionedIn(makes, `${title} ${description}`);
+    const conflicting = named.filter((m) => !recorded || m.slug !== recorded.slug);
+    if (conflicting.length && recorded) {
+      warnings.push(
+        `Recorded as ${recorded.name}, but the listing text says `
+        + `${conflicting.map((m) => m.name).join(' and ')}. `
+        + 'A car filed under the wrong brand cannot be found by anyone filtering for the right one.'
+      );
+    } else if (conflicting.length && car.make) {
+      warnings.push(
+        `"${String(car.make).trim()}" is not a brand on the list, and the listing text says `
+        + `${conflicting.map((m) => m.name).join(' and ')}.`
+      );
+    }
   }
 
   return warnings;
@@ -137,7 +168,7 @@ async function publicationReadiness(client, carId) {
     ready: missing.length === 0,
     missing: [...new Set(missing)],
     // Things worth fixing that are not worth refusing over.
-    warnings: contentWarnings(car),
+    warnings: contentWarnings(car, await loadMakes()),
     photo_count: photoCount,
     min_photos: minPhotos,
     inspection_required: inspectionRequired,
@@ -151,4 +182,7 @@ async function publicationReadiness(client, carId) {
   };
 }
 
-module.exports = { publicationReadiness };
+// contentWarnings is exported for its own tests. It is a pure function of a car
+// row and the brand list — no database, no transaction — which is what makes the
+// brand-mismatch rule cheap to pin down with real listing text.
+module.exports = { publicationReadiness, contentWarnings };

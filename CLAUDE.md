@@ -147,7 +147,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0030`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0036`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -178,6 +178,20 @@ npm run mobile:imports        # mobile import resolution check
 Brand: **Signal Red `#CC050F`** (`src/theme/colors.js`, `web/tailwind.config.ts`).
 Red is reserved for prices, primary actions, active states and the certified
 badge — informational icons stay neutral.
+
+**Account closure** (`src/lib/account-closure.js`) is immediate and needs no
+approval — Apple 5.1.1(v) requires deletion to *complete* in-app, so an operator
+queue that could block one would fail review. The row survives 30 days
+(reopenable), then an operator purges it; there is no scheduler, deliberately.
+
+**Brands** live in `vehicle_makes`, served by `GET /makes` — not bundled in the
+app. `aliases` collapses "Mercedes"/"benz"/"VW" onto one row. No logo files are
+committed (third-party trademarks); an admin uploads them and every client draws
+a lettermark until then.
+
+**`app_release`** carries the newest installable build per platform plus
+`ota_paused`, the stop switch `mobile-update.yml` reads before publishing.
+`min_supported_version` locks people out and is rail-guarded three ways.
 
 Honesty gates already in the code, keep them: `APP.storesLive: false` hides
 store badges until real store IDs exist; `CONTACT.whatsappVerified` gates the

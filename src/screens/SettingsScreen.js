@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Linking, Modal, TextInput,
   ActivityIndicator, KeyboardAvoidingView, Platform,
@@ -14,6 +14,7 @@ import {
   getUpdateMode, setUpdateMode, UPDATE_MODE,
 } from '../utils/updates';
 import { useApp } from '../context/AppContext';
+import authApi from '../api/auth';
 import { getJSON } from '../storage';
 import {
   SAWA_WHATSAPP, SAWA_PHONE_DISPLAY, SAWA_EMAIL, WHATSAPP_VERIFIED,
@@ -23,6 +24,23 @@ import {
 // drift. Play Store policy requires the privacy policy to be reachable from
 // inside the app for anything handling sensitive data — and this app
 // photographs national ID documents.
+// The recovery window, and the list of reasons, both come from the server —
+// GET /auth/closure-reasons — because the same vocabulary is a CHECK constraint
+// there and two copies would eventually disagree about what can be stored.
+// These are only what the screen renders before that answer arrives, or if it
+// never does. Closing an account must work on a bad connection.
+const RECOVERY_DAYS = 30;
+const FALLBACK_REASONS = [
+  { value: 'found_a_car', label: 'I found a car' },
+  { value: 'sold_my_car', label: 'I sold my car' },
+  { value: 'not_useful', label: "I didn't find what I was looking for" },
+  { value: 'too_many_messages', label: 'Too many messages or notifications' },
+  { value: 'privacy', label: "I don't want my details on the platform" },
+  { value: 'bad_experience', label: 'I had a bad experience' },
+  { value: 'duplicate_account', label: 'I have another account' },
+  { value: 'other', label: 'Something else' },
+];
+
 const SITE_URL = (Constants.expoConfig?.extra?.siteUrl || 'https://sawacars.com').replace(/\/+$/, '');
 const LEGAL = {
   privacy: `${SITE_URL}/legal/privacy`,
@@ -59,8 +77,10 @@ const buildGroups = (verificationValue, buildLabel) => [
   },
   {
     // The Support group used to offer no way to reach support: an intro replay
-    // and a coming-soon rating row. The three rows below are the same single
-    // business line and single mailbox the website publishes, and they are
+    // and a coming-soon rating row. Both are gone — replaying a first-run tour
+    // is not support, and it was the only thing in Settings that led BACKWARDS
+    // into the launch sequence. The rows below are the same single business
+    // line and single mailbox the website publishes, and they are
     // gated on WHATSAPP_VERIFIED for the same reason every other surface is —
     // a dead contact row is worse than none.
     title: 'Support',
@@ -82,7 +102,6 @@ const buildGroups = (verificationValue, buildLabel) => [
           ]
         : []),
       { icon: 'mail-outline', label: 'Email us', value: SAWA_EMAIL, link: `mailto:${SAWA_EMAIL}` },
-      { icon: 'play-circle-outline', label: 'Replay intro', screen: 'Onboarding' },
     ],
   },
   {
@@ -179,6 +198,20 @@ export default function SettingsScreen({ navigation }) {
   // Deletion state. A dedicated modal rather than showConfirm(), because this
   // needs a password field and needs to show the server's specific refusal.
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // Asked because the answer is worth having, and required because a reason
+  // list nobody fills in tells the business nothing. The vocabulary is fetched
+  // rather than duplicated here: the server has a CHECK constraint on it, and
+  // two hardcoded lists would eventually disagree about what is storable.
+  const [reason, setReason] = useState(null);
+  const [note, setNote] = useState('');
+  const [reasons, setReasons] = useState(FALLBACK_REASONS);
+  useEffect(() => {
+    let alive = true;
+    authApi.closureReasons()
+      .then((data) => { if (alive && data?.reasons?.length) setReasons(data.reasons); })
+      .catch(() => {});   // the bundled list is already usable
+    return () => { alive = false; };
+  }, []);
   const [password, setPassword] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -225,10 +258,11 @@ export default function SettingsScreen({ navigation }) {
 
   const askToDelete = async () => {
     const ok = await showConfirm({
-      title: 'Delete your account?',
+      title: 'Close your account?',
       message:
-        'This removes your profile, saved cars, saved searches and identity documents for good. ' +
-        'Records of cars you have already bought or sold are kept, as the law requires. This cannot be undone.',
+        'Your listings come down, your number stops being shown, and you are signed out everywhere — straight away. ' +
+        `Nothing is erased for ${RECOVERY_DAYS} days: until then you can sign back in with the same password and pick up where you left off. ` +
+        'After that it is permanent.',
       confirmLabel: 'Continue',
       cancelLabel: 'Keep my account',
       destructive: true,
@@ -236,10 +270,16 @@ export default function SettingsScreen({ navigation }) {
     if (!ok) return;
     setPassword('');
     setDeleteError('');
+    setReason(null);
+    setNote('');
     setDeleteOpen(true);
   };
 
   const confirmDelete = async () => {
+    if (!reason) {
+      setDeleteError('Choose a reason so we know what to fix.');
+      return;
+    }
     if (!password) {
       setDeleteError('Enter your password to confirm.');
       return;
@@ -247,9 +287,24 @@ export default function SettingsScreen({ navigation }) {
     setDeleting(true);
     setDeleteError('');
     try {
-      await deleteAccount(password);
+      const result = await deleteAccount(password, reason, note);
       setDeleteOpen(false);
-      showToast('Your account has been deleted.', 'success');
+      // The date, not "your account has been deleted". Somebody who closes by
+      // mistake — or in anger, or on somebody else's phone — needs to leave
+      // this screen knowing there is a way back and when it expires.
+      const until = result?.reopen_until
+        ? String(result.reopen_until).slice(0, 10)
+        : null;
+      await showConfirm({
+        title: 'Your account is closed',
+        message: until
+          ? `You are signed out everywhere and any listings are off the marketplace.\n\n`
+            + `Until ${until} you can sign in with the same email and password to reopen it, and everything comes back. `
+            + 'After that it is erased for good. We have emailed you the same details.'
+          : 'You are signed out everywhere and any listings are off the marketplace. We have emailed you what happens next.',
+        confirmLabel: 'Done',
+        hideCancel: true,
+      });
       navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
     } catch (err) {
       if (err?.status === 409) {
@@ -303,8 +358,11 @@ export default function SettingsScreen({ navigation }) {
           </View>
         ))}
 
-        {/* Deletion has to be reachable from inside the app — Apple Guideline
-            5.1.1(v) and Google Play both require it of any app with accounts.
+        {/* Closing has to be reachable from inside the app AND has to complete
+            here — Apple Guideline 5.1.1(v) and Google Play both require it of
+            any app with accounts, and a request that waits for somebody's
+            approval does not satisfy either. So this button really does close
+            the account; what it does not do is erase it for thirty days.
             Kept visually separate and last, so it is never a mis-tap. */}
         {isLoggedIn && (
           <View style={{ marginBottom: 22 }}>
@@ -315,8 +373,10 @@ export default function SettingsScreen({ navigation }) {
                   <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.itemLabel, { color: colors.danger }]}>Delete my account</Text>
-                  <Text style={styles.itemHint}>Permanent. Your data is erased.</Text>
+                  <Text style={[styles.itemLabel, { color: colors.danger }]}>Close my account</Text>
+                  <Text style={styles.itemHint}>
+                    Takes effect straight away. Erased for good after {RECOVERY_DAYS} days.
+                  </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
@@ -333,10 +393,48 @@ export default function SettingsScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Confirm deletion</Text>
+            <Text style={styles.modalTitle}>Before you go</Text>
             <Text style={styles.modalBody}>
-              Enter your password to permanently delete your Sawa Cars account.
+              Why are you closing your account? It genuinely changes what we fix next.
             </Text>
+
+            {/* Scrollable: eight reasons plus a password field does not fit on
+                a small handset above the keyboard, and a confirm button the
+                user cannot reach is a dead end in a flow both app stores
+                require to work. */}
+            <ScrollView style={styles.reasonScroll} keyboardShouldPersistTaps="handled">
+              {reasons.map((option) => {
+                const on = reason === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    style={[styles.reasonRow, on && styles.reasonRowOn]}
+                    onPress={() => { setReason(option.value); setDeleteError(''); }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    disabled={deleting}
+                  >
+                    <Ionicons
+                      name={on ? 'radio-button-on' : 'radio-button-off'}
+                      size={19}
+                      color={on ? colors.primary : colors.textMuted}
+                    />
+                    <Text style={[styles.reasonText, on && styles.reasonTextOn]}>{option.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <TextInput
+              style={styles.modalNote}
+              placeholder="Anything else? (optional)"
+              placeholderTextColor={colors.textMuted}
+              value={note}
+              onChangeText={setNote}
+              multiline
+              maxLength={500}
+              editable={!deleting}
+            />
 
             <TextInput
               style={[styles.modalInput, !!deleteError && styles.modalInputError]}
@@ -357,7 +455,7 @@ export default function SettingsScreen({ navigation }) {
             >
               {deleting
                 ? <ActivityIndicator color="#FFFFFF" />
-                : <Text style={styles.modalDangerText}>Delete my account</Text>}
+                : <Text style={styles.modalDangerText}>Close my account</Text>}
             </Pressable>
             <Pressable
               style={styles.modalCancel}
@@ -391,6 +489,21 @@ const styles = StyleSheet.create({
     fontSize: 15, fontFamily: fonts.regular, color: colors.textPrimary,
   },
   modalInputError: { borderColor: colors.danger },
+  reasonScroll: { marginTop: 14, maxHeight: 232 },
+  reasonRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 9, paddingHorizontal: 10,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: 'transparent',
+  },
+  reasonRowOn: { borderColor: colors.primary, backgroundColor: colors.surfaceAlt },
+  reasonText: { flex: 1, fontSize: 14, fontFamily: fonts.regular, color: colors.textSecondary },
+  reasonTextOn: { fontFamily: fonts.semiBold, color: colors.textPrimary },
+  modalNote: {
+    marginTop: 12, minHeight: 62, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.border, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10,
+    fontSize: 14, fontFamily: fonts.regular, color: colors.textPrimary,
+    textAlignVertical: 'top',
+  },
   modalError: { marginTop: 8, fontSize: 13, fontFamily: fonts.medium, color: colors.danger },
   modalDanger: {
     marginTop: 18, height: 50, borderRadius: radius.lg, backgroundColor: colors.danger,

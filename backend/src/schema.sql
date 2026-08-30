@@ -404,7 +404,7 @@ ALTER TABLE users       ADD COLUMN IF NOT EXISTS suspended_at    TIMESTAMPTZ;
 ALTER TABLE users       ADD COLUMN IF NOT EXISTS suspension_reason TEXT;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_account_status_check;
 ALTER TABLE users ADD CONSTRAINT users_account_status_check
-  CHECK (account_status IN ('active', 'suspended'));
+  CHECK (account_status IN ('active', 'suspended', 'closed'));
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_users_account_status ON users(account_status) WHERE deleted_at IS NULL;
 
@@ -930,3 +930,65 @@ CREATE TABLE IF NOT EXISTS disputes (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   resolved_at  TIMESTAMPTZ
 );
+
+-- ─── Vehicle makes — one brand list, served rather than bundled (0035) ───────
+-- The seller-facing list used to be twenty names inside a mobile screen, so
+-- widening it needed an App Store release — and it carried no Chinese marque
+-- while the catalogue already held Dongfeng, BYD and Denza.
+--
+-- `aliases` is the working part: "Mercedes", "Mercedes-Benz", "benz" and "VW"
+-- are two companies written four ways, and without a canonical spelling a make
+-- filter splits one brand's stock across several buckets. `logo_url` is
+-- nullable and normally null — no brand mark is committed to this repository,
+-- because they are third-party trademarks and every client draws a lettermark
+-- until an operator uploads one.
+CREATE TABLE IF NOT EXISTS vehicle_makes (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name          TEXT NOT NULL,
+  slug          TEXT NOT NULL UNIQUE,
+  aliases       TEXT[] NOT NULL DEFAULT '{}',
+  logo_url      TEXT,
+  display_order INT NOT NULL DEFAULT 500,
+  active        BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT vehicle_makes_name_check CHECK (length(btrim(name)) BETWEEN 1 AND 60),
+  CONSTRAINT vehicle_makes_slug_check CHECK (slug ~ '^[a-z0-9-]{1,60}$'),
+  CONSTRAINT vehicle_makes_order_check CHECK (display_order BETWEEN 0 AND 9999)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_vehicle_makes_name ON vehicle_makes (lower(name));
+CREATE INDEX IF NOT EXISTS idx_vehicle_makes_active ON vehicle_makes (display_order, name) WHERE active;
+
+-- ─── Account closure — leave now, erased in thirty days (0036) ──────────────
+-- Deletion used to be one irreversible transaction with no reason recorded.
+-- Closing is now immediate and needs nobody's approval — Guideline 5.1.1(v)
+-- requires deletion to COMPLETE inside the app, so a request waiting in an
+-- operator's queue would fail review — and the row survives for thirty days so
+-- somebody who closed by mistake, or in anger, has a way back.
+--
+-- The reason vocabulary is a CHECK rather than free text because the entire
+-- point of asking is to be able to count the answers; closure_note is where
+-- prose goes, and it does not survive the purge.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS closed_at      TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS closure_reason TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS closure_note   TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS purge_after    TIMESTAMPTZ;
+
+-- All four fields or none: a half-written closure is an account in limbo that
+-- no query finds and nobody ever purges.
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_closure_complete_check;
+ALTER TABLE users ADD CONSTRAINT users_closure_complete_check CHECK (
+  (closed_at IS NULL AND closure_reason IS NULL AND purge_after IS NULL)
+  OR (closed_at IS NOT NULL AND closure_reason IS NOT NULL AND purge_after IS NOT NULL)
+);
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_closure_reason_check;
+ALTER TABLE users ADD CONSTRAINT users_closure_reason_check CHECK (
+  closure_reason IS NULL OR closure_reason IN (
+    'found_a_car', 'sold_my_car', 'not_useful', 'too_many_messages',
+    'privacy', 'bad_experience', 'duplicate_account', 'other'
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_purge_due
+  ON users (purge_after) WHERE closed_at IS NOT NULL AND deleted_at IS NULL;

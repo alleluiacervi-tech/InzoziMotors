@@ -2,11 +2,12 @@ const express = require('express');
 const { log } = require('../lib/log');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const path = require('path');
-const fs = require('fs');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { sendResetCode, sendWelcome, sendPasswordChanged, sendAccountDeleted } = require('../lib/mailer');
+const { sendResetCode, sendWelcome, sendPasswordChanged, sendAccountClosed } = require('../lib/mailer');
+const {
+  CLOSURE_REASONS, REASON_VALUES, RECOVERY_DAYS, closeAccount, reopenAccount,
+} = require('../lib/account-closure');
 const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
@@ -107,7 +108,15 @@ router.post('/login', async (req, res) => {
     const { rows } = await pool.query(
       // Deleted and suspended accounts must not be signable-into. The shared
       // response keeps both states indistinguishable from "no such account".
-      'SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL AND account_status = \'active\'',
+      //
+      // A CLOSED account is deliberately let through this query and refused
+      // below instead — the whole point of the thirty-day window is that the
+      // person can come back, and they cannot be offered that if signing in
+      // looks the same as having no account. The credential check still has to
+      // pass first: "this account is closed" is information about somebody
+      // else's account until you have proved it is yours.
+      `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL
+         AND account_status IN ('active', 'closed')`,
       [email.toLowerCase()]
     );
     const user = rows[0];
@@ -117,6 +126,14 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    if (user.account_status === 'closed') {
+      return res.status(403).json({
+        error: 'This account is closed. You can reopen it with the same password until '
+          + `${new Date(user.purge_after).toISOString().slice(0, 10)}, after which it is erased for good.`,
+        code: 'ACCOUNT_CLOSED',
+        reopen_until: user.purge_after,
+      });
     }
     const { password_hash, ...safe } = user;
     res.json({ user: safe, token: makeToken(user) });
@@ -442,112 +459,129 @@ router.post('/change-password', requireAuth, async (req, res) => {
   }
 });
 
-// ─── Account deletion ─────────────────────────────────────────────────────────
-// Required by Apple (Guideline 5.1.1(v)) and Google Play for any app that lets
-// people create an account: deletion must be initiable from inside the app, not
-// only by emailing support.
+// ─── Account closure ──────────────────────────────────────────────────────────
+// Required by Apple (Guideline 5.1.1(v)) and Google Play: deletion must be
+// initiable AND completable from inside the app, not only by emailing support.
 //
-// Soft delete, not DELETE FROM users. Historical records and moderation events
-// retain foreign keys, while all identifying data is overwritten.
+// What this used to be: one irreversible transaction that overwrote every
+// identifying field, with no reason recorded and no way back. It was compliant
+// and it told the business nothing.
 //
-// What is actively removed rather than anonymised: identity documents (the most
-// sensitive thing held, and nothing depends on them once the account is gone),
-// push tokens (a deleted account must stop reaching the handset), saved cars,
-// saved searches and device registrations.
+// What it is now: closure is immediate and needs nobody's approval — the
+// session dies on the next request, listings come down, contact goes off, login
+// is refused. For thirty days the row is intact and the person can sign back in
+// and reopen; after that an operator purges it and the erasure is exactly what
+// this route always did. See lib/account-closure.js for why an admin cannot
+// veto a closure, and why the purge is a person rather than a scheduler.
+
+// GET /auth/closure-reasons — the fixed vocabulary, so the app renders the same
+// options the CHECK constraint accepts and neither can drift.
+router.get('/closure-reasons', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json({ reasons: CLOSURE_REASONS, recovery_days: RECOVERY_DAYS });
+});
+
 router.delete('/me', requireAuth, async (req, res) => {
-  const { password } = req.body || {};
+  const { password, reason, note } = req.body || {};
+  if (!REASON_VALUES.has(String(reason))) {
+    return res.status(400).json({
+      error: 'Choose a reason for closing your account.',
+      code: 'CLOSURE_REASON_REQUIRED',
+      reasons: CLOSURE_REASONS,
+    });
+  }
   try {
     const result = await withTransaction(async (client) => {
       const { rows } = await client.query(
-        'SELECT id, password_hash, id_front_url, id_back_url, selfie_url FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
+        'SELECT id, name, email, password_hash FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
         [req.user.id]
       );
       if (!rows.length) return { status: 404, body: { error: 'Account not found' } };
       const user = rows[0];
 
-      // Re-authenticate. Deletion is irreversible, and a token left open on a
-      // borrowed handset must not be enough to destroy someone's account.
+      // Re-authenticate. A token left open on a borrowed handset must not be
+      // enough to take somebody's account off the marketplace.
       if (user.password_hash) {
         if (!password) {
-          return { status: 400, body: { error: 'Enter your password to confirm deletion' } };
+          return { status: 400, body: { error: 'Enter your password to confirm' } };
         }
         const ok = await bcrypt.compare(String(password), user.password_hash);
         if (!ok) return { status: 401, body: { error: 'That password is not correct' } };
       }
 
-      // Any listing still on the marketplace comes down with the account.
-      await client.query(
-        `UPDATE cars SET status = 'archived', archived_at = NOW(),
-                         archive_reason = 'Seller account deleted'
-         WHERE seller_id = $1 AND status IN ('live', 'paused', 'approved', 'under_review', 'scheduled', 'inspecting')`,
-        [user.id]
-      );
-
-      await client.query('DELETE FROM saved_cars      WHERE user_id = $1', [user.id]);
-      await client.query('DELETE FROM saved_searches  WHERE user_id = $1', [user.id]);
-      await client.query('DELETE FROM device_tokens   WHERE user_id = $1', [user.id]);
-      await client.query('DELETE FROM password_resets WHERE user_id = $1', [user.id]);
-      await client.query('DELETE FROM notifications   WHERE user_id = $1', [user.id]);
-
-      // The email is released back for reuse but must stay UNIQUE, so it is
-      // replaced with a value derived from the id rather than simply nulled.
-      await client.query(
-        `UPDATE users SET
-           name = 'Deleted user',
-           email = 'deleted+' || id || '@deleted.sawacars.com',
-           phone = NULL, whatsapp_phone = NULL,
-           phone_visible = FALSE, whatsapp_visible = FALSE,
-           contact_consent_at = NULL,
-           password_hash = NULL,
-           avatar_url = NULL,
-           id_front_url = NULL, id_back_url = NULL, selfie_url = NULL,
-           id_verified = 'none', id_submitted_at = NULL,
-           deleted_at = NOW(),
-           token_version = token_version + 1
-         WHERE id = $1`,
-        [user.id]
-      );
+      const closed = await closeAccount(client, { userId: user.id, reason: String(reason), note });
+      if (!closed) return { status: 409, body: { error: 'This account is already closed' } };
 
       return {
         status: 200,
-        body: { success: true },
-        files: [user.id_front_url, user.id_back_url, user.selfie_url],
-        // The row's email is already overwritten — this copy, captured before,
-        // is the only way the confirmation can still reach them.
-        notify: { email: user.email, name: user.name },
+        body: {
+          success: true,
+          closed_at: closed.closed_at,
+          // What the app shows on the confirmation screen. Saying the date out
+          // loud is the difference between a window somebody can use and one
+          // that only exists in a database.
+          reopen_until: closed.purge_after,
+          recovery_days: RECOVERY_DAYS,
+          listings_taken_down: closed.listings_taken_down,
+        },
+        notify: { email: user.email, name: user.name, until: closed.purge_after },
       };
     });
 
-    // Identity documents are erased from disk after the row is committed. Doing
-    // it inside the transaction would leave files deleted but the account intact
-    // if the commit failed. Failures here are logged, never fatal — the account
-    // is already gone from the user's point of view.
-    if (result.status === 200) {
-      removeIdDocuments(result.files);
-      // The written record of what was deleted and what the law keeps.
-      if (result.notify) sendAccountDeleted(result.notify.email, result.notify.name);
+    if (result.status === 200 && result.notify) {
+      sendAccountClosed(result.notify.email, result.notify.name, result.notify.until);
     }
-
     res.status(result.status).json(result.body);
   } catch (err) {
-    log.error('delete account error', { error: err.message });
+    log.error('close account error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// URLs are of the form <base>/id-verification/doc/<filename>; only the basename
-// is used, so nothing outside the id-docs directory can be reached from here.
-function removeIdDocuments(urls) {
-  const dir = path.join(process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads'), 'id-docs');
-  for (const url of (urls || []).filter(Boolean)) {
-    const filename = path.basename(String(url).split('?')[0]);
-    if (!filename || filename === '.' || filename === '..') continue;
-    fs.unlink(path.join(dir, filename), (err) => {
-      if (err && err.code !== 'ENOENT') {
-        log.warn('id document cleanup failed', { filename, error: err.message });
-      }
-    });
+// POST /auth/reopen — take it back, with the same credentials that closed it.
+//
+// Unauthenticated by necessity: closing bumped token_version, so there is no
+// session left to authenticate with. The password IS the authentication, which
+// is why this sits behind authLimiter alongside login.
+router.post('/reopen', async (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(400).json({ error: 'email and password are required' });
   }
-}
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, password_hash, purge_after FROM users
+          WHERE email = $1 AND deleted_at IS NULL AND closed_at IS NOT NULL FOR UPDATE`,
+        [String(email).toLowerCase()]
+      );
+      // One response for "no such account", "not closed" and "wrong password".
+      // Anything else turns this into an oracle for which addresses closed an
+      // account and when.
+      const generic = { status: 401, body: { error: 'Invalid email or password' } };
+      if (!rows.length || !rows[0].password_hash) return generic;
+      if (!(await bcrypt.compare(String(password), rows[0].password_hash))) return generic;
+
+      const user = await reopenAccount(client, rows[0].id);
+      if (!user) {
+        // Closed, correct password, but past the window. This one is worth
+        // saying plainly: the alternative is somebody retyping a password they
+        // know is right, against an account that no longer exists.
+        return {
+          status: 410,
+          body: {
+            error: 'The thirty days have passed and this account has been erased. You are welcome to create a new one.',
+            code: 'ACCOUNT_PURGED',
+          },
+        };
+      }
+      return { status: 200, body: { user, token: makeToken(user) } };
+    });
+    res.status(result.status).json(result.body);
+  } catch (err) {
+    log.error('reopen account error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;

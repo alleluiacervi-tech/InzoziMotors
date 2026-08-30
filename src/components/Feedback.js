@@ -6,7 +6,7 @@ import { colors, radius, fonts, shadows } from '../theme';
 
 // Branded feedback layer — replaces OS Alert popups.
 //   showToast(message, 'success' | 'error' | 'info')  — calm bottom snackbar
-//   await showConfirm({ title, message, confirmLabel, cancelLabel, destructive })
+//   await showConfirm({ title, message, confirmLabel, cancelLabel, destructive, hideCancel })
 //   await showActionSheet({ title, message, options: [{ label, icon }] }) -> index | -1
 // Mount <FeedbackHost /> once (App.js); the imperative API works anywhere.
 let toastFn = null;
@@ -114,9 +114,15 @@ export default function FeedbackHost() {
             >
               <Text style={styles.confirmBtnText}>{confirm?.confirmLabel || 'Confirm'}</Text>
             </Pressable>
-            <Pressable style={({ pressed }) => [styles.cancelBtn, pressed && styles.controlPressed]} onPress={() => close(false)} hitSlop={6} accessibilityRole="button">
-              <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || 'Cancel'}</Text>
-            </Pressable>
+            {/* `hideCancel` for the cases that are an acknowledgement rather
+                than a choice — "your account is closed, here is the date you
+                can reopen it by". A Cancel button under a statement of fact
+                reads as though the fact can be declined. */}
+            {confirm?.hideCancel ? null : (
+              <Pressable style={({ pressed }) => [styles.cancelBtn, pressed && styles.controlPressed]} onPress={() => close(false)} hitSlop={6} accessibilityRole="button">
+                <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || 'Cancel'}</Text>
+              </Pressable>
+            )}
           </Pressable>
         </Pressable>
       </Modal>

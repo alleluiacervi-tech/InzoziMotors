@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const express = require('express');
 const { loadDutyRates } = require('../lib/duty-rates');
+const { loadAppRelease } = require('../lib/app-release');
 
 const router = express.Router();
 
@@ -23,6 +24,28 @@ router.get('/duty-rates', async (_req, res) => {
   // entered — but long enough that a page load is not a database read.
   res.set('Cache-Control', 'public, max-age=600');
   res.json(rates);
+});
+
+// GET /settings/app-release — the newest installable build, per platform.
+//
+// Read on every cold launch by the mobile app, which compares its own version
+// against it. Two fields do the work: `latest_version` produces a dismissable
+// "there is a newer version" prompt, and `min_supported_version` produces a
+// blocking one. Both are inert while that platform's `url` is empty, so this
+// endpoint cannot lock anybody out before there is a store to send them to.
+//
+// `ota_paused` is here too, and it is not for the app: mobile-update.yml reads
+// it before publishing, so halting over-the-air updates is a switch in the
+// admin console rather than a commit.
+//
+// Never throws — an app that cannot reach this must launch normally, not
+// refuse to start because it could not confirm it was allowed to.
+router.get('/app-release', async (_req, res) => {
+  const release = await loadAppRelease();
+  // Short: this is also the stop switch, and a stop switch on a ten-minute
+  // cache is not a stop switch.
+  res.set('Cache-Control', 'public, max-age=60');
+  res.json(release);
 });
 
 module.exports = router;

@@ -46,6 +46,25 @@ export interface PricePoint {
   at: string
 }
 
+/**
+ * A car an operator deliberately placed at the top of the marketplace.
+ *
+ * `sponsored` and `label` are computed by the server, not by each client, so no
+ * surface can render a paid slot as an editorial pick by forgetting to check
+ * the kind. For a company whose product is independent verification, an
+ * unlabelled paid placement is the one thing not to ship.
+ */
+export interface FeaturedPlacement extends Car {
+  placement_id: string
+  kind: 'editorial' | 'hot_deal' | 'sponsored'
+  slot: number
+  headline: string | null
+  ends_at: string
+  seller_name: string
+  sponsored: boolean
+  label: string
+}
+
 export interface Car {
   id: string
   seller_id: string

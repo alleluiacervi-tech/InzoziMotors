@@ -180,6 +180,42 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
 }
 
 
+// ─── Account closures ────────────────────────────────────────────────────────
+
+export type ClosedAccount = {
+  id: string
+  name: string
+  email: string
+  role: string
+  closed_at: string
+  purge_after: string
+  closure_reason: string
+  reason_label: string
+  closure_note: string | null
+  /** The thirty days are up and this account is waiting to be erased. */
+  due_for_purge: boolean
+}
+
+// ─── Brands ──────────────────────────────────────────────────────────────────
+
+export type MakeRow = {
+  id: string
+  name: string
+  slug: string
+  /** Other spellings that mean this brand — "vw", "benz", "range rover".
+   *  Without them one brand's stock splits across several make values and every
+   *  bucket looks emptier than it is. */
+  aliases: string[]
+  /** Null is the normal state. No brand mark is committed to the repository —
+   *  they are third-party trademarks — so every client draws a lettermark until
+   *  an operator uploads one. */
+  logo_url: string | null
+  display_order: number
+  active: boolean
+  /** Only present on the admin list. */
+  listings?: number
+}
+
 // ─── Inspection centers ──────────────────────────────────────────────────────
 
 export type CenterRow = {
@@ -722,6 +758,55 @@ export const api = {
   /** What is in the banner right now, in slot order. */
   featuredBanner: (limit = 12) => request<any[]>(`/cars/featured?limit=${limit}`),
 
+  // ── Account closures ───────────────────────────────────────────────────────
+  // There is no approve or deny here on purpose. Guideline 5.1.1(v) requires
+  // deletion to complete inside the app, so a closure has already happened by
+  // the time it reaches this page. What an approval step was really wanted for
+  // — knowing who left and why — is what these return.
+
+  accountClosures: () => request<{
+    closures: ClosedAccount[]
+    reasons: { value: string; label: string }[]
+    recovery_days: number
+    tally: { closure_reason: string; label: string; n: number }[]
+    due_for_purge: number
+  }>('/admin/account-closures'),
+
+  /** Erases every account past its window. It never chooses WHICH — the
+   *  predicate does — so nobody can be purged early or skipped. */
+  purgeClosedAccounts: () =>
+    request<{ purged: number; attempted?: number; accounts?: unknown[] }>(
+      '/admin/account-closures/purge',
+      { method: 'POST' }
+    ),
+
+  // ── Brands ─────────────────────────────────────────────────────────────────
+  // The seller-facing brand list used to be a twenty-item array inside a mobile
+  // screen, so widening it needed an App Store release — and it carried no
+  // Chinese marque while the catalogue already held three. These are how it is
+  // maintained instead.
+
+  /** Every brand, inactive included, plus how many listings each one carries —
+   *  and `unrecognised`, the makes that appear on listings but on no brand row.
+   *  That list is the one worth reading: it is where a misfiled car shows up. */
+  makes: () => request<{
+    makes: MakeRow[]
+    unrecognised: { make: string; listings: number }[]
+  }>('/admin/makes'),
+
+  createMake: (name: string, aliases: string[] = [], display_order = 500) =>
+    request<MakeRow>('/admin/makes', {
+      method: 'POST', body: JSON.stringify({ name, aliases, display_order }),
+    }),
+
+  updateMake: (id: string, patch: Partial<Pick<MakeRow, 'name' | 'aliases' | 'display_order' | 'active' | 'logo_url'>>) =>
+    request<MakeRow>(`/admin/makes/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+
+  /** The logo itself. FormData, so `request` leaves the Content-Type alone and
+   *  the browser sets the multipart boundary. */
+  uploadMakeLogo: (id: string, data: FormData) =>
+    request<MakeRow>(`/admin/makes/${id}/logo`, { method: 'POST', body: data }),
+
   // ── Inspection centers ─────────────────────────────────────────────────────
   // Booking capacity is enforced against daily_capacity on every scheduling
   // request, so this is the difference between changing a centre's capacity in a
@@ -736,7 +821,9 @@ export const api = {
     request<CenterRow & { pending_inspections: number }>(`/centers/${id}`, { method: 'DELETE' }),
 
   settings: () => request<any[]>('/admin/settings'),
-  updateSetting: (key: string, value: boolean | number) =>
+  // `unknown`, not `boolean | number`: two settings are now objects, and a
+  // narrower type here would only be satisfied by casting at every call site.
+  updateSetting: (key: string, value: unknown) =>
     request<any>(`/admin/settings/${encodeURIComponent(key)}`, {
       method: 'PATCH', body: JSON.stringify({ value }),
     }),

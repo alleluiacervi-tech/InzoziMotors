@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { LogoMark } from '../components/Logo';
 import Button from '../components/Button';
 import { setJSON } from '../storage';
+import { setUpdateMode, UPDATE_MODE } from '../utils/updates';
 import { colors, fonts } from '../theme';
 
 const { width, height } = Dimensions.get('window');
@@ -22,14 +23,29 @@ export default function OnboardingScreen({ navigation }) {
   const ref = useRef(null);
   const last = idx === SLIDES.length - 1;
 
-  const finish = () => {
+  // Ticked by default, and asked here rather than buried in Settings.
+  //
+  // Improvements reach this app over the air, and a person who never finds the
+  // preference sits on whatever bundle they installed with — which in practice
+  // is most people. Asking once, at the only moment the question is not an
+  // interruption, gets the honest outcome: the default is the useful one, and
+  // it was still a choice somebody made rather than one made for them. Settings
+  // keeps the same switch for anyone who changes their mind.
+  const [autoUpdate, setAutoUpdate] = useState(true);
+
+  // `sawTheChoice` is false when Skip is what ended the tour. Somebody who
+  // skipped never saw the tick box, so recording a preference from it would be
+  // putting words in their mouth — they keep the shipped default, which is to
+  // be asked. Only the Get Started button carries a real answer.
+  const finish = (sawTheChoice) => {
     setJSON('onboardingSeen', true);
+    if (sawTheChoice) setUpdateMode(autoUpdate ? UPDATE_MODE.AUTOMATIC : UPDATE_MODE.ASK);
     if (navigation.canGoBack()) navigation.goBack();
     else navigation.replace('Welcome');
   };
 
   const go = () => {
-    if (last) finish();
+    if (last) finish(true);
     else ref.current?.scrollTo({ x: width * (idx + 1), animated: true });
   };
 
@@ -62,7 +78,7 @@ export default function OnboardingScreen({ navigation }) {
 
       <Pressable
         style={[styles.skip, { top: insets.top + 14 }]}
-        onPress={finish}
+        onPress={() => finish(false)}
         hitSlop={12}
       >
         <Text style={styles.skipText}>Skip</Text>
@@ -74,6 +90,23 @@ export default function OnboardingScreen({ navigation }) {
             <View key={i} style={[styles.dot, i === idx && styles.dotActive]} />
           ))}
         </View>
+        {last ? (
+          <Pressable
+            style={styles.optIn}
+            onPress={() => setAutoUpdate((on) => !on)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: autoUpdate }}
+            accessibilityLabel="Keep Sawa Cars up to date automatically"
+          >
+            <View style={[styles.box, autoUpdate && styles.boxOn]}>
+              {autoUpdate ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
+            </View>
+            <Text style={styles.optInText}>
+              Keep Sawa Cars up to date automatically. New versions install when you next
+              open the app — never while you are using it.
+            </Text>
+          </Pressable>
+        ) : null}
         <Button title={last ? 'Get Started' : 'Next'} onPress={go} />
       </View>
     </View>
@@ -111,6 +144,14 @@ const styles = StyleSheet.create({
   skip: { position: 'absolute', right: 20, zIndex: 10 },
   skipText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted },
   footer: { position: 'absolute', left: 24, right: 24, bottom: 0 },
+  optIn: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 16 },
+  box: {
+    width: 20, height: 20, borderRadius: 6, marginTop: 1,
+    borderWidth: 1.5, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  boxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  optInText: { flex: 1, fontSize: 12, lineHeight: 17, fontFamily: fonts.regular, color: colors.textMuted },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 7, marginBottom: 18 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.border },
   dotActive: { width: 22, backgroundColor: colors.primary },

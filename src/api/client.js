@@ -139,6 +139,10 @@ async function request(endpoint, options = {}) {
       const error = new Error(data.error || `HTTP error! Status: ${response.status}`);
       error.status = response.status;
       error.code = data.code;
+      // A closed account's response carries the date it can still be reopened
+      // by. SignInScreen shows it, and a window nobody is told the end of is
+      // not a window.
+      if (data.reopen_until) error.reopen_until = data.reopen_until;
       error.data = data;
 
       // A dead session must not haunt the keychain: JWTs live 30 days, and

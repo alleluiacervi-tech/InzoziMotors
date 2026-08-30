@@ -157,26 +157,43 @@ test('changing a password revokes old tokens but keeps the caller signed in', as
   await api().get('/auth/me').set('Authorization', `Bearer ${changed.body.token}`).expect(200);
 });
 
-test('deleting an account needs the password, then ends every session', async () => {
+test('closing an account needs a reason and the password, then ends every session', async () => {
   const user = await register();
 
+  // A reason first — the vocabulary exists to be counted, and a list nobody
+  // fills in counts nothing.
   await api().delete('/auth/me')
-    .set('Authorization', `Bearer ${user.token}`).send({}).expect(400);
+    .set('Authorization', `Bearer ${user.token}`).send({ password: user.password }).expect(400);
   await api().delete('/auth/me')
-    .set('Authorization', `Bearer ${user.token}`).send({ password: 'nope' }).expect(401);
+    .set('Authorization', `Bearer ${user.token}`).send({ reason: 'other' }).expect(400);
   await api().delete('/auth/me')
-    .set('Authorization', `Bearer ${user.token}`).send({ password: user.password }).expect(200);
+    .set('Authorization', `Bearer ${user.token}`)
+    .send({ password: 'nope', reason: 'other' }).expect(401);
 
+  const closed = await api().delete('/auth/me')
+    .set('Authorization', `Bearer ${user.token}`)
+    .send({ password: user.password, reason: 'other' }).expect(200);
+  assert.ok(closed.body.reopen_until, 'the response has to say when the way back expires');
+
+  // Every session, everywhere, on its next request — verifyLiveSession, not a
+  // logout call.
   await api().get('/auth/me').set('Authorization', `Bearer ${user.token}`).expect(401);
-  await api().post('/auth/login')
-    .send({ email: user.email, password: user.password }).expect(401);
+
+  // 403 and not 401: the person is holding the right password, and telling them
+  // their own account does not exist would waste the thirty-day window.
+  // backend/test/account-closure.test.js covers the window in full.
+  const blocked = await api().post('/auth/login')
+    .send({ email: user.email, password: user.password }).expect(403);
+  assert.equal(blocked.body.code, 'ACCOUNT_CLOSED');
 
   const { rows } = await pool.query(
-    'SELECT name, phone, password_hash, deleted_at FROM users WHERE id = $1', [user.id]
+    'SELECT name, account_status, closed_at, deleted_at FROM users WHERE id = $1', [user.id]
   );
-  assert.equal(rows[0].name, 'Deleted user');
-  assert.equal(rows[0].password_hash, null);
-  assert.notEqual(rows[0].deleted_at, null);
+  assert.equal(rows[0].account_status, 'closed');
+  assert.ok(rows[0].closed_at);
+  // Closed is not deleted. The name and the row survive until the purge.
+  assert.equal(rows[0].deleted_at, null);
+  assert.notEqual(rows[0].name, 'Deleted user');
 });
 
 // ─── Authorization ───────────────────────────────────────────────────────────

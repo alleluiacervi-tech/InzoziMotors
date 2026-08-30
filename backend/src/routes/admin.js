@@ -14,6 +14,20 @@ const {
   validateRates: validateDutyRates,
   invalidateDutyRates,
 } = require('../lib/duty-rates');
+const {
+  SETTING_KEY: APP_RELEASE_KEY,
+  validateRelease: validateAppRelease,
+  invalidateAppRelease,
+} = require('../lib/app-release');
+const {
+  slugify, loadMakes, invalidateMakes,
+} = require('../lib/vehicle-makes');
+const { uploadBrandLogo, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const {
+  CLOSURE_REASONS, REASON_LABELS, RECOVERY_DAYS,
+  purgeAccount, removeIdDocuments, CLOSED_ACCOUNTS, DUE_FOR_PURGE,
+} = require('../lib/account-closure');
+const { sendAccountDeleted } = require('../lib/mailer');
 
 const router = express.Router();
 
@@ -50,7 +64,7 @@ router.get('/action-center', requireAdmin, async (req, res) => {
     const [
       submissions, ids, inspections, reports, imports, importPayments,
       rentalInquiries, listingRisks, lapsingRentals, paidUnpublishedRentals,
-      overCapSellers, suspectInspections,
+      overCapSellers, suspectInspections, purgeDue,
     ] = await Promise.all([
       pool.query(`SELECT id, make, model, submitted_at AS occurred_at,
                     EXTRACT(EPOCH FROM (NOW() - submitted_at)) / 3600 AS age_hours
@@ -194,6 +208,18 @@ router.get('/action-center', requireAdmin, async (req, res) => {
                          OR (i.completed_at - i.started_at) < ($1 || ' minutes')::interval)
                   ORDER BY i.completed_at ASC LIMIT 40`,
                  [String(await minInspectionMinutes())]),
+      // Closed accounts whose thirty days are up.
+      //
+      // A closure needs nobody's approval — Guideline 5.1.1(v) means it cannot
+      // — so this is the only place the work shows up at all. Without it the
+      // rows sit closed forever and the erasure the person was promised never
+      // happens, which is the failure mode of "purge by a person, not a
+      // scheduler". It nags here until somebody presses the button.
+      pool.query(`SELECT id, closure_reason, purge_after AS occurred_at,
+                    EXTRACT(EPOCH FROM (NOW() - purge_after)) / 3600 AS age_hours
+                  FROM users
+                  WHERE closed_at IS NOT NULL AND deleted_at IS NULL AND purge_after <= NOW()
+                  ORDER BY purge_after ASC LIMIT 20`)
     ]);
 
     const minMinutes = await minInspectionMinutes();
@@ -266,6 +292,17 @@ router.get('/action-center', requireAdmin, async (req, res) => {
           + 'Nothing was unpublished; they cannot publish another until they are back under.',
         href: `/users?q=${encodeURIComponent(r.name || '')}`,
       })),
+      // One item for the whole batch, not one per account. A name here would
+      // be the wrong thing to print — these are people who asked to be erased —
+      // and twenty rows saying "erase somebody" is a queue nobody reads.
+      ...(purgeDue.rows.length ? [item(purgeDue.rows[0], {
+        id: 'accounts-due-purge',
+        kind: 'Account',
+        priority: 'attention',
+        title: `${purgeDue.rows.length} closed account${purgeDue.rows.length === 1 ? '' : 's'} ready to be erased`,
+        detail: 'The thirty-day window has passed. Erasing is what these people were promised, and nothing does it automatically.',
+        href: '/account-closures',
+      })] : []),
       ...listingRisks.rows.map((r) => item(r, { id: `listing-risk:${r.id}`, kind: 'Listing', priority: r.age_hours >= 24 ? 'urgent' : 'attention', title: `Review ${r.title}`, detail: 'Approval, inspection or gallery requirement needs attention', href: `/listings/${r.id}/edit` })),
     ];
     const rank = { urgent: 0, attention: 1, routine: 2 };
@@ -798,6 +835,21 @@ router.patch('/users/:id/access', requireAdmin, requireUuid('id'), async (req, r
     const user = await client.query('SELECT email,role,account_status FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
     if (!user.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
     if (user.rows[0].role === 'admin') { await client.query('ROLLBACK'); return res.status(403).json({ error: 'Administrator accounts cannot be suspended here' }); }
+    // A CLOSED account is not this control's business, in either direction.
+    //
+    // Suspending one is meaningless — it is already signed out everywhere and
+    // off the marketplace. Restoring one is worse: this route would set
+    // account_status='active' while closed_at and purge_after stayed set, so
+    // the person would appear to have their account back and then be silently
+    // erased on the next purge sweep. Reopening is theirs to do, from the app,
+    // with their own password — which is the whole point of the window.
+    if (user.rows[0].account_status === 'closed') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'This person closed their own account. Only they can reopen it, by signing in with their password before it is erased.',
+        code: 'ACCOUNT_CLOSED',
+      });
+    }
     const status = action === 'suspend' ? 'suspended' : 'active';
     const { rows } = await client.query(
       `UPDATE users SET account_status=$1, suspended_at=${action === 'suspend' ? 'NOW()' : 'NULL'},
@@ -1115,12 +1167,19 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // twenty numbers cannot be corrected from "Invalid value for
     // import_duty_rates", so this one reports which field is wrong.
     [DUTY_RATES_KEY]: (value) => validateDutyRates(value).length === 0,
+    // Same shape, and the same reason: a form of two version numbers per
+    // platform cannot be corrected from "Invalid value for app_release".
+    [APP_RELEASE_KEY]: (value) => validateAppRelease(value).length === 0,
   };
   if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
   if (!validators[key](req.body.value)) {
     if (key === DUTY_RATES_KEY) {
       const problems = validateDutyRates(req.body.value);
       return res.status(400).json({ error: problems[0], code: 'INVALID_DUTY_RATES', problems });
+    }
+    if (key === APP_RELEASE_KEY) {
+      const problems = validateAppRelease(req.body.value);
+      return res.status(400).json({ error: problems[0], code: 'INVALID_APP_RELEASE', problems });
     }
     return res.status(400).json({ error: `Invalid value for ${key}` });
   }
@@ -1157,6 +1216,7 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // Otherwise the public calculator keeps serving the old rates for up to the
     // cache TTL, and the operator reasonably concludes their edit did not save.
     if (key === DUTY_RATES_KEY) invalidateDutyRates();
+    if (key === APP_RELEASE_KEY) invalidateAppRelease();
     res.json(result);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
@@ -1233,6 +1293,285 @@ router.patch('/fees/:id', requireAdmin, requireUuid('id'), (_req, res) => {
     error: 'The platform fee workflow is retired. Historical records are read-only.',
     code: 'PLATFORM_FEES_RETIRED',
   });
+});
+
+
+// ─── Brands ──────────────────────────────────────────────────────────────────
+//
+// The seller-facing brand list used to be a 20-item array inside a mobile
+// screen, so widening it needed an App Store release — and it contained no
+// Chinese marque while the catalogue already held Dongfeng, BYD and Denza.
+// These routes are how that list is maintained without a release.
+//
+// Logos are uploaded, never bundled: they are third-party trademarks, and a
+// binary carrying sixty of them is a binary shipping somebody else's assets to
+// two app stores. Every client falls back to a lettermark, so a brand with no
+// logo looks deliberate rather than broken.
+
+// GET /admin/makes — everything, inactive included. The public route serves
+// only active brands; an operator has to be able to see what they switched off.
+router.get('/makes', requireAdmin, async (_req, res) => {
+  try {
+    const makes = await loadMakes({ includeInactive: true });
+    const { rows } = await pool.query(
+      `SELECT make, COUNT(*)::int AS n FROM cars WHERE make IS NOT NULL GROUP BY make`
+    );
+    // How many listings each brand actually carries, so an operator can see at
+    // a glance which brands are worth a logo — and can spot a brand with stock
+    // that is not on the list at all.
+    const counts = new Map(rows.map((r) => [String(r.make || '').toLowerCase(), r.n]));
+    const matched = new Set();
+    const withCounts = makes.map((m) => {
+      const keys = [m.name, ...(m.aliases || [])].map((k) => String(k).toLowerCase());
+      let listings = 0;
+      for (const key of keys) {
+        if (counts.has(key)) { listings += counts.get(key); matched.add(key); }
+      }
+      return { ...m, listings };
+    });
+    const unrecognised = rows
+      .filter((r) => !matched.has(String(r.make || '').toLowerCase()))
+      .map((r) => ({ make: r.make, listings: r.n }));
+    res.json({ makes: withCounts, unrecognised });
+  } catch (err) {
+    log.error('admin makes list error', { error: err.message });
+    res.status(500).json({ error: 'Could not load brands' });
+  }
+});
+
+// POST /admin/makes — add a brand.
+router.post('/makes', requireAdmin, async (req, res) => {
+  const name = String(req.body.name || '').trim();
+  if (name.length < 1 || name.length > 60) {
+    return res.status(400).json({ error: 'A brand needs a name of 1 to 60 characters.' });
+  }
+  const slug = slugify(name);
+  if (!slug) return res.status(400).json({ error: 'That name has no letters or digits in it.' });
+  const aliases = Array.isArray(req.body.aliases)
+    ? [...new Set(req.body.aliases.map((a) => String(a).trim().toLowerCase()).filter(Boolean))].slice(0, 12)
+    : [];
+  const order = Number.isInteger(req.body.display_order) ? req.body.display_order : 500;
+  if (order < 0 || order > 9999) return res.status(400).json({ error: 'Display order must be between 0 and 9999.' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `INSERT INTO vehicle_makes (name, slug, aliases, display_order)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (slug) DO NOTHING
+       RETURNING *`,
+      [name, slug, aliases, order]
+    );
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: `${name} is already on the list.`, code: 'MAKE_EXISTS' });
+    }
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'make.created', targetType: 'vehicle_make', targetId: rows[0].id,
+      summary: `Added the brand ${name}`, metadata: { slug, aliases },
+    });
+    await client.query('COMMIT');
+    invalidateMakes();
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    // The unique index on lower(name) catches "BMW" against an existing "bmw",
+    // which slugify would not have collided on its own.
+    if (err.code === '23505') {
+      return res.status(409).json({ error: `${name} is already on the list.`, code: 'MAKE_EXISTS' });
+    }
+    log.error('admin make create error', { error: err.message });
+    res.status(500).json({ error: 'Could not add the brand' });
+  } finally { client.release(); }
+});
+
+// PATCH /admin/makes/:id — logo, aliases, ordering, and whether it is offered.
+//
+// Deactivating never touches a listing. A car recorded as a brand somebody
+// switched off keeps its make, keeps its title and stays live; the brand simply
+// stops being offered to the NEXT seller. Rewriting live listings from a toggle
+// on a settings screen is not something a settings screen should be able to do.
+router.patch('/makes/:id', requireAdmin, requireUuid('id'), async (req, res) => {
+  const sets = [];
+  const params = [req.params.id];
+  const push = (sql, value) => { params.push(value); sets.push(`${sql} = $${params.length}`); };
+
+  if (req.body.name !== undefined) {
+    const name = String(req.body.name).trim();
+    if (name.length < 1 || name.length > 60) return res.status(400).json({ error: 'A brand needs a name of 1 to 60 characters.' });
+    push('name', name);
+  }
+  if (req.body.aliases !== undefined) {
+    if (!Array.isArray(req.body.aliases)) return res.status(400).json({ error: 'Aliases must be a list.' });
+    push('aliases', [...new Set(req.body.aliases.map((a) => String(a).trim().toLowerCase()).filter(Boolean))].slice(0, 12));
+  }
+  if (req.body.display_order !== undefined) {
+    const order = Number(req.body.display_order);
+    if (!Number.isInteger(order) || order < 0 || order > 9999) {
+      return res.status(400).json({ error: 'Display order must be a whole number between 0 and 9999.' });
+    }
+    push('display_order', order);
+  }
+  if (req.body.active !== undefined) {
+    if (typeof req.body.active !== 'boolean') return res.status(400).json({ error: 'Active must be true or false.' });
+    push('active', req.body.active);
+  }
+  // Clearing a logo is `null`, which is different from not sending the field.
+  if (req.body.logo_url !== undefined) {
+    const url = req.body.logo_url === null ? null : String(req.body.logo_url).trim();
+    if (url && !/^https?:\/\//.test(url)) return res.status(400).json({ error: 'A logo URL must start with http:// or https://' });
+    push('logo_url', url || null);
+  }
+  if (!sets.length) return res.status(400).json({ error: 'Nothing to change.' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const before = await client.query('SELECT * FROM vehicle_makes WHERE id=$1 FOR UPDATE', [req.params.id]);
+    if (!before.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Brand not found' }); }
+    const { rows } = await client.query(
+      `UPDATE vehicle_makes SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      params
+    );
+    await recordAdminAction(client, {
+      actorId: req.user.id, action: 'make.updated', targetType: 'vehicle_make', targetId: req.params.id,
+      summary: `Updated the brand ${rows[0].name}`,
+      metadata: { changed: Object.keys(req.body), previous: before.rows[0], current: rows[0] },
+    });
+    await client.query('COMMIT');
+    invalidateMakes();
+    res.json(rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    if (err.code === '23505') return res.status(409).json({ error: 'Another brand already uses that name.', code: 'MAKE_EXISTS' });
+    log.error('admin make update error', { error: err.message });
+    res.status(500).json({ error: 'Could not update the brand' });
+  } finally { client.release(); }
+});
+
+// POST /admin/makes/:makeId/logo — upload the mark itself.
+//
+// Same pipeline every other image goes through: multer writes it, the bytes are
+// read to confirm it really is an image (the extension and content type are
+// both attacker-controlled), then Cloudinary if configured and the persistent
+// volume otherwise. `resolveUploadUrl` is what keeps a Docker-internal hostname
+// out of the stored URL — a bug that shipped once and needed migration 0021.
+router.post('/makes/:makeId/logo', requireAdmin, requireUuid('makeId'),
+  uploadBrandLogo.single('logo'), verifyImageContent, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No logo was uploaded.' });
+    try {
+      const url = await resolveUploadUrl(req, req.file);
+      const { rows } = await pool.query(
+        'UPDATE vehicle_makes SET logo_url=$2, updated_at=NOW() WHERE id=$1 RETURNING *',
+        [req.params.makeId, url]
+      );
+      if (!rows.length) return res.status(404).json({ error: 'Brand not found' });
+      await recordAdminAction(pool, {
+        actorId: req.user.id, action: 'make.logo_set', targetType: 'vehicle_make', targetId: req.params.makeId,
+        summary: `Set the ${rows[0].name} logo`, metadata: { logo_url: url },
+      });
+      invalidateMakes();
+      res.json(rows[0]);
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+      log.error('admin make logo error', { error: err.message });
+      res.status(500).json({ error: 'Could not save the logo' });
+    }
+  });
+
+
+// ─── Account closures ────────────────────────────────────────────────────────
+//
+// The queue an operator watches, and the button that finishes the job. There is
+// deliberately no approve or deny here.
+//
+// The obvious design — the person asks to leave, an operator confirms — is an
+// App Store rejection risk: Guideline 5.1.1(v) requires deletion to be
+// initiated AND completed from inside the app, and a request parked until
+// somebody in the office gets to it is not that. So a closure has already
+// happened by the time it appears on this page. What the business wanted from
+// an approval step was VISIBILITY — who left, and why — and that is what this
+// gives, without standing between a person and their own account.
+
+// GET /admin/account-closures — who closed, why, and who is due to be erased.
+router.get('/account-closures', requireAdmin, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(CLOSED_ACCOUNTS);
+    // Counted over everything closed, not just this page: "why are people
+    // leaving" is the question the reason vocabulary exists to answer, and it
+    // is worthless if it only describes the most recent two hundred.
+    const tally = await pool.query(
+      `SELECT closure_reason, COUNT(*)::int AS n
+         FROM users
+        WHERE closure_reason IS NOT NULL
+        GROUP BY closure_reason
+        ORDER BY n DESC`
+    );
+    res.json({
+      closures: rows.map((row) => ({ ...row, reason_label: REASON_LABELS.get(row.closure_reason) || row.closure_reason })),
+      reasons: CLOSURE_REASONS,
+      recovery_days: RECOVERY_DAYS,
+      // Includes accounts already purged, whose reason survives on purpose —
+      // it carries no personal data and it is the whole history of why people
+      // left. See lib/account-closure.js.
+      tally: tally.rows.map((row) => ({ ...row, label: REASON_LABELS.get(row.closure_reason) || row.closure_reason })),
+      due_for_purge: rows.filter((row) => row.due_for_purge).length,
+    });
+  } catch (err) {
+    log.error('account closures list error', { error: err.message });
+    res.status(500).json({ error: 'Could not load account closures' });
+  }
+});
+
+// POST /admin/account-closures/purge — erase everything past its thirty days.
+//
+// A person presses this rather than a scheduler running it. This backend has no
+// job runner, on purpose (0009 wrote that down), and a handful of rows a month
+// does not justify inventing one. The Action Center nags once anything is due.
+//
+// It never chooses WHICH accounts: the predicate does. An operator cannot purge
+// somebody early by picking them off a list, and cannot skip somebody either.
+router.post('/account-closures/purge', requireAdmin, async (req, res) => {
+  try {
+    const due = await pool.query(DUE_FOR_PURGE);
+    if (!due.rows.length) return res.json({ purged: 0, accounts: [] });
+
+    const purged = [];
+    // One transaction per account, not one for all of them. A single bad row
+    // must not roll back the erasure of the others, and each of these is an
+    // independent legal obligation rather than part of one atomic operation.
+    for (const candidate of due.rows) {
+      try {
+        const result = await require('../lib/tx').withTransaction(async (client) => {
+          const done = await purgeAccount(client, candidate.id);
+          if (!done) return null;
+          await recordAdminAction(client, {
+            actorId: req.user.id,
+            action: 'account.purged',
+            targetType: 'user',
+            targetId: candidate.id,
+            summary: `Erased a closed account after its ${RECOVERY_DAYS}-day window`,
+            // Deliberately no name and no email: this log is permanent, and
+            // writing the identity into it would undo the erasure it records.
+            metadata: { closure_reason: candidate.closure_reason, closed_at: candidate.closed_at },
+          });
+          return done;
+        });
+        if (!result) continue;
+        // After the commit, never inside it — there is no undelete for a file.
+        removeIdDocuments(result.files);
+        sendAccountDeleted(result.email, 'there');
+        purged.push({ id: result.id });
+      } catch (err) {
+        log.error('account purge failed', { user: candidate.id, error: err.message });
+      }
+    }
+    res.json({ purged: purged.length, attempted: due.rows.length });
+  } catch (err) {
+    log.error('account purge sweep error', { error: err.message });
+    res.status(500).json({ error: 'Could not purge closed accounts' });
+  }
 });
 
 module.exports = router;

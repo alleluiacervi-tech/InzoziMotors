@@ -29,6 +29,8 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     items: [
       { href: '/listings', icon: 'car', label: 'Listings' },
       { href: '/banner', icon: 'star', label: 'Home banner' },
+      { href: '/brands', icon: 'car', label: 'Brands' },
+      { href: '/account-closures', icon: 'user', label: 'Closures' },
       { href: '/rentals/fleet', icon: 'calendar', label: 'Rental inventory' },
       { href: '/settings', icon: 'settings', label: 'Platform settings' },
     ],

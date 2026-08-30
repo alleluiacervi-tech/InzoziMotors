@@ -5,6 +5,7 @@ import Screen from '../components/Screen';
 import Button from '../components/Button';
 import StickyFooter from '../components/StickyFooter';
 import { useApp } from '../context/AppContext';
+import BrandMark from '../components/BrandMark';
 import { colors, radius, fonts } from '../theme';
 
 // The filter options are DERIVED from the cars actually on the marketplace, not
@@ -66,20 +67,21 @@ const SCORE_PRESETS = [
 ];
 
 const EMPTY = {
-  make: null, body: null, fuel: null, transmission: null,
+  make: null, body: null, fuel: null, transmission: null, location: null,
   maxPrice: null, minPrice: null, minYear: null, maxMileage: null, minScore: null,
 };
 
-function Chip({ label, active, onPress }) {
+function Chip({ label, active, onPress, mark }) {
   return (
     <Pressable style={[styles.chip, active && styles.chipOn]} onPress={onPress}>
+      {mark}
       <Text style={[styles.chipText, { color: active ? '#fff' : colors.slate600 }]}>{label}</Text>
     </Pressable>
   );
 }
 
 export default function FiltersScreen({ navigation, route }) {
-  const { cars } = useApp();
+  const { cars, makes } = useApp();
   const [selected, setSelected] = useState(
     route.params?.filters || EMPTY
   );
@@ -88,6 +90,27 @@ export default function FiltersScreen({ navigation, route }) {
   const BODY = useMemo(() => distinct(cars, (c) => c.category), [cars]);
   const FUEL = useMemo(() => distinct(cars, (c) => c.fuel), [cars]);
   const TRANSMISSION = useMemo(() => distinct(cars, (c) => c.transmission), [cars]);
+  // What the Map screen was reaching for, done in the one place buyers already
+  // narrow things down. That screen listed six hardcoded Kigali neighbourhoods
+  // and counted cars into them from a demo lookup keyed by '1'…'25', so every
+  // real listing landed in none of them and every pin read zero. These chips
+  // come from the locations sellers actually typed, so they always match stock.
+  const LOCATIONS = useMemo(() => distinct(cars, (c) => c.location), [cars]);
+
+  // Brand -> logo, for the make chips. A Map because the makes list is served
+  // and the chips come from the catalogue, so the two are matched by name at
+  // render time rather than being the same array.
+  const markFor = useMemo(() => {
+    const byName = new Map(makes.map((m) => [String(m.name).toLowerCase(), m]));
+    const byAlias = new Map();
+    for (const m of makes) {
+      for (const alias of m.aliases || []) byAlias.set(String(alias).toLowerCase(), m);
+    }
+    return (name) => {
+      const key = String(name || '').toLowerCase();
+      return byName.get(key) || byAlias.get(key) || null;
+    };
+  }, [makes]);
 
   const toggle = (group, val) =>
     setSelected((s) => ({ ...s, [group]: s[group] === val ? null : val }));
@@ -102,6 +125,12 @@ export default function FiltersScreen({ navigation, route }) {
     if (selected.body) list = list.filter((c) => same(c.category, selected.body));
     if (selected.fuel) list = list.filter((c) => same(c.fuel, selected.fuel));
     if (selected.transmission) list = list.filter((c) => same(c.transmission, selected.transmission));
+    // `includes`, matching the server's ILIKE: "Kicukiro" has to find
+    // "Kicukiro, Kigali" or the count here disagrees with the results screen.
+    if (selected.location) {
+      list = list.filter((c) => String(c.location || '').toLowerCase()
+        .includes(String(selected.location).toLowerCase()));
+    }
     const priceOf = (c) => (c.type === 'auction' ? c.currentBid : c.price);
     if (selected.maxPrice) list = list.filter((c) => priceOf(c) <= selected.maxPrice);
     if (selected.minPrice) list = list.filter((c) => priceOf(c) >= selected.minPrice);
@@ -172,7 +201,24 @@ export default function FiltersScreen({ navigation, route }) {
           <>
             <Text style={[styles.label, { marginTop: 24 }]}>Make</Text>
             <View style={styles.chips}>
-              {MAKES.map((m) => <Chip key={m} label={m} active={selected.make === m} onPress={() => toggle('make', m)} />)}
+              {MAKES.map((m) => (
+                <Chip
+                  key={m}
+                  label={m}
+                  active={selected.make === m}
+                  onPress={() => toggle('make', m)}
+                  mark={<BrandMark name={m} logoUrl={markFor(m)?.logo_url} size={18} />}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
+
+        {LOCATIONS.length ? (
+          <>
+            <Text style={[styles.label, { marginTop: 22 }]}>Location</Text>
+            <View style={styles.chips}>
+              {LOCATIONS.map((l) => <Chip key={l} label={l} active={selected.location === l} onPress={() => toggle('location', l)} />)}
             </View>
           </>
         ) : null}
@@ -232,7 +278,8 @@ const styles = StyleSheet.create({
   h1: { fontSize: 24, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
   label: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  chip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 9, paddingHorizontal: 16, borderRadius: radius.pill },
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, fontFamily: fonts.semiBold },
   standardNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 24, borderRadius: radius.xl, backgroundColor: colors.blueTint, padding: 14 },

@@ -46,7 +46,13 @@ transaction intermediation or a vehicle/payment warranty.
 > inspection/details → Contact verified seller or Request availability → accept
 > the direct-deal notice → use in-app chat or an available contact channel.
 > Seller flow: Profile → Seller tools → submit vehicle / contact settings.
-> Account deletion: Profile → Settings → Delete account.
+> Account deletion: Profile → Settings → Danger zone → Close my account.
+> Closing completes inside the app, immediately, with no review step on our
+> side (Guideline 5.1.1(v)): the session ends, listings come down and the phone
+> number stops being disclosed the moment it is confirmed. Data is erased 30
+> days later, and during those 30 days signing in with the same credentials
+> offers to reopen the account. The reviewer can demonstrate both halves with
+> the test account.
 >
 > The attached physical-device recording starts at launch and demonstrates
 > registration/sign-in, the buyer journey, inspection information, seller
@@ -196,3 +202,24 @@ Use actual app screens, not splash/login-only art:
 - [ ] Play App Signing fingerprint deployed in `assetlinks.json`.
 - [ ] `npm run release:check` passes.
 - [ ] Manual release selected until production smoke tests are complete.
+
+---
+
+## Release levers (added with the app-release work)
+
+These exist so a bad release is recoverable without a store review.
+
+| Lever | Where | What it does |
+|---|---|---|
+| Pause over-the-air updates | Admin → Settings → App release | `mobile-update.yml` reads it before publishing and refuses. Does not remove a bundle already out. |
+| Roll back a bundle | Actions → **Mobile Rollback** | Run with no `group` to list recent updates; re-run with the group id of the last good one to republish it on top. |
+| Preview a branch on a phone | Push any branch | `mobile-preview.yml` publishes to channel `preview`. Install once with `npx eas-cli build --profile preview --platform android`. |
+| Tell installs a new BUILD exists | Admin → Settings → App release | `latest_version` produces a dismissable prompt; `min_supported_version` a blocking one. **Both are inert while that platform's store link is empty**, which is what makes it impossible to lock people out before the app is on a store. |
+
+**Order of operations in an incident:** pause updates → roll back → fix forward
+on a branch and check it on the preview channel → unpause.
+
+⚠️ **`min_supported_version` is the one field that can brick every install.** The
+server refuses a value above `latest_version`, and the app fails open if it
+cannot reach the API — but raise it only for a build that is genuinely broken,
+and only once the newer build is really downloadable on that store.

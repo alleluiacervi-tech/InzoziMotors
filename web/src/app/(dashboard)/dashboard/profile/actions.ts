@@ -99,29 +99,35 @@ export async function deleteAccountAction(
   formData: FormData
 ): Promise<ActionState> {
   const password = String(formData.get('password') || '')
+  const reason = String(formData.get('reason') || '')
+  const note = String(formData.get('note') || '')
   const acknowledged = formData.get('acknowledge') === 'on'
 
   const fieldErrors: Record<string, string> = {}
+  if (!reason) fieldErrors.reason = 'Choose a reason so we know what to fix.'
   if (!password) fieldErrors.password = 'Enter your password to confirm.'
-  if (!acknowledged) fieldErrors.acknowledge = 'Please confirm you understand this cannot be undone.'
+  if (!acknowledged) fieldErrors.acknowledge = 'Please confirm you understand what happens next.'
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 
   const token = await getToken()
   if (!token) return { error: 'Your session has expired. Sign in again.' }
 
   try {
-    await account.deleteAccount(token, password)
+    await account.closeAccount(token, password, reason, note)
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.status === 401) {
         return { fieldErrors: { password: 'That password is not correct.' } }
       }
-      if (err.status === 409) return { error: err.message }
+      if (err.status === 400 || err.status === 409) return { error: err.message }
     }
-    return { error: describeError(err, 'We could not delete your account.') }
+    return { error: describeError(err, 'We could not close your account.') }
   }
 
   await clearSession()
   revalidatePath('/', 'layout')
-  redirect('/?deleted=1')
+  // ?closed=1, not ?deleted=1: nothing has been deleted yet, and the landing
+  // copy has to say so — it is where somebody who closed by mistake finds out
+  // there is still a way back.
+  redirect('/?closed=1')
 }
