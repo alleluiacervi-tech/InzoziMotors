@@ -67,7 +67,9 @@ export default function CarListCard({ car, onPress }) {
 
         <View style={styles.bottomRow}>
           <View style={styles.tagsRow}>
-            {marketDiff < 0 && (
+            {/* Only when the server actually computed a market position from
+                real comparables. getMarketDiff returns null otherwise. */}
+            {typeof marketDiff === 'number' && marketDiff < 0 && (
               <View style={styles.tagGreen}>
                 <Text style={styles.tagGreenText}>{Math.abs(marketDiff)}% below market</Text>
               </View>

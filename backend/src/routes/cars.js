@@ -44,6 +44,48 @@ function validInspectionExists(carAlias = 'c') {
   )`;
 }
 
+// ─── What a stranger may read ─────────────────────────────────────────────────
+// The public browse and detail routes used to `SELECT c.*`, which meant every
+// column the cars table would ever grow was published the moment it was added.
+// Three of them should never have left the building:
+//
+//   review_notes       the admin's own words. On an ID revocation the server
+//                      appends "Seller identity approval was revoked; review is
+//                      required before republication." to this column — and
+//                      then served it to anyone who asked for /cars.
+//   approved_by        the internal user id of the admin who published.
+//   registration_plate the plate itself. This platform burns a badge over the
+//                      plate in every published photograph; shipping the string
+//                      in the JSON undid that work in the same response.
+//
+// Allow-list, never deny-list: a column added to `cars` tomorrow is private
+// until someone puts it here on purpose. `archive_reason` and `vin_key` are
+// omitted for the same reason — internal, and nothing renders them.
+const PUBLIC_CAR_COLUMNS = [
+  'id', 'seller_id', 'title', 'make', 'model', 'year', 'mileage',
+  'fuel_type', 'transmission', 'body_type', 'color', 'price', 'currency',
+  'location', 'drive_side', 'images', 'inspected', 'inspection_score',
+  'status', 'views', 'saves', 'listed_at', 'sold_at', 'created_at',
+  'featured_until', 'condition_grade',
+];
+
+// The feed does not render a description or a VIN, and shipping them cost
+// roughly half the payload on a 20-car page. The detail route adds them back.
+const PUBLIC_CAR_DETAIL_COLUMNS = [...PUBLIC_CAR_COLUMNS, 'description', 'vin'];
+
+// Columns the DETAIL route selects but strips before answering anyone who is
+// not the car's own seller or an admin. The admin listing editor reads
+// review_notes from this route, so they cannot simply be dropped — they have to
+// be gated the same way the seller's phone number already is, further down.
+const INTERNAL_CAR_COLUMNS = [
+  'review_notes', 'archive_reason', 'archived_at', 'approved_at', 'approved_by',
+  'registration_plate', 'vin_key',
+];
+
+/** `c.id, c.title, …` for a SELECT list. */
+const publicCarSelect = (alias, columns = PUBLIC_CAR_COLUMNS) =>
+  columns.map((col) => `${alias}.${col}`).join(', ');
+
 // ─── Market intelligence ──────────────────────────────────────────────────────
 // The app used to fabricate "below market %" / "listed N days ago" from a
 // hardcoded table; the server is the only honest source of these numbers.
@@ -154,7 +196,8 @@ router.get('/', async (req, res) => {
                   c.${safeSort} ${safeOrder}
          LIMIT $${params.length - 1} OFFSET $${params.length}
        )
-       SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust,
+       SELECT ${publicCarSelect('c')},
+              u.name AS seller_name, u.trust_score AS seller_trust,
               u.id_verified AS seller_id_verified,
               u.business_verified AS seller_business_verified,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
@@ -346,7 +389,8 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
     // listing price. A car with no recorded changes returns [] — nothing is
     // synthesised; the app renders an empty history rather than a fake one.
     const { rows } = await pool.query(
-      `SELECT c.*, u.name AS seller_name, u.phone AS seller_phone,
+      `SELECT ${publicCarSelect('c', [...PUBLIC_CAR_DETAIL_COLUMNS, ...INTERNAL_CAR_COLUMNS])},
+              u.name AS seller_name, u.phone AS seller_phone,
               u.whatsapp_phone AS seller_whatsapp,
               u.phone_visible AS seller_phone_visible,
               u.whatsapp_visible AS seller_whatsapp_visible,
@@ -404,6 +448,12 @@ ${MARKET_LATERALS}
     if (!isInsider) {
       car.seller_phone = null;
       car.seller_whatsapp = null;
+      // The admin's own notes, the plate string, and the internal audit
+      // columns. An admin or the car's own seller keeps them — the listing
+      // editor reads review_notes from this route — and nobody else ever
+      // sees them. Deleting rather than nulling keeps them off the wire
+      // entirely, so their absence is not itself a signal.
+      for (const column of INTERNAL_CAR_COLUMNS) delete car[column];
     }
     car.seller_contact_available = available;
     car.direct_deal_notice = DIRECT_DEAL_NOTICE;
@@ -1126,3 +1176,10 @@ router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 });
 
 module.exports = router;
+// Exported for backend/test/public-payload.test.js, which checks both lists
+// against the real table: a name that is not a column, and a column that is in
+// neither list, both fail. That second half is the point — adding a column to
+// `cars` should force somebody to decide whether strangers may read it.
+module.exports.PUBLIC_CAR_COLUMNS = PUBLIC_CAR_COLUMNS;
+module.exports.PUBLIC_CAR_DETAIL_COLUMNS = PUBLIC_CAR_DETAIL_COLUMNS;
+module.exports.INTERNAL_CAR_COLUMNS = INTERNAL_CAR_COLUMNS;

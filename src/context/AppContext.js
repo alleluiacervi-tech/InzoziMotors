@@ -346,8 +346,20 @@ export function AppProvider({ children }) {
       transmission: c.transmission || 'Automatic',
       category: c.body_type || 'SUV',
       seller: c.seller_name || 'Verified Seller',
-      rating: parseFloat(c.seller_trust ? (c.seller_trust / 20).toFixed(1) : '4.5'),
-      distance: 2.5,
+      // The seller's trust score as the server computed it, 0-100, or null.
+      //
+      // This used to be `seller_trust / 20` rendered as a star rating, with
+      // '4.5' substituted when the server sent nothing. Both directions were
+      // wrong. POST /reviews is retired, so the review component of the score
+      // is permanently zero and 4.0 stars was the highest anyone could ever
+      // reach; a genuine ID-verified seller with no completed sales scores
+      // 30 + 0 + 20 + 0 = 50 and was shown to buyers as "★ 2.5". Meanwhile a
+      // seller the server knew nothing about was awarded a flattering 4.5.
+      // A star is a claim about other people's experience; nobody has had one
+      // yet, so the app states what is actually verified instead.
+      sellerTrust: Number.isFinite(c.seller_trust) ? c.seller_trust : null,
+      sellerIdVerified: c.seller_id_verified === 'approved',
+      sellerBusinessVerified: c.seller_business_verified === true,
       inspected: !!c.inspected,
       inspectionScore: c.inspection_score,
       type: 'sale',
