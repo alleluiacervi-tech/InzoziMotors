@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, Pressable, Image, Switch,
+  View, Text, StyleSheet, FlatList, Pressable, Image, Switch, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -117,6 +117,7 @@ export default function SavedScreen({ navigation }) {
   const {
     getSavedCars, toggleSaveCar,
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch,
+    refreshCatalogue, refreshing,
   } = useApp();
   const saved = getSavedCars();
   const [tab, setTab] = useState('saved');
@@ -161,6 +162,10 @@ export default function SavedScreen({ navigation }) {
           keyExtractor={(c) => c.id}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refreshCatalogue}
+              tintColor={colors.primary} colors={[colors.primary]} />
+          }
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => (
             <SavedCarRow

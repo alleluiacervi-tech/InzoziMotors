@@ -15,32 +15,57 @@ import { View, Text, StyleSheet, Pressable, AppState } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, fonts, shadows } from '../theme';
-import { checkForUpdate, applyUpdate, updatesEnabled, UPDATE_STATUS } from '../utils/updates';
+import {
+  checkForUpdate, applyUpdate, updatesEnabled, UPDATE_STATUS,
+  getUpdateMode, UPDATE_MODE,
+} from '../utils/updates';
 
 export default function UpdateBanner() {
   const [ready, setReady] = useState(false);
   const [applying, setApplying] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const appState = useRef(AppState.currentState);
+  // Set when a bundle is downloaded while the preference is `automatic`, so the
+  // next return to the app can apply it. Held in a ref rather than state: it
+  // must survive a re-render without causing one.
+  const pendingAuto = useRef(false);
   const insets = useSafeAreaInsets();
 
-  const look = useCallback(async () => {
-    const { status } = await checkForUpdate();
-    if (status === UPDATE_STATUS.AVAILABLE) {
-      // A new update supersedes an earlier dismissal: the person said "not that
-      // one", not "never tell me again".
-      setDismissed(false);
-      setReady(true);
+  const look = useCallback(async (returning) => {
+    const mode = await getUpdateMode();
+
+    // Automatic mode, an update already downloaded, and the person has just
+    // come BACK to the app — the one moment a restart costs them nothing,
+    // because they were not in the middle of anything.
+    if (mode === UPDATE_MODE.AUTOMATIC && returning && pendingAuto.current) {
+      if (await applyUpdate()) return;   // the runtime relaunches; nothing below runs
+      pendingAuto.current = false;       // could not relaunch — fall through and ask
     }
+
+    const { status } = await checkForUpdate();
+    if (status !== UPDATE_STATUS.AVAILABLE) return;
+
+    if (mode === UPDATE_MODE.AUTOMATIC) {
+      // Downloaded and armed. Deliberately NOT applied here: this check also
+      // runs on a cold start, and relaunching the app a second after someone
+      // opened it looks like a crash. It applies on the next return instead.
+      pendingAuto.current = true;
+      return;
+    }
+
+    // A new update supersedes an earlier dismissal: the person said "not that
+    // one", not "never tell me again".
+    setDismissed(false);
+    setReady(true);
   }, []);
 
   useEffect(() => {
     if (!updatesEnabled()) return undefined;
-    look();
+    look(false);
     const sub = AppState.addEventListener('change', (next) => {
       const returning = appState.current.match(/inactive|background/) && next === 'active';
       appState.current = next;
-      if (returning) look();
+      if (returning) look(true);
     });
     return () => sub.remove();
   }, [look]);

@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { STUDIO } from '../data/carImageAssets';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
-  FlatList, Dimensions, Image,
+  FlatList, Dimensions, Image, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,7 +55,7 @@ const TOOLS = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing } = useApp();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
   // dropped connection does not need a banner over the top of it.
@@ -231,7 +231,18 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshCatalogue}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
 
         {/* Connection notice. The app used to paper over an unreachable API with
             25 bundled demo cars, which meant an outage looked like inventory.
@@ -244,9 +255,21 @@ export default function HomeScreen({ navigation }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.offlineTitle}>We couldn&apos;t reach Sawa Cars</Text>
               <Text style={styles.offlineSub}>
-                Check your connection — listings will appear as soon as we&apos;re back.
+                Check your connection, then try again.
               </Text>
             </View>
+            {/* The recovery the notice used to promise but not provide. The
+                only line that marks the backend reachable again lives inside
+                the catalogue fetch, so without a way to re-run it the notice
+                was permanent for the life of the process. */}
+            <Pressable
+              accessibilityRole="button"
+              style={styles.offlineRetry}
+              disabled={refreshing}
+              onPress={refreshCatalogue}
+            >
+              <Text style={styles.offlineRetryText}>{refreshing ? 'Trying…' : 'Try again'}</Text>
+            </Pressable>
           </View>
         )}
 
@@ -673,6 +696,11 @@ const styles = StyleSheet.create({
   },
   offlineTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   offlineSub: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
+  offlineRetry: {
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: radius.pill, backgroundColor: colors.primary,
+  },
+  offlineRetryText: { fontSize: 12, fontFamily: fonts.bold, color: '#fff' },
 
   // ── Buy/Rent mode switch ──
   modeSwitchWrap: {
