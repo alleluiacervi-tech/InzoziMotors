@@ -19,8 +19,18 @@ import { APP, SITE } from '@/lib/site'
 // client render agree; the platform-led variant appears on the next paint.
 
 const STORES = {
-  ios: { href: APP.appStoreUrl, icon: 'apple' as const, label: 'Download on the App Store' },
-  android: { href: APP.playStoreUrl, icon: 'play-store' as const, label: 'Get it on Google Play' },
+  ios: {
+    href: APP.appStoreUrl,
+    icon: 'apple' as const,
+    label: 'Download on the App Store',
+    live: APP.iosLive,
+  },
+  android: {
+    href: APP.playStoreUrl,
+    icon: 'play-store' as const,
+    label: 'Get it on Google Play',
+    live: APP.androidLive,
+  },
 }
 
 /** Whatever host this deployment actually answers on, so the instruction we
@@ -60,8 +70,14 @@ export function AppLaunch({
     openInApp(to)
   }, [to, platform, openInApp])
 
-  const lead = platform === 'ios' ? STORES.ios : platform === 'android' ? STORES.android : null
-  const other = platform === 'ios' ? STORES.android : platform === 'android' ? STORES.ios : null
+  // Only ever point somebody at a store the app is actually published on. When
+  // the visitor's own store is live we lead with it and offer the other store
+  // (for a second phone) only if that one is live too; otherwise we fall through
+  // to StoreButtons, which shows every live badge and names what is still coming.
+  const mine = platform === 'ios' ? STORES.ios : platform === 'android' ? STORES.android : null
+  const otherRaw = platform === 'ios' ? STORES.android : platform === 'android' ? STORES.ios : null
+  const lead = mine && mine.live ? mine : null
+  const other = otherRaw && otherRaw.live ? otherRaw : null
 
   return (
     <div className="mt-8">

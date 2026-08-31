@@ -7,12 +7,14 @@ import { useDeviceStoreUrl } from './useDeepLink'
 /**
  * App Store / Play Store buttons.
  *
- * HONESTY GATE: while APP.storesLive is false (the store records don't exist
- * yet) this renders a plain "coming soon" line instead of badges — a store
- * button that 404s is exactly the scam signal this product exists to kill.
+ * HONESTY GATE, per platform: a badge renders only for a store the app is
+ * actually published on (APP.iosLive / APP.androidLive) — a store button that
+ * 404s is exactly the scam signal this product exists to kill. With neither
+ * live this falls back to a "coming soon" line; with one live it shows that one
+ * badge and names the other as still coming, so the copy never over-promises.
  *
- * Once live: both badges render (a desktop visitor may want to send the link
- * to their phone), with the visitor's own platform highlighted.
+ * A live badge is highlighted when it matches the visitor's own platform — a
+ * desktop visitor may want to send the link to their phone.
  */
 export function StoreButtons({
   tone = 'light',
@@ -25,13 +27,33 @@ export function StoreButtons({
 }) {
   const platform = useDeviceStoreUrl()
 
-  if (!APP.storesLive) {
+  const stores = [
+    {
+      key: 'ios' as const,
+      live: APP.iosLive,
+      href: APP.appStoreUrl,
+      icon: 'apple' as const,
+      caption: 'Download on the',
+      name: 'App Store',
+    },
+    {
+      key: 'android' as const,
+      live: APP.androidLive,
+      href: APP.playStoreUrl,
+      icon: 'play-store' as const,
+      caption: 'Get it on',
+      name: 'Google Play',
+    },
+  ]
+
+  const liveStores = stores.filter((s) => s.live)
+  const comingSoon = stores.filter((s) => !s.live).map((s) => s.name)
+
+  const mutedText = tone === 'dark' ? 'text-white/55' : 'text-content-muted'
+
+  if (liveStores.length === 0) {
     return (
-      <p
-        className={`text-caption font-semibold ${
-          tone === 'dark' ? 'text-white/55' : 'text-content-muted'
-        } ${className}`}
-      >
+      <p className={`text-caption font-semibold ${mutedText} ${className}`}>
         Coming to the App Store and Google Play.
       </p>
     )
@@ -51,42 +73,32 @@ export function StoreButtons({
       ? 'border-white/40 bg-white/12'
       : 'border-brand/35'
 
-  const stores = [
-    {
-      key: 'ios' as const,
-      href: APP.appStoreUrl,
-      icon: 'apple' as const,
-      caption: 'Download on the',
-      name: 'App Store',
-    },
-    {
-      key: 'android' as const,
-      href: APP.playStoreUrl,
-      icon: 'play-store' as const,
-      caption: 'Get it on',
-      name: 'Google Play',
-    },
-  ]
-
   return (
-    <div className={`flex flex-wrap gap-3 ${className}`}>
-      {stores.map((store) => (
-        <a
-          key={store.key}
-          href={store.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${base} ${sizing} ${styles} ${platform === store.key ? highlight : ''}`}
-        >
-          <Icon name={store.icon} size={size === 'sm' ? 22 : 26} />
-          <span className="text-left leading-tight">
-            <span className="block text-micro opacity-60">{store.caption}</span>
-            <span className={`block font-bold ${size === 'sm' ? 'text-caption' : 'text-body'}`}>
-              {store.name}
+    <div className={className}>
+      <div className="flex flex-wrap gap-3">
+        {liveStores.map((store) => (
+          <a
+            key={store.key}
+            href={store.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${base} ${sizing} ${styles} ${platform === store.key ? highlight : ''}`}
+          >
+            <Icon name={store.icon} size={size === 'sm' ? 22 : 26} />
+            <span className="text-left leading-tight">
+              <span className="block text-micro opacity-60">{store.caption}</span>
+              <span className={`block font-bold ${size === 'sm' ? 'text-caption' : 'text-body'}`}>
+                {store.name}
+              </span>
             </span>
-          </span>
-        </a>
-      ))}
+          </a>
+        ))}
+      </div>
+      {comingSoon.length > 0 ? (
+        <p className={`mt-3 text-caption font-semibold ${mutedText}`}>
+          {comingSoon.join(' and ')} coming soon.
+        </p>
+      ) : null}
     </div>
   )
 }
