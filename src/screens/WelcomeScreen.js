@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Dimensions, Linking } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Dimensions, Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -42,7 +42,7 @@ const TRIO = [
 
 export default function WelcomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { setHomeMode, language, t } = useApp();
+  const { setHomeMode, language, languageInfo, t } = useApp();
 
   const explore = () => {
     setHomeMode('buy');
@@ -71,6 +71,9 @@ export default function WelcomeScreen({ navigation }) {
           accessibilityRole="button"
           accessibilityLabel={t('common.language')}
         >
+          {Platform.OS === 'ios' && languageInfo.flag ? (
+            <Text style={styles.langFlag}>{languageInfo.flag}</Text>
+          ) : null}
           <Text style={styles.langText}>{language.toUpperCase()}</Text>
           <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
         </Pressable>
@@ -200,6 +203,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   langText: { fontFamily: fonts.semiBold, color: colors.textPrimary, fontSize: 13 },
+  langFlag: { fontSize: 15, marginRight: -1 },
 
   brand: { alignItems: 'center', marginTop: sp(2) },
 
