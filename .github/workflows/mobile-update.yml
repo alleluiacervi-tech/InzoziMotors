@@ -115,19 +115,95 @@ jobs:
           # The triggering commit, not whatever main has moved on to — the whole
           # point of gating on CI is publishing the tree that passed.
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-          # Needed to diff against the previous state of main below.
+          # Needed to diff against what is already published, which may be
+          # many commits back.
           fetch-depth: 0
+
+      # Node moves ABOVE the decision because the decision now asks EAS what is
+      # actually on the channel, rather than guessing from the commit's diff.
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ── What is actually on the channel? ─────────────────────────────────────
+      #
+      # The bundle's message carries the commit it was built from — put there
+      # for exactly this question. Reading it back turns "what changed in this
+      # commit" into "what changed since the code people are actually running",
+      # which is the question that matters and the one this workflow got wrong.
+      #
+      # Never fails the run: if EAS cannot be reached or the message cannot be
+      # parsed, the next step falls back to the commit diff and says so.
+      - name: Find the commit currently published
+        id: published
+        continue-on-error: true
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -uo pipefail
+          branch="${{ github.event.inputs.branch || 'production' }}"
+          raw="$(npx eas-cli update:list --branch "$branch" --limit 1 --json --non-interactive 2>/dev/null || echo '')"
+          sha="$(printf '%s' "$raw" | node -e '
+            let s = "";
+            process.stdin.on("data", (d) => (s += d)).on("end", () => {
+              try {
+                // The shape has moved between eas-cli versions, so hunt for a
+                // message rather than trusting one path through the object.
+                const seen = [];
+                const walk = (node) => {
+                  if (!node || typeof node !== "object" || seen.includes(node)) return;
+                  seen.push(node);
+                  if (typeof node.message === "string") {
+                    const m = node.message.match(/\b([0-9a-f]{7,40})\b/);
+                    if (m) { process.stdout.write(m[1]); process.exit(0); }
+                  }
+                  for (const v of Object.values(node)) walk(v);
+                };
+                walk(JSON.parse(s));
+              } catch {}
+              process.stdout.write("");
+            });
+          ' 2>/dev/null || echo '')"
+          if [ -n "${sha}" ] && git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+            echo "Published bundle was built from ${sha}."
+            echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Could not determine the published commit; falling back to this commit's own diff."
+            echo "sha=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Decide whether this commit should be published
         id: scope
         run: |
           set -euo pipefail
           sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+          published="${{ steps.published.outputs.sha }}"
 
-          # main advances by merge commit, so the first parent is the previous
-          # tip and this range is everything the merge brought in.
-          if git rev-parse --verify -q "${sha}^" >/dev/null; then
+          # Diff against WHAT IS RUNNING ON PHONES, not against the previous
+          # commit.
+          #
+          # The old range was ${sha}^..${sha} — "did this commit change the
+          # app?". That is a proxy for "is there anything to ship", and the two
+          # come apart precisely when it hurts: a publish fails for an unrelated
+          # reason, the next commit touches something else, and the workflow
+          # goes green forever while the work sits unshipped. That happened on
+          # 2026-08-30 and, from the run history, on runs 20 and 22 before it —
+          # the symptom being an app that quietly stays old.
+          #
+          # Comparing against the published commit makes a lost publish heal
+          # itself on the next commit instead of needing somebody to notice.
+          if [ -n "${published}" ]; then
+            changed="$(git diff --name-only "${published}" "${sha}")"
+            echo "Comparing against the published bundle (${published:0:8})."
+          elif git rev-parse --verify -q "${sha}^" >/dev/null; then
             changed="$(git diff --name-only "${sha}^" "${sha}")"
+            echo "Comparing against the previous commit."
           else
             changed="$(git ls-tree -r --name-only "${sha}")"
           fi
@@ -160,6 +236,10 @@ jobs:
           # Native-sensitive: a change here may mean the installed binary no
           # longer matches the bundle. package-lock alone counts, because a
           # transitive native dependency can move without package.json moving.
+          #
+          # Measured over the same range, which makes this stricter and more
+          # correct than before: the real question is whether anything native
+          # moved since the bundle installs are RUNNING, not since last commit.
           native=false
           if echo "${changed}" | grep -qE '^(package(-lock)?\.json|app\.config\.js|eas\.json|plugins/)'; then
             native=true
@@ -291,18 +371,6 @@ jobs:
             exit 1
           fi
           echo "Stop switch is off — publishing."
-
-      - name: Setup Node.js
-        if: steps.scope.outputs.publish == 'true'
-        uses: actions/setup-node@v5
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install dependencies
-        if: steps.scope.outputs.publish == 'true'
-        run: npm ci
 
       - name: Publish update to EAS (iOS and Android)
         if: steps.scope.outputs.publish == 'true'
