@@ -9,6 +9,8 @@ import { setDutyRates, setRwfRate } from '@/lib/business'
 import { DutySync } from '@/components/DutySync'
 import { FxSync } from '@/components/FxSync'
 import { SITE } from '@/lib/site'
+import { getLocale } from '@/lib/i18n/server'
+import { LanguageProvider } from '@/lib/i18n/context'
 import './globals.css'
 
 // Satoshi (Indian Type Foundry), self-hosted by next/font — the same four files
@@ -111,11 +113,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const dutyRates = await duty.rates()
   setDutyRates(dutyRates)
 
+  // The visitor's language, from the cookie the switcher writes. Drives
+  // <html lang> and seeds the client provider so the first paint is already
+  // translated — no flash of English.
+  const locale = await getLocale()
+
   return (
     // The inline splash script below may add `splash-done` before React
     // hydrates. That difference is intentional (it prevents a repeat-visit
     // flash), so suppress only this root attribute warning.
-    <html lang="en" className={satoshi.variable} suppressHydrationWarning>
+    <html lang={locale} className={satoshi.variable} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         {/* Runs before first paint: a repeat visit this session gets the
             splash-done class on <html>, and CSS hides the splash overlay with
@@ -133,11 +140,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </a>
         <FxSync rate={rate.rate} />
         <DutySync rates={dutyRates} />
-        <Header user={user} />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        <LanguageProvider initialLocale={locale}>
+          <Header user={user} />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </LanguageProvider>
       </body>
     </html>
   )
