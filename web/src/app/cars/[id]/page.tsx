@@ -511,9 +511,9 @@ export default async function CarDetailPage({ params }: PageProps) {
               </Button>
             </div>
 
-            <ul className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <ul className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4">
               {similar.map((other) => (
-                <li key={other.id}>
+                <li key={other.id} className="min-w-0">
                   <CarCard car={other} />
                 </li>
               ))}

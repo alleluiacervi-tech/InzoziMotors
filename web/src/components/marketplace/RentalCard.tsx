@@ -25,7 +25,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
   return (
     <Link
       href={`/rentals/${car.id}`}
-      className="group block overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card transition-all duration-500 ease-brand hover:-translate-y-1.5 hover:border-line hover:shadow-float"
+      className="group flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card transition-all duration-500 ease-brand hover:-translate-y-1.5 hover:border-line hover:shadow-float"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-surface-alt">
         <Image
@@ -36,26 +36,27 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
           className="object-contain p-2 transition-transform duration-500 ease-brand group-hover:scale-[1.03]"
           priority={priority}
         />
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+        <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
           {tier ? (
             <Badge
               tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'}
               icon="shield-check"
+              className="max-w-full truncate"
             >
               {tier.short}
             </Badge>
           ) : null}
         </div>
         {car.safari_ready ? (
-          <div className="absolute right-3 top-3">
-            <Badge tone="info" icon="location">
+          <div className="absolute right-3 top-3 max-w-[45%]">
+            <Badge tone="info" icon="location" className="max-w-full truncate">
               Safari-ready
             </Badge>
           </div>
         ) : null}
       </div>
 
-      <div className="p-5">
+      <div className="flex min-w-0 flex-1 flex-col p-5">
         <h3 className="truncate text-title-sm font-extrabold tracking-[-0.015em] text-content transition-colors group-hover:text-brand">
           {car.title}
         </h3>
@@ -85,7 +86,7 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
           ) : null}
         </p>
 
-        <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
           <div className="min-w-0">
             <p
               className="text-price font-extrabold tracking-[-0.02em] text-brand"
@@ -121,9 +122,9 @@ export function RentalCard({ car, priority = false }: { car: RentalCar; priority
 
 export function RentalCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-3xl border border-line-soft bg-surface">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-line-soft bg-surface">
       <div className="skeleton aspect-[16/10]" />
-      <div className="space-y-3 p-5">
+      <div className="flex flex-1 flex-col space-y-3 p-5">
         <div className="skeleton h-4 w-3/4 rounded" />
         <div className="skeleton h-3 w-1/2 rounded" />
         <div className="skeleton h-6 w-28 rounded" />
