@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
 import { Button, Icon } from '@/components/ui'
-import { APP, CONTACT, NAV_LINKS } from '@/lib/site'
+import { APP, CONTACT, NAV_LINKS, STORES_LIVE } from '@/lib/site'
 import type { User } from '@/lib/types'
 
 /**
@@ -172,7 +172,7 @@ export function Header({ user }: { user: User | null }) {
             </Button>
           )}
 
-          {APP.storesLive ? (
+          {STORES_LIVE ? (
             <>
               <Button
                 href="/cars"
@@ -302,7 +302,7 @@ export function Header({ user }: { user: User | null }) {
                   <Button href="/signup" variant="secondary" fullWidth>Create account</Button>
                 </>
               )}
-              {APP.storesLive ? (
+              {STORES_LIVE ? (
                 <Button href="/download" fullWidth>Get the app</Button>
               ) : (
                 <>

@@ -19,16 +19,24 @@ export const APP = {
   androidPackage: 'com.sawacars.app',
   iosBundleId: 'com.sawacars.app',
   playStoreUrl: 'https://play.google.com/store/apps/details?id=com.sawacars.app',
-  appStoreUrl: 'https://apps.apple.com/app/sawa/id0000000000',
+  appStoreUrl: 'https://apps.apple.com/app/id6803097569',
   /**
-   * HONESTY GATE. The store records don't exist yet, so every store badge and
-   * store link on the site renders as absence (or "coming soon" copy) until
-   * this flips. Flip it when the real App Store id and Play listing are live —
-   * a button to a 404 store page is exactly the scam signal Sawa exists to
-   * kill.
+   * HONESTY GATE, per platform. A badge or store link only renders for a store
+   * the app is actually published on — a button to a 404 store page is exactly
+   * the scam signal Sawa exists to kill.
+   *
+   * iOS went live on the App Store on 28 Aug 2026 (id 6803097569). Android is
+   * not published yet, so its Play URL still 404s and its badge stays hidden.
+   * Flip androidLive to true the moment the Play listing is live, and not
+   * before.
    */
-  storesLive: false,
+  iosLive: true,
+  androidLive: false,
 } as const
+
+/** True when the app is installable on at least one store — the site may then
+ *  lead with "Get the app" rather than the marketplace-first fallback. */
+export const STORES_LIVE = APP.iosLive || APP.androidLive
 
 /**
  * Sawa Cars' single business line and single public mailbox.

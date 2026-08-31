@@ -41,9 +41,14 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
 
     prefer_related_applications: false,
+    // Only list a native app on a store it is actually published on — a browser
+    // that surfaces an install prompt for a 404 listing is the same broken
+    // promise the store badges guard against.
     related_applications: [
-      { platform: 'play', url: APP.playStoreUrl, id: APP.androidPackage },
-      { platform: 'itunes', url: APP.appStoreUrl },
+      ...(APP.androidLive
+        ? [{ platform: 'play', url: APP.playStoreUrl, id: APP.androidPackage }]
+        : []),
+      ...(APP.iosLive ? [{ platform: 'itunes', url: APP.appStoreUrl }] : []),
     ],
   }
 }
