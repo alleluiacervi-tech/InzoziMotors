@@ -6,6 +6,10 @@ import type { NextConfig } from 'next'
 // server-side equivalent used by Server Components talking to the VPS directly.
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Keep standalone tracing scoped to this app. Without an explicit root,
+  // Next walks up to the first lockfile it finds (on a developer machine that
+  // can be the user's home directory), producing oversized deploy artefacts.
+  outputFileTracingRoot: process.cwd(),
   reactStrictMode: true,
   poweredByHeader: false,
 

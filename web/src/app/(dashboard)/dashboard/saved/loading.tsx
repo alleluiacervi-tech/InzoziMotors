@@ -6,9 +6,11 @@ export default function LoadingSaved() {
   return (
     <div aria-busy="true" aria-label="Loading your saved cars">
       <HeaderSkeleton />
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 3 }, (_, i) => (
-          <CarCardSkeleton key={i} />
+          <div key={i} className="min-w-0">
+            <CarCardSkeleton />
+          </div>
         ))}
       </div>
       <Skeleton className="mt-10 h-40" />
