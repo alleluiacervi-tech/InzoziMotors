@@ -8,6 +8,7 @@
 // Sections are added as pages are localized; English is always complete first.
 
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from './config'
+import { SECTIONS } from './messages'
 
 type Messages = Record<string, unknown>
 
@@ -321,7 +322,26 @@ const ko = {
   },
 } as const
 
-export const DICTIONARY: Record<Locale, Messages> = { en, rw, fr, sw, ko }
+// Per-page-group message sections (src/lib/i18n/messages/*) are merged in by
+// name on top of the base chrome above, one subtree per locale. English is the
+// fallback for any section a locale has not filled in yet.
+const BASE: Record<Locale, Messages> = { en, rw, fr, sw, ko }
+
+function withSections(locale: Locale): Messages {
+  const out: Messages = { ...BASE[locale] }
+  for (const [name, byLocale] of Object.entries(SECTIONS)) {
+    out[name] = byLocale[locale] ?? byLocale[DEFAULT_LOCALE]
+  }
+  return out
+}
+
+export const DICTIONARY: Record<Locale, Messages> = {
+  en: withSections('en'),
+  rw: withSections('rw'),
+  fr: withSections('fr'),
+  sw: withSections('sw'),
+  ko: withSections('ko'),
+}
 
 function lookup(source: Messages | undefined, key: string): string | undefined {
   if (!source) return undefined
