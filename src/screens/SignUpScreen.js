@@ -14,7 +14,7 @@ const SITE_URL = (Constants.expoConfig?.extra?.siteUrl || 'https://sawacars.com'
 const openLegal = (path) => Linking.openURL(`${SITE_URL}${path}`).catch(() => {});
 
 export default function SignUpScreen({ navigation }) {
-  const { signUpUser } = useApp();
+  const { signUpUser, t } = useApp();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,16 +23,16 @@ export default function SignUpScreen({ navigation }) {
 
   const handleSignUp = async () => {
     const errs = {};
-    if (!name.trim()) errs.name = 'Please enter your full name.';
-    if (!email || !email.includes('@')) errs.email = 'Please enter a valid email address.';
-    if (!password || password.length < 6) errs.password = 'Password must be at least 6 characters.';
+    if (!name.trim()) errs.name = t('auth.nameRequired');
+    if (!email || !email.includes('@')) errs.email = t('auth.validEmail');
+    if (!password || password.length < 6) errs.password = t('auth.passwordMin');
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     try {
       await signUpUser(name.trim(), email.trim(), password, 'buyer');
       navigation.replace('Main');
     } catch (err) {
-      showToast(err.message || 'Could not create your account. Please try again.', 'error');
+      showToast(err.message || t('auth.createError'), 'error');
     }
   };
 
@@ -45,20 +45,20 @@ export default function SignUpScreen({ navigation }) {
       >
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <LogoMark size={54} />
-        <Text style={styles.title}>Create account</Text>
-        <Text style={styles.sub}>Buy, save and message sellers on Sawa Cars.</Text>
+        <Text style={styles.title}>{t('auth.createTitle')}</Text>
+        <Text style={styles.sub}>{t('auth.createSub')}</Text>
 
-        <Text style={[styles.label, { marginTop: 26 }]}>Full name</Text>
+        <Text style={[styles.label, { marginTop: 26 }]}>{t('auth.fullName')}</Text>
         <TextInput
           style={[styles.input, errors.name && styles.inputError]}
-          placeholder="Alex Morgan"
+          placeholder={t('auth.namePlaceholder')}
           value={name}
           onChangeText={(t) => { setName(t); setErrors((e) => ({ ...e, name: undefined })); }}
           placeholderTextColor={colors.textMuted}
         />
         {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
 
-        <Text style={[styles.label, { marginTop: 14 }]}>Email</Text>
+        <Text style={[styles.label, { marginTop: 14 }]}>{t('auth.email')}</Text>
         <TextInput
           style={[styles.input, errors.email && styles.inputError]}
           placeholder="you@email.com"
@@ -70,11 +70,11 @@ export default function SignUpScreen({ navigation }) {
         />
         {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
-        <Text style={[styles.label, { marginTop: 14 }]}>Password</Text>
+        <Text style={[styles.label, { marginTop: 14 }]}>{t('auth.password')}</Text>
         <View style={[styles.passwordWrap, errors.password && styles.inputError]}>
           <TextInput
             style={styles.passwordInput}
-            placeholder="At least 6 characters"
+            placeholder={t('auth.passwordPlaceholder')}
             value={password}
             onChangeText={(t) => { setPassword(t); setErrors((e) => ({ ...e, password: undefined })); }}
             placeholderTextColor={colors.textMuted}
@@ -84,7 +84,7 @@ export default function SignUpScreen({ navigation }) {
             onPress={() => setShow((s) => !s)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={show ? 'Hide password' : 'Show password'}
+            accessibilityLabel={t(show ? 'auth.hidePassword' : 'auth.showPassword')}
           >
             <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
           </Pressable>
@@ -92,7 +92,7 @@ export default function SignUpScreen({ navigation }) {
         {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
         <Button
-          title="Create account"
+          title={t('auth.createAccount')}
           style={{ marginTop: 28 }}
           onPress={handleSignUp}
         />
@@ -102,14 +102,14 @@ export default function SignUpScreen({ navigation }) {
             passing Welcome — for a UGC app the agreement must sit at the point
             of account creation, not one screen upstream of it. */}
         <Text style={styles.terms}>
-          By creating an account you agree to our{' '}
+          {t('auth.termsPrefix')}{' '}
           <Text
             style={styles.termsLink}
             onPress={() => openLegal('/legal/terms')}
             suppressHighlighting
             accessibilityRole="link"
           >
-            Terms
+            {t('auth.terms')}
           </Text>
           {' '}and{' '}
           <Text
@@ -118,14 +118,14 @@ export default function SignUpScreen({ navigation }) {
             suppressHighlighting
             accessibilityRole="link"
           >
-            Privacy Policy
+            {t('auth.privacy')}
           </Text>
           .
         </Text>
 
         <Pressable onPress={() => navigation.navigate('SignIn')} style={{ marginTop: 16 }}>
           <Text style={styles.footer}>
-            Already have an account? <Text style={styles.link}>Sign in</Text>
+            {t('auth.alreadyAccount')} <Text style={styles.link}>{t('auth.signIn')}</Text>
           </Text>
         </Pressable>
       </ScrollView>

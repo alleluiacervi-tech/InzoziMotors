@@ -20,7 +20,7 @@ const getRegYear = (car) => {
 
 export default function CarListCard({ car, onPress }) {
   const tier = getCertTier(car);
-  const { isCarSaved, toggleSaveCar } = useApp();
+  const { isCarSaved, toggleSaveCar, t } = useApp();
   const saved = isCarSaved(car.id);
   const price = car.type === 'auction' ? car.currentBid : car.price;
   const marketDiff = getMarketDiff(car);
@@ -47,7 +47,7 @@ export default function CarListCard({ car, onPress }) {
             onPress={() => toggleSaveCar(car.id)}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel={saved ? `Remove ${car.title} from saved` : `Save ${car.title}`}
+            accessibilityLabel={t(saved ? 'home.removeSaved' : 'home.saveCar', { title: car.title })}
             accessibilityState={{ selected: saved }}
           >
             <Ionicons
@@ -69,7 +69,7 @@ export default function CarListCard({ car, onPress }) {
         {car.inspectionScore ? (
           <View style={styles.scoreRow}>
             <Ionicons name="shield-checkmark" size={11} color={colors.green} />
-            <Text style={styles.scoreText}>{car.inspectionScore}/150 inspected</Text>
+            <Text style={styles.scoreText}>{t('home.inspected', { score: car.inspectionScore })}</Text>
           </View>
         ) : null}
 
@@ -79,12 +79,12 @@ export default function CarListCard({ car, onPress }) {
                 real comparables. getMarketDiff returns null otherwise. */}
             {typeof marketDiff === 'number' && marketDiff < 0 && (
               <View style={styles.tagGreen}>
-                <Text style={styles.tagGreenText}>{Math.abs(marketDiff)}% below market</Text>
+                <Text style={styles.tagGreenText}>{t('home.belowMarket', { percent: Math.abs(marketDiff) })}</Text>
               </View>
             )}
             {savedCount >= 10 && (
               <View style={styles.tagAmber}>
-                <Text style={styles.tagAmberText}>High demand</Text>
+                <Text style={styles.tagAmberText}>{t('home.highDemand')}</Text>
               </View>
             )}
           </View>

@@ -16,6 +16,9 @@ import api, { BASE_URL, getToken } from '../api/client';
 import io from 'socket.io-client';
 import { syncPushToken, unregisterPushToken } from '../utils/push';
 import { getJSON, setJSON } from '../storage';
+import {
+  DEFAULT_LANGUAGE, LANGUAGES, languageFor, localeFor, normalizeLanguage, translate,
+} from '../i18n';
 
 const AppContext = createContext();
 
@@ -248,6 +251,19 @@ export function AppProvider({ children }) {
   const currency = 'RWF';
   const toggleCurrency = useCallback(() => {}, []);
 
+  // Language is a device preference, not an account property. Keeping it here
+  // makes every screen react to one change and lets the first-run screens offer
+  // the same selector as Settings. Translation data is bundled, so changing it
+  // never waits for a network request.
+  const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
+  const setLanguage = useCallback((value) => {
+    const next = normalizeLanguage(value);
+    setLanguageState(next);
+    setJSON('language', next).catch(() => {});
+    return next;
+  }, []);
+  const t = useCallback((key, variables) => translate(language, key, variables), [language]);
+
   // Recently viewed — powers the Home personalization rail
   const [recentlyViewedIds, setRecentlyViewedIds] = useState([]);
   // The brand list, served rather than bundled. Empty until the first fetch or
@@ -278,6 +294,7 @@ export function AppProvider({ children }) {
         fxCached,
         dutyCached,
         makesCached,
+        languageCached,
       ] = await Promise.all([
         getJSON('savedCarIds'),
         getJSON('savedSearches'),
@@ -288,12 +305,14 @@ export function AppProvider({ children }) {
         getJSON('fxRate'),
         getJSON('dutyRates'),
         getJSON('vehicleMakes'),
+        getJSON('language'),
       ]);
       if (ids) setSavedCarIds(ids);
       if (searches) setSavedSearches(searches);
       if (inquiries) setRentalInquiries(inquiries);
       if (mode) setHomeMode(mode);
       if (viewed) setRecentlyViewedIds(viewed);
+      if (languageCached) setLanguageState(normalizeLanguage(languageCached));
       // Last known exchange rate first (offline starts format correctly),
       // then the live one. Both best-effort: a rate is a display aid and must
       // never delay or break boot.
@@ -1665,6 +1684,7 @@ export function AppProvider({ children }) {
     homeMode, setHomeMode, rentalCars, rentalInquiries, sendRentalInquiry, cancelRentalInquiry,
     recentlyViewedIds, recordCarView,
     currency, toggleCurrency,
+    language, languages: LANGUAGES, languageInfo: languageFor(language), locale: localeFor(language), setLanguage, t,
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
     // Chat messages
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
