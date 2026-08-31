@@ -10,9 +10,10 @@ import { useApp } from '../context/AppContext';
 // Marketplace browse tab — full inventory with live search, sort, and filters.
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
+const SORT_LABEL_KEYS = { 'Best match': 'bestMatch', 'Price ↑': 'priceLow', 'Price ↓': 'priceHigh', Newest: 'newest', Mileage: 'mileage' };
 
 export default function SearchScreen({ navigation }) {
-  const { cars } = useApp();
+  const { cars, t } = useApp();
   const [sort, setSort] = useState('Best match');
   const [searchQuery, setSearchQuery] = useState('');
   const [layout, setLayout] = useState('list'); // 'list' | 'grid'
@@ -56,21 +57,21 @@ export default function SearchScreen({ navigation }) {
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search make, model, type..."
+            placeholder={t('home.search')}
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
           />
           {searchQuery ? (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear">
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('searchResults.clearSearch')}>
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           ) : null}
         </View>
         <Pressable
           style={styles.filterBtn}
-          onPress={() => navigation.navigate('Filters')} accessibilityRole="button" accessibilityLabel="Filters"
+          onPress={() => navigation.navigate('Filters')} accessibilityRole="button" accessibilityLabel={t('searchResults.filterButton')}
         >
           <Ionicons name="options-outline" size={20} color="#fff" />
         </Pressable>
@@ -86,14 +87,14 @@ export default function SearchScreen({ navigation }) {
         ListHeaderComponent={
           <View style={isGrid && { paddingHorizontal: 6 }}>
             <View style={styles.resultRow}>
-              <Text style={styles.resultCount}>{filteredCars.length} certified cars</Text>
+              <Text style={styles.resultCount}>{t('searchResults.carsFound', { count: filteredCars.length })}</Text>
               <View style={styles.resultActions}>
                 <Pressable
                   style={styles.layoutBtn}
                   onPress={() => setLayout(isGrid ? 'list' : 'grid')}
                   hitSlop={6}
                   accessibilityRole="button"
-                  accessibilityLabel={isGrid ? 'Show results as a list' : 'Show results as a grid'}
+                  accessibilityLabel={t(isGrid ? 'searchResults.showList' : 'searchResults.showGrid')}
                 >
                   <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
                 </Pressable>
@@ -110,7 +111,7 @@ export default function SearchScreen({ navigation }) {
                 const on = item === sort;
                 return (
                   <Pressable style={[styles.sortChip, on && styles.sortChipOn]} onPress={() => setSort(item)}>
-                    <Text style={[styles.sortText, { color: on ? '#fff' : colors.slate600 }]}>{item}</Text>
+                    <Text style={[styles.sortText, { color: on ? '#fff' : colors.slate600 }]}>{t(`searchResults.${SORT_LABEL_KEYS[item]}`)}</Text>
                   </Pressable>
                 );
               }}
@@ -127,10 +128,10 @@ export default function SearchScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="car-outline" size={52} color={colors.border} />
-            <Text style={styles.emptyTitle}>No cars found</Text>
-            <Text style={styles.emptySub}>Try a different make, model, or keyword</Text>
+            <Text style={styles.emptyTitle}>{t('filters.noResults')}</Text>
+            <Text style={styles.emptySub}>{t('filters.adjust')}</Text>
             <Pressable style={styles.clearBtn} onPress={() => setSearchQuery('')}>
-              <Text style={styles.clearBtnText}>Clear search</Text>
+              <Text style={styles.clearBtnText}>{t('searchResults.clearSearch')}</Text>
             </Pressable>
           </View>
         }

@@ -71,7 +71,7 @@ export default function ShowroomScreen({ navigation, route }) {
           <View style={styles.captionRow}>
             {tier && <Badge variant={tier.variant} label={tier.short} />}
             <Text style={styles.captionPrice}>
-              {car.listingType === 'rental' ? `RWF ${Number(car.dailyRate || 0).toLocaleString('en-RW')}/day` : formatPrice(car.type === 'auction' ? car.currentBid : car.price)}
+              {car.listingType === 'rental' ? `${formatPrice(car.dailyRate || 0)}/day` : formatPrice(car.type === 'auction' ? car.currentBid : car.price)}
             </Text>
           </View>
           <Pressable

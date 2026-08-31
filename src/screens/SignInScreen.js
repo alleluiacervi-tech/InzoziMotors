@@ -10,7 +10,7 @@ import { colors, radius, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 
 export default function SignInScreen({ navigation, route }) {
-  const { loginUser, reopenAccount } = useApp();
+  const { loginUser, reopenAccount, t } = useApp();
   // Carried over from a completed password reset so the user isn't retyping it
   const [email, setEmail] = useState(route?.params?.email || '');
   const [password, setPassword] = useState('');
@@ -19,8 +19,8 @@ export default function SignInScreen({ navigation, route }) {
 
   const handleSignIn = async () => {
     const errs = {};
-    if (!email || !email.includes('@')) errs.email = 'Please enter a valid email address.';
-    if (!password || password.length < 6) errs.password = 'Password must be at least 6 characters.';
+    if (!email || !email.includes('@')) errs.email = t('auth.validEmail');
+    if (!password || password.length < 6) errs.password = t('auth.passwordMin');
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     try {
@@ -34,24 +34,24 @@ export default function SignInScreen({ navigation, route }) {
       if (err?.code === 'ACCOUNT_CLOSED') {
         const until = err.reopen_until ? String(err.reopen_until).slice(0, 10) : null;
         const ok = await showConfirm({
-          title: 'This account is closed',
+          title: t('auth.accountClosed'),
           message: until
-            ? `You closed it, and nothing has been erased. Reopen it and your saved cars, messages and listings come back.\n\nAfter ${until} it is deleted for good.`
-            : 'You closed it, and nothing has been erased yet. Reopen it and everything comes back.',
-          confirmLabel: 'Reopen my account',
-          cancelLabel: 'Not now',
+            ? `${t('auth.accountClosedMessage')}\n\n${t('auth.accountClosedUntil', { date: until })}`
+            : t('auth.accountClosedMessage'),
+          confirmLabel: t('auth.reopen'),
+          cancelLabel: t('auth.notNow'),
         });
         if (!ok) return;
         try {
           await reopenAccount(email.trim(), password);
-          showToast('Welcome back. Your account is open again.', 'success');
+          showToast(t('auth.welcomeBack'), 'success');
           navigation.replace('Main');
         } catch (reopenErr) {
-          showToast(reopenErr.message || 'Could not reopen this account.', 'error');
+          showToast(reopenErr.message || t('auth.reopenError'), 'error');
         }
         return;
       }
-      showToast(err.message || 'Invalid email or password.', 'error');
+      showToast(err.message || t('auth.invalidCredentials'), 'error');
     }
   };
 
@@ -64,10 +64,10 @@ export default function SignInScreen({ navigation, route }) {
       >
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <LogoMark size={54} />
-        <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.sub}>Sign in to continue to Sawa Cars.</Text>
+        <Text style={styles.title}>{t('auth.signInTitle')}</Text>
+        <Text style={styles.sub}>{t('auth.signInSub')}</Text>
 
-        <Text style={[styles.label, { marginTop: 26 }]}>Email</Text>
+        <Text style={[styles.label, { marginTop: 26 }]}>{t('auth.email')}</Text>
         <TextInput
           style={[styles.input, errors.email && styles.inputError]}
           placeholder="you@email.com"
@@ -80,15 +80,15 @@ export default function SignInScreen({ navigation, route }) {
         {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
         <View style={styles.labelRow}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={styles.label}>{t('auth.password')}</Text>
           <Pressable onPress={() => navigation.navigate('ForgotPassword', { email: email.trim() })}>
-            <Text style={styles.forgot}>Forgot?</Text>
+            <Text style={styles.forgot}>{t('auth.forgot')}</Text>
           </Pressable>
         </View>
         <View style={[styles.passwordWrap, errors.password && styles.inputError]}>
           <TextInput
             style={styles.passwordInput}
-            placeholder="Enter your password"
+            placeholder={t('auth.enterPassword')}
             value={password}
             onChangeText={(t) => { setPassword(t); setErrors((e) => ({ ...e, password: undefined })); }}
             placeholderTextColor={colors.textMuted}
@@ -98,18 +98,18 @@ export default function SignInScreen({ navigation, route }) {
             onPress={() => setShow((s) => !s)}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={show ? 'Hide password' : 'Show password'}
+            accessibilityLabel={t(show ? 'auth.hidePassword' : 'auth.showPassword')}
           >
             <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textMuted} />
           </Pressable>
         </View>
         {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
 
-        <Button title="Sign in" style={{ marginTop: 28 }} onPress={handleSignIn} />
+        <Button title={t('auth.signIn')} style={{ marginTop: 28 }} onPress={handleSignIn} />
 
         <Pressable onPress={() => navigation.navigate('SignUp')} style={{ marginTop: 16 }}>
           <Text style={styles.footer}>
-            Don't have an account? <Text style={styles.link}>Sign up</Text>
+            {t('auth.noAccount')} <Text style={styles.link}>{t('auth.signUp')}</Text>
           </Text>
         </Pressable>
       </ScrollView>

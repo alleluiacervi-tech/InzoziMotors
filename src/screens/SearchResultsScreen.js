@@ -10,6 +10,10 @@ import { showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
+const SORT_LABEL_KEYS = {
+  'Best match': 'bestMatch', 'Price ↑': 'priceLow', 'Price ↓': 'priceHigh',
+  Newest: 'newest', Mileage: 'mileage',
+};
 
 // Price works for both inventories: rentals sort by daily rate
 const priceOf = (c) =>
@@ -60,7 +64,7 @@ function filterLocally(list, { query, filters, sort }) {
 }
 
 export default function SearchResultsScreen({ navigation, route }) {
-  const { cars, rentalCars, createSavedSearch, searchCars } = useApp();
+  const { cars, rentalCars, createSavedSearch, searchCars, t } = useApp();
   const isRentMode = route.params?.mode === 'rent';
   const [sort, setSort] = useState('Best match');
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,14 +161,14 @@ export default function SearchResultsScreen({ navigation, route }) {
     <Screen background={colors.bg}>
       {/* Search header */}
       <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={t('searchResults.back')}>
           <Ionicons name="chevron-back" size={20} color={colors.slate700} />
         </Pressable>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder={isRentMode ? 'Search rental cars...' : 'Search make, model, type...'}
+            placeholder={isRentMode ? t('home.searchRentals') : t('home.search')}
             autoFocus={!!route.params?.focusSearch}
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
@@ -172,14 +176,14 @@ export default function SearchResultsScreen({ navigation, route }) {
             autoCapitalize="none"
           />
           {searchQuery ? (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear search">
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('searchResults.clearSearch')}>
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           ) : null}
         </View>
         <Pressable
           style={styles.filterBtn}
-          onPress={() => navigation.navigate('Filters', { filters: activeFilters })} accessibilityRole="button" accessibilityLabel="Filters"
+          onPress={() => navigation.navigate('Filters', { filters: activeFilters })} accessibilityRole="button" accessibilityLabel={t('searchResults.filterButton')}
         >
           <Ionicons name="options-outline" size={20} color="#fff" />
         </Pressable>
@@ -201,8 +205,8 @@ export default function SearchResultsScreen({ navigation, route }) {
                 {/* With paging, the count is what's loaded so far — say so rather
                     than implying the whole catalogue fits on screen. */}
                 {serverBacked && !exhausted
-                  ? `${filteredCars.length}+ cars`
-                  : `${filteredCars.length} ${isRentMode ? 'rentals' : 'cars'} found`}
+                  ? t('searchResults.plusCars', { count: filteredCars.length })
+                  : t(isRentMode ? 'searchResults.rentalsFound' : 'searchResults.carsFound', { count: filteredCars.length })}
               </Text>
               <View style={styles.resultActions}>
                 {(searchQuery.trim() || activeFilters) && !isRentMode && (
@@ -212,13 +216,13 @@ export default function SearchResultsScreen({ navigation, route }) {
                     onPress={async () => {
                       const parts = [
                         activeFilters?.make, activeFilters?.body, activeFilters?.fuel,
-                        activeFilters?.maxPrice ? `< $${(activeFilters.maxPrice / 1000)}k` : null,
+                        activeFilters?.maxPrice ? `< RWF ${(activeFilters.maxPrice / 1000000)}M` : null,
                         searchQuery.trim() || null,
                       ].filter(Boolean);
-                      const label = parts.join(' · ') || 'All cars';
+                      const label = parts.join(' · ') || t('searchResults.allCars');
                       await createSavedSearch(label, { ...activeFilters, query: searchQuery.trim() });
-                      showToast("Search saved — we'll notify you when new matching cars are listed.", 'success');
-                    }} accessibilityRole="button" accessibilityLabel="Save"
+                      showToast(t('searchResults.savedToast'), 'success');
+                    }} accessibilityRole="button" accessibilityLabel={t('searchResults.saveSearch')}
                   >
                     <Ionicons name="bookmark-outline" size={16} color={colors.textSecondary} />
                   </Pressable>
@@ -228,7 +232,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                   onPress={() => setLayout(isGrid ? 'list' : 'grid')}
                   hitSlop={6}
                   accessibilityRole="button"
-                  accessibilityLabel={isGrid ? 'Show results as a list' : 'Show results as a grid'}
+                  accessibilityLabel={t(isGrid ? 'searchResults.showList' : 'searchResults.showGrid')}
                 >
                   <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
                 </Pressable>
@@ -258,7 +262,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                 )}
                 {activeFilters.maxPrice && (
                   <Pressable style={styles.filterChip} onPress={() => removeFilter('maxPrice')}>
-                    <Text style={styles.filterChipText}>Under ${activeFilters.maxPrice / 1000}k</Text>
+                    <Text style={styles.filterChipText}>RWF {(activeFilters.maxPrice / 1000000)}M</Text>
                     <Ionicons name="close" size={12} color={colors.primary} />
                   </Pressable>
                 )}
@@ -275,7 +279,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                 const on = item === sort;
                 return (
                   <Pressable style={[styles.sortChip, on && styles.sortChipOn]} onPress={() => setSort(item)}>
-                    <Text style={[styles.sortText, { color: on ? '#fff' : colors.slate600 }]}>{item}</Text>
+                    <Text style={[styles.sortText, { color: on ? '#fff' : colors.slate600 }]}>{t(`searchResults.${SORT_LABEL_KEYS[item]}`)}</Text>
                   </Pressable>
                 );
               }}
@@ -294,7 +298,7 @@ export default function SearchResultsScreen({ navigation, route }) {
           loadingMore ? (
             <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 20 }} />
           ) : serverBacked && exhausted && filteredCars.length > 0 ? (
-            <Text style={styles.endOfList}>That's every match on Sawa Cars right now.</Text>
+            <Text style={styles.endOfList}>{t('searchResults.everyMatch')}</Text>
           ) : null
         }
         ListEmptyComponent={
@@ -305,16 +309,16 @@ export default function SearchResultsScreen({ navigation, route }) {
           ) : (
             <View style={styles.emptyState}>
               <Ionicons name="car-outline" size={52} color={colors.border} />
-              <Text style={styles.emptyTitle}>No cars found</Text>
+              <Text style={styles.emptyTitle}>{t('filters.noResults')}</Text>
               <Text style={styles.emptySub}>
-                Try adjusting your search or removing filters
+                {t('filters.adjust')}
               </Text>
               {(activeFilters || searchQuery) && (
                 <Pressable
                   style={styles.clearBtn}
                   onPress={() => { setSearchQuery(''); setActiveFilters(null); }}
                 >
-                  <Text style={styles.clearBtnText}>Clear all filters</Text>
+                  <Text style={styles.clearBtnText}>{t('filters.clear')}</Text>
                 </Pressable>
               )}
             </View>

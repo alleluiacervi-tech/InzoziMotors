@@ -8,17 +8,19 @@ import Button from '../components/Button';
 import { setJSON } from '../storage';
 import { setUpdateMode, UPDATE_MODE } from '../utils/updates';
 import { colors, fonts } from '../theme';
+import { useApp } from '../context/AppContext';
 
 const { width, height } = Dimensions.get('window');
 
 const SLIDES = [
-  { key: 'inspect', car: true, title: 'Every car, inspected', sub: '150-point certified check.' },
-  { key: 'photos', icon: 'camera-outline', title: 'Real photos, real specs', sub: 'Shot by our own team.' },
-  { key: 'trust', icon: 'shield-checkmark-outline', title: 'Contact verified sellers', sub: 'Agree and transact directly.' },
+  { key: 'inspect', car: true, titleKey: 'onboarding.inspectTitle', subKey: 'onboarding.inspectSub' },
+  { key: 'photos', icon: 'camera-outline', titleKey: 'onboarding.photosTitle', subKey: 'onboarding.photosSub' },
+  { key: 'trust', icon: 'shield-checkmark-outline', titleKey: 'onboarding.trustTitle', subKey: 'onboarding.trustSub' },
 ];
 
 export default function OnboardingScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { language, t } = useApp();
   const [idx, setIdx] = useState(0);
   const ref = useRef(null);
   const last = idx === SLIDES.length - 1;
@@ -70,19 +72,32 @@ export default function OnboardingScreen({ navigation }) {
                 <Ionicons name={s.icon} size={76} color={colors.primary} />
               </View>
             )}
-            <Text style={styles.title}>{s.title}</Text>
-            <Text style={styles.sub}>{s.sub}</Text>
+            <Text style={styles.title}>{t(s.titleKey)}</Text>
+            <Text style={styles.sub}>{t(s.subKey)}</Text>
           </View>
         ))}
       </ScrollView>
 
-      <Pressable
-        style={[styles.skip, { top: insets.top + 14 }]}
-        onPress={() => finish(false)}
-        hitSlop={12}
-      >
-        <Text style={styles.skipText}>Skip</Text>
-      </Pressable>
+      <View style={[styles.topBar, { top: insets.top + 10 }]}>
+        <Pressable
+          style={styles.langPill}
+          onPress={() => navigation.navigate('Language')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.language')}
+        >
+          <Text style={styles.langText}>{language.toUpperCase()}</Text>
+          <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
+        </Pressable>
+        <Pressable
+          style={styles.skip}
+          onPress={() => finish(false)}
+          hitSlop={12}
+          accessibilityRole="button"
+        >
+          <Text style={styles.skipText}>{t('common.skip')}</Text>
+        </Pressable>
+      </View>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 18 }]}>
         <View style={styles.dots}>
@@ -96,18 +111,17 @@ export default function OnboardingScreen({ navigation }) {
             onPress={() => setAutoUpdate((on) => !on)}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: autoUpdate }}
-            accessibilityLabel="Keep Sawa Cars up to date automatically"
+            accessibilityLabel={t('onboarding.updateChoice')}
           >
             <View style={[styles.box, autoUpdate && styles.boxOn]}>
               {autoUpdate ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
             </View>
             <Text style={styles.optInText}>
-              Keep Sawa Cars up to date automatically. New versions install when you next
-              open the app — never while you are using it.
+              {t('onboarding.updateChoice')}
             </Text>
           </Pressable>
         ) : null}
-        <Button title={last ? 'Get Started' : 'Next'} onPress={go} />
+        <Button title={last ? t('common.getStarted') : t('common.next')} onPress={go} />
       </View>
     </View>
   );
@@ -141,7 +155,14 @@ const styles = StyleSheet.create({
     fontSize: 15, fontFamily: fonts.medium, color: colors.textMuted,
     marginTop: 10, textAlign: 'center',
   },
-  skip: { position: 'absolute', right: 20, zIndex: 10 },
+  topBar: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 },
+  langPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999,
+  },
+  langText: { fontFamily: fonts.bold, color: colors.textPrimary, fontSize: 12, letterSpacing: 0.4 },
+  skip: { paddingVertical: 8, paddingHorizontal: 4 },
   skipText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted },
   footer: { position: 'absolute', left: 24, right: 24, bottom: 0 },
   optIn: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 16 },

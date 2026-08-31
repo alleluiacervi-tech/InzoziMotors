@@ -21,11 +21,11 @@ const distinct = (cars, pick) => [...new Set(
   (cars || []).map(pick).filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim())
 )].sort((a, b) => a.localeCompare(b));
 const PRICE_PRESETS = [
-  { label: 'Any price', value: null },
-  { label: 'Under RWF 10M', value: 10000000 },
-  { label: 'Under RWF 20M', value: 20000000 },
-  { label: 'Under RWF 35M', value: 35000000 },
-  { label: 'Under RWF 50M', value: 50000000 },
+  { labelKey: 'anyPrice', value: null },
+  { labelKey: 'under10m', value: 10000000 },
+  { labelKey: 'under20m', value: 20000000 },
+  { labelKey: 'under35m', value: 35000000 },
+  { labelKey: 'under50m', value: 50000000 },
 ];
 
 // A ceiling with no floor is half a price filter. "Under RWF 10M" was the
@@ -33,37 +33,37 @@ const PRICE_PRESETS = [
 // it, so the commonest search — "I have eight to twelve million" — could not be
 // expressed at all.
 const MIN_PRICE_PRESETS = [
-  { label: 'No minimum', value: null },
-  { label: 'RWF 5M+', value: 5000000 },
-  { label: 'RWF 10M+', value: 10000000 },
-  { label: 'RWF 20M+', value: 20000000 },
-  { label: 'RWF 35M+', value: 35000000 },
+  { labelKey: 'noMinimum', value: null },
+  { labelKey: 'min5m', value: 5000000 },
+  { labelKey: 'min10m', value: 10000000 },
+  { labelKey: 'min20m', value: 20000000 },
+  { labelKey: 'min35m', value: 35000000 },
 ];
 
 // Year and mileage are the two questions every used-car buyer asks before
 // price, and neither was on this screen — while the API has accepted min_year
 // and max_year the whole time.
 const YEAR_PRESETS = [
-  { label: 'Any year', value: null },
-  { label: '2020 or newer', value: 2020 },
-  { label: '2015 or newer', value: 2015 },
-  { label: '2010 or newer', value: 2010 },
+  { labelKey: 'anyYear', value: null },
+  { labelKey: 'newer', value: 2020 },
+  { labelKey: 'newer', value: 2015 },
+  { labelKey: 'newer', value: 2010 },
 ];
 
 const MILEAGE_PRESETS = [
-  { label: 'Any mileage', value: null },
-  { label: 'Under 50,000 km', value: 50000 },
-  { label: 'Under 100,000 km', value: 100000 },
-  { label: 'Under 150,000 km', value: 150000 },
+  { labelKey: 'anyMileage', value: null },
+  { labelKey: 'underMileage', value: 50000 },
+  { labelKey: 'underMileage', value: 100000 },
+  { labelKey: 'underMileage', value: 150000 },
 ];
 
 // The one filter no competitor in this market can offer. It turns the 150-point
 // inspection from a badge a buyer looks at into a tool a buyer operates.
 const SCORE_PRESETS = [
-  { label: 'Any score', value: null },
-  { label: '140+ / 150', value: 140 },
-  { label: '130+ / 150', value: 130 },
-  { label: '120+ / 150', value: 120 },
+  { labelKey: 'anyScore', value: null },
+  { labelKey: 'scorePlus', value: 140 },
+  { labelKey: 'scorePlus', value: 130 },
+  { labelKey: 'scorePlus', value: 120 },
 ];
 
 const EMPTY = {
@@ -81,7 +81,7 @@ function Chip({ label, active, onPress, mark }) {
 }
 
 export default function FiltersScreen({ navigation, route }) {
-  const { cars, makes } = useApp();
+  const { cars, makes, t } = useApp();
   const [selected, setSelected] = useState(
     route.params?.filters || EMPTY
   );
@@ -143,54 +143,54 @@ export default function FiltersScreen({ navigation, route }) {
   return (
     <Screen background={colors.surface}>
       <View style={styles.head}>
-        <Text style={styles.h1}>Filters</Text>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close">
+        <Text style={styles.h1}>{t('filters.filters')}</Text>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('common.close')}>
           <Ionicons name="close" size={26} color={colors.slate700} />
         </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 20 }}>
-        <Text style={styles.label}>Price</Text>
+        <Text style={styles.label}>{t('filters.price')}</Text>
         <View style={styles.chips}>
           {PRICE_PRESETS.map((p) => (
             <Chip
-              key={p.label}
-              label={p.label}
+              key={p.labelKey + p.value}
+              label={p.labelKey === 'under10m' ? t('filters.underPrice', { amount: '10M' }) : p.labelKey === 'under20m' ? t('filters.underPrice', { amount: '20M' }) : p.labelKey === 'under35m' ? t('filters.underPrice', { amount: '35M' }) : p.labelKey === 'under50m' ? t('filters.underPrice', { amount: '50M' }) : t(`filters.${p.labelKey}`)}
               active={selected.maxPrice === p.value}
               onPress={() => setSelected((s) => ({ ...s, maxPrice: p.value }))}
             />
           ))}
         </View>
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Minimum price</Text>
+        <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.minimumPrice')}</Text>
         <View style={styles.chips}>
           {MIN_PRICE_PRESETS.map((p) => (
-            <Chip key={p.label} label={p.label} active={selected.minPrice === p.value}
+              <Chip key={p.labelKey + p.value} label={p.labelKey === 'noMinimum' ? t('filters.noMinimum') : t('filters.minPrice', { amount: String(p.value / 1000000) })} active={selected.minPrice === p.value}
                   onPress={() => setSelected((s) => ({ ...s, minPrice: p.value }))} />
           ))}
         </View>
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Year</Text>
+        <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.year')}</Text>
         <View style={styles.chips}>
           {YEAR_PRESETS.map((p) => (
-            <Chip key={p.label} label={p.label} active={selected.minYear === p.value}
+            <Chip key={p.labelKey + p.value} label={p.value == null ? t('filters.anyYear') : t('filters.newer', { year: p.value })} active={selected.minYear === p.value}
                   onPress={() => setSelected((s) => ({ ...s, minYear: p.value }))} />
           ))}
         </View>
 
-        <Text style={[styles.label, { marginTop: 22 }]}>Mileage</Text>
+        <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.mileage')}</Text>
         <View style={styles.chips}>
           {MILEAGE_PRESETS.map((p) => (
-            <Chip key={p.label} label={p.label} active={selected.maxMileage === p.value}
+            <Chip key={p.labelKey + p.value} label={p.value == null ? t('filters.anyMileage') : t('filters.underMileage', { mileage: p.value.toLocaleString() })} active={selected.maxMileage === p.value}
                   onPress={() => setSelected((s) => ({ ...s, maxMileage: p.value }))} />
           ))}
         </View>
 
         {/* Nobody else in this market can offer this one. */}
-        <Text style={[styles.label, { marginTop: 22 }]}>Inspection score</Text>
+        <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.inspectionScore')}</Text>
         <View style={styles.chips}>
           {SCORE_PRESETS.map((p) => (
-            <Chip key={p.label} label={p.label} active={selected.minScore === p.value}
+            <Chip key={p.labelKey + p.value} label={p.value == null ? t('filters.anyScore') : t('filters.scorePlus', { score: p.value })} active={selected.minScore === p.value}
                   onPress={() => setSelected((s) => ({ ...s, minScore: p.value }))} />
           ))}
         </View>
@@ -199,7 +199,7 @@ export default function FiltersScreen({ navigation, route }) {
             it. A heading above an empty row reads as a loading failure. */}
         {MAKES.length ? (
           <>
-            <Text style={[styles.label, { marginTop: 24 }]}>Make</Text>
+            <Text style={[styles.label, { marginTop: 24 }]}>{t('filters.make')}</Text>
             <View style={styles.chips}>
               {MAKES.map((m) => (
                 <Chip
@@ -216,7 +216,7 @@ export default function FiltersScreen({ navigation, route }) {
 
         {LOCATIONS.length ? (
           <>
-            <Text style={[styles.label, { marginTop: 22 }]}>Location</Text>
+            <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.location')}</Text>
             <View style={styles.chips}>
               {LOCATIONS.map((l) => <Chip key={l} label={l} active={selected.location === l} onPress={() => toggle('location', l)} />)}
             </View>
@@ -225,7 +225,7 @@ export default function FiltersScreen({ navigation, route }) {
 
         {BODY.length ? (
           <>
-            <Text style={[styles.label, { marginTop: 22 }]}>Body type</Text>
+            <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.bodyType')}</Text>
             <View style={styles.chips}>
               {BODY.map((b) => <Chip key={b} label={b} active={selected.body === b} onPress={() => toggle('body', b)} />)}
             </View>
@@ -234,7 +234,7 @@ export default function FiltersScreen({ navigation, route }) {
 
         {FUEL.length ? (
           <>
-            <Text style={[styles.label, { marginTop: 22 }]}>Fuel type</Text>
+            <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.fuelType')}</Text>
             <View style={styles.chips}>
               {FUEL.map((f) => <Chip key={f} label={f} active={selected.fuel === f} onPress={() => toggle('fuel', f)} />)}
             </View>
@@ -243,7 +243,7 @@ export default function FiltersScreen({ navigation, route }) {
 
         {TRANSMISSION.length ? (
           <>
-            <Text style={[styles.label, { marginTop: 22 }]}>Transmission</Text>
+            <Text style={[styles.label, { marginTop: 22 }]}>{t('filters.transmission')}</Text>
             <View style={styles.chips}>
               {TRANSMISSION.map((t) => (
                 <Chip key={t} label={t} active={selected.transmission === t}
@@ -253,15 +253,15 @@ export default function FiltersScreen({ navigation, route }) {
           </>
         ) : null}
 
-        <View style={styles.standardNote}><Ionicons name="shield-checkmark-outline" size={19} color={colors.primary} /><Text style={styles.standardText}>Public listings pass the configured seller, inspection and image publication checks. Inspection evidence is not a transaction warranty.</Text></View>
+        <View style={styles.standardNote}><Ionicons name="shield-checkmark-outline" size={19} color={colors.primary} /><Text style={styles.standardText}>{t('filters.standardNote')}</Text></View>
       </ScrollView>
 
       <StickyFooter style={styles.footer}>
         <Pressable style={styles.reset} onPress={() => setSelected(EMPTY)}>
-          <Text style={styles.resetText}>Reset</Text>
+          <Text style={styles.resetText}>{t('filters.reset')}</Text>
         </Pressable>
         <Button
-          title={`View ${getMatchingCount()} cars`}
+          title={t('filters.viewCount', { count: getMatchingCount() })}
           fullWidth={false}
           style={{ flex: 1 }}
           onPress={() => {

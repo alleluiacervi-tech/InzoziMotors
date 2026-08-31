@@ -19,53 +19,53 @@ const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.78, 320);
 // decoration, and both rows that had one had carried it since launch.
 const MENU_SECTIONS = [
   {
-    title: 'Buy a Car',
+    titleKey: 'drawer.buyCar',
     items: [
-      { icon: 'search-outline', label: 'Browse All Cars', screen: 'SearchResults' },
-      { icon: 'heart-outline', label: 'Saved Cars', screen: 'Saved' },
-      { icon: 'git-compare-outline', label: 'Compare Cars', screen: 'Comparison' },
+      { icon: 'search-outline', labelKey: 'drawer.browseAll', screen: 'SearchResults' },
+      { icon: 'heart-outline', labelKey: 'drawer.savedCars', screen: 'Saved' },
+      { icon: 'git-compare-outline', labelKey: 'drawer.compareCars', screen: 'Comparison' },
     ],
   },
   {
-    title: 'Rent',
+    titleKey: 'drawer.rent',
     items: [
-      { icon: 'key-outline', label: 'Browse Rentals', action: 'browseRentals' },
-      { icon: 'calendar-outline', label: 'Rental Inquiries', screen: 'MyRentals' },
+      { icon: 'key-outline', labelKey: 'drawer.browseRentals', action: 'browseRentals' },
+      { icon: 'calendar-outline', labelKey: 'drawer.rentalInquiries', screen: 'MyRentals' },
     ],
   },
   {
-    title: 'Finance & Services',
+    titleKey: 'drawer.financeServices',
     items: [
-      { icon: 'calculator-outline', label: 'Financing Calculator', screen: 'Financing' },
-      { icon: 'globe-outline', label: 'Import Duty Calculator', screen: 'DutyCalculator' },
-      { icon: 'boat-outline', label: 'My Vehicle Imports', screen: 'ImportOrders' },
+      { icon: 'calculator-outline', labelKey: 'drawer.financing', screen: 'Financing' },
+      { icon: 'globe-outline', labelKey: 'drawer.importDuty', screen: 'DutyCalculator' },
+      { icon: 'boat-outline', labelKey: 'drawer.imports', screen: 'ImportOrders' },
     ],
   },
   {
-    title: 'Sell a Car',
+    titleKey: 'drawer.sellCar',
     items: [
-      { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
-      { icon: 'car-outline', label: 'Submit My Car', screen: 'CarSubmission', gated: true },
-      { icon: 'time-outline', label: 'My Submissions', screen: 'SellerDashboard' },
-      { icon: 'bar-chart-outline', label: 'Seller Analytics', screen: 'SellerAnalytics' },
+      { icon: 'shield-checkmark-outline', labelKey: 'drawer.verifyIdentity', screen: 'IDVerification' },
+      { icon: 'car-outline', labelKey: 'drawer.submitCar', screen: 'CarSubmission', gated: true },
+      { icon: 'time-outline', labelKey: 'drawer.submissions', screen: 'SellerDashboard' },
+      { icon: 'bar-chart-outline', labelKey: 'drawer.analytics', screen: 'SellerAnalytics' },
       // Filed under selling because that is whose score it is. It used to sit
       // under Finance & Services, where a buyer tapping it got their own empty
       // score and no way to tell whose it was meant to be.
-      { icon: 'ribbon-outline', label: 'My Trust Score', screen: 'TrustScore' },
+      { icon: 'ribbon-outline', labelKey: 'drawer.trustScore', screen: 'TrustScore' },
     ],
   },
   {
-    title: 'Trust & Safety',
+    titleKey: 'drawer.trustSafety',
     items: [
-      { icon: 'notifications-outline', label: 'Notifications', screen: 'NotificationCenter' },
-      { icon: 'shield-half-outline', label: 'Marketplace Safety', screen: 'SawaPromise' },
+      { icon: 'notifications-outline', labelKey: 'drawer.notifications', screen: 'NotificationCenter' },
+      { icon: 'shield-half-outline', labelKey: 'drawer.marketplaceSafety', screen: 'SawaPromise' },
     ],
   },
 ];
 
 export default function DrawerMenu({ visible, onClose, navigation }) {
   const insets = useSafeAreaInsets();
-  const { currentUser, isLoggedIn, logoutUser, setHomeMode, demoMode } = useApp();
+  const { currentUser, isLoggedIn, logoutUser, setHomeMode, demoMode, t } = useApp();
   const gate = useSellerGate(navigation);
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -146,10 +146,10 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
               <LogoMark size={34} />
               <View>
                 <Text style={styles.headerBrand}>SAWA</Text>
-                <Text style={styles.headerSub}>Rwanda's Certified Marketplace</Text>
+                <Text style={styles.headerSub}>{t('drawer.certifiedMarketplace')}</Text>
               </View>
             </View>
-            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close menu">
+            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.close')}>
               <Ionicons name="close" size={20} color="rgba(255,255,255,0.8)" />
             </Pressable>
           </View>
@@ -173,7 +173,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                 }}
                 hitSlop={8}
               >
-                <Text style={styles.accountBtnText}>Log out</Text>
+                <Text style={styles.accountBtnText}>{t('common.logout')}</Text>
               </Pressable>
             </Pressable>
           ) : (
@@ -183,13 +183,13 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                 onPress={() => navigate('SignIn')}
               >
                 <Ionicons name="person-outline" size={15} color={colors.greenLight} />
-                <Text style={styles.accountBtnText}>Sign In</Text>
+                <Text style={styles.accountBtnText}>{t('common.signIn')}</Text>
               </Pressable>
               <Pressable
                 style={[styles.accountBtn, styles.accountBtnPrimary]}
                 onPress={() => navigate('SignUp')}
               >
-                <Text style={styles.accountBtnPrimaryText}>Register</Text>
+                <Text style={styles.accountBtnPrimaryText}>{t('common.register')}</Text>
               </Pressable>
             </View>
           )}
@@ -203,7 +203,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
         >
           {MENU_SECTIONS.map((section, si) => (
             <View key={si} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Text style={styles.sectionTitle}>{t(section.titleKey)}</Text>
               {section.items.map((item, ii) => (
                 <Pressable
                   key={ii}
@@ -213,7 +213,7 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
                   <View style={styles.menuIconWrap}>
                     <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
                   </View>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Text style={styles.menuLabel}>{t(item.labelKey)}</Text>
                   {item.isNew && (
                     <View style={styles.newBadge}>
                       <Text style={styles.newBadgeText}>NEW</Text>
@@ -231,16 +231,16 @@ export default function DrawerMenu({ visible, onClose, navigation }) {
             {(demoMode || currentUser?.role === 'admin') && (
               <>
                 <Pressable onPress={() => navigate('AdminPanel')}>
-                  <Text style={styles.footerLink}>Team Portal</Text>
+                  <Text style={styles.footerLink}>{t('drawer.teamPortal')}</Text>
                 </Pressable>
                 <Text style={styles.footerDot}>·</Text>
               </>
             )}
             <Pressable onPress={() => navigate('Settings')}>
-              <Text style={styles.footerLink}>Settings</Text>
+              <Text style={styles.footerLink}>{t('common.settings')}</Text>
             </Pressable>
           </View>
-          <Text style={styles.version}>Sawa Cars v1.0 · Kigali, Rwanda</Text>
+          <Text style={styles.version}>{t('drawer.version')}</Text>
         </ScrollView>
       </Animated.View>
     </View>

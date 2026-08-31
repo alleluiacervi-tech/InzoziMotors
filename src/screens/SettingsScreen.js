@@ -60,19 +60,22 @@ async function openLink(url) {
 // (they flipped local state and did nothing); the "coming soon" rows went
 // next — a settings row whose only behaviour is announcing a future feature
 // is exactly what a store reviewer probes as non-functional (guideline 4.2).
-// Edit-profile, language and rate-us return WHEN they work.
-const buildGroups = (verificationValue, buildLabel) => [
+// All user-facing settings labels come through the same translation function as
+// the language picker. This keeps the selector useful even when the user cannot
+// read the default English screen.
+const buildGroups = (t, verificationValue, buildLabel, languageLabel) => [
   {
-    title: 'Account',
+    title: t('settings.account'),
     items: [
-      { icon: 'shield-checkmark-outline', label: 'Verification & trust', value: verificationValue, screen: 'IDVerification' },
-      { icon: 'notifications-outline', label: 'Saved searches', screen: 'Saved' },
+      { icon: 'shield-checkmark-outline', label: t('settings.verification'), value: verificationValue, screen: 'IDVerification' },
+      { icon: 'notifications-outline', label: t('settings.savedSearches'), screen: 'Saved' },
     ],
   },
   {
-    title: 'Preferences',
+    title: t('settings.preferences'),
     items: [
-      { icon: 'notifications-outline', label: 'Push notifications', toggle: 'push' },
+      { icon: 'language-outline', label: t('settings.language'), value: languageLabel, screen: 'Language' },
+      { icon: 'notifications-outline', label: t('settings.push'), toggle: 'push' },
     ],
   },
   {
@@ -83,25 +86,25 @@ const buildGroups = (verificationValue, buildLabel) => [
     // line and single mailbox the website publishes, and they are
     // gated on WHATSAPP_VERIFIED for the same reason every other surface is —
     // a dead contact row is worse than none.
-    title: 'Support',
+    title: t('settings.support'),
     items: [
       ...(WHATSAPP_VERIFIED
         ? [
             {
               icon: 'logo-whatsapp',
-              label: 'WhatsApp us',
+              label: t('settings.whatsapp'),
               value: SAWA_PHONE_DISPLAY,
               link: `https://wa.me/${SAWA_WHATSAPP}`,
             },
             {
               icon: 'call-outline',
-              label: 'Call us',
+              label: t('settings.call'),
               value: SAWA_PHONE_DISPLAY,
               link: `tel:+${SAWA_WHATSAPP}`,
             },
           ]
         : []),
-      { icon: 'mail-outline', label: 'Email us', value: SAWA_EMAIL, link: `mailto:${SAWA_EMAIL}` },
+      { icon: 'mail-outline', label: t('settings.email'), value: SAWA_EMAIL, link: `mailto:${SAWA_EMAIL}` },
     ],
   },
   {
@@ -109,21 +112,21 @@ const buildGroups = (verificationValue, buildLabel) => [
     // alone is useless for support — every install reports 1.0.0 — so the row
     // shows the running bundle, which is what actually differs between two
     // phones that were updated on different days.
-    title: 'App',
+    title: t('settings.app'),
     items: [
-      { icon: 'refresh-outline', label: 'Check for updates', action: 'checkUpdate', value: buildLabel },
+      { icon: 'refresh-outline', label: t('settings.checkUpdates'), action: 'checkUpdate', value: buildLabel },
       // Off by default. A first launch has no basis for assuming somebody
       // consents to the app restarting itself, and an update that arrives
       // without being asked for should still be announced rather than done.
-      { icon: 'cloud-download-outline', label: 'Install updates automatically', toggle: 'autoUpdate' },
+      { icon: 'cloud-download-outline', label: t('settings.autoUpdate'), toggle: 'autoUpdate' },
     ],
   },
   {
-    title: 'Legal',
+    title: t('settings.legal'),
     items: [
-      { icon: 'lock-closed-outline', label: 'Privacy policy', link: LEGAL.privacy },
-      { icon: 'document-text-outline', label: 'Terms of service', link: LEGAL.terms },
-      { icon: 'shield-checkmark-outline', label: 'Direct-deal notice', link: LEGAL.guarantee },
+      { icon: 'lock-closed-outline', label: t('settings.privacy'), link: LEGAL.privacy },
+      { icon: 'document-text-outline', label: t('settings.terms'), link: LEGAL.terms },
+      { icon: 'shield-checkmark-outline', label: t('settings.directDeal'), link: LEGAL.guarantee },
     ],
   },
 ];
@@ -137,7 +140,10 @@ function Toggle({ on }) {
 }
 
 export default function SettingsScreen({ navigation }) {
-  const { isLoggedIn, deleteAccount, setPushEnabled, idVerificationStatus } = useApp();
+  const {
+    isLoggedIn, deleteAccount, setPushEnabled, idVerificationStatus,
+    languageInfo, t,
+  } = useApp();
 
   // Persisted, and actually wired: off tells the server to forget this device.
   const [pushOn, setPushOn] = useState(true);
@@ -162,8 +168,8 @@ export default function SettingsScreen({ navigation }) {
     await setUpdateMode(next ? UPDATE_MODE.AUTOMATIC : UPDATE_MODE.ASK);
     showToast(
       next
-        ? 'New versions will install themselves the next time you open the app.'
-        : 'You will be asked before a new version is installed.',
+        ? t('settings.autoUpdateOn')
+        : t('settings.autoUpdateOff'),
       'success',
     );
   };
@@ -179,20 +185,22 @@ export default function SettingsScreen({ navigation }) {
     if (next && !ok) {
       // Permission denied or registration failed — reflect reality, not the tap.
       setPushOn(false);
-      showToast('Push could not be enabled. Check notification permissions in your phone settings.', 'error');
+      showToast(t('settings.pushError'), 'error');
     }
   };
 
   const VERIFICATION_LABELS = {
-    approved: 'Verified',
-    pending: 'Under review',
-    rejected: 'Action needed',
+    approved: t('settings.verified'),
+    pending: t('settings.underReview'),
+    rejected: t('settings.actionNeeded'),
   };
   const groups = buildGroups(
-    VERIFICATION_LABELS[idVerificationStatus] || 'Not verified',
+    t,
+    VERIFICATION_LABELS[idVerificationStatus] || t('settings.notVerified'),
     // The row doubles as the progress indicator: a tap that changes nothing on
     // screen is indistinguishable from a tap that missed.
-    checkingUpdate ? 'Checking…' : build.label,
+    checkingUpdate ? t('common.loading') : build.label,
+    languageInfo.nativeLabel,
   );
 
   // Deletion state. A dedicated modal rather than showConfirm(), because this
@@ -310,11 +318,11 @@ export default function SettingsScreen({ navigation }) {
       if (err?.status === 409) {
         setDeleteError(err.message || 'The account cannot be deleted while required records are still active.');
       } else if (err?.status === 401) {
-        setDeleteError('That password is not correct.');
+        setDeleteError(t('settings.wrongPassword'));
       } else if (err?.isNetworkError) {
-        setDeleteError("We couldn't reach Sawa Cars. Check your connection and try again.");
+        setDeleteError(t('settings.networkError'));
       } else {
-        setDeleteError(err?.message || 'Something went wrong. Please try again.');
+        setDeleteError(err?.message || t('settings.genericError'));
       }
     } finally {
       setDeleting(false);
@@ -323,7 +331,7 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Settings" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('settings.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingTop: 4, paddingBottom: 30 }}>
         {groups.map((g) => (
           <View key={g.title} style={{ marginBottom: 22 }}>
@@ -366,16 +374,16 @@ export default function SettingsScreen({ navigation }) {
             Kept visually separate and last, so it is never a mis-tap. */}
         {isLoggedIn && (
           <View style={{ marginBottom: 22 }}>
-            <Text style={styles.groupTitle}>Danger zone</Text>
+            <Text style={styles.groupTitle}>{t('settings.danger')}</Text>
             <View style={styles.group}>
               <Pressable style={styles.item} onPress={askToDelete}>
                 <View style={styles.itemIcon}>
                   <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.itemLabel, { color: colors.danger }]}>Close my account</Text>
+                  <Text style={[styles.itemLabel, { color: colors.danger }]}>{t('settings.closeAccount')}</Text>
                   <Text style={styles.itemHint}>
-                    Takes effect straight away. Erased for good after {RECOVERY_DAYS} days.
+                    {t('settings.closeHint', { days: RECOVERY_DAYS })}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -394,9 +402,7 @@ export default function SettingsScreen({ navigation }) {
         >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Before you go</Text>
-            <Text style={styles.modalBody}>
-              Why are you closing your account? It genuinely changes what we fix next.
-            </Text>
+            <Text style={styles.modalBody}>{t('settings.closeWhy')}</Text>
 
             {/* Scrollable: eight reasons plus a password field does not fit on
                 a small handset above the keyboard, and a confirm button the
@@ -427,7 +433,7 @@ export default function SettingsScreen({ navigation }) {
 
             <TextInput
               style={styles.modalNote}
-              placeholder="Anything else? (optional)"
+              placeholder={t('settings.closeNote')}
               placeholderTextColor={colors.textMuted}
               value={note}
               onChangeText={setNote}
@@ -438,7 +444,7 @@ export default function SettingsScreen({ navigation }) {
 
             <TextInput
               style={[styles.modalInput, !!deleteError && styles.modalInputError]}
-              placeholder="Your password"
+              placeholder={t('settings.password')}
               placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={(t) => { setPassword(t); setDeleteError(''); }}
@@ -455,14 +461,14 @@ export default function SettingsScreen({ navigation }) {
             >
               {deleting
                 ? <ActivityIndicator color="#FFFFFF" />
-                : <Text style={styles.modalDangerText}>Close my account</Text>}
+                : <Text style={styles.modalDangerText}>{t('settings.closeAccount')}</Text>}
             </Pressable>
             <Pressable
               style={styles.modalCancel}
               onPress={() => setDeleteOpen(false)}
               disabled={deleting}
             >
-              <Text style={styles.modalCancelText}>Cancel</Text>
+              <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>

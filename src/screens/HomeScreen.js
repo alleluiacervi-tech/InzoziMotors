@@ -27,37 +27,37 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_SLIDES = [
   {
     id: 1,
-    brand: 'Sawa Certified',
-    tagline: 'Every car inspected before listing. No exceptions.',
-    tag: 'Trust',
+    brandKey: 'bannerCertifiedBrand',
+    taglineKey: 'bannerCertifiedTagline',
+    tagKey: 'bannerCertifiedTag',
     image: STUDIO.heroSedan,
   },
   {
     id: 2,
-    brand: '150-Point Check',
-    tagline: 'Certified mechanics. Full report before you buy.',
-    tag: 'Inspection',
+    brandKey: 'bannerInspectionBrand',
+    taglineKey: 'bannerInspectionTagline',
+    tagKey: 'bannerInspectionTag',
     image: STUDIO.heroSuv,
   },
   {
     id: 3,
-    brand: 'Certify Your Car',
-    tagline: 'Submit for our 150-point inspection. We list it for you.',
-    tag: 'Sell',
+    brandKey: 'bannerSellBrand',
+    taglineKey: 'bannerSellTagline',
+    tagKey: 'bannerSellTag',
     image: STUDIO.heroGt,
   },
 ];
 
 
 const TOOLS = [
-  { label: 'Certify My Car', icon: 'car-outline', screen: 'CarSubmission' },
-  { label: 'Import Duty', icon: 'globe-outline', screen: 'DutyCalculator' },
-  { label: 'Financing', icon: 'calculator-outline', screen: 'Financing' },
-  { label: 'Compare', icon: 'git-compare-outline', screen: 'Comparison' },
+  { labelKey: 'certifyCar', icon: 'car-outline', screen: 'CarSubmission' },
+  { labelKey: 'importDuty', icon: 'globe-outline', screen: 'DutyCalculator' },
+  { labelKey: 'financing', icon: 'calculator-outline', screen: 'Financing' },
+  { labelKey: 'compare', icon: 'git-compare-outline', screen: 'Comparison' },
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing, makes } = useApp();
+  const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing, makes, t } = useApp();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
   // dropped connection does not need a banner over the top of it.
@@ -69,7 +69,13 @@ export default function HomeScreen({ navigation }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [rentFilter, setRentFilter] = useState('All');
 
-  const RENT_FILTERS = ['All', 'Safari-Ready', 'SUV', 'Sedan', 'Truck'];
+  const RENT_FILTERS = [
+    { value: 'All', labelKey: 'all' },
+    { value: 'Safari-Ready', labelKey: 'safariReady' },
+    { value: 'SUV', labelKey: 'suv' },
+    { value: 'Sedan', labelKey: 'sedan' },
+    { value: 'Truck', labelKey: 'truck' },
+  ];
   const filteredRentals = useMemo(() => rentalCars.filter((c) => {
     if (rentFilter === 'All') return true;
     if (rentFilter === 'Safari-Ready') return c.safariReady;
@@ -169,9 +175,9 @@ export default function HomeScreen({ navigation }) {
 
   const centerWindow = useMemo(() => ({
     brand: 'Sawa Center',
-    subtitle: 'On display in Nyarutarama this week',
+    subtitle: t('home.onDisplay'),
     cars: carsByListedDate.slice(0, 5),
-  }), [carsByListedDate]);
+  }), [carsByListedDate, t]);
 
   // The production catalogue is allowed to be empty (for example during a
   // first deployment or while the admin is preparing the first listing). Do
@@ -224,21 +230,21 @@ export default function HomeScreen({ navigation }) {
 
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <Pressable style={({ pressed }) => [styles.hamburger, pressed && styles.headerControlPressed]} onPress={() => setDrawerOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel="Open menu">
+          <Pressable style={({ pressed }) => [styles.hamburger, pressed && styles.headerControlPressed]} onPress={() => setDrawerOpen(true)} hitSlop={6} accessibilityRole="button" accessibilityLabel={t('common.menu')}>
           <View style={styles.hamburgerLine} />
           <View style={[styles.hamburgerLine, { width: 16 }]} />
           <View style={styles.hamburgerLine} />
         </Pressable>
 
         <View style={styles.locationContainer}>
-          <Text style={styles.locationLabel}>LOCATION</Text>
+          <Text style={styles.locationLabel}>{t('home.location').toUpperCase()}</Text>
           <View style={styles.locationValueRow}>
-            <Text style={styles.locationText}>Kigali, Rwanda</Text>
+            <Text style={styles.locationText}>{t('home.kigali')}</Text>
           </View>
         </View>
 
         <View style={styles.topBarRight}>
-          <Pressable style={({ pressed }) => [styles.bellBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel="Notifications">
+          <Pressable style={({ pressed }) => [styles.bellBtn, pressed && styles.headerControlPressed]} onPress={() => navigation.navigate('NotificationCenter')} accessibilityRole="button" accessibilityLabel={t('drawer.notifications')}>
             <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             {hasUnread && <View style={styles.bellBadge} />}
           </Pressable>
@@ -256,7 +262,7 @@ export default function HomeScreen({ navigation }) {
                 style={[styles.modeBtn, on && styles.modeBtnOn]}
                 onPress={() => setHomeMode(m)}
                 accessibilityRole="tab"
-                accessibilityLabel={m === 'buy' ? 'Cars for sale' : 'Cars for rent'}
+                accessibilityLabel={m === 'buy' ? `${t('common.buy')} cars` : `${t('common.rent')} cars`}
                 accessibilityState={{ selected: on }}
               >
                 <Ionicons
@@ -265,7 +271,7 @@ export default function HomeScreen({ navigation }) {
                   color={on ? '#fff' : colors.textSecondary}
                 />
                 <Text style={[styles.modeBtnText, on && styles.modeBtnTextOn]}>
-                  {m === 'buy' ? 'Buy' : 'Rent'}
+                  {m === 'buy' ? t('home.buy') : t('home.rent')}
                 </Text>
               </Pressable>
             );
@@ -295,9 +301,9 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.offlineNotice}>
             <Ionicons name="cloud-offline-outline" size={20} color={colors.amber} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.offlineTitle}>We couldn&apos;t reach Sawa Cars</Text>
+              <Text style={styles.offlineTitle}>{t('home.offlineTitle')}</Text>
               <Text style={styles.offlineSub}>
-                Check your connection, then try again.
+                {t('home.offlineSub')}
               </Text>
             </View>
             {/* The recovery the notice used to promise but not provide. The
@@ -310,7 +316,7 @@ export default function HomeScreen({ navigation }) {
               disabled={refreshing}
               onPress={refreshCatalogue}
             >
-              <Text style={styles.offlineRetryText}>{refreshing ? 'Trying…' : 'Try again'}</Text>
+              <Text style={styles.offlineRetryText}>{refreshing ? t('home.trying') : t('common.retry')}</Text>
             </Pressable>
           </View>
         )}
@@ -326,7 +332,7 @@ export default function HomeScreen({ navigation }) {
           >
             <Ionicons name="search" size={18} color={colors.textMuted} />
             <Text style={styles.searchPlaceholder}>
-              {homeMode === 'rent' ? 'Search rental cars...' : 'Search by brand, model, or keyword...'}
+              {homeMode === 'rent' ? t('home.searchRentals') : t('home.search')}
             </Text>
           </Pressable>
         </View>
@@ -340,9 +346,9 @@ export default function HomeScreen({ navigation }) {
                   <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.tripTitle}>Rental inquiry in progress</Text>
+                  <Text style={styles.tripTitle}>{t('home.rentalInquiry')}</Text>
                   <Text style={styles.tripSub} numberOfLines={1}>
-                    {openInquiry.carTitle} · {openInquiry.status === 'contacted' ? 'provider contacted' : 'awaiting provider reply'}
+                    {openInquiry.carTitle} · {openInquiry.status === 'contacted' ? t('home.providerContacted') : t('home.awaitingProvider')}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.8)" />
@@ -351,9 +357,9 @@ export default function HomeScreen({ navigation }) {
 
             <View style={styles.rentHero}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.rentHeroTitle}>Certified rentals</Text>
+                <Text style={styles.rentHeroTitle}>{t('home.certifiedRentals')}</Text>
                 <Text style={styles.rentHeroSub}>
-                  Every car 150-point inspected. Insurance & roadside assistance included.
+                  {t('home.certifiedRentalsSub')}
                 </Text>
               </View>
               <View style={styles.rentHeroIcon}>
@@ -368,24 +374,24 @@ export default function HomeScreen({ navigation }) {
               contentContainerStyle={styles.rentFilterRow}
             >
               {RENT_FILTERS.map((f) => {
-                const on = rentFilter === f;
+                const on = rentFilter === f.value;
                 return (
                   <Pressable
-                    key={f}
+                    key={f.value}
                     style={[styles.rentFilterChip, on && styles.rentFilterChipOn]}
-                    onPress={() => setRentFilter(f)}
+                    onPress={() => setRentFilter(f.value)}
                   >
-                    {f === 'Safari-Ready' && (
+                    {f.value === 'Safari-Ready' && (
                       <Ionicons name="trail-sign-outline" size={13} color={on ? '#fff' : colors.textSecondary} />
                     )}
-                    <Text style={[styles.rentFilterText, on && styles.rentFilterTextOn]}>{f}</Text>
+                    <Text style={[styles.rentFilterText, on && styles.rentFilterTextOn]}>{t(`home.${f.labelKey}`)}</Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
 
             <View style={styles.sectionContainer}>
-              <SectionHeader title={rentFilter === 'Safari-Ready' ? 'Safari-Ready 4×4s' : 'Available in Kigali'} />
+              <SectionHeader title={rentFilter === 'Safari-Ready' ? t('home.safari4x4s') : t('home.availableKigali')} />
               <View style={styles.twoColumnGrid}>
                 {filteredRentals.map((item) => (
                   <View key={item.id} style={styles.gridCardWrapper}>
@@ -406,8 +412,8 @@ export default function HomeScreen({ navigation }) {
             and calling them one would be the first dishonest label in the app. */}
         {featured.length ? (
           <View style={styles.topDealsHead}>
-            <Text style={styles.topDealsTitle}>Top deals</Text>
-            <Text style={styles.topDealsSub}>Chosen by our team · swipe for more</Text>
+            <Text style={styles.topDealsTitle}>{t('home.topDeals')}</Text>
+            <Text style={styles.topDealsSub}>{t('home.topDealsSub')}</Text>
           </View>
         ) : null}
         <View style={styles.carouselContainer}>
@@ -423,11 +429,11 @@ export default function HomeScreen({ navigation }) {
               // A placement from the server, or one of the fallback slides.
               const isCar = Boolean(slide.placement_id);
               const image = isCar ? slide.images?.[0] : slide.image;
-              const heading = isCar ? (slide.headline || slide.title) : slide.brand;
+              const heading = isCar ? (slide.headline || slide.title) : t(`home.${slide.brandKey}`);
               const sub = isCar
                 ? `${formatPrice(slide.price)}${slide.location ? ` · ${slide.location}` : ''}`
-                : slide.tagline;
-              const tag = isCar ? slide.label : slide.tag;
+                : t(`home.${slide.taglineKey}`);
+              const tag = isCar ? slide.label : t(`home.${slide.tagKey}`);
 
               const Slide = (
                 <ImageBackground
@@ -458,7 +464,7 @@ export default function HomeScreen({ navigation }) {
                       <View style={styles.slideScore}>
                         <Ionicons name="shield-checkmark" size={11} color="#fff" />
                         <Text style={styles.slideScoreText}>
-                          {slide.inspection_score}/150 inspected
+                          {t('home.inspected', { score: slide.inspection_score })}
                         </Text>
                       </View>
                     ) : null}
@@ -504,7 +510,7 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.toolIconCircle}>
                 <Ionicons name={item.icon} size={22} color={colors.textSecondary} />
               </View>
-              <Text style={styles.toolLabel}>{item.label}</Text>
+              <Text style={styles.toolLabel}>{t(`home.${item.labelKey}`)}</Text>
             </Pressable>
           ))}
         </View>
@@ -512,7 +518,7 @@ export default function HomeScreen({ navigation }) {
         {/* ── SHOWROOMS — walk past the glass ── */}
         {showroomWindows.length > 0 && (
           <View style={styles.sectionContainer}>
-            <SectionHeader title="Showrooms" />
+            <SectionHeader title={t('home.showrooms')} />
             <FlatList
               horizontal
               data={showroomWindows}
@@ -526,7 +532,7 @@ export default function HomeScreen({ navigation }) {
                   style={styles.showroomWindow}
                   onPress={() => navigation.navigate('Showroom', {
                     title: item.brand,
-                    subtitle: item.subtitle || `${item.cars.length} cars in the showroom`,
+                    subtitle: item.subtitle || t('home.carsInShowroom', { count: item.cars.length }),
                     cars: item.cars,
                   })}
                 >
@@ -545,7 +551,7 @@ export default function HomeScreen({ navigation }) {
                       <Text style={styles.showroomBrand}>{item.brand}</Text>
                     </View>
                     <Text style={styles.showroomCount}>
-                      {item.subtitle || `${item.cars.length} cars · view the collection`}
+                      {item.subtitle || t('home.showroomCarsView', { count: item.cars.length })}
                     </Text>
                   </View>
                 </Pressable>
@@ -560,15 +566,15 @@ export default function HomeScreen({ navigation }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.originRow}
         >
-          {ORIGIN_TABS.map((t) => {
-            const on = originTab === t;
+          {ORIGIN_TABS.map((tab) => {
+            const on = originTab === tab;
             return (
               <Pressable
-                key={t}
+                key={tab}
                 style={[styles.originChip, on && styles.originChipOn]}
-                onPress={() => setOriginTab(t)}
+                onPress={() => setOriginTab(tab)}
               >
-                <Text style={[styles.originText, on && styles.originTextOn]}>{t}</Text>
+                <Text style={[styles.originText, on && styles.originTextOn]}>{t(`home.${tab === 'EV·Hybrid' ? 'evHybrid' : tab.toLowerCase()}`)}</Text>
               </Pressable>
             );
           })}
@@ -576,7 +582,7 @@ export default function HomeScreen({ navigation }) {
 
         {originTab !== 'All' ? (
           <View style={styles.sectionContainer}>
-            <SectionHeader title={`${originTab} · ${originCars.length} cars`} />
+            <SectionHeader title={t('home.carsCount', { label: t(`home.${originTab === 'EV·Hybrid' ? 'evHybrid' : originTab.toLowerCase()}`), count: originCars.length })} />
             <View style={styles.twoColumnGrid}>
               {originCars.map((item) => (
                 <View key={item.id} style={styles.gridCardWrapper}>
@@ -593,7 +599,7 @@ export default function HomeScreen({ navigation }) {
         {/* ── RECENTLY VIEWED ── */}
         {recentlyViewed.length > 0 && (
           <View style={styles.sectionContainer}>
-            <SectionHeader title="Recently Viewed" />
+            <SectionHeader title={t('home.recentlyViewed')} />
             <FlatList
               horizontal
               data={recentlyViewed}
@@ -619,8 +625,8 @@ export default function HomeScreen({ navigation }) {
         {likeSaved.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader
-              title="More Like Your Saved Cars"
-              actionLabel="Saved"
+              title={t('home.moreLikeSaved')}
+              actionLabel={t('home.saved')}
               onAction={() => navigation.navigate('Saved')}
             />
             <FlatList
@@ -644,8 +650,8 @@ export default function HomeScreen({ navigation }) {
         {/* ── FRESH THIS WEEK ── */}
         <View style={styles.sectionContainer}>
           <SectionHeader
-            title="Fresh This Week"
-            actionLabel="More"
+            title={t('home.fresh')}
+            actionLabel={t('home.more')}
             onAction={() => navigation.navigate('SearchResults')}
           />
           <View style={styles.twoColumnGrid}>
@@ -670,8 +676,8 @@ export default function HomeScreen({ navigation }) {
         {popularCars.length ? (
         <View style={styles.sectionContainer}>
           <SectionHeader
-            title="Popular in Kigali"
-            actionLabel="More"
+            title={t('home.popular')}
+            actionLabel={t('home.more')}
             onAction={() => navigation.navigate('SearchResults')}
           />
           <FlatList
@@ -701,22 +707,22 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.footerContainer}>
           <View style={styles.footerLinksRow}>
             <Pressable onPress={() => navigation.navigate('SignIn')}>
-              <Text style={styles.footerLinkText}>Log In</Text>
+              <Text style={styles.footerLinkText}>{t('home.login')}</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
             <Pressable onPress={() => navigation.navigate('SawaPromise')}>
-              <Text style={styles.footerLinkText}>Our Promise</Text>
+              <Text style={styles.footerLinkText}>{t('home.ourPromise')}</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
             <Pressable onPress={() => navigation.navigate('SawaPromise')}>
-              <Text style={styles.footerLinkText}>About Us</Text>
+              <Text style={styles.footerLinkText}>{t('home.aboutUs')}</Text>
             </Pressable>
             <Text style={styles.footerDivider}>·</Text>
             <Pressable onPress={() => navigation.navigate('Settings')}>
-              <Text style={styles.footerLinkText}>Settings</Text>
+              <Text style={styles.footerLinkText}>{t('common.settings')}</Text>
             </Pressable>
           </View>
-          <Text style={styles.copyrightText}>© 2026 Sawa Cars. All rights reserved.</Text>
+          <Text style={styles.copyrightText}>{t('home.copyright')}</Text>
         </View>
 
       </ScrollView>

@@ -31,18 +31,18 @@ const sp = (n) => Math.round(n * Math.min(1.10, Math.max(0.62, RATIO)));
 const ft = (n) => Math.round(n * Math.min(1.06, Math.max(0.88, RATIO)) * 10) / 10;
 
 const TRIO = [
-  { icon: 'shield-checkmark-outline', title: 'Trusted', sub: 'Every car is\ninspected' },
-  { icon: 'pricetag-outline', title: 'Fair Prices', sub: 'Best value for\nyour money' },
+  { icon: 'shield-checkmark-outline', titleKey: 'welcome.trusted', subKey: 'welcome.trustedSub' },
+  { icon: 'pricetag-outline', titleKey: 'welcome.fairPrices', subKey: 'welcome.fairPricesSub' },
   // Was "2,000+ satisfied customers". Nobody counted them, no screen in the
   // app can produce the figure, and it is the first claim a new user reads —
   // on a product whose entire pitch is that its claims are checked. The
   // replacement is the one thing here that is verifiable, on every listing.
-  { icon: 'people-outline', title: 'Direct Contact', sub: 'Deal with the\nseller yourself' },
+  { icon: 'people-outline', titleKey: 'welcome.directContact', subKey: 'welcome.directContactSub' },
 ];
 
 export default function WelcomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { setHomeMode } = useApp();
+  const { setHomeMode, language, t } = useApp();
 
   const explore = () => {
     setHomeMode('buy');
@@ -64,8 +64,14 @@ export default function WelcomeScreen({ navigation }) {
       <StatusBar style="dark" />
 
       <View style={[styles.topBar, { paddingTop: insets.top + sp(4) }]}>
-        <Pressable style={styles.langPill} hitSlop={8}>
-          <Text style={styles.langText}>EN</Text>
+        <Pressable
+          style={styles.langPill}
+          onPress={() => navigation.navigate('Language')}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.language')}
+        >
+          <Text style={styles.langText}>{language.toUpperCase()}</Text>
           <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
         </Pressable>
       </View>
@@ -75,14 +81,8 @@ export default function WelcomeScreen({ navigation }) {
       </View>
 
       <View style={styles.copy}>
-        <Text style={styles.title}>
-          Rwanda's most{'\n'}
-          <Text style={styles.titleAccent}>trusted</Text> car{'\n'}
-          marketplace.
-        </Text>
-        <Text style={styles.subtitle}>
-          Quality cars. Fair prices.{'\n'}Total peace of mind.
-        </Text>
+        <Text style={styles.title}>{t('welcome.title')}</Text>
+        <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
       </View>
 
       {/* The one elastic element: it takes whatever the fixed blocks leave, so
@@ -97,15 +97,15 @@ export default function WelcomeScreen({ navigation }) {
 
       <View style={styles.sheet}>
         <View style={styles.trioCard}>
-          {TRIO.map((t, i) => (
-            <React.Fragment key={t.title}>
+          {TRIO.map((item, i) => (
+            <React.Fragment key={item.titleKey}>
               {i > 0 && <View style={styles.divider} />}
               <View style={styles.trioCol}>
                 <View style={styles.trioIcon}>
-                  <Ionicons name={t.icon} size={ft(17)} color={colors.primary} />
+                  <Ionicons name={item.icon} size={ft(17)} color={colors.primary} />
                 </View>
-                <Text style={styles.trioTitle} numberOfLines={1}>{t.title}</Text>
-                <Text style={styles.trioSub}>{t.sub}</Text>
+                <Text style={styles.trioTitle} numberOfLines={1}>{t(item.titleKey)}</Text>
+                <Text style={styles.trioSub}>{t(item.subKey)}</Text>
               </View>
             </React.Fragment>
           ))}
@@ -115,7 +115,7 @@ export default function WelcomeScreen({ navigation }) {
           style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
           onPress={explore}
         >
-          <Text style={styles.primaryText}>Explore Cars</Text>
+          <Text style={styles.primaryText}>{t('welcome.exploreCars')}</Text>
           <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
         </Pressable>
 
@@ -124,7 +124,7 @@ export default function WelcomeScreen({ navigation }) {
           onPress={sell}
         >
           <Ionicons name="car-sport-outline" size={19} color={colors.primary} />
-          <Text style={styles.secondaryText}>Sell Your Car</Text>
+          <Text style={styles.secondaryText}>{t('welcome.sellCar')}</Text>
           <Ionicons name="arrow-forward" size={18} color={colors.primary} />
         </Pressable>
 
@@ -134,19 +134,19 @@ export default function WelcomeScreen({ navigation }) {
           style={styles.signinWrap}
         >
           <Text style={styles.signin}>
-            Already have an account? <Text style={styles.signinLink}>Sign in</Text>
+            {t('welcome.alreadyAccount')} <Text style={styles.signinLink}>{t('common.signIn')}</Text>
           </Text>
         </Pressable>
 
         <Text style={styles.terms}>
-          By continuing, you agree to our{' '}
+          {t('welcome.termsPrefix')}{' '}
           <Text
             style={styles.termsStrong}
             onPress={() => openLegal('/legal/terms')}
             suppressHighlighting
             accessibilityRole="link"
           >
-            Terms
+            {t('welcome.terms')}
           </Text>
           {' '}&{' '}
           <Text
@@ -155,7 +155,7 @@ export default function WelcomeScreen({ navigation }) {
             suppressHighlighting
             accessibilityRole="link"
           >
-            Privacy Policy
+            {t('welcome.privacy')}
           </Text>
           .
         </Text>

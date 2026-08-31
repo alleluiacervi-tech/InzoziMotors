@@ -39,7 +39,7 @@ function SavedCarRow({ car, onPress, onRemove }) {
         <View style={styles.rowPriceRow}>
           <Text style={styles.rowPrice}>
             {car.listingType === 'rental'
-              ? `$${car.dailyRate}/day`
+              ? `${formatPrice(car.dailyRate || 0)}/day`
               : formatPrice(car.type === 'auction' ? car.currentBid : car.price)}
           </Text>
           {drop > 0 && (

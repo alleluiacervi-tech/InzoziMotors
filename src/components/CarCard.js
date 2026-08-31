@@ -26,7 +26,7 @@ const getSawaLocation = (car) => {
 const getSawaPrice = (car) => formatPrice(car.price ?? car.currentBid ?? 0);
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
-  const { isCarSaved, toggleSaveCar } = useApp();
+  const { isCarSaved, toggleSaveCar, t } = useApp();
   const saved = isCarSaved(car.id);
   const isContract = car.type === 'auction';
   const isRental = car.listingType === 'rental';
@@ -60,7 +60,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
               accessibilityRole="button"
               // Names the car, because a list of hearts is otherwise a list of
               // identical unlabelled buttons.
-              accessibilityLabel={saved ? `Remove ${car.title} from saved` : `Save ${car.title}`}
+              accessibilityLabel={t(saved ? 'home.removeSaved' : 'home.saveCar', { title: car.title })}
               accessibilityState={{ selected: saved }}
             >
               <Ionicons
@@ -84,14 +84,14 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
         {isRental ? (
           <>
             <Text style={styles.meta} numberOfLines={1}>
-              {car.seats} seats · {car.transmission}
+              {car.seats} {t('home.seats')} · {car.transmission}
             </Text>
             <Text style={styles.meta} numberOfLines={1}>
-              <Ionicons name="star" size={10} color={colors.amber} /> {car.rating} ({car.trips} trips) · {getSawaLocation(car)}
+              <Ionicons name="star" size={10} color={colors.amber} /> {car.rating} ({car.trips} {t('home.trips')}) · {getSawaLocation(car)}
             </Text>
             <View style={styles.rentalPriceRow}>
-              <Text style={styles.price}>RWF {Number(car.dailyRate || 0).toLocaleString('en-RW')}</Text>
-              <Text style={styles.perDay}>/day</Text>
+              <Text style={styles.price}>{formatPrice(car.dailyRate || 0)}</Text>
+              <Text style={styles.perDay}>{t('home.perDay')}</Text>
             </View>
           </>
         ) : (
@@ -107,7 +107,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             {car.inspectionScore ? (
               <View style={styles.scoreRow}>
                 <Ionicons name="shield-checkmark" size={12} color={colors.green} />
-                <Text style={styles.scoreText}>{car.inspectionScore}/150 inspected</Text>
+                <Text style={styles.scoreText}>{t('home.inspected', { score: car.inspectionScore })}</Text>
               </View>
             ) : null}
             <Text style={styles.price}>{getSawaPrice(car)}</Text>
