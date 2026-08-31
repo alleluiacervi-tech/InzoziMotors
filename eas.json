@@ -33,7 +33,8 @@
         "track": "internal"
       },
       "ios": {
-        "ascAppId": "6803097569"
+        "ascAppId": "6803097569",
+        "appleTeamId": "5Z2LA9U639"
       }
     }
   }
