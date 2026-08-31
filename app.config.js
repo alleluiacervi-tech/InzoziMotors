@@ -13,7 +13,7 @@ export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
   slug: 'sawa-cars',
-  version: '1.0.0',
+  version: '1.0.1',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
@@ -30,13 +30,13 @@ export default ({ config }) => ({
     fallbackToCacheTimeout: 0,
     checkAutomatically: 'ON_LOAD',
   },
-  // The OTA compatibility key. Every build of version 1.0.0 can receive any
-  // update published from a 1.0.0 tree, which is what makes shipping a fix
-  // without a store review possible. Bumping `version` above deliberately cuts
-  // that line: installs on the old version stop receiving updates and need a
-  // new build from the store, because a native change cannot travel over the
-  // air. src/utils/updates.js says exactly that to the user rather than
-  // offering a button that would do nothing.
+  // The OTA compatibility key. Every build of a given `version` can receive any
+  // update published from a tree at that same version, which is what makes
+  // shipping a fix without a store review possible. Bumping `version` above
+  // deliberately cuts that line: installs on the old version stop receiving
+  // updates and need a new build from the store, because a native change cannot
+  // travel over the air. src/utils/updates.js says exactly that to the user
+  // rather than offering a button that would do nothing.
   runtimeVersion: {
     policy: 'appVersion',
   },
