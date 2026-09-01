@@ -49,10 +49,10 @@ export async function TopDeals({ placements }: { placements: FeaturedPlacement[]
           </Link>
         </div>
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {placements.map((placement, i) => (
-            <Reveal key={placement.placement_id} delay={(i % 3) * 90}>
-              <div className="relative">
+            <Reveal key={placement.placement_id} delay={(i % 3) * 90} className="h-full min-w-0">
+              <div className="relative flex h-full min-w-0 flex-col">
                 <span
                   className={`absolute left-4 top-4 z-10 rounded-lg px-2.5 py-1 text-caption font-bold shadow-card ${
                     placement.sponsored

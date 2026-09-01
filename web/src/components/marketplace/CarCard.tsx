@@ -44,14 +44,14 @@ export async function CarCard({
   return (
     <Link
       href={`/cars/${car.id}`}
-      className={`group block overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card
+      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card
                   transition-all duration-500 ease-brand
                   hover:-translate-y-1.5 hover:border-line hover:shadow-float
-                  ${isRow ? 'sm:flex' : ''}`}
+                  ${isRow ? 'sm:flex-row' : ''}`}
     >
       <div
-        className={`relative overflow-hidden bg-surface-alt ${
-          isRow ? 'aspect-[16/10] sm:aspect-auto sm:w-72 sm:shrink-0' : 'aspect-[16/10]'
+        className={`relative shrink-0 overflow-hidden bg-surface-alt ${
+          isRow ? 'aspect-[16/10] sm:w-72' : 'aspect-[16/10]'
         }`}
       >
         {/* Multi-photo listings preview their available gallery on hover or tap.
@@ -80,19 +80,16 @@ export async function CarCard({
 
         {/* Trust badges sit top-left; urgency signals top-right, so the two
             never compete for the same corner. */}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+        <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
           {demo ? (
-            <Badge tone="neutral">{t('cars.card.previewListing')}</Badge>
+
           ) : tier ? (
-            <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check">
+            <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
               {tier.short}
             </Badge>
           ) : null}
         </div>
-        <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1.5">
-          {drop > 0 ? <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge> : null}
-          {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">{t('cars.card.new')}</Badge> : null}
-          {isHighDemand(car) ? <Badge tone="danger">{t('cars.card.highDemand')}</Badge> : null}
+
         </div>
 
         {/* The 36-angle standard is the signature — advertise it on every card.
@@ -106,7 +103,7 @@ export async function CarCard({
 
       </div>
 
-      <div className={`p-5 ${isRow ? 'flex flex-1 flex-col' : ''}`}>
+      <div className="flex min-w-0 flex-1 flex-col p-5">
         <h3 className="truncate text-title-sm font-extrabold tracking-[-0.015em] text-content transition-colors group-hover:text-brand">
           {car.title}
         </h3>
@@ -146,7 +143,7 @@ export async function CarCard({
           </p>
         ) : null}
 
-        <div className={isRow ? 'mt-auto pt-5' : 'mt-5'}>
+        <div className="mt-auto pt-5">
           {/* Price is one of the few places brand red is allowed. */}
           {/* tabular-nums so prices line up digit-for-digit down a grid of
               cards — Satoshi defaults to proportional figures. */}
@@ -198,12 +195,12 @@ export async function CarCard({
 export function CarCardSkeleton({ layout = 'grid' }: { layout?: 'grid' | 'row' }) {
   return (
     <div
-      className={`overflow-hidden rounded-2xl border border-line-soft bg-surface ${
-        layout === 'row' ? 'sm:flex' : ''
+      className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface ${
+        layout === 'row' ? 'sm:flex-row' : ''
       }`}
     >
-      <div className={`skeleton ${layout === 'row' ? 'aspect-[4/3] sm:w-72' : 'aspect-[4/3]'}`} />
-      <div className="flex-1 space-y-3 p-5">
+      <div className={`skeleton shrink-0 ${layout === 'row' ? 'aspect-[16/10] sm:w-72' : 'aspect-[16/10]'}`} />
+      <div className="flex min-w-0 flex-1 flex-col space-y-3 p-5">
         <div className="skeleton h-4 w-3/4 rounded" />
         <div className="skeleton h-3 w-1/2 rounded" />
         <div className="skeleton h-6 w-28 rounded" />

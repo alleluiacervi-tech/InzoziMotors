@@ -166,9 +166,9 @@ async function BrowseResults({
                 )
               )}
             />
-            <ul className="stagger mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="stagger mt-6 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, index) => (
-                <li key={car.id}>
+                <li key={car.id} className="min-w-0">
                   {/* Only the first row is eager — the rest would fight the
                       LCP image for bandwidth on a mobile connection. */}
                   <CarCard car={car} priority={index < 3} />
@@ -207,9 +207,9 @@ function BrowseSkeleton() {
       <div className="hidden lg:block">
         <div className="skeleton h-96 rounded-2xl" />
       </div>
-      <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <ul className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <li key={i}>
+          <li key={i} className="min-w-0">
             <CarCardSkeleton />
           </li>
         ))}

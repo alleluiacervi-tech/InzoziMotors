@@ -64,9 +64,9 @@ export default async function SavedPage() {
             />
           </Card>
         ) : (
-          <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {cars.map((car, index) => (
-              <li key={car.id}>
+              <li key={car.id} className="min-w-0">
                 <CarCard car={car} priority={index < 3} />
                 <UnsaveButton carId={car.id} title={car.title} />
               </li>
