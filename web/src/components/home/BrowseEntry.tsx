@@ -6,6 +6,7 @@ import { Reveal } from '@/components/ui/Reveal'
 import { isDemoListing } from '@/lib/business'
 import { BODY_TYPE_IMAGES } from '@/lib/imagery'
 import type { Car } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
 
 // The browse showcase — our adaptation of a model-range grid. AVATR shows six
 // vehicles; our honest equivalent is the four body-type families buyers
@@ -18,7 +19,12 @@ import type { Car } from '@/lib/types'
 // shown — the homepage fetch sees one page of inventory, and a number we can't
 // back is a number we don't print.
 
-const FAMILIES = ['SUV', 'Sedan', 'Hatchback', 'Pickup'] as const
+const FAMILIES = [
+  { value: 'SUV', labelKey: 'home.browse.family.suv' },
+  { value: 'Sedan', labelKey: 'home.browse.family.sedan' },
+  { value: 'Hatchback', labelKey: 'home.browse.family.hatchback' },
+  { value: 'Pickup', labelKey: 'home.browse.family.pickup' },
+] as const
 
 // Computed per render, not at import: at import time the live rate has not
 // been fetched yet, and budget chips built on a stale rate would filter to the
@@ -26,14 +32,15 @@ const FAMILIES = ['SUV', 'Sedan', 'Hatchback', 'Pickup'] as const
 const budgets = () => {
   const rwf = (rwfMillions: number) => rwfMillions * 1_000_000
   return [
-    { label: 'Under 10M RWF', href: `/cars?max_price=${rwf(10)}` },
-    { label: '10 – 20M RWF', href: `/cars?min_price=${rwf(10)}&max_price=${rwf(20)}` },
-    { label: '20 – 35M RWF', href: `/cars?min_price=${rwf(20)}&max_price=${rwf(35)}` },
-    { label: '35M+ RWF', href: `/cars?min_price=${rwf(35)}` },
+    { labelKey: 'home.browse.budget.under', href: `/cars?max_price=${rwf(10)}` },
+    { labelKey: 'home.browse.budget.band1', href: `/cars?min_price=${rwf(10)}&max_price=${rwf(20)}` },
+    { labelKey: 'home.browse.budget.band2', href: `/cars?min_price=${rwf(20)}&max_price=${rwf(35)}` },
+    { labelKey: 'home.browse.budget.top', href: `/cars?min_price=${rwf(35)}` },
   ]
 }
 
-export function BrowseEntry({ cars }: { cars: Car[] }) {
+export async function BrowseEntry({ cars }: { cars: Car[] }) {
+  const t = await getServerT()
   const familyImage = (family: string) => {
     // Inventory-first, but never demo-first: the seeded listings carry press
     // renders that contradict their own body types (the "SUV" that put a white
@@ -55,18 +62,18 @@ export function BrowseEntry({ cars }: { cars: Car[] }) {
   return (
     <Section tone="page">
       <Container>
-        <SectionHeading eyebrow="Browse" title="Start where buyers start" />
+        <SectionHeading eyebrow={t('home.browse.eyebrow')} title={t('home.browse.title')} />
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FAMILIES.map((family, i) => {
-            const photo = familyImage(family)
+            const photo = familyImage(family.value)
             return (
-              <Reveal key={family} delay={i * 90}>
+              <Reveal key={family.value} delay={i * 90}>
                 {/* The model-grid card: the whole vehicle contained on a clean
                     studio field, name below — never a portrait crop of a wide
                     side profile. */}
                 <Link
-                  href={`/cars?body_type=${family}`}
+                  href={`/cars?body_type=${family.value}`}
                   className="group block overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card transition-all duration-300 ease-brand hover:-translate-y-1 hover:border-line hover:shadow-card-lg"
                 >
                   <div className="relative aspect-[16/10] bg-surface-alt">
@@ -81,8 +88,8 @@ export function BrowseEntry({ cars }: { cars: Car[] }) {
                   </div>
                   <div className="flex items-center justify-between gap-3 p-5">
                     <div>
-                      <h3 className="text-title-sm font-extrabold text-content">{family}s</h3>
-                      <p className="mt-0.5 text-caption text-content-muted">Certified · Kigali</p>
+                      <h3 className="text-title-sm font-extrabold text-content">{t(family.labelKey)}</h3>
+                      <p className="mt-0.5 text-caption text-content-muted">{t('home.browse.familyMeta')}</p>
                     </div>
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill border border-line text-content-secondary transition-colors group-hover:border-content-muted group-hover:bg-surface-alt">
                       <Icon name="arrow-right" size={16} />
@@ -97,8 +104,8 @@ export function BrowseEntry({ cars }: { cars: Car[] }) {
         {/* Budgets stay — quiet, one row, under the photography */}
         <div className="mt-6 flex flex-wrap gap-2.5">
           {budgets().map((b) => (
-            <ChipLink key={b.label} href={b.href}>
-              {b.label}
+            <ChipLink key={b.labelKey} href={b.href}>
+              {t(b.labelKey)}
             </ChipLink>
           ))}
         </div>

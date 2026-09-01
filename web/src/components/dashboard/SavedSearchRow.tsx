@@ -9,6 +9,8 @@ import {
 } from '@/app/(dashboard)/dashboard/saved/actions'
 import { Button, Icon } from '@/components/ui'
 import { formatKm, formatUSD } from '@/lib/business'
+import { useT } from '@/lib/i18n/context'
+import type { TFunction } from '@/lib/i18n/dictionary'
 import type { SavedSearch } from '@/lib/types'
 
 // A saved search is a standing instruction: "tell me when a car like this is
@@ -28,18 +30,19 @@ function searchHref(filters: SavedSearch['filters']): string {
   return qs ? `/cars?${qs}` : '/cars'
 }
 
-function summarise(filters: SavedSearch['filters']): string[] {
+function summarise(filters: SavedSearch['filters'], t: TFunction): string[] {
   const parts: string[] = []
   if (filters.make) parts.push(filters.make)
   if (filters.model) parts.push(filters.model)
   if (filters.category) parts.push(filters.category)
-  if (typeof filters.maxPrice === 'number') parts.push(`under ${formatUSD(filters.maxPrice)}`)
-  if (typeof filters.maxMileage === 'number') parts.push(`under ${formatKm(filters.maxMileage)}`)
+  if (typeof filters.maxPrice === 'number') parts.push(t('dashboard.saved.under', { value: formatUSD(filters.maxPrice) }))
+  if (typeof filters.maxMileage === 'number') parts.push(t('dashboard.saved.under', { value: formatKm(filters.maxMileage) }))
   if (filters.query) parts.push(`“${filters.query}”`)
   return parts
 }
 
 function ToggleButton({ enabled }: { enabled: boolean }) {
+  const t = useT()
   const { pending } = useFormStatus()
   return (
     <Button
@@ -62,12 +65,13 @@ function ToggleButton({ enabled }: { enabled: boolean }) {
           }`}
         />
       </span>
-      {enabled ? 'Alerts on' : 'Alerts off'}
+      {enabled ? t('dashboard.saved.alertsOn') : t('dashboard.saved.alertsOff')}
     </Button>
   )
 }
 
 function DeleteButtons({ onCancel }: { onCancel: () => void }) {
+  const t = useT()
   const { pending } = useFormStatus()
   return (
     <>
@@ -78,21 +82,22 @@ function DeleteButtons({ onCancel }: { onCancel: () => void }) {
         disabled={pending}
         aria-busy={pending || undefined}
       >
-        {pending ? 'Deleting…' : 'Yes, delete'}
+        {pending ? t('dashboard.saved.deleting') : t('dashboard.saved.yesDelete')}
       </Button>
       <Button type="button" variant="ghost" size="compact" onClick={onCancel} disabled={pending}>
-        Keep it
+        {t('dashboard.saved.keepIt')}
       </Button>
     </>
   )
 }
 
 export function SavedSearchRow({ search }: { search: SavedSearch }) {
+  const t = useT()
   const [toggleState, toggle] = useActionState(toggleSearchNotifyAction, null)
   const [deleteState, remove] = useActionState(deleteSearchAction, null)
   const [confirming, setConfirming] = useState(false)
 
-  const parts = summarise(search.filters)
+  const parts = summarise(search.filters, t)
   const error = toggleState?.error ?? deleteState?.error
 
   return (
@@ -106,7 +111,7 @@ export function SavedSearchRow({ search }: { search: SavedSearch }) {
             {search.label}
           </Link>
           <p className="mt-1 text-caption text-content-muted">
-            {parts.length > 0 ? parts.join(' · ') : 'All certified cars'}
+            {parts.length > 0 ? parts.join(' · ') : t('dashboard.saved.allCertified')}
           </p>
           {error ? (
             <p role="alert" className="mt-2 text-micro font-semibold text-danger">
@@ -132,7 +137,7 @@ export function SavedSearchRow({ search }: { search: SavedSearch }) {
               type="button"
               onClick={() => setConfirming(true)}
               className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-content-muted transition-colors hover:bg-surface-alt hover:text-content"
-              aria-label={`Delete saved search: ${search.label}`}
+              aria-label={t('dashboard.saved.deleteSearchLabel', { label: search.label })}
             >
               <Icon name="close" size={18} />
             </button>

@@ -3,40 +3,42 @@ import { FinanceCalculator } from '@/components/tools/FinanceCalculator'
 import { Button, Card, Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { FINANCE_TERMS } from '@/lib/business'
 import { SITE } from '@/lib/site'
+import { getServerT } from '@/lib/i18n/server'
 
-export const metadata: Metadata = {
-  title: 'Car finance calculator',
-  description:
-    'Estimate the monthly repayment on a car loan in Kigali, or work backwards from what you can afford each month. Deposit, term and total interest, all in RWF.',
-  keywords: [
-    'car loan calculator Rwanda',
-    'car finance Kigali',
-    'monthly car payment Rwanda',
-    'vehicle loan RWF',
-    'car affordability calculator',
-  ],
-  alternates: { canonical: '/tools/finance' },
-  openGraph: {
-    title: 'Car finance calculator',
-    description:
-      'Monthly repayment, deposit and total interest on a car loan in Kigali — or the car price your monthly budget supports.',
-    url: `${SITE.url}/tools/finance`,
-    type: 'website',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('tools.financePage.metaTitle'),
+    description: t('tools.financePage.metaDescription'),
+    keywords: [
+      'car loan calculator Rwanda',
+      'car finance Kigali',
+      'monthly car payment Rwanda',
+      'vehicle loan RWF',
+      'car affordability calculator',
+    ],
+    alternates: { canonical: '/tools/finance' },
+    openGraph: {
+      title: t('tools.financePage.ogTitle'),
+      description: t('tools.financePage.ogDescription'),
+      url: `${SITE.url}/tools/finance`,
+      type: 'website',
+    },
+  }
 }
 
-export default function FinancePage() {
+export default async function FinancePage() {
+  const t = await getServerT()
   return (
     <>
       {/* ─── Hero ─────────────────────────────────────────────────────────── */}
       <Section tone="surface" className="pb-10 pt-12 sm:pb-14 sm:pt-20">
         <Container>
           <div className="max-w-3xl">
-            <p className="mb-4 text-eyebrow font-bold uppercase text-brand">Free tool</p>
-            <h1 className="text-display font-extrabold text-content">Car finance calculator</h1>
+            <p className="mb-4 text-eyebrow font-bold uppercase text-brand">{t('tools.financePage.heroEyebrow')}</p>
+            <h1 className="text-display font-extrabold text-content">{t('tools.financePage.heroTitle')}</h1>
             <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
-              Two ways round the same question. Start from a car you have found and see the monthly
-              payment, or start from what you can pay each month and see which cars that reaches.
+              {t('tools.financePage.heroLede')}
             </p>
           </div>
         </Container>
@@ -46,8 +48,8 @@ export default function FinancePage() {
       <Section className="pt-10 sm:pt-14">
         <Container>
           <SectionHeading
-            title="Estimate a repayment"
-            description={`Calculated at ${FINANCE_TERMS.annualRatePct}% a year — a representative rate for car lending in Kigali, and the same rate behind the monthly figure on every listing card.`}
+            title={t('tools.financePage.estimateTitle')}
+            description={t('tools.financePage.estimateDescription', { rate: FINANCE_TERMS.annualRatePct })}
           />
           <div className="mt-10">
             <FinanceCalculator />
@@ -59,27 +61,27 @@ export default function FinancePage() {
       <Section tone="surface">
         <Container>
           <SectionHeading
-            eyebrow="Before you take it to a bank"
-            title="Three things that will change this number"
-            description="Sawa Cars does not lend and takes no commission from any lender. This tool exists so you walk into the bank knowing roughly what to expect."
+            eyebrow={t('tools.financePage.beforeEyebrow')}
+            title={t('tools.financePage.beforeTitle')}
+            description={t('tools.financePage.beforeDescription')}
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 icon: 'chart' as const,
-                title: 'Your rate is personal',
-                body: `${FINANCE_TERMS.annualRatePct}% a year is a market reference point, not a quote. Banks price on your income, your employment and your history with them, and the rate they offer may sit either side of it.`,
+                title: t('tools.financePage.rateTitle'),
+                body: t('tools.financePage.rateBody', { rate: FINANCE_TERMS.annualRatePct }),
               },
               {
                 icon: 'document' as const,
-                title: 'Fees are not in here',
-                body: 'Arrangement fees, valuation fees and the comprehensive insurance most lenders require are charged separately. They usually add to the monthly figure rather than the price.',
+                title: t('tools.financePage.feesTitle'),
+                body: t('tools.financePage.feesBody'),
               },
               {
                 icon: 'clock' as const,
-                title: 'A longer term costs more',
-                body: 'Stretching the same loan over more months lowers the payment and raises the total interest. Compare the "total you pay" line, not just the monthly one.',
+                title: t('tools.financePage.termTitle'),
+                body: t('tools.financePage.termBody'),
               },
             ].map((item) => (
               <Card key={item.title} className="p-6">
@@ -99,14 +101,14 @@ export default function FinancePage() {
         <Container>
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-headline font-extrabold text-white">
-              Finance is arranged outside Sawa Cars
+              {t('tools.financePage.closeTitle')}
             </h2>
             <p className="mt-4 text-title-sm leading-relaxed text-white/70">
-              This calculator is informational. Confirm any loan directly with the bank and agree the payment recipient, ownership transfer, delivery and written sale terms directly with the seller. Sawa Cars does not receive the funds or guarantee the transaction.
+              {t('tools.financePage.closeBody')}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button href="/cars" size="lg" trailingIcon={<Icon name="arrow-right" size={18} />}>
-                Browse certified cars
+                {t('tools.financePage.browse')}
               </Button>
               <Button
                 href="/how-it-works"
@@ -114,7 +116,7 @@ export default function FinancePage() {
                 size="lg"
                 className="border border-white/20"
               >
-                How buying works
+                {t('tools.financePage.howBuying')}
               </Button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 import { deleteAccountAction } from '@/app/(dashboard)/dashboard/profile/actions'
 import { Button, Field, Input } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import type { ActionState } from './types'
 import { SubmitButton } from './SubmitButton'
 
@@ -42,18 +43,25 @@ export function DeleteAccountForm({
   reasons?: { value: string; label: string }[]
   recoveryDays?: number
 }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const [state, action] = useActionState<ActionState, FormData>(deleteAccountAction, null)
+
+  // Translate a reason by its stable value when we have a matching key; fall
+  // back to the server-provided label (which may be a value the CHECK
+  // constraint added after this build shipped).
+  const reasonLabel = (value: string, fallback: string) => {
+    const key = `dashboard.profile.delete.reasons.${value}`
+    const translated = t(key)
+    return translated === key ? fallback : translated
+  }
 
   if (!open) {
     return (
       <div className="rounded-2xl border border-danger/30 bg-surface p-5 sm:p-6">
-        <h2 className="text-title-sm font-extrabold text-content">Close your account</h2>
+        <h2 className="text-title-sm font-extrabold text-content">{t('dashboard.profile.delete.collapsedTitle')}</h2>
         <p className="mt-2 text-caption text-content-secondary">
-          Your listings come down and you are signed out everywhere straight away. Nothing is
-          erased for {recoveryDays} days — until then you can sign back in and reopen it. After
-          that your profile, saved cars, saved searches and identity documents are deleted for
-          good. Records of cars you have already bought or sold are kept, as the law requires.
+          {t('dashboard.profile.delete.collapsedBody', { days: recoveryDays })}
         </p>
         <Button
           type="button"
@@ -62,7 +70,7 @@ export function DeleteAccountForm({
           onClick={() => setOpen(true)}
           className="mt-4"
         >
-          Close my account
+          {t('dashboard.profile.delete.openButton')}
         </Button>
       </div>
     )
@@ -70,9 +78,9 @@ export function DeleteAccountForm({
 
   return (
     <form action={action} className="rounded-2xl border border-danger bg-surface p-5 sm:p-6">
-      <h2 className="text-title-sm font-extrabold text-content">Before you go</h2>
+      <h2 className="text-title-sm font-extrabold text-content">{t('dashboard.profile.delete.beforeTitle')}</h2>
       <p className="mt-2 text-caption text-content-secondary">
-        Why are you closing your account? It genuinely changes what we fix next.
+        {t('dashboard.profile.delete.beforeBody')}
       </p>
 
       {state?.error ? (
@@ -82,7 +90,7 @@ export function DeleteAccountForm({
       ) : null}
 
       <fieldset className="mt-5">
-        <legend className="text-caption font-bold text-content">Reason</legend>
+        <legend className="text-caption font-bold text-content">{t('dashboard.profile.delete.reasonLegend')}</legend>
         <div className="mt-2 space-y-1">
           {reasons.map((option) => (
             <label
@@ -90,7 +98,7 @@ export function DeleteAccountForm({
               className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-caption text-content-secondary hover:bg-surface-alt"
             >
               <input type="radio" name="reason" value={option.value} className="h-4 w-4 accent-brand" />
-              {option.label}
+              {reasonLabel(option.value, option.label)}
             </label>
           ))}
         </div>
@@ -99,7 +107,7 @@ export function DeleteAccountForm({
         ) : null}
       </fieldset>
 
-      <Field label="Anything else? (optional)" htmlFor="delete-note" className="mt-4">
+      <Field label={t('dashboard.profile.delete.noteLabel')} htmlFor="delete-note" className="mt-4">
         <textarea
           id="delete-note"
           name="note"
@@ -110,7 +118,7 @@ export function DeleteAccountForm({
       </Field>
 
       <Field
-        label="Your password"
+        label={t('dashboard.profile.delete.passwordLabel')}
         htmlFor="delete-password"
         error={state?.fieldErrors?.password}
         className="mt-5"
@@ -135,7 +143,7 @@ export function DeleteAccountForm({
           aria-describedby={state?.fieldErrors?.acknowledge ? 'delete-acknowledge-error' : undefined}
         />
         <label htmlFor="delete-acknowledge" className="text-caption text-content-secondary">
-          I understand my account closes now, and is deleted for good after {recoveryDays} days.
+          {t('dashboard.profile.delete.acknowledge', { days: recoveryDays })}
         </label>
       </div>
       {state?.fieldErrors?.acknowledge ? (
@@ -145,11 +153,11 @@ export function DeleteAccountForm({
       ) : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <SubmitButton pendingLabel="Closing…" variant="primary">
-          Close my account
+        <SubmitButton pendingLabel={t('dashboard.profile.delete.closing')} variant="primary">
+          {t('dashboard.profile.delete.confirmButton')}
         </SubmitButton>
         <Button type="button" variant="outline" size="compact" onClick={() => setOpen(false)}>
-          Cancel
+          {t('dashboard.profile.delete.cancel')}
         </Button>
       </div>
     </form>

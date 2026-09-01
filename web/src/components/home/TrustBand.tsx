@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { CountUp } from '@/components/ui/CountUp'
+import { getServerT } from '@/lib/i18n/server'
 
 // The homepage's single trust section. There used to be three — a stat band,
 // an "elsewhere vs Sawa" comparison, and a five-promise ledger — saying the
@@ -14,45 +15,25 @@ import { CountUp } from '@/components/ui/CountUp'
 // the comparison and the sample report, lives on /promise and /how-it-works.
 
 const FACTS = [
-  { value: 150, label: 'point inspection, published in full' },
-  { value: 40, label: 'gallery images supported per listing' },
-  { value: 0, label: 'payments processed by Sawa Cars' },
-  { value: 3, label: 'Kigali inspection centers' },
+  { value: 150, labelKey: 'home.trust.fact.inspection' },
+  { value: 40, labelKey: 'home.trust.fact.gallery' },
+  { value: 0, labelKey: 'home.trust.fact.payments' },
+  { value: 3, labelKey: 'home.trust.fact.centers' },
 ] as const
 
-const LEDGER: { claim: string; proof: string }[] = [
-  {
-    claim: 'Inspection evidence',
-    proof: 'Publication checks require a completed inspection when the platform inspection policy is enabled.',
-  },
-  {
-    claim: 'Verified seller status',
-    proof: 'A listing cannot go live for a suspended, deleted or identity-unverified seller.',
-  },
-  {
-    claim: 'Evidence without guessing',
-    proof: 'Ownership, mileage and RRA duty status are checked — unknowns are labelled unknown, never guessed.',
-  },
-  {
-    claim: 'Controlled publication',
-    proof: 'Only authorized administrators publish, with the decision and readiness result retained in the audit history.',
-  },
-  {
-    claim: 'Direct transactions',
-    proof: 'Sawa Cars does not accept, hold or route user transaction funds and does not create the parties’ contract.',
-  },
-]
+const LEDGER = ['evidence', 'seller', 'guessing', 'publication', 'direct'] as const
 
-export function TrustBand() {
+export async function TrustBand() {
+  const t = await getServerT()
   return (
     <Section tone="alt">
       <Container>
         <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <SectionHeading
-              eyebrow="Marketplace controls"
-              title="Evidence before contact"
-              description="Sawa Cars controls verification and publication. Users retain control—and responsibility—for the deal itself."
+              eyebrow={t('home.trust.eyebrow')}
+              title={t('home.trust.title')}
+              description={t('home.trust.description')}
             />
 
             {/* The process in four numbers. Facts about how we work — not
@@ -60,7 +41,7 @@ export function TrustBand() {
             <dl className="mt-10 grid grid-cols-2 gap-x-8 gap-y-7">
               {FACTS.map((fact) => (
                 <div key={fact.value}>
-                  <dt className="sr-only">{fact.label}</dt>
+                  <dt className="sr-only">{t(fact.labelKey)}</dt>
                   <dd>
                     {/* Counts up as it enters the viewport — the numbers are
                         the section's whole argument, so they get the moment. */}
@@ -69,7 +50,7 @@ export function TrustBand() {
                       className="block text-display font-extrabold tracking-[-0.03em] text-content"
                     />
                     <span className="mt-1 block text-caption text-content-secondary">
-                      {fact.label}
+                      {t(fact.labelKey)}
                     </span>
                   </dd>
                 </div>
@@ -81,7 +62,7 @@ export function TrustBand() {
                 href="/promise"
                 className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
               >
-                See the controls and their limits
+                {t('home.trust.link')}
                 <Icon name="arrow-right" size={16} />
               </Link>
             </p>
@@ -89,9 +70,9 @@ export function TrustBand() {
 
           <ul>
             {LEDGER.map((row) => (
-              <li key={row.claim} className="hairline py-6 first:pt-0">
-                <h3 className="text-title-sm font-extrabold text-content">{row.claim}</h3>
-                <p className="mt-1.5 text-caption text-content-muted">{row.proof}</p>
+              <li key={row} className="hairline py-6 first:pt-0">
+                <h3 className="text-title-sm font-extrabold text-content">{t(`home.trust.ledger.${row}.claim`)}</h3>
+                <p className="mt-1.5 text-caption text-content-muted">{t(`home.trust.ledger.${row}.proof`)}</p>
               </li>
             ))}
           </ul>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button, Card, Container, Eyebrow, Icon, Section, SectionHeading, type IconName } from '@/components/ui'
+import { getServerT } from '@/lib/i18n/server'
 import { AppLaunch } from './AppLaunch'
 
 // The app landing page, and the target every universal / app link lands on when
@@ -9,28 +10,28 @@ import { AppLaunch } from './AppLaunch'
 // to the store, and reassure everyone else that the website is not a lesser
 // version of the product.
 
-export const metadata: Metadata = {
-  title: 'Get the app',
-  description:
-    'The Sawa Cars app for iPhone and Android. Browse certified cars, read full inspection reports, and get price-drop alerts. Everything except the camera work also runs on the website.',
-  alternates: { canonical: '/download' },
-  // The share card has to be named explicitly. Declaring `openGraph` here
-  // replaces the root layout's object wholesale, and the root
-  // opengraph-image.tsx file convention does not re-merge into it — without
-  // this, a /download link shared in WhatsApp arrives with no image at all.
-  openGraph: {
-    title: 'Get the Sawa Cars app',
-    description:
-      'Browse certified cars, read full inspection reports, and get price-drop alerts on your phone.',
-    url: '/download',
-    images: ['/opengraph-image'],
-  },
-  twitter: {
-    title: 'Get the Sawa Cars app',
-    description:
-      'Browse certified cars, read full inspection reports, and get price-drop alerts on your phone.',
-    images: ['/opengraph-image'],
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('auth.download.metaTitle'),
+    description: t('auth.download.metaDescription'),
+    alternates: { canonical: '/download' },
+    // The share card has to be named explicitly. Declaring `openGraph` here
+    // replaces the root layout's object wholesale, and the root
+    // opengraph-image.tsx file convention does not re-merge into it — without
+    // this, a /download link shared in WhatsApp arrives with no image at all.
+    openGraph: {
+      title: t('auth.download.ogTitle'),
+      description: t('auth.download.ogDescription'),
+      url: '/download',
+      images: ['/opengraph-image'],
+    },
+    twitter: {
+      title: t('auth.download.ogTitle'),
+      description: t('auth.download.ogDescription'),
+      images: ['/opengraph-image'],
+    },
+  }
 }
 
 /** `to` is echoed into a custom-scheme URL, so it is validated as a plain
@@ -53,52 +54,6 @@ function webPathFor(appPath: string | null): string | null {
   return null
 }
 
-const APP_ONLY: { icon: IconName; title: string; body: string }[] = [
-  {
-    icon: 'camera',
-    title: 'ID verification in one sitting',
-    body: 'Photograph your national ID and take the verification selfie without leaving the screen. That check is what keeps every listing on Sawa Cars real, and a phone camera is the only sensible way to do it.',
-  },
-  {
-    icon: 'car',
-    title: 'Photos with your submission',
-    body: 'Capture clear reference photos while submitting. The admin gallery supports a flexible set of truthful vehicle images rather than a fixed angle checklist.',
-  },
-  {
-    icon: 'bell',
-    title: 'Push notifications',
-    body: 'A price drop, seller message, rental inquiry update or inspection slot appears on your lock screen instead of being buried in email.',
-  },
-]
-
-const ON_THE_WEB: { icon: IconName; title: string; body: string }[] = [
-  {
-    icon: 'search',
-    title: 'The full catalogue',
-    body: 'Every live listing, with the same filters and the same photos.',
-  },
-  {
-    icon: 'document',
-    title: 'Complete inspection reports',
-    body: 'All 150 points, category by category, including anything flagged.',
-  },
-  {
-    icon: 'heart',
-    title: 'Saved cars and search alerts',
-    body: 'Save a car or a search once and it follows you to the app.',
-  },
-  {
-    icon: 'key',
-    title: 'Direct seller contact',
-    body: 'Message a verified seller or use an enabled phone or WhatsApp channel after acknowledging the direct-deal notice.',
-  },
-  {
-    icon: 'user',
-    title: 'Your whole account',
-    body: 'Profile, verification status, messages and purchase history.',
-  },
-]
-
 export default async function DownloadPage({
   searchParams,
 }: {
@@ -107,13 +62,60 @@ export default async function DownloadPage({
   const params = await searchParams
   const to = safeAppPath(params.to)
   const webFallback = webPathFor(to)
+  const t = await getServerT()
+
+  const APP_ONLY: { icon: IconName; title: string; body: string }[] = [
+    {
+      icon: 'camera',
+      title: t('auth.download.appOnly1Title'),
+      body: t('auth.download.appOnly1Body'),
+    },
+    {
+      icon: 'car',
+      title: t('auth.download.appOnly2Title'),
+      body: t('auth.download.appOnly2Body'),
+    },
+    {
+      icon: 'bell',
+      title: t('auth.download.appOnly3Title'),
+      body: t('auth.download.appOnly3Body'),
+    },
+  ]
+
+  const ON_THE_WEB: { icon: IconName; title: string; body: string }[] = [
+    {
+      icon: 'search',
+      title: t('auth.download.web1Title'),
+      body: t('auth.download.web1Body'),
+    },
+    {
+      icon: 'document',
+      title: t('auth.download.web2Title'),
+      body: t('auth.download.web2Body'),
+    },
+    {
+      icon: 'heart',
+      title: t('auth.download.web3Title'),
+      body: t('auth.download.web3Body'),
+    },
+    {
+      icon: 'key',
+      title: t('auth.download.web4Title'),
+      body: t('auth.download.web4Body'),
+    },
+    {
+      icon: 'user',
+      title: t('auth.download.web5Title'),
+      body: t('auth.download.web5Body'),
+    },
+  ]
 
   return (
     <>
       <Section tone="surface">
         <Container>
           <div className="max-w-2xl">
-            <Eyebrow>The Sawa Cars app</Eyebrow>
+            <Eyebrow>{t('auth.download.eyebrow')}</Eyebrow>
 
             {/* The store-listing lockup — the exact grammar the App Store and
                 Play Store use for a product header (icon tile, name, developer,
@@ -135,15 +137,15 @@ export default async function DownloadPage({
                   Sawa Cars
                 </h1>
                 <p className="mt-1 text-body text-content-secondary">
-                  Certified used cars in Rwanda
+                  {t('auth.download.subtitle')}
                 </p>
                 <p className="mt-0.5 text-caption text-content-muted">Sawa Cars Ltd</p>
 
                 <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
                   {[
-                    { label: 'Price', value: 'Free' },
-                    { label: 'Category', value: 'Vehicles' },
-                    { label: 'Works with', value: 'iPhone & Android' },
+                    { label: t('auth.download.metaPrice'), value: t('auth.download.metaPriceValue') },
+                    { label: t('auth.download.metaCategory'), value: t('auth.download.metaCategoryValue') },
+                    { label: t('auth.download.metaWorks'), value: 'iPhone & Android' },
                   ].map((m, i) => (
                     <li key={m.label} className="flex items-center gap-5">
                       {i > 0 ? <span aria-hidden className="h-7 w-px bg-line" /> : null}
@@ -160,9 +162,7 @@ export default async function DownloadPage({
             </div>
 
             <p className="mt-7 text-body leading-relaxed text-content-secondary">
-              The same certified marketplace and the same account, with the parts that only make
-              sense on a phone: the camera work for verification, and alerts the moment a price
-              moves.
+              {t('auth.download.lead')}
             </p>
 
             <AppLaunch to={to} webFallback={webFallback} />
@@ -173,9 +173,9 @@ export default async function DownloadPage({
       <Section>
         <Container>
           <SectionHeading
-            eyebrow="Only in the app"
-            title="What the app adds"
-            description="Three things the browser cannot do well. Everything else on this page works either way."
+            eyebrow={t('auth.download.onlyEyebrow')}
+            title={t('auth.download.onlyTitle')}
+            description={t('auth.download.onlyDescription')}
           />
 
           <div className="mt-10 grid gap-4 md:grid-cols-3">
@@ -198,9 +198,9 @@ export default async function DownloadPage({
       <Section tone="alt">
         <Container>
           <SectionHeading
-            eyebrow="No app required"
-            title="What the website does just as well"
-            description="You are never blocked by not having installed anything. Sign in here and the app picks up exactly where you left off."
+            eyebrow={t('auth.download.webEyebrow')}
+            title={t('auth.download.webTitle')}
+            description={t('auth.download.webDescription')}
           />
 
           <ul className="mt-10 grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -219,7 +219,7 @@ export default async function DownloadPage({
 
           <div className="mt-10">
             <Button href="/cars" variant="outline" trailingIcon={<Icon name="arrow-right" size={18} />}>
-              Browse certified cars
+              {t('auth.download.browseCars')}
             </Button>
           </div>
         </Container>
@@ -229,18 +229,15 @@ export default async function DownloadPage({
         <Container>
           <div className="max-w-2xl">
             <h2 className="text-headline font-extrabold tracking-[-0.025em] text-white">
-              No checkout, escrow or platform contract
+              {t('auth.download.inkTitle')}
             </h2>
             <p className="mt-5 text-title-sm leading-relaxed text-white/70">
-              Sawa Cars never receives or holds sale or rental transaction funds. Users arrange
-              viewing, verification, price, written terms, payment, transfer, pickup, return and
-              delivery directly. The app provides information and communication—not a guarantee
-              of the external agreement.
+              {t('auth.download.inkBody')}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button href="/promise">Read about marketplace safety</Button>
+              <Button href="/promise">{t('auth.download.readSafety')}</Button>
               <Button href="/how-it-works" variant="inverse" trailingIcon={<Icon name="arrow-right" size={17} />}>
-                How buying works
+                {t('auth.download.howBuying')}
               </Button>
             </div>
           </div>

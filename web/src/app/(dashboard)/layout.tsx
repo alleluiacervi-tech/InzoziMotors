@@ -6,6 +6,7 @@ import { VerificationNotice } from '@/components/dashboard/VerificationNotice'
 import { getUnreadCount } from '@/components/dashboard/data'
 import { Button, Container, Icon } from '@/components/ui'
 import { getCurrentUser } from '@/lib/session'
+import { getServerT } from '@/lib/i18n/server'
 import type { UserRole } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,13 +28,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-const ROLE_LABEL: Record<UserRole, string> = {
-  buyer: 'Buyer account',
-  seller: 'Seller account',
-  admin: 'Sawa team',
+const ROLE_KEY: Record<UserRole, string> = {
+  buyer: 'dashboard.roles.buyer',
+  seller: 'dashboard.roles.seller',
+  admin: 'dashboard.roles.admin',
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const t = await getServerT()
   const user = await getCurrentUser()
   // Via /session/expired, not straight to /signin: the cookie is still present
   // and still fools the middleware, so sending them to /signin here would bounce
@@ -59,14 +61,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-body font-extrabold text-content">{user.name}</p>
-                  <p className="truncate text-micro text-content-muted">{ROLE_LABEL[user.role]}</p>
+                  <p className="truncate text-micro text-content-muted">{t(ROLE_KEY[user.role])}</p>
                 </div>
               </div>
 
               <form action={signOutAction} className="ml-auto lg:ml-0">
                 <Button type="submit" variant="outline" size="compact" className="lg:w-full">
                   <Icon name="logout" size={16} />
-                  Sign out
+                  {t('dashboard.common.signOut')}
                 </Button>
               </form>
             </div>

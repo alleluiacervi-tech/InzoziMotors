@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Icon } from '@/components/ui'
+import { getServerT } from '@/lib/i18n/server'
 
 // Small server-rendered pieces shared by the three account pages. Kept here
 // rather than in components/ui because nothing outside this route group needs
@@ -41,15 +42,15 @@ export function AuthSwitch({
  * One account spans web and mobile — worth saying on both forms, because people
  * who downloaded the app first assume the website is a separate product.
  */
-export function OneAccountNote({ className = '' }: { className?: string }) {
+export async function OneAccountNote({ className = '' }: { className?: string }) {
+  const t = await getServerT()
   return (
     <p className={`flex gap-2.5 text-caption leading-relaxed text-content-muted ${className}`}>
       <Icon name="phone" size={15} className="mt-px" />
       <span>
-        One account, every platform. Your saved cars, saved searches, vehicle enquiries and submissions are
-        the same here and in the{' '}
+        {t('auth.oneAccount.text')}{' '}
         <Link href="/download" className="font-bold text-brand transition-colors hover:text-brand-deep">
-          Sawa Cars app
+          {t('auth.oneAccount.appLink')}
         </Link>
         .
       </span>

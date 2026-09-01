@@ -3,27 +3,29 @@ import { Button, Card, Container, EmptyState, Icon, Section, SectionHeading } fr
 import { CarCard } from '@/components/marketplace/CarCard'
 import { Reveal } from '@/components/ui/Reveal'
 import type { Car } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
 
 // Real inventory or a designed explanation — never placeholder cars, and never
 // a silent vanish. A homepage section that disappears without a word reads as
 // "they have no stock"; the honest degraded state says what actually happened
 // and keeps both routes into the marketplace open.
 
-export function FeaturedCars({ cars }: { cars: Car[] }) {
+export async function FeaturedCars({ cars }: { cars: Car[] }) {
+  const t = await getServerT()
   return (
     <Section tone="page">
       <Container>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
-            eyebrow="Just listed"
-            title="Certified and available now"
-            description="Fresh from inspection at our Kigali centers."
+            eyebrow={t('home.featured.eyebrow')}
+            title={t('home.featured.title')}
+            description={t('home.featured.description')}
           />
           <Link
             href="/cars"
             className="inline-flex items-center gap-1.5 pb-1 text-body font-bold text-brand hover:underline"
           >
-            View all cars
+            {t('home.featured.viewAll')}
             <Icon name="arrow-right" size={16} />
           </Link>
         </div>
@@ -43,11 +45,11 @@ export function FeaturedCars({ cars }: { cars: Car[] }) {
           <Card className="mt-12">
             <EmptyState
               icon="alert"
-              title="The marketplace is briefly unreachable"
-              description="The cars are still there — browse directly, or check back in a moment."
+              title={t('home.featured.emptyTitle')}
+              description={t('home.featured.emptyDescription')}
               action={
                 <Button href="/cars" variant="outline">
-                  Browse all cars
+                  {t('home.featured.emptyAction')}
                 </Button>
               }
             />

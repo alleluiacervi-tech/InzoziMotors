@@ -7,16 +7,21 @@ import { CarCard } from '@/components/marketplace/CarCard'
 import { Alert, Button, Card, EmptyState } from '@/components/ui'
 import { saved } from '@/lib/api'
 import { getToken } from '@/lib/session'
+import { getServerT } from '@/lib/i18n/server'
 
-export const metadata: Metadata = {
-  title: 'Saved',
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('dashboard.meta.saved'),
+    robots: { index: false, follow: false },
+  }
 }
 
 // Saved cars and saved searches. Both are per-user, so both are fetched with
 // the cookie token and never cached.
 
 export default async function SavedPage() {
+  const t = await getServerT()
   const token = await getToken()
   if (!token) return null
 
@@ -32,30 +37,30 @@ export default async function SavedPage() {
   return (
     <>
       <PageHeader
-        title="Saved"
-        description="Your shortlist and your standing alerts. We notify you when a saved car drops in price, and when a car matching a saved search is certified and listed."
+        title={t('dashboard.saved.title')}
+        description={t('dashboard.saved.description')}
       />
 
       {failed ? (
-        <Alert tone="warning" title="Some of this page did not load" className="mb-6">
-          Refresh to try again. Nothing on your account has changed.
+        <Alert tone="warning" title={t('dashboard.common.someFailedTitle')} className="mb-6">
+          {t('dashboard.common.someFailedBody')}
         </Alert>
       ) : null}
 
       <section aria-labelledby="saved-cars">
         <PanelHeading
           id="saved-cars"
-          title="Saved cars"
-          hint={cars.length > 0 ? `${cars.length} ${cars.length === 1 ? 'car' : 'cars'}` : undefined}
+          title={t('dashboard.saved.carsHeading')}
+          hint={cars.length > 0 ? t(cars.length === 1 ? 'dashboard.saved.carCountOne' : 'dashboard.saved.carCountOther', { count: cars.length }) : undefined}
         />
 
         {cars.length === 0 ? (
           <Card>
             <EmptyState
               icon="heart"
-              title="No saved cars yet"
-              description="Saving a car keeps it in one place and puts you first in line for a price drop. It costs nothing and the seller is not notified."
-              action={<Button href="/cars">Browse certified cars</Button>}
+              title={t('dashboard.saved.carsEmptyTitle')}
+              description={t('dashboard.saved.carsEmptyBody')}
+              action={<Button href="/cars">{t('dashboard.saved.browseCertified')}</Button>}
             />
           </Card>
         ) : (
@@ -73,10 +78,10 @@ export default async function SavedPage() {
       <section className="mt-10" aria-labelledby="saved-searches">
         <PanelHeading
           id="saved-searches"
-          title="Saved searches"
+          title={t('dashboard.saved.searchesHeading')}
           hint={
             searches.length > 0
-              ? `${searches.length} ${searches.length === 1 ? 'alert' : 'alerts'}`
+              ? t(searches.length === 1 ? 'dashboard.saved.alertCountOne' : 'dashboard.saved.alertCountOther', { count: searches.length })
               : undefined
           }
         />
@@ -85,11 +90,11 @@ export default async function SavedPage() {
           <Card>
             <EmptyState
               icon="search"
-              title="No saved searches"
-              description="Set the filters you care about — a Toyota RAV4 under RWF 30,000,000, say — then save the search. We will tell you the moment a car that matches passes inspection."
+              title={t('dashboard.saved.searchesEmptyTitle')}
+              description={t('dashboard.saved.searchesEmptyBody')}
               action={
                 <Button href="/cars" variant="outline">
-                  Start a search
+                  {t('dashboard.saved.startSearch')}
                 </Button>
               }
             />

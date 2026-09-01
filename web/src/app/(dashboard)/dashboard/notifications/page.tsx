@@ -7,11 +7,16 @@ import { notificationTarget } from '@/components/dashboard/meta'
 import { Badge, Button, Card, EmptyState, Icon, type IconName } from '@/components/ui'
 import { formatDate } from '@/lib/business'
 import type { AppNotification } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
+import type { TFunction } from '@/lib/i18n/dictionary'
 import { markReadAction } from './actions'
 
-export const metadata: Metadata = {
-  title: 'Notifications',
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('dashboard.meta.notifications'),
+    robots: { index: false, follow: false },
+  }
 }
 
 // Everything the platform has told this account, newest first, grouped by day.
@@ -29,7 +34,7 @@ const TYPE_ICON: Record<string, IconName> = {
 
 /** Groups by calendar day in the server's zone, labelling the two most recent
  *  days in words. Anything older reads better as a date than as "6d ago". */
-function groupByDay(list: AppNotification[]): { key: string; label: string; items: AppNotification[] }[] {
+function groupByDay(list: AppNotification[], t: TFunction): { key: string; label: string; items: AppNotification[] }[] {
   const today = new Date().toDateString()
   const yesterday = new Date(Date.now() - 86400000).toDateString()
 
@@ -45,21 +50,26 @@ function groupByDay(list: AppNotification[]): { key: string; label: string; item
   return Array.from(groups.entries()).map(([key, items]) => ({
     key,
     label:
-      key === today ? 'Today' : key === yesterday ? 'Yesterday' : formatDate(items[0].created_at),
+      key === today
+        ? t('dashboard.notifications.today')
+        : key === yesterday
+          ? t('dashboard.notifications.yesterday')
+          : formatDate(items[0].created_at),
     items,
   }))
 }
 
 export default async function NotificationsPage() {
+  const t = await getServerT()
   const list = await getNotifications()
   const unread = list.filter((n) => !n.read).length
-  const groups = groupByDay(list)
+  const groups = groupByDay(list, t)
 
   return (
     <>
       <PageHeader
-        title="Notifications"
-        description="Price drops on saved cars, listing updates, new messages, rental inquiry activity and saved-search matches. The app adds push alerts for the same events."
+        title={t('dashboard.notifications.title')}
+        description={t('dashboard.notifications.description')}
         action={unread > 0 ? <MarkAllReadButton unread={unread} /> : undefined}
       />
 
@@ -67,9 +77,9 @@ export default async function NotificationsPage() {
         <Card>
           <EmptyState
             icon="bell"
-            title="Nothing to read"
-            description="Save a car or a search and this fills up: we tell you when a saved car drops in price, when a matching car passes inspection, and every time your request moves forward."
-            action={<Button href="/cars">Browse certified cars</Button>}
+            title={t('dashboard.notifications.emptyTitle')}
+            description={t('dashboard.notifications.emptyBody')}
+            action={<Button href="/cars">{t('dashboard.notifications.browseCertified')}</Button>}
           />
         </Card>
       ) : (
@@ -112,7 +122,7 @@ export default async function NotificationsPage() {
                               >
                                 {notification.title}
                               </h3>
-                              {notification.read ? null : <Badge tone="info">New</Badge>}
+                              {notification.read ? null : <Badge tone="info">{t('dashboard.common.new')}</Badge>}
                             </div>
 
                             <p className="mt-1 text-caption leading-relaxed text-content-secondary">
@@ -135,7 +145,7 @@ export default async function NotificationsPage() {
                                   href={target.href}
                                   className="inline-flex min-h-[44px] items-center gap-1 text-caption font-bold text-brand hover:underline"
                                 >
-                                  {target.label}
+                                  {t(target.labelKey)}
                                   <Icon name="chevron-right" size={13} />
                                 </Link>
                               ) : null}
@@ -147,8 +157,8 @@ export default async function NotificationsPage() {
                                     type="submit"
                                     className="inline-flex min-h-[44px] items-center text-caption font-bold text-content-muted underline-offset-2 hover:text-content hover:underline"
                                   >
-                                    Mark read
-                                    <span className="sr-only">: {notification.title}</span>
+                                    {t('dashboard.notifications.markRead')}
+                                    <span className="sr-only">{t('dashboard.notifications.markReadFor', { title: notification.title })}</span>
                                   </button>
                                 </form>
                               )}

@@ -4,46 +4,49 @@ import { Container, Icon, Section, type IconName } from '@/components/ui'
 import { SITE } from '@/lib/site'
 import { JsonLd } from '@/components/JsonLd'
 import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
+import { getServerT } from '@/lib/i18n/server'
 
-export const metadata: Metadata = {
-  title: 'Free car valuation, finance and import-duty tools for Rwanda',
-  description:
-    'Free calculators for anyone buying, selling or importing a car in Rwanda: a market valuation from real Sawa Cars sales, the full RRA import duty breakdown, and a monthly finance estimate.',
-  alternates: { canonical: '/tools' },
-  openGraph: {
-    title: `Free car tools · ${SITE.name}`,
-    description:
-      'Valuation, RRA import duty and finance calculators for the Rwandan market. No account needed.',
-    url: `${SITE.url}/tools`,
-    type: 'website',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('tools.hub.metaTitle'),
+    description: t('tools.hub.metaDescription'),
+    alternates: { canonical: '/tools' },
+    openGraph: {
+      title: t('tools.hub.ogTitle', { site: SITE.name }),
+      description: t('tools.hub.ogDescription'),
+      url: `${SITE.url}/tools`,
+      type: 'website',
+    },
+  }
 }
 
-const TOOLS: { href: string; icon: IconName; title: string; body: string; meta: string }[] = [
+const TOOLS: { href: string; icon: IconName; titleKey: string; bodyKey: string; metaKey: string }[] = [
   {
     href: '/tools/valuation',
     icon: 'chart',
-    title: 'Free valuation',
-    body: 'What your car is worth today, priced against cars actually listed and sold on Sawa Cars. If there are not enough comparable cars, we say so rather than guess.',
-    meta: 'For sellers',
+    titleKey: 'tools.hub.valuationTitle',
+    bodyKey: 'tools.hub.valuationBody',
+    metaKey: 'tools.hub.valuationMeta',
   },
   {
     href: '/tools/import-duty',
     icon: 'document',
-    title: 'Import duty calculator',
-    body: 'The full RRA breakdown on an imported vehicle — CIF, customs, excise by engine size, VAT and the infrastructure levy — entirely in RWF.',
-    meta: 'For importers',
+    titleKey: 'tools.hub.dutyTitle',
+    bodyKey: 'tools.hub.dutyBody',
+    metaKey: 'tools.hub.dutyMeta',
   },
   {
     href: '/tools/finance',
     icon: 'cash',
-    title: 'Finance calculator',
-    body: 'A monthly repayment from a car price, or the car price your monthly budget supports. Deposit, term and total interest included.',
-    meta: 'For buyers',
+    titleKey: 'tools.hub.financeTitle',
+    bodyKey: 'tools.hub.financeBody',
+    metaKey: 'tools.hub.financeMeta',
   },
 ]
 
-export default function ToolsPage() {
+export default async function ToolsPage() {
+  const t = await getServerT()
   return (
     <>
     <JsonLd data={graph(
@@ -60,14 +63,12 @@ export default function ToolsPage() {
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_12%,rgba(204,5,15,0.28),transparent_32%),radial-gradient(circle_at_10%_90%,rgba(255,255,255,0.08),transparent_28%)]" />
       <Container>
         <div className="max-w-3xl">
-          <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">Tools</p>
+          <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">{t('tools.hub.eyebrow')}</p>
           <h1 className="text-display-xl font-extrabold text-white">
-            Work out the numbers before you commit
+            {t('tools.hub.title')}
           </h1>
           <p className="mt-5 text-title-sm leading-relaxed text-white/70">
-            Three calculators built for the Rwandan market. No account, no phone number, no
-            follow-up call — they are here because a buyer or seller who understands the numbers
-            makes a better decision.
+            {t('tools.hub.lede')}
           </p>
         </div>
 
@@ -84,14 +85,14 @@ export default function ToolsPage() {
                 <Icon name={tool.icon} size={22} />
               </span>
               <p className="mt-4 text-micro font-bold uppercase tracking-wide text-content-muted">
-                {tool.meta}
+                {t(tool.metaKey)}
               </p>
-              <h2 className="mt-1.5 text-title-sm font-extrabold text-content">{tool.title}</h2>
+              <h2 className="mt-1.5 text-title-sm font-extrabold text-content">{t(tool.titleKey)}</h2>
               <p className="mt-2 flex-1 text-caption leading-relaxed text-content-secondary">
-                {tool.body}
+                {t(tool.bodyKey)}
               </p>
               <span className="mt-5 inline-flex items-center gap-1.5 text-caption font-bold text-brand">
-                Open
+                {t('tools.hub.open')}
                 <Icon
                   name="arrow-right"
                   size={16}

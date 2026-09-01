@@ -4,11 +4,13 @@ import { useActionState } from 'react'
 import { unsaveCarAction } from '@/app/(dashboard)/dashboard/saved/actions'
 import { SubmitButton } from '@/components/dashboard/SubmitButton'
 import { Icon } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 
 // Sits under the card rather than on top of it: CarCard is one big link, and
 // a button inside a link is invalid markup that keyboards handle badly.
 
 export function UnsaveButton({ carId, title }: { carId: string; title: string }) {
+  const t = useT()
   const [state, action] = useActionState(unsaveCarAction, null)
 
   return (
@@ -18,10 +20,10 @@ export function UnsaveButton({ carId, title }: { carId: string; title: string })
         variant="ghost"
         size="sm"
         fullWidth
-        pendingLabel="Removing…"
+        pendingLabel={t('dashboard.saved.removing')}
         leadingIcon={<Icon name="heart-filled" size={15} />}
       >
-        <span className="truncate">Remove from saved</span>
+        <span className="truncate">{t('dashboard.saved.remove')}</span>
         <span className="sr-only"> — {title}</span>
       </SubmitButton>
       {state?.error ? (

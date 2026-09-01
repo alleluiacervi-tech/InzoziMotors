@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { auth, ApiError } from '@/lib/api'
+import { getServerT } from '@/lib/i18n/server'
 import { setSession } from '@/lib/session'
 
 export type ActivateState = { error?: string } | null
@@ -10,11 +11,12 @@ export type ActivateState = { error?: string } | null
 // we just activated rather than being hardcoded — this used to always land on
 // the seller dashboard, which is the wrong room for a buyer.
 export async function activateAccount(_prev: ActivateState, formData: FormData): Promise<ActivateState> {
+  const t = await getServerT()
   const token = String(formData.get('token') || '')
   const password = String(formData.get('password') || '')
   const confirm = String(formData.get('confirm') || '')
-  if (password.length < 8) return { error: 'Use at least 8 characters.' }
-  if (password !== confirm) return { error: 'Both passwords must match.' }
+  if (password.length < 8) return { error: t('auth.activate.errShort') }
+  if (password !== confirm) return { error: t('auth.activate.errMatch') }
 
   let destination = '/dashboard'
   try {
@@ -22,7 +24,7 @@ export async function activateAccount(_prev: ActivateState, formData: FormData):
     await setSession(result.token)
     if (result.user?.role === 'seller') destination = '/dashboard/selling'
   } catch (err) {
-    return { error: err instanceof ApiError ? err.message : 'Could not activate this account.' }
+    return { error: err instanceof ApiError ? err.message : t('auth.activate.errGeneric') }
   }
   redirect(destination)
 }

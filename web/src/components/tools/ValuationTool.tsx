@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import { estimateValuationAction, type ValuationState } from '@/app/sell/actions'
 import { Alert, Button, Field, Icon, Input, LiveRegion } from '@/components/ui'
 import { formatKm, formatUSD } from '@/lib/business'
+import { useT } from '@/lib/i18n/context'
 import { CONTACT } from '@/lib/site'
 import {
   Headline,
@@ -38,6 +39,7 @@ export function ValuationTool({
   /** Passed from the server so the year hint cannot drift between render passes. */
   currentYear: number
 }) {
+  const t = useT()
   const [state, formAction, pending] = useActionState(estimateValuationAction, INITIAL)
 
   const [make, setMake] = useState('')
@@ -54,15 +56,15 @@ export function ValuationTool({
         className="rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 lg:col-span-2"
       >
         <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
-          Your car
+          {t('tools.valuationTool.yourCar')}
         </h3>
 
         <div className="mt-4 space-y-5">
           <Field
-            label="Make"
+            label={t('tools.valuationTool.make')}
             htmlFor="valuation-make"
             error={fieldErrors.make}
-            hint={makes.length ? 'Start typing — we suggest makes we already have on the site.' : undefined}
+            hint={makes.length ? t('tools.valuationTool.makeHint') : undefined}
             required
           >
             <Input
@@ -90,7 +92,7 @@ export function ValuationTool({
           <NumberField
             id="valuation-year"
             name="year"
-            label="Year"
+            label={t('tools.valuationTool.year')}
             placeholder={String(currentYear - 6)}
             value={year}
             onChange={setYear}
@@ -101,62 +103,60 @@ export function ValuationTool({
           <NumberField
             id="valuation-mileage"
             name="mileage"
-            label="Mileage"
+            label={t('tools.valuationTool.mileage')}
             suffix="km"
             placeholder="80000"
             value={mileage}
             onChange={setMileage}
             error={fieldErrors.mileage}
-            hint={`Optional. Left blank, we value at ${formatKm(MILEAGE_REFERENCE)}.`}
+            hint={t('tools.valuationTool.mileageHint', { km: formatKm(MILEAGE_REFERENCE) })}
           />
 
           <Button type="submit" fullWidth disabled={pending}>
-            {pending ? 'Checking the market…' : 'Get my valuation'}
+            {pending ? t('tools.valuationTool.checking') : t('tools.valuationTool.getValuation')}
           </Button>
 
           <p className="text-micro leading-relaxed text-content-muted">
-            No account, no phone number. We do not call you afterwards.
+            {t('tools.valuationTool.noAccount')}
           </p>
         </div>
       </form>
 
       {/* ─── Result ───────────────────────────────────────────────────────── */}
       <div className="lg:col-span-3">
-        <ResultPanel title="What it is worth" className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
+        <ResultPanel title={t('tools.valuationTool.whatWorth')} className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
           {state.status === 'ok' ? <ValuationResult state={state} /> : null}
 
           {state.status === 'empty' ? (
             <div className="space-y-5">
-              <Alert tone="info" title="Not enough comparable cars yet">
-                {state.message}. We price from cars actually listed or sold on Sawa Cars, so a make
-                and year we have not handled yet gets no number rather than a guess.
+              <Alert tone="info" title={t('tools.valuationTool.notEnoughTitle')}>
+                {t('tools.valuationTool.notEnoughBody', { message: state.message })}
               </Alert>
               <p className="text-caption leading-relaxed text-content-secondary">
-                An inspection still tells you where your {state.make} stands. Our team prices it
-                against the market on the day it is certified, and you keep the final say.
+                {t('tools.valuationTool.inspectionStill', { make: state.make })}
               </p>
               <NextSteps />
             </div>
           ) : null}
 
           {state.status === 'error' ? (
-            <Alert tone="danger" title="We could not run that estimate">
+            <Alert tone="danger" title={t('tools.valuationTool.errorTitle')}>
               {state.message}
             </Alert>
           ) : null}
 
           {state.status === 'idle' || state.status === 'invalid' ? (
             <ResultPlaceholder>
-              Enter a make and year to see what comparable cars on Sawa Cars are selling for.
+              {t('tools.valuationTool.placeholder')}
             </ResultPlaceholder>
           ) : null}
         </ResultPanel>
 
         <LiveRegion>
           {state.status === 'ok'
-            ? `Estimated range ${formatUSD(state.low)} to ${formatUSD(state.high)}, based on ${state.comparables} comparable cars.`
+            ? t('tools.valuationTool.liveOk', { low: formatUSD(state.low), high: formatUSD(state.high), comparables: state.comparables })
             : state.status === 'empty'
-              ? 'Not enough comparable cars for that make and year.'
+              ? t('tools.valuationTool.liveEmpty')
               : state.status === 'error'
                 ? state.message
                 : ''}
@@ -169,6 +169,7 @@ export function ValuationTool({
 // ─── Result body ─────────────────────────────────────────────────────────────
 
 function ValuationResult({ state }: { state: Extract<ValuationState, { status: 'ok' }> }) {
+  const t = useT()
   // The backend compares against ±2 years around the one entered; saying so is
   // what turns a number into evidence.
   const from = state.year - 2
@@ -177,40 +178,39 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
   return (
     <div className="space-y-5">
       <Headline
-        label={`${state.year} ${state.make}${state.mileage ? ` · ${formatKm(state.mileage)}` : ''}`}
+        label={`${t('tools.valuationTool.carLabel', { year: state.year, make: state.make })}${state.mileage ? ` · ${formatKm(state.mileage)}` : ''}`}
         value={`${formatUSD(state.low)} – ${formatUSD(state.high)}`}
         note={
           state.mileage
-            ? 'Adjusted for the mileage you entered.'
-            : `Valued at our ${formatKm(MILEAGE_REFERENCE)} reference — add your mileage for a closer range.`
+            ? t('tools.valuationTool.adjusted')
+            : t('tools.valuationTool.valuedAt', { km: formatKm(MILEAGE_REFERENCE) })
         }
       />
 
       <div>
         {state.market_avg !== null ? (
           <ResultRow
-            label="Average price of those cars"
-            hint={`${state.make}, ${from}–${to}`}
+            label={t('tools.valuationTool.avgPrice')}
+            hint={t('tools.valuationTool.avgHint', { make: state.make, from, to })}
             value={formatUSD(state.market_avg)}
           />
         ) : null}
         {state.range_seen ? (
           <ResultRow
-            label="Prices actually seen"
-            hint="Lowest and highest of the same group"
+            label={t('tools.valuationTool.pricesSeen')}
+            hint={t('tools.valuationTool.pricesSeenHint')}
             value={`${formatUSD(state.range_seen.low)} – ${formatUSD(state.range_seen.high)}`}
           />
         ) : null}
         <ResultRow
-          label="Comparable cars used"
-          hint="Listed or sold on Sawa Cars"
+          label={t('tools.valuationTool.comparablesUsed')}
+          hint={t('tools.valuationTool.comparablesHint')}
           value={String(state.comparables)}
         />
       </div>
 
       <p className="rounded-xl bg-surface-alt px-4 py-3 text-micro leading-relaxed text-content-secondary">
-        This is a market estimate, not an offer. The final asking price is yours — we confirm it
-        with you after the 150-point inspection, when we know the car&apos;s real condition.
+        {t('tools.valuationTool.estimateNote')}
       </p>
 
       <NextSteps />
@@ -219,6 +219,7 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
 }
 
 function NextSteps() {
+  const t = useT()
   return (
     <div className="space-y-3 border-t border-line-soft pt-5">
       <Button
@@ -227,17 +228,17 @@ function NextSteps() {
         className={WRAPPING_LABEL}
         trailingIcon={<Icon name="arrow-right" size={18} />}
       >
-        Submit this car for inspection
+        {t('tools.valuationTool.submitBtn')}
       </Button>
       <p className="text-center text-micro leading-relaxed text-content-muted">
-        Submission starts with a one-time ID check, which happens in the app.{' '}
+        {t('tools.valuationTool.submissionHint')}{' '}
         <a
           href={`https://wa.me/${CONTACT.whatsapp}`}
           target="_blank"
           rel="noopener noreferrer"
           className="font-bold text-brand hover:underline"
         >
-          Or message us on WhatsApp
+          {t('tools.valuationTool.orWhatsApp')}
         </a>
         .
       </p>

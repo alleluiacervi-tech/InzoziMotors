@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Button, Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { HERO_SLIDES } from '@/lib/imagery'
+import { getServerT } from '@/lib/i18n/server'
 
 // The hero is a full-viewport photographic stage with the marketplace's first
 // action ON it. A marketplace's front door is a search box, not a slogan — so
@@ -19,24 +20,25 @@ import { HERO_SLIDES } from '@/lib/imagery'
 // Selling is the quieter path — a text link, because "Sell" also lives in the
 // header and in the page's closing band. One primary action per viewport.
 
-const TRUST_STRIP: { icon: IconName; label: string }[] = [
-  { icon: 'shield-check', label: '150-point inspection' },
-  { icon: 'user', label: 'Verified sellers' },
-  { icon: 'mail', label: 'Direct contact, no checkout' },
+const TRUST_STRIP: { icon: IconName; key: string }[] = [
+  { icon: 'shield-check', key: 'home.hero.trust.inspection' },
+  { icon: 'user', key: 'home.hero.trust.sellers' },
+  { icon: 'mail', key: 'home.hero.trust.contact' },
 ]
 
 // One slide. The first entry of the curated set is the buy-side statement,
 // which is the right single message for a marketplace's front door.
 const STAGE = HERO_SLIDES[0]
 
-const JOURNEYS: { label: string; href: string; icon: IconName; active?: boolean }[] = [
-  { label: 'Buy', href: '/cars', icon: 'search', active: true },
-  { label: 'Rent', href: '/rentals', icon: 'key' },
-  { label: 'Sell', href: '/sell', icon: 'car' },
-  { label: 'Car tools', href: '/tools', icon: 'gauge' },
+const JOURNEYS: { key: string; href: string; icon: IconName; active?: boolean }[] = [
+  { key: 'home.hero.nav.buy', href: '/cars', icon: 'search', active: true },
+  { key: 'home.hero.nav.rent', href: '/rentals', icon: 'key' },
+  { key: 'home.hero.nav.sell', href: '/sell', icon: 'car' },
+  { key: 'home.hero.nav.tools', href: '/tools', icon: 'gauge' },
 ]
 
-export function Hero() {
+export async function Hero() {
+  const t = await getServerT()
   return (
     // -mt pulls the stage up UNDER the transparent header (see Header.tsx's
     // overlay mode) so the page opens as one full-bleed photograph with the
@@ -68,25 +70,25 @@ export function Hero() {
             className="mb-3 animate-fade-up text-eyebrow font-bold uppercase text-white/85"
             style={{ animationDelay: '80ms' }}
           >
-            Rwanda&rsquo;s trusted mobility marketplace
+            {t('home.hero.eyebrow')}
           </p>
           <h1 className="animate-fade-up text-display-xl font-extrabold" style={{ animationDelay: '160ms' }}>
-            The right car. The confidence to move.
+            {t('home.hero.title')}
           </h1>
           <p
             className="mt-4 max-w-xl animate-fade-up text-title-sm leading-relaxed text-white/80"
             style={{ animationDelay: '260ms' }}
           >
-            Compare reviewed listings, contact verified sellers and agree your own sale or rental with clear information upfront.
+            {t('home.hero.subtitle')}
           </p>
 
           <nav
-            aria-label="Choose what you want to do"
+            aria-label={t('home.hero.navLabel')}
             className="mt-8 flex w-full max-w-xl gap-1 rounded-2xl border border-white/15 bg-ink-900/35 p-1.5 backdrop-blur-md"
           >
             {JOURNEYS.map((journey) => (
               <Link
-                key={journey.label}
+                key={journey.key}
                 href={journey.href}
                 aria-current={journey.active ? 'page' : undefined}
                 className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-caption font-bold transition-all sm:px-3 ${
@@ -96,7 +98,7 @@ export function Hero() {
                 }`}
               >
                 <Icon name={journey.icon} size={15} />
-                <span className="truncate">{journey.label}</span>
+                <span className="truncate">{t(journey.key)}</span>
               </Link>
             ))}
           </nav>
@@ -109,7 +111,7 @@ export function Hero() {
             style={{ animationDelay: '380ms' }}
           >
             <label htmlFor="hero-search" className="sr-only">
-              Search certified cars
+              {t('home.hero.searchLabel')}
             </label>
             <span className="pl-3 text-content-muted">
               <Icon name="search" size={18} />
@@ -119,11 +121,11 @@ export function Hero() {
               name="q"
               type="search"
               autoComplete="off"
-              placeholder="Toyota RAV4, automatic SUV, diesel…"
+              placeholder={t('home.hero.searchPlaceholder')}
               className="h-11 min-w-0 flex-1 bg-transparent text-body text-content placeholder:text-content-muted"
             />
             <Button type="submit" size="sm">
-              Search
+              {t('home.hero.searchButton')}
             </Button>
           </form>
 
@@ -133,11 +135,11 @@ export function Hero() {
           >
             {TRUST_STRIP.map((item) => (
               <li
-                key={item.label}
+                key={item.key}
                 className="flex items-center gap-2 text-caption font-semibold text-white/85"
               >
                 <Icon name={item.icon} size={15} className="text-white/70" />
-                {item.label}
+                {t(item.key)}
               </li>
             ))}
           </ul>

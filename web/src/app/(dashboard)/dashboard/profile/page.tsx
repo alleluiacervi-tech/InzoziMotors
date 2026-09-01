@@ -8,11 +8,15 @@ import { Badge, Button, Card, Icon } from '@/components/ui'
 import { formatDate } from '@/lib/business'
 import { account } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
+import { getServerT } from '@/lib/i18n/server'
 import type { IdVerificationStatus } from '@/lib/types'
 
-export const metadata: Metadata = {
-  title: 'Profile',
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('dashboard.meta.profile'),
+    robots: { index: false, follow: false },
+  }
 }
 
 // Account settings. Only the two controls the API actually supports are built:
@@ -21,35 +25,32 @@ export const metadata: Metadata = {
 
 const VERIFICATION: Record<
   IdVerificationStatus,
-  { label: string; tone: 'success' | 'warning' | 'neutral' | 'danger'; body: string }
+  { labelKey: string; tone: 'success' | 'warning' | 'neutral' | 'danger'; bodyKey: string }
 > = {
   approved: {
-    label: 'Verified',
+    labelKey: 'dashboard.profile.verification.approvedLabel',
     tone: 'success',
-    body:
-      'Our team has confirmed your identity. Eligible inspected listings can now be approved for publication, and buyers see a verified-seller mark on them.',
+    bodyKey: 'dashboard.profile.verification.approvedBody',
   },
   pending: {
-    label: 'In review',
+    labelKey: 'dashboard.profile.verification.pendingLabel',
     tone: 'warning',
-    body:
-      'Your documents are with our team. Reviews finish within 24 hours and you will get a notification the moment it is done.',
+    bodyKey: 'dashboard.profile.verification.pendingBody',
   },
   rejected: {
-    label: 'Needs another attempt',
+    labelKey: 'dashboard.profile.verification.rejectedLabel',
     tone: 'danger',
-    body:
-      'The photos we received were not clear enough to confirm. Open the Sawa Cars app and resubmit — there is no limit on attempts.',
+    bodyKey: 'dashboard.profile.verification.rejectedBody',
   },
   none: {
-    label: 'Not started',
+    labelKey: 'dashboard.profile.verification.noneLabel',
     tone: 'neutral',
-    body:
-      'Buying, saving and requests all work without this, and you may submit a car for inspection. Verification is required before publication or public contact activation and happens in the Sawa Cars app: a photo of your national ID and a selfie.',
+    bodyKey: 'dashboard.profile.verification.noneBody',
   },
 }
 
 export default async function ProfilePage() {
+  const t = await getServerT()
   const user = await getCurrentUser()
   if (!user) return null
 
@@ -65,13 +66,13 @@ export default async function ProfilePage() {
   return (
     <>
       <PageHeader
-        title="Profile"
-        description="Your details, your password, and where your identity check stands."
+        title={t('dashboard.profile.title')}
+        description={t('dashboard.profile.description')}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="details">
-          <PanelHeading id="details" title="Your details" />
+          <PanelHeading id="details" title={t('dashboard.profile.detailsHeading')} />
           <Card className="p-5 sm:p-6">
             <ProfileForm name={user.name} phone={user.phone ?? ''} whatsapp={user.whatsapp_phone ?? ''} phoneVisible={!!user.phone_visible} whatsappVisible={!!user.whatsapp_visible} email={user.email} />
           </Card>
@@ -79,21 +80,21 @@ export default async function ProfilePage() {
 
         <div className="space-y-6">
           <section aria-labelledby="verification">
-            <PanelHeading id="verification" title="Identity verification" />
+            <PanelHeading id="verification" title={t('dashboard.profile.verificationHeading')} />
             <Card className="p-5 sm:p-6">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge tone={verification.tone}>{verification.label}</Badge>
+                <Badge tone={verification.tone}>{t(verification.labelKey)}</Badge>
                 <p className="text-caption text-content-muted">
-                  Account created {formatDate(user.created_at)}
+                  {t('dashboard.profile.accountCreated', { date: formatDate(user.created_at) })}
                 </p>
               </div>
               <p className="mt-3 text-caption leading-relaxed text-content-secondary">
-                {verification.body}
+                {t(verification.bodyKey)}
               </p>
               {user.id_verified !== 'approved' ? (
                 <div className="mt-5">
                   <Button href="/download" variant="outline" size="sm">
-                    Get the app
+                    {t('dashboard.common.getApp')}
                   </Button>
                 </div>
               ) : null}
@@ -101,30 +102,29 @@ export default async function ProfilePage() {
           </section>
 
           <section aria-labelledby="password">
-            <PanelHeading id="password" title="Password" />
+            <PanelHeading id="password" title={t('dashboard.profile.passwordHeading')} />
             <Card className="p-5 sm:p-6">
               <PasswordForm />
             </Card>
           </section>
 
           <section aria-labelledby="session">
-            <PanelHeading id="session" title="This device" />
+            <PanelHeading id="session" title={t('dashboard.profile.deviceHeading')} />
             <Card className="p-5 sm:p-6">
               <p className="text-caption leading-relaxed text-content-secondary">
-                Signing out clears your session on this browser only. Your saved cars, inquiries and
-                alerts stay exactly as they are.
+                {t('dashboard.profile.deviceBody')}
               </p>
               <form action={signOutAction} className="mt-4">
                 <Button type="submit" variant="outline" size="compact">
                   <Icon name="logout" size={16} />
-                  Sign out
+                  {t('dashboard.common.signOut')}
                 </Button>
               </form>
             </Card>
           </section>
 
           <section aria-labelledby="delete-account">
-            <PanelHeading id="delete-account" title="Close account" />
+            <PanelHeading id="delete-account" title={t('dashboard.profile.closeHeading')} />
             <DeleteAccountForm reasons={closure?.reasons} recoveryDays={closure?.recovery_days} />
           </section>
         </div>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useActionState } from 'react'
 import { signUpAction, type AuthState } from '@/app/actions/auth'
 import { Alert, Field, Icon, Input, type IconName } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import { PasswordField } from '../_components/PasswordField'
 import { SubmitButton } from '../_components/SubmitButton'
 
@@ -56,6 +57,7 @@ function RoleCard({
 }
 
 export function SignUpForm({ next }: { next: string }) {
+  const t = useT()
   const [state, formAction] = useActionState<AuthState, FormData>(signUpAction, null)
   const fieldErrors = state?.fieldErrors ?? {}
 
@@ -65,7 +67,7 @@ export function SignUpForm({ next }: { next: string }) {
 
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
 
-      <Field label="Full name" htmlFor="name" error={fieldErrors.name}>
+      <Field label={t('auth.signup.name')} htmlFor="name" error={fieldErrors.name}>
         <Input
           id="name"
           name="name"
@@ -73,13 +75,13 @@ export function SignUpForm({ next }: { next: string }) {
           autoComplete="name"
           autoCapitalize="words"
           required
-          placeholder="As it appears on your ID"
+          placeholder={t('auth.signup.namePlaceholder')}
           error={Boolean(fieldErrors.name)}
           aria-describedby={fieldErrors.name ? 'name-error' : undefined}
         />
       </Field>
 
-      <Field label="Email" htmlFor="email" error={fieldErrors.email}>
+      <Field label={t('auth.signup.email')} htmlFor="email" error={fieldErrors.email}>
         <Input
           id="email"
           name="email"
@@ -98,53 +100,51 @@ export function SignUpForm({ next }: { next: string }) {
       <PasswordField
         id="password"
         name="password"
-        label="Password"
+        label={t('auth.signup.password')}
         autoComplete="new-password"
         required
-        placeholder="At least 6 characters"
-        hint="Minimum 6 characters. Longer is stronger — a short phrase beats a single word. Use something you do not use elsewhere."
+        placeholder={t('auth.signup.passwordPlaceholder')}
+        hint={t('auth.signup.passwordHint')}
         error={fieldErrors.password}
       />
 
       <fieldset>
         <legend className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted">
-          What brings you here
+          {t('auth.signup.legend')}
         </legend>
         <div className="grid gap-3 sm:grid-cols-2">
           <RoleCard
             value="buyer"
             icon="search"
-            title="I'm buying"
-            desc="Browse certified cars, save them, and request the one you want."
+            title={t('auth.signup.buyerTitle')}
+            desc={t('auth.signup.buyerDesc')}
             defaultChecked
           />
           <RoleCard
             value="seller"
             icon="key"
-            title="I want to sell"
-            desc="Submit your car for inspection and let our team list it."
+            title={t('auth.signup.sellerTitle')}
+            desc={t('auth.signup.sellerDesc')}
           />
         </div>
         <p className="mt-3 flex gap-2 text-micro leading-relaxed text-content-muted">
           <Icon name="info" size={14} className="mt-px" />
           <span>
-            Selling needs a one-time ID check, and that step happens in the Sawa Cars app — a
-            browser cannot capture your ID and selfie. Everything after it, from submitting the
-            car to booking the inspection, works here. You can switch to selling at any time.
+            {t('auth.signup.sellerNote')}
           </span>
         </p>
       </fieldset>
 
-      <SubmitButton pendingLabel="Creating your account…">Create account</SubmitButton>
+      <SubmitButton pendingLabel={t('auth.signup.submitting')}>{t('auth.signup.submit')}</SubmitButton>
 
       <p className="text-center text-micro leading-relaxed text-content-muted">
-        By creating an account you agree to our{' '}
+        {t('auth.signup.termsPrefix')}{' '}
         <Link href="/legal/terms" className="font-bold text-brand transition-colors hover:text-brand-deep">
-          Terms of Service
+          {t('auth.signup.termsLink')}
         </Link>{' '}
-        and{' '}
+        {t('auth.signup.termsAnd')}{' '}
         <Link href="/legal/privacy" className="font-bold text-brand transition-colors hover:text-brand-deep">
-          Privacy Policy
+          {t('auth.signup.privacyLink')}
         </Link>
         .
       </p>
