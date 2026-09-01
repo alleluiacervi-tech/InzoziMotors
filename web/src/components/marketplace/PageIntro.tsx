@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Container, Eyebrow, Icon } from '@/components/ui'
+import { getServerT } from '@/lib/i18n/server'
 
 /**
  * The workspace opening — one of exactly two sanctioned page openings on the
@@ -11,7 +12,7 @@ import { Container, Eyebrow, Icon } from '@/components/ui'
  * pages, so crawlers and no-JS visitors always get the h1 even when the data
  * behind the grid is unreachable.
  */
-export function PageIntro({
+export async function PageIntro({
   eyebrow,
   title,
   description,
@@ -22,6 +23,7 @@ export function PageIntro({
   description?: string
   aside?: ReactNode
 }) {
+  const t = await getServerT()
   return (
     <div className="relative isolate overflow-hidden bg-ink-900 py-10 text-white sm:py-14">
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_12%,rgba(204,5,15,0.24),transparent_34%),radial-gradient(circle_at_8%_92%,rgba(255,255,255,0.08),transparent_27%)]" />
@@ -34,9 +36,9 @@ export function PageIntro({
             <p className="mt-4 max-w-2xl text-title-sm leading-relaxed text-white/70">{description}</p>
           ) : null}
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-caption font-semibold text-white/70">
-            <span className="inline-flex items-center gap-1.5"><Icon name="shield-check" size={15} className="text-white" />150-point inspection</span>
-            <span className="inline-flex items-center gap-1.5"><Icon name="check-circle" size={15} className="text-white" />Admin-approved listings</span>
-            <span className="inline-flex items-center gap-1.5"><Icon name="user" size={15} className="text-white" />Direct seller contact</span>
+            <span className="inline-flex items-center gap-1.5"><Icon name="shield-check" size={15} className="text-white" />{t('cars.pageIntro.inspection')}</span>
+            <span className="inline-flex items-center gap-1.5"><Icon name="check-circle" size={15} className="text-white" />{t('cars.pageIntro.approved')}</span>
+            <span className="inline-flex items-center gap-1.5"><Icon name="user" size={15} className="text-white" />{t('cars.pageIntro.contact')}</span>
           </div>
         </div>
         {aside ? <div className="shrink-0">{aside}</div> : null}

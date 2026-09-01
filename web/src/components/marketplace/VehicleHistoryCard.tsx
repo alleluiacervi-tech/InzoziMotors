@@ -1,6 +1,8 @@
 import { Card, Icon, type IconName } from '@/components/ui'
 import { formatKm } from '@/lib/business'
 import type { VehicleHistory } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
+import type { TFunction } from '@/lib/i18n/dictionary'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The paperwork, reported exactly as it was found.
@@ -13,11 +15,11 @@ import type { VehicleHistory } from '@/lib/types'
 
 type Tone = 'pass' | 'flag' | 'fail' | 'unknown'
 
-const TONES: Record<Tone, { icon: IconName; className: string; fallback: string }> = {
-  pass: { icon: 'check-circle', className: 'text-success', fallback: 'Verified' },
-  flag: { icon: 'alert', className: 'text-warning-text', fallback: 'Needs attention' },
-  fail: { icon: 'close-circle', className: 'text-danger', fallback: 'Failed check' },
-  unknown: { icon: 'minus', className: 'text-content-muted', fallback: 'Not verified' },
+const TONES: Record<Tone, { icon: IconName; className: string; fallbackKey: string }> = {
+  pass: { icon: 'check-circle', className: 'text-success', fallbackKey: 'cars.history.verified' },
+  flag: { icon: 'alert', className: 'text-warning-text', fallbackKey: 'cars.history.needsAttention' },
+  fail: { icon: 'close-circle', className: 'text-danger', fallbackKey: 'cars.history.failedCheck' },
+  unknown: { icon: 'minus', className: 'text-content-muted', fallbackKey: 'cars.history.notVerified' },
 }
 
 function toneOf(verdict: string | null | undefined): Tone {
@@ -33,60 +35,62 @@ interface Row {
 
 /** A document check. `whenPassed` lets a row say something more useful than
  *  "Verified" once it has actually passed. */
-function documentRow(label: string, verdict: string | null | undefined, whenPassed?: string): Row {
+function documentRow(t: TFunction, label: string, verdict: string | null | undefined, whenPassed?: string): Row {
   const tone = toneOf(verdict)
   return {
     label,
     tone,
-    value: tone === 'pass' && whenPassed ? whenPassed : TONES[tone].fallback,
+    value: tone === 'pass' && whenPassed ? whenPassed : t(TONES[tone].fallbackKey),
   }
 }
 
-export function VehicleHistoryCard({ history }: { history: VehicleHistory | null }) {
+export async function VehicleHistoryCard({ history }: { history: VehicleHistory | null }) {
   if (!history) return null
+  const t = await getServerT()
 
   const rows: Row[] = [
-    documentRow('RRA import duty', history.rra_duty_paid, 'Duty paid, stamp seen'),
-    documentRow('Registration / logbook', history.registration),
-    documentRow('Service history', history.service_history),
-    documentRow('Insurance', history.insurance_valid, 'Valid at inspection'),
+    documentRow(t, t('cars.history.rraDuty'), history.rra_duty_paid, t('cars.history.dutyPaid')),
+    documentRow(t, t('cars.history.registration'), history.registration),
+    documentRow(t, t('cars.history.serviceHistory'), history.service_history),
+    documentRow(t, t('cars.history.insurance'), history.insurance_valid, t('cars.history.validAtInspection')),
     {
-      label: 'Odometer',
+      label: t('cars.history.odometer'),
       tone: history.mileage_verified ? 'pass' : 'unknown',
       value: history.mileage_verified
-        ? `${formatKm(history.mileage)} — checked against records`
-        : `${formatKm(history.mileage)} — not verified`,
+        ? t('cars.history.odoChecked', { km: formatKm(history.mileage) })
+        : t('cars.history.odoNotVerified', { km: formatKm(history.mileage) }),
     },
     {
-      label: 'VIN / chassis',
+      label: t('cars.history.vin'),
       tone: history.vin_verified ? 'pass' : 'unknown',
       value: history.vin
-        ? `${history.vin}${history.vin_verified ? ' — matches documents' : ' — not verified'}`
-        : 'Not recorded',
+        ? history.vin_verified
+          ? t('cars.history.vinMatches', { vin: history.vin })
+          : t('cars.history.vinNotVerified', { vin: history.vin })
+        : t('cars.history.notRecorded'),
     },
     {
-      label: 'Import origin',
+      label: t('cars.history.importOrigin'),
       tone: 'unknown',
       value:
         history.import_origin && history.import_origin !== 'Unknown'
           ? history.import_origin
-          : 'Not recorded',
+          : t('cars.history.notRecorded'),
     },
     {
-      label: 'Accident history',
+      label: t('cars.history.accidentHistory'),
       tone: 'unknown',
-      value: history.accident_history || 'No data',
+      value: history.accident_history || t('cars.history.noData'),
     },
   ]
 
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-line-soft p-5 sm:p-6">
-        <p className="text-eyebrow font-bold uppercase text-brand">Vehicle history</p>
-        <h2 className="mt-2 text-title font-extrabold text-content">The paperwork</h2>
+        <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.history.eyebrow')}</p>
+        <h2 className="mt-2 text-title font-extrabold text-content">{t('cars.history.title')}</h2>
         <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-          Checked at the center against the documents the seller brought.
-          Anything we could not confirm is marked not verified.
+          {t('cars.history.intro')}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { Button, Icon } from '@/components/ui'
+import { getServerT } from '@/lib/i18n/server'
 import { buildBrowseHref, PAGE_SIZE, type Filters, type SortValue } from './query'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -12,7 +13,7 @@ import { buildBrowseHref, PAGE_SIZE, type Filters, type SortValue } from './quer
 // Real <a> links, so crawlers walk the whole catalogue.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function Pagination({
+export async function Pagination({
   filters,
   sort,
   offset,
@@ -27,6 +28,7 @@ export function Pagination({
   const hasPrevious = offset > 0
   const hasNext = count === PAGE_SIZE
   if (!hasPrevious && !hasNext) return null
+  const t = await getServerT()
 
   const page = Math.floor(offset / PAGE_SIZE) + 1
   const from = offset + 1
@@ -34,12 +36,12 @@ export function Pagination({
 
   return (
     <nav
-      aria-label="Listing pages"
+      aria-label={t('cars.pagination.ariaLabel')}
       className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-line-soft pt-6 sm:flex-row"
     >
       <p className="text-caption text-content-secondary">
-        Showing <span className="font-bold text-content">{from}–{to}</span>
-        <span className="text-content-muted"> · page {page}</span>
+        {t('cars.pagination.showing')} <span className="font-bold text-content">{from}–{to}</span>
+        <span className="text-content-muted"> {t('cars.pagination.page', { page })}</span>
       </p>
 
       <div className="flex items-center gap-2">
@@ -51,12 +53,12 @@ export function Pagination({
             size="compact"
           >
             <Icon name="chevron-left" size={16} className="text-content-secondary" />
-            Previous
+            {t('cars.pagination.previous')}
           </Button>
         ) : (
           <Button variant="outline" size="compact" disabled>
             <Icon name="chevron-left" size={16} />
-            Previous
+            {t('cars.pagination.previous')}
           </Button>
         )}
 
@@ -67,12 +69,12 @@ export function Pagination({
             variant="outline"
             size="compact"
           >
-            Next
+            {t('cars.pagination.next')}
             <Icon name="chevron-right" size={16} className="text-content-secondary" />
           </Button>
         ) : (
           <Button variant="outline" size="compact" disabled>
-            Next
+            {t('cars.pagination.next')}
             <Icon name="chevron-right" size={16} />
           </Button>
         )}

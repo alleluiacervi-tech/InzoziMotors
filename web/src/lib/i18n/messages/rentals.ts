@@ -46,6 +46,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     },
     card: {
       safariReady: 'Safari-ready',
+      alt: '{{title}} — Sawa rental fleet',
       seats: '{{count}} seats',
       perDay: '/ day',
       depositLine: '{{amount}} provider-stated deposit',
@@ -152,6 +153,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     },
     card: {
       safariReady: 'Ibereye safari',
+      alt: '{{title}} — ibinyabiziga bya Sawa bikodeshwa',
       seats: 'imyanya {{count}}',
       perDay: '/ umunsi',
       depositLine: 'ingwate {{amount}} yatangajwe n’utanga',
@@ -258,6 +260,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     },
     card: {
       safariReady: 'Prête pour safari',
+      alt: '{{title}} — flotte de location Sawa',
       seats: '{{count}} places',
       perDay: '/ jour',
       depositLine: 'caution de {{amount}} indiquée par le prestataire',
@@ -364,6 +367,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     },
     card: {
       safariReady: 'Tayari kwa safari',
+      alt: '{{title}} — kundi la magari ya kukodisha la Sawa',
       seats: 'viti {{count}}',
       perDay: '/ siku',
       depositLine: 'amana ya {{amount}} iliyotajwa na mtoa huduma',
@@ -470,6 +474,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     },
     card: {
       safariReady: '사파리 대응',
+      alt: '{{title}} — Sawa 렌트 차량',
       seats: '{{count}}인승',
       perDay: '/ 일',
       depositLine: '제공자 제시 보증금 {{amount}}',

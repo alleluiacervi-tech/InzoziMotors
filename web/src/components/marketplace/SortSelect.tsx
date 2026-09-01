@@ -3,6 +3,7 @@
 import { useId, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Select } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import {
   buildBrowseHref,
   FILTER_FIELDS,
@@ -19,6 +20,7 @@ import {
  * with JavaScript the change event has already navigated.
  */
 export function SortSelect({ filters, sort }: { filters: Filters; sort: SortValue }) {
+  const t = useT()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const id = useId()
@@ -41,10 +43,10 @@ export function SortSelect({ filters, sort }: { filters: Filters; sort: SortValu
       )}
 
       <label htmlFor={id} className="hidden text-caption font-semibold text-content-muted sm:block">
-        Sort
+        {t('cars.sort.label')}
       </label>
       <label htmlFor={id} className="sr-only sm:hidden">
-        Sort results
+        {t('cars.sort.resultsLabel')}
       </label>
 
       <Select
@@ -64,13 +66,13 @@ export function SortSelect({ filters, sort }: { filters: Filters; sort: SortValu
       >
         {SORT_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {t(`cars.sort.${option.value}`)}
           </option>
         ))}
       </Select>
 
       <button type="submit" className="sr-only">
-        Apply sorting
+        {t('cars.sort.apply')}
       </button>
     </form>
   )

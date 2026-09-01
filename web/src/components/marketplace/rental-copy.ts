@@ -1,17 +1,19 @@
 import type { IconName } from '@/components/ui'
 
 // Provider-stated features. The detail page labels this list clearly; Sawa does
-// not turn provider information into a platform guarantee.
-export const RENTAL_INCLUDES: { icon: IconName; label: string }[] = [
-  { icon: 'shield-check', label: 'Comprehensive insurance' },
-  { icon: 'settings', label: '24/7 roadside assistance' },
-  { icon: 'gauge', label: 'Unlimited kilometres' },
-  { icon: 'sparkles', label: 'Cleaned and sanitised between trips' },
+// not turn provider information into a platform guarantee. Labels are i18n keys
+// (rentals.includes.*) resolved by the consuming Server Component.
+export const RENTAL_INCLUDES: { icon: IconName; labelKey: string }[] = [
+  { icon: 'shield-check', labelKey: 'rentals.includes.insurance' },
+  { icon: 'settings', labelKey: 'rentals.includes.roadside' },
+  { icon: 'gauge', labelKey: 'rentals.includes.unlimitedKm' },
+  { icon: 'sparkles', labelKey: 'rentals.includes.cleaned' },
 ]
 
-/** Sensible preparation; exact requirements come from the provider's contract. */
+/** Sensible preparation; exact requirements come from the provider's contract.
+ *  Values are i18n keys (rentals.requirements.*). */
 export const RENTAL_REQUIREMENTS = [
-  'A valid driving licence, held for at least two years',
-  'Your national ID or passport',
-  'The provider’s confirmed payment and deposit arrangements in writing',
+  'rentals.requirements.licence',
+  'rentals.requirements.id',
+  'rentals.requirements.payment',
 ]

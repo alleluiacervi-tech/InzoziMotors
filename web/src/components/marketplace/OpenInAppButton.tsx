@@ -2,6 +2,7 @@
 
 import { Button, Icon } from '@/components/ui'
 import { useOpenInApp } from '@/components/app/useDeepLink'
+import { useT } from '@/lib/i18n/context'
 
 /**
  * Hands a visitor off to the same screen inside the native app, falling back to
@@ -9,7 +10,7 @@ import { useOpenInApp } from '@/components/app/useDeepLink'
  */
 export function OpenInAppButton({
   path,
-  label = 'Open in the app',
+  label,
   variant = 'outline',
   fullWidth,
   className = '',
@@ -21,7 +22,9 @@ export function OpenInAppButton({
   fullWidth?: boolean
   className?: string
 }) {
+  const t = useT()
   const openInApp = useOpenInApp()
+  const text = label ?? t('cars.openInApp')
 
   return (
     <Button
@@ -32,7 +35,7 @@ export function OpenInAppButton({
       onClick={() => openInApp(path)}
       leadingIcon={<Icon name="external" size={16} className="text-content-secondary" />}
     >
-      {label}
+      {text}
     </Button>
   )
 }
