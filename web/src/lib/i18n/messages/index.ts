@@ -11,6 +11,7 @@ import { marketing } from './marketing'
 import { auth } from './auth'
 import { dashboard } from './dashboard'
 import { faq } from './faq'
+import { store } from './store'
 
 export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> = {
   home,
@@ -22,4 +23,5 @@ export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> =
   auth,
   dashboard,
   faq,
+  store,
 }

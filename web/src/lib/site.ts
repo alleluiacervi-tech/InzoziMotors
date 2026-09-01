@@ -218,34 +218,42 @@ export const SELLING_STEPS = [
 
 export const FAQS = [
   {
+    id: 'pay',
     q: 'Do I pay anything through the app or website?',
     a: 'No. Sawa Cars has no checkout or payment gateway for vehicle sales or rentals. Buyers, sellers and rental providers decide payment and contract arrangements directly and should document them carefully.',
   },
   {
+    id: 'inspection',
     q: 'What does the 150-point inspection actually cover?',
     a: 'Seven categories: engine and drivetrain, brakes and steering, body and exterior, interior and comfort, electronics and safety, tyres and wheels, and documentation. Every item is graded pass, flag or fail, and the full report is published on the listing before you commit.',
   },
   {
+    id: 'guarantee',
     q: 'Does Sawa Cars guarantee the transaction?',
     a: 'No. Sawa Cars reviews listings and seller eligibility, but it does not guarantee a vehicle, payment, rental deposit, contract, delivery or outcome between users. Always inspect, verify and agree terms in writing.',
   },
   {
+    id: 'listing',
     q: 'Can sellers list cars themselves?',
     a: 'Sellers submit vehicle information and can manage approved listing details, but only an authorized administrator can make a listing public after the required checks.',
   },
   {
+    id: 'cost',
     q: 'What does it cost to sell?',
     a: 'Any commercial service or listing charges are communicated separately by Sawa Cars and are not collected through a buyer–seller payment gateway. A vehicle transaction itself is always between the users.',
   },
   {
+    id: 'reserve',
     q: 'Does contacting a seller reserve a car?',
     a: 'No. Contacting a seller starts a conversation only. Availability remains the seller’s responsibility until you and the seller make your own agreement.',
   },
   {
+    id: 'appOrWeb',
     q: 'Do I need the mobile app, or can I do everything on the web?',
     a: 'Browsing, inspection information, saved cars, direct seller contact and your account work on the web. The app adds camera capture, push notifications and a more convenient messaging experience.',
   },
   {
+    id: 'areas',
     q: 'Which areas do you cover?',
     a: 'We operate inspection services across Kigali. Listings show the location supplied for each vehicle. Buyer and seller decide where to view or exchange a vehicle.',
   },
