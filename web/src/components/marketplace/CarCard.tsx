@@ -82,14 +82,17 @@ export async function CarCard({
             never compete for the same corner. */}
         <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
           {demo ? (
-
+            <Badge tone="neutral">{t('cars.card.previewListing')}</Badge>
           ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
               {tier.short}
             </Badge>
           ) : null}
         </div>
-
+        <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1.5">
+          {drop > 0 ? <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge> : null}
+          {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">{t('cars.card.new')}</Badge> : null}
+          {isHighDemand(car) ? <Badge tone="danger">{t('cars.card.highDemand')}</Badge> : null}
         </div>
 
         {/* The 36-angle standard is the signature — advertise it on every card.

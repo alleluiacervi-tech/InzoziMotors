@@ -50,7 +50,9 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
           ) : null}
         </div>
         {car.safari_ready ? (
-
+          <div className="absolute right-3 top-3">
+            <Badge tone="info" icon="location">
+              {t('rentals.card.safariReady')}
             </Badge>
           </div>
         ) : null}
