@@ -18,10 +18,16 @@ export type IconName =
   | 'calendar' | 'location' | 'phone' | 'mail' | 'whatsapp' | 'user' | 'bell'
   | 'menu' | 'grid' | 'chart' | 'gauge' | 'fuel' | 'settings' | 'logout'
   | 'sparkles' | 'trending-down' | 'trending-up' | 'lock' | 'apple' | 'play-store'
-  | 'alert' | 'info' | 'plus' | 'minus' | 'external'
+  | 'alert' | 'info' | 'plus' | 'minus' | 'external' | 'compass'
 
 // React 19 removed the global JSX namespace — ReactElement is the supported type.
 const PATHS: Record<IconName, ReactElement> = {
+  compass: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+    </>
+  ),
   shield: <path d="M12 3l7 3v6c0 4.4-3 8.1-7 9-4-.9-7-4.6-7-9V6l7-3z" />,
   'shield-check': (
     <>

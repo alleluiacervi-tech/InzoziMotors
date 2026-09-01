@@ -407,3 +407,27 @@ export function formatRelative(iso?: string | null): string {
   if (days < 7) return `${days}d ago`
   return formatDate(iso)
 }
+
+export const RETURN_WINDOW_DAYS = 7
+
+export function daysLeftInReturnWindow(completedAt?: string | null): number {
+  if (!completedAt) return 0
+  const completed = new Date(completedAt).getTime()
+  if (Number.isNaN(completed)) return 0
+  const elapsed = Date.now() - completed
+  const daysPassed = elapsed / (1000 * 60 * 60 * 24)
+  return Math.max(0, Math.ceil(RETURN_WINDOW_DAYS - daysPassed))
+}
+
+export const HANDOVER_STATUS_LABEL: Record<string, string> = {
+  pending: 'Requested',
+  confirmed: 'Handover booked',
+  booked: 'Handover booked',
+  scheduled: 'Handover scheduled',
+  in_progress: 'In progress',
+  complete: 'Completed',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  disputed: 'Dispute open',
+}
+

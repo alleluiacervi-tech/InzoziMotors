@@ -367,3 +367,53 @@ export interface CarQuery {
   limit?: number
   offset?: number
 }
+
+export type HandoverStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'booked'
+  | 'scheduled'
+  | 'in_progress'
+  | 'complete'
+  | 'completed'
+  | 'cancelled'
+  | 'disputed'
+
+export interface Handover {
+  id: string
+  booking_id: string
+  car_id: string
+  car_title?: string
+  car_images?: string[]
+  price: number
+  agreed_price?: number | null
+  status: HandoverStatus
+  booked_at: string
+  completed_at?: string | null
+  confirmed_at?: string | null
+  center_id?: string
+  center_name?: string
+  center?: string
+  handover_date?: string | null
+  handover_time?: string | null
+  contact_phone?: string | null
+  seller_id?: string
+  buyer_id?: string
+}
+
+export interface Dispute {
+  id: string
+  handover_id: string
+  reason: string
+  status: 'open' | 'investigating' | 'resolved' | 'rejected'
+  created_at: string
+  resolved_at?: string | null
+}
+
+export interface ReferralStats {
+  code: string
+  total_referrals: number
+  completed_handovers: number
+  reward_earned: number
+}
+
