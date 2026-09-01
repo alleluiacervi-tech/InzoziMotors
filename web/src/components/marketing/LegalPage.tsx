@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Alert, Container, Section } from '@/components/ui'
 import { PageHeader } from './PageHeader'
+import { getServerT } from '@/lib/i18n/server'
 
 // Shared shell for the three policy pages. They are drafts, and the page says so
 // at the top of every one of them — a policy scaffold that pretends to be a
@@ -38,7 +39,7 @@ export function Prose({ children, className = '' }: { children: ReactNode; class
   )
 }
 
-export function LegalPage({
+export async function LegalPage({
   title,
   lede,
   sections,
@@ -47,9 +48,10 @@ export function LegalPage({
   lede: string
   sections: readonly LegalSection[]
 }) {
+  const t = await getServerT()
   return (
     <>
-      <PageHeader eyebrow="Legal" title={title} lede={lede} />
+      <PageHeader eyebrow={t('ui.legalEyebrow')} title={title} lede={lede} />
 
       <Section tone="page">
         <Container>
@@ -58,11 +60,11 @@ export function LegalPage({
                 chip rail's content width would otherwise become the DOCUMENT
                 width — every legal page scrolled sideways ~2000px on phones. */}
             <nav
-              aria-label="On this page"
+              aria-label={t('ui.onThisPage')}
               className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+24px)] lg:self-start"
             >
               <h2 className="mb-4 text-eyebrow font-bold uppercase text-content-muted">
-                On this page
+                {t('ui.onThisPage')}
               </h2>
 
               {/* A twelve-item vertical list would push the policy itself a
@@ -86,11 +88,8 @@ export function LegalPage({
             </nav>
 
             <div className="min-w-0">
-              <Alert tone="warning" title="Draft — pending legal review">
-                This document describes how Sawa Cars actually operates today, written in
-                plain language. It has not yet been reviewed by a qualified lawyer in Rwanda and
-                is not legal advice. Users should obtain independent legal advice for their own
-                contracts and regulated obligations before launch.
+              <Alert tone="warning" title={t('ui.draftTitle')}>
+                {t('ui.draftBody')}
               </Alert>
 
               <div className="mt-12 space-y-12">

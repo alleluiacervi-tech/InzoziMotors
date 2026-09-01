@@ -12,6 +12,7 @@ import { auth } from './auth'
 import { dashboard } from './dashboard'
 import { faq } from './faq'
 import { store } from './store'
+import { ui } from './ui'
 
 export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> = {
   home,
@@ -24,4 +25,5 @@ export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> =
   dashboard,
   faq,
   store,
+  ui,
 }
