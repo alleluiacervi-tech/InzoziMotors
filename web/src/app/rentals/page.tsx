@@ -119,9 +119,9 @@ async function FleetResults({
               ])
             )}
           />
-          <ul className="stagger mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <ul className="stagger mt-8 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {visible.map((car, index) => (
-              <li key={car.id}>
+              <li key={car.id} className="min-w-0">
                 <RentalCard car={car} priority={index < 3} />
               </li>
             ))}
@@ -146,9 +146,9 @@ async function FleetResults({
 
 function FleetSkeleton() {
   return (
-    <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <li key={i}>
+        <li key={i} className="min-w-0">
           <CarCardSkeleton />
         </li>
       ))}

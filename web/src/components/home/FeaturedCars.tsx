@@ -31,12 +31,12 @@ export async function FeaturedCars({ cars }: { cars: Car[] }) {
         </div>
 
         {cars.length ? (
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {cars.map((car, i) => (
               // The first row is the LCP candidate on most viewports; Reveal
               // renders visible before hydration, so LCP is never delayed —
               // the cascade only exists for the rows entering from below.
-              <Reveal key={car.id} delay={(i % 3) * 90}>
+              <Reveal key={car.id} delay={(i % 3) * 90} className="h-full min-w-0">
                 <CarCard car={car} priority={i < 3} />
               </Reveal>
             ))}
