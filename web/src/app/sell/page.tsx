@@ -19,6 +19,7 @@ import { InkClose } from '@/components/layout/InkClose'
 import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
 import { JsonLd } from '@/components/JsonLd'
 import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
+import { getServerT } from '@/lib/i18n/server'
 
 // The page reads live inventory (catalogue makes for the valuation) — render
 // it per request like /cars, never at build. Prerendering it made the BUILD
@@ -26,53 +27,30 @@ import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 // site is designed to avoid.
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'Sell your car in Kigali, Rwanda — valuation and inspection',
-  description:
-    'Submit your vehicle for seller verification, inspection and controlled publication on Sawa Cars. Manage direct buyer enquiries and keep control of your price.',
-  alternates: { canonical: '/sell' },
-  openGraph: {
-    title: `Sell your car with ${SITE.name}`,
-    description:
-      'We review, inspect and publish verified listings. You communicate and agree any sale directly with the buyer.',
-    url: `${SITE.url}/sell`,
-    type: 'website',
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('sell.metaTitle'),
+    description: t('sell.metaDescription'),
+    alternates: { canonical: '/sell' },
+    openGraph: {
+      title: t('sell.metaOgTitle', { name: SITE.name }),
+      description: t('sell.metaOgDescription'),
+      url: `${SITE.url}/sell`,
+      type: 'website',
+    },
+  }
 }
 
 // ─── What the seller hands over, and what we hand back ───────────────────────
 
-const WHAT_WE_DO: { icon: IconName; title: string; body: string }[] = [
-  {
-    icon: 'shield-check',
-    title: 'We inspect it properly',
-    body: 'A 150-point check across engine and drivetrain, brakes and steering, body, interior, electronics, tyres and documentation. Every item is graded pass, flag or fail, and the full report is published with your listing.',
-  },
-  {
-    icon: 'camera',
-    title: 'We photograph it',
-    body: 'We add a clear, truthful gallery with the useful exterior, interior, document and defect views this particular vehicle needs. There is no fixed angle count.',
-  },
-  {
-    icon: 'chart',
-    title: 'We price it on evidence',
-    body: 'We show you what comparable cars are listed and sold for on Sawa Cars, then you set the asking price. You can change it at any time while the car is live.',
-  },
-  {
-    icon: 'user',
-    title: 'You choose your contact channels',
-    body: 'Use in-app messages, or opt in to phone and WhatsApp disclosure. Direct details are released only after a signed-in buyer acknowledges the marketplace notice.',
-  },
-  {
-    icon: 'document',
-    title: 'You agree the sale directly',
-    body: 'You and the buyer decide the price, payment, viewing, written contract, ownership transfer and delivery without making Sawa Cars a party.',
-  },
-  {
-    icon: 'cash',
-    title: 'Sawa never holds the payment',
-    body: 'There is no platform checkout or escrow. Verify the buyer and recipient, document your terms and retain proof of any independent payment.',
-  },
+const WHAT_WE_DO: { icon: IconName; key: string }[] = [
+  { icon: 'shield-check', key: 'inspect' },
+  { icon: 'camera', key: 'photograph' },
+  { icon: 'chart', key: 'price' },
+  { icon: 'user', key: 'contact' },
+  { icon: 'document', key: 'agree' },
+  { icon: 'cash', key: 'payment' },
 ]
 
 /** Seller-side questions, pulled from the shared FAQ set so the site and the
@@ -101,6 +79,7 @@ async function catalogueMakes(): Promise<string[]> {
 }
 
 export default async function SellPage() {
+  const t = await getServerT()
   const makes = await catalogueMakes()
   const centers = await getDisplayCenters()
   const currentYear = new Date().getFullYear()
@@ -124,21 +103,19 @@ export default async function SellPage() {
         <Container>
           <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
-              <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">Sell your car</p>
+              <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">{t('sell.hero.eyebrow')}</p>
               <h1 className="text-display-xl font-extrabold text-white">
-                What&apos;s your car worth in Kigali?
+                {t('sell.hero.title')}
               </h1>
               <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-white/70">
-                Priced from cars actually listed and sold on Sawa Cars — never a lookup table. If the
-                 number works, we inspect it, create a useful gallery and publish only after admin
-                 review. You then manage verified buyer enquiries and any agreement directly.
+                {t('sell.hero.subtitle')}
               </p>
 
               <ul className="mt-8 space-y-3">
                 {[
-                  'The valuation takes about ten seconds and needs no account',
-                  'You keep control of the price the whole way',
-                   'You control whether buyers can request phone or WhatsApp contact',
+                  t('sell.hero.bullet1'),
+                  t('sell.hero.bullet2'),
+                  t('sell.hero.bullet3'),
                 ].map((line) => (
                   <li key={line} className="flex gap-3">
                     <Icon name="check-circle" size={20} className="mt-0.5 shrink-0 text-white" />
@@ -149,16 +126,16 @@ export default async function SellPage() {
 
               <p className="mt-6 text-caption text-white/55">
                 <Link href="#cost" className="font-bold text-white hover:underline">
-                  See what selling costs
+                  {t('sell.hero.seeCost')}
                 </Link>{' '}
-                — two charges, both quoted before you commit.
+                {t('sell.hero.costNote')}
               </p>
             </div>
 
             <Card className="relative overflow-hidden rounded-3xl border-white/10 p-6 shadow-float sm:p-8">
               <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
               <h2 className="text-caption font-bold uppercase tracking-wide text-content-muted">
-                Free valuation
+                {t('sell.hero.freeValuation')}
               </h2>
               <div className="mt-4">
                 <ValuationTool makes={makes} currentYear={currentYear} />
@@ -172,19 +149,19 @@ export default async function SellPage() {
       <Section>
         <Container>
           <SectionHeading
-            eyebrow="The work we do"
-            title="Six jobs you no longer have to do yourself"
-            description="Selling privately in Kigali means photographing the car, fielding calls, meeting strangers, and hoping the paperwork goes through. This is the same sale without any of that."
+            eyebrow={t('sell.work.eyebrow')}
+            title={t('sell.work.title')}
+            description={t('sell.work.description')}
           />
 
           <div className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {WHAT_WE_DO.map((item) => (
-              <Card key={item.title} interactive className="p-6">
+              <Card key={item.key} interactive className="p-6">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                   <Icon name={item.icon} size={22} />
                 </span>
-                <h3 className="mt-4 text-title-sm font-extrabold text-content">{item.title}</h3>
-                <p className="mt-2 text-caption leading-relaxed text-content-secondary">{item.body}</p>
+                <h3 className="mt-4 text-title-sm font-extrabold text-content">{t(`sell.work.${item.key}.title`)}</h3>
+                <p className="mt-2 text-caption leading-relaxed text-content-secondary">{t(`sell.work.${item.key}.body`)}</p>
               </Card>
             ))}
           </div>
@@ -195,9 +172,9 @@ export default async function SellPage() {
       <Section id="how" tone="surface">
         <Container>
           <SectionHeading
-            eyebrow="How selling works"
-            title="Five steps, and you know where you are at every one"
-            description="Your submission carries a status from verification through inspection, publication and any seller-reported close."
+            eyebrow={t('sell.pipeline.eyebrow')}
+            title={t('sell.pipeline.title')}
+            description={t('sell.pipeline.description')}
           />
 
           <div className="mt-12">
@@ -210,36 +187,33 @@ export default async function SellPage() {
       <Section id="cost" tone="surface">
         <Container>
           <SectionHeading
-            eyebrow="Clear boundaries"
-            title="What the platform controls—and what you control"
-            description="The publication workflow is managed by Sawa Cars. The transaction workflow belongs to you and the buyer."
+            eyebrow={t('sell.boundaries.eyebrow')}
+            title={t('sell.boundaries.title')}
+            description={t('sell.boundaries.description')}
           />
 
           <div className="mt-12 grid gap-4 lg:grid-cols-3">
             <Card className="p-6">
-              <Badge tone="neutral">Platform</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">Publication requirements</h3>
+              <Badge tone="neutral">{t('sell.boundaries.platform')}</Badge>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">{t('sell.boundaries.pubReqTitle')}</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                Your account must be active and verified, the required inspection must be complete,
-                and the listing needs a valid gallery before an administrator can make it public.
+                {t('sell.boundaries.pubReqBody')}
               </p>
             </Card>
 
             <Card className="p-6">
-              <Badge tone="success">Seller</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">Direct buyer communication</h3>
+              <Badge tone="success">{t('sell.boundaries.seller')}</Badge>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">{t('sell.boundaries.commTitle')}</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                Reply in the platform or enable phone and WhatsApp. Keep the listing accurate,
-                disclose material changes and pause or mark it sold when it is no longer available.
+                {t('sell.boundaries.commBody')}
               </p>
             </Card>
 
             <Card className="p-6">
-              <Badge tone="neutral">Independent</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">Contract and payment</h3>
+              <Badge tone="neutral">{t('sell.boundaries.independent')}</Badge>
+              <h3 className="mt-4 text-title-sm font-extrabold text-content">{t('sell.boundaries.contractTitle')}</h3>
               <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                You and the buyer are responsible for inspection, price, payment, ownership
-                transfer, delivery and written terms. Sawa Cars does not hold money or guarantee the deal.
+                {t('sell.boundaries.contractBody')}
               </p>
             </Card>
           </div>
@@ -247,7 +221,7 @@ export default async function SellPage() {
           <div className="mt-8 flex flex-col gap-3 rounded-2xl bg-ink-900 p-6 text-white sm:flex-row sm:items-center sm:gap-5 sm:p-8">
             <Icon name="info" size={22} className="text-white/70" />
             <p className="text-body leading-relaxed text-white/85">
-              <span className="font-extrabold text-white">No Sawa transaction checkout.</span> Contacting you is an inquiry only; it does not reserve the vehicle or create a contract with Sawa Cars.
+              <span className="font-extrabold text-white">{t('sell.boundaries.noCheckoutBold')}</span>{t('sell.boundaries.noCheckoutBody')}
             </p>
           </div>
         </Container>
@@ -258,34 +232,30 @@ export default async function SellPage() {
         <Container>
           <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-16">
             <div>
-              <p className="mb-4 text-eyebrow font-bold uppercase text-brand">Before you start</p>
+              <p className="mb-4 text-eyebrow font-bold uppercase text-brand">{t('sell.app.eyebrow')}</p>
               <h2 className="text-headline font-extrabold text-content">
-                One step has to happen in the app
+                {t('sell.app.title')}
               </h2>
               <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
-                You can submit the car first. Before the listing or your direct contact details can
-                become public, complete a one-time identity check: a photo of your national ID, front
-                and back, and a selfie. The capture happens in the Sawa Cars app, takes about two
-                minutes, and only needs to be approved once.
+                {t('sell.app.body1')}
               </p>
               <p className="mt-4 text-body leading-relaxed text-content-secondary">
-                It is also the reason there are no fake listings on Sawa Cars. Every seller on this
-                marketplace is a verified person, checked by our team.
+                {t('sell.app.body2')}
               </p>
             </div>
 
             <Card className="p-6 sm:p-8">
               <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
-                Where each step happens
+                {t('sell.app.whereTitle')}
               </h3>
               <ul className="mt-5 space-y-3.5">
                 {[
-                  { where: 'App', what: 'Identity verification and submitting a car' },
-                  { where: 'Web', what: 'Free valuation and browsing the market' },
-                  { where: 'Both', what: 'Tracking your submission through the pipeline' },
-                  { where: 'Both', what: 'Messages from buyers, and changing your price' },
-                  { where: 'Center', what: 'Vehicle inspection and listing evidence where required' },
-                  { where: 'Direct', what: 'Viewing, negotiation, contract, payment, transfer and delivery' },
+                  { where: t('sell.app.whereApp'), what: t('sell.app.step1') },
+                  { where: t('sell.app.whereWeb'), what: t('sell.app.step2') },
+                  { where: t('sell.app.whereBoth'), what: t('sell.app.step3') },
+                  { where: t('sell.app.whereBoth'), what: t('sell.app.step4') },
+                  { where: t('sell.app.whereCenter'), what: t('sell.app.step5') },
+                  { where: t('sell.app.whereDirect'), what: t('sell.app.step6') },
                 ].map((row) => (
                   <li key={row.what} className="flex items-start gap-3">
                     <span className="mt-0.5 w-[52px] shrink-0 rounded-pill bg-surface-alt px-2 py-1 text-center text-micro font-bold uppercase tracking-wide text-content-muted">
@@ -301,9 +271,9 @@ export default async function SellPage() {
               <div className="mt-7 border-t border-line-soft pt-6">
                 <StoreButtons size="sm" />
                 <p className="mt-4 text-micro leading-relaxed text-content-muted">
-                  Already have the app?{' '}
+                  {t('sell.app.alreadyHaveApp')}{' '}
                   <Link href="/download" className="font-bold text-brand hover:underline">
-                    Open the seller flow
+                    {t('sell.app.openSellerFlow')}
                   </Link>
                   .
                 </p>
@@ -317,9 +287,9 @@ export default async function SellPage() {
       <Section tone="surface">
         <Container>
           <SectionHeading
-            eyebrow="Where you bring it"
-            title="Inspection centers across Kigali"
-            description="Inspection services happen at the center you choose. Bring the car, your ID and any service records you have."
+            eyebrow={t('sell.centers.eyebrow')}
+            title={t('sell.centers.title')}
+            description={t('sell.centers.description')}
           />
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -344,7 +314,7 @@ export default async function SellPage() {
       {sellerFaqs.length ? (
         <Section>
           <Container>
-            <SectionHeading eyebrow="Questions" title="What sellers ask us first" />
+            <SectionHeading eyebrow={t('sell.faq.eyebrow')} title={t('sell.faq.title')} />
 
             <div className="mt-10 max-w-3xl divide-y divide-line-soft border-y border-line-soft">
               {sellerFaqs.map((faq) => (
@@ -369,20 +339,19 @@ export default async function SellPage() {
 
       {/* ─── Close ────────────────────────────────────────────────────────── */}
       <InkClose
-        headline="Find out what it is worth first"
+        headline={t('sell.close.headline')}
         actions={
           <>
             <Button href="#valuation" size="lg">
-              Value my car
+              {t('sell.close.valueMy')}
             </Button>
             <Button href="/download" variant="inverse" size="lg">
-              Get the app to submit
+              {t('sell.close.getApp')}
             </Button>
           </>
         }
       >
-        The valuation costs nothing and commits you to nothing. If the number works, verify
-        your ID in the app and book an inspection at the center nearest you.
+        {t('sell.close.body')}
       </InkClose>
     </>
   )

@@ -16,19 +16,19 @@ function readId(meta: Record<string, unknown> | null | undefined, key: string): 
  */
 export function notificationTarget(
   notification: AppNotification
-): { href: string; label: string } | null {
+): { href: string; labelKey: string } | null {
   const meta = notification.meta
   const disputeId = readId(meta, 'disputeId')
-  if (disputeId) return { href: '/dashboard', label: 'View account' }
+  if (disputeId) return { href: '/dashboard', labelKey: 'dashboard.notificationTarget.viewAccount' }
 
   const bookingId = readId(meta, 'bookingId')
-  if (bookingId) return { href: '/dashboard', label: 'View account' }
+  if (bookingId) return { href: '/dashboard', labelKey: 'dashboard.notificationTarget.viewAccount' }
 
   const carId = readId(meta, 'carId')
-  if (carId) return { href: `/cars/${carId}`, label: 'View car' }
+  if (carId) return { href: `/cars/${carId}`, labelKey: 'dashboard.notificationTarget.viewCar' }
 
   const submissionId = readId(meta, 'submissionId')
-  if (submissionId) return { href: '/dashboard/selling', label: 'View submission' }
+  if (submissionId) return { href: '/dashboard/selling', labelKey: 'dashboard.notificationTarget.viewSubmission' }
 
   return null
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Button, Icon } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import { FilterPanel } from './FilterPanel'
 import type { Facets } from './facets'
 import { activeFilterCount, type Filters, type SortValue } from './query'
@@ -19,6 +20,7 @@ export function FilterSheet({
   filters: Filters
   sort: SortValue
 }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -83,7 +85,7 @@ export function FilterSheet({
         className="lg:hidden"
       >
         <Icon name="filter" size={17} className="text-content-secondary" />
-        Filters
+        {t('cars.filterSheet.filters')}
         {count > 0 ? (
           <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-pill bg-brand px-1.5 text-micro font-extrabold text-white">
             {count}
@@ -102,16 +104,16 @@ export function FilterSheet({
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Filter listings"
+            aria-label={t('cars.filter.ariaLabel')}
             className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col bg-surface shadow-float"
           >
             <div className="flex items-center justify-between border-b border-line-soft px-5 py-4">
-              <h2 className="text-base font-extrabold text-content">Filters</h2>
+              <h2 className="text-base font-extrabold text-content">{t('cars.filterSheet.filters')}</h2>
               <button
                 ref={closeRef}
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close filters"
+                aria-label={t('cars.filterSheet.close')}
                 className="flex h-11 w-11 items-center justify-center rounded-xl text-content-secondary transition-colors hover:bg-surface-alt hover:text-content"
               >
                 <Icon name="close" size={20} />

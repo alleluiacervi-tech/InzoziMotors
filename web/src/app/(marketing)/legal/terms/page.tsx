@@ -2,28 +2,42 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { LegalPage, type LegalSection } from '@/components/marketing/LegalPage'
 import { CONTACT } from '@/lib/site'
+import { getServerT } from '@/lib/i18n/server'
 
-export const metadata: Metadata = {
-  title: 'Marketplace terms of service',
-  description: 'Terms governing accounts, verified vehicle listings, seller contact, rental inquiries and direct user transactions on Sawa Cars.',
-  alternates: { canonical: '/legal/terms' },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('marketing.terms.meta.title'),
+    description: t('marketing.terms.meta.desc'),
+    alternates: { canonical: '/legal/terms' },
+  }
 }
 
-const SECTIONS: LegalSection[] = [
-  { id: 'scope', heading: 'Scope and acceptance', body: <><p>These terms govern use of the Sawa Cars website, mobile apps and related marketplace services. By creating an account or using an authenticated feature, you agree to these terms and the <Link href="/legal/privacy">privacy policy</Link>.</p><p>The current marketplace terms version is shown when a user first requests a seller contact channel. Material policy changes may require acceptance again.</p></> },
-  { id: 'role', heading: 'Sawa Cars’ limited role', body: <><p><strong>Sawa Cars provides a verified-listing and communication platform.</strong> It is not the buyer, seller, rental provider, payment processor, escrow agent, insurer, lender, transport company or a party to a contract between users.</p><p>Contacting another user is an inquiry only. It does not reserve a vehicle, confirm availability, create a sale or rental, or bind Sawa Cars.</p></> },
-  { id: 'accounts', heading: 'Accounts and eligibility', body: <ul><li>Provide accurate, current information and keep your credentials secure.</li><li>Use your own identity and contact information.</li><li>Notify us promptly of unauthorized access.</li><li>Seller publication may require identity verification; rental inventory requires separate business verification.</li><li>We may suspend or restrict an account to protect users, investigate abuse, comply with law or enforce these terms.</li></ul> },
-  { id: 'listings', heading: 'Listings and publication', body: <><p>Sellers must describe the vehicle truthfully, disclose material defects or changes and have authority to offer it. Submission does not guarantee publication.</p><p>Only an authorized administrator can publish a listing. Publication readiness may require an active verified seller, a completed inspection and a valid image gallery. Sawa Cars may reject, pause, correct or archive content that is inaccurate, unsafe, unlawful or inconsistent with platform standards.</p></> },
-  { id: 'inspection', heading: 'Inspection information and badges', body: <><p>An inspection reflects recorded observations on the inspection date and the items actually checked. It is not a warranty, guarantee of future condition or substitute for a buyer’s independent mechanical and legal review.</p><p>“Verified seller” means the platform completed its configured account checks; it does not promise that every statement, vehicle or future action by that person is risk-free.</p></> },
-  { id: 'contact', heading: 'Contact sharing and communications', body: <><p>A seller chooses whether phone or WhatsApp contact can be disclosed. Sawa Cars reveals an enabled channel only to an authenticated user after acknowledgement of the direct-deal notice and records that disclosure for safety and audit purposes.</p><p>Users must not harass, threaten, spam, scrape contact data or use it for an unrelated purpose. In-app messages may be reported and reviewed for moderation as described in the privacy policy.</p></> },
-  { id: 'transactions', heading: 'Independent sales and rentals', body: <><p>Buyer and seller—or renter and provider—are solely responsible for availability, further inspection, documents, price, taxes, payment, deposits, written terms, delivery, pickup, return, ownership transfer, insurance and regulatory compliance.</p><p>Sawa Cars does not collect or hold transaction funds and cannot cancel, refund, reverse, enforce or decide an agreement made by users. Rental rates and deposits shown are provider-supplied information until the provider confirms them.</p></> },
-  { id: 'prohibited', heading: 'Prohibited conduct', body: <ul><li>Fraud, impersonation, stolen vehicles or false documents.</li><li>Misleading descriptions, concealed material defects or manipulated images.</li><li>Malware, automated scraping, interference with security or unauthorized access.</li><li>Discrimination, threats, harassment or unlawful content.</li><li>Using another person’s contact data outside the purpose for which it was disclosed.</li></ul> },
-  { id: 'reports', heading: 'Reports, evidence and disputes', body: <><p>Users can report platform content, messages or accounts. Sawa Cars may moderate the platform, preserve evidence and cooperate with lawful requests.</p><p>Platform moderation is not arbitration of the users’ contract. A payment, ownership, delivery or rental dispute must be handled by the parties and, where appropriate, their bank, payment provider, insurer, lawyer, regulator, court or law-enforcement authority.</p></> },
-  { id: 'liability', heading: 'Disclaimers and responsibility', body: <><p>To the extent permitted by applicable law, marketplace information and communication tools are provided without a promise that a vehicle will remain available, a user will complete a deal, or an external agreement will achieve a particular result.</p><p>Each user is responsible for their own decisions and for losses caused by their own representation, agreement, payment or unlawful conduct. Nothing in these terms excludes fraud, wilful misconduct or any right or liability that applicable law does not permit us to exclude.</p></> },
-  { id: 'changes', heading: 'Changes and termination', body: <><p>We may improve, restrict or retire features and update these terms. Material updates will be communicated through the service where practical. Historical records may be retained when needed for security, audit, legal compliance or legitimate claims.</p><p>You may request account deletion through the app or website, subject to legally required retention and irreversible anonymisation rules described in the privacy policy.</p></> },
-  { id: 'law-contact', heading: 'Law and contact', body: <><p>These terms are intended to operate under the laws applicable in Rwanda. The final governing-law and dispute-resolution clause must be confirmed by qualified Rwandan counsel before production launch.</p><p>Questions about these terms can be sent to <a href={`mailto:${CONTACT.supportEmail}`}>{CONTACT.supportEmail}</a>.</p><p>Last updated: 23 August 2026.</p></> },
-]
+export default async function TermsPage() {
+  const t = await getServerT()
 
-export default function TermsPage() {
-  return <LegalPage title="Marketplace terms of service" lede="Clear rules for verified listings and direct communication—and a clear boundary around contracts and payments made independently by users." sections={SECTIONS} />
+  const list = (base: string, count: number) => (
+    <ul>
+      {Array.from({ length: count }, (_, i) => (
+        <li key={i}>{t(`${base}.${i}`)}</li>
+      ))}
+    </ul>
+  )
+
+  const SECTIONS: LegalSection[] = [
+    { id: 'scope', heading: t('marketing.terms.scope.heading'), body: <><p>{t('marketing.terms.scope.p1before')}<Link href="/legal/privacy">{t('marketing.terms.scope.p1link')}</Link>{t('marketing.terms.scope.p1after')}</p><p>{t('marketing.terms.scope.p2')}</p></> },
+    { id: 'role', heading: t('marketing.terms.role.heading'), body: <><p><strong>{t('marketing.terms.role.p1strong')}</strong>{t('marketing.terms.role.p1rest')}</p><p>{t('marketing.terms.role.p2')}</p></> },
+    { id: 'accounts', heading: t('marketing.terms.accounts.heading'), body: list('marketing.terms.accounts.items', 5) },
+    { id: 'listings', heading: t('marketing.terms.listings.heading'), body: <><p>{t('marketing.terms.listings.p1')}</p><p>{t('marketing.terms.listings.p2')}</p></> },
+    { id: 'inspection', heading: t('marketing.terms.inspection.heading'), body: <><p>{t('marketing.terms.inspection.p1')}</p><p>{t('marketing.terms.inspection.p2')}</p></> },
+    { id: 'contact', heading: t('marketing.terms.contact.heading'), body: <><p>{t('marketing.terms.contact.p1')}</p><p>{t('marketing.terms.contact.p2')}</p></> },
+    { id: 'transactions', heading: t('marketing.terms.transactions.heading'), body: <><p>{t('marketing.terms.transactions.p1')}</p><p>{t('marketing.terms.transactions.p2')}</p></> },
+    { id: 'prohibited', heading: t('marketing.terms.prohibited.heading'), body: list('marketing.terms.prohibited.items', 5) },
+    { id: 'reports', heading: t('marketing.terms.reports.heading'), body: <><p>{t('marketing.terms.reports.p1')}</p><p>{t('marketing.terms.reports.p2')}</p></> },
+    { id: 'liability', heading: t('marketing.terms.liability.heading'), body: <><p>{t('marketing.terms.liability.p1')}</p><p>{t('marketing.terms.liability.p2')}</p></> },
+    { id: 'changes', heading: t('marketing.terms.changes.heading'), body: <><p>{t('marketing.terms.changes.p1')}</p><p>{t('marketing.terms.changes.p2')}</p></> },
+    { id: 'law-contact', heading: t('marketing.terms.lawContact.heading'), body: <><p>{t('marketing.terms.lawContact.p1')}</p><p>{t('marketing.terms.lawContact.p2before')}<a href={`mailto:${CONTACT.supportEmail}`}>{CONTACT.supportEmail}</a>{t('marketing.terms.lawContact.p2after')}</p><p>{t('marketing.terms.lawContact.lastUpdated')}</p></> },
+  ]
+
+  return <LegalPage title={t('marketing.terms.page.title')} lede={t('marketing.terms.page.lede')} sections={SECTIONS} />
 }

@@ -3,6 +3,7 @@
 import { useId, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Icon, Input, Select } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import { withSelected, type Facets } from './facets'
 import {
   buildBrowseHref,
@@ -37,10 +38,16 @@ export function FilterPanel({
   onApplied?: () => void
   className?: string
 }) {
+  const t = useT()
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [pending, startTransition] = useTransition()
   const uid = useId()
+
+  const driveSideLabel = (value: string) =>
+    value === 'RHD' ? t('cars.driveSide.rhd.label') : t('cars.driveSide.lhd.label')
+  const driveSideHintFor = (value: string) =>
+    value === 'RHD' ? t('cars.driveSide.rhd.hint') : t('cars.driveSide.lhd.hint')
 
   const fieldId = (name: string) => `${uid}-${name}`
 
@@ -81,14 +88,14 @@ export function FilterPanel({
         if ((event.target as HTMLElement).tagName === 'SELECT') apply()
       }}
       className={`space-y-6 ${className}`}
-      aria-label="Filter listings"
+      aria-label={t('cars.filter.ariaLabel')}
     >
       {/* Sort lives in the toolbar, but it has to survive a filter submit. */}
       <input type="hidden" name="sort" value={sort} />
 
       <div>
         <label htmlFor={fieldId('q')} className={LABEL}>
-          Keyword
+          {t('cars.filter.keyword')}
         </label>
         <div className="relative">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-content-muted">
@@ -99,7 +106,7 @@ export function FilterPanel({
             name="q"
             type="search"
             defaultValue={filters.q ?? ''}
-            placeholder="RAV4, hybrid, pickup…"
+            placeholder={t('cars.filter.keywordPlaceholder')}
             className="pl-10"
           />
         </div>
@@ -108,38 +115,38 @@ export function FilterPanel({
       <SelectField
         id={fieldId('make')}
         name="make"
-        label="Make"
+        label={t('cars.filter.make')}
         value={filters.make}
         options={withSelected(facets.makes, filters.make)}
-        anyLabel="Any make"
+        anyLabel={t('cars.filter.anyMake')}
       />
 
       <div>
         <label htmlFor={fieldId('model')} className={LABEL}>
-          Model
+          {t('cars.filter.model')}
         </label>
         <Input
           id={fieldId('model')}
           name="model"
           defaultValue={filters.model ?? ''}
-          placeholder="Any model"
+          placeholder={t('cars.filter.anyModel')}
         />
       </div>
 
       <SelectField
         id={fieldId('body_type')}
         name="body_type"
-        label="Body type"
+        label={t('cars.filter.bodyType')}
         value={filters.body_type}
         options={withSelected(facets.bodyTypes, filters.body_type)}
-        anyLabel="Any body type"
+        anyLabel={t('cars.filter.anyBodyType')}
       />
 
       <fieldset>
-        <legend className={LABEL}>Price (RWF)</legend>
+        <legend className={LABEL}>{t('cars.filter.priceRwf')}</legend>
         <div className="flex items-center gap-2">
           <label className="sr-only" htmlFor={fieldId('min_price')}>
-            Minimum price in Rwandan francs
+            {t('cars.filter.minPriceSr')}
           </label>
           <Input
             id={fieldId('min_price')}
@@ -149,13 +156,13 @@ export function FilterPanel({
             min={0}
             step={500}
             defaultValue={filters.min_price ?? ''}
-            placeholder="Min"
+            placeholder={t('cars.filter.min')}
           />
           <span aria-hidden className="text-content-muted">
             –
           </span>
           <label className="sr-only" htmlFor={fieldId('max_price')}>
-            Maximum price in Rwandan francs
+            {t('cars.filter.maxPriceSr')}
           </label>
           <Input
             id={fieldId('max_price')}
@@ -165,16 +172,16 @@ export function FilterPanel({
             min={0}
             step={500}
             defaultValue={filters.max_price ?? ''}
-            placeholder="Max"
+            placeholder={t('cars.filter.max')}
           />
         </div>
       </fieldset>
 
       <fieldset>
-        <legend className={LABEL}>Year</legend>
+        <legend className={LABEL}>{t('cars.filter.year')}</legend>
         <div className="flex items-center gap-2">
           <label className="sr-only" htmlFor={fieldId('min_year')}>
-            Earliest model year
+            {t('cars.filter.minYearSr')}
           </label>
           <Input
             id={fieldId('min_year')}
@@ -184,13 +191,13 @@ export function FilterPanel({
             min={1980}
             max={2100}
             defaultValue={filters.min_year ?? ''}
-            placeholder="From"
+            placeholder={t('cars.filter.from')}
           />
           <span aria-hidden className="text-content-muted">
             –
           </span>
           <label className="sr-only" htmlFor={fieldId('max_year')}>
-            Latest model year
+            {t('cars.filter.maxYearSr')}
           </label>
           <Input
             id={fieldId('max_year')}
@@ -200,14 +207,14 @@ export function FilterPanel({
             min={1980}
             max={2100}
             defaultValue={filters.max_year ?? ''}
-            placeholder="To"
+            placeholder={t('cars.filter.to')}
           />
         </div>
       </fieldset>
 
       <div>
         <label htmlFor={fieldId('drive_side')} className={LABEL}>
-          Drive side
+          {t('cars.filter.driveSide')}
         </label>
         <Select
           id={fieldId('drive_side')}
@@ -215,43 +222,42 @@ export function FilterPanel({
           defaultValue={filters.drive_side ?? ''}
           aria-describedby={fieldId('drive_side-hint')}
         >
-          <option value="">Either</option>
+          <option value="">{t('cars.filter.either')}</option>
           {DRIVE_SIDES.map((side) => (
             <option key={side.value} value={side.value}>
-              {side.label} — {side.hint}
+              {driveSideLabel(side.value)} — {driveSideHintFor(side.value)}
             </option>
           ))}
         </Select>
         <p id={fieldId('drive_side-hint')} className="mt-2 text-micro leading-relaxed text-content-muted">
-          Most imports from Japan are right-hand drive. Cars bought new in Rwanda
-          are usually left-hand drive.
+          {t('cars.filter.driveSideHint')}
         </p>
       </div>
 
       <SelectField
         id={fieldId('fuel_type')}
         name="fuel_type"
-        label="Fuel"
+        label={t('cars.filter.fuel')}
         value={filters.fuel_type}
         options={withSelected(facets.fuelTypes, filters.fuel_type)}
-        anyLabel="Any fuel"
+        anyLabel={t('cars.filter.anyFuel')}
       />
 
       <SelectField
         id={fieldId('transmission')}
         name="transmission"
-        label="Gearbox"
+        label={t('cars.filter.gearbox')}
         value={filters.transmission}
         options={withSelected(facets.transmissions, filters.transmission)}
-        anyLabel="Any gearbox"
+        anyLabel={t('cars.filter.anyGearbox')}
       />
 
       <div className="flex flex-col gap-2 border-t border-line-soft pt-5">
         <Button type="submit" fullWidth disabled={pending}>
-          {pending ? 'Applying…' : 'Apply filters'}
+          {pending ? t('cars.filter.applying') : t('cars.filter.apply')}
         </Button>
         <Button href="/cars" variant="ghost" size="sm" fullWidth>
-          Clear all
+          {t('cars.filter.clearAll')}
         </Button>
       </div>
     </form>

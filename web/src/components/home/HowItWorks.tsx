@@ -1,19 +1,21 @@
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
+import { getServerT } from '@/lib/i18n/server'
 
 // The pipeline as numbered modules on one dashed line — the offline handover
 // is a first-class node, not an apology. Shared grammar with /sell and
 // /how-it-works via PipelineModules.
 
-export function HowItWorks() {
+export async function HowItWorks() {
+  const t = await getServerT()
   return (
     <Section tone="surface">
       <Container>
         <SectionHeading
-          eyebrow="How it works"
-          title="Submission to direct enquiry, in five steps"
-          description="Our team controls the evidence and publication stages. The seller controls the resulting negotiation."
+          eyebrow={t('home.howItWorks.eyebrow')}
+          title={t('home.howItWorks.title')}
+          description={t('home.howItWorks.description')}
         />
 
         <div className="mt-12">
@@ -30,7 +32,7 @@ export function HowItWorks() {
             href="/how-it-works"
             className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
           >
-            Buying safety, direct deals, and how selling works
+            {t('home.howItWorks.link')}
             <Icon name="arrow-right" size={16} />
           </Link>
         </p>

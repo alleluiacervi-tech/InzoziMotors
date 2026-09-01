@@ -5,6 +5,7 @@ import { describeError } from '@/components/dashboard/data'
 import type { ActionState } from '@/components/dashboard/types'
 import { saved } from '@/lib/api'
 import { getToken } from '@/lib/session'
+import { getServerT } from '@/lib/i18n/server'
 
 // Saved cars and saved searches. Each action reads the token itself rather
 // than accepting one from the form — a token that travels through a client
@@ -19,9 +20,10 @@ export async function toggleSearchNotifyAction(
   // cannot silently flip the toggle the other way.
   const notify = formData.get('notify') === 'on'
 
+  const t = await getServerT()
   const token = await getToken()
-  if (!token) return { error: 'Your session has expired. Sign in again.' }
-  if (!id) return { error: 'That search could not be found.' }
+  if (!token) return { error: t('dashboard.errors.sessionExpired') }
+  if (!id) return { error: t('dashboard.errors.searchNotFound') }
 
   try {
     await saved.updateSearch(token, id, notify)
@@ -32,7 +34,7 @@ export async function toggleSearchNotifyAction(
   revalidatePath('/dashboard/saved')
   return {
     ok: true,
-    message: notify ? 'Alerts on for this search.' : 'Alerts off for this search.',
+    message: notify ? t('dashboard.messages.alertsOnSearch') : t('dashboard.messages.alertsOffSearch'),
   }
 }
 
@@ -41,9 +43,10 @@ export async function deleteSearchAction(
   formData: FormData
 ): Promise<ActionState> {
   const id = String(formData.get('id') || '')
+  const t = await getServerT()
   const token = await getToken()
-  if (!token) return { error: 'Your session has expired. Sign in again.' }
-  if (!id) return { error: 'That search could not be found.' }
+  if (!token) return { error: t('dashboard.errors.sessionExpired') }
+  if (!id) return { error: t('dashboard.errors.searchNotFound') }
 
   try {
     await saved.deleteSearch(token, id)
@@ -52,7 +55,7 @@ export async function deleteSearchAction(
   }
 
   revalidatePath('/dashboard/saved')
-  return { ok: true, message: 'Search deleted.' }
+  return { ok: true, message: t('dashboard.messages.searchDeleted') }
 }
 
 export async function unsaveCarAction(
@@ -60,9 +63,10 @@ export async function unsaveCarAction(
   formData: FormData
 ): Promise<ActionState> {
   const carId = String(formData.get('car_id') || '')
+  const t = await getServerT()
   const token = await getToken()
-  if (!token) return { error: 'Your session has expired. Sign in again.' }
-  if (!carId) return { error: 'That car could not be found.' }
+  if (!token) return { error: t('dashboard.errors.sessionExpired') }
+  if (!carId) return { error: t('dashboard.errors.carNotFound') }
 
   try {
     // The endpoint is a toggle. It is only ever reached from a card that is
@@ -73,5 +77,5 @@ export async function unsaveCarAction(
   }
 
   revalidatePath('/dashboard/saved')
-  return { ok: true, message: 'Removed from saved.' }
+  return { ok: true, message: t('dashboard.messages.removedFromSaved') }
 }

@@ -22,6 +22,7 @@ import {
   priceDrop,
 } from '@/lib/business'
 import type { Car } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
 import { Alert, Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
 import { CarCard } from '@/components/marketplace/CarCard'
 import { Gallery } from '@/components/marketplace/Gallery'
@@ -94,8 +95,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (err instanceof ApiError && (err.status === 404 || err.status === 400)) notFound()
     car = null
   }
+  const t = await getServerT()
   if (!car) {
-    return { title: 'Car unavailable', robots: { index: false, follow: true } }
+    return { title: t('cars.detail.metaUnavailable'), robots: { index: false, follow: true } }
   }
 
   const facts = [String(car.year), formatKm(car.mileage), car.fuel_type, car.transmission]
@@ -103,8 +105,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .join(' · ')
 
   const description = car.inspected
-    ? `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali. Inspection information and verified-seller contact available on Sawa Cars.`
-    : `${car.title} — ${facts}. ${formatUSD(car.price)} in Kigali, listed by Sawa Cars.`
+    ? t('cars.detail.metaDescriptionInspected', { title: car.title, facts, price: formatUSD(car.price) })
+    : t('cars.detail.metaDescriptionListed', { title: car.title, facts, price: formatUSD(car.price) })
 
   const image = car.images?.[0]
 
@@ -128,6 +130,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
   const car = await loadCar(id)
   if (!car) notFound()
+  const t = await getServerT()
 
   // Each call is allowed to fail on its own terms: an uninspected car has no
   // report, a history lookup can time out, and neither may blank the listing.
@@ -152,29 +155,29 @@ export default async function CarDetailPage({ params }: PageProps) {
   const isOwnListing = Boolean(user && user.id === car.seller_id)
 
   const specs: Spec[] = [
-    { label: 'Year', value: String(car.year), icon: 'calendar' },
-    { label: 'Mileage', value: formatKm(car.mileage), icon: 'gauge' },
-    { label: 'Fuel', value: car.fuel_type ?? '', icon: 'fuel' },
-    { label: 'Gearbox', value: car.transmission ?? '', icon: 'settings' },
-    { label: 'Body type', value: car.body_type ?? '', icon: 'car' },
-    { label: 'Colour', value: car.color ?? '' },
+    { label: t('cars.spec.year'), value: String(car.year), icon: 'calendar' },
+    { label: t('cars.spec.mileage'), value: formatKm(car.mileage), icon: 'gauge' },
+    { label: t('cars.spec.fuel'), value: car.fuel_type ?? '', icon: 'fuel' },
+    { label: t('cars.spec.gearbox'), value: car.transmission ?? '', icon: 'settings' },
+    { label: t('cars.spec.bodyType'), value: car.body_type ?? '', icon: 'car' },
+    { label: t('cars.spec.colour'), value: car.color ?? '' },
     {
-      label: 'Drive side',
+      label: t('cars.spec.driveSide'),
       value:
         car.drive_side === 'RHD'
-          ? 'Right-hand drive'
+          ? t('cars.spec.rhd')
           : car.drive_side === 'LHD'
-          ? 'Left-hand drive'
+          ? t('cars.spec.lhd')
           : '',
       hint:
         car.drive_side === 'RHD'
-          ? 'Japanese import'
+          ? t('cars.spec.japaneseImport')
           : car.drive_side === 'LHD'
-          ? 'Bought locally'
+          ? t('cars.spec.boughtLocally')
           : undefined,
       icon: 'key',
     },
-    { label: 'Location', value: car.location ?? '', icon: 'location' },
+    { label: t('cars.spec.location'), value: car.location ?? '', icon: 'location' },
   ]
 
   return (
@@ -188,13 +191,13 @@ export default async function CarDetailPage({ params }: PageProps) {
           <ol className="flex flex-wrap items-center gap-1.5 text-caption text-content-muted">
             <li className="flex items-center gap-1.5">
               <Link href="/" className="hover:text-content">
-                Home
+                {t('cars.detail.breadcrumbHome')}
               </Link>
               <span aria-hidden>·</span>
             </li>
             <li className="flex items-center gap-1.5">
               <Link href="/cars" className="hover:text-content">
-                Cars
+                {t('cars.detail.breadcrumbCars')}
               </Link>
               <span aria-hidden>·</span>
             </li>
@@ -221,7 +224,7 @@ export default async function CarDetailPage({ params }: PageProps) {
             <header>
               <div className="flex flex-wrap items-center gap-2">
                 {demo ? (
-                  <Badge tone="neutral">Preview listing</Badge>
+                  <Badge tone="neutral">{t('cars.card.previewListing')}</Badge>
                 ) : tier ? (
                   <Badge
                     tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'}
@@ -232,11 +235,11 @@ export default async function CarDetailPage({ params }: PageProps) {
                 ) : null}
                 {drop > 0 ? (
                   <Badge tone="warning" icon="trending-down">
-                    Price reduced
+                    {t('cars.detail.priceReduced')}
                   </Badge>
                 ) : null}
-                {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">New listing</Badge> : null}
-                {isHighDemand(car) ? <Badge tone="danger">High demand</Badge> : null}
+                {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">{t('cars.detail.newListing')}</Badge> : null}
+                {isHighDemand(car) ? <Badge tone="danger">{t('cars.card.highDemand')}</Badge> : null}
                 {!isAvailable ? (
                   <Badge tone="neutral">
                     {CAR_STATUS_LABEL[car.status] ?? car.status}
@@ -268,7 +271,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                 {car.saves_count ? (
                   <>
                     <span aria-hidden className="text-line">·</span>
-                    <span>{car.saves_count} saved</span>
+                    <span>{t('cars.card.saved', { count: car.saves_count })}</span>
                   </>
                 ) : null}
               </p>
@@ -279,14 +282,14 @@ export default async function CarDetailPage({ params }: PageProps) {
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="relative overflow-hidden rounded-3xl border-line bg-surface p-6 shadow-float sm:p-7">
                 <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">Purchase overview</p>
+                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">{t('cars.detail.purchaseOverview')}</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
                 <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.price)}
                 </p>
                 <p className="mt-2 text-caption text-content-secondary">
-                  ~{formatUSD(monthly)}/mo estimated finance
+                  {t('cars.detail.monthlyFinance', { amount: formatUSD(monthly) })}
                 </p>
 
                 {market && car.market_avg ? (
@@ -300,16 +303,17 @@ export default async function CarDetailPage({ params }: PageProps) {
                     }`}
                   >
                     {market.tone === 'neutral'
-                      ? `At market price · ${car.comparables} similar cars`
-                      : `${formatRWF(Math.abs(car.market_avg - car.price))} ${
-                          market.tone === 'good' ? 'below' : 'above'
-                        } the average of ${car.comparables} similar cars`}
+                      ? t('cars.card.atMarketPrice', { count: car.comparables ?? 0 })
+                      : t(market.tone === 'good' ? 'cars.card.belowAverage' : 'cars.card.aboveAverage', {
+                          amount: formatRWF(Math.abs(car.market_avg - car.price)),
+                          count: car.comparables ?? 0,
+                        })}
                   </p>
                 ) : null}
 
                 {drop > 0 ? (
                   <p className="mt-2 text-caption font-semibold text-warning-text">
-                    Reduced by {formatUSD(drop)} since it was listed
+                    {t('cars.detail.reducedBy', { amount: formatUSD(drop) })}
                   </p>
                 ) : null}
 
@@ -319,17 +323,17 @@ export default async function CarDetailPage({ params }: PageProps) {
                   {!isAvailable ? (
                     <div className="space-y-4">
                       <Alert tone="info">
-                        This car is not currently available. Browse the live marketplace for alternatives.
+                        {t('cars.detail.unavailableAlert')}
                       </Alert>
                       <Button href="/cars" variant="outline" fullWidth>
-                        Browse available cars
+                        {t('cars.detail.browseAvailable')}
                       </Button>
                     </div>
                   ) : isOwnListing ? (
                     <div className="space-y-4">
-                      <Alert tone="info">This is your listing. Use your dashboard to manage it.</Alert>
+                      <Alert tone="info">{t('cars.detail.ownListingAlert')}</Alert>
                       <Button href="/dashboard" variant="outline" fullWidth>
-                        Manage this listing
+                        {t('cars.detail.manageListing')}
                       </Button>
                     </div>
                   ) : user ? (
@@ -342,12 +346,12 @@ export default async function CarDetailPage({ params }: PageProps) {
                         fullWidth
                         trailingIcon={<Icon name="arrow-right" size={18} />}
                       >
-                        Sign in to contact seller
+                        {t('cars.detail.signInToContact')}
                       </Button>
                       <p className="text-micro leading-relaxed text-content-muted">
-                        Contact details are released only to signed-in users after the direct-deal notice is acknowledged.{' '}
+                        {t('cars.detail.contactGate')}{' '}
                         <Link href="/how-it-works" className="font-bold text-brand hover:underline">
-                          see how buying works
+                          {t('cars.detail.seeHowBuying')}
                         </Link>
                         .
                       </p>
@@ -360,7 +364,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
                   <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">
                     <Icon name="shield" size={14} className="mt-px shrink-0" />
-                    Verified listing · Direct buyer–seller contact · No in-app payment
+                    {t('cars.detail.trustLine')}
                   </p>
                 </div>
 
@@ -368,7 +372,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     but they never again sit visually equal to the CTA. */}
                 <details className="group mt-5 border-t border-line-soft pt-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between text-caption font-bold text-content [&::-webkit-details-marker]:hidden">
-                    Price history &amp; financing
+                    {t('cars.detail.priceHistoryFinancing')}
                     <Icon name="chevron-down" size={16} className="transition-transform group-open:rotate-180" />
                   </summary>
 
@@ -376,24 +380,26 @@ export default async function CarDetailPage({ params }: PageProps) {
                     {priceHistory.length >= 2 ? (
                       <div className="mb-4">
                         <p className="mb-2 text-micro font-bold uppercase tracking-wide text-content-muted">
-                          Asking price since listing
+                          {t('cars.detail.askingPriceSince')}
                         </p>
                         <Sparkline points={priceHistory} />
                       </div>
                     ) : null}
 
                     <p className="text-caption text-content-secondary">
-                      <span className="font-bold text-content">~{formatUSD(monthly)} a month</span>{' '}
-                      if financed
+                      <span className="font-bold text-content">{t('cars.detail.perMonthBold', { amount: formatUSD(monthly) })}</span>{' '}
+                      {t('cars.detail.ifFinanced')}
                     </p>
                     <p className="mt-1 text-micro leading-relaxed text-content-muted">
-                      An estimate only, using {FINANCE_TERMS.downPaymentPct}% deposit,{' '}
-                      {FINANCE_TERMS.annualRatePct}% a year over {FINANCE_TERMS.termMonths} months.
-                      Sawa Cars does not lend — your bank sets the real terms.
+                      {t('cars.detail.financeDisclaimer', {
+                        deposit: FINANCE_TERMS.downPaymentPct,
+                        rate: FINANCE_TERMS.annualRatePct,
+                        term: FINANCE_TERMS.termMonths,
+                      })}
                     </p>
                     <p className="mt-3 text-caption">
                       <Link href="/tools/import-duty" className="font-bold text-brand hover:underline">
-                        Estimate RRA import duty
+                        {t('cars.detail.estimateDuty')}
                       </Link>
                     </p>
                   </div>
@@ -402,7 +408,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
               <p className="mt-4 flex items-start gap-2 px-1 text-micro leading-relaxed text-content-muted">
                 <Icon name="location" size={14} className="mt-0.5" />
-                Arrange your own viewing, document checks, ownership transfer and delivery directly with the seller.
+                {t('cars.detail.arrangeViewing')}
               </p>
             </div>
           </aside>
@@ -412,7 +418,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
             <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
-                Specification
+                {t('cars.detail.specification')}
               </h2>
               <SpecGrid specs={specs} />
             </section>
@@ -420,7 +426,7 @@ export default async function CarDetailPage({ params }: PageProps) {
             {car.description ? (
               <section aria-labelledby="about-heading">
                 <h2 id="about-heading" className="mb-3 text-title font-extrabold text-content">
-                  About this car
+                  {t('cars.detail.aboutTitle')}
                 </h2>
                 <p className="max-w-prose whitespace-pre-line text-body leading-relaxed text-content-secondary">
                   {car.description}
@@ -431,39 +437,37 @@ export default async function CarDetailPage({ params }: PageProps) {
             {/* The provenance claim, stated exactly once on this page — three
                 facts above the report they produced. */}
             <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-line-soft bg-surface-alt px-5 py-4">
-              {['Inspected by our mechanics', 'Photographed at our center', 'Published by Sawa Cars'].map(
-                (fact) => (
-                  <p key={fact} className="flex items-center gap-1.5 text-caption font-semibold text-content-secondary">
-                    <Icon name="check-circle" size={15} className="text-success" />
-                    {fact}
-                  </p>
-                )
-              )}
+              {[
+                t('cars.detail.provInspected'),
+                t('cars.detail.provPhotographed'),
+                t('cars.detail.provPublished'),
+              ].map((fact) => (
+                <p key={fact} className="flex items-center gap-1.5 text-caption font-semibold text-content-secondary">
+                  <Icon name="check-circle" size={15} className="text-success" />
+                  {fact}
+                </p>
+              ))}
             </div>
 
             <InspectionReportCard report={report} />
 
             {!report && car.inspected ? (
-              <Alert tone="info" title="Report being written up">
-                This car has been inspected. The full 150-point report is published
-                on this page as soon as the center files it.
+              <Alert tone="info" title={t('cars.detail.reportPendingTitle')}>
+                {t('cars.detail.reportPendingBody')}
               </Alert>
             ) : null}
 
             {/* Marketplace role, between the evidence and the history. */}
             <Card className="p-5 sm:p-6">
               <h2 className="text-title-sm font-extrabold text-content">
-                A verified listing, not a managed transaction
+                {t('cars.detail.roleTitle')}
               </h2>
               <p className="mt-2 max-w-prose text-body leading-relaxed text-content-secondary">
-                Sawa Cars reviews seller identity and vehicle information before publication.
-                Buyers and sellers then communicate, negotiate, inspect further, agree terms and
-                transact directly. Sawa Cars does not hold funds, write the parties&apos; contract,
-                guarantee the deal or decide transaction disputes.
+                {t('cars.detail.roleBody')}
               </p>
               <p className="mt-3 text-caption">
                 <Link href="/legal/terms" className="font-bold text-brand hover:underline">
-                  Read the marketplace terms
+                  {t('cars.detail.readTerms')}
                 </Link>
               </p>
             </Card>
@@ -474,7 +478,7 @@ export default async function CarDetailPage({ params }: PageProps) {
 
             <section aria-labelledby="next-heading">
               <h2 id="next-heading" className="mb-4 text-title font-extrabold text-content">
-                What happens after you make contact
+                {t('cars.detail.nextTitle')}
               </h2>
               <ol className="space-y-4">
                 {BUYING_STEPS.slice(0, 4).map((step, index) => (
@@ -501,13 +505,13 @@ export default async function CarDetailPage({ params }: PageProps) {
           <Container>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-eyebrow font-bold uppercase text-brand">Similar cars</p>
+                <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.detail.similarEyebrow')}</p>
                 <h2 className="mt-2 text-headline font-extrabold text-content">
-                  More {car.make} on Sawa Cars
+                  {t('cars.detail.similarTitle', { make: car.make })}
                 </h2>
               </div>
               <Button href={`/cars?make=${encodeURIComponent(car.make)}`} variant="outline" size="sm">
-                See all {car.make}
+                {t('cars.detail.seeAllMake', { make: car.make })}
               </Button>
             </div>
 
@@ -530,7 +534,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <p className="text-title-sm font-extrabold text-brand" aria-label={formatMoneyExact(car.price)}>{formatUSD(car.price)}</p>
             </div>
             <Button href="#purchase-panel" size="compact" trailingIcon={<Icon name="arrow-right" size={16} />}>
-              Request this car
+              {t('cars.detail.requestThisCar')}
             </Button>
           </div>
         </div>
@@ -539,7 +543,8 @@ export default async function CarDetailPage({ params }: PageProps) {
   )
 }
 
-function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<ReturnType<typeof carsApi.inspectionReport>> | null; history: Awaited<ReturnType<typeof carsApi.history>> | null }) {
+async function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<ReturnType<typeof carsApi.inspectionReport>> | null; history: Awaited<ReturnType<typeof carsApi.history>> | null }) {
+  const t = await getServerT()
   const documentChecks = history
     ? [history.rra_duty_paid, history.registration, history.service_history, history.insurance_valid]
     : []
@@ -550,26 +555,26 @@ function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<R
   const signals = [
     {
       icon: report ? 'shield-check' : 'clock',
-      label: 'Inspection',
-      value: report ? `${report.score}/150 recorded` : car.inspected ? 'Report being prepared' : 'Not yet published',
+      label: t('cars.detail.signalInspection'),
+      value: report ? t('cars.detail.inspectionRecorded', { score: report.score }) : car.inspected ? t('cars.detail.reportBeingPrepared') : t('cars.detail.notYetPublished'),
       tone: report ? 'text-success' : 'text-content-muted',
     },
     {
       icon: documentIssues ? 'alert' : verifiedDocuments ? 'check-circle' : 'minus',
-      label: 'Paperwork',
-      value: documentIssues ? `${documentIssues} item${documentIssues === 1 ? '' : 's'} need attention` : verifiedDocuments ? `${verifiedDocuments} checks verified` : 'No verified evidence yet',
+      label: t('cars.detail.signalPaperwork'),
+      value: documentIssues ? t(documentIssues === 1 ? 'cars.detail.itemNeedsAttention' : 'cars.detail.itemsNeedAttention', { count: documentIssues }) : verifiedDocuments ? t('cars.detail.checksVerified', { count: verifiedDocuments }) : t('cars.detail.noEvidenceYet'),
       tone: documentIssues ? 'text-warning-text' : verifiedDocuments ? 'text-success' : 'text-content-muted',
     },
     {
       icon: sellerVerified ? 'shield-check' : 'user',
-      label: 'Seller',
-      value: sellerVerified ? 'Identity verified' : 'Verification not available',
+      label: t('cars.detail.signalSeller'),
+      value: sellerVerified ? t('cars.detail.identityVerified') : t('cars.detail.verificationUnavailable'),
       tone: sellerVerified ? 'text-success' : 'text-content-muted',
     },
     {
       icon: 'check-circle',
-      label: 'Transaction model',
-      value: 'Direct buyer–seller agreement',
+      label: t('cars.detail.signalTransaction'),
+      value: t('cars.detail.directAgreement'),
       tone: 'text-content-secondary',
     },
   ] as const
@@ -577,9 +582,9 @@ function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<R
   return (
     <section aria-labelledby="decision-heading" className="overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">
       <div className="border-b border-line-soft px-5 py-4 sm:px-7">
-        <p className="text-eyebrow font-bold uppercase text-brand">Decision summary</p>
-        <h2 id="decision-heading" className="mt-2 text-title font-extrabold text-content">What is verified right now</h2>
-        <p className="mt-1 text-caption text-content-muted">A quick view only—the complete evidence remains below.</p>
+        <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.detail.decisionEyebrow')}</p>
+        <h2 id="decision-heading" className="mt-2 text-title font-extrabold text-content">{t('cars.detail.decisionTitle')}</h2>
+        <p className="mt-1 text-caption text-content-muted">{t('cars.detail.decisionNote')}</p>
       </div>
       <dl className="grid sm:grid-cols-2">
         {signals.map((signal, index) => (
@@ -598,13 +603,14 @@ function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<R
 
 // ─── Seller ──────────────────────────────────────────────────────────────────
 
-function SellerCard({ car }: { car: Car }) {
+async function SellerCard({ car }: { car: Car }) {
   if (!car.seller_name) return null
+  const t = await getServerT()
   const verified = car.seller_id_verified === 'approved'
 
   return (
     <Card className="p-5 sm:p-6">
-      <h2 className="text-title font-extrabold text-content">The seller</h2>
+      <h2 className="text-title font-extrabold text-content">{t('cars.detail.sellerTitle')}</h2>
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-surface-alt text-content-secondary">
@@ -613,23 +619,23 @@ function SellerCard({ car }: { car: Car }) {
           <div>
             <p className="text-body font-bold text-content">{car.seller_name}</p>
             <p className="text-caption text-content-muted">
-              {verified ? 'Identity verified by Sawa Cars' : 'Identity not yet verified'}
+              {verified ? t('cars.detail.sellerVerified') : t('cars.detail.sellerUnverified')}
             </p>
           </div>
         </div>
 
-        {verified ? <Badge tone="success" icon="shield-check">Verified seller</Badge> : null}
+        {verified ? <Badge tone="success" icon="shield-check">{t('cars.detail.verifiedSellerBadge')}</Badge> : null}
 
         {typeof car.seller_sales === 'number' && car.seller_sales > 0 ? (
           <p className="text-caption text-content-secondary">
-            <span className="font-bold text-content">{car.seller_sales}</span> completed{' '}
-            {car.seller_sales === 1 ? 'listing' : 'listings'} previously marked sold
+            <span className="font-bold text-content">{car.seller_sales}</span>{' '}
+            {t(car.seller_sales === 1 ? 'cars.detail.sellerSalesOne' : 'cars.detail.sellerSalesMany')}
           </p>
         ) : null}
       </div>
 
       <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-muted">
-        You deal directly with the seller. Verify the vehicle, documents, price, payment method and written terms before making any commitment.
+        {t('cars.detail.sellerNote')}
       </p>
     </Card>
   )

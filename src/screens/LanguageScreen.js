@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -35,9 +35,15 @@ export default function LanguageScreen({ navigation }) {
                 accessibilityLabel={`${item.nativeLabel}, ${item.label}`}
               >
                 <View style={[styles.flag, selected && styles.flagSelected]}>
-                  <Text style={[styles.code, selected && styles.codeSelected]}>
-                    {item.code.toUpperCase()}
-                  </Text>
+                  {/* iOS renders the flag emoji; Android has no flag glyphs, so
+                      it falls back to the language code. */}
+                  {Platform.OS === 'ios' && item.flag ? (
+                    <Text style={styles.flagEmoji}>{item.flag}</Text>
+                  ) : (
+                    <Text style={[styles.code, selected && styles.codeSelected]}>
+                      {item.code.toUpperCase()}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.copy}>
                   <Text style={styles.nativeLabel}>{item.nativeLabel}</Text>
@@ -103,6 +109,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSoft,
   },
   flagSelected: { backgroundColor: colors.greenTint, borderColor: colors.primary },
+  flagEmoji: { fontSize: 22, lineHeight: 28 },
   code: { fontFamily: fonts.bold, fontSize: 11, color: colors.textMuted, letterSpacing: 0.4 },
   codeSelected: { color: colors.primary },
   copy: { flex: 1 },

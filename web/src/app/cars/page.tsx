@@ -13,6 +13,7 @@ import { PageIntro } from '@/components/marketplace/PageIntro'
 import { Pagination } from '@/components/marketplace/Pagination'
 import { SortSelect } from '@/components/marketplace/SortSelect'
 import { buildFacets, EMPTY_FACETS } from '@/components/marketplace/facets'
+import { getServerT } from '@/lib/i18n/server'
 import {
   browseHeading,
   describeFilters,
@@ -41,26 +42,26 @@ type PageProps = { searchParams: Promise<SearchParams> }
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const params = await searchParams
+  const t = await getServerT()
   const filters = readFilters(params)
   const sort = readSort(params)
   const offset = readOffset(params)
-  const description = describeFilters(filters)
+  const description = describeFilters(t, filters)
 
   // Which filtered views earn a place in the index — see browseIndexPolicy.
   const { canonical, index } = browseIndexPolicy(filters, sort, offset)
 
   return {
     title: Object.keys(filters).length
-      ? `${browseHeading(filters)} in Kigali, Rwanda`
-      : 'Cars for sale in Kigali, Rwanda',
-    description:
-      `${description} reviewed for publication on Sawa Cars in Kigali. View listing evidence and contact verified sellers directly.`,
+      ? t('cars.browse.metaTitleFiltered', { heading: browseHeading(t, filters) })
+      : t('cars.browse.metaTitleDefault'),
+    description: t('cars.browse.metaDescription', { description }),
     // Always self-canonical: a filtered view is a narrower page, not a
     // duplicate of the unfiltered one.
     alternates: { canonical },
     robots: index ? undefined : { index: false, follow: true },
     openGraph: {
-      title: browseHeading(filters),
+      title: browseHeading(t, filters),
       url: canonical,
       images: ['/opengraph-image'],
     },
@@ -93,6 +94,7 @@ async function BrowseResults({
     carsApi.list({ limit: 100 }).catch(() => [] as Car[]),
   ])
 
+  const t = await getServerT()
   const results = primary.rows
   const apiDown = !primary.reachable
   const facets = facetSource.length ? buildFacets(facetSource) : EMPTY_FACETS
@@ -103,8 +105,8 @@ async function BrowseResults({
         <div className="sticky top-[calc(var(--header-h)+24px)] rounded-3xl border border-line-soft bg-surface p-6 shadow-card">
           <div className="mb-6 flex items-center justify-between border-b border-line-soft pb-4">
             <div>
-              <p className="text-micro font-bold uppercase tracking-[0.14em] text-brand">Find your fit</p>
-              <h2 className="mt-1 text-title-sm font-extrabold text-content">Refine the collection</h2>
+              <p className="text-micro font-bold uppercase tracking-[0.14em] text-brand">{t('cars.browse.refineEyebrow')}</p>
+              <h2 className="mt-1 text-title-sm font-extrabold text-content">{t('cars.browse.refineTitle')}</h2>
             </div>
             <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface-alt text-content-secondary"><Icon name="filter" size={17} /></span>
           </div>
@@ -123,8 +125,8 @@ async function BrowseResults({
             {!apiDown ? (
               <p className="text-caption text-content-secondary">
                 <span className="font-bold text-content">{results.length}</span>
-                {results.length === 1 ? ' car' : ' cars'}
-                {offset > 0 || results.length === PAGE_SIZE ? ' on this page' : ''}
+                {' '}{results.length === 1 ? t('cars.browse.carOne') : t('cars.browse.carMany')}
+                {offset > 0 || results.length === PAGE_SIZE ? ` ${t('cars.browse.onThisPage')}` : ''}
               </p>
             ) : null}
           </div>
@@ -138,15 +140,15 @@ async function BrowseResults({
         {apiDown ? (
           <EmptyState
             icon="alert"
-            title="The marketplace is briefly unreachable"
-            description="The cars are still there — this page just couldn't reach them. Try again in a moment."
+            title={t('cars.browse.apiDownTitle')}
+            description={t('cars.browse.apiDownDesc')}
             action={
               <Button
                 href={buildBrowseHref(filters, { sort })}
                 variant="outline"
                 leadingIcon={<Icon name="refresh" size={16} />}
               >
-                Try again
+                {t('cars.browse.tryAgain')}
               </Button>
             }
             className="mt-6 rounded-2xl border border-line-soft bg-surface"
@@ -160,7 +162,7 @@ async function BrowseResults({
               data={graph(
                 itemListNode(
                   results.map((car) => ({ path: `/cars/${car.id}`, name: car.title })),
-                  browseHeading(filters)
+                  browseHeading(t, filters)
                 )
               )}
             />
@@ -184,15 +186,11 @@ async function BrowseResults({
         ) : (
           <EmptyState
             icon="search"
-            title="Nothing matches these filters yet"
-            description={
-              offset > 0
-                ? 'There are no more cars on this page. Go back to see the full list.'
-                : 'Our inventory changes as cars clear inspection — a match may be at a center right now. Widen the search, or check back; new cars go live the day they pass.'
-            }
+            title={t('cars.browse.emptyTitle')}
+            description={offset > 0 ? t('cars.browse.emptyMoreDesc') : t('cars.browse.emptyDesc')}
             action={
               <Button href="/cars" variant="outline" leadingIcon={<Icon name="refresh" size={16} />}>
-                Clear all filters
+                {t('cars.browse.clearAll')}
               </Button>
             }
             className="mt-6 rounded-2xl border border-line-soft bg-surface"
@@ -222,6 +220,7 @@ function BrowseSkeleton() {
 
 export default async function CarsPage({ searchParams }: PageProps) {
   const params = await searchParams
+  const t = await getServerT()
   const filters = readFilters(params)
   const sort = readSort(params)
   const offset = readOffset(params)
@@ -241,9 +240,9 @@ export default async function CarsPage({ searchParams }: PageProps) {
 
       {/* Outside the data boundary — the headline never waits on the API. */}
       <PageIntro
-        eyebrow="The marketplace"
-        title={browseHeading(filters)}
-        description="Every car inspected on the same 150 points. Buyers never pay a fee."
+        eyebrow={t('cars.browse.eyebrow')}
+        title={browseHeading(t, filters)}
+        description={t('cars.browse.introDescription')}
       />
 
       <Container className="py-8 sm:py-12">

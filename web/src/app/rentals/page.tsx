@@ -10,6 +10,7 @@ import { JsonLd } from '@/components/JsonLd'
 import { breadcrumbNode, graph, itemListNode, serviceNode } from '@/lib/seo'
 import { CarCardSkeleton } from '@/components/marketplace/CarCard'
 import { RENTAL_INCLUDES } from '@/components/marketplace/rental-copy'
+import { getServerT } from '@/lib/i18n/server'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The rental fleet — the same product wearing the same clothes.
@@ -21,16 +22,18 @@ import { RENTAL_INCLUDES } from '@/components/marketplace/rental-copy'
 // of it.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const metadata: Metadata = {
-  title: 'Car rental in Kigali, Rwanda — inspected vehicles',
-  description:
-    'Browse verified rental-provider inventory in Kigali, compare provider-supplied rates and send direct availability inquiries through Sawa Cars.',
-  alternates: { canonical: '/rentals' },
-  openGraph: {
-    title: `Rent a certified car in Kigali · ${SITE.name}`,
-    url: '/rentals',
-    images: ['/opengraph-image'],
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('rentals.metaTitle'),
+    description: t('rentals.metaDescription'),
+    alternates: { canonical: '/rentals' },
+    openGraph: {
+      title: t('rentals.metaOgTitle', { name: SITE.name }),
+      url: '/rentals',
+      images: ['/opengraph-image'],
+    },
+  }
 }
 
 type PageProps = { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }
@@ -46,6 +49,7 @@ async function FleetResults({
   category: string
 }) {
   const fleet = await rentalsApi.list().catch(() => [])
+  const t = await getServerT()
 
   const categories = [
     ...new Set(fleet.map((car) => car.category?.trim()).filter((value): value is string => !!value)),
@@ -62,16 +66,16 @@ async function FleetResults({
   return (
     <>
       <div className="rounded-2xl border border-line-soft bg-surface p-3 shadow-card sm:p-4">
-      <ul className="flex flex-wrap gap-2.5" aria-label="Filter the fleet">
+      <ul className="flex flex-wrap gap-2.5" aria-label={t('rentals.filter.ariaLabel')}>
         <li>
           <ChipLink href="/rentals" selected={!safariOnly && !category}>
-            All cars
+            {t('rentals.filter.allCars')}
           </ChipLink>
         </li>
         {safariCount > 0 ? (
           <li>
             <ChipLink href="/rentals?fit=safari" selected={safariOnly}>
-              Safari-ready
+              {t('rentals.filter.safariReady')}
             </ChipLink>
           </li>
         ) : null}
@@ -90,8 +94,7 @@ async function FleetResults({
 
       {safariOnly ? (
         <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-secondary">
-          Safari-ready means four-wheel drive with the ground clearance and tyres
-          for park roads — Akagera, Nyungwe and Volcanoes.
+          {t('rentals.safariExplainer')}
         </p>
       ) : null}
 
@@ -127,15 +130,11 @@ async function FleetResults({
       ) : (
         <EmptyState
           icon="key"
-          title={fleet.length ? 'Nothing in the fleet matches that' : 'The fleet is briefly unreachable'}
-          description={
-            fleet.length
-              ? 'Try the full fleet — availability changes as cars come back from trips.'
-              : 'The cars are still there. Check back in a moment, or ask us at a center.'
-          }
+          title={fleet.length ? t('rentals.emptyMatchTitle') : t('rentals.emptyUnreachableTitle')}
+          description={fleet.length ? t('rentals.emptyMatchDesc') : t('rentals.emptyUnreachableDesc')}
           action={
             <Button href="/rentals" variant="outline">
-              See the whole fleet
+              {t('rentals.seeWholeFleet')}
             </Button>
           }
           className="mt-8 rounded-2xl border border-line-soft bg-surface"
@@ -159,6 +158,7 @@ function FleetSkeleton() {
 
 export default async function RentalsPage({ searchParams }: PageProps) {
   const params = await searchParams
+  const t = await getServerT()
   const safariOnly = firstValue(params.fit) === 'safari'
   const category = firstValue(params.category)
 
@@ -166,9 +166,9 @@ export default async function RentalsPage({ searchParams }: PageProps) {
     <>
       {/* Outside the data boundary — the headline never waits on the API. */}
       <PageIntro
-        eyebrow="Rentals"
-        title="Rent a certified car in Kigali"
-        description="The same 150-point standard as the cars we sell. Deposits back in full after the return check."
+        eyebrow={t('rentals.eyebrow')}
+        title={t('rentals.title')}
+        description={t('rentals.introDescription')}
       />
 
       <span id="fleet" className="block scroll-mt-24" />
@@ -182,36 +182,34 @@ export default async function RentalsPage({ searchParams }: PageProps) {
         <Container>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
             <div>
-              <p className="text-eyebrow font-bold uppercase text-brand">Provider-stated features</p>
+              <p className="text-eyebrow font-bold uppercase text-brand">{t('rentals.providerFeaturesEyebrow')}</p>
               <h2 className="mt-2 text-headline font-extrabold text-content">
-                 Compare the published terms, then confirm in writing
+                 {t('rentals.providerFeaturesTitle')}
               </h2>
               <ul className="mt-8 grid gap-4 sm:grid-cols-2">
                 {RENTAL_INCLUDES.map((item) => (
-                  <li key={item.label} className="flex items-start gap-3">
+                  <li key={item.labelKey} className="flex items-start gap-3">
                     <span className="mt-0.5 text-content-secondary">
                       <Icon name={item.icon} size={20} />
                     </span>
-                    <span className="text-body font-semibold text-content">{item.label}</span>
+                    <span className="text-body font-semibold text-content">{t(item.labelKey)}</span>
                   </li>
                 ))}
               </ul>
               <p className="mt-8 max-w-prose text-body leading-relaxed text-content-secondary">
-                 These features and rates are supplied by each rental provider. Before paying,
-                 confirm availability, insurance, mileage, taxes, deposit, pickup, return,
-                 cancellation and damage terms directly with that provider.
+                 {t('rentals.providerDisclaimer')}
               </p>
             </div>
 
             <Card className="relative h-fit overflow-hidden rounded-3xl border-line p-7 shadow-float">
               <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-              <h3 className="text-title font-extrabold text-content">Requesting availability</h3>
+              <h3 className="text-title font-extrabold text-content">{t('rentals.requestingTitle')}</h3>
               <p className="mt-3 text-caption leading-relaxed text-content-secondary">
-                Open a vehicle, enter your dates and send an inquiry. The provider—not Sawa Cars—confirms availability and all rental terms.
+                {t('rentals.requestingBody')}
               </p>
               <div className="mt-6 space-y-2">
-                <Button href="#fleet" fullWidth>Choose a rental</Button>
-                <Button href="/how-it-works" variant="outline" fullWidth>Read the direct-deal process</Button>
+                <Button href="#fleet" fullWidth>{t('rentals.chooseRental')}</Button>
+                <Button href="/how-it-works" variant="outline" fullWidth>{t('rentals.readProcess')}</Button>
               </div>
             </Card>
           </div>

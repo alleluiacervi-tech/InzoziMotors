@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { StoreButtons } from '@/components/app/StoreButtons'
 import { usePlatform, useOpenInApp } from '@/components/app/useDeepLink'
 import { Alert, Button, Icon } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import { APP, SITE } from '@/lib/site'
 
 // The interactive half of /download.
@@ -22,13 +23,13 @@ const STORES = {
   ios: {
     href: APP.appStoreUrl,
     icon: 'apple' as const,
-    label: 'Download on the App Store',
+    labelKey: 'auth.download.appStore',
     live: APP.iosLive,
   },
   android: {
     href: APP.playStoreUrl,
     icon: 'play-store' as const,
-    label: 'Get it on Google Play',
+    labelKey: 'auth.download.playStore',
     live: APP.androidLive,
   },
 }
@@ -52,6 +53,7 @@ export function AppLaunch({
   /** The same destination on the website, when one exists. */
   webFallback: string | null
 }) {
+  const t = useT()
   const platform = usePlatform()
   const openInApp = useOpenInApp()
   const [handedOff, setHandedOff] = useState(false)
@@ -84,13 +86,13 @@ export function AppLaunch({
       {to ? (
         <Alert
           tone="info"
-          title={handedOff ? 'Opening the app…' : 'This link opens in the Sawa Cars app'}
+          title={handedOff ? t('auth.download.openingTitle') : t('auth.download.opensInAppTitle')}
           className="mb-6"
         >
           <p>
             {handedOff
-              ? 'If nothing happened, the app isn’t installed yet — the store will open instead.'
-              : 'Open this page on your phone to jump straight to it, or carry on here.'}
+              ? t('auth.download.handedOffBody')
+              : t('auth.download.notHandedBody')}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-x-5">
             {platform !== 'desktop' ? (
@@ -99,7 +101,7 @@ export function AppLaunch({
                 onClick={() => openInApp(to)}
                 className="inline-flex min-h-[44px] items-center text-caption font-bold text-brand underline underline-offset-4"
               >
-                Try opening the app again
+                {t('auth.download.tryAgain')}
               </button>
             ) : null}
             {webFallback ? (
@@ -107,7 +109,7 @@ export function AppLaunch({
                 href={webFallback}
                 className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand underline underline-offset-4"
               >
-                Continue on the web
+                {t('auth.download.continueWeb')}
                 <Icon name="arrow-right" size={15} />
               </Link>
             ) : null}
@@ -123,7 +125,7 @@ export function AppLaunch({
             target="_blank"
             leadingIcon={<Icon name={lead.icon} size={22} />}
           >
-            {lead.label}
+            {t(lead.labelKey)}
           </Button>
           <a
             href={other.href}
@@ -132,15 +134,16 @@ export function AppLaunch({
             className="inline-flex min-h-[44px] items-center gap-2 text-caption font-semibold text-content-secondary underline underline-offset-4 hover:text-content"
           >
             <Icon name={other.icon} size={18} className="text-content-muted" />
-            Using another phone? {other.label}
+            {t('auth.download.otherPhone', { label: t(other.labelKey) })}
           </a>
         </div>
       ) : (
         <div>
           <StoreButtons />
           <p className="mt-4 text-caption text-content-muted">
-            Open <span className="font-semibold text-content-secondary">{shortUrl()}</span> on your
-            phone to install it directly.
+            {t('auth.download.installHintPrefix')}{' '}
+            <span className="font-semibold text-content-secondary">{shortUrl()}</span>{' '}
+            {t('auth.download.installHintSuffix')}
           </p>
         </div>
       )}

@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useState } from 'react'
 import { Icon } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Listing gallery.
@@ -17,6 +18,7 @@ import { Icon } from '@/components/ui'
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function Gallery({ images, title }: { images: string[]; title: string }) {
+  const t = useT()
   const [active, setActive] = useState(0)
 
   if (!images.length) {
@@ -24,7 +26,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
       <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 rounded-2xl border border-line-soft bg-surface-alt text-content-muted">
         <Icon name="camera" size={30} />
         <p className="px-6 text-center text-caption">
-          Photos for this car are still being processed at the center.
+          {t('cars.gallery.processing')}
         </p>
       </div>
     )
@@ -39,7 +41,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
         className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-surface-alt sm:aspect-[16/10]"
         tabIndex={count > 1 ? 0 : undefined}
         role={count > 1 ? 'region' : undefined}
-        aria-label={count > 1 ? `${title} photo gallery. Use left and right arrow keys to browse.` : undefined}
+        aria-label={count > 1 ? t('cars.gallery.galleryAria', { title }) : undefined}
         onKeyDown={(event) => {
           if (event.key === 'ArrowLeft') { event.preventDefault(); go(active - 1) }
           if (event.key === 'ArrowRight') { event.preventDefault(); go(active + 1) }
@@ -48,7 +50,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
         <Image
           key={images[active]}
           src={images[active]}
-          alt={`${title} — photo ${active + 1} of ${count}, shot at a Sawa inspection center`}
+          alt={t('cars.gallery.photoAlt', { title, index: active + 1, count })}
           fill
           sizes="(max-width: 1024px) 100vw, 780px"
           className="object-contain p-3"
@@ -60,7 +62,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
             <button
               type="button"
               onClick={() => go(active - 1)}
-              aria-label="Previous photo"
+              aria-label={t('cars.gallery.previous')}
               className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-pill bg-surface/90 text-content shadow-card backdrop-blur transition-transform hover:scale-105"
             >
               <Icon name="chevron-left" size={20} />
@@ -68,7 +70,7 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
             <button
               type="button"
               onClick={() => go(active + 1)}
-              aria-label="Next photo"
+              aria-label={t('cars.gallery.next')}
               className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-pill bg-surface/90 text-content shadow-card backdrop-blur transition-transform hover:scale-105"
             >
               <Icon name="chevron-right" size={20} />
@@ -81,13 +83,13 @@ export function Gallery({ images, title }: { images: string[]; title: string }) 
       </div>
 
       {count > 1 ? (
-        <ul className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1" aria-label="Choose a photo">
+        <ul className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1" aria-label={t('cars.gallery.choosePhoto')}>
           {images.map((image, index) => (
             <li key={`${index}-${image}`} className="shrink-0">
               <button
                 type="button"
                 onClick={() => setActive(index)}
-                aria-label={`Show photo ${index + 1} of ${count}`}
+                aria-label={t('cars.gallery.showPhoto', { index: index + 1, count })}
                 aria-current={index === active ? 'true' : undefined}
                 className={`relative block h-16 w-24 overflow-hidden rounded-lg border-2 transition-colors ${
                   index === active

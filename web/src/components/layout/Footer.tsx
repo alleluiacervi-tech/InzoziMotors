@@ -4,10 +4,12 @@ import { Eyebrow, Icon } from '@/components/ui'
 import { StoreButtons } from '@/components/app/StoreButtons'
 import { CONTACT, FOOTER_LINKS, SITE } from '@/lib/site'
 import { getDisplayCenters } from '@/lib/centers'
+import { getServerT } from '@/lib/i18n/server'
 
 export async function Footer() {
   const year = new Date().getFullYear()
   const centers = await getDisplayCenters()
+  const t = await getServerT()
 
   return (
     <footer className="border-t border-line bg-ink-900 text-white">
@@ -16,11 +18,11 @@ export async function Footer() {
           <div>
             <Logo size={19} tone="light" />
             <p className="mt-5 max-w-sm text-body leading-relaxed text-white/60">
-              Rwanda&apos;s verified vehicle marketplace. We improve listing evidence and seller accountability, then let users communicate and agree independently.
+              {t('footer.tagline')}
             </p>
 
             <div className="mt-7">
-              <Eyebrow tone="invert">Get the app</Eyebrow>
+              <Eyebrow tone="invert">{t('footer.getApp')}</Eyebrow>
               <StoreButtons tone="dark" size="sm" />
             </div>
 
@@ -45,7 +47,7 @@ export async function Footer() {
                     className="flex items-center gap-2.5 text-white/60 transition-colors hover:text-white"
                   >
                     <Icon name="whatsapp" size={17} />
-                    Message us on WhatsApp
+                    {t('footer.messageWhatsApp')}
                   </a>
                 </>
               ) : null}
@@ -61,9 +63,9 @@ export async function Footer() {
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             {FOOTER_LINKS.map((group) => (
-              <div key={group.heading}>
+              <div key={t(`footer.headings.${group.heading}`)}>
                 <h2 className="mb-4 text-eyebrow font-bold uppercase text-white/40">
-                  {group.heading}
+                  {t(`footer.headings.${group.heading}`)}
                 </h2>
                 {/* -my-2 cancels the added tap padding at the group edges so
                     the rhythm reads the same while each link gets a ~36px
@@ -75,7 +77,7 @@ export async function Footer() {
                         href={link.href}
                         className="inline-flex py-2 text-caption text-white/65 transition-colors hover:text-white"
                       >
-                        {link.label}
+                        {t(`footer.links.${link.href}`)}
                       </Link>
                     </li>
                   ))}
@@ -89,7 +91,7 @@ export async function Footer() {
             ends. Competitors bury their locations — the centers ARE the product
             here, so the footer says so. */}
         <div className="mt-14 border-t border-white/10 pt-10">
-          <Eyebrow tone="invert">Visit us</Eyebrow>
+          <Eyebrow tone="invert">{t('footer.visitUs')}</Eyebrow>
           <div className="grid gap-6 sm:grid-cols-3">
             {centers.map((center) => (
               <div key={center.id} className="text-caption leading-relaxed text-white/60">
@@ -103,10 +105,10 @@ export async function Footer() {
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-micro text-white/45">
-            © {year} {SITE.name}. Kigali, Rwanda. All rights reserved.
+            © {year} {SITE.name}. Kigali, Rwanda. {t('footer.rights')}
           </p>
           <p className="text-micro text-white/45">
-            No Sawa checkout or escrow. Users remain responsible for their own contracts and payments.
+            {t('footer.noCheckout')}
           </p>
         </div>
       </div>

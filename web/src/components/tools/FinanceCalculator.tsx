@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Button, Icon, LiveRegion } from '@/components/ui'
 import { FINANCE_TERMS, formatUSD, monthlyEstimate } from '@/lib/business'
+import { useT } from '@/lib/i18n/context'
 import {
   ChipGroup,
   Headline,
@@ -29,17 +30,6 @@ import {
 
 const MONTHLY_RATE = FINANCE_TERMS.annualRatePct / 100 / 12
 
-const TERM_OPTIONS: readonly ChipOption<string>[] = [12, 24, 36, 48, 60].map((months) => ({
-  value: String(months),
-  label: `${months} mo`,
-  hint: months === FINANCE_TERMS.termMonths ? 'standard' : undefined,
-}))
-
-const MODE_OPTIONS: readonly ChipOption<'price' | 'budget'>[] = [
-  { value: 'price', label: 'From a price' },
-  { value: 'budget', label: 'From a budget' },
-]
-
 /** Maximum deposit the form accepts — above this the loan stops being a loan. */
 const MAX_DEPOSIT_PCT = 90
 
@@ -57,11 +47,23 @@ function principalFor(monthly: number, months: number): number {
 }
 
 export function FinanceCalculator() {
+  const t = useT()
   const [mode, setMode] = useState<'price' | 'budget'>('price')
   const [price, setPrice] = useState('')
   const [budget, setBudget] = useState('')
   const [deposit, setDeposit] = useState(String(FINANCE_TERMS.downPaymentPct))
   const [term, setTerm] = useState(String(FINANCE_TERMS.termMonths))
+
+  const TERM_OPTIONS: readonly ChipOption<string>[] = [12, 24, 36, 48, 60].map((months) => ({
+    value: String(months),
+    label: t('tools.financeCalc.months', { months }),
+    hint: months === FINANCE_TERMS.termMonths ? t('tools.financeCalc.standard') : undefined,
+  }))
+
+  const MODE_OPTIONS: readonly ChipOption<'price' | 'budget'>[] = [
+    { value: 'price', label: t('tools.financeCalc.fromPrice') },
+    { value: 'budget', label: t('tools.financeCalc.fromBudget') },
+  ]
 
   const months = Number(term) || FINANCE_TERMS.termMonths
   const depositPct = Math.min(Math.max(Number(deposit) || 0, 0), MAX_DEPOSIT_PCT)
@@ -105,13 +107,13 @@ export function FinanceCalculator() {
       {/* ─── Inputs ───────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 lg:col-span-2">
         <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
-          Your numbers
+          {t('tools.financeCalc.yourNumbers')}
         </h3>
 
         <div className="mt-4 space-y-6">
           <ChipGroup
             name="finance-mode"
-            legend="Start from"
+            legend={t('tools.financeCalc.startFrom')}
             options={MODE_OPTIONS}
             value={mode}
             onChange={setMode}
@@ -121,38 +123,38 @@ export function FinanceCalculator() {
           {mode === 'price' ? (
             <NumberField
               id="finance-price"
-              label="Car price"
+              label={t('tools.financeCalc.carPrice')}
               prefix="RWF"
               placeholder="18000"
               value={price}
               onChange={setPrice}
-              hint="The asking price on the listing."
+              hint={t('tools.financeCalc.carPriceHint')}
             />
           ) : (
             <NumberField
               id="finance-budget"
-              label="Monthly budget"
+              label={t('tools.financeCalc.monthlyBudget')}
               prefix="RWF"
               placeholder="400"
               value={budget}
               onChange={setBudget}
-              hint="What you can comfortably pay each month."
+              hint={t('tools.financeCalc.monthlyBudgetHint')}
             />
           )}
 
           <NumberField
             id="finance-deposit"
-            label="Deposit"
+            label={t('tools.financeCalc.deposit')}
             suffix="%"
             placeholder={String(FINANCE_TERMS.downPaymentPct)}
             value={deposit}
             onChange={setDeposit}
-            hint={`Banks in Kigali typically want ${FINANCE_TERMS.downPaymentPct}% down. Up to ${MAX_DEPOSIT_PCT}%.`}
+            hint={t('tools.financeCalc.depositHint', { pct: FINANCE_TERMS.downPaymentPct, max: MAX_DEPOSIT_PCT })}
           />
 
           <ChipGroup
             name="finance-term"
-            legend="Repayment term"
+            legend={t('tools.financeCalc.repaymentTerm')}
             options={TERM_OPTIONS}
             value={term}
             onChange={setTerm}
@@ -163,45 +165,49 @@ export function FinanceCalculator() {
       {/* ─── Result ───────────────────────────────────────────────────────── */}
       <div className="lg:col-span-3">
         <ResultPanel
-          title={mode === 'price' ? 'Estimated repayment' : 'What you can afford'}
+          title={mode === 'price' ? t('tools.financeCalc.estimatedRepayment') : t('tools.financeCalc.whatYouCanAfford')}
           className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]"
         >
           {!hasResult ? (
             <ResultPlaceholder>
               {mode === 'price'
-                ? 'Enter a car price to see the monthly payment, the deposit and the total cost of the loan.'
-                : 'Enter what you can pay each month to see the car price it supports.'}
+                ? t('tools.financeCalc.placeholderPrice')
+                : t('tools.financeCalc.placeholderBudget')}
             </ResultPlaceholder>
           ) : mode === 'price' ? (
             <div className="space-y-5">
               <Headline
-                label={`Over ${months} months at ${FINANCE_TERMS.annualRatePct}% a year`}
-                value={`${formatUSD(fromPrice.monthly)}/mo`}
+                label={t('tools.financeCalc.overMonths', { months, rate: FINANCE_TERMS.annualRatePct })}
+                value={t('tools.financeCalc.perMonth', { amount: formatUSD(fromPrice.monthly) })}
                 note={
                   onStandardTerms
                     ? undefined
-                    : `At the standard ${FINANCE_TERMS.downPaymentPct}% over ${FINANCE_TERMS.termMonths} months it would be ${formatUSD(monthlyEstimate(fromPrice.carPrice))}/mo — the figure shown on listing cards.`
+                    : t('tools.financeCalc.standardNote', {
+                        deposit: FINANCE_TERMS.downPaymentPct,
+                        months: FINANCE_TERMS.termMonths,
+                        amount: formatUSD(monthlyEstimate(fromPrice.carPrice)),
+                      })
                 }
               />
 
               <div>
                 <ResultRow
-                  label="Deposit"
-                  hint={`${depositPct}% of the price, paid at the center`}
+                  label={t('tools.financeCalc.depositRow')}
+                  hint={t('tools.financeCalc.depositRowHint', { pct: depositPct })}
                   value={formatUSD(fromPrice.depositAmount)}
                 />
                 <ResultRow
-                  label="Amount financed"
+                  label={t('tools.financeCalc.amountFinanced')}
                   value={formatUSD(fromPrice.financed)}
                 />
                 <ResultRow
-                  label="Interest over the term"
-                  hint="At the representative rate below"
+                  label={t('tools.financeCalc.interestRow')}
+                  hint={t('tools.financeCalc.interestHint')}
                   value={formatUSD(fromPrice.totalInterest)}
                 />
                 <ResultRow
-                  label="Total you pay"
-                  hint="Deposit plus every repayment"
+                  label={t('tools.financeCalc.totalYouPay')}
+                  hint={t('tools.financeCalc.totalHint')}
                   value={formatUSD(fromPrice.totalRepaid)}
                   emphasis
                 />
@@ -216,31 +222,31 @@ export function FinanceCalculator() {
                   className={WRAPPING_LABEL}
                   trailingIcon={<Icon name="arrow-right" size={18} />}
                 >
-                  Browse certified cars up to {formatUSD(fromPrice.carPrice)}
+                  {t('tools.financeCalc.browseUpTo', { amount: formatUSD(fromPrice.carPrice) })}
                 </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-5">
               <Headline
-                label={`Paying ${formatUSD(fromBudget.monthly)} a month for ${months} months`}
-                value={`Up to ${formatUSD(fromBudget.maxPrice)}`}
-                note={`Assumes a ${depositPct}% deposit at ${FINANCE_TERMS.annualRatePct}% a year.`}
+                label={t('tools.financeCalc.payingMonth', { amount: formatUSD(fromBudget.monthly), months })}
+                value={t('tools.financeCalc.upTo', { amount: formatUSD(fromBudget.maxPrice) })}
+                note={t('tools.financeCalc.budgetNote', { deposit: depositPct, rate: FINANCE_TERMS.annualRatePct })}
               />
 
               <div>
                 <ResultRow
-                  label="Deposit you would need"
-                  hint={`${depositPct}% of the car price`}
+                  label={t('tools.financeCalc.depositNeeded')}
+                  hint={t('tools.financeCalc.depositNeededHint', { pct: depositPct })}
                   value={formatUSD(fromBudget.depositNeeded)}
                 />
                 <ResultRow
-                  label="Amount financed"
+                  label={t('tools.financeCalc.amountFinanced')}
                   value={formatUSD(fromBudget.financed)}
                 />
                 <ResultRow
-                  label="Total you pay"
-                  hint="Deposit plus every repayment"
+                  label={t('tools.financeCalc.totalYouPay')}
+                  hint={t('tools.financeCalc.totalHint')}
                   value={formatUSD(fromBudget.depositNeeded + fromBudget.monthly * months)}
                   emphasis
                 />
@@ -255,7 +261,7 @@ export function FinanceCalculator() {
                   className={WRAPPING_LABEL}
                   trailingIcon={<Icon name="arrow-right" size={18} />}
                 >
-                  Browse certified cars up to {formatUSD(fromBudget.maxPrice)}
+                  {t('tools.financeCalc.browseUpTo', { amount: formatUSD(fromBudget.maxPrice) })}
                 </Button>
               </div>
             </div>
@@ -266,8 +272,8 @@ export function FinanceCalculator() {
           {!hasResult
             ? ''
             : mode === 'price'
-              ? `Estimated ${formatUSD(fromPrice.monthly)} a month over ${months} months.`
-              : `A budget of ${formatUSD(fromBudget.monthly)} a month supports a car up to ${formatUSD(fromBudget.maxPrice)}.`}
+              ? t('tools.financeCalc.liveResultPrice', { amount: formatUSD(fromPrice.monthly), months })
+              : t('tools.financeCalc.liveResultBudget', { amount: formatUSD(fromBudget.monthly), max: formatUSD(fromBudget.maxPrice) })}
         </LiveRegion>
       </div>
     </div>
@@ -275,12 +281,10 @@ export function FinanceCalculator() {
 }
 
 function Disclaimer() {
+  const t = useT()
   return (
     <p className="rounded-xl bg-surface-alt px-4 py-3 text-micro leading-relaxed text-content-secondary">
-      Sawa Cars does not lend and does not arrange finance. {FINANCE_TERMS.annualRatePct}% a year is a
-      representative Kigali market rate — your bank sets its own based on your profile, and usually
-      adds arrangement fees and required insurance on top. Treat this as a starting point for that
-      conversation.
+      {t('tools.financeCalc.disclaimer', { rate: FINANCE_TERMS.annualRatePct })}
     </p>
   )
 }

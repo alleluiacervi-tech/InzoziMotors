@@ -16,11 +16,15 @@ import {
   formatUSD,
 } from '@/lib/business'
 import { getCurrentUser, getToken } from '@/lib/session'
+import { getServerT } from '@/lib/i18n/server'
 import { SELLING_STEPS } from '@/lib/site'
 
-export const metadata: Metadata = {
-  title: 'Selling',
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getServerT()
+  return {
+    title: t('dashboard.meta.selling'),
+    robots: { index: false, follow: false },
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -33,6 +37,7 @@ export const metadata: Metadata = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function SellingPage() {
+  const t = await getServerT()
   const user = await getCurrentUser()
   const token = await getToken()
   if (!user || !token) return null
@@ -56,26 +61,24 @@ export default async function SellingPage() {
   return (
     <>
       <PageHeader
-        title="Selling"
-        description="Where each of your cars has reached. Only the Sawa team publishes listings, and only after the 150-point inspection and the photo shoot — that is what makes every car on the marketplace real."
-        action={<Button href="/download" size="sm">Submit in the app</Button>}
+        title={t('dashboard.selling.title')}
+        description={t('dashboard.selling.description')}
+        action={<Button href="/download" size="sm">{t('dashboard.selling.submitInApp')}</Button>}
       />
 
       {failed ? (
-        <Alert tone="warning" title="Some of this page did not load" className="mb-6">
-          Refresh to try again. Nothing on your account has changed.
+        <Alert tone="warning" title={t('dashboard.common.someFailedTitle')} className="mb-6">
+          {t('dashboard.common.someFailedBody')}
         </Alert>
       ) : null}
 
       {!verified ? (
         <Card className="mb-8 p-6">
           <h2 className="text-title-sm font-extrabold text-content">
-            Complete identity verification before publication
+            {t('dashboard.selling.verifyTitle')}
           </h2>
           <p className="mt-2 max-w-prose text-caption leading-relaxed text-content-secondary">
-            You may submit a car and book its inspection now. Before an administrator can publish it
-            or enable your direct contact details, complete the one-time check in the Sawa Cars app:
-            a photo of your national ID and a selfie. Nothing else on your account is affected.
+            {t('dashboard.selling.verifyBody')}
           </p>
 
           <ol className="mt-5 space-y-4">
@@ -98,9 +101,9 @@ export default async function SellingPage() {
           </ol>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button href="/download">Open the seller app</Button>
+            <Button href="/download">{t('dashboard.selling.openSellerApp')}</Button>
             <Button href="/sell" variant="outline">
-              How selling works
+              {t('dashboard.selling.howSellingWorks')}
             </Button>
           </div>
         </Card>
@@ -110,15 +113,15 @@ export default async function SellingPage() {
         <section aria-labelledby="pipeline">
           <PanelHeading
             id="pipeline"
-            title="In the pipeline"
-            hint={`${mySubmissions.length} ${mySubmissions.length === 1 ? 'car' : 'cars'}`}
+            title={t('dashboard.selling.pipelineHeading')}
+            hint={t(mySubmissions.length === 1 ? 'dashboard.selling.carCountOne' : 'dashboard.selling.carCountOther', { count: mySubmissions.length })}
           />
           <ul className="space-y-4">
             {mySubmissions.map((submission) => {
               const name =
                 submission.car_title ||
                 [submission.year, submission.make, submission.model].filter(Boolean).join(' ') ||
-                'Submitted car'
+                t('dashboard.selling.submittedFallback')
               const rejected = submission.status === 'rejected'
 
               return (
@@ -128,7 +131,7 @@ export default async function SellingPage() {
                       <div className="min-w-0">
                         <h3 className="text-title-sm font-extrabold text-content">{name}</h3>
                         <p className="mt-1 text-caption text-content-muted">
-                          Submitted {formatDate(submission.submitted_at)}
+                          {t('dashboard.selling.submitted', { date: formatDate(submission.submitted_at) })}
                           {submission.mileage ? ` · ${formatKm(submission.mileage)}` : ''}
                         </p>
                       </div>
@@ -140,7 +143,7 @@ export default async function SellingPage() {
 
                     {submission.asking_price > 0 ? (
                       <p className="mt-3 text-caption text-content-secondary">
-                        Asking{' '}
+                        {t('dashboard.selling.asking')}{' '}
                         <span className="font-extrabold text-content">
                           {formatUSD(submission.asking_price)}
                         </span>
@@ -148,9 +151,9 @@ export default async function SellingPage() {
                     ) : null}
 
                     {rejected ? (
-                      <Alert tone="warning" title="This submission needs your attention" className="mt-4">
+                      <Alert tone="warning" title={t('dashboard.selling.rejectedTitle')} className="mt-4">
                         {submission.admin_notes ??
-                          'Our team could not accept this car as submitted. Contact us and we will explain what is needed.'}
+                          t('dashboard.selling.rejectedFallback')}
                       </Alert>
                     ) : (
                       <div className="mt-5">
@@ -163,13 +166,11 @@ export default async function SellingPage() {
                     {submission.inspection_center && submission.inspection_date ? (
                       <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-surface-alt px-4 py-3 text-caption text-content-secondary">
                         <Icon name="calendar" size={15} className="text-content-muted" />
-                        Inspection at{' '}
-                        <span className="font-bold text-content">
-                          {submission.inspection_center}
-                        </span>{' '}
-                        on {submission.inspection_date}
-                        {submission.inspection_time ? ` at ${submission.inspection_time}` : ''}. Bring
-                        the car, your ID and any service records.
+                        {t('dashboard.selling.inspectionLine', {
+                          center: submission.inspection_center,
+                          date: submission.inspection_date,
+                          time: submission.inspection_time ? t('dashboard.selling.inspectionTime', { time: submission.inspection_time }) : '',
+                        })}
                       </p>
                     ) : null}
 
@@ -179,7 +180,7 @@ export default async function SellingPage() {
                           href={`/cars/${submission.car_id}`}
                           className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
                         >
-                          View the listing
+                          {t('dashboard.selling.viewListing')}
                           <Icon name="arrow-right" size={15} />
                         </Link>
                       </p>
@@ -194,9 +195,9 @@ export default async function SellingPage() {
         <Card>
           <EmptyState
             icon="car"
-            title="No cars in the pipeline"
-            description="Tell us the make, model, mileage and what you want for it. We suggest a price range from real comparable sales, inspect the car at a center, photograph it, and publish the listing ourselves."
-            action={<Button href="/sell">Submit a car</Button>}
+            title={t('dashboard.selling.pipelineEmptyTitle')}
+            description={t('dashboard.selling.pipelineEmptyBody')}
+            action={<Button href="/sell">{t('dashboard.selling.submitCar')}</Button>}
           />
         </Card>
       ) : null}

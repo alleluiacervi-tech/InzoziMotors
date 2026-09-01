@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -20,7 +20,7 @@ const SLIDES = [
 
 export default function OnboardingScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { language, t } = useApp();
+  const { language, languageInfo, t } = useApp();
   const [idx, setIdx] = useState(0);
   const ref = useRef(null);
   const last = idx === SLIDES.length - 1;
@@ -86,6 +86,9 @@ export default function OnboardingScreen({ navigation }) {
           accessibilityRole="button"
           accessibilityLabel={t('common.language')}
         >
+          {Platform.OS === 'ios' && languageInfo.flag ? (
+            <Text style={styles.langFlag}>{languageInfo.flag}</Text>
+          ) : null}
           <Text style={styles.langText}>{language.toUpperCase()}</Text>
           <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
         </Pressable>
@@ -162,6 +165,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999,
   },
   langText: { fontFamily: fonts.bold, color: colors.textPrimary, fontSize: 12, letterSpacing: 0.4 },
+  langFlag: { fontSize: 14, marginRight: -2 },
   skip: { paddingVertical: 8, paddingHorizontal: 4 },
   skipText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted },
   footer: { position: 'absolute', left: 24, right: 24, bottom: 0 },

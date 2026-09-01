@@ -1,6 +1,7 @@
 'use client'
 
 import { APP } from '@/lib/site'
+import { useT } from '@/lib/i18n/context'
 import { Icon } from '@/components/ui'
 import { useDeviceStoreUrl } from './useDeepLink'
 
@@ -26,6 +27,7 @@ export function StoreButtons({
   className?: string
 }) {
   const platform = useDeviceStoreUrl()
+  const t = useT()
 
   const stores = [
     {
@@ -33,7 +35,7 @@ export function StoreButtons({
       live: APP.iosLive,
       href: APP.appStoreUrl,
       icon: 'apple' as const,
-      caption: 'Download on the',
+      caption: t('store.downloadOn'),
       name: 'App Store',
     },
     {
@@ -41,7 +43,7 @@ export function StoreButtons({
       live: APP.androidLive,
       href: APP.playStoreUrl,
       icon: 'play-store' as const,
-      caption: 'Get it on',
+      caption: t('store.getItOn'),
       name: 'Google Play',
     },
   ]
@@ -54,7 +56,7 @@ export function StoreButtons({
   if (liveStores.length === 0) {
     return (
       <p className={`text-caption font-semibold ${mutedText} ${className}`}>
-        Coming to the App Store and Google Play.
+        {t('store.comingBoth')}
       </p>
     )
   }
@@ -96,7 +98,7 @@ export function StoreButtons({
       </div>
       {comingSoon.length > 0 ? (
         <p className={`mt-3 text-caption font-semibold ${mutedText}`}>
-          {comingSoon.join(' and ')} coming soon.
+          {t('store.comingSoon', { names: comingSoon.join(' & ') })}
         </p>
       ) : null}
     </div>

@@ -1,6 +1,7 @@
 import { Badge, Card, Icon } from '@/components/ui'
 import { formatDate, inspectionGrade } from '@/lib/business'
 import type { InspectionReport } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
 import { SCORE_MAX, summariseReport } from './inspection'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,9 +20,10 @@ const GRADE_TONE = {
   D: { bar: 'bg-danger', text: 'text-danger' },
 } as const
 
-export function InspectionReportCard({ report }: { report: InspectionReport | null }) {
+export async function InspectionReportCard({ report }: { report: InspectionReport | null }) {
   const summary = summariseReport(report)
   if (!summary || !report) return null
+  const t = await getServerT()
 
   const grade = inspectionGrade(summary.score)
   const tone = GRADE_TONE[grade]
@@ -30,9 +32,9 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-line-soft p-5 sm:p-6">
-        <p className="text-eyebrow font-bold uppercase text-brand">150-point inspection</p>
+        <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.report.eyebrow')}</p>
         <h2 className="mt-2 text-title font-extrabold text-content">
-          What our mechanic found
+          {t('cars.report.title')}
         </h2>
 
         <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-3">
@@ -43,10 +45,10 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
             <span className="text-lg font-bold text-content-muted">/ {SCORE_MAX}</span>
           </p>
           <Badge tone={grade === 'A' || grade === 'B' ? 'success' : grade === 'C' ? 'warning' : 'danger'}>
-            Grade {grade}
+            {t('cars.report.grade', { grade })}
           </Badge>
           <p className="text-caption text-content-secondary">
-            {summary.checked} checks recorded
+            {t('cars.report.checksRecorded', { count: summary.checked })}
             {report.completed_at ? ` · ${formatDate(report.completed_at)}` : ''}
           </p>
         </div>
@@ -54,7 +56,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
         <div
           className="mt-4 h-2 overflow-hidden rounded-pill bg-surface-alt"
           role="img"
-          aria-label={`Overall score ${summary.score} out of ${SCORE_MAX}`}
+          aria-label={t('cars.report.scoreAria', { score: summary.score, max: SCORE_MAX })}
         >
           <div className={`h-full rounded-pill ${tone.bar}`} style={{ width: `${percent}%` }} />
         </div>
@@ -62,15 +64,15 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
         <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-caption font-semibold">
           <span className="inline-flex items-center gap-1.5 text-success">
             <Icon name="check-circle" size={14} />
-            {summary.pass} passed
+            {t('cars.report.passed', { count: summary.pass })}
           </span>
           <span className="inline-flex items-center gap-1.5 text-warning-text">
             <Icon name="alert" size={14} />
-            {summary.flag} flagged
+            {t('cars.report.flagged', { count: summary.flag })}
           </span>
           <span className="inline-flex items-center gap-1.5 text-danger">
             <Icon name="close-circle" size={14} />
-            {summary.fail} failed
+            {t('cars.report.failed', { count: summary.fail })}
           </span>
         </p>
       </div>
@@ -98,11 +100,11 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
               </div>
 
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro font-semibold">
-                <span className="text-success">{category.pass} passed</span>
+                <span className="text-success">{t('cars.report.passed', { count: category.pass })}</span>
                 {category.flag ? (
-                  <span className="text-warning-text">{category.flag} flagged</span>
+                  <span className="text-warning-text">{t('cars.report.flagged', { count: category.flag })}</span>
                 ) : null}
-                {category.fail ? <span className="text-danger">{category.fail} failed</span> : null}
+                {category.fail ? <span className="text-danger">{t('cars.report.failed', { count: category.fail })}</span> : null}
               </p>
 
               {category.issues.length ? (
@@ -120,7 +122,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
                       <span>
                         {issue.item}
                         <span className="text-content-muted">
-                          {issue.verdict === 'fail' ? ' — failed' : ' — flagged for attention'}
+                          {issue.verdict === 'fail' ? t('cars.report.itemFailed') : t('cars.report.itemFlagged')}
                         </span>
                       </span>
                     </li>
@@ -135,7 +137,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
       {report.notes ? (
         <div className="border-t border-line-soft bg-surface-alt px-5 py-4 sm:px-6">
           <p className="text-micro font-bold uppercase tracking-wide text-content-muted">
-            Mechanic&rsquo;s notes
+            {t('cars.report.notesTitle')}
           </p>
           <p className="mt-1.5 whitespace-pre-line text-caption leading-relaxed text-content-secondary">
             {report.notes}
@@ -144,8 +146,7 @@ export function InspectionReportCard({ report }: { report: InspectionReport | nu
       ) : null}
 
       <p className="border-t border-line-soft px-5 py-4 text-micro leading-relaxed text-content-muted sm:px-6">
-        Recorded by a Sawa mechanic at the inspection center, not by the seller.
-        Use this record as one input to your own viewing and independent checks.
+        {t('cars.report.footer')}
       </p>
     </Card>
   )

@@ -3,22 +3,24 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icon, type IconName } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 
 // One nav, two shapes: a horizontal rail that sticks under the site header on
 // phones, and a vertical sidebar from lg up. Client-only because the active
 // item depends on the pathname — no user data passes through here.
 
-const ITEMS: { href: string; label: string; icon: IconName }[] = [
-  { href: '/dashboard', label: 'Overview', icon: 'grid' },
-  { href: '/dashboard/saved', label: 'Saved', icon: 'heart' },
-  { href: '/dashboard/rentals', label: 'Rental inquiries', icon: 'calendar' },
-  { href: '/dashboard/imports', label: 'Imports', icon: 'clock' },
-  { href: '/dashboard/notifications', label: 'Notifications', icon: 'bell' },
-  { href: '/dashboard/selling', label: 'Selling', icon: 'car' },
-  { href: '/dashboard/profile', label: 'Profile', icon: 'user' },
+const ITEMS: { href: string; labelKey: string; icon: IconName }[] = [
+  { href: '/dashboard', labelKey: 'dashboard.nav.overview', icon: 'grid' },
+  { href: '/dashboard/saved', labelKey: 'dashboard.nav.saved', icon: 'heart' },
+  { href: '/dashboard/rentals', labelKey: 'dashboard.nav.rentals', icon: 'calendar' },
+  { href: '/dashboard/imports', labelKey: 'dashboard.nav.imports', icon: 'clock' },
+  { href: '/dashboard/notifications', labelKey: 'dashboard.nav.notifications', icon: 'bell' },
+  { href: '/dashboard/selling', labelKey: 'dashboard.nav.selling', icon: 'car' },
+  { href: '/dashboard/profile', labelKey: 'dashboard.nav.profile', icon: 'user' },
 ]
 
 export function DashboardNav({ unread = 0 }: { unread?: number }) {
+  const t = useT()
   const pathname = usePathname()
 
   // Overview must match exactly, or every child route would light it up too.
@@ -26,7 +28,7 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
     href === '/dashboard' ? pathname === href : pathname.startsWith(href)
 
   return (
-    <nav aria-label="Dashboard">
+    <nav aria-label={t('dashboard.nav.label')}>
       {/* Phones: scrolling rail, pinned below the site header */}
       <div className="sticky top-[var(--header-h)] z-30 -mx-5 border-b border-line-soft bg-surface-page/95 backdrop-blur sm:-mx-8 lg:hidden">
         <ul className="no-scrollbar flex gap-1 overflow-x-auto px-5 py-2 sm:px-8">
@@ -44,7 +46,7 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
                   }`}
                 >
                   <Icon name={item.icon} size={16} />
-                  {item.label}
+                  {t(item.labelKey)}
                   {item.href === '/dashboard/notifications' && unread > 0 ? (
                     <span
                       className={`rounded-pill px-1.5 py-0.5 text-micro leading-none ${
@@ -77,11 +79,11 @@ export function DashboardNav({ unread = 0 }: { unread?: number }) {
                 }`}
               >
                 <Icon name={item.icon} size={18} />
-                <span className="flex-1 truncate">{item.label}</span>
+                <span className="flex-1 truncate">{t(item.labelKey)}</span>
                 {item.href === '/dashboard/notifications' && unread > 0 ? (
                   <span className="rounded-pill bg-info-tint px-2 py-0.5 text-micro font-bold leading-none text-info">
                     {unread}
-                    <span className="sr-only"> unread</span>
+                    <span className="sr-only"> {t('dashboard.nav.unread')}</span>
                   </span>
                 ) : null}
               </Link>

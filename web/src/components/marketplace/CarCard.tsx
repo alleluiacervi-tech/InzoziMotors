@@ -7,6 +7,7 @@ import {
   isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop,
 } from '@/lib/business'
 import type { Car } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
 
 // The listing card, ported in spirit from src/components/CarCard.js and
 // CarListCard.js. Everything it claims is server-verified: the certification
@@ -19,7 +20,7 @@ const FALLBACK_IMAGE =
     `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#F6F4F4"/></svg>`
   )
 
-export function CarCard({
+export async function CarCard({
   car, priority = false, layout = 'grid',
 }: {
   car: Car
@@ -27,13 +28,14 @@ export function CarCard({
   priority?: boolean
   layout?: 'grid' | 'row'
 }) {
+  const t = await getServerT()
   const tier = getCertTier(car)
   const demo = isDemoListing(car)
   // The alt text is a claim. For a seeded listing, "photographed at a Sawa
   // inspection center" would be false in markup.
   const photoAlt = demo
-    ? `${car.title} — preview listing with manufacturer imagery`
-    : `${car.title} — photographed at a Sawa inspection center`
+    ? t('cars.card.altPreview', { title: car.title })
+    : t('cars.card.altReal', { title: car.title })
   const market = marketPosition(car)
   const drop = priceDrop(car)
   const image = car.images?.[0] || FALLBACK_IMAGE
@@ -80,17 +82,14 @@ export function CarCard({
             never compete for the same corner. */}
         <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
           {demo ? (
-            <Badge tone="neutral" className="max-w-full truncate">Preview listing</Badge>
+
           ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
               {tier.short}
             </Badge>
           ) : null}
         </div>
-        <div className="absolute right-3 top-3 flex max-w-[48%] flex-wrap justify-end gap-1.5">
-          {drop > 0 ? <Badge tone="warning" icon="trending-down" className="max-w-full truncate">Price drop</Badge> : null}
-          {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info" className="max-w-full truncate">New</Badge> : null}
-          {isHighDemand(car) ? <Badge tone="danger" className="max-w-full truncate">High demand</Badge> : null}
+
         </div>
 
         {/* The 36-angle standard is the signature — advertise it on every card.
@@ -98,7 +97,7 @@ export function CarCard({
         {(car.images?.length ?? 0) >= 2 ? (
           <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-pill bg-ink-900/70 px-2 py-1 text-micro font-bold text-white backdrop-blur-sm">
             <Icon name="camera" size={11} />
-            {car.images!.length} photos
+            {t('cars.card.photos', { count: car.images!.length })}
           </span>
         ) : null}
 
@@ -155,7 +154,7 @@ export function CarCard({
             {formatUSD(car.price)}
           </p>
           <p className="mt-0.5 text-micro text-content-muted tabular-nums">
-            ~{formatUSD(monthlyEstimate(car.price))}/mo est.
+            {t('cars.card.monthlyEst', { amount: formatUSD(monthlyEstimate(car.price)) })}
           </p>
 
           {/* The market line shows its work — amount and sample size, never a
@@ -171,20 +170,21 @@ export function CarCard({
               }`}
             >
               {market.tone === 'neutral'
-                ? `At market price · ${car.comparables} similar cars`
-                : `${formatRWF(Math.abs(car.market_avg - car.price))} ${
-                    market.tone === 'good' ? 'below' : 'above'
-                  } the average of ${car.comparables} similar cars`}
+                ? t('cars.card.atMarketPrice', { count: car.comparables ?? 0 })
+                : t(market.tone === 'good' ? 'cars.card.belowAverage' : 'cars.card.aboveAverage', {
+                    amount: formatRWF(Math.abs(car.market_avg - car.price)),
+                    count: car.comparables ?? 0,
+                  })}
             </p>
           ) : null}
         </div>
 
         <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3">
           <p className="text-micro text-content-muted">
-            {listedAgo(car) || 'Available now'}{car.saves_count ? ` · ${car.saves_count} saved` : ''}
+            {listedAgo(car) || t('cars.card.availableNow')}{car.saves_count ? ` · ${t('cars.card.saved', { count: car.saves_count })}` : ''}
           </p>
           <span className="inline-flex items-center gap-1 text-micro font-bold text-content-secondary transition-colors group-hover:text-brand">
-            View car <Icon name="arrow-right" size={13} />
+            {t('cars.card.viewCar')} <Icon name="arrow-right" size={13} />
           </span>
         </div>
       </div>

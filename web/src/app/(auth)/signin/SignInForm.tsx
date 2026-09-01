@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { signInAction, type AuthState } from '@/app/actions/auth'
 import { Alert, Field, Input } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import { PasswordField } from '../_components/PasswordField'
 import { SubmitButton } from '../_components/SubmitButton'
 
 export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail: string }) {
+  const t = useT()
   const [state, formAction] = useActionState<AuthState, FormData>(signInAction, null)
 
   // Held in state only so "Forgot your password?" can carry the address across —
@@ -28,7 +30,7 @@ export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail:
 
       {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
 
-      <Field label="Email" htmlFor="email" error={fieldErrors.email}>
+      <Field label={t('auth.signin.email')} htmlFor="email" error={fieldErrors.email}>
         <Input
           id="email"
           name="email"
@@ -50,10 +52,10 @@ export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail:
         <PasswordField
           id="password"
           name="password"
-          label="Password"
+          label={t('auth.signin.password')}
           autoComplete="current-password"
           required
-          placeholder="Your password"
+          placeholder={t('auth.signin.passwordPlaceholder')}
           error={fieldErrors.password}
         />
         <p className="mt-2 text-right">
@@ -61,12 +63,12 @@ export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail:
             href={forgotHref}
             className="text-caption font-bold text-brand transition-colors hover:text-brand-deep"
           >
-            Forgot your password?
+            {t('auth.signin.forgot')}
           </Link>
         </p>
       </div>
 
-      <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
+      <SubmitButton pendingLabel={t('auth.signin.submitting')}>{t('auth.signin.submit')}</SubmitButton>
     </form>
   )
 }

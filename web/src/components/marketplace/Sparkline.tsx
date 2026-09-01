@@ -1,5 +1,6 @@
 import { formatDate, formatUSD } from '@/lib/business'
 import type { PricePoint } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
 
 // A price-history line drawn by hand, because pulling a charting library for
 // one polyline would cost more kilobytes than the rest of this page.
@@ -11,12 +12,13 @@ const VIEW_W = 240
 const VIEW_H = 56
 const PAD = 4
 
-export function Sparkline({ points, className = '' }: { points: PricePoint[]; className?: string }) {
+export async function Sparkline({ points, className = '' }: { points: PricePoint[]; className?: string }) {
   // Two points is the minimum that says anything. One price is not a history.
   if (!Array.isArray(points) || points.length < 2) return null
 
   const values = points.map((point) => Number(point.price)).filter((n) => Number.isFinite(n))
   if (values.length < 2) return null
+  const t = await getServerT()
 
   const min = Math.min(...values)
   const max = Math.max(...values)
@@ -43,7 +45,11 @@ export function Sparkline({ points, className = '' }: { points: PricePoint[]; cl
         preserveAspectRatio="none"
         className="h-14 w-full text-content-muted"
         role="img"
-        aria-label={`Asking price since listing: ${formatUSD(opening)} to ${formatUSD(current)} — ${direction}`}
+        aria-label={t('cars.sparkline.aria', {
+          from: formatUSD(opening),
+          to: formatUSD(current),
+          direction: t(`cars.sparkline.${direction}`),
+        })}
       >
         <polygon points={area} fill="currentColor" opacity={0.1} />
         <polyline
@@ -63,7 +69,7 @@ export function Sparkline({ points, className = '' }: { points: PricePoint[]; cl
           {formatUSD(opening)} · {formatDate(points[0].at)}
         </span>
         <span className="font-bold text-content">
-          {formatUSD(current)} · today
+          {formatUSD(current)} · {t('cars.sparkline.today')}
         </span>
       </figcaption>
     </figure>

@@ -6,12 +6,16 @@
 // translations are complete, and a missing translation never renders a blank
 // label.
 
+// `flag` is a regional-indicator emoji. It renders as a flag on iOS; Android
+// has no flag glyphs and shows the two letters instead, so the picker falls
+// back to the code badge there (see LanguageScreen). The emoji stays in the
+// data so one source describes each language.
 export const LANGUAGES = [
-  { code: 'en', label: 'English', nativeLabel: 'English', locale: 'en-RW' },
-  { code: 'rw', label: 'Kinyarwanda', nativeLabel: 'Kinyarwanda', locale: 'rw-RW' },
-  { code: 'fr', label: 'French', nativeLabel: 'Français', locale: 'fr-RW' },
-  { code: 'sw', label: 'Swahili', nativeLabel: 'Kiswahili', locale: 'sw-KE' },
-  { code: 'ko', label: 'Korean', nativeLabel: '한국어', locale: 'ko-KR' },
+  { code: 'en', label: 'English', nativeLabel: 'English', locale: 'en-RW', flag: '🇬🇧' },
+  { code: 'rw', label: 'Kinyarwanda', nativeLabel: 'Kinyarwanda', locale: 'rw-RW', flag: '🇷🇼' },
+  { code: 'fr', label: 'French', nativeLabel: 'Français', locale: 'fr-RW', flag: '🇫🇷' },
+  { code: 'sw', label: 'Swahili', nativeLabel: 'Kiswahili', locale: 'sw-KE', flag: '🇰🇪' },
+  { code: 'ko', label: 'Korean', nativeLabel: '한국어', locale: 'ko-KR', flag: '🇰🇷' },
 ];
 
 export const DEFAULT_LANGUAGE = 'en';

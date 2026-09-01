@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useActionState, useState } from 'react'
 import { confirmResetAction, requestResetAction, type ResetState } from '@/app/actions/auth'
 import { Alert, Button, Field, Icon, Input, LiveRegion } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import { PasswordField } from '../_components/PasswordField'
 import { SubmitButton } from '../_components/SubmitButton'
 
@@ -19,6 +20,7 @@ async function runReset(prev: ResetState, formData: FormData): Promise<ResetStat
 }
 
 export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
+  const t = useT()
   const [state, formAction] = useActionState<ResetState, FormData>(runReset, { stage: 'request' })
 
   // Kept locally so the address survives step 2 and the success screen; the
@@ -38,16 +40,15 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
   if (stage === 'done') {
     return (
       <div className="space-y-6">
-        <Alert tone="success" title="Password updated">
-          Your new password is active. Nobody else has been signed out — if you did not make
-          this change, contact us straight away.
+        <Alert tone="success" title={t('auth.forgot.doneTitle')}>
+          {t('auth.forgot.doneBody')}
         </Alert>
         <Button
           href={email ? `/signin?email=${encodeURIComponent(email)}` : '/signin'}
           size="lg"
           fullWidth
         >
-          Sign in
+          {t('auth.forgot.signIn')}
         </Button>
       </div>
     )
@@ -62,11 +63,10 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
       {stage === 'request' ? (
         <>
           <p className="text-body leading-relaxed text-content-secondary">
-            Enter the email on your account and we will send a 6-digit code. It is valid for 30
-            minutes.
+            {t('auth.forgot.requestIntro')}
           </p>
 
-          <Field label="Email" htmlFor="reset-email">
+          <Field label={t('auth.forgot.email')} htmlFor="reset-email">
             <Input
               id="reset-email"
               name="email"
@@ -83,12 +83,12 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
             />
           </Field>
 
-          <SubmitButton pendingLabel="Sending…">Send reset code</SubmitButton>
+          <SubmitButton pendingLabel={t('auth.forgot.sending')}>{t('auth.forgot.sendCode')}</SubmitButton>
 
           <p className="text-center text-caption text-content-secondary">
-            Remembered it?{' '}
+            {t('auth.forgot.remembered')}{' '}
             <Link href="/signin" className="font-bold text-brand transition-colors hover:text-brand-deep">
-              Back to sign in
+              {t('auth.forgot.backToSignIn')}
             </Link>
           </p>
         </>
@@ -97,22 +97,21 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
           <input type="hidden" name="email" value={sentTo} />
 
           <p className="text-body leading-relaxed text-content-secondary">
-            If <span className="font-bold text-content">{sentTo}</span> has an account, a 6-digit
-            code is on its way. It expires in 30 minutes, and five wrong attempts cancel it.
+            {t('auth.forgot.sentPrefix')}{' '}
+            <span className="font-bold text-content">{sentTo}</span>{' '}
+            {t('auth.forgot.sentSuffix')}
           </p>
 
           {devCode ? (
-            <Alert tone="warning" title="Development build — code shown here">
-              No email or SMS provider is connected yet, so the server is handing the code back
-              instead of sending it. In production it arrives by message and never appears on
-              screen.
+            <Alert tone="warning" title={t('auth.forgot.devTitle')}>
+              {t('auth.forgot.devBody')}
               <span className="mt-2 block text-xl font-extrabold tabular-nums tracking-[0.35em]">
                 {devCode}
               </span>
             </Alert>
           ) : null}
 
-          <Field label="6-digit code" htmlFor="code">
+          <Field label={t('auth.forgot.codeLabel')} htmlFor="code">
             <Input
               id="code"
               name="code"
@@ -131,26 +130,26 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
           <PasswordField
             id="password"
             name="password"
-            label="New password"
+            label={t('auth.forgot.newPassword')}
             autoComplete="new-password"
             required
-            placeholder="At least 6 characters"
-            hint="Minimum 6 characters. Pick something you do not use on another site."
+            placeholder={t('auth.forgot.newPasswordPlaceholder')}
+            hint={t('auth.forgot.newPasswordHint')}
           />
 
           <PasswordField
             id="confirm"
             name="confirm"
-            label="Confirm new password"
+            label={t('auth.forgot.confirmPassword')}
             autoComplete="new-password"
             required
-            placeholder="Type it once more"
+            placeholder={t('auth.forgot.confirmPlaceholder')}
           />
 
           {/* First submit button in the form, so pressing Enter in a field
               confirms the reset rather than requesting another code. */}
-          <SubmitButton pendingLabel="Updating…" name="intent" value="confirm">
-            Reset password
+          <SubmitButton pendingLabel={t('auth.forgot.updating')} name="intent" value="confirm">
+            {t('auth.forgot.reset')}
           </SubmitButton>
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-caption">
@@ -160,7 +159,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
               value="resend"
               className="min-h-[44px] font-bold text-brand transition-colors hover:text-brand-deep"
             >
-              Send a new code
+              {t('auth.forgot.resend')}
             </button>
             <button
               type="button"
@@ -168,7 +167,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
               className="inline-flex min-h-[44px] items-center gap-1.5 text-content-secondary transition-colors hover:text-content"
             >
               <Icon name="chevron-left" size={14} />
-              Use a different email
+              {t('auth.forgot.differentEmail')}
             </button>
           </div>
         </>
@@ -177,7 +176,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
       {/* The form swaps wholesale between steps; without this the change is
           silent for a screen reader. */}
       <LiveRegion>
-        {stage === 'code' ? `Step 2 of 2. Enter the 6-digit code sent to ${sentTo}.` : ''}
+        {stage === 'code' ? t('auth.forgot.liveStep2', { email: sentTo }) : ''}
       </LiveRegion>
     </form>
   )

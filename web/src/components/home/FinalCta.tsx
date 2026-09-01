@@ -1,29 +1,31 @@
 import { Button, Icon } from '@/components/ui'
 import { InkClose } from '@/components/layout/InkClose'
+import { getServerT } from '@/lib/i18n/server'
 
 // The structural claim no volume marketplace can make, stated bluntly, as the
 // page's closer. One primary, one inverse — the InkClose contract.
 
-export function FinalCta() {
+export async function FinalCta() {
+  const t = await getServerT()
   return (
     <InkClose
       // Portrait workshop photography sits beside the claim rather than being
       // stretched behind it. The alignment equipment makes inspection tangible.
-      image={{ src: '/img/inspection-alignment.jpg', alt: 'A vehicle undergoing wheel alignment in a professional inspection workshop' }}
+      image={{ src: '/img/inspection-alignment.jpg', alt: t('home.finalCta.imageAlt') }}
       imagePresentation="portrait"
-      headline="Every car here passed the same 150-point inspection. There is no uninspected tier."
+      headline={t('home.finalCta.headline')}
       actions={
         <>
           <Button href="/cars" size="lg" trailingIcon={<Icon name="arrow-right" size={18} />}>
-            Browse certified cars
+            {t('home.finalCta.browse')}
           </Button>
           <Button href="/sell" variant="inverse" size="lg">
-            Sell your car
+            {t('home.finalCta.sell')}
           </Button>
         </>
       }
     >
-      Review the listing evidence, contact the verified seller, then inspect, negotiate and document your own agreement. Sawa Cars never takes custody of the transaction funds.
+      {t('home.finalCta.body')}
     </InkClose>
   )
 }

@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
 import { Button, Icon } from '@/components/ui'
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
+import { useT } from '@/lib/i18n/context'
 import { APP, CONTACT, NAV_LINKS, STORES_LIVE } from '@/lib/site'
 import type { User } from '@/lib/types'
 
@@ -25,7 +27,14 @@ import type { User } from '@/lib/types'
  * cookie) and handed down as a prop. That keeps the JWT out of the browser
  * entirely while still letting this be a client component for the menu state.
  */
+// Nav labels come from NAV_LINKS (hrefs) but are translated by key.
+const NAV_KEY: Record<string, string> = {
+  '/cars': 'nav.buy', '/rentals': 'nav.rentals', '/sell': 'nav.sell',
+  '/tools': 'nav.tools', '/how-it-works': 'nav.howItWorks',
+}
+
 export function Header({ user }: { user: User | null }) {
+  const t = useT()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -109,7 +118,7 @@ export function Header({ user }: { user: User | null }) {
                   aria-current={isActive(link.href) ? 'page' : undefined}
                   className={navLink(isActive(link.href))}
                 >
-                  {link.label}
+                  {t(NAV_KEY[link.href] ?? '') || link.label}
                 </Link>
               </li>
             ))}
@@ -147,7 +156,7 @@ export function Header({ user }: { user: User | null }) {
               size="sm"
               className="hidden sm:inline-flex"
             >
-              Admin
+              {t('common.admin')}
             </Button>
           ) : null}
 
@@ -168,7 +177,7 @@ export function Header({ user }: { user: User | null }) {
               size="sm"
               className="hidden sm:inline-flex"
             >
-              Sign in
+              {t('common.signIn')}
             </Button>
           )}
 
@@ -180,10 +189,10 @@ export function Header({ user }: { user: User | null }) {
                 size="sm"
                 className="hidden lg:inline-flex"
               >
-                Browse cars
+                {t('common.browseCars')}
               </Button>
               <Button href="/download" size="sm" className="hidden sm:inline-flex">
-                Get the app
+                {t('common.getApp')}
               </Button>
             </>
           ) : (
@@ -197,13 +206,17 @@ export function Header({ user }: { user: User | null }) {
                 size="sm"
                 className="hidden lg:inline-flex"
               >
-                Get the app
+                {t('common.getApp')}
               </Button>
               <Button href="/cars" size="sm" className="hidden sm:inline-flex">
-                Browse cars
+                {t('common.browseCars')}
               </Button>
             </>
           )}
+
+          <div className="hidden sm:block">
+            <LanguageSwitcher tone={overlay ? 'dark' : 'light'} />
+          </div>
 
           <button
             type="button"
@@ -251,7 +264,7 @@ export function Header({ user }: { user: User | null }) {
                         : 'text-content hover:bg-surface-alt'
                     }`}
                   >
-                    {link.label}
+                    {t(NAV_KEY[link.href] ?? '') || link.label}
                     <Icon name="chevron-right" size={16} />
                   </Link>
                 </li>
@@ -278,7 +291,7 @@ export function Header({ user }: { user: User | null }) {
                   className="flex items-center justify-center gap-2 rounded-xl border border-line px-3 py-3 text-caption font-bold text-content transition-colors hover:bg-surface-alt"
                 >
                   <Icon name="phone" size={16} />
-                  Call us
+                  {t('common.callUs')}
                 </a>
               </div>
             ) : null}
@@ -289,27 +302,32 @@ export function Header({ user }: { user: User | null }) {
             >
               {user?.role === 'admin' ? (
                 <Button href="/admin-portal" prefetch={false} variant="secondary" fullWidth>
-                  Admin dashboard
+                  {t('common.adminDashboard')}
                 </Button>
               ) : null}
               {user ? (
                 <Button href="/dashboard" variant="outline" fullWidth leadingIcon={<Icon name="user" size={18} />}>
-                  My dashboard
+                  {t('common.dashboard')}
                 </Button>
               ) : (
                 <>
-                  <Button href="/signin" variant="outline" fullWidth>Sign in</Button>
-                  <Button href="/signup" variant="secondary" fullWidth>Create account</Button>
+                  <Button href="/signin" variant="outline" fullWidth>{t('common.signIn')}</Button>
+                  <Button href="/signup" variant="secondary" fullWidth>{t('common.createAccount')}</Button>
                 </>
               )}
               {STORES_LIVE ? (
-                <Button href="/download" fullWidth>Get the app</Button>
+                <Button href="/download" fullWidth>{t('common.getApp')}</Button>
               ) : (
                 <>
-                  <Button href="/cars" fullWidth>Browse certified cars</Button>
-                  <Button href="/download" variant="ghost" fullWidth>Get the app</Button>
+                  <Button href="/cars" fullWidth>{t('common.browseCertified')}</Button>
+                  <Button href="/download" variant="ghost" fullWidth>{t('common.getApp')}</Button>
                 </>
               )}
+
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-caption font-semibold text-content-secondary">{t('common.language')}</span>
+                <LanguageSwitcher tone="light" />
+              </div>
             </div>
           </nav>
         </div>

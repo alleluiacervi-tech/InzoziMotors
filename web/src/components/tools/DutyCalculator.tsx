@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Button, Icon, LiveRegion } from '@/components/ui'
 import { calcRwandaDuty, formatUSD, getDutyRates } from '@/lib/business'
+import { useT } from '@/lib/i18n/context'
 import {
   ChipGroup,
   Headline,
@@ -35,25 +36,27 @@ function share(part: number, whole: number): string {
   return `${Math.round((part / whole) * 1000) / 10}%`
 }
 
-const AGE_OPTIONS: readonly ChipOption<number>[] = [
-  { value: 0, label: 'Under 2 years', hint: 'No allowance' },
-  { value: 3, label: '2 – 4 years' },
-  { value: 5, label: '4 – 6 years' },
-  { value: 7, label: '6 – 8 years' },
-  { value: 9, label: '8 – 10 years' },
-  { value: 11, label: 'Over 10 years' },
-]
-
 export function DutyCalculator() {
+  const t = useT()
   const rates = getDutyRates()
+
+  const AGE_OPTIONS: readonly ChipOption<number>[] = [
+    { value: 0, label: t('tools.dutyCalc.ageUnder2'), hint: t('tools.dutyCalc.noAllowance') },
+    { value: 3, label: t('tools.dutyCalc.age2to4') },
+    { value: 5, label: t('tools.dutyCalc.age4to6') },
+    { value: 7, label: t('tools.dutyCalc.age6to8') },
+    { value: 9, label: t('tools.dutyCalc.age8to10') },
+    { value: 11, label: t('tools.dutyCalc.ageOver10') },
+  ]
+
   const bracketOptions: readonly ChipOption<number>[] = useMemo(
     () =>
       rates.excise_brackets.map((bracket) => ({
         value: bracket.max_cc ?? Number.MAX_SAFE_INTEGER,
         label: bracket.label,
-        hint: `${bracket.rate_pct}% excise`,
+        hint: t('tools.dutyCalc.exciseWord', { pct: bracket.rate_pct }),
       })),
-    [rates]
+    [rates, t]
   )
 
   const [value, setValue] = useState('')
@@ -72,23 +75,23 @@ export function DutyCalculator() {
       {/* ─── Inputs ───────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 lg:col-span-2">
         <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
-          The vehicle
+          {t('tools.dutyCalc.theVehicle')}
         </h3>
 
         <div className="mt-4 space-y-6">
           <NumberField
             id="duty-value"
-            label="Purchase price"
+            label={t('tools.dutyCalc.purchasePrice')}
             prefix="RWF"
             placeholder="15000"
             value={value}
             onChange={setValue}
-            hint="What you pay for the vehicle before shipping, entered in RWF."
+            hint={t('tools.dutyCalc.purchasePriceHint')}
           />
 
           <ChipGroup
             name="duty-bracket"
-            legend="Engine size"
+            legend={t('tools.dutyCalc.engineSize')}
             options={bracketOptions}
             value={cc}
             onChange={setCc}
@@ -97,7 +100,7 @@ export function DutyCalculator() {
 
           <ChipGroup
             name="duty-age"
-            legend="Vehicle age"
+            legend={t('tools.dutyCalc.vehicleAge')}
             options={AGE_OPTIONS}
             value={ageYears}
             onChange={setAgeYears}
@@ -105,9 +108,7 @@ export function DutyCalculator() {
           />
 
           <p className="text-micro leading-relaxed text-content-muted">
-            Excise moves with engine size, and an older vehicle is assessed on a reduced value
-            under the EAC depreciation schedule. Everything else is charged the same way on every
-            imported car.
+            {t('tools.dutyCalc.note')}
           </p>
         </div>
       </div>
@@ -115,67 +116,65 @@ export function DutyCalculator() {
       {/* ─── Breakdown ────────────────────────────────────────────────────── */}
       <div className="lg:col-span-3">
         <ResultPanel
-          title="Estimated landed cost"
+          title={t('tools.dutyCalc.estimatedLanded')}
           className="lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]"
         >
           {hasValue ? (
             <div className="space-y-5">
               <Headline
-                label="Purchase price plus duties and taxes"
+                label={t('tools.dutyCalc.landedLabel')}
                 value={formatUSD(duty.grandTotal)}
-                note={`Duties add ${duty.effectiveRate}% on top of what you pay the exporter.`}
+                note={t('tools.dutyCalc.landedNote', { pct: duty.effectiveRate })}
               />
 
               <div>
                 {duty.depreciationPct > 0 ? (
                   <ResultRow
-                    label="Value assessed for duty"
-                    hint={`${duty.depreciationPct}% depreciation allowance for the vehicle's age`}
+                    label={t('tools.dutyCalc.assessedValue')}
+                    hint={t('tools.dutyCalc.assessedHint', { pct: duty.depreciationPct })}
                     value={formatUSD(duty.dutiableValue)}
                   />
                 ) : null}
                 <ResultRow
-                  label="CIF value"
-                  hint={`Assessed value plus ${share(duty.cif - duty.dutiableValue, duty.dutiableValue)} freight and insurance`}
+                  label={t('tools.dutyCalc.cifValue')}
+                  hint={t('tools.dutyCalc.cifHint', { pct: share(duty.cif - duty.dutiableValue, duty.dutiableValue) })}
                   value={formatUSD(duty.cif)}
                 />
                 <ResultRow
-                  label="Customs duty"
-                  hint={`${share(duty.customs, duty.cif)} of CIF`}
+                  label={t('tools.dutyCalc.customsDuty')}
+                  hint={t('tools.dutyCalc.customsHint', { pct: share(duty.customs, duty.cif) })}
                   value={formatUSD(duty.customs)}
                 />
                 <ResultRow
-                  label="Excise duty"
-                  hint={`${duty.exciseRatePct}% of CIF plus customs — set by engine size`}
+                  label={t('tools.dutyCalc.exciseDuty')}
+                  hint={t('tools.dutyCalc.exciseHint', { pct: duty.exciseRatePct })}
                   value={formatUSD(duty.excise)}
                 />
                 <ResultRow
-                  label="VAT"
-                  hint={`${share(duty.vat, duty.cif + duty.customs + duty.excise)} of CIF plus customs and excise`}
+                  label={t('tools.dutyCalc.vat')}
+                  hint={t('tools.dutyCalc.vatHint', { pct: share(duty.vat, duty.cif + duty.customs + duty.excise) })}
                   value={formatUSD(duty.vat)}
                 />
                 <ResultRow
-                  label="Withholding tax"
-                  hint={`${share(duty.withholding, duty.cif)} of CIF`}
+                  label={t('tools.dutyCalc.withholding')}
+                  hint={t('tools.dutyCalc.withholdingHint', { pct: share(duty.withholding, duty.cif) })}
                   value={formatUSD(duty.withholding)}
                 />
                 <ResultRow
-                  label="Infrastructure levy"
-                  hint={`${share(duty.infra, duty.cif)} of CIF`}
+                  label={t('tools.dutyCalc.infra')}
+                  hint={t('tools.dutyCalc.infraHint', { pct: share(duty.infra, duty.cif) })}
                   value={formatUSD(duty.infra)}
                 />
                 <ResultRow
-                  label="Total duties and taxes"
+                  label={t('tools.dutyCalc.totalDuties')}
                   value={formatUSD(duty.totalDuties)}
                   emphasis
                 />
               </div>
 
               <p className="rounded-xl bg-surface-alt px-4 py-3 text-micro leading-relaxed text-content-secondary">
-                An estimate for planning. RRA assesses duty against its own valuation of the
-                vehicle, which can differ from your invoice — age, body type and condition all
-                move the figure. The assessment at clearing is the one that counts.
-                {duty.reviewedOn ? ` Rates last reviewed ${duty.reviewedOn}.` : ''}
+                {t('tools.dutyCalc.disclaimer')}
+                {duty.reviewedOn ? ` ${t('tools.dutyCalc.ratesReviewed', { date: duty.reviewedOn })}` : ''}
               </p>
 
               <div className="border-t border-line-soft pt-5">
@@ -186,21 +185,20 @@ export function DutyCalculator() {
                   className={WRAPPING_LABEL}
                   trailingIcon={<Icon name="arrow-right" size={18} />}
                 >
-                  Compare against cars already in Rwanda
+                  {t('tools.dutyCalc.compareBtn')}
                 </Button>
               </div>
             </div>
           ) : (
             <ResultPlaceholder>
-              Enter a purchase price to see the full breakdown — CIF, customs, excise, VAT and the
-              withholding tax and the infrastructure levy.
+              {t('tools.dutyCalc.placeholder')}
             </ResultPlaceholder>
           )}
         </ResultPanel>
 
         <LiveRegion>
           {hasValue
-            ? `Estimated landed cost ${formatUSD(duty.grandTotal)}, of which ${formatUSD(duty.totalDuties)} is duties and taxes.`
+            ? t('tools.dutyCalc.liveResult', { total: formatUSD(duty.grandTotal), duties: formatUSD(duty.totalDuties) })
             : ''}
         </LiveRegion>
       </div>

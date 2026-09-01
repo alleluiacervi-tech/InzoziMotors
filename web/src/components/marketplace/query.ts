@@ -1,5 +1,6 @@
 import { formatUSD } from '@/lib/business'
 import type { CarQuery } from '@/lib/types'
+import type { TFunction } from '@/lib/i18n/dictionary'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The browse URL contract.
@@ -184,20 +185,24 @@ export const FILTER_LABELS: Record<FilterField, string> = {
   max_year: 'Latest year',
 }
 
-export function chipLabel(field: FilterField, value: string): string {
+export function chipLabel(t: TFunction, field: FilterField, value: string): string {
   switch (field) {
     case 'q':
       return `“${value}”`
     case 'drive_side':
-      return DRIVE_SIDES.find((side) => side.value === value)?.label ?? value
+      return value === 'RHD'
+        ? t('cars.driveSide.rhd.label')
+        : value === 'LHD'
+        ? t('cars.driveSide.lhd.label')
+        : value
     case 'min_price':
-      return `From ${formatUSD(Number(value))}`
+      return t('cars.chip.from', { amount: formatUSD(Number(value)) })
     case 'max_price':
-      return `Up to ${formatUSD(Number(value))}`
+      return t('cars.chip.upTo', { amount: formatUSD(Number(value)) })
     case 'min_year':
-      return `${value} or newer`
+      return t('cars.chip.orNewer', { year: value })
     case 'max_year':
-      return `${value} or older`
+      return t('cars.chip.orOlder', { year: value })
     default:
       return value
   }
@@ -211,30 +216,33 @@ function pluralise(word: string): string {
  * One phrase describing the current view, reused by the <h1>, the page title
  * and the meta description so all three always agree.
  */
-export function describeFilters(filters: Filters): string {
+export function describeFilters(t: TFunction, filters: Filters): string {
   const parts: string[] = []
   if (filters.make) parts.push(filters.make)
   if (filters.model) parts.push(filters.model)
   if (filters.body_type) parts.push(pluralise(filters.body_type))
   if (!parts.length && filters.fuel_type) parts.push(pluralise(filters.fuel_type))
   if (!parts.length && filters.drive_side) {
-    parts.push(pluralise(chipLabel('drive_side', filters.drive_side)))
+    parts.push(pluralise(chipLabel(t, 'drive_side', filters.drive_side)))
   }
   if (!parts.length && filters.q) return `“${filters.q}”`
-  if (!parts.length) return 'Certified cars'
+  if (!parts.length) return t('cars.browse.certifiedCars')
 
   const phrase = parts.join(' ')
-  return /s$/i.test(phrase) ? phrase : `${phrase} cars`
+  // Makes/models/body types are seller/catalogue data, so the noun phrase is
+  // composed in English grammar; the surrounding frame is translated. The `s`
+  // check keeps "SUVs" from becoming "SUVs cars".
+  return /s$/i.test(phrase) ? phrase : t('cars.browse.subjectCars', { phrase })
 }
 
-export function browseHeading(filters: Filters): string {
+export function browseHeading(t: TFunction, filters: Filters): string {
   // A keyword on its own does not read as a noun — "“hybrid pickup” for sale in
   // Kigali" is nonsense, so it gets its own sentence.
   const onlyKeyword =
     !!filters.q && !filters.make && !filters.model && !filters.body_type &&
     !filters.fuel_type && !filters.drive_side
-  if (onlyKeyword) return `Cars matching “${filters.q}” in Kigali`
-  return `${describeFilters(filters)} for sale in Kigali`
+  if (onlyKeyword) return t('cars.browse.headingKeyword', { q: filters.q as string })
+  return t('cars.browse.headingForSale', { subject: describeFilters(t, filters) })
 }
 
 // ─── Indexing policy for faceted browse ──────────────────────────────────────

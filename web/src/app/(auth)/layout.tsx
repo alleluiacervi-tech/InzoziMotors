@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { LogoMark } from '@/components/brand/Logo'
 import { Container, Icon, type IconName } from '@/components/ui'
 import { getDisplayCenters } from '@/lib/centers'
+import { getServerT } from '@/lib/i18n/server'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shell for sign in / sign up / password reset.
@@ -17,32 +18,33 @@ import { getDisplayCenters } from '@/lib/centers'
 // Header and footer come from the root layout — auth is not a walled garden.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Every claim here is a mechanic that actually exists in the product. */
-const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
-  {
-    icon: 'shield-check',
-    title: '150-point inspection',
-    desc: 'Engine, brakes, body, interior, electronics, tyres and documentation are checked in person before a car can be listed.',
-  },
-  {
-    icon: 'eye-off',
-    title: 'Only Sawa Cars publishes',
-    desc: 'Sellers submit a car — they never post it. A listing goes live only after our team has inspected and photographed it.',
-  },
-  {
-    icon: 'refresh',
-    title: 'Consent-based seller contact',
-    desc: 'Phone and WhatsApp details are released only when a seller enables them and a signed-in buyer accepts the direct-deal notice.',
-  },
-  {
-    icon: 'cash',
-    title: 'No checkout or escrow',
-    desc: 'Users decide their own contract, payment, delivery and ownership-transfer arrangements. Sawa Cars never holds transaction funds.',
-  },
-]
-
 export default async function AuthLayout({ children }: { children: ReactNode }) {
   const centers = await getDisplayCenters()
+  const t = await getServerT()
+
+  /** Every claim here is a mechanic that actually exists in the product. */
+  const TRUST_POINTS: { icon: IconName; title: string; desc: string }[] = [
+    {
+      icon: 'shield-check',
+      title: t('auth.layout.trust.inspectionTitle'),
+      desc: t('auth.layout.trust.inspectionDesc'),
+    },
+    {
+      icon: 'eye-off',
+      title: t('auth.layout.trust.publishTitle'),
+      desc: t('auth.layout.trust.publishDesc'),
+    },
+    {
+      icon: 'refresh',
+      title: t('auth.layout.trust.consentTitle'),
+      desc: t('auth.layout.trust.consentDesc'),
+    },
+    {
+      icon: 'cash',
+      title: t('auth.layout.trust.noCheckoutTitle'),
+      desc: t('auth.layout.trust.noCheckoutDesc'),
+    },
+  ]
   return (
     <div className="bg-surface-page">
       {/* Phones are the majority in Rwanda, and below lg the ink aside
@@ -51,7 +53,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
       <div className="flex items-center gap-3 bg-ink-900 px-5 py-5 lg:hidden">
         <LogoMark size={30} />
         <p className="text-caption font-semibold text-white/60">
-          Every car inspected. Every seller verified.
+          {t('auth.layout.mobileTagline')}
         </p>
       </div>
 
@@ -66,10 +68,10 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
           <LogoMark size={48} />
 
           <p className="mt-8 text-eyebrow font-bold uppercase text-brand-light">
-            The Sawa Cars difference
+            {t('auth.layout.eyebrow')}
           </p>
           <h2 className="mt-3 max-w-sm text-headline font-extrabold">
-            Why every listing here is a real car.
+            {t('auth.layout.heading')}
           </h2>
 
           <ul className="mt-9 space-y-6">
@@ -93,13 +95,13 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
               href="/promise"
               className="font-bold text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
             >
-              Read about marketplace safety
+              {t('auth.layout.readSafety')}
             </Link>
           </p>
 
           <div className="mt-auto border-t border-white/10 pt-7">
             <p className="text-eyebrow font-bold uppercase text-white/50">
-              Inspection centers
+              {t('auth.layout.centersLabel')}
             </p>
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-caption text-white/70">
               {centers.map((center) => (

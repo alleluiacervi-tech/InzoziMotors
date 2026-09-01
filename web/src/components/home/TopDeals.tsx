@@ -3,6 +3,7 @@ import { Container, Icon, Section, SectionHeading } from '@/components/ui'
 import { CarCard } from '@/components/marketplace/CarCard'
 import { Reveal } from '@/components/ui/Reveal'
 import type { FeaturedPlacement } from '@/lib/types'
+import { getServerT } from '@/lib/i18n/server'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Top deals — the cars an operator actually placed.
@@ -26,23 +27,24 @@ import type { FeaturedPlacement } from '@/lib/types'
 // simply the truth: nobody placed anything today.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function TopDeals({ placements }: { placements: FeaturedPlacement[] }) {
+export async function TopDeals({ placements }: { placements: FeaturedPlacement[] }) {
   if (!placements.length) return null
+  const t = await getServerT()
 
   return (
     <Section tone="page">
       <Container>
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
-            eyebrow="Top deals"
-            title="Picked by our team this week"
-            description="Chosen from cars that passed the 150-point inspection. Paid placements say so."
+            eyebrow={t('home.topDeals.eyebrow')}
+            title={t('home.topDeals.title')}
+            description={t('home.topDeals.description')}
           />
           <Link
             href="/cars"
             className="inline-flex items-center gap-1.5 pb-1 text-body font-bold text-brand hover:underline"
           >
-            View all cars
+            {t('home.topDeals.viewAll')}
             <Icon name="arrow-right" size={16} />
           </Link>
         </div>

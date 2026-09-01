@@ -14,6 +14,7 @@ import { InspectionReportCard } from '@/components/marketplace/InspectionReportC
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { RENTAL_INCLUDES, RENTAL_REQUIREMENTS } from '@/components/marketplace/rental-copy'
 import { formatRating, tripCost } from '@/components/marketplace/rental-math'
+import { getServerT } from '@/lib/i18n/server'
 import { RentalInquiryForm } from './RentalInquiryForm'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,21 +50,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (err instanceof ApiError && (err.status === 404 || err.status === 400)) notFound()
     car = null
   }
-  if (!car) return { title: 'Rental unavailable', robots: { index: false, follow: true } }
+  const t = await getServerT()
+  if (!car) return { title: t('rentals.detail.metaUnavailable'), robots: { index: false, follow: true } }
 
-  const description =
-    `Rent the ${car.title} in Kigali from ${formatUSD(car.daily_rate)} a day. ` +
-    'Provider-supplied rates and vehicle details, with direct availability inquiries through Sawa Cars.'
+  const description = t('rentals.detail.metaDescription', { title: car.title, price: formatUSD(car.daily_rate) })
 
   const image = car.images?.[0]
 
   return {
-    title: `${car.title} — ${formatUSD(car.daily_rate)} a day`,
+    title: t('rentals.detail.metaTitle', { title: car.title, price: formatUSD(car.daily_rate) }),
     description,
     alternates: { canonical: `/rentals/${car.id}` },
     robots: car.status === 'active' ? undefined : { index: false, follow: true },
     openGraph: {
-      title: `${car.title} — rent in Kigali`,
+      title: t('rentals.detail.metaOgTitle', { title: car.title }),
       description,
       url: `/rentals/${car.id}`,
       images: image ? [{ url: image, alt: car.title }] : undefined,
@@ -76,6 +76,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
 
   const car = await loadCar(id)
   if (!car) notFound()
+  const t = await getServerT()
   const [user, inspectionReport] = await Promise.all([
     getCurrentUser(),
     rentalsApi.inspectionReport(id).catch(() => null),
@@ -93,16 +94,16 @@ export default async function RentalDetailPage({ params }: PageProps) {
     .map((days) => tripCost(car, days))
 
   const specs: Spec[] = [
-    { label: 'Seats', value: car.seats ? String(car.seats) : '', icon: 'user' },
-    { label: 'Gearbox', value: car.transmission ?? '', icon: 'settings' },
-    { label: 'Fuel', value: car.fuel ?? '', icon: 'fuel' },
-    { label: 'Year', value: car.year ? String(car.year) : '', icon: 'calendar' },
-    { label: 'Category', value: car.category ?? '', icon: 'car' },
-    { label: 'Odometer', value: car.mileage ? formatKm(car.mileage) : '', icon: 'gauge' },
-    { label: 'Kept at', value: car.location ?? '', icon: 'location' },
+    { label: t('rentals.spec.seats'), value: car.seats ? String(car.seats) : '', icon: 'user' },
+    { label: t('rentals.spec.gearbox'), value: car.transmission ?? '', icon: 'settings' },
+    { label: t('rentals.spec.fuel'), value: car.fuel ?? '', icon: 'fuel' },
+    { label: t('rentals.spec.year'), value: car.year ? String(car.year) : '', icon: 'calendar' },
+    { label: t('rentals.spec.category'), value: car.category ?? '', icon: 'car' },
+    { label: t('rentals.spec.odometer'), value: car.mileage ? formatKm(car.mileage) : '', icon: 'gauge' },
+    { label: t('rentals.spec.keptAt'), value: car.location ?? '', icon: 'location' },
     {
-      label: 'Minimum stay',
-      value: `${car.min_days} ${car.min_days === 1 ? 'day' : 'days'}`,
+      label: t('rentals.spec.minimumStay'),
+      value: t(car.min_days === 1 ? 'rentals.detail.dayOne' : 'rentals.detail.days', { count: car.min_days }),
       icon: 'clock',
     },
   ]
@@ -116,13 +117,13 @@ export default async function RentalDetailPage({ params }: PageProps) {
           <ol className="flex flex-wrap items-center gap-1.5 text-caption text-content-muted">
             <li className="flex items-center gap-1.5">
               <Link href="/" className="hover:text-content">
-                Home
+                {t('rentals.detail.breadcrumbHome')}
               </Link>
               <span aria-hidden>·</span>
             </li>
             <li className="flex items-center gap-1.5">
               <Link href="/rentals" className="hover:text-content">
-                Rentals
+                {t('rentals.detail.breadcrumbRentals')}
               </Link>
               <span aria-hidden>·</span>
             </li>
@@ -150,10 +151,10 @@ export default async function RentalDetailPage({ params }: PageProps) {
                 ) : null}
                 {car.safari_ready ? (
                   <Badge tone="info" icon="location">
-                    Safari-ready
+                    {t('rentals.card.safariReady')}
                   </Badge>
                 ) : null}
-                {car.status !== 'active' ? <Badge tone="neutral">Not currently available</Badge> : null}
+                {car.status !== 'active' ? <Badge tone="neutral">{t('rentals.detail.notAvailableBadge')}</Badge> : null}
               </div>
 
               <h1 className="mt-4 text-display font-extrabold text-content">{car.title}</h1>
@@ -169,7 +170,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   <>
                     {rating ? <span aria-hidden className="text-line">·</span> : null}
                     <span>
-                      {car.trips} {car.trips === 1 ? 'trip' : 'trips'}
+                      {t(car.trips === 1 ? 'rentals.detail.tripOne' : 'rentals.detail.tripMany', { count: car.trips })}
                     </span>
                   </>
                 ) : null}
@@ -190,38 +191,38 @@ export default async function RentalDetailPage({ params }: PageProps) {
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="relative overflow-hidden rounded-3xl border-line p-6 shadow-float sm:p-7">
                 <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">Rental overview</p>
+                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">{t('rentals.detail.overview')}</p>
                 <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   {formatUSD(car.daily_rate)}
-                  <span className="text-base font-bold text-content-muted"> / day</span>
+                  <span className="text-base font-bold text-content-muted"> {t('rentals.card.perDay')}</span>
                 </p>
 
                 <dl className="mt-5 space-y-2 border-t border-line-soft pt-4 text-caption">
                   <div className="flex items-baseline justify-between gap-4">
-                    <dt className="text-content-muted">Weekly rate</dt>
+                    <dt className="text-content-muted">{t('rentals.detail.weeklyRate')}</dt>
                     <dd className="font-bold text-content">{formatUSD(weekly)}</dd>
                   </div>
                   <div className="flex items-baseline justify-between gap-4">
-                    <dt className="text-content-muted">Deposit</dt>
+                    <dt className="text-content-muted">{t('rentals.detail.deposit')}</dt>
                     <dd className="font-bold text-content">{formatUSD(car.deposit)}</dd>
                   </div>
                   <div className="flex items-baseline justify-between gap-4">
-                    <dt className="text-content-muted">Minimum stay</dt>
+                    <dt className="text-content-muted">{t('rentals.detail.minimumStay')}</dt>
                     <dd className="font-bold text-content">
-                      {car.min_days} {car.min_days === 1 ? 'day' : 'days'}
+                      {t(car.min_days === 1 ? 'rentals.detail.dayOne' : 'rentals.detail.days', { count: car.min_days })}
                     </dd>
                   </div>
                 </dl>
 
-                <p className="mt-3 text-micro leading-relaxed text-content-muted">Rates and deposits are supplied by the provider and remain subject to their written confirmation and rental contract.</p>
+                <p className="mt-3 text-micro leading-relaxed text-content-muted">{t('rentals.detail.ratesNote')}</p>
 
                 <div className="mt-5 space-y-2 border-t border-line-soft pt-5">
-                  {user ? <RentalInquiryForm rentalId={car.id} minDays={car.min_days || 1} available={car.provider_contact_available} /> : <Button href={`/signin?next=${encodeURIComponent(`/rentals/${car.id}`)}`} size="lg" fullWidth>Sign in to request availability</Button>}
-                  <OpenInAppButton path={`rentals/${car.id}`} label="Open in the app" fullWidth />
+                  {user ? <RentalInquiryForm rentalId={car.id} minDays={car.min_days || 1} available={car.provider_contact_available} /> : <Button href={`/signin?next=${encodeURIComponent(`/rentals/${car.id}`)}`} size="lg" fullWidth>{t('rentals.detail.signInToRequest')}</Button>}
+                  <OpenInAppButton path={`rentals/${car.id}`} label={t('rentals.detail.openInApp')} fullWidth />
                 </div>
 
                 <p className="mt-4 text-micro leading-relaxed text-content-muted">
-                  An inquiry does not reserve the car. The provider confirms availability and is solely responsible for payment, deposit, insurance, pickup, return and contract terms.
+                  {t('rentals.detail.inquiryNote')}
                 </p>
               </Card>
             </div>
@@ -229,18 +230,18 @@ export default async function RentalDetailPage({ params }: PageProps) {
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
             <InspectionReportCard report={inspectionReport} />
-            <section aria-labelledby="availability-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7"><h2 id="availability-heading" className="text-title font-extrabold text-content">Availability is confirmed by the provider</h2><p className="mt-2 text-body leading-relaxed text-content-secondary">Send your dates as an inquiry. Sawa Cars does not block the calendar or confirm a rental on the provider&apos;s behalf.</p></section>
+            <section aria-labelledby="availability-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7"><h2 id="availability-heading" className="text-title font-extrabold text-content">{t('rentals.detail.availabilityTitle')}</h2><p className="mt-2 text-body leading-relaxed text-content-secondary">{t('rentals.detail.availabilityBody')}</p></section>
 
             <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
-                The car
+                {t('rentals.detail.theCar')}
               </h2>
               <SpecGrid specs={specs} />
             </section>
 
             <section aria-labelledby="cost-heading">
               <h2 id="cost-heading" className="mb-4 text-title font-extrabold text-content">
-                What a trip costs
+                {t('rentals.detail.tripCostTitle')}
               </h2>
               <Card className="overflow-hidden">
                 <ul className="divide-y divide-line-soft">
@@ -250,59 +251,59 @@ export default async function RentalDetailPage({ params }: PageProps) {
                       className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-5 py-4"
                     >
                       <p className="text-body font-bold text-content">
-                        {quote.days} {quote.days === 1 ? 'day' : 'days'}
+                        {t(quote.days === 1 ? 'rentals.detail.dayOne' : 'rentals.detail.days', { count: quote.days })}
                       </p>
                       <p className="text-caption text-content-secondary">
                         <span className="font-bold text-content">{formatUSD(quote.subtotal)}</span>{' '}
-                        rental
+                        {t('rentals.detail.rentalWord')}
                         <span className="text-content-muted">
                           {' '}
-                          + {formatUSD(quote.deposit)} refundable deposit
+                          {t('rentals.detail.refundableDeposit', { amount: formatUSD(quote.deposit) })}
                         </span>
                       </p>
                     </li>
                   ))}
                 </ul>
                 <p className="border-t border-line-soft bg-surface-alt px-5 py-4 text-micro leading-relaxed text-content-muted">
-                  Illustrative calculation from the provider&apos;s published rates. Ask the provider to confirm the final price, taxes, deposit, mileage, insurance and extras in writing.
+                  {t('rentals.detail.tripCostNote')}
                 </p>
               </Card>
             </section>
 
             <section aria-labelledby="included-heading">
               <h2 id="included-heading" className="mb-4 text-title font-extrabold text-content">
-                Provider-stated rental features
+                {t('rentals.detail.featuresTitle')}
               </h2>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {RENTAL_INCLUDES.map((item) => (
                   <li
-                    key={item.label}
+                    key={item.labelKey}
                     className="flex items-start gap-3 rounded-xl border border-line-soft bg-surface p-4"
                   >
                     <span className="mt-0.5 text-content-secondary">
                       <Icon name={item.icon} size={19} />
                     </span>
-                    <span className="text-caption font-semibold text-content">{item.label}</span>
+                    <span className="text-caption font-semibold text-content">{t(item.labelKey)}</span>
                   </li>
                 ))}
               </ul>
             </section>
 
             <Card className="p-5 sm:p-6">
-              <h2 className="text-title font-extrabold text-content">What to bring</h2>
+              <h2 className="text-title font-extrabold text-content">{t('rentals.detail.whatToBring')}</h2>
               <ul className="mt-4 space-y-2.5">
                 {RENTAL_REQUIREMENTS.map((requirement) => (
                   <li key={requirement} className="flex items-start gap-3">
                     <Icon name="check" size={17} className="mt-0.5 text-content-secondary" />
                     <span className="text-body leading-relaxed text-content-secondary">
-                      {requirement}
+                      {t(requirement)}
                     </span>
                   </li>
                 ))}
               </ul>
             </Card>
 
-            <section aria-labelledby="pickup-heading"><h2 id="pickup-heading" className="mb-4 text-title font-extrabold text-content">Pickup and return</h2><p className="max-w-prose text-body leading-relaxed text-content-secondary">Agree the exact location, vehicle condition record, fuel level, deposit handling and return process directly with the provider before paying or collecting the vehicle.</p></section>
+            <section aria-labelledby="pickup-heading"><h2 id="pickup-heading" className="mb-4 text-title font-extrabold text-content">{t('rentals.detail.pickupTitle')}</h2><p className="max-w-prose text-body leading-relaxed text-content-secondary">{t('rentals.detail.pickupBody')}</p></section>
           </div>
         </div>
       </Container>
@@ -312,14 +313,14 @@ export default async function RentalDetailPage({ params }: PageProps) {
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
             <div className="max-w-xl">
               <h2 className="text-title font-extrabold text-content">
-                Renting to see whether you want to buy?
+                {t('rentals.detail.crossSellTitle')}
               </h2>
               <p className="mt-2 text-body leading-relaxed text-content-secondary">
-                Compare inspected sale listings and then contact the verified seller directly. A rental provider and a vehicle seller may be different businesses with different terms.
+                {t('rentals.detail.crossSellBody')}
               </p>
             </div>
             <Button href="/cars" variant="outline">
-              Browse cars for sale
+              {t('rentals.detail.browseCars')}
             </Button>
           </div>
         </Container>
