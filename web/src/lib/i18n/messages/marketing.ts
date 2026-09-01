@@ -920,10 +920,1387 @@ const rw = {
   },
 }
 
+const fr = {
+  about: {
+    meta: {
+      title: 'À propos de Sawa Cars',
+      desc: 'Sawa Cars est une place de marché automobile vérifiée au Rwanda : notre équipe contrôle les vendeurs, les inspections et les preuves des annonces avant publication, puis les utilisateurs communiquent directement.',
+    },
+    header: {
+      eyebrow: 'À propos',
+      title: 'Une place de marché plus solide, avec des limites claires.',
+      lede: 'Acheter une voiture d’occasion à Kigali peut obliger à se fier à des informations difficiles à vérifier. Sawa Cars ajoute des contrôles des vendeurs, des preuves d’inspection et une publication encadrée, tout en laissant la décision finale et la transaction aux utilisateurs.',
+      browse: 'Voir les voitures certifiées',
+      visit: 'Visiter un centre',
+    },
+    why: {
+      eyebrow: 'Pourquoi elle existe',
+      title: 'La provenance est ici le vrai problème',
+      description: 'Pas le prix. Pas le choix. Savoir ce que la voiture devant vous a réellement vécu.',
+      p1: 'Une grande partie des voitures qui circulent sur les routes rwandaises sont arrivées comme des importations d’occasion, beaucoup à conduite à droite en provenance du Japon. Elles ont un carnet d’entretien rédigé ailleurs, un compteur difficile à vérifier et des documents qu’un particulier n’a aucun moyen concret de contrôler avant de remettre son argent.',
+      p2: 'Un site de petites annonces ne résout pas cela. Il ne fait que porter ce qu’on y publie : le vendeur rédige la description, le vendeur prend les photos, et le vendeur est la seule personne à avoir jamais regardé sous le capot.',
+      p3: 'Sawa Cars a donc pris la position inverse. Nous prenons la voiture en charge, réalisons un contrôle en 150 points sur sa mécanique, sa carrosserie, son électronique et ses documents, la photographions dans une galerie utile et publions l’annonce uniquement après un examen par un administrateur. Le vendeur garde la maîtrise du prix. Nous gardons la maîtrise de la vérité.',
+    },
+    pipeline: {
+      eyebrow: 'Comment une voiture arrive sur le site',
+      title: 'Cinq étapes, aucune ne peut être sautée',
+      description: 'Le même processus fonctionne derrière le tableau de bord vendeur, la file d’attente admin et ce site web — il n’y a pas de porte dérobée.',
+      stages: [
+        { title: 'Soumise', desc: 'Un vendeur vérifié nous envoie les détails de la voiture et le prix demandé.' },
+        { title: 'Examinée', desc: 'Notre équipe lit la soumission et réserve un créneau d’inspection.' },
+        { title: 'Inspectée', desc: 'Un mécanicien effectue le contrôle en 150 points au centre.' },
+        { title: 'Documentée', desc: 'Une galerie claire et fidèle est ajoutée avec autant d’images utiles que le véhicule le nécessite.' },
+        { title: 'Publiée', desc: 'Nous créons l’annonce, rapport joint, et elle est mise en ligne.' },
+      ],
+    },
+    weDoNot: {
+      eyebrow: 'Là où nous fixons la limite',
+      title: 'Quatre choses que Sawa Cars ne fera pas',
+      description: 'Ce qui rend cette place de marché digne de confiance tient surtout à ce qu’elle refuse de proposer.',
+      items: [
+        { title: 'Nous ne percevons pas de paiements', desc: 'Il n’y a ni paiement, ni passerelle de paiement, ni séquestre dans l’application ou le site. Acheteurs, vendeurs et loueurs décident du paiement directement, à leurs propres risques.' },
+        { title: 'Nous ne laissons pas les vendeurs publier', desc: 'Un vendeur soumet une voiture. Seule l’équipe Sawa peut transformer une soumission en annonce, et uniquement après que la voiture est passée par un centre.' },
+        { title: 'Nous n’affichons pas ce que nous n’avons pas inspecté', desc: 'Chaque annonce en ligne s’appuie sur un rapport en 150 points. Les voitures qui n’atteignent pas notre seuil ne sont pas publiées.' },
+        { title: 'Nous ne gérons pas les contrats des utilisateurs', desc: 'Nous ne confirmons pas la vente ou la location, ne détenons pas d’acompte, ne rédigeons pas le contrat des parties, ne traitons pas le transfert de propriété et ne tranchons pas un litige de transaction externe.' },
+      ],
+    },
+    centers: {
+      eyebrow: 'Où nous travaillons',
+      title: 'Centres d’inspection à Kigali',
+      description: 'Ces sites accueillent les services d’inspection de la plateforme. Les utilisateurs décident indépendamment où et comment réaliser toute transaction ultérieure.',
+      directions: 'Itinéraire et heures d’ouverture',
+    },
+  },
+
+  promise: {
+    meta: {
+      title: 'Sécurité du marché',
+      desc: 'Les contrôles de vérification, de preuve, de consentement et de publication utilisés par Sawa Cars.',
+    },
+    header: {
+      eyebrow: 'Sécurité du marché',
+      title: 'Des contrôles utiles. Des limites honnêtes.',
+      lede: 'Sawa Cars réduit les risques évitables de la place de marché grâce à la vérification, aux preuves et à une publication encadrée. Ces contrôles améliorent l’information ; ils ne font pas de Sawa Cars une partie à l’accord.',
+      browse: 'Voir les annonces vérifiées',
+      notice: 'Lire l’avis de transaction directe',
+    },
+    controls: {
+      eyebrow: 'Contrôles de la plateforme',
+      title: 'Cinq niveaux avant et pendant le contact',
+      description: 'Chacun est précis, vérifiable et limité à ce que la plateforme peut réellement contrôler.',
+      items: [
+        { title: 'Informations d’inspection', desc: 'Lorsqu’une inspection est réalisée, l’annonce affiche les contrôles enregistrés de la mécanique, de la carrosserie, de l’électronique et des documents afin que les acheteurs décident en meilleure connaissance de cause.' },
+        { title: 'Vendeurs vérifiés', desc: 'L’identité du vendeur et le statut du compte sont contrôlés avant qu’un véhicule puisse être publié. Les prestataires professionnels reçoivent un contrôle de vérification distinct.' },
+        { title: 'Preuves claires', desc: 'Les annonces distinguent les contrôles enregistrés des informations inconnues. Les acheteurs doivent tout de même vérifier le véhicule et les documents originaux avant de conclure un accord.' },
+        { title: 'Contact fondé sur le consentement', desc: 'Le numéro de téléphone ou WhatsApp d’un vendeur n’est partagé que lorsque ce vendeur l’active et qu’un acheteur connecté accepte l’avis de transaction directe.' },
+        { title: 'Publication encadrée', desc: 'Seuls des administrateurs autorisés peuvent publier des annonces. Les exigences d’identité, d’inspection et de photos sont revérifiées au moment de la publication.' },
+      ],
+    },
+    sawaControls: {
+      title: 'Ce que Sawa contrôle',
+      body: 'L’accès aux comptes, le statut de vérification des vendeurs, les barrières de publication, la modération des annonces, la divulgation de contact fondée sur le consentement, les messages de la plateforme et l’historique d’audit.',
+    },
+    usersControl: {
+      title: 'Ce que les utilisateurs contrôlent',
+      body: 'Les visites, les vérifications indépendantes, la négociation, le contrat, le paiement, l’acompte, le transfert de propriété, la livraison, la prise en charge, la restitution, l’assurance et tout litige externe.',
+    },
+  },
+
+  contact: {
+    meta: {
+      title: 'Nous contacter',
+      desc: 'Appelez ou écrivez à l’équipe Sawa Cars sur WhatsApp au +250 788 308 611, ou par e-mail à contact@sawacars.com. Heures d’ouverture et adresses de nos centres d’inspection à Kigali.',
+    },
+    header: {
+      eyebrow: 'Contact',
+      title: 'Parlez à une personne',
+      lede: 'Une seule ligne, gérée par l’équipe qui prend en charge les inspections, les annonces et les questions liées à la plateforme. Acheteurs et vendeurs utilisent leurs propres canaux de contact activés pour les discussions de transaction directe.',
+    },
+    hours: 'Lun–Sam · 8:00 – 18:00',
+    band: {
+      label: 'Appels & WhatsApp',
+      whatsapp: 'Écrire sur WhatsApp',
+      call: 'Appeler maintenant',
+    },
+    channels: {
+      whatsapp: {
+        label: 'WhatsApp',
+        note: 'Le moyen le plus rapide de nous joindre. Envoyez le lien d’une annonce et nous vous dirons si la voiture est encore disponible.',
+        badge: 'Le plus rapide',
+      },
+      call: {
+        label: 'Nous appeler',
+        note: 'La même ligne, répondue en personne pendant les heures des centres — {{hours}}.',
+      },
+      email: {
+        label: 'E-mail',
+        note: 'Pour tout ce qui nécessite une pièce jointe : comptes concessionnaires, partenariats, rapports d’inspection ou assistance de compte.',
+      },
+    },
+    reach: {
+      eyebrow: 'Nous joindre',
+      title: 'Trois moyens, tous réels',
+    },
+    composer: {
+      title: 'Écrivez ici',
+      body: 'Ce site web ne gère pas de boîte de réception, donc rien n’est envoyé depuis cette page. Le bouton ouvre WhatsApp avec ce que vous avez écrit déjà saisi — c’est vous qui appuyez sur envoyer.',
+      fieldLabel: 'Votre message',
+      fieldHint: 'Incluez l’annonce dont vous parlez, s’il y en a une — cela évite un aller-retour.',
+      placeholder: 'Bonjour Sawa Cars — je souhaite me renseigner sur…',
+      submit: 'Ouvrir WhatsApp',
+      emailPrefix: 'Vous préférez l’e-mail ? ',
+      emailSuffix: ' joint la même équipe.',
+    },
+    expect: {
+      eyebrow: 'À quoi s’attendre',
+      title: 'Après nous avoir contactés',
+      items: [
+        { title: 'Sous 24 heures', body: 'Chaque demande d’assistance de la place de marché reçoit une réponse de l’équipe qui gère les centres d’inspection.' },
+        { title: 'Une personne, pas un robot', body: 'La ligne est répondue par les personnes qui inspectent les véhicules et soutiennent la place de marché. Il n’y a pas de serveur vocal.' },
+        { title: 'Un seul numéro, toujours', body: 'Nous ne vous demandons jamais de continuer sur un autre numéro ni d’envoyer de l’argent vers un compte communiqué par messagerie.' },
+      ],
+    },
+    centers: {
+      eyebrow: 'Venez nous voir',
+      title: 'Nos centres',
+      description: 'Les services d’inspection de la plateforme ont lieu ici. Contactez l’équipe avant de déposer un véhicule ; les transactions entre utilisateurs s’organisent indépendamment.',
+    },
+  },
+
+  howItWorks: {
+    meta: {
+      title: 'Comment fonctionne Sawa Cars',
+      desc: 'Comment fonctionnent les annonces de véhicules vérifiées, le contact direct avec le vendeur, les inspections et les demandes de disponibilité de location sur Sawa Cars.',
+    },
+    header: {
+      eyebrow: 'Comment ça marche',
+      title: 'D’abord l’information vérifiée. Ensuite l’accord direct.',
+      lede: 'Sawa Cars contrôle les vendeurs, les inspections et les annonces. Acheteurs, vendeurs et loueurs communiquent, négocient et effectuent ensuite la transaction de façon indépendante. Il n’y a ni paiement, ni séquestre, ni contrat Sawa, ni garantie de transaction.',
+      browse: 'Voir les voitures',
+      submit: 'Soumettre un véhicule',
+    },
+    buyers: {
+      eyebrow: 'Pour les acheteurs',
+      title: 'De l’annonce à la transaction directe',
+      description: 'Contacter un vendeur démarre une conversation. Cela ne réserve pas la voiture et ne crée pas de transaction avec Sawa Cars.',
+    },
+    buyingSteps: [
+      { title: 'Examinez l’annonce', desc: 'Lisez les détails du véhicule, la galerie, les informations d’inspection et toute limitation avant de contacter le vendeur.' },
+      { title: 'Contactez le vendeur', desc: 'Utilisez le chat de l’application, le téléphone ou WhatsApp lorsque le vendeur vérifié a activé ce canal.' },
+      { title: 'Inspectez et vérifiez', desc: 'Organisez votre propre visite ou une inspection complémentaire et vérifiez le véhicule, le VIN, les documents originaux et la propriété de façon indépendante.' },
+      { title: 'Convenez de conditions écrites', desc: 'Acheteur et vendeur décident directement du prix, du mode de paiement, de la livraison, du transfert de propriété et du contrat écrit.' },
+      { title: 'Concluez la transaction de façon indépendante', desc: 'Sawa Cars ne reçoit ni ne détient l’argent de l’achat et n’est pas partie au contrat ou au litige qui en résulte.' },
+    ],
+    checks: {
+      eyebrow: 'Gardez le contrôle',
+      title: 'Quatre vérifications avant de vous engager',
+      description: 'La vérification de la plateforme réduit l’incertitude ; elle ne remplace pas votre propre diligence ni un accord écrit.',
+      items: [
+        { title: 'Avant le contact', desc: 'Comparez l’annonce, la galerie, le rapport d’inspection et la vérification du vendeur. Traitez toute information inconnue comme inconnue.' },
+        { title: 'Avant de payer', desc: 'Voyez le véhicule, vérifiez le VIN et les documents de propriété originaux, et confirmez indépendamment le destinataire et le mode de paiement.' },
+        { title: 'Avant de signer', desc: 'Mettez le prix, l’état, les éléments inclus, le transfert, la livraison, l’acompte et les conditions d’annulation dans un accord écrit entre les parties.' },
+        { title: 'Après l’accord', desc: 'Conservez des copies des messages, documents et reçus. Sawa Cars ne peut ni annuler ni trancher un paiement ou un contrat conclu en dehors de la plateforme.' },
+      ],
+    },
+    sellers: {
+      eyebrow: 'Pour les vendeurs',
+      title: 'Publication encadrée, demandes directes',
+      description: 'Soumettez le véhicule et effectuez la vérification. Un administrateur autorisé ne publie qu’une fois les contrôles de preuve configurés réussis.',
+      responsibilityLabel: 'Votre responsabilité après la publication :',
+      responsibilityBody: ' gardez l’annonce exacte, répondez avec honnêteté, signalez les changements et documentez tout accord indépendant avec l’acheteur.',
+    },
+    sellingSteps: [
+      { title: 'Soumettez votre voiture', desc: 'Indiquez-nous la marque, le modèle, le kilométrage et votre prix demandé. Nous suggérons une fourchette à partir de ventes comparables réelles.' },
+      { title: 'Réservez votre inspection', desc: 'Choisissez un centre et un créneau. Apportez la voiture et vos carnets d’entretien.' },
+      { title: 'Nous inspectons et examinons', desc: 'Notre équipe enregistre l’inspection et ajoute une galerie d’images claire et fidèle. Il n’y a pas de nombre d’angles imposé.' },
+      { title: 'Effectuez la vérification vendeur', desc: 'Avant la publication, notre équipe doit approuver votre contrôle d’identité unique et activer votre compte vendeur.' },
+      { title: 'Un administrateur la publie', desc: 'La publication est conditionnée par la vérification du vendeur, l’achèvement de l’inspection et une galerie valide. Vous gardez la maîtrise du prix.' },
+      { title: 'Vous gérez les demandes des acheteurs', desc: 'Discutez, négociez et concluez toute vente directement. Sawa Cars n’est pas partie à votre contrat ou à votre paiement.' },
+    ],
+    notParty: {
+      title: 'Sawa Cars n’est pas partie aux transactions des utilisateurs',
+      body: 'La plateforme ne détient pas d’argent, ne confirme pas une vente ou une location, n’émet pas le contrat des parties, ne garantit pas un acompte ou un véhicule, et n’assume aucune responsabilité pour un paiement, un accord, une livraison, une perte ou un litige externe. Rien ici ne supprime des droits ou des responsabilités que la loi applicable ne permet pas d’exclure.',
+      cta: 'Lire l’intégralité des conditions du marché',
+    },
+  },
+
+  terms: {
+    meta: {
+      title: 'Conditions d’utilisation du marché',
+      desc: 'Conditions régissant les comptes, les annonces de véhicules vérifiées, le contact vendeur, les demandes de location et les transactions directes entre utilisateurs sur Sawa Cars.',
+    },
+    page: {
+      title: 'Conditions d’utilisation du marché',
+      lede: 'Des règles claires pour les annonces vérifiées et la communication directe — et une frontière claire autour des contrats et des paiements conclus de façon indépendante par les utilisateurs.',
+    },
+    scope: {
+      heading: 'Champ d’application et acceptation',
+      p1before: 'Ces conditions régissent l’utilisation du site web Sawa Cars, des applications mobiles et des services de place de marché associés. En créant un compte ou en utilisant une fonctionnalité authentifiée, vous acceptez ces conditions et la ',
+      p1link: 'politique de confidentialité',
+      p1after: '.',
+      p2: 'La version actuelle des conditions du marché est affichée lorsqu’un utilisateur demande pour la première fois un canal de contact vendeur. Les modifications importantes de politique peuvent exiger une nouvelle acceptation.',
+    },
+    role: {
+      heading: 'Le rôle limité de Sawa Cars',
+      p1strong: 'Sawa Cars fournit une plateforme d’annonces vérifiées et de communication.',
+      p1rest: ' Elle n’est pas l’acheteur, le vendeur, le loueur, le prestataire de paiement, l’agent de séquestre, l’assureur, le prêteur, le transporteur ni une partie à un contrat entre utilisateurs.',
+      p2: 'Contacter un autre utilisateur n’est qu’une demande d’information. Cela ne réserve pas un véhicule, ne confirme pas la disponibilité, ne crée pas de vente ou de location et n’engage pas Sawa Cars.',
+    },
+    accounts: {
+      heading: 'Comptes et admissibilité',
+      items: [
+        'Fournissez des informations exactes et à jour et gardez vos identifiants sécurisés.',
+        'Utilisez votre propre identité et vos propres coordonnées.',
+        'Signalez-nous rapidement tout accès non autorisé.',
+        'La publication vendeur peut exiger une vérification d’identité ; les stocks de location exigent une vérification professionnelle distincte.',
+        'Nous pouvons suspendre ou restreindre un compte pour protéger les utilisateurs, enquêter sur des abus, respecter la loi ou faire appliquer ces conditions.',
+      ],
+    },
+    listings: {
+      heading: 'Annonces et publication',
+      p1: 'Les vendeurs doivent décrire le véhicule avec exactitude, divulguer les défauts ou changements importants et avoir le droit de le proposer. La soumission ne garantit pas la publication.',
+      p2: 'Seul un administrateur autorisé peut publier une annonce. La publication peut exiger un vendeur vérifié actif, une inspection terminée et une galerie d’images valide. Sawa Cars peut rejeter, suspendre, corriger ou archiver un contenu inexact, dangereux, illégal ou non conforme aux normes de la plateforme.',
+    },
+    inspection: {
+      heading: 'Informations d’inspection et badges',
+      p1: 'Une inspection reflète les observations enregistrées à la date de l’inspection et les éléments réellement contrôlés. Ce n’est pas une garantie, ni une garantie d’état futur, ni un substitut à l’examen mécanique et juridique indépendant de l’acheteur.',
+      p2: '« Vendeur vérifié » signifie que la plateforme a effectué ses contrôles de compte configurés ; cela ne promet pas que chaque déclaration, véhicule ou action future de cette personne est sans risque.',
+    },
+    contact: {
+      heading: 'Partage de contact et communications',
+      p1: 'Un vendeur choisit si un contact par téléphone ou WhatsApp peut être divulgué. Sawa Cars ne révèle un canal activé qu’à un utilisateur authentifié après acceptation de l’avis de transaction directe et enregistre cette divulgation à des fins de sécurité et d’audit.',
+      p2: 'Les utilisateurs ne doivent pas harceler, menacer, envoyer du spam, extraire des données de contact ni les utiliser à des fins étrangères. Les messages dans l’application peuvent être signalés et examinés pour modération, comme décrit dans la politique de confidentialité.',
+    },
+    transactions: {
+      heading: 'Ventes et locations indépendantes',
+      p1: 'L’acheteur et le vendeur — ou le locataire et le prestataire — sont seuls responsables de la disponibilité, de l’inspection complémentaire, des documents, du prix, des taxes, du paiement, des acomptes, des conditions écrites, de la livraison, de la prise en charge, de la restitution, du transfert de propriété, de l’assurance et de la conformité réglementaire.',
+      p2: 'Sawa Cars ne perçoit ni ne détient de fonds de transaction et ne peut annuler, rembourser, inverser, faire exécuter ni trancher un accord conclu par les utilisateurs. Les tarifs de location et les acomptes affichés sont des informations fournies par le prestataire jusqu’à ce que celui-ci les confirme.',
+    },
+    prohibited: {
+      heading: 'Conduites interdites',
+      items: [
+        'Fraude, usurpation d’identité, véhicules volés ou faux documents.',
+        'Descriptions trompeuses, défauts importants dissimulés ou images manipulées.',
+        'Logiciels malveillants, extraction automatisée, atteinte à la sécurité ou accès non autorisé.',
+        'Discrimination, menaces, harcèlement ou contenu illégal.',
+        'Utilisation des coordonnées d’une autre personne en dehors de la finalité pour laquelle elles ont été divulguées.',
+      ],
+    },
+    reports: {
+      heading: 'Signalements, preuves et litiges',
+      p1: 'Les utilisateurs peuvent signaler du contenu, des messages ou des comptes de la plateforme. Sawa Cars peut modérer la plateforme, conserver des preuves et coopérer avec les demandes légales.',
+      p2: 'La modération de la plateforme n’est pas un arbitrage du contrat des utilisateurs. Un litige de paiement, de propriété, de livraison ou de location doit être traité par les parties et, le cas échéant, leur banque, prestataire de paiement, assureur, avocat, régulateur, tribunal ou autorité de police.',
+    },
+    liability: {
+      heading: 'Avertissements et responsabilité',
+      p1: 'Dans la mesure permise par la loi applicable, les informations de la place de marché et les outils de communication sont fournis sans promesse qu’un véhicule restera disponible, qu’un utilisateur conclura une transaction ou qu’un accord externe aboutira à un résultat particulier.',
+      p2: 'Chaque utilisateur est responsable de ses propres décisions et des pertes causées par ses propres déclarations, accords, paiements ou conduites illégales. Rien dans ces conditions n’exclut la fraude, la faute intentionnelle ni un droit ou une responsabilité que la loi applicable ne nous permet pas d’exclure.',
+    },
+    changes: {
+      heading: 'Modifications et résiliation',
+      p1: 'Nous pouvons améliorer, restreindre ou retirer des fonctionnalités et mettre à jour ces conditions. Les mises à jour importantes seront communiquées via le service lorsque cela est possible. Des enregistrements historiques peuvent être conservés lorsque cela est nécessaire pour la sécurité, l’audit, la conformité légale ou des réclamations légitimes.',
+      p2: 'Vous pouvez demander la suppression de votre compte via l’application ou le site web, sous réserve des règles de conservation légalement requises et d’anonymisation irréversible décrites dans la politique de confidentialité.',
+    },
+    lawContact: {
+      heading: 'Droit applicable et contact',
+      p1: 'Ces conditions sont destinées à s’appliquer sous les lois en vigueur au Rwanda. La clause finale de droit applicable et de règlement des litiges doit être confirmée par un conseil rwandais qualifié avant le lancement en production.',
+      p2before: 'Les questions relatives à ces conditions peuvent être envoyées à ',
+      p2after: '.',
+      lastUpdated: 'Dernière mise à jour : 23 août 2026.',
+    },
+  },
+
+  privacy: {
+    meta: {
+      title: 'Politique de confidentialité',
+      desc: 'Ce que Sawa Cars collecte, pourquoi, qui peut le voir et comment les pièces d’identité sont traitées. Un seul compte pour l’application et le site web.',
+    },
+    page: {
+      title: 'Politique de confidentialité',
+      lede: 'Ce que nous collectons, pourquoi nous le conservons, qui peut le voir — et le soin particulier apporté aux pièces d’identité qui font fonctionner cette place de marché.',
+    },
+    scope: {
+      heading: 'Champ d’application',
+      p1: 'Cette politique couvre {{name}} — ce site web, les applications Android et iOS, et les dossiers que notre équipe conserve dans les centres d’inspection. Les trois partagent un seul compte et une seule base de données, de sorte que les informations que vous fournissez à un endroit vous sont accessibles ailleurs.',
+    },
+    collect: {
+      heading: 'Ce que nous collectons',
+      h1: 'Lorsque vous créez un compte',
+      list1: [
+        'Votre nom, votre adresse e-mail et votre numéro de téléphone.',
+        'Votre mot de passe, stocké uniquement sous forme de hachage cryptographique. Personne chez Sawa Cars ne peut le lire, nous y compris.',
+      ],
+      h2: 'Lorsque vous vérifiez votre identité en tant que vendeur',
+      list2: [
+        'Des photographies du recto et du verso de votre carte d’identité nationale, ainsi qu’un selfie.',
+      ],
+      h3: 'Lorsque vous utilisez la place de marché',
+      list3: [
+        'Les voitures que vous enregistrez, les recherches que vous enregistrez et les alertes que vous activez.',
+        'Les divulgations de contact vendeur et les demandes de disponibilité de location.',
+        'Les messages que vous échangez avec les vendeurs, les acheteurs ou notre équipe.',
+        'Les détails de véhicule que vous soumettez et les résultats d’inspection que nos mécaniciens enregistrent.',
+      ],
+      h4: 'Automatiquement',
+      list4: [
+        'Des journaux techniques de base nécessaires pour exploiter et sécuriser le service.',
+        'Dans l’application uniquement : l’accès à la caméra lorsque vous choisissez de prendre une photo, et un jeton de notification push si vous autorisez les notifications. Ni l’un ni l’autre n’est utilisé à d’autres fins.',
+      ],
+    },
+    why: {
+      heading: 'Pourquoi nous les conservons',
+      list: [
+        'Pour vérifier qu’un vendeur est une personne réelle et identifiable — le fondement de toute la place de marché.',
+        'Pour publier des annonces et des rapports d’inspection exacts.',
+        'Pour permettre les communications directes de la place de marché et les réponses des prestataires aux demandes de location.',
+        'Pour envoyer les alertes que vous avez demandées : baisses de prix, correspondances de recherches enregistrées, messages.',
+        'Pour enquêter sur les signalements relatifs au contenu ou à la conduite de la plateforme et prévenir la fraude.',
+        'Pour tenir des registres de sécurité, de consentement et d’audit administratif.',
+      ],
+      p: 'Nous ne créons pas de profils publicitaires et nous ne vendons de données personnelles à personne.',
+    },
+    identity: {
+      heading: 'Les pièces d’identité, en particulier',
+      p: 'Les photographies d’identité et les selfies sont les données les plus sensibles que nous détenons, et elles sont traitées en conséquence.',
+      list: [
+        'Elles ne sont jamais affichées sur une annonce et jamais partagées avec des acheteurs ou d’autres vendeurs.',
+        'L’accès est restreint aux membres de l’équipe Sawa qui examinent les vérifications. Les documents se trouvent derrière une route réservée aux administrateurs ; un compte ordinaire ne peut y accéder, même avec un lien direct.',
+        'Ce que les autres utilisateurs voient n’est que le résultat : une mention « Vendeur vérifié » et le score de confiance qui en découle.',
+        'Nous les conservons tant que votre compte est ouvert et aussi longtemps ensuite que la tenue des registres sur les ventes conclues l’exige, puis nous les supprimons.',
+      ],
+    },
+    whoSees: {
+      heading: 'Qui voit quoi',
+      items: [
+        { lead: 'Les acheteurs voient', rest: ' le nom affiché d’un vendeur, son statut de vérification, son score de confiance, les informations de profil vendeur et la disponibilité des canaux de contact. Un numéro de téléphone ou WhatsApp n’est divulgué qu’après le consentement du vendeur et l’acceptation de l’acheteur.' },
+        { lead: 'Les vendeurs et les loueurs voient', rest: ' les informations nécessaires pour répondre aux messages ou aux demandes de disponibilité qui leur sont envoyés.' },
+        { lead: 'Notre équipe voit', rest: ' ce qui est nécessaire au fonctionnement du processus : soumissions, inspections, annonces, demandes, divulgations de contact et — lorsque la sécurité de la plateforme ou un signalement l’exige — les conversations.' },
+        { lead: 'Personne ne voit', rest: ' votre mot de passe, vos pièces d’identité ni vos recherches enregistrées, à part vous et les examinateurs mentionnés ci-dessus.' },
+      ],
+    },
+    sharing: {
+      heading: 'Qui d’autre intervient',
+      p1: 'Nous faisons appel à un petit nombre de prestataires de services pour exploiter la plateforme — hébergement, distribution des messages et stockage des images. Ils traitent les données uniquement selon nos instructions et ne sont pas autorisés à les utiliser à leurs propres fins.',
+      p2: 'Nous partageons des informations avec les autorités uniquement lorsque la loi l’exige, et avec la Rwanda Revenue Authority dans la mesure où un transfert de propriété le requiert.',
+    },
+    cookies: {
+      heading: 'Cookies',
+      p1before: 'Ce site web dépose un seul cookie : un cookie de session qui vous maintient connecté. Il est ',
+      p1strong: 'httpOnly',
+      p1after: ', ce qui signifie qu’aucun script s’exécutant dans votre navigateur ne peut le lire — y compris un script malveillant. Il est supprimé lorsque vous vous déconnectez.',
+      p2: 'Il n’y a pas de cookies publicitaires ni de traceurs tiers sur ce site.',
+    },
+    security: {
+      heading: 'Comment elles sont protégées',
+      list: [
+        'Les mots de passe sont hachés, jamais stockés sous une forme lisible.',
+        'Les sessions sur le web sont conservées dans un cookie httpOnly plutôt que dans le stockage du navigateur.',
+        'Chaque requête vers notre API est autorisée sur le serveur, et les fonctions d’administration sont protégées par rôle plutôt qu’en masquant un lien.',
+        'Les pièces d’identité ne sont servies qu’aux examinateurs, jamais publiquement.',
+      ],
+      pbefore: 'Aucun système n’est parfait. Si vous pensez qu’un compte a été compromis, contactez ',
+      pafter: ' et nous agirons le jour même.',
+    },
+    rights: {
+      heading: 'Vos choix',
+      item1: 'Vous pouvez consulter et corriger votre profil à tout moment depuis votre compte.',
+      item2: 'Vous pouvez désactiver n’importe quelle alerte sans perdre la voiture ou la recherche enregistrée qui la sous-tend.',
+      item3part1: 'Vous pouvez fermer votre compte vous-même, à tout moment et sans l’approbation de quiconque — sur ce site web sous ',
+      item3link1: 'Profil → Fermer le compte',
+      item3part2: ', ou dans l’application sous Paramètres → Zone de danger. La fermeture prend effet immédiatement ; vos données sont effacées 30 jours plus tard, et jusque-là vous pouvez vous reconnecter et rouvrir le compte. Tous les détails figurent sur la ',
+      item3link2: 'page de suppression de compte',
+      item3part3: '.',
+      item4: 'La fermeture retire vos annonces de la place de marché et cesse immédiatement d’afficher votre numéro de téléphone. Au bout de 30 jours, l’effacement supprime votre profil, vos coordonnées, vos pièces d’identité ainsi que vos voitures et recherches enregistrées. Les enregistrements de transferts de véhicules déjà réalisés sont conservés lorsque la loi l’exige, votre nom et vos coordonnées en étant retirés.',
+      item5before: 'Vous pouvez demander une copie de ce que nous détenons à votre sujet en écrivant à ',
+      item5after: '.',
+    },
+    children: {
+      heading: 'Enfants',
+      p: 'Les comptes Sawa Cars sont réservés aux adultes. Nous ne collectons pas sciemment d’informations sur toute personne de moins de 18 ans, et nous les supprimons si nous découvrons en avoir.',
+    },
+    contact: {
+      heading: 'Modifications et contact',
+      p1: 'Nous mettrons cette page à jour chaque fois que la plateforme modifiera ce qu’elle collecte, et les titulaires de compte seront informés des changements importants.',
+      p2before: 'Les questions relatives à la confidentialité vont à ',
+      p2mid: ', ou à ',
+      p2after: ' pour tout le reste.',
+    },
+  },
+
+  guarantee: {
+    meta: {
+      title: 'Avis de place de marché en transaction directe',
+      desc: 'Le rôle de Sawa Cars et les responsabilités des acheteurs, vendeurs et loueurs lorsqu’ils effectuent une transaction directement.',
+    },
+    page: {
+      title: 'Avis de place de marché en transaction directe',
+      lede: 'Sawa Cars améliore la qualité des annonces et la communication, mais n’est pas partie au contrat, au paiement ou à la livraison que les utilisateurs organisent entre eux.',
+    },
+    noGuarantee: {
+      heading: 'Aucune garantie de transaction Sawa',
+      p1: 'Sawa Cars ne fournit pas de garantie de retour de sept jours, de garantie de transaction, de séquestre, de promesse de remboursement ni de garantie de caution de location pour un accord entre utilisateurs.',
+      p2: 'Un rapport d’inspection de véhicule décrit des observations faites à un instant donné. Ce n’est pas une garantie d’état futur et ne remplace pas une inspection indépendante ou des vérifications juridiques.',
+    },
+    platformRole: {
+      heading: 'Ce que fait la plateforme',
+      items: [
+        'Contrôle l’identité du vendeur et le statut du compte.',
+        'Détermine quelles annonces de véhicules deviennent publiques.',
+        'Stocke les informations d’annonce, de galerie et d’inspection.',
+        'Fournit la messagerie dans l’application et la divulgation par téléphone ou WhatsApp fondée sur le consentement.',
+        'Reçoit les signalements sur le contenu ou la conduite de la plateforme aux fins de modération.',
+      ],
+    },
+    userRole: {
+      heading: 'Ce que les utilisateurs décident et gèrent',
+      items: [
+        'La visite du véhicule, l’inspection complémentaire et la vérification des documents.',
+        'Le prix, le mode de paiement, l’acompte et la preuve de paiement.',
+        'Le contrat, les déclarations, la livraison, la prise en charge, la restitution et le transfert de propriété.',
+        'L’assurance, les taxes, les licences et les autres exigences légales ou réglementaires.',
+        'Toute annulation, remboursement, réclamation ou litige découlant de l’accord indépendant.',
+      ],
+    },
+    safety: {
+      heading: 'Avant de transférer de l’argent',
+      p1: 'Vérifiez l’autre partie, le véhicule, le VIN, les documents de propriété originaux et le destinataire du paiement de façon indépendante. Mettez toutes les conditions importantes par écrit et conservez des copies des communications et des reçus.',
+      p2: 'Ne vous fiez pas à un badge, une annonce, un message ou un score d’inspection comme preuve que le paiement est sûr. Signalez le contenu suspect de la plateforme, mais contactez immédiatement la banque, le prestataire de mobile-money, la police ou le régulateur approprié lorsqu’un paiement ou une infraction peut être en cause.',
+    },
+    law: {
+      heading: 'Droits préservés par la loi',
+      p: 'Rien dans cet avis n’exclut la responsabilité ou les droits des consommateurs que la loi applicable ne permet pas d’exclure. L’acheteur, le vendeur ou le prestataire reste responsable des promesses et obligations qu’il accepte dans son propre accord.',
+    },
+    related: {
+      heading: 'Informations connexes',
+      terms: 'Conditions d’utilisation',
+      how: 'Comment fonctionne la place de marché',
+      promise: 'Contrôles de sécurité du marché',
+    },
+  },
+}
+
+const sw = {
+  about: {
+    meta: {
+      title: 'Kuhusu Sawa Cars',
+      desc: 'Sawa Cars ni soko la magari lililothibitishwa nchini Rwanda: timu yetu hukagua wauzaji, ukaguzi na ushahidi wa matangazo kabla ya kuchapishwa, kisha watumiaji huwasiliana moja kwa moja.',
+    },
+    header: {
+      eyebrow: 'Kuhusu',
+      title: 'Soko imara zaidi, lenye mipaka iliyo wazi.',
+      lede: 'Kununua gari lililotumika Kigali kunaweza kumaanisha kuamini taarifa ambazo ni vigumu kuzithibitisha. Sawa Cars huongeza ukaguzi wa wauzaji, ushahidi wa ukaguzi na uchapishaji unaodhibitiwa, huku ikiacha uamuzi wa mwisho na muamala mikononi mwa watumiaji.',
+      browse: 'Angalia magari yaliyothibitishwa',
+      visit: 'Tembelea kituo',
+    },
+    why: {
+      eyebrow: 'Kwa nini lipo',
+      title: 'Chanzo cha gari ndicho tatizo gumu hapa',
+      description: 'Si bei. Si uchaguzi. Ni kujua gari lililo mbele yako limepitia nini hasa.',
+      p1: 'Sehemu kubwa ya magari yaliyo barabarani nchini Rwanda yaliingia kama magari ya mtumba yaliyoagizwa, mengi yakiwa na usukani wa kulia kutoka Japani. Yanakuja na historia ya matengenezo iliyoandikwa mahali pengine, spidomita ambayo ni vigumu kuithibitisha, na nyaraka ambazo mnunuzi wa kawaida hana njia halisi ya kuzikagua kabla ya kutoa pesa.',
+      p2: 'Tovuti ya matangazo haisuluhishi hilo. Hubeba chochote kilichowekwa humo: muuzaji anaandika maelezo, muuzaji anapiga picha, na muuzaji ndiye mtu pekee aliyewahi kuangalia chini ya boneti.',
+      p3: 'Kwa hivyo Sawa Cars ilichukua msimamo tofauti. Tunapokea gari, tunafanya ukaguzi wa pointi 150 kwa mekaniki yake, mwili, elektroniki na nyaraka, tunalipiga picha katika ghala la picha muhimu, na tunachapisha tangazo tu baada ya ukaguzi wa msimamizi. Muuzaji anabaki na udhibiti wa bei. Sisi tunabaki na udhibiti wa ukweli.',
+    },
+    pipeline: {
+      eyebrow: 'Jinsi gari linavyofika kwenye tovuti',
+      title: 'Hatua tano, hakuna inayoweza kurukwa',
+      description: 'Mchakato uleule hufanya kazi nyuma ya dashibodi ya muuzaji, foleni ya msimamizi na tovuti hii — hakuna mlango wa kando.',
+      stages: [
+        { title: 'Limewasilishwa', desc: 'Muuzaji aliyethibitishwa anatutumia maelezo ya gari na bei anayoomba.' },
+        { title: 'Limekaguliwa', desc: 'Timu yetu inasoma wasilisho na kuweka nafasi ya ukaguzi.' },
+        { title: 'Limekaguliwa kimekaniki', desc: 'Fundi anafanya ukaguzi wa pointi 150 kituoni.' },
+        { title: 'Limerekodiwa', desc: 'Ghala la picha lililo wazi na la kweli linaongezwa likiwa na picha muhimu nyingi kadri gari linavyohitaji.' },
+        { title: 'Limechapishwa', desc: 'Tunatengeneza tangazo, ripoti imeambatanishwa, na linaenda hewani.' },
+      ],
+    },
+    weDoNot: {
+      eyebrow: 'Mahali tunapoweka mstari',
+      title: 'Mambo manne ambayo Sawa Cars haitafanya',
+      description: 'Mengi yanayolifanya soko hili kuaminika ni yale linayokataa kuyatoa.',
+      items: [
+        { title: 'Hatuchukui malipo', desc: 'Hakuna malipo, lango la malipo wala udhamini wa pesa katika programu au tovuti. Wanunuzi, wauzaji na watoa kodi huamua malipo moja kwa moja kwa hatari yao wenyewe.' },
+        { title: 'Hatuwaruhusu wauzaji kuchapisha', desc: 'Muuzaji anawasilisha gari. Ni timu ya Sawa pekee inayoweza kugeuza wasilisho kuwa tangazo, na tu baada ya gari kuwa limefika kituoni.' },
+        { title: 'Hatutangazi tusichokagua', desc: 'Kila tangazo lililo hewani lina ripoti ya pointi 150 nyuma yake. Magari yasiyofikia kiwango chetu hayachapishwi.' },
+        { title: 'Hatusimamii mikataba ya watumiaji', desc: 'Hatuthibitishi mauzo au kodi, hatushiki amana, hatuandiki mkataba wa pande husika, hatushughulikii uhamishaji wa umiliki wala hatuamui mgogoro wa muamala wa nje.' },
+      ],
+    },
+    centers: {
+      eyebrow: 'Mahali tunapofanyia kazi',
+      title: 'Vituo vya ukaguzi Kigali',
+      description: 'Maeneo haya hukaribisha huduma za ukaguzi za jukwaa. Watumiaji huamua wenyewe wapi na jinsi ya kukamilisha muamala wowote wa baadaye.',
+      directions: 'Maelekezo na saa za kufunguliwa',
+    },
+  },
+
+  promise: {
+    meta: {
+      title: 'Usalama wa soko',
+      desc: 'Vidhibiti vya uthibitishaji, ushahidi, ridhaa na uchapishaji vinavyotumiwa na Sawa Cars.',
+    },
+    header: {
+      eyebrow: 'Usalama wa soko',
+      title: 'Vidhibiti vyenye manufaa. Mipaka ya ukweli.',
+      lede: 'Sawa Cars hupunguza hatari za soko zinazoweza kuepukwa kupitia uthibitishaji, ushahidi na uchapishaji unaodhibitiwa. Vidhibiti hivyo huboresha taarifa; haviifanyi Sawa Cars kuwa sehemu ya muamala.',
+      browse: 'Angalia matangazo yaliyothibitishwa',
+      notice: 'Soma ilani ya biashara ya moja kwa moja',
+    },
+    controls: {
+      eyebrow: 'Vidhibiti vya jukwaa',
+      title: 'Tabaka tano kabla na wakati wa mawasiliano',
+      description: 'Kila kimoja ni mahususi, kinachoweza kukaguliwa na kimewekewa mipaka kwa kile jukwaa linaloweza kudhibiti hasa.',
+      items: [
+        { title: 'Taarifa za ukaguzi', desc: 'Pale ukaguzi umekamilika, tangazo huonyesha ukaguzi uliorekodiwa wa mekaniki, mwili, elektroniki na nyaraka ili wanunuzi wafanye uamuzi wenye taarifa zaidi.' },
+        { title: 'Wauzaji waliothibitishwa', desc: 'Utambulisho wa muuzaji na hali ya akaunti hukaguliwa kabla gari haliwezi kuchapishwa. Watoa huduma wa kibiashara hupokea kidhibiti tofauti cha uthibitishaji.' },
+        { title: 'Ushahidi ulio wazi', desc: 'Matangazo hutofautisha ukaguzi uliorekodiwa na taarifa zisizojulikana. Wanunuzi bado wanapaswa kuthibitisha gari na nyaraka za asili kabla ya kukubaliana muamala.' },
+        { title: 'Mawasiliano yanayotegemea ridhaa', desc: 'Namba ya simu au WhatsApp ya muuzaji hushirikishwa tu pale muuzaji huyo anapowasha na mnunuzi aliyeingia anakubali ilani ya biashara ya moja kwa moja.' },
+        { title: 'Uchapishaji unaodhibitiwa', desc: 'Ni wasimamizi walioidhinishwa pekee wanaoweza kuchapisha matangazo. Mahitaji ya utambulisho, ukaguzi na picha hukaguliwa tena wakati wa uchapishaji.' },
+      ],
+    },
+    sawaControls: {
+      title: 'Kile Sawa inachodhibiti',
+      body: 'Ufikiaji wa akaunti, hali ya uthibitishaji wa muuzaji, vizuizi vya uchapishaji, uangalizi wa matangazo, ufichuaji wa mawasiliano unaotegemea ridhaa, jumbe za jukwaa na historia ya ukaguzi.',
+    },
+    usersControl: {
+      title: 'Kile watumiaji wanachodhibiti',
+      body: 'Kutazama, ukaguzi wa kujitegemea, majadiliano, mkataba, malipo, amana, uhamishaji wa umiliki, uwasilishaji, uchukuaji, urejeshaji, bima na mgogoro wowote wa nje.',
+    },
+  },
+
+  contact: {
+    meta: {
+      title: 'Wasiliana nasi',
+      desc: 'Piga simu au andikia timu ya Sawa Cars kupitia WhatsApp kwa +250 788 308 611, au tuma barua pepe contact@sawacars.com. Saa za kufunguliwa na anwani za vituo vyetu vya ukaguzi Kigali.',
+    },
+    header: {
+      eyebrow: 'Wasiliana',
+      title: 'Ongea na mtu',
+      lede: 'Laini moja, inayojibiwa na timu inayoshughulikia ukaguzi, matangazo na maswali ya jukwaa. Wanunuzi na wauzaji hutumia njia zao za mawasiliano zilizowashwa kwa mazungumzo ya muamala wa moja kwa moja.',
+    },
+    hours: 'Jumatatu–Jumamosi · 8:00 – 18:00',
+    band: {
+      label: 'Simu & WhatsApp',
+      whatsapp: 'Andika kupitia WhatsApp',
+      call: 'Piga simu sasa',
+    },
+    channels: {
+      whatsapp: {
+        label: 'WhatsApp',
+        note: 'Njia ya haraka zaidi ya kutufikia. Tuma kiungo cha tangazo nasi tutakuambia kama gari bado lipo.',
+        badge: 'Haraka zaidi',
+      },
+      call: {
+        label: 'Tupigie simu',
+        note: 'Laini ileile, inayojibiwa na mtu wakati wa saa za vituo — {{hours}}.',
+      },
+      email: {
+        label: 'Barua pepe',
+        note: 'Kwa chochote kinachohitaji kiambatisho: akaunti za wafanyabiashara, ushirikiano, ripoti za ukaguzi, au msaada wa akaunti.',
+      },
+    },
+    reach: {
+      eyebrow: 'Tufikie',
+      title: 'Njia tatu, zote ni za kweli',
+    },
+    composer: {
+      title: 'Andika hapa',
+      body: 'Tovuti hii haiendeshi kisanduku cha barua za mawasiliano, kwa hivyo hakuna kinachotumwa kutoka ukurasa huu. Kitufe hufungua WhatsApp na kile ulichokiandika tayari kikiwa kimeandikwa — wewe ndiye unabonyeza tuma.',
+      fieldLabel: 'Ujumbe wako',
+      fieldHint: 'Jumuisha tangazo unaloliuliza, kama lipo — kunaokoa safari ya kwenda na kurudi.',
+      placeholder: 'Habari Sawa Cars — ningependa kuuliza kuhusu…',
+      submit: 'Fungua WhatsApp',
+      emailPrefix: 'Unapendelea barua pepe? ',
+      emailSuffix: ' hufikia timu ileile.',
+    },
+    expect: {
+      eyebrow: 'Cha kutarajia',
+      title: 'Baada ya kuwasiliana nasi',
+      items: [
+        { title: 'Ndani ya saa 24', body: 'Kila ombi la msaada la soko hupata jibu kutoka kwa timu inayoendesha vituo vya ukaguzi.' },
+        { title: 'Mtu, si roboti', body: 'Laini hujibiwa na watu wanaokagua magari na kusaidia soko. Hakuna mfumo wa kupiga simu wa kiotomatiki.' },
+        { title: 'Namba moja, kila wakati', body: 'Kamwe hatukuombi uendelee kwenye namba nyingine au kutuma pesa kwenye akaunti iliyotolewa kwenye gumzo.' },
+      ],
+    },
+    centers: {
+      eyebrow: 'Njoo utuone',
+      title: 'Vituo vyetu',
+      description: 'Huduma za ukaguzi za jukwaa hufanyika hapa. Wasiliana na timu kabla ya kuacha gari; miamala ya watumiaji hupangwa kwa kujitegemea.',
+    },
+  },
+
+  howItWorks: {
+    meta: {
+      title: 'Jinsi Sawa Cars inavyofanya kazi',
+      desc: 'Jinsi matangazo ya magari yaliyothibitishwa, mawasiliano ya moja kwa moja na muuzaji, ukaguzi na maombi ya upatikanaji wa kodi yanavyofanya kazi kwenye Sawa Cars.',
+    },
+    header: {
+      eyebrow: 'Jinsi inavyofanya kazi',
+      title: 'Taarifa iliyothibitishwa kwanza. Makubaliano ya moja kwa moja baadaye.',
+      lede: 'Sawa Cars hukagua wauzaji, ukaguzi na matangazo. Wanunuzi, wauzaji na watoa kodi kisha huwasiliana, kujadiliana na kufanya muamala kwa kujitegemea. Hakuna malipo, udhamini wa pesa, mkataba wa Sawa wala dhamana ya muamala.',
+      browse: 'Angalia magari',
+      submit: 'Wasilisha gari',
+    },
+    buyers: {
+      eyebrow: 'Kwa wanunuzi',
+      title: 'Kutoka tangazo hadi muamala wa moja kwa moja',
+      description: 'Kuwasiliana na muuzaji huanzisha mazungumzo. Hakuhifadhi gari wala kutengeneza muamala na Sawa Cars.',
+    },
+    buyingSteps: [
+      { title: 'Kagua tangazo', desc: 'Soma maelezo ya gari, ghala la picha, taarifa za ukaguzi na vikwazo vyovyote kabla ya kuwasiliana na muuzaji.' },
+      { title: 'Wasiliana na muuzaji', desc: 'Tumia gumzo la ndani ya programu, simu au WhatsApp pale muuzaji aliyethibitishwa amewasha njia hiyo.' },
+      { title: 'Kagua na thibitisha', desc: 'Panga kutazama kwako mwenyewe au ukaguzi wa ziada na kagua gari, VIN, nyaraka za asili na umiliki kwa kujitegemea.' },
+      { title: 'Kubaliana masharti yaliyoandikwa', desc: 'Mnunuzi na muuzaji huamua bei, njia ya malipo, uwasilishaji, uhamishaji wa umiliki na mkataba ulioandikwa moja kwa moja.' },
+      { title: 'Kamilisha muamala kwa kujitegemea', desc: 'Sawa Cars haipokei wala kushika pesa za ununuzi na si sehemu ya mkataba au mgogoro utokanao.' },
+    ],
+    checks: {
+      eyebrow: 'Baki na udhibiti',
+      title: 'Ukaguzi manne kabla ya kujitolea',
+      description: 'Uthibitishaji wa jukwaa hupunguza kutokuwa na uhakika; haubadilishi uangalifu wako mwenyewe wala makubaliano yaliyoandikwa.',
+      items: [
+        { title: 'Kabla ya mawasiliano', desc: 'Linganisha tangazo, ghala la picha, rekodi ya ukaguzi na uthibitishaji wa muuzaji. Chukulia taarifa zisizojulikana kama zisizojulikana.' },
+        { title: 'Kabla ya kulipa', desc: 'Ona gari, thibitisha VIN na nyaraka za asili za umiliki, na thibitisha kwa kujitegemea mpokeaji na njia ya malipo.' },
+        { title: 'Kabla ya kutia saini', desc: 'Weka bei, hali, vitu vilivyojumuishwa, uhamishaji, uwasilishaji, amana na masharti ya kughairi katika makubaliano yaliyoandikwa kati ya pande husika.' },
+        { title: 'Baada ya makubaliano', desc: 'Weka nakala za jumbe, nyaraka na risiti. Sawa Cars haiwezi kubatilisha wala kuamua malipo au mkataba uliofanywa nje ya jukwaa.' },
+      ],
+    },
+    sellers: {
+      eyebrow: 'Kwa wauzaji',
+      title: 'Uchapishaji unaodhibitiwa, maulizo ya moja kwa moja',
+      description: 'Wasilisha gari na kamilisha uthibitishaji. Msimamizi aliyeidhinishwa huchapisha tu baada ya ukaguzi wa ushahidi uliowekwa kupita.',
+      responsibilityLabel: 'Wajibu wako baada ya uchapishaji:',
+      responsibilityBody: ' weka tangazo likiwa sahihi, jibu kwa ukweli, fichua mabadiliko, na andika makubaliano yoyote ya kujitegemea na mnunuzi.',
+    },
+    sellingSteps: [
+      { title: 'Wasilisha gari lako', desc: 'Tuambie chapa, muundo, umbali uliosafiriwa na bei unayoomba. Tunapendekeza kiwango kutoka mauzo halisi yanayolinganishwa.' },
+      { title: 'Weka nafasi ya ukaguzi', desc: 'Chagua kituo na nafasi. Leta gari na rekodi zako za matengenezo.' },
+      { title: 'Tunakagua na kupitia', desc: 'Timu yetu hurekodi ukaguzi na kuongeza ghala la picha lililo wazi na la kweli. Hakuna idadi maalumu ya pembe.' },
+      { title: 'Kamilisha uthibitishaji wa muuzaji', desc: 'Kabla ya uchapishaji, timu yetu lazima iidhinishe ukaguzi wako wa utambulisho wa mara moja na kuwasha akaunti yako ya muuzaji.' },
+      { title: 'Msimamizi analichapisha', desc: 'Uchapishaji hutegemea uthibitishaji wa muuzaji, kukamilika kwa ukaguzi na ghala halali. Unabaki na udhibiti wa bei.' },
+      { title: 'Unasimamia maulizo ya wanunuzi', desc: 'Ongea, jadiliana na kubaliana mauzo yoyote moja kwa moja. Sawa Cars si sehemu ya mkataba au malipo yako.' },
+    ],
+    notParty: {
+      title: 'Sawa Cars si sehemu ya miamala ya watumiaji',
+      body: 'Jukwaa halishiki pesa, halithibitishi mauzo au kodi, halitoi mkataba wa pande husika, halidhamini amana au gari, wala halikubali wajibu kwa malipo, makubaliano, uwasilishaji, hasara au mgogoro wa nje. Hakuna chochote hapa kinachoondoa haki au wajibu ambao sheria inayotumika haiwezi kuondoa.',
+      cta: 'Soma masharti kamili ya soko',
+    },
+  },
+
+  terms: {
+    meta: {
+      title: 'Masharti ya huduma ya soko',
+      desc: 'Masharti yanayosimamia akaunti, matangazo ya magari yaliyothibitishwa, mawasiliano ya muuzaji, maombi ya kodi na miamala ya moja kwa moja ya watumiaji kwenye Sawa Cars.',
+    },
+    page: {
+      title: 'Masharti ya huduma ya soko',
+      lede: 'Kanuni zilizo wazi za matangazo yaliyothibitishwa na mawasiliano ya moja kwa moja—na mpaka ulio wazi kuzunguka mikataba na malipo yanayofanywa kwa kujitegemea na watumiaji.',
+    },
+    scope: {
+      heading: 'Wigo na kukubali',
+      p1before: 'Masharti haya husimamia matumizi ya tovuti ya Sawa Cars, programu za simu na huduma za soko zinazohusiana. Kwa kufungua akaunti au kutumia kipengele kinachohitaji kuingia, unakubali masharti haya na ',
+      p1link: 'sera ya faragha',
+      p1after: '.',
+      p2: 'Toleo la sasa la masharti ya soko huonyeshwa pale mtumiaji anapoomba kwa mara ya kwanza njia ya mawasiliano ya muuzaji. Mabadiliko makubwa ya sera yanaweza kuhitaji kukubali tena.',
+    },
+    role: {
+      heading: 'Nafasi ndogo ya Sawa Cars',
+      p1strong: 'Sawa Cars hutoa jukwaa la matangazo yaliyothibitishwa na mawasiliano.',
+      p1rest: ' Si mnunuzi, muuzaji, mtoa kodi, mchakataji wa malipo, wakala wa udhamini wa pesa, mbima, mkopeshaji, kampuni ya usafirishaji wala sehemu ya mkataba kati ya watumiaji.',
+      p2: 'Kuwasiliana na mtumiaji mwingine ni ombi la taarifa tu. Hakuhifadhi gari, hakuthibitishi upatikanaji, hakutengenezi mauzo au kodi, wala hakumfungi Sawa Cars.',
+    },
+    accounts: {
+      heading: 'Akaunti na ustahiki',
+      items: [
+        'Toa taarifa sahihi na za sasa na weka salama vitambulisho vyako vya kuingia.',
+        'Tumia utambulisho wako mwenyewe na taarifa zako za mawasiliano.',
+        'Tujulishe mara moja kuhusu ufikiaji usioidhinishwa.',
+        'Uchapishaji wa muuzaji unaweza kuhitaji uthibitishaji wa utambulisho; hisa za kodi zinahitaji uthibitishaji wa kibiashara tofauti.',
+        'Tunaweza kusimamisha au kuzuia akaunti ili kuwalinda watumiaji, kuchunguza matumizi mabaya, kuzingatia sheria au kutekeleza masharti haya.',
+      ],
+    },
+    listings: {
+      heading: 'Matangazo na uchapishaji',
+      p1: 'Wauzaji lazima waeleze gari kwa ukweli, wafichue kasoro au mabadiliko makubwa na wawe na mamlaka ya kulitoa. Kuwasilisha hakuhakikishi uchapishaji.',
+      p2: 'Ni msimamizi aliyeidhinishwa pekee anayeweza kuchapisha tangazo. Utayari wa uchapishaji unaweza kuhitaji muuzaji aliyethibitishwa aliye hai, ukaguzi uliokamilika na ghala halali la picha. Sawa Cars inaweza kukataa, kusimamisha, kusahihisha au kuweka kwenye kumbukumbu maudhui yasiyo sahihi, yasiyo salama, yasiyo halali au yasiyolingana na viwango vya jukwaa.',
+    },
+    inspection: {
+      heading: 'Taarifa za ukaguzi na beji',
+      p1: 'Ukaguzi huonyesha uchunguzi uliorekodiwa katika tarehe ya ukaguzi na vitu vilivyokaguliwa hasa. Si dhamana, si uhakikisho wa hali ya baadaye wala si mbadala wa ukaguzi wa kimekaniki na wa kisheria wa kujitegemea wa mnunuzi.',
+      p2: '“Muuzaji aliyethibitishwa” humaanisha kuwa jukwaa lilikamilisha ukaguzi wake wa akaunti uliowekwa; haliahidi kuwa kila taarifa, gari au kitendo cha baadaye cha mtu huyo hakina hatari.',
+    },
+    contact: {
+      heading: 'Kushirikisha mawasiliano na mawasiliano',
+      p1: 'Muuzaji huchagua kama mawasiliano ya simu au WhatsApp yanaweza kufichuliwa. Sawa Cars hufichua njia iliyowashwa tu kwa mtumiaji aliyethibitishwa baada ya kukubali ilani ya biashara ya moja kwa moja na hurekodi ufichuaji huo kwa madhumuni ya usalama na ukaguzi.',
+      p2: 'Watumiaji hawapaswi kusumbua, kutishia, kutuma spam, kukusanya data za mawasiliano au kuitumia kwa madhumuni yasiyohusiana. Jumbe za ndani ya programu zinaweza kuripotiwa na kukaguliwa kwa uangalizi kama ilivyoelezwa katika sera ya faragha.',
+    },
+    transactions: {
+      heading: 'Mauzo na kodi za kujitegemea',
+      p1: 'Mnunuzi na muuzaji—au mkodishaji na mtoa huduma—ndio pekee wanaowajibika kwa upatikanaji, ukaguzi zaidi, nyaraka, bei, kodi za serikali, malipo, amana, masharti yaliyoandikwa, uwasilishaji, uchukuaji, urejeshaji, uhamishaji wa umiliki, bima na kuzingatia kanuni.',
+      p2: 'Sawa Cars haikusanyi wala haishiki fedha za muamala na haiwezi kughairi, kurejesha, kubatilisha, kutekeleza wala kuamua makubaliano yaliyofanywa na watumiaji. Viwango vya kodi na amana vinavyoonyeshwa ni taarifa zilizotolewa na mtoa huduma hadi mtoa huduma atakapozithibitisha.',
+    },
+    prohibited: {
+      heading: 'Mwenendo uliokatazwa',
+      items: [
+        'Udanganyifu, kujifanya mtu mwingine, magari yaliyoibwa au nyaraka za uongo.',
+        'Maelezo yanayopotosha, kasoro kubwa zilizofichwa au picha zilizogeuzwa.',
+        'Programu hasidi, ukusanyaji wa kiotomatiki, kuingilia usalama au ufikiaji usioidhinishwa.',
+        'Ubaguzi, vitisho, unyanyasaji au maudhui yasiyo halali.',
+        'Kutumia data za mawasiliano za mtu mwingine nje ya madhumuni yaliyofichuliwa.',
+      ],
+    },
+    reports: {
+      heading: 'Ripoti, ushahidi na migogoro',
+      p1: 'Watumiaji wanaweza kuripoti maudhui ya jukwaa, jumbe au akaunti. Sawa Cars inaweza kuangalia jukwaa, kuhifadhi ushahidi na kushirikiana na maombi halali.',
+      p2: 'Uangalizi wa jukwaa si usuluhishi wa mkataba wa watumiaji. Mgogoro wa malipo, umiliki, uwasilishaji au kodi lazima ushughulikiwe na pande husika na, inapofaa, benki yao, mtoa malipo, mbima, wakili, mdhibiti, mahakama au mamlaka ya kutekeleza sheria.',
+    },
+    liability: {
+      heading: 'Kanusho na wajibu',
+      p1: 'Kwa kadiri inayoruhusiwa na sheria inayotumika, taarifa za soko na zana za mawasiliano hutolewa bila ahadi kuwa gari litabaki linapatikana, kuwa mtumiaji atakamilisha muamala, au kuwa makubaliano ya nje yatafikia matokeo fulani.',
+      p2: 'Kila mtumiaji anawajibika kwa maamuzi yake mwenyewe na kwa hasara zinazotokana na taarifa, makubaliano, malipo au mwenendo wake usio halali. Hakuna chochote katika masharti haya kinachoondoa udanganyifu, utovu wa nidhamu wa makusudi wala haki au dhima yoyote ambayo sheria inayotumika hairuhusu kuondoa.',
+    },
+    changes: {
+      heading: 'Mabadiliko na kusitisha',
+      p1: 'Tunaweza kuboresha, kuzuia au kuondoa vipengele na kusasisha masharti haya. Masasisho makubwa yatawasilishwa kupitia huduma inapowezekana. Kumbukumbu za kihistoria zinaweza kuhifadhiwa zinapohitajika kwa usalama, ukaguzi, kuzingatia sheria au madai halali.',
+      p2: 'Unaweza kuomba kufuta akaunti kupitia programu au tovuti, kwa kuzingatia kanuni za kuhifadhi zinazohitajika kisheria na za kuondoa utambulisho zisizoweza kubatilishwa zilizoelezwa katika sera ya faragha.',
+    },
+    lawContact: {
+      heading: 'Sheria na mawasiliano',
+      p1: 'Masharti haya yamekusudiwa kufanya kazi chini ya sheria zinazotumika nchini Rwanda. Kifungu cha mwisho cha sheria inayosimamia na utatuzi wa migogoro lazima kithibitishwe na mwanasheria wa Rwanda mwenye sifa kabla ya uzinduzi wa uzalishaji.',
+      p2before: 'Maswali kuhusu masharti haya yanaweza kutumwa kwa ',
+      p2after: '.',
+      lastUpdated: 'Ilisasishwa mwisho: 23 Agosti 2026.',
+    },
+  },
+
+  privacy: {
+    meta: {
+      title: 'Sera ya faragha',
+      desc: 'Kile Sawa Cars inachokusanya, kwa nini, nani anaweza kukiona, na jinsi nyaraka za utambulisho zinavyoshughulikiwa. Akaunti moja kwa programu na tovuti.',
+    },
+    page: {
+      title: 'Sera ya faragha',
+      lede: 'Kile tunachokusanya, kwa nini tunakihifadhi, nani anaweza kukiona — na uangalifu maalum unaotolewa kwa nyaraka za utambulisho zinazolifanya soko hili kufanya kazi.',
+    },
+    scope: {
+      heading: 'Wigo',
+      p1: 'Sera hii inashughulikia {{name}} — tovuti hii, programu za Android na iOS, na kumbukumbu ambazo timu yetu huhifadhi katika vituo vya ukaguzi. Zote tatu zinashiriki akaunti moja na hifadhidata moja, kwa hivyo taarifa unazotoa mahali pamoja zinapatikana kwako mahali pengine.',
+    },
+    collect: {
+      heading: 'Kile tunachokusanya',
+      h1: 'Unapofungua akaunti',
+      list1: [
+        'Jina lako, anwani ya barua pepe na namba ya simu.',
+        'Nywila yako, iliyohifadhiwa tu kama alama ya kriptografia. Hakuna mtu Sawa Cars anayeweza kuisoma, sisi tukiwemo.',
+      ],
+      h2: 'Unapothibitisha utambulisho wako kama muuzaji',
+      list2: [
+        'Picha za mbele na nyuma ya kitambulisho chako cha taifa, na selfie.',
+      ],
+      h3: 'Unapotumia soko',
+      list3: [
+        'Magari unayohifadhi, utafutaji unaohifadhi, na arifa unazowasha.',
+        'Ufichuaji wa mawasiliano ya muuzaji na maombi ya upatikanaji wa kodi.',
+        'Jumbe unazobadilishana na wauzaji, wanunuzi au timu yetu.',
+        'Maelezo ya gari unayowasilisha, na matokeo ya ukaguzi ambayo mafundi wetu wanarekodi.',
+      ],
+      h4: 'Kiotomatiki',
+      list4: [
+        'Kumbukumbu za kiufundi za msingi zinazohitajika kuendesha na kulinda huduma.',
+        'Katika programu pekee: ufikiaji wa kamera unapochagua kupiga picha, na tokeni ya arifa ibukizi ukiruhusu arifa. Hakuna kati ya hizo kinachotumika kwa jambo lingine.',
+      ],
+    },
+    why: {
+      heading: 'Kwa nini tunakihifadhi',
+      list: [
+        'Kuthibitisha kuwa muuzaji ni mtu halisi, anayeweza kutambulika — msingi wa soko lote.',
+        'Kuchapisha matangazo sahihi na ripoti za ukaguzi.',
+        'Kuwezesha mawasiliano ya moja kwa moja ya soko na majibu ya watoa huduma kwa maombi ya kodi.',
+        'Kutuma arifa ulizoziomba: kushuka kwa bei, ulinganifu wa utafutaji uliohifadhiwa, jumbe.',
+        'Kuchunguza ripoti kuhusu maudhui au mwenendo wa jukwaa na kuzuia udanganyifu.',
+        'Kudumisha kumbukumbu za usalama, ridhaa na ukaguzi wa kiutawala.',
+      ],
+      p: 'Hatujengi wasifu wa matangazo, na hatuuzi taarifa binafsi kwa mtu yeyote.',
+    },
+    identity: {
+      heading: 'Nyaraka za utambulisho, hasa',
+      p: 'Picha za kitambulisho na selfie ndizo kitu nyeti zaidi tunachohifadhi, na zinashughulikiwa ipasavyo.',
+      list: [
+        'Hazionyeshwi kamwe kwenye tangazo, na hazishirikishwi kamwe na wanunuzi au wauzaji wengine.',
+        'Ufikiaji umewekewa mipaka kwa wanachama wa timu ya Sawa wanaokagua uthibitishaji. Nyaraka ziko nyuma ya njia ya msimamizi pekee; akaunti ya kawaida haiwezi kuzifikia hata kwa kiungo cha moja kwa moja.',
+        'Kile watumiaji wengine wanachokiona ni matokeo pekee: alama ya “Muuzaji aliyethibitishwa”, na alama ya uaminifu inayotokana nayo.',
+        'Tunazihifadhi wakati akaunti yako iko wazi na kwa muda mrefu baadaye kadri utunzaji wa kumbukumbu za mauzo yaliyokamilika unavyohitaji, kisha tunazifuta.',
+      ],
+    },
+    whoSees: {
+      heading: 'Nani anaona nini',
+      items: [
+        { lead: 'Wanunuzi wanaona', rest: ' jina la kuonyesha la muuzaji, hali ya uthibitishaji, alama ya uaminifu, taarifa za wasifu wa muuzaji na upatikanaji wa njia ya mawasiliano. Namba ya simu au WhatsApp hufichuliwa tu baada ya ridhaa ya muuzaji na kukubali kwa mnunuzi.' },
+        { lead: 'Wauzaji na watoa kodi wanaona', rest: ' taarifa zinazohitajika kujibu jumbe au maombi ya upatikanaji yaliyotumwa kwao.' },
+        { lead: 'Timu yetu inaona', rest: ' kinachohitajika kuendesha mchakato: mawasilisho, ukaguzi, matangazo, maombi, ufichuaji wa mawasiliano na — pale usalama wa jukwaa au ripoti inavyohitaji — mazungumzo.' },
+        { lead: 'Hakuna mtu anayeona', rest: ' nywila yako, nyaraka zako za utambulisho au utafutaji wako uliohifadhiwa isipokuwa wewe na wakaguzi waliotajwa hapo juu.' },
+      ],
+    },
+    sharing: {
+      heading: 'Nani mwingine anahusika',
+      p1: 'Tunatumia idadi ndogo ya watoa huduma kuendesha jukwaa — kuhifadhi, kufikisha jumbe na kuhifadhi picha. Wanachakata data kwa maagizo yetu pekee, na hawaruhusiwi kuzitumia kwa madhumuni yao wenyewe.',
+      p2: 'Tunashiriki taarifa na mamlaka pale tu sheria inapohitaji, na na Rwanda Revenue Authority kwa kadiri uhamishaji wa umiliki unavyohitaji.',
+    },
+    cookies: {
+      heading: 'Vidakuzi',
+      p1before: 'Tovuti hii huweka kidakuzi kimoja: kidakuzi cha kipindi kinachokuweka umeingia. Ni ',
+      p1strong: 'httpOnly',
+      p1after: ', ambayo ina maana hakuna hati inayoendeshwa kwenye kivinjari chako inayoweza kukisoma — ikiwemo hasidi. Kinaondolewa unapotoka.',
+      p2: 'Hakuna vidakuzi vya matangazo wala vifuatiliaji vya wahusika wengine kwenye tovuti hii.',
+    },
+    security: {
+      heading: 'Jinsi zinavyolindwa',
+      list: [
+        'Nywila hufanywa alama za siri, hazihifadhiwi kamwe katika hali inayosomeka.',
+        'Vipindi kwenye wavuti huhifadhiwa katika kidakuzi cha httpOnly badala ya kwenye hifadhi ya kivinjari.',
+        'Kila ombi kwa API yetu huidhinishwa kwenye seva, na kazi za msimamizi hulindwa kwa jukumu badala ya kuficha kiungo.',
+        'Nyaraka za utambulisho hutolewa kwa wakaguzi pekee, kamwe si hadharani.',
+      ],
+      pbefore: 'Hakuna mfumo ulio kamili. Ikiwa unaamini akaunti imevunjwa, wasiliana na ',
+      pafter: ' nasi tutachukua hatua siku hiyohiyo.',
+    },
+    rights: {
+      heading: 'Chaguo zako',
+      item1: 'Unaweza kutazama na kusahihisha wasifu wako wakati wowote kutoka kwa akaunti yako.',
+      item2: 'Unaweza kuzima arifa yoyote bila kupoteza gari au utafutaji uliohifadhiwa nyuma yake.',
+      item3part1: 'Unaweza kufunga akaunti yako mwenyewe, wakati wowote na bila idhini ya mtu yeyote — kwenye tovuti hii chini ya ',
+      item3link1: 'Wasifu → Funga akaunti',
+      item3part2: ', au katika programu chini ya Mipangilio → Eneo la hatari. Kufunga huanza kutumika mara moja; data yako inafutwa siku 30 baadaye, na hadi wakati huo unaweza kuingia tena na kufungua upya akaunti. Maelezo kamili yako kwenye ',
+      item3link2: 'ukurasa wa kufuta akaunti',
+      item3part3: '.',
+      item4: 'Kufunga huondoa matangazo yako kutoka sokoni na husimamisha mara moja kuonyeshwa kwa namba yako ya simu. Baada ya siku 30, ufutaji huondoa wasifu wako, taarifa zako za mawasiliano, nyaraka zako za utambulisho na magari na utafutaji uliohifadhi. Kumbukumbu za uhamishaji wa magari zilizokamilika tayari zinahifadhiwa pale sheria inapohitaji, jina lako na taarifa zako za mawasiliano zikiondolewa humo.',
+      item5before: 'Unaweza kuomba nakala ya kile tunachokishika kukuhusu kwa kuandikia ',
+      item5after: '.',
+    },
+    children: {
+      heading: 'Watoto',
+      p: 'Akaunti za Sawa Cars ni kwa ajili ya watu wazima. Hatukusanyi kwa makusudi taarifa kutoka kwa mtu yeyote aliye chini ya miaka 18, na tunazifuta tukigundua kuwa tumezikusanya.',
+    },
+    contact: {
+      heading: 'Mabadiliko na mawasiliano',
+      p1: 'Tutasasisha ukurasa huu kila jukwaa linapobadilisha kile linachokusanya, na wamiliki wa akaunti watajulishwa kuhusu mabadiliko makubwa.',
+      p2before: 'Maswali kuhusu faragha huenda kwa ',
+      p2mid: ', au kwa ',
+      p2after: ' kwa jambo lingine lolote.',
+    },
+  },
+
+  guarantee: {
+    meta: {
+      title: 'Ilani ya soko la biashara ya moja kwa moja',
+      desc: 'Nafasi ya Sawa Cars na wajibu wa wanunuzi, wauzaji na watoa kodi wanapofanya muamala moja kwa moja.',
+    },
+    page: {
+      title: 'Ilani ya soko la biashara ya moja kwa moja',
+      lede: 'Sawa Cars huboresha ubora wa matangazo na mawasiliano, lakini si sehemu ya mkataba, malipo au uwasilishaji ambao watumiaji hupanga kati yao.',
+    },
+    noGuarantee: {
+      heading: 'Hakuna dhamana ya muamala ya Sawa',
+      p1: 'Sawa Cars haitoi dhamana ya kurejesha ya siku saba, dhamana ya muamala, udhamini wa pesa, ahadi ya kurejesha pesa wala dhamana ya amana ya kodi kwa makubaliano kati ya watumiaji.',
+      p2: 'Rekodi ya ukaguzi wa gari huelezea uchunguzi uliofanywa kwa wakati fulani. Si dhamana ya hali ya baadaye na haibadilishi ukaguzi wa kujitegemea au ukaguzi wa kisheria.',
+    },
+    platformRole: {
+      heading: 'Kile jukwaa hufanya',
+      items: [
+        'Hukagua utambulisho wa muuzaji na hali ya akaunti.',
+        'Hudhibiti ni matangazo yapi ya magari yanayokuwa ya umma.',
+        'Huhifadhi taarifa za tangazo, ghala la picha na ukaguzi.',
+        'Hutoa ujumbe wa ndani ya programu na ufichuaji wa simu au WhatsApp unaotegemea ridhaa.',
+        'Hupokea ripoti kuhusu maudhui au mwenendo wa jukwaa kwa ajili ya uangalizi.',
+      ],
+    },
+    userRole: {
+      heading: 'Kile watumiaji huamua na kusimamia',
+      items: [
+        'Kutazama gari, ukaguzi wa ziada na uthibitishaji wa nyaraka.',
+        'Bei, njia ya malipo, amana na uthibitisho wa malipo.',
+        'Mkataba, uwakilishaji, uwasilishaji, uchukuaji, urejeshaji na uhamishaji wa umiliki.',
+        'Bima, kodi za serikali, leseni na mahitaji mengine ya kisheria au ya kikanuni.',
+        'Kughairi, kurejesha pesa, madai au mgogoro wowote unaotokana na makubaliano ya kujitegemea.',
+      ],
+    },
+    safety: {
+      heading: 'Kabla ya kuhamisha pesa',
+      p1: 'Thibitisha mhusika mwingine, gari, VIN, nyaraka za asili za umiliki na mpokeaji wa malipo kwa kujitegemea. Weka masharti yote makubwa kwa maandishi na weka nakala za mawasiliano na risiti.',
+      p2: 'Usitegemee beji, tangazo, ujumbe au alama ya ukaguzi kama uthibitisho kuwa malipo ni salama. Ripoti maudhui ya jukwaa yenye shaka, lakini wasiliana na benki, mtoa huduma wa pesa za simu, polisi au mdhibiti anayefaa mara moja pale malipo au uhalifu unaweza kuhusika.',
+    },
+    law: {
+      heading: 'Haki ambazo sheria huhifadhi',
+      p: 'Hakuna chochote katika ilani hii kinachoondoa dhima au haki za watumiaji ambazo sheria inayotumika hairuhusu mtu kuziondoa. Mnunuzi, muuzaji au mtoa huduma anabaki kuwajibika kwa ahadi na wajibu anaokubali katika makubaliano yake mwenyewe.',
+    },
+    related: {
+      heading: 'Taarifa zinazohusiana',
+      terms: 'Masharti ya huduma',
+      how: 'Jinsi soko linavyofanya kazi',
+      promise: 'Vidhibiti vya usalama wa soko',
+    },
+  },
+}
+
+const ko = {
+  about: {
+    meta: {
+      title: 'Sawa Cars 소개',
+      desc: 'Sawa Cars는 르완다의 인증 차량 마켓플레이스입니다. 저희 팀이 게시 전에 판매자, 검사, 매물 근거를 검토한 뒤 이용자가 직접 소통합니다.',
+    },
+    header: {
+      eyebrow: '소개',
+      title: '명확한 경계를 갖춘, 더 튼튼한 마켓플레이스.',
+      lede: 'Kigali에서 중고차를 사는 일은 검증하기 어려운 정보를 믿어야 하는 상황이 되곤 합니다. Sawa Cars는 판매자 확인, 검사 근거, 통제된 게시를 더하면서도 최종 결정과 거래는 이용자에게 맡깁니다.',
+      browse: '인증 차량 둘러보기',
+      visit: '센터 방문하기',
+    },
+    why: {
+      eyebrow: '존재하는 이유',
+      title: '여기서 어려운 문제는 이력입니다',
+      description: '가격이 아닙니다. 선택지도 아닙니다. 눈앞의 차가 실제로 무엇을 겪었는지 아는 것입니다.',
+      p1: '르완다 도로를 달리는 차량의 상당수는 중고 수입차로 들어왔으며, 그중 다수는 일본에서 온 우핸들 차량입니다. 이 차들은 다른 곳에서 작성된 정비 이력, 검증하기 어려운 주행거리계, 그리고 개인 구매자가 돈을 건네기 전에 실질적으로 확인할 방법이 없는 서류를 가지고 있습니다.',
+      p2: '광고 게시판 사이트는 그 문제를 해결하지 못합니다. 올라온 것을 그대로 실어 나를 뿐입니다. 설명도 판매자가 쓰고, 사진도 판매자가 찍으며, 보닛 아래를 들여다본 사람은 판매자뿐입니다.',
+      p3: '그래서 Sawa Cars는 정반대의 입장을 택했습니다. 저희는 차량을 인수해 기계, 차체, 전자장치, 서류에 걸친 150개 항목 점검을 실시하고, 유용한 사진 갤러리로 촬영하며, 관리자 검토를 거친 뒤에야 매물을 게시합니다. 판매자는 가격의 통제권을 갖습니다. 저희는 진실의 통제권을 갖습니다.',
+    },
+    pipeline: {
+      eyebrow: '차량이 사이트에 올라오는 과정',
+      title: '다섯 단계, 어느 것도 건너뛸 수 없습니다',
+      description: '판매자 대시보드, 관리자 대기열, 그리고 이 웹사이트 뒤에서 동일한 절차가 작동합니다 — 옆문은 없습니다.',
+      stages: [
+        { title: '제출', desc: '인증 판매자가 차량 정보와 희망 가격을 보내옵니다.' },
+        { title: '검토', desc: '저희 팀이 제출 내용을 읽고 검사 시간을 예약합니다.' },
+        { title: '검사', desc: '정비사가 센터에서 150개 항목 점검을 실시합니다.' },
+        { title: '문서화', desc: '차량에 필요한 만큼의 유용한 이미지로 명확하고 진실한 갤러리를 추가합니다.' },
+        { title: '게시', desc: '보고서를 첨부해 매물을 만들고, 공개됩니다.' },
+      ],
+    },
+    weDoNot: {
+      eyebrow: '경계를 긋는 지점',
+      title: 'Sawa Cars가 하지 않는 네 가지',
+      description: '이 마켓플레이스를 신뢰할 수 있게 만드는 것의 대부분은 제공하기를 거부하는 것들입니다.',
+      items: [
+        { title: '결제를 받지 않습니다', desc: '앱이나 웹사이트에 결제, 결제 게이트웨이, 에스크로가 없습니다. 구매자, 판매자, 렌트 제공자가 자신의 책임 아래 직접 결제를 결정합니다.' },
+        { title: '판매자가 직접 게시하도록 두지 않습니다', desc: '판매자는 차량을 제출합니다. 제출을 매물로 바꿀 수 있는 것은 Sawa 팀뿐이며, 차량이 센터를 거친 뒤에만 가능합니다.' },
+        { title: '검사하지 않은 것은 게시하지 않습니다', desc: '공개된 모든 매물 뒤에는 150개 항목 보고서가 있습니다. 기준에 미달하는 차량은 게시되지 않습니다.' },
+        { title: '이용자 계약을 관리하지 않습니다', desc: '저희는 판매나 렌트를 확정하지 않고, 보증금을 보관하지 않으며, 당사자 간 계약서를 작성하지 않고, 소유권 이전을 처리하지 않으며, 외부 거래 분쟁을 판정하지 않습니다.' },
+      ],
+    },
+    centers: {
+      eyebrow: '저희가 일하는 곳',
+      title: 'Kigali의 검사 센터',
+      description: '이 장소들은 플랫폼 검사 서비스를 지원합니다. 이후의 거래를 어디서 어떻게 완료할지는 이용자가 독립적으로 결정합니다.',
+      directions: '오시는 길과 운영 시간',
+    },
+  },
+
+  promise: {
+    meta: {
+      title: '마켓플레이스 안전',
+      desc: 'Sawa Cars가 사용하는 검증, 근거, 동의, 게시 통제 장치.',
+    },
+    header: {
+      eyebrow: '마켓플레이스 안전',
+      title: '유용한 통제 장치. 정직한 한계.',
+      lede: 'Sawa Cars는 검증, 근거, 통제된 게시를 통해 피할 수 있는 마켓플레이스 위험을 줄입니다. 이러한 통제 장치는 정보를 개선하지만, Sawa Cars를 거래의 당사자로 만들지는 않습니다.',
+      browse: '인증 매물 둘러보기',
+      notice: '직접 거래 안내 읽기',
+    },
+    controls: {
+      eyebrow: '플랫폼 통제 장치',
+      title: '연락 전과 연락 중의 다섯 겹',
+      description: '각각은 구체적이고 감사 가능하며, 플랫폼이 실제로 통제할 수 있는 것에 한정됩니다.',
+      items: [
+        { title: '검사 정보', desc: '검사가 완료된 경우, 매물에는 기록된 기계, 차체, 전자장치, 서류 점검이 표시되어 구매자가 더 잘 알고 결정할 수 있습니다.' },
+        { title: '인증 판매자', desc: '차량이 게시되기 전에 판매자 신원과 계정 상태가 검토됩니다. 사업자 제공자는 별도의 검증 통제를 받습니다.' },
+        { title: '명확한 근거', desc: '매물은 기록된 점검과 알 수 없는 정보를 구분합니다. 그래도 구매자는 거래에 합의하기 전에 차량과 원본 서류를 확인해야 합니다.' },
+        { title: '동의 기반 연락', desc: '판매자의 전화 또는 WhatsApp 번호는 그 판매자가 활성화하고 로그인한 구매자가 직접 거래 안내에 동의한 경우에만 공유됩니다.' },
+        { title: '통제된 게시', desc: '매물을 게시할 수 있는 것은 승인된 관리자뿐입니다. 신원, 검사, 사진 요건은 게시 시점에 다시 확인됩니다.' },
+      ],
+    },
+    sawaControls: {
+      title: 'Sawa가 통제하는 것',
+      body: '계정 접근, 판매자 검증 상태, 게시 관문, 매물 조정, 동의 기반 연락처 공개, 플랫폼 메시지, 감사 이력.',
+    },
+    usersControl: {
+      title: '이용자가 통제하는 것',
+      body: '시승, 독립적인 확인, 협상, 계약, 결제, 보증금, 소유권 이전, 인도, 인수, 반납, 보험, 그리고 모든 외부 분쟁.',
+    },
+  },
+
+  contact: {
+    meta: {
+      title: '문의하기',
+      desc: 'Sawa Cars 팀에 +250 788 308 611로 전화 또는 WhatsApp으로 연락하거나 contact@sawacars.com으로 이메일을 보내세요. Kigali에 있는 검사 센터의 운영 시간과 주소.',
+    },
+    header: {
+      eyebrow: '문의',
+      title: '사람과 이야기하세요',
+      lede: '검사, 매물, 플랫폼 관련 질문을 지원하는 팀이 응대하는 단일 회선입니다. 구매자와 판매자는 직접 거래 논의를 위해 각자 활성화한 연락 수단을 사용합니다.',
+    },
+    hours: '월–토 · 8:00 – 18:00',
+    band: {
+      label: '전화 & WhatsApp',
+      whatsapp: 'WhatsApp으로 메시지 보내기',
+      call: '지금 전화하기',
+    },
+    channels: {
+      whatsapp: {
+        label: 'WhatsApp',
+        note: '가장 빠르게 연락하는 방법입니다. 매물 링크를 보내주시면 차량이 아직 있는지 알려드립니다.',
+        badge: '가장 빠름',
+      },
+      call: {
+        label: '전화하기',
+        note: '같은 회선이며, 센터 운영 시간 동안 사람이 직접 응대합니다 — {{hours}}.',
+      },
+      email: {
+        label: '이메일',
+        note: '첨부 파일이 필요한 모든 경우: 딜러 계정, 제휴, 검사 기록, 계정 지원.',
+      },
+    },
+    reach: {
+      eyebrow: '연락 방법',
+      title: '세 가지 방법, 모두 실제입니다',
+    },
+    composer: {
+      title: '여기에 작성하세요',
+      body: '이 웹사이트는 연락용 수신함을 운영하지 않으므로 이 페이지에서는 아무것도 전송되지 않습니다. 버튼을 누르면 작성한 내용이 이미 입력된 상태로 WhatsApp이 열리며 — 보내기는 직접 누르시면 됩니다.',
+      fieldLabel: '메시지',
+      fieldHint: '문의하시는 매물이 있다면 함께 적어주세요 — 왕복을 줄여줍니다.',
+      placeholder: '안녕하세요 Sawa Cars — 다음에 대해 문의하고 싶습니다…',
+      submit: 'WhatsApp 열기',
+      emailPrefix: '이메일이 더 편하신가요? ',
+      emailSuffix: ' 로도 같은 팀에 닿습니다.',
+    },
+    expect: {
+      eyebrow: '예상할 수 있는 것',
+      title: '연락하신 후에는',
+      items: [
+        { title: '24시간 이내', body: '모든 마켓플레이스 지원 요청은 검사 센터를 운영하는 팀으로부터 답변을 받습니다.' },
+        { title: '봇이 아닌 사람', body: '회선은 차량을 검사하고 마켓플레이스를 지원하는 사람들이 응대합니다. 자동 전화 안내는 없습니다.' },
+        { title: '언제나 하나의 번호', body: '저희는 결코 다른 번호로 이어서 연락하라거나 채팅으로 알려준 계좌로 송금하라고 요청하지 않습니다.' },
+      ],
+    },
+    centers: {
+      eyebrow: '방문해 주세요',
+      title: '저희 센터',
+      description: '플랫폼 검사 서비스는 이곳에서 진행됩니다. 차량을 맡기기 전에 팀에 연락하세요. 이용자 간 거래는 독립적으로 마련됩니다.',
+    },
+  },
+
+  howItWorks: {
+    meta: {
+      title: 'Sawa Cars 이용 방법',
+      desc: 'Sawa Cars에서 인증 차량 매물, 직접 판매자 연락, 검사, 렌트 가능 여부 문의가 어떻게 작동하는지.',
+    },
+    header: {
+      eyebrow: '이용 방법',
+      title: '검증된 정보가 먼저. 직접 합의가 그다음.',
+      lede: 'Sawa Cars는 판매자, 검사, 매물을 검토합니다. 그다음 구매자, 판매자, 렌트 제공자가 독립적으로 소통하고 협상하며 거래합니다. 결제, 에스크로, Sawa 계약, 거래 보증은 없습니다.',
+      browse: '차량 둘러보기',
+      submit: '차량 제출하기',
+    },
+    buyers: {
+      eyebrow: '구매자를 위해',
+      title: '매물에서 직접 거래까지',
+      description: '판매자에게 연락하면 대화가 시작됩니다. 차량이 예약되거나 Sawa Cars와의 거래가 성립되는 것은 아닙니다.',
+    },
+    buyingSteps: [
+      { title: '매물 검토', desc: '판매자에게 연락하기 전에 차량 정보, 갤러리, 검사 정보, 모든 제한 사항을 읽어보세요.' },
+      { title: '판매자에게 연락', desc: '인증 판매자가 해당 수단을 활성화한 경우 앱 내 채팅, 전화 또는 WhatsApp을 사용하세요.' },
+      { title: '검사 및 확인', desc: '직접 시승이나 추가 검사를 마련하고 차량, VIN, 원본 서류, 소유권을 독립적으로 확인하세요.' },
+      { title: '서면 조건 합의', desc: '구매자와 판매자가 가격, 결제 방법, 인도, 소유권 이전, 서면 계약을 직접 결정합니다.' },
+      { title: '거래를 독립적으로 완료', desc: 'Sawa Cars는 구매 대금을 받거나 보관하지 않으며 그로 인한 계약이나 분쟁의 당사자가 아닙니다.' },
+    ],
+    checks: {
+      eyebrow: '주도권을 유지하세요',
+      title: '약속하기 전 네 가지 확인',
+      description: '플랫폼 검증은 불확실성을 줄여주지만, 당신 자신의 실사나 서면 합의를 대신하지는 않습니다.',
+      items: [
+        { title: '연락 전', desc: '매물, 갤러리, 검사 기록, 판매자 검증을 비교하세요. 알 수 없는 정보는 알 수 없는 것으로 간주하세요.' },
+        { title: '결제 전', desc: '차량을 직접 보고, VIN과 원본 소유권 서류를 확인하며, 수령인과 결제 방법을 독립적으로 확인하세요.' },
+        { title: '서명 전', desc: '가격, 상태, 포함 품목, 이전, 인도, 보증금, 취소 조건을 당사자 간 서면 합의에 담으세요.' },
+        { title: '합의 후', desc: '메시지, 서류, 영수증 사본을 보관하세요. Sawa Cars는 플랫폼 밖에서 이루어진 결제나 계약을 되돌리거나 판정할 수 없습니다.' },
+      ],
+    },
+    sellers: {
+      eyebrow: '판매자를 위해',
+      title: '통제된 게시, 직접 문의',
+      description: '차량을 제출하고 검증을 완료하세요. 승인된 관리자는 설정된 근거 확인을 통과한 후에만 게시합니다.',
+      responsibilityLabel: '게시 후 당신의 책임:',
+      responsibilityBody: ' 매물을 정확하게 유지하고, 진실하게 응답하며, 변경 사항을 공개하고, 구매자와의 모든 독립적 합의를 문서화하세요.',
+    },
+    sellingSteps: [
+      { title: '차량 제출', desc: '제조사, 모델, 주행거리, 희망 가격을 알려주세요. 실제 비교 판매를 바탕으로 범위를 제안합니다.' },
+      { title: '검사 예약', desc: '센터와 시간을 선택하세요. 차량과 정비 기록을 가져오세요.' },
+      { title: '검사 및 검토', desc: '저희 팀이 검사를 기록하고 명확하고 진실한 이미지 갤러리를 추가합니다. 정해진 촬영 각도 수는 없습니다.' },
+      { title: '판매자 검증 완료', desc: '게시 전에 저희 팀이 일회성 신원 확인을 승인하고 판매자 계정을 활성화해야 합니다.' },
+      { title: '관리자가 게시', desc: '게시는 판매자 검증, 검사 완료, 유효한 갤러리를 조건으로 합니다. 가격의 통제권은 당신에게 있습니다.' },
+      { title: '구매자 문의 관리', desc: '직접 대화하고 협상하며 모든 판매에 합의하세요. Sawa Cars는 당신의 계약이나 결제의 당사자가 아닙니다.' },
+    ],
+    notParty: {
+      title: 'Sawa Cars는 이용자 거래의 당사자가 아닙니다',
+      body: '플랫폼은 돈을 보관하지 않고, 판매나 렌트를 확정하지 않으며, 당사자 계약서를 발행하지 않고, 보증금이나 차량을 보증하지 않으며, 외부의 결제, 합의, 인도, 손실, 분쟁에 대한 책임을 지지 않습니다. 여기의 어떤 내용도 관련 법률이 배제할 수 없는 권리나 책임을 없애지 않습니다.',
+      cta: '마켓플레이스 약관 전문 읽기',
+    },
+  },
+
+  terms: {
+    meta: {
+      title: '마켓플레이스 서비스 약관',
+      desc: 'Sawa Cars의 계정, 인증 차량 매물, 판매자 연락, 렌트 문의, 이용자 간 직접 거래를 규율하는 약관.',
+    },
+    page: {
+      title: '마켓플레이스 서비스 약관',
+      lede: '인증 매물과 직접 소통을 위한 명확한 규칙 — 그리고 이용자가 독립적으로 맺는 계약과 결제를 둘러싼 명확한 경계.',
+    },
+    scope: {
+      heading: '적용 범위 및 동의',
+      p1before: '본 약관은 Sawa Cars 웹사이트, 모바일 앱 및 관련 마켓플레이스 서비스의 이용을 규율합니다. 계정을 만들거나 인증이 필요한 기능을 사용하면 본 약관과 ',
+      p1link: '개인정보 보호정책',
+      p1after: '에 동의하는 것입니다.',
+      p2: '현행 마켓플레이스 약관 버전은 이용자가 판매자 연락 수단을 처음 요청할 때 표시됩니다. 중대한 정책 변경 시 다시 동의가 필요할 수 있습니다.',
+    },
+    role: {
+      heading: 'Sawa Cars의 제한된 역할',
+      p1strong: 'Sawa Cars는 인증 매물 및 소통 플랫폼을 제공합니다.',
+      p1rest: ' 구매자, 판매자, 렌트 제공자, 결제 처리자, 에스크로 대리인, 보험사, 대출기관, 운송회사가 아니며, 이용자 간 계약의 당사자도 아닙니다.',
+      p2: '다른 이용자에게 연락하는 것은 문의일 뿐입니다. 차량을 예약하거나, 가용성을 확정하거나, 판매나 렌트를 성립시키거나, Sawa Cars를 구속하지 않습니다.',
+    },
+    accounts: {
+      heading: '계정 및 자격',
+      items: [
+        '정확하고 최신의 정보를 제공하고 로그인 자격 증명을 안전하게 유지하세요.',
+        '본인의 신원과 연락처 정보를 사용하세요.',
+        '무단 접근이 있을 경우 즉시 저희에게 알려주세요.',
+        '판매자 게시에는 신원 확인이 필요할 수 있으며, 렌트 재고에는 별도의 사업자 검증이 필요합니다.',
+        '저희는 이용자를 보호하고, 남용을 조사하고, 법을 준수하거나 본 약관을 집행하기 위해 계정을 정지하거나 제한할 수 있습니다.',
+      ],
+    },
+    listings: {
+      heading: '매물 및 게시',
+      p1: '판매자는 차량을 진실하게 설명하고, 중대한 결함이나 변경 사항을 공개하며, 이를 제공할 권한을 가져야 합니다. 제출이 게시를 보장하지는 않습니다.',
+      p2: '매물을 게시할 수 있는 것은 승인된 관리자뿐입니다. 게시 준비에는 활성 상태의 인증 판매자, 완료된 검사, 유효한 이미지 갤러리가 필요할 수 있습니다. Sawa Cars는 부정확하거나, 안전하지 않거나, 불법적이거나, 플랫폼 기준에 부합하지 않는 콘텐츠를 거부, 중지, 수정 또는 보관할 수 있습니다.',
+    },
+    inspection: {
+      heading: '검사 정보 및 배지',
+      p1: '검사는 검사일에 기록된 관찰 내용과 실제로 점검한 항목을 반영합니다. 이는 보증이나 미래 상태에 대한 보장이 아니며, 구매자의 독립적인 기계적·법적 검토를 대체하지 않습니다.',
+      p2: '“인증 판매자”는 플랫폼이 설정된 계정 확인을 완료했음을 의미하며, 그 사람의 모든 진술, 차량, 향후 행위에 위험이 없음을 약속하지 않습니다.',
+    },
+    contact: {
+      heading: '연락처 공유 및 커뮤니케이션',
+      p1: '판매자는 전화 또는 WhatsApp 연락을 공개할지 여부를 선택합니다. Sawa Cars는 직접 거래 안내에 동의한 인증 이용자에게만 활성화된 수단을 공개하며, 안전과 감사 목적을 위해 해당 공개를 기록합니다.',
+      p2: '이용자는 연락처 데이터를 이용해 괴롭히거나, 위협하거나, 스팸을 보내거나, 수집하거나, 무관한 목적으로 사용해서는 안 됩니다. 앱 내 메시지는 개인정보 보호정책에 설명된 대로 신고되어 조정을 위해 검토될 수 있습니다.',
+    },
+    transactions: {
+      heading: '독립적인 판매 및 렌트',
+      p1: '구매자와 판매자 — 또는 임차인과 제공자 — 는 가용성, 추가 검사, 서류, 가격, 세금, 결제, 보증금, 서면 조건, 인도, 인수, 반납, 소유권 이전, 보험, 규제 준수에 대해 전적으로 책임을 집니다.',
+      p2: 'Sawa Cars는 거래 자금을 수취하거나 보관하지 않으며, 이용자가 맺은 합의를 취소, 환불, 되돌리기, 집행, 판정할 수 없습니다. 표시된 렌트 요금과 보증금은 제공자가 확정하기 전까지는 제공자가 제출한 정보입니다.',
+    },
+    prohibited: {
+      heading: '금지된 행위',
+      items: [
+        '사기, 사칭, 도난 차량 또는 허위 서류.',
+        '오해를 일으키는 설명, 숨겨진 중대한 결함, 조작된 이미지.',
+        '악성코드, 자동 수집, 보안 방해 또는 무단 접근.',
+        '차별, 위협, 괴롭힘 또는 불법 콘텐츠.',
+        '타인의 연락처 데이터를 공개된 목적 외로 사용하는 행위.',
+      ],
+    },
+    reports: {
+      heading: '신고, 증거 및 분쟁',
+      p1: '이용자는 플랫폼 콘텐츠, 메시지 또는 계정을 신고할 수 있습니다. Sawa Cars는 플랫폼을 조정하고, 증거를 보존하며, 적법한 요청에 협조할 수 있습니다.',
+      p2: '플랫폼 조정은 이용자 계약의 중재가 아닙니다. 결제, 소유권, 인도 또는 렌트 분쟁은 당사자가, 그리고 적절한 경우 각자의 은행, 결제 제공자, 보험사, 변호사, 규제기관, 법원 또는 법 집행 기관이 처리해야 합니다.',
+    },
+    liability: {
+      heading: '면책 및 책임',
+      p1: '관련 법률이 허용하는 범위 내에서, 마켓플레이스 정보와 소통 도구는 차량이 계속 판매 가능하다거나, 이용자가 거래를 완료한다거나, 외부 합의가 특정한 결과를 달성한다는 약속 없이 제공됩니다.',
+      p2: '각 이용자는 자신의 결정과, 자신의 진술, 합의, 결제 또는 불법 행위로 인한 손실에 대해 책임을 집니다. 본 약관의 어떤 내용도 사기, 고의적 위법행위, 또는 관련 법률이 배제를 허용하지 않는 권리나 책임을 배제하지 않습니다.',
+    },
+    changes: {
+      heading: '변경 및 해지',
+      p1: '저희는 기능을 개선, 제한 또는 폐지하고 본 약관을 업데이트할 수 있습니다. 중대한 업데이트는 가능한 경우 서비스를 통해 전달됩니다. 보안, 감사, 법적 준수 또는 정당한 청구를 위해 필요한 경우 과거 기록이 보관될 수 있습니다.',
+      p2: '개인정보 보호정책에 설명된 법적으로 요구되는 보관 및 되돌릴 수 없는 익명화 규칙을 조건으로, 앱이나 웹사이트를 통해 계정 삭제를 요청할 수 있습니다.',
+    },
+    lawContact: {
+      heading: '준거법 및 연락처',
+      p1: '본 약관은 르완다에서 적용되는 법률에 따라 운영되도록 의도되었습니다. 최종 준거법 및 분쟁 해결 조항은 프로덕션 출시 전에 자격을 갖춘 르완다 법률 자문에 의해 확인되어야 합니다.',
+      p2before: '본 약관에 관한 문의는 다음으로 보낼 수 있습니다: ',
+      p2after: '.',
+      lastUpdated: '최종 업데이트: 2026년 8월 23일.',
+    },
+  },
+
+  privacy: {
+    meta: {
+      title: '개인정보 보호정책',
+      desc: 'Sawa Cars가 무엇을, 왜 수집하는지, 누가 볼 수 있는지, 신원 서류가 어떻게 처리되는지. 앱과 웹사이트에 걸친 하나의 계정.',
+    },
+    page: {
+      title: '개인정보 보호정책',
+      lede: '무엇을 수집하고, 왜 보관하며, 누가 볼 수 있는지 — 그리고 이 마켓플레이스를 작동하게 하는 신원 서류에 기울이는 각별한 주의.',
+    },
+    scope: {
+      heading: '적용 범위',
+      p1: '본 정책은 {{name}} — 이 웹사이트, Android 및 iOS 앱, 그리고 저희 팀이 검사 센터에서 보관하는 기록을 다룹니다. 세 곳은 하나의 계정과 하나의 데이터베이스를 공유하므로, 한 곳에서 제공한 정보는 다른 곳에서도 이용하실 수 있습니다.',
+    },
+    collect: {
+      heading: '수집하는 정보',
+      h1: '계정을 만들 때',
+      list1: [
+        '이름, 이메일 주소, 전화번호.',
+        '비밀번호는 암호화 해시로만 저장됩니다. 저희를 포함해 Sawa Cars의 누구도 읽을 수 없습니다.',
+      ],
+      h2: '판매자로서 신원을 확인할 때',
+      list2: [
+        '국가 신분증 앞뒤 사진과 셀피.',
+      ],
+      h3: '마켓플레이스를 이용할 때',
+      list3: [
+        '저장한 차량, 저장한 검색, 켜둔 알림.',
+        '판매자 연락처 공개 및 렌트 가용성 문의.',
+        '판매자, 구매자 또는 저희 팀과 주고받는 메시지.',
+        '제출한 차량 정보와 저희 정비사가 기록한 검사 결과.',
+      ],
+      h4: '자동으로',
+      list4: [
+        '서비스를 운영하고 보호하는 데 필요한 기본 기술 로그.',
+        '앱에서만: 사진을 찍기로 선택할 때의 카메라 접근, 그리고 알림을 허용할 경우의 푸시 알림 토큰. 둘 다 다른 용도로는 사용되지 않습니다.',
+      ],
+    },
+    why: {
+      heading: '보관하는 이유',
+      list: [
+        '판매자가 실재하고 식별 가능한 사람인지 확인하기 위해 — 마켓플레이스 전체의 기반입니다.',
+        '정확한 매물과 검사 보고서를 게시하기 위해.',
+        '직접적인 마켓플레이스 소통과 렌트 문의에 대한 제공자의 응답을 가능하게 하기 위해.',
+        '요청하신 알림을 보내기 위해: 가격 인하, 저장한 검색 일치, 메시지.',
+        '플랫폼 콘텐츠나 행위에 관한 신고를 조사하고 사기를 방지하기 위해.',
+        '보안, 동의, 관리 감사 기록을 유지하기 위해.',
+      ],
+      p: '저희는 광고 프로필을 만들지 않으며, 개인정보를 누구에게도 판매하지 않습니다.',
+    },
+    identity: {
+      heading: '신원 서류, 특히',
+      p: '신분증 사진과 셀피는 저희가 보관하는 가장 민감한 것이며, 그에 맞게 취급됩니다.',
+      list: [
+        '매물에 표시되지 않으며, 구매자나 다른 판매자와 공유되지 않습니다.',
+        '접근은 검증을 검토하는 Sawa 팀원으로 제한됩니다. 서류는 관리자 전용 경로 뒤에 있으며, 일반 계정은 직접 링크가 있어도 접근할 수 없습니다.',
+        '다른 이용자가 보는 것은 결과뿐입니다: “인증 판매자” 표시와 그로부터 산출되는 신뢰 점수.',
+        '계정이 열려 있는 동안, 그리고 완료된 판매에 대한 기록 보관이 요구하는 기간만큼 이후에도 보관한 뒤 삭제합니다.',
+      ],
+    },
+    whoSees: {
+      heading: '누가 무엇을 보는가',
+      items: [
+        { lead: '구매자가 보는 것', rest: ': 판매자의 표시 이름, 검증 상태, 신뢰 점수, 판매자 프로필 정보, 연락 수단 가용 여부. 전화 또는 WhatsApp 번호는 판매자 동의와 구매자 확인 후에만 공개됩니다.' },
+        { lead: '판매자와 렌트 제공자가 보는 것', rest: ': 자신에게 보내진 메시지나 가용성 문의에 답하는 데 필요한 정보.' },
+        { lead: '저희 팀이 보는 것', rest: ': 절차를 운영하는 데 필요한 것 — 제출, 검사, 매물, 문의, 연락처 공개, 그리고 플랫폼 안전이나 신고가 요구하는 경우 대화.' },
+        { lead: '아무도 보지 못하는 것', rest: ': 당신의 비밀번호, 신원 서류, 저장한 검색 — 당신과 위에 언급된 검토자를 제외하고는.' },
+      ],
+    },
+    sharing: {
+      heading: '그 밖에 관여하는 곳',
+      p1: '저희는 플랫폼을 운영하기 위해 소수의 서비스 제공업체 — 호스팅, 메시지 전달, 이미지 저장 — 를 이용합니다. 이들은 저희 지시에 따라서만 데이터를 처리하며, 자신의 목적으로 사용하는 것은 허용되지 않습니다.',
+      p2: '저희는 법이 요구하는 경우에만 당국과 정보를 공유하며, 소유권 이전에 필요한 범위에서 Rwanda Revenue Authority와 공유합니다.',
+    },
+    cookies: {
+      heading: '쿠키',
+      p1before: '이 웹사이트는 쿠키 하나를 설정합니다: 로그인 상태를 유지하는 세션 쿠키. 이는 ',
+      p1strong: 'httpOnly',
+      p1after: '이며, 이는 악성 스크립트를 포함해 브라우저에서 실행되는 어떤 스크립트도 읽을 수 없음을 의미합니다. 로그아웃하면 제거됩니다.',
+      p2: '이 사이트에는 광고 쿠키나 제3자 추적기가 없습니다.',
+    },
+    security: {
+      heading: '어떻게 보호되는가',
+      list: [
+        '비밀번호는 해시 처리되며, 읽을 수 있는 형태로는 결코 저장되지 않습니다.',
+        '웹의 세션은 브라우저 저장소가 아니라 httpOnly 쿠키에 보관됩니다.',
+        '저희 API에 대한 모든 요청은 서버에서 인증되며, 관리자 기능은 링크를 숨기는 것이 아니라 역할로 통제됩니다.',
+        '신원 서류는 검토자에게만 제공되며 결코 공개적으로 제공되지 않습니다.',
+      ],
+      pbefore: '완벽한 시스템은 없습니다. 계정이 침해되었다고 생각되면 ',
+      pafter: '로 연락하세요. 당일에 조치하겠습니다.',
+    },
+    rights: {
+      heading: '당신의 선택',
+      item1: '언제든지 계정에서 프로필을 확인하고 수정할 수 있습니다.',
+      item2: '저장된 차량이나 검색을 잃지 않고 어떤 알림이든 끌 수 있습니다.',
+      item3part1: '언제든지 누구의 승인도 없이 직접 계정을 닫을 수 있습니다 — 이 웹사이트에서는 ',
+      item3link1: '프로필 → 계정 닫기',
+      item3part2: '에서, 또는 앱에서는 설정 → 위험 구역에서. 닫기는 즉시 적용됩니다. 데이터는 30일 후에 삭제되며, 그때까지는 다시 로그인해 계정을 재개할 수 있습니다. 자세한 내용은 ',
+      item3link2: '계정 삭제 페이지',
+      item3part3: '에 있습니다.',
+      item4: '닫으면 매물이 마켓플레이스에서 내려가고 전화번호 표시가 즉시 중단됩니다. 30일 후 삭제는 프로필, 연락처 정보, 신원 서류, 저장한 차량과 검색을 제거합니다. 이미 완료된 차량 이전 기록은 법이 요구하는 경우 보관되며, 이름과 연락처 정보는 거기서 제거됩니다.',
+      item5before: '저희가 당신에 대해 보관하는 정보의 사본을 다음으로 서면 요청할 수 있습니다: ',
+      item5after: '.',
+    },
+    children: {
+      heading: '아동',
+      p: 'Sawa Cars 계정은 성인을 위한 것입니다. 저희는 18세 미만의 누구로부터도 고의로 정보를 수집하지 않으며, 수집한 사실을 발견하면 삭제합니다.',
+    },
+    contact: {
+      heading: '변경 및 연락처',
+      p1: '플랫폼이 수집하는 내용을 변경할 때마다 이 페이지를 업데이트하며, 중대한 변경 사항은 계정 보유자에게 통지됩니다.',
+      p2before: '개인정보에 관한 문의는 ',
+      p2mid: '로, 그 밖의 사항은 ',
+      p2after: '로 보내주세요.',
+    },
+  },
+
+  guarantee: {
+    meta: {
+      title: '직접 거래 마켓플레이스 안내',
+      desc: '구매자, 판매자, 렌트 제공자가 직접 거래할 때의 Sawa Cars의 역할과 그들의 책임.',
+    },
+    page: {
+      title: '직접 거래 마켓플레이스 안내',
+      lede: 'Sawa Cars는 매물 품질과 소통을 개선하지만, 이용자가 서로 마련하는 계약, 결제, 인도의 당사자가 아닙니다.',
+    },
+    noGuarantee: {
+      heading: 'Sawa 거래 보증은 없습니다',
+      p1: 'Sawa Cars는 이용자 간 합의에 대해 7일 반품 보증, 거래 보증, 에스크로, 환불 약속, 렌트 보증금 보증을 제공하지 않습니다.',
+      p2: '차량 검사 기록은 특정 시점에 이루어진 관찰을 설명합니다. 이는 미래 상태에 대한 보증이 아니며 독립적인 검사나 법적 확인을 대체하지 않습니다.',
+    },
+    platformRole: {
+      heading: '플랫폼이 하는 일',
+      items: [
+        '판매자 신원과 계정 상태를 검토합니다.',
+        '어떤 차량 매물이 공개될지 통제합니다.',
+        '매물, 갤러리, 검사 정보를 저장합니다.',
+        '앱 내 메시지와 동의 기반 전화 또는 WhatsApp 공개를 제공합니다.',
+        '조정을 위해 플랫폼 콘텐츠나 행위에 관한 신고를 접수합니다.',
+      ],
+    },
+    userRole: {
+      heading: '이용자가 결정하고 관리하는 것',
+      items: [
+        '차량 시승, 추가 검사, 서류 확인.',
+        '가격, 결제 방법, 보증금, 결제 증빙.',
+        '계약, 진술, 인도, 인수, 반납, 소유권 이전.',
+        '보험, 세금, 면허 및 기타 법적·규제적 요건.',
+        '독립적 합의에서 발생하는 모든 취소, 환불, 청구 또는 분쟁.',
+      ],
+    },
+    safety: {
+      heading: '송금하기 전에',
+      p1: '상대방, 차량, VIN, 원본 소유권 서류, 결제 수령인을 독립적으로 확인하세요. 모든 중요한 조건을 서면으로 남기고 소통 내용과 영수증 사본을 보관하세요.',
+      p2: '배지, 매물, 메시지, 검사 점수를 결제가 안전하다는 증거로 의존하지 마세요. 의심스러운 플랫폼 콘텐츠는 신고하되, 결제나 범죄가 관련될 수 있는 경우 즉시 해당 은행, 모바일 머니 제공자, 경찰 또는 규제기관에 연락하세요.',
+    },
+    law: {
+      heading: '법이 보전하는 권리',
+      p: '본 안내의 어떤 내용도 관련 법률이 배제를 허용하지 않는 책임이나 소비자 권리를 배제하지 않습니다. 구매자, 판매자 또는 제공자는 자신의 합의에서 수락한 약속과 의무에 대해 계속 책임을 집니다.',
+    },
+    related: {
+      heading: '관련 정보',
+      terms: '서비스 약관',
+      how: '마켓플레이스 작동 방식',
+      promise: '마켓플레이스 안전 통제 장치',
+    },
+  },
+}
+
 export const marketing: Record<Locale, Record<string, unknown>> = {
   en,
   rw,
-  fr: {},
-  sw: {},
-  ko: {},
+  fr,
+  sw,
+  ko,
 }
