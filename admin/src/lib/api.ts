@@ -394,6 +394,14 @@ export const api = {
   // Dashboard
   stats:     () => request<any>('/admin/stats'),
   analytics: () => request<any>('/admin/analytics'),
+  // Fee revenue by month and type — platform_fees (paid only) plus rental
+  // listing subscriptions (their own table, always RWF). Distinct from
+  // analytics' GMV figures: this is money Sawa itself actually received.
+  revenue: () => request<{
+    fees: { fee_type: string; month: string; currency: string; total: number; count: number }[]
+    rental_subscriptions: { month: string; total: number; count: number }[]
+    totals_by_type: { type: string; currency: string; total: number; count: number }[]
+  }>('/admin/revenue'),
   actionCenter: () => request<ActionCenterResponse>('/admin/action-center'),
   search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
   activity: () => request<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>('/admin/activity'),

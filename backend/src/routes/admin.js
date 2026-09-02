@@ -1308,6 +1308,70 @@ router.patch('/fees/:id', requireAdmin, requireUuid('id'), (_req, res) => {
   });
 });
 
+// GET /admin/revenue — what the business actually earned, by month.
+//
+// Five monetizable lines were built and none of them had a place an operator
+// could see all of them together. platform_fees carries the walk-in
+// inspection fee and report resale (fee_type='inspection'|'report' — the
+// other fee_types this table's CHECK constraint still allows, 'commission',
+// 'certification' and 'featured', have no live write path and so never
+// appear here). Rental listing subscriptions live in their own table
+// (rental_subscriptions.amount_rwf, always RWF, no currency column), so this
+// combines both rather than pretending one query covers the business.
+//
+// Only 'paid' fees and non-voided subscriptions count — a due fee or a
+// voided subscription was never actually collected. This is fee revenue,
+// distinct from the GMV disclaimer on GET /admin/analytics: a walk-in
+// inspection fee is money Sawa itself received, not a vehicle's sale price.
+router.get('/revenue', requireAdmin, async (_req, res) => {
+  try {
+    const [fees, subscriptions] = await Promise.all([
+      pool.query(
+        `SELECT fee_type,
+                TO_CHAR(DATE_TRUNC('month', COALESCE(collected_at, created_at)), 'YYYY-MM') AS month,
+                currency, SUM(amount)::bigint AS total, COUNT(*)::int AS count
+         FROM platform_fees
+         WHERE status = 'paid'
+         GROUP BY fee_type, month, currency
+         ORDER BY month DESC, fee_type`
+      ),
+      pool.query(
+        `SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS month,
+                SUM(amount_rwf)::bigint AS total, COUNT(*)::int AS count
+         FROM rental_subscriptions
+         WHERE voided_at IS NULL
+         GROUP BY month
+         ORDER BY month DESC`
+      ),
+    ]);
+
+    // One combined by-type total so the console can render a single ranked
+    // list rather than two disconnected tables. Subscriptions are always RWF.
+    const byType = {};
+    for (const row of fees.rows) {
+      const key = `${row.fee_type}:${row.currency}`;
+      byType[key] = byType[key] || { type: row.fee_type, currency: row.currency, total: 0, count: 0 };
+      byType[key].total += Number(row.total);
+      byType[key].count += row.count;
+    }
+    for (const row of subscriptions.rows) {
+      const key = 'rental_subscription:RWF';
+      byType[key] = byType[key] || { type: 'rental_subscription', currency: 'RWF', total: 0, count: 0 };
+      byType[key].total += Number(row.total);
+      byType[key].count += row.count;
+    }
+
+    res.json({
+      fees: fees.rows,
+      rental_subscriptions: subscriptions.rows,
+      totals_by_type: Object.values(byType).sort((a, b) => b.total - a.total),
+    });
+  } catch (err) {
+    log.error('admin revenue error', { error: err.message });
+    res.status(500).json({ error: 'Revenue unavailable' });
+  }
+});
+
 
 // ─── Brands ──────────────────────────────────────────────────────────────────
 //
