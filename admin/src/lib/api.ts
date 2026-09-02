@@ -687,6 +687,10 @@ export const api = {
     request<{ documents: any[] }>(`/imports/${orderId}/document-pack`, { method: 'POST' }),
   issueImportPaymentReceipt: (orderId: string, paymentId: string) =>
     request<any>(`/imports/${orderId}/payments/${paymentId}/receipt`, { method: 'POST' }),
+  // Sawa's own landed cost, kept apart from quoted_total_rwf so margin is
+  // visible — never returned to the buyer's own read of the same order.
+  recordImportCost: (orderId: string, data: { actual_cost_rwf: number; note?: string }) =>
+    request<any>(`/imports/${orderId}/cost`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Trust score
   trustScore: (userId: string) => request<any>(`/reviews/trust-score/${userId}`),

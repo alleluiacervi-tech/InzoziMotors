@@ -10,6 +10,7 @@ type ImportRow = {
   id: string; order_ref: string; buyer_name: string; buyer_email: string
   origin_country: string; make: string; model: string; year?: number
   status: string; quoted_total_rwf?: number | string; paid_rwf?: number | string
+  actual_cost_rwf?: number | string | null
   created_at: string; delivery_estimate?: string
 }
 type QuoteDraft = { vehicle?: string; freight?: string; landed?: string; expires?: string; delivery?: string }
@@ -79,7 +80,9 @@ export default function ImportsPage() {
             <h2 className="mt-2 text-lg font-extrabold text-content">{item.year || ''} {item.make} {item.model}</h2>
             <p className="mt-1 text-label text-content-muted">From {item.origin_country} · {item.buyer_name} · {item.buyer_email}</p>
           </div>
-          <div className="text-left md:text-right"><p className="font-extrabold text-content">{item.quoted_total_rwf ? money(item.quoted_total_rwf) : 'Awaiting quotation'}</p><p className="text-caption text-content-muted">Verified paid: {money(item.paid_rwf)}</p></div>
+          <div className="text-left md:text-right"><p className="font-extrabold text-content">{item.quoted_total_rwf ? money(item.quoted_total_rwf) : 'Awaiting quotation'}</p><p className="text-caption text-content-muted">Verified paid: {money(item.paid_rwf)}</p>
+            {item.actual_cost_rwf != null && item.quoted_total_rwf ? (() => { const margin = Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf); return <p className={`text-caption font-bold ${margin >= 0 ? 'text-success' : 'text-danger-strong'}`}>Margin: {money(margin)}</p> })() : null}
+          </div>
         </div>
         {item.status === 'enquiry' ? <div className="mt-4 border-t border-line-soft pt-4"><p className="mb-3 text-label font-bold text-content">Build an exact landed-price quotation</p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {[['vehicle','Vehicle & supplier (RWF)'],['freight','Freight & insurance (RWF)'],['landed','Import, customs & service (RWF)']].map(([key,label])=><input key={key} inputMode="numeric" value={(quote[item.id] as any)?.[key]||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],[key]:e.target.value.replace(/\D/g,'')}})} placeholder={label} className="h-11 rounded-xl border border-line px-3"/>)}

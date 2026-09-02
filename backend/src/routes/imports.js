@@ -67,7 +67,20 @@ async function fullOrder(client, id, user) {
     client.query(`SELECT id,version,terms_snapshot,issued_at,accepted_at FROM import_agreements WHERE import_order_id=$1 AND superseded_at IS NULL ORDER BY version DESC`, [id]),
     client.query(`SELECT * FROM import_shipments WHERE import_order_id=$1`, [id]),
   ]);
-  return { ...rows[0], payments: payments.rows, documents: documents.rows, generated_documents: generatedDocuments.rows, events: events.rows, agreements: agreements.rows, shipment: shipment.rows[0] || null };
+  const order = { ...rows[0], payments: payments.rows, documents: documents.rows, generated_documents: generatedDocuments.rows, events: events.rows, agreements: agreements.rows, shipment: shipment.rows[0] || null };
+  if (!admin) {
+    // Sawa's own operating detail, never the buyer's business: what they were
+    // quoted, not what it cost Sawa to deliver, and not the desk's own notes
+    // on the order. `internal_notes` was already spread here unguarded before
+    // actual_cost_rwf existed — closing both in the same place rather than
+    // shipping the new columns into the same hole.
+    delete order.internal_notes;
+    delete order.actual_cost_rwf;
+    delete order.cost_note;
+    delete order.cost_recorded_at;
+    delete order.cost_recorded_by;
+  }
+  return order;
 }
 
 function documentFailure(res, error) {
@@ -128,8 +141,15 @@ router.post('/', requireAuth, async (req, res) => {
 
 router.get('/mine', requireAuth, async (req, res) => {
   try {
+    // Named columns, not `*`: internal_notes and (since migration 0039)
+    // actual_cost_rwf/cost_note/cost_recorded_at/cost_recorded_by are Sawa's
+    // own operating detail, not the buyer's business — see fullOrder()'s
+    // strip list, which this route bypasses by not going through fullOrder.
     const { rows } = await pool.query(
-      `SELECT *, COALESCE(quoted_total_rwf,0)::bigint AS quoted_total_rwf
+      `SELECT id, order_ref, buyer_id, assigned_admin_id, status, origin_country, make, model, year,
+              vin, supplier_reference, specification, exchange_rate, quote_expires_at, delivery_estimate,
+              customer_notes, agreement_accepted_at, created_at, updated_at,
+              COALESCE(quoted_total_rwf,0)::bigint AS quoted_total_rwf
        FROM import_orders WHERE buyer_id=$1 ORDER BY created_at DESC`, [req.user.id]
     );
     res.json(rows);
@@ -217,6 +237,50 @@ router.post('/:id/quote', requireAdmin, requireUuid('id'), async (req, res) => {
     }
     res.json(result);
   } catch (err) { res.status(err.status || 500).json({ error: err.message || 'Could not issue quote' }); }
+});
+
+// PATCH /:id/cost — Sawa's own landed cost, kept apart from quoted_total_rwf.
+//
+// No status restriction, unlike the quote route: cost information arrives
+// piecemeal across the whole pipeline (a deposit paid, shipping booked,
+// duty finally assessed at customs), and an admin correcting an earlier
+// estimate later is a normal part of that, not an error to void and
+// re-record. The trail lives in import_order_events, not a reversal
+// column — this is Sawa's own internal figure, never money collected from
+// a counterparty, so there is no proof-of-payment to review or void.
+router.patch('/:id/cost', requireAdmin, requireUuid('id'), async (req, res) => {
+  const cost = Number(req.body.actual_cost_rwf);
+  if (!Number.isSafeInteger(cost) || cost < 0) {
+    return res.status(400).json({ error: 'Enter the actual cost in RWF, zero or more' });
+  }
+  const note = clean(req.body.note, 2000);
+  try {
+    const result = await withTransaction(async (client) => {
+      const current = await client.query(`SELECT actual_cost_rwf FROM import_orders WHERE id=$1 FOR UPDATE`, [req.params.id]);
+      if (!current.rows.length) return null;
+      const { rows } = await client.query(
+        `UPDATE import_orders
+            SET actual_cost_rwf=$1, cost_note=$2, cost_recorded_at=NOW(), cost_recorded_by=$3, updated_at=NOW()
+          WHERE id=$4 RETURNING *`,
+        [cost, note || null, req.user.id, req.params.id]
+      );
+      // customer_visible=FALSE: this table defaults it TRUE, and Sawa's own
+      // cost is never the buyer's business — see fullOrder()'s strip list.
+      await client.query(
+        `INSERT INTO import_order_events (import_order_id,actor_id,event_type,summary,metadata,customer_visible)
+         VALUES ($1,$2,'cost_recorded','Actual cost recorded',jsonb_build_object('previous_rwf',$3::bigint,'current_rwf',$4::bigint),FALSE)`,
+        [req.params.id, req.user.id, current.rows[0].actual_cost_rwf, cost]
+      );
+      return rows[0];
+    });
+    if (!result) return res.status(404).json({ error: 'Import order not found' });
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'import.cost_recorded', targetType: 'import_order', targetId: req.params.id,
+      summary: `Recorded actual cost on ${result.order_ref}`,
+      metadata: { actual_cost_rwf: cost, quoted_total_rwf: result.quoted_total_rwf },
+    });
+    res.json(result);
+  } catch (err) { res.status(err.status || 500).json({ error: err.message || 'Could not record the cost' }); }
 });
 
 router.post('/:id/accept-agreement', requireAuth, requireUuid('id'), async (req, res) => {

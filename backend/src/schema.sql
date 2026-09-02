@@ -492,13 +492,20 @@ CREATE TABLE IF NOT EXISTS import_orders (
   agreement_accepted_at TIMESTAMPTZ,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- Sawa's own cost, kept apart from quoted_total_rwf so margin is visible.
+  -- One admin-editable figure, not a line-item ledger — see migration 0039.
+  actual_cost_rwf       BIGINT,
+  cost_note             TEXT,
+  cost_recorded_at      TIMESTAMPTZ,
+  cost_recorded_by      UUID REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT import_order_status_check CHECK (status IN (
     'enquiry','quoted','agreement_pending','deposit_due','deposit_review',
     'ordered','inspected_abroad','shipping_booked','in_transit','arrived',
     'kigali_inspection','balance_due','balance_review','customs_clearance',
     'ready_for_handover','completed','cancelled'
   )),
-  CONSTRAINT import_quote_nonnegative CHECK (quoted_total_rwf IS NULL OR quoted_total_rwf >= 0)
+  CONSTRAINT import_quote_nonnegative CHECK (quoted_total_rwf IS NULL OR quoted_total_rwf >= 0),
+  CONSTRAINT import_cost_nonnegative CHECK (actual_cost_rwf IS NULL OR actual_cost_rwf >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS import_payments (

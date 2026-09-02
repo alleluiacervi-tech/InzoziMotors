@@ -44,6 +44,38 @@ test('the single super admin completes separate review and verification checkpoi
   await api().get(`/imports/${created.body.id}/payments/${payment.id}/receipt/file`).set('Authorization',`Bearer ${buyer.token}`).expect('Content-Type',/application\/pdf/).expect(200);
 });
 
+test('actual cost stays separate from the quote, and never reaches the buyer',async()=>{
+  const buyer=await register();const operator=await admin();
+  const created=await api().post('/imports').set('Authorization',`Bearer ${buyer.token}`).send({origin_country:'Japan',make:'Toyota',model:'Land Cruiser',year:2021}).expect(201);
+  await api().post(`/imports/${created.body.id}/quote`).set('Authorization',`Bearer ${operator.token}`).send({quoted_total_rwf:40000000}).expect(200);
+
+  await api().patch(`/imports/${created.body.id}/cost`).set('Authorization',`Bearer ${buyer.token}`).send({actual_cost_rwf:30000000}).expect(403);
+  const negative=await api().patch(`/imports/${created.body.id}/cost`).set('Authorization',`Bearer ${operator.token}`).send({actual_cost_rwf:-1}).expect(400);
+  assert.match(negative.body.error,/RWF/);
+
+  const recorded=await api().patch(`/imports/${created.body.id}/cost`).set('Authorization',`Bearer ${operator.token}`).send({actual_cost_rwf:30000000,note:'Vehicle 24M, freight 4M, duty 2M'}).expect(200);
+  assert.equal(Number(recorded.body.actual_cost_rwf),30000000);
+  assert.equal(Number(recorded.body.quoted_total_rwf),40000000);
+  assert.ok(recorded.body.cost_recorded_at);
+
+  // A correction, not a void-and-reissue — cost data arrives piecemeal.
+  const corrected=await api().patch(`/imports/${created.body.id}/cost`).set('Authorization',`Bearer ${operator.token}`).send({actual_cost_rwf:31000000}).expect(200);
+  assert.equal(Number(corrected.body.actual_cost_rwf),31000000);
+
+  // The buyer's own read of the same order never carries Sawa's cost.
+  const asBuyer=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
+  assert.equal('actual_cost_rwf' in asBuyer.body,false);
+  assert.equal('cost_note' in asBuyer.body,false);
+  assert.equal(asBuyer.body.events.some((e)=>e.event_type==='cost_recorded'),false,'the cost event must not be customer-visible');
+
+  const asAdmin=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${operator.token}`).expect(200);
+  assert.equal(Number(asAdmin.body.actual_cost_rwf),31000000);
+
+  const mine=await api().get('/imports/mine').set('Authorization',`Bearer ${buyer.token}`).expect(200);
+  const own=mine.body.find((o)=>o.id===created.body.id);
+  assert.equal('actual_cost_rwf' in own,false);
+});
+
 test('only an admin can create a pre-verified showroom account',async()=>{
   const buyer=await register();const operator=await admin();const email=unique('showroom');
   await api().post('/admin/showrooms').set('Authorization',`Bearer ${buyer.token}`).send({name:'Contact',business_name:'Trusted Motors',email}).expect(403);
