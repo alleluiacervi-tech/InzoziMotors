@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui'
 import { JsonLd } from '@/components/JsonLd'
 import { autoDealerNodes, graph } from '@/lib/seo'
 import { getDisplayCenters } from '@/lib/centers'
+import { getServerT } from '@/lib/i18n/server'
 
 // Public center information for inspection visitors. The authenticated mobile
 // booking flow reads the active list from the API so operational changes are
@@ -15,6 +16,7 @@ import { getDisplayCenters } from '@/lib/centers'
 // matters most and the site was invisible to it.
 
 export async function CenterList({ className = '' }: { className?: string }) {
+  const t = await getServerT()
   const centers = await getDisplayCenters()
 
   return (
@@ -31,12 +33,12 @@ export async function CenterList({ className = '' }: { className?: string }) {
 
           <dl className="mt-5 space-y-2.5 text-caption text-content-secondary">
             <div className="flex gap-2.5">
-              <dt className="sr-only">Address</dt>
+              <dt className="sr-only">{t('ui.address')}</dt>
               <Icon name="location" size={16} className="mt-0.5 shrink-0 text-content-muted" />
               <dd>{center.address}</dd>
             </div>
             <div className="flex gap-2.5">
-              <dt className="sr-only">Opening hours</dt>
+              <dt className="sr-only">{t('ui.openingHours')}</dt>
               <Icon name="clock" size={16} className="mt-0.5 shrink-0 text-content-muted" />
               <dd>{center.hours}</dd>
             </div>

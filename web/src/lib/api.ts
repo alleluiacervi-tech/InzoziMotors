@@ -1,7 +1,7 @@
 import type { DutyRates } from '@/lib/business'
 import type {
-  AppNotification, Car, CarQuery, Conversation, FeaturedPlacement, InspectionCenter,
-  InspectionReport,
+  AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement,
+  InspectionCenter, InspectionReport,
   Message, RentalCar, RentalInquiry, Review, SavedSearch, Submission, TrustScore, User,
   Valuation, VehicleHistory,
 } from './types'
@@ -209,6 +209,26 @@ export const rentals = {
     }),
   myInquiries: (token: string) => request<RentalInquiry[]>('/rentals/inquiries/my', { token, cache: 'no-store' }),
   updateInquiry: (token: string, id: string, status: 'cancelled') =>
+    request<RentalInquiry>(`/rentals/inquiries/${id}/status`, { token, method: 'PATCH', body: JSON.stringify({ status }) }),
+
+  // ── Provider self-serve ──────────────────────────────────────────────────
+  // A verified rental provider managing their own fleet and inbox. Publication
+  // stays admin-only — propose() can only ever land 'pending_review'.
+  mine: (token: string) => request<RentalCar[]>('/rentals/mine', { token, cache: 'no-store' }),
+  eligibleInspections: (token: string) =>
+    request<EligibleRentalInspection[]>('/rentals/mine/eligible-inspections', { token, cache: 'no-store' }),
+  propose: (token: string, body: Record<string, unknown>) =>
+    request<RentalCar & { message: string }>('/rentals/propose', {
+      token, method: 'POST', body: JSON.stringify(body), cache: 'no-store',
+    }),
+  updateMine: (token: string, id: string, body: Record<string, unknown>) =>
+    request<RentalCar>(`/rentals/${id}/mine`, {
+      token, method: 'PATCH', body: JSON.stringify(body), cache: 'no-store',
+    }),
+  /** The provider's incoming inquiries (or every inquiry, for an admin). */
+  providerInquiries: (token: string, status?: RentalInquiry['status']) =>
+    request<RentalInquiry[]>(`/rentals/inquiries${status ? `?status=${status}` : ''}`, { token, cache: 'no-store' }),
+  updateInquiryStatus: (token: string, id: string, status: 'contacted' | 'closed' | 'cancelled') =>
     request<RentalInquiry>(`/rentals/inquiries/${id}/status`, { token, method: 'PATCH', body: JSON.stringify({ status }) }),
 }
 

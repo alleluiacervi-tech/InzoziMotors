@@ -148,7 +148,7 @@ const EXTRA_HOME = {
     bannerInspectionBrand: '150-Point Check', bannerInspectionTagline: 'Certified mechanics. Full report before you buy.', bannerInspectionTag: 'Inspection',
     bannerSellBrand: 'Certify Your Car', bannerSellTagline: 'Submit for our 150-point inspection. We list it for you.', bannerSellTag: 'Sell',
     providerContacted: 'provider contacted', awaitingProvider: 'awaiting provider reply', inspected: '{{score}}/150 inspected', perDay: '/day', seats: 'seats', trips: 'trips', belowMarket: '{{percent}}% below market', highDemand: 'High demand', saveCar: 'Save {{title}}', removeSaved: 'Remove {{title}} from saved',
-    carsCount: '{{label}} · {{count}} cars',
+    carsCount: '{{label}} · {{count}} cars', unavailableUntil: 'Unavailable until {{date}}',
   },
   rw: {
     trying: 'Biragerageza…', safariReady: 'Yiteguye safari', suv: 'SUV', sedan: 'Sedani', truck: 'Ikamyo',
@@ -157,7 +157,7 @@ const EXTRA_HOME = {
     bannerCertifiedBrand: 'Sawa yemeje', bannerCertifiedTagline: 'Buri modoka isuzumwa mbere yo gushyirwa ku isoko.', bannerCertifiedTag: 'Icyizere',
     bannerInspectionBrand: 'Isuzuma ry’ingingo 150', bannerInspectionTagline: 'Abakanishi bemewe. Raporo yuzuye mbere yo kugura.', bannerInspectionTag: 'Isuzuma',
     bannerSellBrand: 'Emeza imodoka yawe', bannerSellTagline: 'Tanga imodoka yawe isuzumwe ingingo 150. Turayishyira ku isoko.', bannerSellTag: 'Gurisha',
-    providerContacted: 'uwatanga imodoka yavugishijwe', awaitingProvider: 'dutegereje igisubizo', inspected: 'Isuzumwe {{score}}/150', perDay: '/umunsi', seats: 'imyanya', trips: 'ingendo', belowMarket: '{{percent}}% munsi y’isoko', highDemand: 'Irasabwa cyane', saveCar: 'Bika {{title}}', removeSaved: 'Kuraho {{title}} mu zabitswe', carsCount: '{{label}} · imodoka {{count}}',
+    providerContacted: 'uwatanga imodoka yavugishijwe', awaitingProvider: 'dutegereje igisubizo', inspected: 'Isuzumwe {{score}}/150', perDay: '/umunsi', seats: 'imyanya', trips: 'ingendo', belowMarket: '{{percent}}% munsi y’isoko', highDemand: 'Irasabwa cyane', saveCar: 'Bika {{title}}', removeSaved: 'Kuraho {{title}} mu zabitswe', carsCount: '{{label}} · imodoka {{count}}', unavailableUntil: 'Ntiboneka kugeza {{date}}',
   },
   fr: {
     trying: 'Tentative…', safariReady: 'Prêt pour le safari', suv: 'SUV', sedan: 'Berline', truck: 'Pick-up',
@@ -166,7 +166,7 @@ const EXTRA_HOME = {
     bannerCertifiedBrand: 'Sawa certifié', bannerCertifiedTagline: 'Chaque voiture est inspectée avant sa mise en ligne.', bannerCertifiedTag: 'Confiance',
     bannerInspectionBrand: 'Contrôle en 150 points', bannerInspectionTagline: 'Mécaniciens certifiés. Rapport complet avant l’achat.', bannerInspectionTag: 'Inspection',
     bannerSellBrand: 'Certifiez votre voiture', bannerSellTagline: 'Soumettez-la à notre contrôle en 150 points. Nous la mettons en ligne.', bannerSellTag: 'Vendre',
-    providerContacted: 'prestataire contacté', awaitingProvider: 'en attente de réponse', inspected: '{{score}}/150 inspectés', perDay: '/jour', seats: 'places', trips: 'trajets', belowMarket: '{{percent}}% sous le marché', highDemand: 'Forte demande', saveCar: 'Enregistrer {{title}}', removeSaved: 'Retirer {{title}} des favoris', carsCount: '{{label}} · {{count}} voitures',
+    providerContacted: 'prestataire contacté', awaitingProvider: 'en attente de réponse', inspected: '{{score}}/150 inspectés', perDay: '/jour', seats: 'places', trips: 'trajets', belowMarket: '{{percent}}% sous le marché', highDemand: 'Forte demande', saveCar: 'Enregistrer {{title}}', removeSaved: 'Retirer {{title}} des favoris', carsCount: '{{label}} · {{count}} voitures', unavailableUntil: 'Indisponible jusqu’au {{date}}',
   },
   sw: {
     trying: 'Inajaribu…', safariReady: 'Tayari kwa safari', suv: 'SUV', sedan: 'Sedani', truck: 'Lori',
@@ -175,7 +175,7 @@ const EXTRA_HOME = {
     bannerCertifiedBrand: 'Sawa Imethibitishwa', bannerCertifiedTagline: 'Kila gari linakaguliwa kabla ya kutangazwa.', bannerCertifiedTag: 'Uaminifu',
     bannerInspectionBrand: 'Ukaguzi wa pointi 150', bannerInspectionTagline: 'Mafundi waliothibitishwa. Ripoti kamili kabla ya kununua.', bannerInspectionTag: 'Ukaguzi',
     bannerSellBrand: 'Thibitisha gari lako', bannerSellTagline: 'Wasilisha gari lako kwa ukaguzi wa pointi 150. Tutaliweka sokoni.', bannerSellTag: 'Uza',
-    providerContacted: 'mtoa huduma amewasilishwa', awaitingProvider: 'inasubiri jibu', inspected: 'Limekaguliwa {{score}}/150', perDay: '/siku', seats: 'viti', trips: 'safari', belowMarket: '{{percent}}% chini ya soko', highDemand: 'Mahitaji makubwa', saveCar: 'Hifadhi {{title}}', removeSaved: 'Ondoa {{title}} kwenye yaliyohifadhiwa', carsCount: '{{label}} · magari {{count}}',
+    providerContacted: 'mtoa huduma amewasilishwa', awaitingProvider: 'inasubiri jibu', inspected: 'Limekaguliwa {{score}}/150', perDay: '/siku', seats: 'viti', trips: 'safari', belowMarket: '{{percent}}% chini ya soko', highDemand: 'Mahitaji makubwa', saveCar: 'Hifadhi {{title}}', removeSaved: 'Ondoa {{title}} kwenye yaliyohifadhiwa', carsCount: '{{label}} · magari {{count}}', unavailableUntil: 'Haipatikani hadi {{date}}',
   },
   ko: {
     trying: '시도 중…', safariReady: '사파리 준비 완료', suv: 'SUV', sedan: '세단', truck: '트럭',
@@ -184,7 +184,7 @@ const EXTRA_HOME = {
     bannerCertifiedBrand: 'Sawa 인증', bannerCertifiedTagline: '모든 차량은 등록 전에 검사를 받습니다.', bannerCertifiedTag: '신뢰',
     bannerInspectionBrand: '150개 항목 검사', bannerInspectionTagline: '인증 정비사가 구매 전에 전체 보고서를 제공합니다.', bannerInspectionTag: '검사',
     bannerSellBrand: '내 차량 인증', bannerSellTagline: '150개 항목 검사를 신청하면 차량을 등록해 드립니다.', bannerSellTag: '판매',
-    providerContacted: '제공자에게 연락함', awaitingProvider: '제공자 답변 대기 중', inspected: '{{score}}/150 검사 완료', perDay: '/일', seats: '좌석', trips: '회 운행', belowMarket: '시장가보다 {{percent}}% 저렴', highDemand: '인기 차량', saveCar: '{{title}} 저장', removeSaved: '{{title}} 저장 취소', carsCount: '{{label}} · 차량 {{count}}대',
+    providerContacted: '제공자에게 연락함', awaitingProvider: '제공자 답변 대기 중', inspected: '{{score}}/150 검사 완료', perDay: '/일', seats: '좌석', trips: '회 운행', belowMarket: '시장가보다 {{percent}}% 저렴', highDemand: '인기 차량', saveCar: '{{title}} 저장', removeSaved: '{{title}} 저장 취소', carsCount: '{{label}} · 차량 {{count}}대', unavailableUntil: '{{date}}까지 이용 불가',
   },
 };
 
@@ -212,6 +212,92 @@ const EXTRA_AUTH = {
   ko: { signInTitle: '다시 오신 것을 환영합니다', signInSub: 'Sawa Cars를 계속 이용하려면 로그인하세요.', createTitle: '계정 만들기', createSub: 'Sawa Cars에서 차량을 구매하고 저장하고 판매자에게 문의하세요.', email: '이메일', validEmail: '올바른 이메일 주소를 입력하세요.', password: '비밀번호', passwordMin: '비밀번호는 6자 이상이어야 합니다.', forgot: '비밀번호를 잊으셨나요?', enterPassword: '비밀번호 입력', hidePassword: '비밀번호 숨기기', showPassword: '비밀번호 보기', signIn: '로그인', noAccount: '계정이 없으신가요?', signUp: '회원가입', fullName: '이름', namePlaceholder: 'Alex Morgan', nameRequired: '이름을 입력하세요.', passwordPlaceholder: '6자 이상', createAccount: '계정 만들기', termsPrefix: '계정을 만들면 다음에 동의하게 됩니다:', terms: '이용약관', privacy: '개인정보 보호정책', alreadyAccount: '이미 계정이 있으신가요?', accountClosed: '이 계정은 닫혀 있습니다', accountClosedMessage: '계정을 닫았지만 데이터는 삭제되지 않았습니다. 다시 열면 저장한 차량, 메시지와 매물이 복구됩니다.', accountClosedUntil: '{{date}} 후에는 영구 삭제됩니다.', reopen: '계정 다시 열기', notNow: '나중에', welcomeBack: '다시 오신 것을 환영합니다. 계정이 열렸습니다.', reopenError: '계정을 다시 열 수 없습니다.', invalidCredentials: '이메일 또는 비밀번호가 올바르지 않습니다.', createError: '계정을 만들 수 없습니다. 다시 시도하세요.' },
 };
 
+// RentalDetailScreen — one screen, entirely hand-written copy (it predates the
+// i18n rollout). Keyed flat rather than nested per section since there is only
+// one screen consuming it.
+const EXTRA_RENTAL_DETAIL = {
+  en: {
+    notFoundTitle: "This rental isn't available", notFoundSub: 'It may have been paused or removed from the fleet.', goBack: 'Go back', loading: 'Loading this rental…',
+    forRent: 'For Rent', certified: 'Certified {{score}}/150', safariReady: 'Safari-Ready', share: 'Share', shareMessage: '{{title}} — {{price}}/day on Sawa Cars',
+    seats: 'Seats', gearbox: 'Gearbox', fuel: 'Fuel', year: 'Year',
+    unavailableUntil: 'Unavailable until {{date}}',
+    availability: 'Availability', requestDates: 'Request your dates', availabilityNote: 'The verified provider will confirm the vehicle, price and pickup arrangements. Sending an inquiry does not hold or book the car.',
+    pricing: 'Pricing', dailyRate: 'Daily rate', weeklyRate: 'Weekly rate', saveVsDaily: 'Save {{amount}} vs daily', securityDeposit: 'Security deposit', depositSub: 'Provider-stated amount · confirm written terms', minRental: 'Minimum rental: {{count}} days',
+    confirmTerms: 'Confirm these terms with the provider', insurance: 'Insurance coverage', roadside: 'Roadside assistance', mileageLimits: 'Kilometre limits', depositTerms: 'Deposit & refund terms',
+    safetyLink: 'Marketplace safety & responsibilities',
+    inspectionTitle: '150-Point Inspection Report', inspectionSub: 'Scored {{score}}/150 · View full report',
+    howItWorks: 'How renting works',
+    step1Title: 'Send an inquiry', step1Desc: 'Share your dates and preferred contact channel.',
+    step2Title: 'Agree directly', step2Desc: 'The provider confirms availability, price, insurance, deposit and written rental terms.',
+    step3Title: 'Manage the rental', step3Desc: 'Pickup, payment, vehicle condition and return are handled directly between you and the provider.',
+    ctaDailyRental: 'Daily rental', ctaPerDay: '/ day', ctaRateNote: 'Provider-stated rate · confirm directly', ctaInquiryOnly: 'Inquiry only', ctaRequestAvailability: 'Request availability',
+  },
+  rw: {
+    notFoundTitle: 'Iyi modoka ntiboneka', notFoundSub: 'Ishobora kuba yarahagaritswe cyangwa ikuwe mu modoka zikodeshwa.', goBack: 'Subira inyuma', loading: 'Turimo gutegura iyi modoka…',
+    forRent: 'Ikodeshwa', certified: 'Yemejwe {{score}}/150', safariReady: 'Yiteguye safari', share: 'Sangiza', shareMessage: '{{title}} — {{price}}/umunsi kuri Sawa Cars',
+    seats: 'Imyanya', gearbox: 'Gearbox', fuel: 'Lisansi', year: 'Umwaka',
+    unavailableUntil: 'Ntiboneka kugeza {{date}}',
+    availability: 'Kuboneka', requestDates: 'Saba amatariki yawe', availabilityNote: 'Uwatanga imodoka wemejwe azemeza imodoka, igiciro n’uko izafatirwa. Kohereza icyifuzo ntibivuze ko imodoka yabitswe cyangwa yasabwe.',
+    pricing: 'Ibiciro', dailyRate: 'Igiciro cy’umunsi', weeklyRate: 'Igiciro cy’icyumweru', saveVsDaily: 'Zigama {{amount}} ugereranyije n’umunsi', securityDeposit: 'Ingwate y’umutekano', depositSub: 'Umubare watanzwe n’uwatanga imodoka · emeza amabwiriza yanditse', minRental: 'Igihe gito cyo gukodesha: iminsi {{count}}',
+    confirmTerms: 'Emeza aya mabwiriza n’uwatanga imodoka', insurance: 'Ubwishingizi', roadside: 'Ubufasha mu nzira', mileageLimits: 'Imipaka y’intera', depositTerms: 'Amabwiriza y’ingwate no gusubizwa',
+    safetyLink: 'Umutekano n’inshingano ku isoko',
+    inspectionTitle: 'Raporo y’isuzuma ry’ingingo 150', inspectionSub: 'Amanota {{score}}/150 · Reba raporo yuzuye',
+    howItWorks: 'Uburyo gukodesha bikora',
+    step1Title: 'Ohereza icyifuzo', step1Desc: 'Tanga amatariki yawe n’uburyo bwiza bwo kuvugana nawe.',
+    step2Title: 'Mwumvikane mu buryo butaziguye', step2Desc: 'Uwatanga imodoka yemeza ko iboneka, igiciro, ubwishingizi, ingwate n’amabwiriza yanditse.',
+    step3Title: 'Genzura ikodeshwa', step3Desc: 'Gufata imodoka, kwishyura, uko imodoka imeze no kuyisubiza bikorwa hagati yawe n’uwayitanze.',
+    ctaDailyRental: 'Ikodeshwa ry’umunsi', ctaPerDay: '/ umunsi', ctaRateNote: 'Igiciro giteganywa n’uwatanga imodoka · emeza mu buryo butaziguye', ctaInquiryOnly: 'Icyifuzo gusa', ctaRequestAvailability: 'Saba ko iboneka',
+  },
+  fr: {
+    notFoundTitle: 'Cette location n’est pas disponible', notFoundSub: 'Elle a peut-être été suspendue ou retirée de la flotte.', goBack: 'Retour', loading: 'Chargement de cette location…',
+    forRent: 'À louer', certified: 'Certifié {{score}}/150', safariReady: 'Prêt pour le safari', share: 'Partager', shareMessage: '{{title}} — {{price}}/jour sur Sawa Cars',
+    seats: 'Places', gearbox: 'Boîte', fuel: 'Carburant', year: 'Année',
+    unavailableUntil: 'Indisponible jusqu’au {{date}}',
+    availability: 'Disponibilité', requestDates: 'Demandez vos dates', availabilityNote: 'Le prestataire vérifié confirmera le véhicule, le prix et les modalités de prise en charge. Envoyer une demande ne réserve pas le véhicule.',
+    pricing: 'Tarifs', dailyRate: 'Tarif journalier', weeklyRate: 'Tarif hebdomadaire', saveVsDaily: 'Économisez {{amount}} par rapport au tarif journalier', securityDeposit: 'Caution', depositSub: 'Montant indiqué par le prestataire · confirmez les conditions écrites', minRental: 'Location minimale : {{count}} jours',
+    confirmTerms: 'Confirmez ces conditions avec le prestataire', insurance: 'Couverture d’assurance', roadside: 'Assistance routière', mileageLimits: 'Limites de kilométrage', depositTerms: 'Conditions de caution et de remboursement',
+    safetyLink: 'Sécurité et responsabilités sur la plateforme',
+    inspectionTitle: 'Rapport d’inspection en 150 points', inspectionSub: 'Score {{score}}/150 · Voir le rapport complet',
+    howItWorks: 'Comment fonctionne la location',
+    step1Title: 'Envoyez une demande', step1Desc: 'Indiquez vos dates et le moyen de contact préféré.',
+    step2Title: 'Convenez directement', step2Desc: 'Le prestataire confirme la disponibilité, le prix, l’assurance, la caution et les conditions écrites.',
+    step3Title: 'Gérez la location', step3Desc: 'La prise en charge, le paiement, l’état du véhicule et le retour se règlent directement entre vous et le prestataire.',
+    ctaDailyRental: 'Location journalière', ctaPerDay: '/ jour', ctaRateNote: 'Tarif indiqué par le prestataire · à confirmer directement', ctaInquiryOnly: 'Demande uniquement', ctaRequestAvailability: 'Demander la disponibilité',
+  },
+  sw: {
+    notFoundTitle: 'Gari hili la kukodisha halipatikani', notFoundSub: 'Huenda limesitishwa au kuondolewa kwenye meli.', goBack: 'Rudi nyuma', loading: 'Inapakia gari hili…',
+    forRent: 'Kwa Kukodisha', certified: 'Imethibitishwa {{score}}/150', safariReady: 'Tayari kwa safari', share: 'Shiriki', shareMessage: '{{title}} — {{price}}/siku kwenye Sawa Cars',
+    seats: 'Viti', gearbox: 'Gearbox', fuel: 'Mafuta', year: 'Mwaka',
+    unavailableUntil: 'Haipatikani hadi {{date}}',
+    availability: 'Upatikanaji', requestDates: 'Omba tarehe zako', availabilityNote: 'Mtoa huduma aliyethibitishwa atathibitisha gari, bei na mpangilio wa kuchukua. Kutuma ombi hakuhifadhi wala kubuki gari.',
+    pricing: 'Bei', dailyRate: 'Bei ya siku', weeklyRate: 'Bei ya wiki', saveVsDaily: 'Okoa {{amount}} ukilinganisha na bei ya siku', securityDeposit: 'Amana ya usalama', depositSub: 'Kiasi kilichoelezwa na mtoa huduma · thibitisha masharti yaliyoandikwa', minRental: 'Kukodisha kwa chini: siku {{count}}',
+    confirmTerms: 'Thibitisha masharti haya na mtoa huduma', insurance: 'Bima', roadside: 'Msaada wa barabarani', mileageLimits: 'Kikomo cha umbali', depositTerms: 'Masharti ya amana na kurejeshewa',
+    safetyLink: 'Usalama na majukumu ya sokoni',
+    inspectionTitle: 'Ripoti ya Ukaguzi wa Pointi 150', inspectionSub: 'Alama {{score}}/150 · Angalia ripoti kamili',
+    howItWorks: 'Jinsi kukodisha kunavyofanya kazi',
+    step1Title: 'Tuma ombi', step1Desc: 'Shiriki tarehe zako na njia unayopendelea kuwasiliana.',
+    step2Title: 'Kubaliana moja kwa moja', step2Desc: 'Mtoa huduma huthibitisha upatikanaji, bei, bima, amana na masharti yaliyoandikwa.',
+    step3Title: 'Simamia ukodishaji', step3Desc: 'Kuchukua gari, malipo, hali ya gari na kurejesha hushughulikiwa moja kwa moja kati yako na mtoa huduma.',
+    ctaDailyRental: 'Ukodishaji wa siku', ctaPerDay: '/ siku', ctaRateNote: 'Bei iliyoelezwa na mtoa huduma · thibitisha moja kwa moja', ctaInquiryOnly: 'Ombi tu', ctaRequestAvailability: 'Omba upatikanaji',
+  },
+  ko: {
+    notFoundTitle: '이 렌트 차량은 이용할 수 없습니다', notFoundSub: '일시 중단되었거나 목록에서 제거되었을 수 있습니다.', goBack: '뒤로 가기', loading: '이 차량 정보를 불러오는 중…',
+    forRent: '렌트 가능', certified: '인증 {{score}}/150', safariReady: '사파리 준비 완료', share: '공유', shareMessage: '{{title}} — Sawa Cars에서 하루 {{price}}',
+    seats: '좌석', gearbox: '변속기', fuel: '연료', year: '연식',
+    unavailableUntil: '{{date}}까지 이용 불가',
+    availability: '이용 가능 여부', requestDates: '희망 날짜 요청', availabilityNote: '인증된 제공자가 차량, 가격, 픽업 방식을 확인해 드립니다. 문의를 보낸다고 해서 차량이 예약되거나 확보되지는 않습니다.',
+    pricing: '요금', dailyRate: '일일 요금', weeklyRate: '주간 요금', saveVsDaily: '일일 요금 대비 {{amount}} 절약', securityDeposit: '보증금', depositSub: '제공자가 명시한 금액 · 서면 조건을 확인하세요', minRental: '최소 대여 기간: {{count}}일',
+    confirmTerms: '제공자와 다음 조건을 확인하세요', insurance: '보험 보장', roadside: '긴급 출동 지원', mileageLimits: '주행거리 제한', depositTerms: '보증금 및 환불 조건',
+    safetyLink: '마켓플레이스 안전 및 책임',
+    inspectionTitle: '150개 항목 검사 보고서', inspectionSub: '{{score}}/150점 · 전체 보고서 보기',
+    howItWorks: '렌트 이용 방법',
+    step1Title: '문의 보내기', step1Desc: '희망 날짜와 선호하는 연락 방법을 공유하세요.',
+    step2Title: '직접 협의하기', step2Desc: '제공자가 이용 가능 여부, 가격, 보험, 보증금, 서면 대여 조건을 확인해 드립니다.',
+    step3Title: '대여 관리하기', step3Desc: '픽업, 결제, 차량 상태, 반납은 제공자와 직접 처리합니다.',
+    ctaDailyRental: '일일 렌트', ctaPerDay: '/ 일', ctaRateNote: '제공자가 명시한 요금 · 직접 확인하세요', ctaInquiryOnly: '문의만 가능', ctaRequestAvailability: '이용 가능 여부 요청',
+  },
+};
+
 export const TRANSLATIONS = { en: EN, rw: RW, fr: FR, sw: SW, ko: KO };
 for (const code of Object.keys(TRANSLATIONS)) {
   TRANSLATIONS[code].settings = { ...TRANSLATIONS[code].settings, ...EXTRA_SETTINGS[code] };
@@ -219,6 +305,7 @@ for (const code of Object.keys(TRANSLATIONS)) {
   TRANSLATIONS[code].filters = { ...TRANSLATIONS[code].filters, ...EXTRA_FILTERS[code] };
   TRANSLATIONS[code].searchResults = EXTRA_SEARCH[code];
   TRANSLATIONS[code].auth = EXTRA_AUTH[code];
+  TRANSLATIONS[code].rentalDetail = EXTRA_RENTAL_DETAIL[code];
 }
 
 export function normalizeLanguage(value) {

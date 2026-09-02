@@ -12,13 +12,6 @@ import { useApp } from '../context/AppContext';
 import Photo from '../components/Photo';
 import { PHOTO } from '../utils/photo';
 
-const SPEC_ITEMS = [
-  { icon: 'people-outline', label: 'Seats', key: 'seats' },
-  { icon: 'cog-outline', label: 'Gearbox', key: 'transmission' },
-  { icon: 'flash-outline', label: 'Fuel', key: 'fuel' },
-  { icon: 'calendar-outline', label: 'Year', key: 'year' },
-];
-
 export default function RentalDetailScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
   // A deep link (sawa://rentals/<id>) carries only an id — resolve it against
@@ -29,12 +22,19 @@ export default function RentalDetailScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [activeIdx, setActiveIdx] = useState(0);
   const [viewerIdx, setViewerIdx] = useState(null);
-  const { recordCarView, rentalCars } = useApp();
+  const { recordCarView, rentalCars, t } = useApp();
   const car =
     paramCar ||
     (rentalCars || []).find((c) => String(c.id) === String(rentalId)) ||
     null;
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
+
+  const SPEC_ITEMS = [
+    { icon: 'people-outline', label: t('rentalDetail.seats'), key: 'seats' },
+    { icon: 'cog-outline', label: t('rentalDetail.gearbox'), key: 'transmission' },
+    { icon: 'flash-outline', label: t('rentalDetail.fuel'), key: 'fuel' },
+    { icon: 'calendar-outline', label: t('rentalDetail.year'), key: 'year' },
+  ];
 
   if (!car) {
     // Catalogue still loading → spinner; loaded but id unknown → honest miss.
@@ -45,19 +45,27 @@ export default function RentalDetailScreen({ navigation, route }) {
         {notFound ? (
           <ErrorState
             icon="key-outline"
-            title="This rental isn't available"
-            sub="It may have been paused or removed from the fleet."
-            actionLabel="Go back"
+            title={t('rentalDetail.notFoundTitle')}
+            sub={t('rentalDetail.notFoundSub')}
+            actionLabel={t('rentalDetail.goBack')}
             onAction={() => navigation.goBack()}
           />
         ) : (
-          <LoadingState label="Loading this rental…" />
+          <LoadingState label={t('rentalDetail.loading')} />
         )}
       </View>
     );
   }
 
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
+  // Future-dated and unparsed-safe: a bad or past value must never render.
+  // Informational only — the provider set this, it never hides the car or
+  // blocks an inquiry. See backend migration 0037.
+  const unavailableDate = car.unavailableUntil ? new Date(car.unavailableUntil) : null;
+  const unavailableUntil =
+    unavailableDate && !Number.isNaN(unavailableDate.getTime()) && unavailableDate.getTime() > Date.now()
+      ? unavailableDate
+      : null;
 
   return (
     <View style={styles.root}>
@@ -87,7 +95,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             </Pressable>
             <Pressable
               style={styles.circleBtn}
-              onPress={() => Share.share({ message: `${car.title} — ${formatRWF(car.dailyRate)}/day on Sawa Cars` }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
+              onPress={() => Share.share({ message: t('rentalDetail.shareMessage', { title: car.title, price: formatRWF(car.dailyRate) }) }).catch(() => {})} accessibilityRole="button" accessibilityLabel={t('rentalDetail.share')}
             >
               <Ionicons name="share-outline" size={19} color={colors.textPrimary} />
             </Pressable>
@@ -96,16 +104,24 @@ export default function RentalDetailScreen({ navigation, route }) {
           <View style={styles.heroBadges}>
             <View style={styles.rentPill}>
               <Ionicons name="key" size={11} color="#fff" />
-              <Text style={styles.rentPillText}>For Rent</Text>
+              <Text style={styles.rentPillText}>{t('rentalDetail.forRent')}</Text>
             </View>
             <View style={styles.certPill}>
               <Ionicons name="shield-checkmark" size={11} color="#fff" />
-              <Text style={styles.rentPillText}>Certified {car.inspectionScore}/150</Text>
+              <Text style={styles.rentPillText}>{t('rentalDetail.certified', { score: car.inspectionScore })}</Text>
             </View>
             {car.safariReady && (
               <View style={styles.safariPill}>
                 <Ionicons name="trail-sign" size={11} color="#fff" />
-                <Text style={styles.rentPillText}>Safari-Ready</Text>
+                <Text style={styles.rentPillText}>{t('rentalDetail.safariReady')}</Text>
+              </View>
+            )}
+            {unavailableUntil && (
+              <View style={styles.unavailablePill}>
+                <Ionicons name="time-outline" size={11} color="#fff" />
+                <Text style={styles.rentPillText}>
+                  {t('rentalDetail.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
+                </Text>
               </View>
             )}
           </View>
@@ -140,50 +156,50 @@ export default function RentalDetailScreen({ navigation, route }) {
           </View>
 
           {/* Availability is confirmed by the independent provider. */}
-          <Text style={styles.sectionTitle}>Availability</Text>
-          <View style={styles.availabilityNote}><Ionicons name="calendar-outline" size={21} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.availabilityTitle}>Request your dates</Text><Text style={styles.availabilityText}>The verified provider will confirm the vehicle, price and pickup arrangements. Sending an inquiry does not hold or book the car.</Text></View></View>
+          <Text style={styles.sectionTitle}>{t('rentalDetail.availability')}</Text>
+          <View style={styles.availabilityNote}><Ionicons name="calendar-outline" size={21} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.availabilityTitle}>{t('rentalDetail.requestDates')}</Text><Text style={styles.availabilityText}>{t('rentalDetail.availabilityNote')}</Text></View></View>
 
           {/* Pricing */}
-          <Text style={styles.sectionTitle}>Pricing</Text>
+          <Text style={styles.sectionTitle}>{t('rentalDetail.pricing')}</Text>
           <View style={styles.priceCard}>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Daily rate</Text>
+              <Text style={styles.priceLabel}>{t('rentalDetail.dailyRate')}</Text>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.priceValue}>{formatRWF(car.dailyRate)}/day</Text>
               </View>
             </View>
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Weekly rate</Text>
+              <Text style={styles.priceLabel}>{t('rentalDetail.weeklyRate')}</Text>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.priceValue}>{formatRWF(car.weeklyRate)}/week</Text>
                 <Text style={styles.priceSave}>
-                  Save {formatRWF(car.dailyRate * 7 - car.weeklyRate)} vs daily
+                  {t('rentalDetail.saveVsDaily', { amount: formatRWF(car.dailyRate * 7 - car.weeklyRate) })}
                 </Text>
               </View>
             </View>
             <View style={[styles.priceRow, styles.priceRowLast]}>
               <View>
-                <Text style={styles.priceLabel}>Security deposit</Text>
-                <Text style={styles.priceSub}>Provider-stated amount · confirm written terms</Text>
+                <Text style={styles.priceLabel}>{t('rentalDetail.securityDeposit')}</Text>
+                <Text style={styles.priceSub}>{t('rentalDetail.depositSub')}</Text>
               </View>
               <Text style={styles.priceValue}>{formatRWF(car.deposit)}</Text>
             </View>
             {car.minDays > 1 && (
               <View style={styles.minDaysNote}>
                 <Ionicons name="information-circle-outline" size={14} color={colors.amber} />
-                <Text style={styles.minDaysText}>Minimum rental: {car.minDays} days</Text>
+                <Text style={styles.minDaysText}>{t('rentalDetail.minRental', { count: car.minDays })}</Text>
               </View>
             )}
           </View>
 
           {/* What's included */}
-          <Text style={styles.sectionTitle}>Confirm these terms with the provider</Text>
+          <Text style={styles.sectionTitle}>{t('rentalDetail.confirmTerms')}</Text>
           <View style={styles.includesGrid}>
             {[
-              { icon: 'shield-checkmark-outline', label: 'Insurance coverage' },
-              { icon: 'construct-outline', label: 'Roadside assistance' },
-              { icon: 'speedometer-outline', label: 'Kilometre limits' },
-              { icon: 'cash-outline', label: 'Deposit & refund terms' },
+              { icon: 'shield-checkmark-outline', label: t('rentalDetail.insurance') },
+              { icon: 'construct-outline', label: t('rentalDetail.roadside') },
+              { icon: 'speedometer-outline', label: t('rentalDetail.mileageLimits') },
+              { icon: 'cash-outline', label: t('rentalDetail.depositTerms') },
             ].map((item) => (
               <View key={item.label} style={styles.includeCard}>
                 <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
@@ -194,7 +210,7 @@ export default function RentalDetailScreen({ navigation, route }) {
 
           <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-            <Text style={styles.promiseLinkText}>Marketplace safety & responsibilities</Text>
+            <Text style={styles.promiseLinkText}>{t('rentalDetail.safetyLink')}</Text>
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
@@ -207,18 +223,18 @@ export default function RentalDetailScreen({ navigation, route }) {
               <Ionicons name="shield-checkmark" size={20} color={colors.green} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.inspectionTitle}>150-Point Inspection Report</Text>
-              <Text style={styles.inspectionSub}>Scored {car.inspectionScore}/150 · View full report</Text>
+              <Text style={styles.inspectionTitle}>{t('rentalDetail.inspectionTitle')}</Text>
+              <Text style={styles.inspectionSub}>{t('rentalDetail.inspectionSub', { score: car.inspectionScore })}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
 
           {/* How it works */}
-          <Text style={styles.sectionTitle}>How renting works</Text>
+          <Text style={styles.sectionTitle}>{t('rentalDetail.howItWorks')}</Text>
           {[
-            { n: '1', t: 'Send an inquiry', d: 'Share your dates and preferred contact channel.' },
-            { n: '2', t: 'Agree directly', d: 'The provider confirms availability, price, insurance, deposit and written rental terms.' },
-            { n: '3', t: 'Manage the rental', d: 'Pickup, payment, vehicle condition and return are handled directly between you and the provider.' },
+            { n: '1', t: t('rentalDetail.step1Title'), d: t('rentalDetail.step1Desc') },
+            { n: '2', t: t('rentalDetail.step2Title'), d: t('rentalDetail.step2Desc') },
+            { n: '3', t: t('rentalDetail.step3Title'), d: t('rentalDetail.step3Desc') },
           ].map((step) => (
             <View key={step.n} style={styles.stepRow}>
               <View style={styles.stepNum}><Text style={styles.stepNumText}>{step.n}</Text></View>
@@ -236,24 +252,24 @@ export default function RentalDetailScreen({ navigation, route }) {
         <View style={styles.ctaInner}>
           <View style={styles.ctaMetaRow}>
             <View style={styles.ctaPrice}>
-              <Text style={styles.ctaPriceLabel}>Daily rental</Text>
+              <Text style={styles.ctaPriceLabel}>{t('rentalDetail.ctaDailyRental')}</Text>
               <View style={styles.ctaPriceLine}>
                 <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>
                   {formatRWF(car.dailyRate)}
                 </Text>
-                <Text style={styles.ctaPerDay}>/ day</Text>
+                <Text style={styles.ctaPerDay}>{t('rentalDetail.ctaPerDay')}</Text>
               </View>
-              <Text style={styles.ctaDeposit}>Provider-stated rate · confirm directly</Text>
+              <Text style={styles.ctaDeposit}>{t('rentalDetail.ctaRateNote')}</Text>
             </View>
             <View style={styles.ctaAssurance}>
               <Ionicons name="shield-checkmark" size={14} color={colors.greenText} />
-              <Text style={styles.ctaAssuranceText}>Inquiry only</Text>
+              <Text style={styles.ctaAssuranceText}>{t('rentalDetail.ctaInquiryOnly')}</Text>
             </View>
           </View>
 
           <View style={styles.ctaActions}>
             <Button
-              title="Request availability"
+              title={t('rentalDetail.ctaRequestAvailability')}
               icon="calendar-outline"
               style={styles.bookButton}
               textStyle={styles.bookButtonText}
@@ -300,6 +316,11 @@ const styles = StyleSheet.create({
   safariPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#B45309',
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
+  },
+  unavailablePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(23,18,15,0.78)',
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
   },
   rentPillText: { color: '#fff', fontSize: 11, fontFamily: fonts.extraBold },

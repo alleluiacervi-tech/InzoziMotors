@@ -9,23 +9,38 @@ import { useT } from '@/lib/i18n/context'
 // phones, and a vertical sidebar from lg up. Client-only because the active
 // item depends on the pathname — no user data passes through here.
 
-const ITEMS: { href: string; labelKey: string; icon: IconName }[] = [
+const BASE_ITEMS: { href: string; labelKey: string; icon: IconName }[] = [
   { href: '/dashboard', labelKey: 'dashboard.nav.overview', icon: 'grid' },
   { href: '/dashboard/saved', labelKey: 'dashboard.nav.saved', icon: 'heart' },
   { href: '/dashboard/rentals', labelKey: 'dashboard.nav.rentals', icon: 'calendar' },
+]
+
+// Shown only to a verified rental provider (role=seller, business_verified) —
+// see (dashboard)/layout.tsx. A buyer or an unverified seller has no fleet or
+// inbox to manage, so the links would just 404-shaped empty-state their way.
+const PROVIDER_ITEMS: { href: string; labelKey: string; icon: IconName }[] = [
+  { href: '/dashboard/rentals/fleet', labelKey: 'dashboard.nav.rentalFleet', icon: 'car' },
+  { href: '/dashboard/rentals/inbox', labelKey: 'dashboard.nav.rentalInbox', icon: 'mail' },
+]
+
+const REST_ITEMS: { href: string; labelKey: string; icon: IconName }[] = [
   { href: '/dashboard/imports', labelKey: 'dashboard.nav.imports', icon: 'clock' },
   { href: '/dashboard/notifications', labelKey: 'dashboard.nav.notifications', icon: 'bell' },
   { href: '/dashboard/selling', labelKey: 'dashboard.nav.selling', icon: 'car' },
   { href: '/dashboard/profile', labelKey: 'dashboard.nav.profile', icon: 'user' },
 ]
 
-export function DashboardNav({ unread = 0 }: { unread?: number }) {
+export function DashboardNav({ unread = 0, isRentalProvider = false }: { unread?: number; isRentalProvider?: boolean }) {
   const t = useT()
   const pathname = usePathname()
+  const ITEMS = [...BASE_ITEMS, ...(isRentalProvider ? PROVIDER_ITEMS : []), ...REST_ITEMS]
 
   // Overview must match exactly, or every child route would light it up too.
+  // /dashboard/rentals must match exactly too, or it would light up alongside
+  // /dashboard/rentals/fleet and /dashboard/rentals/inbox — three different
+  // pages under the same prefix.
   const isActive = (href: string) =>
-    href === '/dashboard' ? pathname === href : pathname.startsWith(href)
+    href === '/dashboard' || href === '/dashboard/rentals' ? pathname === href : pathname.startsWith(href)
 
   return (
     <nav aria-label={t('dashboard.nav.label')}>

@@ -4,7 +4,7 @@ import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
 import {
   formatKm, formatMoneyExact, formatRWF, formatUSD, getCertTier, isDemoListing,
-  listedAgo, marketPosition, monthlyEstimate, priceDrop,
+  isHighDemand, isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop,
 } from '@/lib/business'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
@@ -83,13 +83,18 @@ export async function CarCard({
         <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
           {demo ? (
             <Badge tone="preview" className="max-w-full truncate">
-              {t('cars.card.demoBadge') || 'Preview'}
+              {t('cars.card.previewListing')}
             </Badge>
           ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
               {tier.short}
             </Badge>
           ) : null}
+        </div>
+        <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1.5">
+          {drop > 0 ? <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge> : null}
+          {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">{t('cars.card.new')}</Badge> : null}
+          {isHighDemand(car) ? <Badge tone="danger">{t('cars.card.highDemand')}</Badge> : null}
         </div>
 
         {/* The 36-angle standard is the signature — advertise it on every card.

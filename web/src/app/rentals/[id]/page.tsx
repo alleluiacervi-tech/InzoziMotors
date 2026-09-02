@@ -85,6 +85,13 @@ export default async function RentalDetailPage({ params }: PageProps) {
   const images = (car.images ?? []).filter(Boolean)
   const tier = getCertTier(car)
   const rating = formatRating(car.rating)
+  // Future-dated and unparsed-safe: informational only, never a gate — the
+  // page, gallery and inquiry form below all stay fully usable regardless.
+  const unavailableDate = car.unavailable_until ? new Date(car.unavailable_until) : null
+  const unavailableUntil =
+    unavailableDate && !Number.isNaN(unavailableDate.getTime()) && unavailableDate.getTime() > Date.now()
+      ? unavailableDate
+      : null
   const weekly = car.weekly_rate ?? car.daily_rate * 7
 
   // A few trip lengths priced with the server's own formula, so the weekly rate
@@ -150,11 +157,16 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   </Badge>
                 ) : null}
                 {car.safari_ready ? (
-                  <Badge tone="info" icon="location">
+                  <Badge tone="safari" icon="compass">
                     {t('rentals.card.safariReady')}
                   </Badge>
                 ) : null}
                 {car.status !== 'active' ? <Badge tone="neutral">{t('rentals.detail.notAvailableBadge')}</Badge> : null}
+                {unavailableUntil ? (
+                  <Badge tone="neutral" icon="clock">
+                    {t('rentals.card.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
+                  </Badge>
+                ) : null}
               </div>
 
               <h1 className="mt-4 text-display font-extrabold text-content">{car.title}</h1>

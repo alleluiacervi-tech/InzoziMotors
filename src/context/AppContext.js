@@ -600,6 +600,7 @@ export function AppProvider({ children }) {
       rating: Number(rc.rating) || 0, trips: rc.trips, location: rc.location,
       image: rc.images?.[0] || null, images: rc.images || [],
       safariReady: !!rc.safari_ready,
+      unavailableUntil: rc.unavailable_until || null,
       providerId: rc.provider_id || null,
       providerName: rc.provider_business_name || rc.provider_name || 'Verified rental provider',
       providerContactAvailable: rc.provider_contact_available || { phone: false, whatsapp: false, in_app: true },

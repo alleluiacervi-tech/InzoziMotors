@@ -45,6 +45,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const unread = await getUnreadCount()
   const initial = user.name.trim().charAt(0).toUpperCase() || '?'
+  // Mirrors verifiedRentalProvider() in backend/src/routes/rentals.js — the
+  // same three conditions that let POST /rentals/propose actually succeed.
+  // Showing the fleet/inbox links to anyone else would just hand them an
+  // empty page and a 403 on their first action.
+  const isRentalProvider = user.role === 'seller' && user.id_verified === 'approved' && user.business_verified === true
 
   return (
     <div className="bg-surface-page">
@@ -73,7 +78,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </form>
             </div>
 
-            <DashboardNav unread={unread} />
+            <DashboardNav unread={unread} isRentalProvider={isRentalProvider} />
           </aside>
 
           <div className="min-w-0 pt-6 lg:pt-0">

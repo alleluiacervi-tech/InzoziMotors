@@ -31,6 +31,14 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
   const isContract = car.type === 'auction';
   const isRental = car.listingType === 'rental';
   const tier = getCertTier(car);
+  // Future-dated and unparsed-safe: a bad or past value must never render.
+  // Informational only — the provider set this, it never hides the car or
+  // blocks an inquiry. See backend migration 0037.
+  const unavailableDate = isRental && car.unavailableUntil ? new Date(car.unavailableUntil) : null;
+  const unavailableUntil =
+    unavailableDate && !Number.isNaN(unavailableDate.getTime()) && unavailableDate.getTime() > Date.now()
+      ? unavailableDate
+      : null;
 
   return (
     <Pressable
@@ -75,6 +83,15 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
         {rank !== null && (
           <View style={styles.rankBadge}>
             <Text style={styles.rankText}>{rank}</Text>
+          </View>
+        )}
+
+        {unavailableUntil && (
+          <View style={styles.unavailableBadge}>
+            <Ionicons name="time-outline" size={10} color="#fff" />
+            <Text style={styles.unavailableBadgeText} numberOfLines={1}>
+              {t('home.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
+            </Text>
           </View>
         )}
       </View>
@@ -170,6 +187,14 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   rankText: { fontFamily: fonts.extraBold, color: '#FFFFFF', fontSize: 12 },
+  unavailableBadge: {
+    position: 'absolute', bottom: 6, right: 6, maxWidth: '70%',
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: 'rgba(23,18,15,0.78)',
+    paddingHorizontal: 7, paddingVertical: 3,
+    borderRadius: 5,
+  },
+  unavailableBadgeText: { color: '#fff', fontSize: 9.5, fontFamily: fonts.extraBold },
   body: { paddingHorizontal: 10, paddingVertical: 10, flex: 1, gap: 2 },
   title: { fontFamily: fonts.bold, fontSize: 13, color: colors.textPrimary },
   meta: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },

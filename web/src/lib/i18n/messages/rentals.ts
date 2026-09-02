@@ -33,6 +33,14 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Open a vehicle, enter your dates and send an inquiry. The provider—not Sawa Cars—confirms availability and all rental terms.',
     chooseRental: 'Choose a rental',
     readProcess: 'Read the direct-deal process',
+    howItWorks: {
+      title: 'How renting works',
+      steps: {
+        browse: { title: 'Browse inspected vehicles', body: 'Every car passed the same 150-point check as our sale listings.' },
+        inquire: { title: 'Send an availability inquiry', body: 'Pick your dates and message the provider — this is not a booking.' },
+        confirm: { title: 'Confirm directly with the provider', body: 'Agree price, deposit, insurance, pickup and return between yourselves.' },
+      },
+    },
     includes: {
       insurance: 'Comprehensive insurance',
       roadside: '24/7 roadside assistance',
@@ -47,6 +55,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     card: {
       safariReady: 'Safari-ready',
       alt: '{{title}} — Sawa rental fleet',
+      unavailableUntil: 'Unavailable until {{date}}',
       seats: '{{count}} seats',
       perDay: '/ day',
       depositLine: '{{amount}} provider-stated deposit',
@@ -140,6 +149,14 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Fungura imodoka, wandike amatariki yawe hanyuma wohereze ikibazo. Utanga—atari Sawa Cars—niwe wemeza ukuboneka n’amabwiriza yose y’ubukode.',
     chooseRental: 'Hitamo iyo ukodesha',
     readProcess: 'Soma inzira y’ubucuruzi butaziguye',
+    howItWorks: {
+      title: 'Uko gukodesha bikorwa',
+      steps: {
+        browse: { title: 'Reba imodoka zasuzumwe', body: 'Buri modoka yanyuze mu isuzuma ry’ingingo 150, nk’izigurishwa.' },
+        inquire: { title: 'Ohereza ikibazo ku kuboneka', body: 'Hitamo amatariki wandikire uwatanga imodoka — ntibisobanura ko wabitswe.' },
+        confirm: { title: 'Mwumvikane ubwanyu n’uwatanga imodoka', body: 'Mwumvikane ku giciro, ingwate, ubwishingizi, gufata no gusubiza imodoka.' },
+      },
+    },
     includes: {
       insurance: 'Ubwishingizi bwuzuye',
       roadside: 'Ubufasha ku muhanda amasaha 24/24',
@@ -154,6 +171,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     card: {
       safariReady: 'Ibereye safari',
       alt: '{{title}} — ibinyabiziga bya Sawa bikodeshwa',
+      unavailableUntil: 'Ntiboneka kugeza {{date}}',
       seats: 'imyanya {{count}}',
       perDay: '/ umunsi',
       depositLine: 'ingwate {{amount}} yatangajwe n’utanga',
@@ -247,6 +265,14 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Ouvrez un véhicule, saisissez vos dates et envoyez une demande. Le prestataire—et non Sawa Cars—confirme la disponibilité et toutes les conditions de location.',
     chooseRental: 'Choisir une location',
     readProcess: 'Lire le processus de transaction directe',
+    howItWorks: {
+      title: 'Comment fonctionne la location',
+      steps: {
+        browse: { title: 'Parcourez des véhicules inspectés', body: 'Chaque voiture a passé le même contrôle en 150 points que nos annonces de vente.' },
+        inquire: { title: 'Envoyez une demande de disponibilité', body: 'Choisissez vos dates et écrivez au prestataire — ce n’est pas une réservation.' },
+        confirm: { title: 'Confirmez directement avec le prestataire', body: 'Convenez du prix, de la caution, de l’assurance, de la prise en charge et du retour entre vous.' },
+      },
+    },
     includes: {
       insurance: 'Assurance tous risques',
       roadside: 'Assistance routière 24h/24 et 7j/7',
@@ -261,6 +287,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     card: {
       safariReady: 'Prête pour safari',
       alt: '{{title}} — flotte de location Sawa',
+      unavailableUntil: 'Indisponible jusqu’au {{date}}',
       seats: '{{count}} places',
       perDay: '/ jour',
       depositLine: 'caution de {{amount}} indiquée par le prestataire',
@@ -354,6 +381,14 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Fungua gari, weka tarehe zako na utume ombi. Mtoa huduma—si Sawa Cars—ndiye huthibitisha upatikanaji na masharti yote ya ukodishaji.',
     chooseRental: 'Chagua gari la kukodisha',
     readProcess: 'Soma mchakato wa biashara ya moja kwa moja',
+    howItWorks: {
+      title: 'Jinsi ukodishaji unavyofanya kazi',
+      steps: {
+        browse: { title: 'Angalia magari yaliyokaguliwa', body: 'Kila gari lilipitia ukaguzi ule ule wa pointi 150 kama matangazo yetu ya mauzo.' },
+        inquire: { title: 'Tuma ombi la upatikanaji', body: 'Chagua tarehe zako na umtumie ujumbe mtoa huduma — hii si uhifadhi.' },
+        confirm: { title: 'Thibitisha moja kwa moja na mtoa huduma', body: 'Kubaliana bei, amana, bima, uchukuaji na urejeshaji ninyi wenyewe.' },
+      },
+    },
     includes: {
       insurance: 'Bima ya kina',
       roadside: 'Msaada wa barabarani saa 24/7',
@@ -368,6 +403,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     card: {
       safariReady: 'Tayari kwa safari',
       alt: '{{title}} — kundi la magari ya kukodisha la Sawa',
+      unavailableUntil: 'Haipatikani hadi {{date}}',
       seats: 'viti {{count}}',
       perDay: '/ siku',
       depositLine: 'amana ya {{amount}} iliyotajwa na mtoa huduma',
@@ -461,6 +497,14 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       '차량을 열고 날짜를 입력한 뒤 문의를 보내세요. Sawa Cars가 아니라 제공자가 예약 가능 여부와 모든 렌트 조건을 확정합니다.',
     chooseRental: '렌트 차량 선택',
     readProcess: '직접 거래 절차 읽기',
+    howItWorks: {
+      title: '렌트 이용 방법',
+      steps: {
+        browse: { title: '검사된 차량 둘러보기', body: '모든 차량은 판매 매물과 동일한 150개 항목 검사를 통과했습니다.' },
+        inquire: { title: '이용 가능 여부 문의 보내기', body: '날짜를 선택하고 제공자에게 메시지를 보내세요 — 예약이 아닙니다.' },
+        confirm: { title: '제공자와 직접 확정하기', body: '가격, 보증금, 보험, 픽업과 반납을 서로 합의하세요.' },
+      },
+    },
     includes: {
       insurance: '종합 보험',
       roadside: '연중무휴 24시간 긴급출동',
@@ -475,6 +519,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     card: {
       safariReady: '사파리 대응',
       alt: '{{title}} — Sawa 렌트 차량',
+      unavailableUntil: '{{date}}까지 이용 불가',
       seats: '{{count}}인승',
       perDay: '/ 일',
       depositLine: '제공자 제시 보증금 {{amount}}',
