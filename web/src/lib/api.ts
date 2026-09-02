@@ -2,7 +2,7 @@ import type { DutyRates } from '@/lib/business'
 import type {
   AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement,
   InspectionCenter, InspectionReport,
-  Message, RentalCar, RentalInquiry, Review, SavedSearch, Submission, TrustScore, User,
+  Message, RentalCar, RentalInquiry, ReportEntitlement, Review, SavedSearch, Submission, TrustScore, User,
   Valuation, VehicleHistory,
 } from './types'
 
@@ -418,6 +418,14 @@ export const submissions = {
     request<Submission>(`/submissions/${id}/schedule`, {
       token, method: 'PATCH', body: JSON.stringify(body),
     }),
+}
+
+export const inspections = {
+  /** Every report this account may read — commissioned, resold, or granted.
+   *  Each row's `file_url` is the path the account's own /api/documents/[id]
+   *  route handler proxies (the backend only accepts a Bearer header, which a
+   *  plain <a href> download link cannot send). */
+  myReports: (token: string) => request<ReportEntitlement[]>('/inspections/my-reports', { token }),
 }
 
 export const notifications = {
