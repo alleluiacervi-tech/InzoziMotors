@@ -1325,7 +1325,7 @@ router.patch('/fees/:id', requireAdmin, requireUuid('id'), (_req, res) => {
 // inspection fee is money Sawa itself received, not a vehicle's sale price.
 router.get('/revenue', requireAdmin, async (_req, res) => {
   try {
-    const [fees, subscriptions] = await Promise.all([
+    const [fees, subscriptions, unrecordedInspections] = await Promise.all([
       pool.query(
         `SELECT fee_type,
                 TO_CHAR(DATE_TRUNC('month', COALESCE(collected_at, created_at)), 'YYYY-MM') AS month,
@@ -1342,6 +1342,26 @@ router.get('/revenue', requireAdmin, async (_req, res) => {
          WHERE voided_at IS NULL
          GROUP BY month
          ORDER BY month DESC`
+      ),
+      // The reconciliation gap this table can actually detect: a walk-in
+      // whose customer received a completed inspection but whose fee was
+      // never recorded (or was voided and never re-recorded). Nothing else
+      // here is checkable from inside the database alone — a fee this table
+      // has no row for at all leaves no trace by definition, which is why
+      // every other line in the business reassessment starts from "put a
+      // price on it" rather than "detect the missing collection".
+      pool.query(
+        `SELECT i.id, i.vehicle_make, i.vehicle_model, i.vehicle_year, i.completed_at,
+                u.name AS customer_name
+           FROM inspections i
+           LEFT JOIN users u ON u.id = i.customer_user_id
+          WHERE i.kind = 'standalone' AND i.status = 'complete'
+            AND NOT EXISTS (
+              SELECT 1 FROM platform_fees f
+               WHERE f.inspection_id = i.id AND f.fee_type = 'inspection' AND f.status <> 'waived'
+            )
+          ORDER BY i.completed_at DESC
+          LIMIT 100`
       ),
     ]);
 
@@ -1365,6 +1385,9 @@ router.get('/revenue', requireAdmin, async (_req, res) => {
       fees: fees.rows,
       rental_subscriptions: subscriptions.rows,
       totals_by_type: Object.values(byType).sort((a, b) => b.total - a.total),
+      gaps: {
+        standalone_inspections_missing_fee: unrecordedInspections.rows,
+      },
     });
   } catch (err) {
     log.error('admin revenue error', { error: err.message });

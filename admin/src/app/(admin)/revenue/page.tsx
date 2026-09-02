@@ -13,13 +13,20 @@
 // never represented as Sawa revenue") because THAT page shows listing
 // prices. This page shows the other thing — fees Sawa itself received.
 //
-// Sponsored placements and import-order margin have no line here yet: no fee
-// is charged for a placement (the reassessment recommends holding that until
-// there is an audience), and an import order's cost isn't split from its
-// quote (a separate piece of work).
+// Sponsored placements have no line here on purpose: no fee is charged for a
+// placement yet — the reassessment recommends holding that line until there
+// is an audience worth selling. Import-order margin lives on each order's
+// own page (/imports/:id), not here: quote and cost move on different
+// timelines per order, not as a monthly aggregate.
+//
+// "Needs attention" below is the one collection gap this database can
+// actually detect: a completed walk-in inspection with no live fee row. A
+// fee this table has no row for AT ALL leaves no trace by definition — see
+// GET /admin/revenue's own comment on why that's the only checkable gap.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { api } from '@/lib/api'
 import { BarChart, Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney, fmtMoneyShort } from '@/components/ui'
 
@@ -85,6 +92,7 @@ export default function RevenuePage() {
   const allTimeTotal = rwfTypes.reduce((sum, t) => sum + t.total, 0)
   const currentMonthCount = fees.filter((f) => f.month === thisMonth() && f.currency === 'RWF').reduce((n, f) => n + f.count, 0)
     + subs.filter((s) => s.month === thisMonth()).reduce((n, s) => n + s.count, 0)
+  const gaps = data?.gaps?.standalone_inspections_missing_fee || []
 
   return (
     <div>
@@ -111,6 +119,35 @@ export default function RevenuePage() {
           <p className="mt-2 text-caption text-content-muted">Sponsored placement and import margin aren’t priced yet</p>
         </Card>
       </section>
+
+      {gaps.length ? (
+        <section className="mb-7">
+          <div className="mb-3">
+            <h2 className="text-section font-extrabold text-content">Needs attention</h2>
+            <p className="mt-0.5 text-caption text-content-muted">
+              {gaps.length} completed walk-in inspection{gaps.length === 1 ? '' : 's'} with no fee recorded. The customer has their report either way — this is bookkeeping catching up, not a hold on anyone.
+            </p>
+          </div>
+          <Card className="p-2">
+            <ul>
+              {gaps.map((g) => (
+                <li key={g.id} className="border-b border-line-soft last:border-0">
+                  <Link
+                    href={`/inspections/${g.id}`}
+                    className="flex items-center justify-between gap-3 p-3 hover:bg-surface-alt"
+                  >
+                    <div>
+                      <p className="font-bold text-content">{[g.vehicle_year, g.vehicle_make, g.vehicle_model].filter(Boolean).join(' ') || 'Walk-in inspection'}</p>
+                      <p className="text-caption text-content-muted">{g.customer_name || 'No customer name'} · completed {new Date(g.completed_at).toLocaleDateString()}</p>
+                    </div>
+                    <span className="whitespace-nowrap rounded-lg bg-warning-tint px-3 py-1.5 text-caption font-bold text-warning-text">Record fee →</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ) : null}
 
       <section className="mb-7">
         <div className="mb-3">

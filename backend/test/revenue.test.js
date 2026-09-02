@@ -154,6 +154,49 @@ test('a rental subscription is its own line, separate from platform_fees, and a 
   assert.equal(afterVoid.rentalSub?.total || 0, beforeTotal, 'a voided subscription must not count as revenue');
 });
 
+test('a completed walk-in with no recorded fee shows up as a reconciliation gap, and clears once recorded', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const day = nextDay();
+  await pool.query(
+    "DELETE FROM inspections i WHERE lower(i.center)='nyarutarama center' AND i.scheduled_on=$1::date"
+    + " AND NOT EXISTS (SELECT 1 FROM rental_cars rc WHERE rc.inspection_id = i.id)", [day]
+  );
+  const booked = await api().post('/inspections/standalone').set(auth).send({
+    make: 'Toyota', model: 'Hilux', year: 2016,
+    center: 'Nyarutarama Center', scheduled_date: day, scheduled_time: '10:00 AM',
+    customer: { name: 'Gap Customer', email: unique('gap') },
+  }).expect(201);
+
+  // Still scheduled — not a gap. Completion is the trigger, not booking.
+  const beforeComplete = await revenueSnapshot(auth);
+  assert.equal(
+    beforeComplete.body.gaps.standalone_inspections_missing_fee.some((r) => r.id === booked.body.id),
+    false,
+    'an inspection that has not been completed yet must not read as an unrecorded fee'
+  );
+
+  await api().post(`/inspections/${booked.body.id}/start`).set(auth).expect(200);
+  await api().post(`/inspections/${booked.body.id}/complete`).set(auth)
+    .send({ checklist_results: checklist() }).expect(200);
+
+  const withGap = await revenueSnapshot(auth);
+  assert.ok(
+    withGap.body.gaps.standalone_inspections_missing_fee.some((r) => r.id === booked.body.id),
+    'a completed walk-in with no fee row must be flagged'
+  );
+
+  await api().post(`/inspections/${booked.body.id}/fee`).set(auth)
+    .send({ amount: 8000, method: 'cash' }).expect(201);
+
+  const afterRecorded = await revenueSnapshot(auth);
+  assert.equal(
+    afterRecorded.body.gaps.standalone_inspections_missing_fee.some((r) => r.id === booked.body.id),
+    false,
+    'recording the fee must clear the gap'
+  );
+});
+
 test('the revenue view is admin-only', async () => {
   const outsider = await register();
   await api().get('/admin/revenue')

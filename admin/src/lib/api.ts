@@ -401,6 +401,11 @@ export const api = {
     fees: { fee_type: string; month: string; currency: string; total: number; count: number }[]
     rental_subscriptions: { month: string; total: number; count: number }[]
     totals_by_type: { type: string; currency: string; total: number; count: number }[]
+    gaps: {
+      // Completed walk-ins with no live inspection fee — the one collection
+      // gap this table can actually detect. See GET /admin/revenue.
+      standalone_inspections_missing_fee: { id: string; vehicle_make: string | null; vehicle_model: string | null; vehicle_year: number | null; completed_at: string; customer_name: string | null }[]
+    }
   }>('/admin/revenue'),
   actionCenter: () => request<ActionCenterResponse>('/admin/action-center'),
   search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
