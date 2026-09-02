@@ -16,6 +16,16 @@ const input = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:
 const label = 'mb-1 block text-xs font-semibold text-gray-700'
 const number = (value: string) => value === '' ? undefined : Number.parseInt(value, 10)
 
+// 'pending_review' reads as an underscored fragment under a plain `capitalize`
+// class — this is the one status a provider can put a car into themselves
+// (POST /rentals/propose), and it is the one that most needs an operator's
+// attention, so it gets its own label and its own colour rather than sharing
+// the neutral grey the admin-created statuses use.
+const STATUS_LABEL: Record<string, string> = {
+  all: 'all', active: 'Active', maintenance: 'Maintenance', retired: 'Retired',
+  pending_review: 'Pending review',
+}
+
 export default function RentalFleetPage() {
   const [cars, setCars] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -161,8 +171,8 @@ export default function RentalFleetPage() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1">{['all', 'active', 'maintenance', 'retired'].map((status) => (
-          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${filter === status ? 'bg-brand text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{status}</button>
+        <div className="flex flex-wrap gap-1">{['all', 'pending_review', 'active', 'maintenance', 'retired'].map((status) => (
+          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-brand text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
         ))}</div>
         <button onClick={() => begin()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Add provider vehicle</button>
       </div>
@@ -172,7 +182,7 @@ export default function RentalFleetPage() {
           <article key={car.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
             {car.images?.[0] ? <img src={car.images[0]} alt="" className="h-40 w-full bg-gray-100 object-contain" /> : <div className="flex h-40 items-center justify-center bg-gray-100 text-sm text-gray-400">No image</div>}
             <div className="p-4">
-              <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-gray-900">{car.title}</h2><p className="mt-1 text-xs text-gray-500">{car.provider_business_name || car.provider_name || 'Provider not assigned'}</p></div><span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold capitalize text-gray-600">{car.status}</span></div>
+              <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-gray-900">{car.title}</h2><p className="mt-1 text-xs text-gray-500">{car.provider_business_name || car.provider_name || 'Provider not assigned'}</p></div><span className={`rounded-full px-2 py-1 text-xs font-semibold ${car.status === 'pending_review' ? 'bg-warning-tint text-warning-text' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[car.status] || car.status}</span></div>
               <p className="mt-4 text-lg font-extrabold text-gray-900">{fmtMoney(car.daily_rate, car.currency || 'RWF')} <span className="text-xs font-medium text-gray-500">provider rate / day</span></p>
               <p className="mt-2 text-xs text-gray-500">Rates and availability are confirmed directly by the provider.</p>
 
@@ -200,6 +210,17 @@ export default function RentalFleetPage() {
                   is the most reassuring possible way to show a problem. The
                   server derives `publishable` so there is one definition of
                   "one click from live". */}
+              {car.status === 'pending_review' ? (
+                <div className="mt-2 rounded-lg border border-line bg-info-tint px-3 py-2.5">
+                  <p className="text-xs font-bold text-info">Provider-proposed — awaiting your review</p>
+                  <p className="mt-0.5 text-[11px] text-info">
+                    {car.provider_business_name || car.provider_name || 'The provider'} proposed this vehicle from
+                    their own passing inspection. Check the inspection and images, record a listing subscription
+                    below, then set the inventory status to Active to publish it.
+                  </p>
+                </div>
+              ) : null}
+
               {car.publishable ? (
                 <div className="mt-2 rounded-lg border border-warning-border bg-warning-tint px-3 py-2.5">
                   <p className="text-xs font-bold text-warning-text">Paid, but not on the public feed</p>
@@ -269,7 +290,7 @@ export default function RentalFleetPage() {
             <div><label className={label}>Minimum days</label><input type="number" min="1" value={form.min_days} onChange={(e) => setForm({ ...form, min_days: e.target.value })} className={input} /></div>
             <div className="sm:col-span-2"><label className={label}>Location</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={input} /></div>
             <div className="sm:col-span-2"><label className={label}>Image URLs, one per line</label><textarea rows={4} value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className={input} required /><p className="mt-1 text-xs text-gray-500">At least one HTTPS image is required while the vehicle is active; up to 40 are supported.</p></div>
-            {editing.id && <div className="sm:col-span-2"><label className={label}>Inventory status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={input}><option value="active">Active</option><option value="maintenance">Maintenance</option><option value="retired">Retired</option></select></div>}
+            {editing.id && <div className="sm:col-span-2"><label className={label}>Inventory status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={input}><option value="pending_review">Pending review</option><option value="active">Active</option><option value="maintenance">Maintenance</option><option value="retired">Retired</option></select></div>}
           </div>
           <div className="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-4"><button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600">Cancel</button><button disabled={saving} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save vehicle'}</button></div>
         </form>
