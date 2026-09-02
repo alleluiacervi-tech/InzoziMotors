@@ -142,6 +142,31 @@ export const fx = {
   },
 }
 
+export type RateCard = {
+  inspection_fee_rwf: number
+  report_resale_fee_rwf: number
+  rental_subscription_monthly_rwf: number
+  reviewed_on?: string
+}
+
+export const rateCard = {
+  /**
+   * What Sawa charges for a walk-in inspection, a resold report and a rental
+   * listing subscription. Cached for ten minutes, matching the backend's own
+   * cache header — a correction should reach the public page the same day.
+   *
+   * Returns null rather than throwing, so the pricing page can say "prices
+   * are being updated" instead of failing to render.
+   */
+  get: async (): Promise<RateCard | null> => {
+    try {
+      return await request<RateCard>('/settings/rate-card', { revalidate: 600, cache: undefined, timeoutMs: 4000 })
+    } catch {
+      return null
+    }
+  },
+}
+
 export const duty = {
   /**
    * The import duty schedule the calculator runs on. Cached for an hour by

@@ -43,6 +43,13 @@ const TOOLS: { href: string; icon: IconName; titleKey: string; bodyKey: string; 
     bodyKey: 'tools.hub.financeBody',
     metaKey: 'tools.hub.financeMeta',
   },
+  {
+    href: '/tools/pricing',
+    icon: 'document',
+    titleKey: 'tools.hub.pricingTitle',
+    bodyKey: 'tools.hub.pricingBody',
+    metaKey: 'tools.hub.pricingMeta',
+  },
 ]
 
 export default async function ToolsPage() {

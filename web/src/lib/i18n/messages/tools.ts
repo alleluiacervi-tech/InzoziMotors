@@ -32,6 +32,10 @@ const en = {
     financeTitle: 'Finance calculator',
     financeBody:
       'A monthly repayment from a car price, or the car price your monthly budget supports. Deposit, term and total interest included.',
+    pricingMeta: 'What we charge',
+    pricingTitle: 'Pricing',
+    pricingBody:
+      'What Sawa Cars actually charges: a walk-in inspection, a resold report, a rental listing subscription. Browsing and messaging sellers stays free.',
   },
 
   financePage: {
@@ -254,6 +258,31 @@ const en = {
     submissionHint: 'Submission starts with a one-time ID check, which happens in the app.',
     orWhatsApp: 'Or message us on WhatsApp',
   },
+
+  pricingPage: {
+    metaTitle: 'Sawa Cars pricing — inspection, report and rental listing fees',
+    metaDescription:
+      'What Sawa Cars charges for a walk-in vehicle inspection, a resold inspection report, and a rental listing subscription. Browsing, buying, selling and messaging sellers stays free.',
+    ogTitle: 'Sawa Cars pricing',
+    heroEyebrow: 'Pricing',
+    heroTitle: 'What we actually charge for',
+    heroLede:
+      'Browsing, buying, selling and contacting a verified seller are free. These are the paid services: an independent inspection, a copy of an existing report, and keeping a rental car visible.',
+    inspectionTitle: 'Walk-in inspection',
+    inspectionBody:
+      'Bring any car — one you are about to buy from someone else, not just a Sawa listing — to a center for the full 150-point inspection. Paid at the office; the report is yours either way.',
+    reportTitle: 'Report resale',
+    reportBody:
+      'A car has already been inspected and you want the same report — as a second buyer, or the seller wanting their own copy. Pay once for read access instead of a fresh inspection.',
+    rentalTitle: 'Rental listing subscription',
+    rentalBody:
+      'Per vehicle, per month, for a verified rental provider to keep a car visible in the rental fleet. Renters never pay to browse or inquire.',
+    reviewedNote: 'Prices last reviewed {{date}}.',
+    disclaimer:
+      'These are fees for Sawa Cars’ own inspection and listing services, paid or recorded at our office — never a marketplace transaction fee. Sawa Cars is not a party to any sale or rental; buyers, sellers and renters agree their own price, payment and terms directly.',
+    bookInspection: 'Book a walk-in inspection',
+    browseCars: 'Browse inspected cars',
+  },
 } as const
 
 const rw = {
@@ -280,6 +309,10 @@ const rw = {
     financeTitle: 'Ikibaruzo cy’inguzanyo',
     financeBody:
       'Ikiguzi cya buri kwezi gishingiye ku giciro cy’imodoka, cyangwa igiciro cy’imodoka ingengo yawe ya buri kwezi yakwiyemeza. Harimo ingwate, igihe n’inyungu yose.',
+    pricingMeta: 'Ibyo dusaba',
+    pricingTitle: 'Ibiciro',
+    pricingBody:
+      'Ibyo Sawa Cars isaba by’ukuri: isuzuma ku kigo, kopi ya raporo, ubwishyu bwo kwerekana imodoka ikodeshwa. Gushakisha no kuvugana n’abagurisha ni ubuntu.',
   },
 
   financePage: {
@@ -502,6 +535,31 @@ const rw = {
     submissionHint: 'Gutanga bitangirana n’igenzura ry’indangamuntu rimwe gusa, ribera muri porogaramu.',
     orWhatsApp: 'Cyangwa utwandikire kuri WhatsApp',
   },
+
+  pricingPage: {
+    metaTitle: 'Ibiciro bya Sawa Cars — isuzuma, raporo n’ikodeshwa',
+    metaDescription:
+      'Ibyo Sawa Cars isaba ku isuzuma ry’imodoka ku ikigo, kopi ya raporo isanzweho, n’ubwishyu bwo gukomeza kwerekana imodoka ikodeshwa. Gushakisha, kugura, kugurisha no kuvugana n’umugurisha wemejwe ni ubuntu.',
+    ogTitle: 'Ibiciro bya Sawa Cars',
+    heroEyebrow: 'Ibiciro',
+    heroTitle: 'Ibyo dusaba by’ukuri',
+    heroLede:
+      'Gushakisha, kugura, kugurisha no kuvugana n’umugurisha wemejwe ni ubuntu. Ibi ni serivisi zishyurwa: isuzuma ryigenga, kopi ya raporo isanzweho, no gukomeza kwerekana imodoka ikodeshwa.',
+    inspectionTitle: 'Isuzuma ku kigo',
+    inspectionBody:
+      'Zana imodoka iyo ari yo yose — harimo n’iyo ugiye kugura ku wundi muntu, atari gusa iri ku rutonde rwa Sawa — ku kigo kugira ngo isuzumwe ku ngingo 150. Byishyurwa ku kigo; raporo iraguhabwa uko byagenda kose.',
+    reportTitle: 'Kopi ya raporo',
+    reportBody:
+      'Imodoka yamaze gusuzumwa kandi ushaka raporo imwe — nk’umuguzi wa kabiri, cyangwa umugurisha ushaka kopi ye bwite. Ishyura rimwe kugira ngo ubone raporo aho kongera gusuzumwa.',
+    rentalTitle: 'Ubwishyu bwo kwerekana imodoka ikodeshwa',
+    rentalBody:
+      'Ku modoka imwe, buri kwezi, kugira ngo uwatanga imodoka wemejwe akomeze kuyerekana mu modoka zikodeshwa. Abakodesha ntibishyura gushakisha cyangwa gusaba.',
+    reviewedNote: 'Ibiciro byasuzumwe bwa nyuma {{date}}.',
+    disclaimer:
+      'Aya ni amafaranga ya serivisi za Sawa Cars ubwazo z’isuzuma n’ikodeshwa, yishyurwa cyangwa yanditswe ku kigo cyacu — ntabwo ari amafaranga y’ubucuruzi bwo ku isoko. Sawa Cars ntabwo ari uruhande mu igurisha cyangwa ikodeshwa; abaguzi, abagurisha n’abakodesha bumvikana bwite ku giciro, kwishyura n’amabwiriza.',
+    bookInspection: 'Saba isuzuma ku kigo',
+    browseCars: 'Reba imodoka zasuzumwe',
+  },
 } as const
 
 const fr = {
@@ -528,6 +586,10 @@ const fr = {
     financeTitle: 'Calculateur de financement',
     financeBody:
       'Une mensualité à partir d’un prix de voiture, ou le prix que votre budget mensuel permet. Apport, durée et intérêts totaux inclus.',
+    pricingMeta: 'Ce que nous facturons',
+    pricingTitle: 'Tarifs',
+    pricingBody:
+      'Ce que Sawa Cars facture réellement : une inspection sur place, un rapport revendu, un abonnement d’annonce de location. Parcourir et contacter les vendeurs reste gratuit.',
   },
 
   financePage: {
@@ -750,6 +812,31 @@ const fr = {
     submissionHint: 'La soumission commence par une vérification d’identité unique, qui se fait dans l’application.',
     orWhatsApp: 'Ou écrivez-nous sur WhatsApp',
   },
+
+  pricingPage: {
+    metaTitle: 'Tarifs Sawa Cars — inspection, rapport et abonnement de location',
+    metaDescription:
+      'Ce que Sawa Cars facture pour une inspection sur place, la revente d’un rapport existant et un abonnement d’annonce de location. Parcourir, acheter, vendre et contacter un vendeur reste gratuit.',
+    ogTitle: 'Tarifs Sawa Cars',
+    heroEyebrow: 'Tarifs',
+    heroTitle: 'Ce que nous facturons réellement',
+    heroLede:
+      'Parcourir, acheter, vendre et contacter un vendeur vérifié est gratuit. Voici les services payants : une inspection indépendante, une copie d’un rapport existant, et le maintien de la visibilité d’une voiture de location.',
+    inspectionTitle: 'Inspection sur place',
+    inspectionBody:
+      'Amenez n’importe quel véhicule — y compris un que vous êtes sur le point d’acheter à un particulier, pas seulement une annonce Sawa — dans un centre pour l’inspection complète en 150 points. Payée sur place ; le rapport vous revient dans tous les cas.',
+    reportTitle: 'Revente du rapport',
+    reportBody:
+      'Un véhicule a déjà été inspecté et vous voulez le même rapport — en tant que second acheteur, ou vendeur souhaitant sa propre copie. Payez une fois pour y accéder plutôt que de payer une nouvelle inspection.',
+    rentalTitle: 'Abonnement d’annonce de location',
+    rentalBody:
+      'Par véhicule, par mois, pour qu’un loueur vérifié garde une voiture visible dans le parc de location. Les locataires ne paient jamais pour parcourir ou envoyer une demande.',
+    reviewedNote: 'Tarifs revus pour la dernière fois le {{date}}.',
+    disclaimer:
+      'Ce sont des frais pour les propres services d’inspection et d’annonce de Sawa Cars, payés ou enregistrés à notre bureau — jamais des frais de transaction sur le marché. Sawa Cars n’est partie à aucune vente ni location ; acheteurs, vendeurs et locataires conviennent eux-mêmes du prix, du paiement et des conditions.',
+    bookInspection: 'Réserver une inspection sur place',
+    browseCars: 'Parcourir les voitures inspectées',
+  },
 } as const
 
 const sw = {
@@ -776,6 +863,10 @@ const sw = {
     financeTitle: 'Kikokotoo cha ufadhili',
     financeBody:
       'Malipo ya kila mwezi kutoka bei ya gari, au bei ya gari ambayo bajeti yako ya kila mwezi inaweza kumudu. Kianzio, muda na riba yote imejumuishwa.',
+    pricingMeta: 'Tunachotoza',
+    pricingTitle: 'Bei',
+    pricingBody:
+      'Sawa Cars inatoza nini kwa uhalisia: ukaguzi kituoni, ripoti iliyouzwa tena, usajili wa tangazo la kukodisha. Kutafuta na kuwasiliana na wauzaji ni bure.',
   },
 
   financePage: {
@@ -998,6 +1089,31 @@ const sw = {
     submissionHint: 'Uwasilishaji huanza na uthibitisho wa utambulisho wa mara moja, unaofanyika ndani ya programu.',
     orWhatsApp: 'Au tuandikie kwa WhatsApp',
   },
+
+  pricingPage: {
+    metaTitle: 'Bei za Sawa Cars — ukaguzi, ripoti na usajili wa kukodisha',
+    metaDescription:
+      'Sawa Cars inatoza nini kwa ukaguzi wa gari kituoni, nakala ya ripoti iliyopo, na usajili wa tangazo la kukodisha. Kutafuta, kununua, kuuza na kuwasiliana na muuzaji aliyethibitishwa ni bure.',
+    ogTitle: 'Bei za Sawa Cars',
+    heroEyebrow: 'Bei',
+    heroTitle: 'Tunachotoza kwa uhalisia',
+    heroLede:
+      'Kutafuta, kununua, kuuza na kuwasiliana na muuzaji aliyethibitishwa ni bure. Hizi ni huduma zinazolipiwa: ukaguzi huru, nakala ya ripoti iliyopo, na kuendelea kuonyesha gari la kukodisha.',
+    inspectionTitle: 'Ukaguzi kituoni',
+    inspectionBody:
+      'Leta gari lolote — ikiwa ni pamoja na lile unalokaribia kununua kutoka kwa mtu mwingine, si tu tangazo la Sawa — kituoni kwa ajili ya ukaguzi kamili wa pointi 150. Inalipwa kituoni; ripoti ni yako kwa hali yoyote.',
+    reportTitle: 'Uuzaji wa ripoti',
+    reportBody:
+      'Gari tayari limekaguliwa na unataka ripoti hiyo hiyo — kama mnunuzi wa pili, au muuzaji anayetaka nakala yake mwenyewe. Lipa mara moja badala ya ukaguzi mpya.',
+    rentalTitle: 'Usajili wa tangazo la kukodisha',
+    rentalBody:
+      'Kwa gari moja, kwa mwezi, ili mtoa huduma wa kukodisha aliyethibitishwa aendelee kuonyesha gari kwenye orodha ya kukodisha. Wakodishaji hawalipi kutafuta au kuuliza.',
+    reviewedNote: 'Bei zilipitiwa mara ya mwisho {{date}}.',
+    disclaimer:
+      'Haya ni malipo kwa huduma za Sawa Cars mwenyewe za ukaguzi na tangazo, yanayolipwa au kuandikwa kituoni kwetu — si ada ya muamala wa sokoni. Sawa Cars si upande katika mauzo au ukodishaji wowote; wanunuzi, wauzaji na wakodishaji hukubaliana wenyewe bei, malipo na masharti.',
+    bookInspection: 'Panga ukaguzi kituoni',
+    browseCars: 'Tazama magari yaliyokaguliwa',
+  },
 } as const
 
 const ko = {
@@ -1024,6 +1140,10 @@ const ko = {
     financeTitle: '금융 계산기',
     financeBody:
       '차량 가격으로부터의 월 상환액, 또는 월 예산으로 감당할 수 있는 차량 가격입니다. 계약금, 기간, 총이자가 포함됩니다.',
+    pricingMeta: '요금 안내',
+    pricingTitle: '요금',
+    pricingBody:
+      'Sawa Cars가 실제로 부과하는 요금입니다: 워크인 검사, 보고서 재구매, 렌트 등록 구독. 둘러보기와 판매자 연락은 무료입니다.',
   },
 
   financePage: {
@@ -1245,6 +1365,31 @@ const ko = {
     submitBtn: '이 차량 점검 신청하기',
     submissionHint: '신청은 앱에서 이루어지는 일회성 신원 확인으로 시작됩니다.',
     orWhatsApp: '아니면 WhatsApp으로 문의하세요',
+  },
+
+  pricingPage: {
+    metaTitle: 'Sawa Cars 요금 안내 — 검사, 보고서, 렌트 등록',
+    metaDescription:
+      'Sawa Cars가 워크인 차량 검사, 기존 검사 보고서 재구매, 렌트 등록 구독에 부과하는 요금입니다. 둘러보기, 구매, 판매, 판매자에게 연락하는 것은 무료입니다.',
+    ogTitle: 'Sawa Cars 요금 안내',
+    heroEyebrow: '요금',
+    heroTitle: '실제로 부과하는 요금',
+    heroLede:
+      '둘러보기, 구매, 판매, 인증된 판매자에게 연락하는 것은 무료입니다. 아래는 유료 서비스입니다: 독립적인 검사, 기존 보고서 사본, 렌트 차량의 노출 유지.',
+    inspectionTitle: '워크인 검사',
+    inspectionBody:
+      'Sawa 매물뿐 아니라 다른 사람에게서 구매하려는 차량도 포함해, 어떤 차량이든 센터로 가져와 150개 항목 전체 검사를 받으세요. 요금은 현장에서 지불하며, 결과와 상관없이 보고서는 당신 것입니다.',
+    reportTitle: '보고서 재구매',
+    reportBody:
+      '이미 검사받은 차량의 동일한 보고서를 원할 때 — 두 번째 구매자로서, 또는 자신의 사본을 원하는 판매자로서. 새로 검사받는 대신 한 번만 지불하고 열람 권한을 얻습니다.',
+    rentalTitle: '렌트 등록 구독',
+    rentalBody:
+      '인증된 렌트 제공자가 차량을 렌트 목록에 계속 노출하기 위해 차량당 월 단위로 지불합니다. 렌트 이용자는 둘러보거나 문의하는 데 비용을 지불하지 않습니다.',
+    reviewedNote: '요금은 {{date}}에 마지막으로 검토되었습니다.',
+    disclaimer:
+      '이는 Sawa Cars 자체의 검사 및 등록 서비스에 대한 요금으로, 저희 사무실에서 지불되거나 기록됩니다 — 마켓플레이스 거래 수수료가 아닙니다. Sawa Cars는 어떤 판매나 렌트 계약의 당사자도 아니며, 구매자·판매자·렌트 이용자가 가격, 결제, 조건을 직접 합의합니다.',
+    bookInspection: '워크인 검사 예약',
+    browseCars: '검사된 차량 둘러보기',
   },
 } as const
 
