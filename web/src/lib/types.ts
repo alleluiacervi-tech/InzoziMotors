@@ -194,13 +194,30 @@ export interface RentalCar {
   location?: string | null
   images?: string[] | null
   safari_ready: boolean
-  status: 'active' | 'maintenance' | 'retired'
+  status: 'active' | 'maintenance' | 'retired' | 'pending_review'
+  /** Provider-set, informational only — no public read filters on it. */
+  unavailable_until?: string | null
   booked_ranges?: { start_date: string; days: number }[]
   provider_name?: string | null
   provider_business_name?: string | null
   provider_contact_available?: { phone: boolean; whatsapp: boolean; in_app: boolean }
   direct_deal_notice?: string
   marketplace_terms_version?: string
+  /** Present on GET /rentals/mine and the admin fleet view only. */
+  subscription_status?: 'none' | 'lapsed' | 'lapsing' | 'active'
+  subscription_ends_on?: string | null
+  subscription_amount_rwf?: number | null
+}
+
+/** One of the caller's own inspections eligible to back a new rental proposal. */
+export interface EligibleRentalInspection {
+  id: string
+  score: number
+  completed_at: string
+  make: string
+  model: string
+  year: number
+  purpose: 'sale' | 'rental' | 'both'
 }
 
 export interface RentalInquiry {
@@ -220,6 +237,10 @@ export interface RentalInquiry {
   car_images?: string[] | null
   provider_name?: string | null
   provider_business_name?: string | null
+  /** Present only on GET /rentals/inquiries (the provider/admin inbox). */
+  renter_name?: string | null
+  renter_phone?: string | null
+  renter_whatsapp?: string | null
 }
 
 export type SubmissionStatus =
