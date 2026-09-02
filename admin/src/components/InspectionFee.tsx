@@ -15,7 +15,7 @@
 // worth keeping.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, fmtMoney, parseRwfInput, formatRwfInput } from '@/components/ui'
 import { useToast, useConfirm } from '@/components/feedback'
@@ -39,6 +39,16 @@ export function InspectionFee({ inspectionId, fee, onChange }: {
   const [busy, setBusy] = useState(false)
   const [voiding, setVoiding] = useState(false)
   const [voidReason, setVoidReason] = useState('')
+
+  // Prefill from the rate card so the common case is "confirm and record",
+  // not "remember the number from memory" — still a plain text field, so a
+  // one-off different amount is one edit away.
+  useEffect(() => {
+    if (fee) return
+    api.rateCard().then((rates) => {
+      setAmount((current) => current || formatRwfInput(String(rates.inspection_fee_rwf)))
+    }).catch(() => {})
+  }, [fee])
 
   async function record(event: React.FormEvent) {
     event.preventDefault()

@@ -31,6 +31,10 @@ export default function RentalFleetPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [renewAmount, setRenewAmount] = useState<Record<string, string>>({})
+  // Prefilled from the rate card so "Pay 30 days" defaults to the current
+  // published price rather than whatever an operator remembers charging last
+  // time — still a plain field, one edit away from a one-off different amount.
+  const [defaultSubAmount, setDefaultSubAmount] = useState('')
   const [renewing, setRenewing] = useState<string | null>(null)
   const [publishing, setPublishing] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -56,6 +60,9 @@ export default function RentalFleetPage() {
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
+  useEffect(() => {
+    api.rateCard().then((rates) => setDefaultSubAmount(formatRwfInput(String(rates.rental_subscription_monthly_rwf)))).catch(() => {})
+  }, [])
 
   // The eligible set used to be filtered out silently, so a seller who was
   // simply missing a flag looked exactly like a typo: no results, no reason. A
@@ -146,7 +153,7 @@ export default function RentalFleetPage() {
   }
 
   async function renew(car: any) {
-    const amount = parseRwfInput(renewAmount[car.id] || '')
+    const amount = parseRwfInput(renewAmount[car.id] ?? defaultSubAmount)
     if (!amount) { toast('Enter the amount collected, in Rwandan francs.', 'error'); return }
     const today = new Date()
     const ends = new Date(today.getTime() + 30 * 86_400_000)
@@ -240,7 +247,7 @@ export default function RentalFleetPage() {
                 <div className="mt-2 flex gap-2">
                   <input
                     inputMode="numeric" placeholder="Amount (RWF)"
-                    value={renewAmount[car.id] || ''}
+                    value={renewAmount[car.id] ?? defaultSubAmount}
                     onChange={(e) => setRenewAmount({ ...renewAmount, [car.id]: formatRwfInput(e.target.value) })}
                     className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 px-3 text-sm tabular-nums focus:border-brand focus:outline-none"
                   />

@@ -20,6 +20,11 @@ const {
   invalidateAppRelease,
 } = require('../lib/app-release');
 const {
+  SETTING_KEY: SERVICE_RATES_KEY,
+  validateRates: validateServiceRates,
+  invalidateServiceRates,
+} = require('../lib/service-rates');
+const {
   slugify, loadMakes, invalidateMakes,
 } = require('../lib/vehicle-makes');
 const { uploadBrandLogo, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
@@ -1170,6 +1175,9 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // Same shape, and the same reason: a form of two version numbers per
     // platform cannot be corrected from "Invalid value for app_release".
     [APP_RELEASE_KEY]: (value) => validateAppRelease(value).length === 0,
+    // Three flat RWF amounts — still names which one is wrong rather than a
+    // generic "invalid value" for a form with three fields.
+    [SERVICE_RATES_KEY]: (value) => validateServiceRates(value).length === 0,
   };
   if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
   if (!validators[key](req.body.value)) {
@@ -1180,6 +1188,10 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     if (key === APP_RELEASE_KEY) {
       const problems = validateAppRelease(req.body.value);
       return res.status(400).json({ error: problems[0], code: 'INVALID_APP_RELEASE', problems });
+    }
+    if (key === SERVICE_RATES_KEY) {
+      const problems = validateServiceRates(req.body.value);
+      return res.status(400).json({ error: problems[0], code: 'INVALID_SERVICE_RATES', problems });
     }
     return res.status(400).json({ error: `Invalid value for ${key}` });
   }
@@ -1217,6 +1229,7 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // cache TTL, and the operator reasonably concludes their edit did not save.
     if (key === DUTY_RATES_KEY) invalidateDutyRates();
     if (key === APP_RELEASE_KEY) invalidateAppRelease();
+    if (key === SERVICE_RATES_KEY) invalidateServiceRates();
     res.json(result);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });

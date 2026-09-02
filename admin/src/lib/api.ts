@@ -827,6 +827,10 @@ export const api = {
     request<any>(`/admin/settings/${encodeURIComponent(key)}`, {
       method: 'PATCH', body: JSON.stringify({ value }),
     }),
+  // The public rate card — same numbers a customer would see, so a
+  // fee-recording form can prefill what the office should be charging
+  // without duplicating the whole settings read.
+  rateCard: () => request<{ inspection_fee_rwf: number; report_resale_fee_rwf: number; rental_subscription_monthly_rwf: number; reviewed_on?: string }>('/settings/rate-card'),
 
   // ── Reported messages ──────────────────────────────────────────────────────
   reports: (status: 'open' | 'resolved' | 'dismissed' | 'all' = 'open') =>
