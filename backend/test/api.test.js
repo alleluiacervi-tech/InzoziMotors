@@ -471,11 +471,15 @@ test('inspection requires the exact 150 checks, a recorded start, and never auto
     .send({ make: 'Toyota', model: 'Corolla', year: 2019, mileage: 50000, asking_price: 14000 })
     .expect(201);
 
+  // A future date computed at run time, not a fixed string — a hardcoded
+  // date here previously went stale and turned this test into a flake once
+  // the calendar caught up to it.
+  const scheduledDate = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
   await api().patch(`/submissions/${submission.body.id}`)
     .set('Authorization', `Bearer ${admin}`)
     .send({
       status: 'scheduled', center: 'Kicukiro Center',
-      scheduled_date: '2026-09-01', scheduled_time: '10:00 AM',
+      scheduled_date: scheduledDate, scheduled_time: '10:00 AM',
     })
     .expect(200);
 
