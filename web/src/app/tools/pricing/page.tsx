@@ -72,7 +72,11 @@ export default async function PricingPage() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button href="/sell" size="lg" trailingIcon={<Icon name="arrow-right" size={18} />}>
+            {/* A walk-in inspection is booked at the office today — there is no
+                self-serve web form for it yet, so this sends people to the
+                channel that actually books one rather than to /sell, which is
+                the different flow for listing your own car with Sawa. */}
+            <Button href="/contact" size="lg" trailingIcon={<Icon name="arrow-right" size={18} />}>
               {t('tools.pricingPage.bookInspection')}
             </Button>
             <Button href="/cars" variant="outline" size="lg">
