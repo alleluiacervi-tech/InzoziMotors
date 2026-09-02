@@ -641,14 +641,18 @@ CREATE TABLE IF NOT EXISTS rental_cars (
   images           TEXT[],
   safari_ready     BOOLEAN NOT NULL DEFAULT FALSE,  -- 4x4 fit for park trips
   -- rentals.js validated this set on write; migration 0025 finally constrains it.
+  -- 'pending_review' (0037): a provider-proposed row, exactly as invisible to
+  -- public reads as 'maintenance' — only requireAdmin routes move it further.
   status           TEXT NOT NULL DEFAULT 'active'
-                     CHECK (status IN ('active', 'maintenance', 'retired')),
+                     CHECK (status IN ('active', 'maintenance', 'retired', 'pending_review')),
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS safari_ready BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS provider_id UUID REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retired_at TIMESTAMPTZ;
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS retirement_reason TEXT;
+-- Provider-set, informational only (0037) — no public read filters on it.
+ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS unavailable_until DATE;
 -- Partial on retired_at (migration 0030): one inspection may back a sale
 -- listing and a rental car at once — the evidence says the vehicle passed, which
 -- is true either way — and retiring a rental frees its evidence for a

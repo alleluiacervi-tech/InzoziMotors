@@ -411,6 +411,207 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Provider self-serve — a verified rental provider managing their OWN fleet,
+// without waiting on an admin for every rate change or new vehicle.
+//
+// Publication itself stays admin-only: POST /propose can only ever produce a
+// 'pending_review' row (see migration 0037), exactly as invisible to the three
+// public predicates as 'maintenance' already is, and only PATCH /:id
+// (requireAdmin, below) can move it further. Nothing here can put a car in
+// front of a renter without an admin having acted on it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /rentals/mine — the caller's own fleet, in the same enriched shape as
+// the admin fleet view (subscription status included, unfiltered by status —
+// an owner needs to see a lapsed or pending car, not just the live ones).
+router.get('/mine', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT rc.*, ${PROVIDER_COLUMNS},
+              sub.ends_on AS subscription_ends_on,
+              sub.amount_rwf AS subscription_amount_rwf,
+              CASE
+                WHEN sub.id IS NULL THEN 'none'
+                WHEN sub.ends_on < CURRENT_DATE THEN 'lapsed'
+                WHEN sub.ends_on <= CURRENT_DATE + 7 THEN 'lapsing'
+                ELSE 'active'
+              END AS subscription_status
+       FROM rental_cars rc
+       LEFT JOIN users u ON u.id = rc.provider_id
+       LEFT JOIN LATERAL (
+         SELECT * FROM rental_subscriptions s
+          WHERE s.rental_car_id = rc.id AND s.voided_at IS NULL
+          ORDER BY s.ends_on DESC LIMIT 1
+       ) sub ON TRUE
+       WHERE rc.provider_id = $1
+       ORDER BY rc.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(rows.map((row) => ({
+      ...publicRental(row, true),
+      subscription_status: row.subscription_status,
+      subscription_ends_on: row.subscription_ends_on,
+      subscription_amount_rwf: row.subscription_amount_rwf,
+    })));
+  } catch (err) {
+    log.error('rentals mine error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /rentals/mine/eligible-inspections — the caller's own inspections that
+// could back a NEW rental car: complete, passing, and not already claimed by a
+// live (non-retired) rental_cars row. Mirrors VALID_RENTAL_INSPECTION's
+// conditions for the picker; inspectionEvidenceForProvider is the authority
+// that actually decides it, re-checked in POST /propose.
+router.get('/mine/eligible-inspections', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.id, i.score, i.completed_at, s.make, s.model, s.year, s.purpose
+         FROM inspections i
+         JOIN submissions s ON s.id = i.submission_id
+        WHERE s.seller_id = $1
+          AND i.status = 'complete'
+          AND i.checklist_version = $2
+          AND i.passed = TRUE
+          AND i.score >= $3
+          AND jsonb_array_length(COALESCE(i.critical_failures, '[]'::jsonb)) = 0
+          AND NOT EXISTS (
+            SELECT 1 FROM rental_cars rc
+             WHERE rc.inspection_id = i.id AND rc.retired_at IS NULL
+          )
+        ORDER BY i.completed_at DESC
+        LIMIT 50`,
+      [req.user.id, CHECKLIST_VERSION, PUBLISH_THRESHOLD]
+    );
+    res.json(rows);
+  } catch (err) {
+    log.error('rentals eligible-inspections error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /rentals/propose — a verified rental provider creates their own rental
+// car row from their own passing inspection. Same validation as admin POST /,
+// with two differences: provider_id is always the caller (never trusted from
+// the body), and the row can only start 'pending_review'.
+router.post('/propose', requireAuth, async (req, res) => {
+  const { title, make, model, year, category, seats, fuel,
+          transmission, mileage, daily_rate, weekly_rate, deposit, min_days,
+          inspection_id, location, images } = req.body;
+  if (!title || !make || !model || !year || !daily_rate || !inspection_id) {
+    return res.status(400).json({ error: 'title, make, model, year, daily_rate and inspection_id are required' });
+  }
+  if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) return res.status(400).json({ error: 'daily_rate must be a positive number' });
+  const galleryError = rentalGalleryError(images, true);
+  if (galleryError) return res.status(400).json({ error: galleryError });
+  try {
+    const created = await withTransaction(async (client) => {
+      if (!await verifiedRentalProvider(client, req.user.id)) {
+        const error = new Error('Only an active, identity- and business-verified seller can propose a rental vehicle');
+        error.status = 403;
+        throw error;
+      }
+      const evidence = await inspectionEvidenceForProvider(client, inspection_id, req.user.id);
+      if (!evidence) {
+        const error = new Error('Choose one of your own complete, passing 150-point inspections');
+        error.status = 409;
+        throw error;
+      }
+      if (!inspectionMatchesVehicle(evidence, { make, model, year })) {
+        const error = new Error('The selected inspection belongs to a different make, model, or model year');
+        error.status = 409;
+        throw error;
+      }
+      const { rows } = await client.query(
+        `INSERT INTO rental_cars
+           (provider_id,title,make,model,year,category,seats,fuel,transmission,mileage,
+            daily_rate,weekly_rate,deposit,min_days,inspection_id,inspected,inspection_score,location,images,status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TRUE,$16,$17,$18,'pending_review')
+         RETURNING *`,
+        [req.user.id, String(title).trim(), make, model, year, category, seats || 5, fuel,
+         transmission, mileage, daily_rate, weekly_rate || Number(daily_rate) * 6,
+         deposit || 0, min_days || 1, inspection_id, Number(evidence.score), location,
+         images.map((url) => url.trim())]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'rental_car.proposed', targetType: 'rental_car', targetId: rows[0].id,
+        summary: `${rows[0].title} proposed for rental review`, metadata: {
+          daily_rate: rows[0].daily_rate, inspection_id, inspection_score: Number(evidence.score),
+        },
+      });
+      return rows[0];
+    });
+    res.status(201).json({
+      ...created,
+      message: 'Sent for review. An admin checks the inspection and your verification before this appears in the catalogue.',
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    if (err.code === '23505') return res.status(409).json({ error: 'That inspection is already linked to another rental vehicle that is still in the fleet. Retire that vehicle first and the inspection becomes available again.', code: 'INSPECTION_IN_USE' });
+    log.error('rental propose error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /rentals/:id/mine — the owning provider edits their own car's
+// commercial terms and availability. Deliberately excludes status,
+// provider_id, inspection_id and vehicle identity (make/model/year): those stay
+// admin-only, the same way a seller cannot re-point their own listing at a
+// different inspection (see P15, vehicle-identity lock on the sale side).
+const PROVIDER_EDITABLE = ['title', 'category', 'seats', 'fuel', 'transmission',
+  'mileage', 'daily_rate', 'weekly_rate', 'deposit', 'min_days', 'location',
+  'images', 'unavailable_until'];
+
+router.patch('/:id/mine', requireAuth, requireUuid('id'), async (req, res) => {
+  const fields = PROVIDER_EDITABLE.filter((field) => req.body[field] !== undefined);
+  if (!fields.length) return res.status(400).json({ error: 'No editable fields provided' });
+  if (req.body.title !== undefined && !String(req.body.title).trim()) return res.status(400).json({ error: 'title cannot be empty' });
+  for (const field of ['daily_rate', 'weekly_rate', 'deposit', 'min_days']) {
+    if (req.body[field] !== undefined && (!Number.isFinite(Number(req.body[field])) || Number(req.body[field]) < (field === 'min_days' || field === 'daily_rate' ? 1 : 0))) {
+      return res.status(400).json({ error: `${field} has an invalid value` });
+    }
+  }
+  if (req.body.images !== undefined) {
+    const galleryError = rentalGalleryError(req.body.images, false);
+    if (galleryError) return res.status(400).json({ error: galleryError });
+  }
+  let unavailableUntil;
+  if (req.body.unavailable_until !== undefined) {
+    const raw = req.body.unavailable_until;
+    if (raw === null || raw === '') {
+      unavailableUntil = null;
+    } else if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw) && !Number.isNaN(new Date(`${raw}T00:00:00.000Z`).getTime())) {
+      unavailableUntil = raw;
+    } else {
+      return res.status(400).json({ error: 'unavailable_until must be a YYYY-MM-DD date, or empty to clear it' });
+    }
+  }
+  try {
+    const updated = await withTransaction(async (client) => {
+      const current = await client.query('SELECT * FROM rental_cars WHERE id=$1 FOR UPDATE', [req.params.id]);
+      if (!current.rowCount) { const error = new Error('Rental car not found'); error.status = 404; throw error; }
+      if (current.rows[0].provider_id !== req.user.id) { const error = new Error('Forbidden'); error.status = 403; throw error; }
+      const normalized = { ...req.body };
+      if (normalized.title !== undefined) normalized.title = String(normalized.title).trim();
+      if (normalized.images !== undefined) normalized.images = normalized.images.map((url) => url.trim());
+      const params = fields.map((field) => (field === 'unavailable_until' ? unavailableUntil : normalized[field]));
+      const assignments = fields.map((field, index) => `${field}=$${index + 1}`);
+      params.push(req.params.id);
+      const { rows } = await client.query(
+        `UPDATE rental_cars SET ${assignments.join(', ')} WHERE id=$${params.length} RETURNING *`, params
+      );
+      return rows[0];
+    });
+    res.json(publicRental(updated, true));
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental mine update error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /rentals/:id — public detail after fixed route names above.
 router.get('/:id', requireUuid('id'), async (req, res) => {
   try {
@@ -676,7 +877,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     'deposit', 'min_days', 'inspection_id', 'location', 'images', 'status'];
   const fields = EDITABLE.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable fields provided' });
-  if (req.body.status && !['active', 'maintenance', 'retired'].includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
+  if (req.body.status && !['active', 'maintenance', 'retired', 'pending_review'].includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
   if (req.body.title !== undefined && !String(req.body.title).trim()) return res.status(400).json({ error: 'title cannot be empty' });
   for (const field of ['daily_rate', 'weekly_rate', 'deposit', 'min_days']) {
     if (req.body[field] !== undefined && (!Number.isFinite(Number(req.body[field])) || Number(req.body[field]) < (field === 'min_days' || field === 'daily_rate' ? 1 : 0))) {
