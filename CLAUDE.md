@@ -104,13 +104,17 @@ stays readable:
 - Web `/rentals/payment-return`, `/dashboard/requests` and admin `/fees`,
   `/handovers`, `/contracts`, `/disputes`, `/rentals` are redirect stubs
 
-⚠️ **Landmine**: `platform_fees` and the commission calculation still exist as
-live code in `backend/src/routes/handovers.js`, unreachable *only* because of
-that middleware. Remounting `/handovers` without it resurrects commission
-accrual. Delete deliberately, not accidentally.
+The commission calculation that used to live in `backend/src/routes/handovers.js`
+(`PATCH /:id/complete`) has been deleted — it was unreachable dead code, kept
+alive only by this middleware, and a landmine if `/handovers` were ever
+remounted without it. `platform_fees.fee_type` still allows `'commission'` and
+the vestigial `'certification'` (scaffolded in the 0001 baseline, never
+billed by any code path) so historical rows keep validating, but nothing
+writes either value anymore.
 
 Do not reintroduce: checkout, escrow, held funds, Sawa-managed handover,
-transaction protection, or a seven-day guarantee.
+transaction protection, a seven-day guarantee, or a percentage-of-sale
+commission.
 
 ---
 

@@ -741,13 +741,11 @@ CREATE INDEX IF NOT EXISTS idx_inspections_vin_key
 CREATE INDEX IF NOT EXISTS idx_cars_vin_key
   ON cars(vin_key) WHERE vin_key IS NOT NULL;
 
--- Certification is billed per SUBMISSION (the car that was inspected), not per
--- handover — it is earned when the 150-point check completes, whether or not
--- the car ever sells. The partial unique index makes re-inspection after
--- remedial work idempotent: one certification fee per car, ever.
+-- submission_id was added for a per-submission 'certification' fee that was
+-- scaffolded in 0001 but never billed by any code path — sellers pay nothing
+-- for a listing inspection. Migration 0040 drops the partial unique index
+-- that existed only to make that fee idempotent; the column stays, unused.
 ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS submission_id UUID REFERENCES submissions(id);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_certification
-  ON platform_fees(submission_id) WHERE fee_type = 'certification';
 
 -- ── Walk-in inspection fees (migration 0023) ─────────────────────────────────
 -- Collected offline and recorded here. A correction is void-and-re-record, so

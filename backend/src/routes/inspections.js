@@ -1321,8 +1321,8 @@ router.post('/:id/fee', requireAdmin, requireUuid('id'), async (req, res) => {
       const found = await client.query('SELECT * FROM inspections WHERE id = $1 FOR UPDATE', [req.params.id]);
       if (!found.rows.length) { const e = new Error('Inspection not found'); e.status = 404; throw e; }
       const inspection = found.rows[0];
-      // A listing inspection is part of what a seller already pays for through
-      // the certification fee; billing it again here would double-charge.
+      // A listing inspection is bundled into the free submission process — no
+      // fee is charged for it at all, so there is nothing here to double-bill.
       if (inspection.kind !== 'standalone') {
         const e = new Error('Only a walk-in inspection is billed to a customer'); e.status = 409; throw e;
       }
