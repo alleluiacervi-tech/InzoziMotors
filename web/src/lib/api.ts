@@ -424,9 +424,30 @@ export const sellerListings = {
     request<Car>(`/cars/${id}/price`, { token, method: 'PATCH', body: JSON.stringify({ price }) }),
 }
 
+export const disputes = {
+  raise: (token: string, handoverId: string, reason: string) =>
+    request<any>('/disputes', {
+      token, method: 'POST', body: JSON.stringify({ handover_id: handoverId, reason }),
+    }),
+}
+
+export const referrals = {
+  redeem: (token: string, code: string) =>
+    request<{ success: true }>('/referrals/redeem', {
+      token, method: 'POST', body: JSON.stringify({ code }),
+    }),
+}
+
+export const handovers = {
+  cancel: (token: string, id: string) =>
+    request<{ success: true }>(`/handovers/${id}/cancel`, { token, method: 'POST' }),
+}
+
 export const api = {
   cars, rentals, sellers, auth, account, saved,
   submissions, notifications, messages, sellerListings,
+  disputes, referrals, handovers,
 }
 
 export default api
+

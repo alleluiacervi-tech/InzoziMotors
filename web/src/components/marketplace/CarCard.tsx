@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
 import {
-  formatKm, formatMoneyExact, formatRWF, formatUSD, getCertTier, isDemoListing, isHighDemand,
-  isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop,
+  formatKm, formatMoneyExact, formatRWF, formatUSD, getCertTier, isDemoListing,
+  isHighDemand, isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop,
 } from '@/lib/business'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
@@ -82,7 +82,9 @@ export async function CarCard({
             never compete for the same corner. */}
         <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
           {demo ? (
-            <Badge tone="neutral">{t('cars.card.previewListing')}</Badge>
+            <Badge tone="preview" className="max-w-full truncate">
+              {t('cars.card.previewListing')}
+            </Badge>
           ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
               {tier.short}
@@ -103,7 +105,6 @@ export async function CarCard({
             {t('cars.card.photos', { count: car.images!.length })}
           </span>
         ) : null}
-
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col p-5">

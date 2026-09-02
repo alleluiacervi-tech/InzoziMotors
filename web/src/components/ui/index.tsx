@@ -110,7 +110,7 @@ export function Card({
 
 type BadgeTone =
   | 'cert' | 'certPlus' | 'inspected' | 'success' | 'warning' | 'danger'
-  | 'info' | 'neutral' | 'brand' | 'reserved'
+  | 'info' | 'neutral' | 'brand' | 'reserved' | 'preview' | 'safari'
 
 const BADGE_TONES: Record<BadgeTone, string> = {
   // Certified+ is the only tier that earns brand red — matches the app's
@@ -125,6 +125,8 @@ const BADGE_TONES: Record<BadgeTone, string> = {
   reserved: 'bg-status-reservedBg text-status-reserved ring-1 ring-inset ring-status-reserved/20',
   neutral: 'bg-surface-alt text-content-muted ring-1 ring-inset ring-line',
   brand: 'bg-brand/10 text-brand ring-1 ring-inset ring-brand/20',
+  preview: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20',
+  safari: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20',
 }
 
 export function Badge({

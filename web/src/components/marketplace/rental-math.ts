@@ -29,3 +29,37 @@ export function formatRating(rating: RentalCar['rating']): string | null {
   if (!Number.isFinite(value) || value <= 0) return null
   return value.toFixed(1)
 }
+
+export interface AvailableDay {
+  key: string
+  date: Date
+  available: boolean
+}
+
+export function availabilityWindow(
+  ranges: RentalCar['booked_ranges'] = [],
+  daysCount = 14
+): AvailableDay[] {
+  const days: AvailableDay[] = []
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+
+  const parsedRanges = (ranges || []).map((r) => {
+    const start = new Date(r.start_date).getTime()
+    const end = start + (r.days || 1) * 24 * 60 * 60 * 1000
+    return { start, end }
+  })
+
+  for (let i = 0; i < daysCount; i++) {
+    const d = new Date(today.getTime() + i * 24 * 60 * 60 * 1000)
+    const time = d.getTime()
+    const isBooked = parsedRanges.some((r) => time >= r.start && time <= r.end)
+    days.push({
+      key: d.toISOString().slice(0, 10),
+      date: d,
+      available: !isBooked,
+    })
+  }
+
+  return days
+}
