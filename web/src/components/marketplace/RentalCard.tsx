@@ -23,6 +23,12 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
   const tier = getCertTier(car)
   const image = car.images?.[0] || FALLBACK_IMAGE
   const rating = formatRating(car.rating)
+  // Future-dated and unparsed-safe: a bad or past value must never render.
+  const unavailableDate = car.unavailable_until ? new Date(car.unavailable_until) : null
+  const unavailableUntil =
+    unavailableDate && !Number.isNaN(unavailableDate.getTime()) && unavailableDate.getTime() > Date.now()
+      ? unavailableDate
+      : null
 
   return (
     <Link
@@ -49,13 +55,20 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
             </Badge>
           ) : null}
         </div>
-        {car.safari_ready ? (
-          <div className="absolute right-3 top-3">
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
+          {car.safari_ready ? (
             <Badge tone="safari" icon="compass">
               {t('rentals.card.safariReady')}
             </Badge>
-          </div>
-        ) : null}
+          ) : null}
+          {/* Informational only — the provider set this, it never hides the car
+              or blocks an inquiry. See migration 0037. */}
+          {unavailableUntil ? (
+            <Badge tone="neutral" icon="clock" className="max-w-full truncate">
+              {t('rentals.card.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
+            </Badge>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col p-5">

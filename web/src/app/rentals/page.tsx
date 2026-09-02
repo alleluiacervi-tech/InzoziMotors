@@ -203,10 +203,25 @@ export default async function RentalsPage({ searchParams }: PageProps) {
 
             <Card className="relative h-fit overflow-hidden rounded-3xl border-line p-7 shadow-float">
               <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-              <h3 className="text-title font-extrabold text-content">{t('rentals.requestingTitle')}</h3>
-              <p className="mt-3 text-caption leading-relaxed text-content-secondary">
-                {t('rentals.requestingBody')}
-              </p>
+              <h3 className="text-title font-extrabold text-content">{t('rentals.howItWorks.title')}</h3>
+              <ol className="mt-5 space-y-5">
+                {(['browse', 'inquire', 'confirm'] as const).map((step, i) => (
+                  <li key={step} className="flex gap-3">
+                    <span
+                      aria-hidden
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-caption font-extrabold text-brand"
+                    >
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-body font-bold text-content">{t(`rentals.howItWorks.steps.${step}.title`)}</p>
+                      <p className="mt-0.5 text-caption leading-relaxed text-content-secondary">
+                        {t(`rentals.howItWorks.steps.${step}.body`)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
               <div className="mt-6 space-y-2">
                 <Button href="#fleet" fullWidth>{t('rentals.chooseRental')}</Button>
                 <Button href="/how-it-works" variant="outline" fullWidth>{t('rentals.readProcess')}</Button>
