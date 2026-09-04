@@ -124,6 +124,10 @@ require('./src/socket')(io);
 // Routes broadcast through the same io instance (REST is the single write
 // path for chat; the socket layer is delivery only — see routes/messages.js).
 app.set('io', io);
+// Notification rows fan out live to their owner's devices over this same io,
+// so the in-app bell updates the instant a price drop, message, saved-search
+// match or account update is written — see lib/notify.js.
+require('./src/lib/notify').setIo(io);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 // Request logging first, so even a request rejected by the body parser or a

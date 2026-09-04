@@ -1003,6 +1003,18 @@ export function AppProvider({ children }) {
           });
         });
 
+        // Live notifications: a price drop, a saved-search match, an account or
+        // import update, or a new message all arrive here the instant the server
+        // writes the row, so the bell and Notification Center update on every
+        // signed-in device without a refresh. Deduped by id in case a refetch
+        // and the socket race.
+        newSocket.on('notification', (n) => {
+          setNotifications((prev) => {
+            if (prev.some((x) => x.id === n.id)) return prev;
+            return [mapNotification(n), ...prev];
+          });
+        });
+
         // Typing indicator: track which conversation the other party is typing in
         newSocket.on('user_typing', ({ conversationId }) => {
           setTypingConvId(conversationId);
@@ -1019,9 +1031,9 @@ export function AppProvider({ children }) {
       if (liveSocket) liveSocket.disconnect();
       setSocket((prev) => (prev === liveSocket ? null : prev));
     };
-    // mapConversation is memoised on currentUser?.id, which is already a dep, so
-    // listing it here adds no extra socket reconnects.
-  }, [isLoggedIn, currentUser?.id, mapConversation]);
+    // mapConversation is memoised on currentUser?.id, which is already a dep,
+    // and mapNotification is stable — neither adds a socket reconnect.
+  }, [isLoggedIn, currentUser?.id, mapConversation, mapNotification]);
 
   // --- Auth operations ---
 
