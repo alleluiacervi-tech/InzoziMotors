@@ -299,6 +299,25 @@ export interface AppNotification {
   created_at: string
 }
 
+/** One inspection report this account may read — GET /inspections/my-reports.
+ *  `source` distinguishes a commissioned inspection from a resold copy or an
+ *  admin grant; `paid_rwf` is null for a free grant. */
+export interface ReportEntitlement {
+  entitlement_id: string
+  source: 'purchased' | 'seller_copy' | 'admin_grant' | 'paid_customer'
+  granted_at: string
+  inspection_id: string
+  score: number | null
+  completed_at: string | null
+  vehicle_make: string | null
+  vehicle_model: string | null
+  vehicle_year: number | null
+  vehicle_vin: string | null
+  vehicle: string
+  paid_rwf: number | null
+  file_url: string
+}
+
 export interface SavedSearch {
   id: string
   label: string

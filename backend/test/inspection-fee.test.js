@@ -7,8 +7,8 @@
 //
 //   • a fee is recorded exactly once, and a correction is void-and-re-record
 //     rather than a silent edit, so the mistake and its reason both survive;
-//   • a listing inspection is never billed to a customer (the seller already
-//     pays the certification fee — billing it twice is the failure mode);
+//   • a listing inspection is never billed to a customer (it's bundled into
+//     the free submission process — billing it at all is the failure mode);
 //   • the report reaches its own customer and nobody else, answering 404 rather
 //     than 403 so a stranger cannot learn an inspection exists.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,8 +104,8 @@ test('a walk-in fee is recorded once, and a correction is a void and a re-record
 });
 
 test('a listing inspection is never billed to a customer', async () => {
-  // The seller already pays the certification fee. Billing the same inspection
-  // here would be a double charge with no visible trace of the first one.
+  // Listing inspections are free, bundled into the submission process — there
+  // is no fee to bill here at all.
   const admin = await makeAdmin(await register());
   const auth = { Authorization: `Bearer ${admin}` };
   const seller = await register({ role: 'seller' });

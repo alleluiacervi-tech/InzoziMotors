@@ -394,6 +394,19 @@ export const api = {
   // Dashboard
   stats:     () => request<any>('/admin/stats'),
   analytics: () => request<any>('/admin/analytics'),
+  // Fee revenue by month and type — platform_fees (paid only) plus rental
+  // listing subscriptions (their own table, always RWF). Distinct from
+  // analytics' GMV figures: this is money Sawa itself actually received.
+  revenue: () => request<{
+    fees: { fee_type: string; month: string; currency: string; total: number; count: number }[]
+    rental_subscriptions: { month: string; total: number; count: number }[]
+    totals_by_type: { type: string; currency: string; total: number; count: number }[]
+    gaps: {
+      // Completed walk-ins with no live inspection fee — the one collection
+      // gap this table can actually detect. See GET /admin/revenue.
+      standalone_inspections_missing_fee: { id: string; vehicle_make: string | null; vehicle_model: string | null; vehicle_year: number | null; completed_at: string; customer_name: string | null }[]
+    }
+  }>('/admin/revenue'),
   actionCenter: () => request<ActionCenterResponse>('/admin/action-center'),
   search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
   activity: () => request<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>('/admin/activity'),
@@ -679,6 +692,10 @@ export const api = {
     request<{ documents: any[] }>(`/imports/${orderId}/document-pack`, { method: 'POST' }),
   issueImportPaymentReceipt: (orderId: string, paymentId: string) =>
     request<any>(`/imports/${orderId}/payments/${paymentId}/receipt`, { method: 'POST' }),
+  // Sawa's own landed cost, kept apart from quoted_total_rwf so margin is
+  // visible — never returned to the buyer's own read of the same order.
+  recordImportCost: (orderId: string, data: { actual_cost_rwf: number; note?: string }) =>
+    request<any>(`/imports/${orderId}/cost`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Trust score
   trustScore: (userId: string) => request<any>(`/reviews/trust-score/${userId}`),
@@ -827,6 +844,10 @@ export const api = {
     request<any>(`/admin/settings/${encodeURIComponent(key)}`, {
       method: 'PATCH', body: JSON.stringify({ value }),
     }),
+  // The public rate card — same numbers a customer would see, so a
+  // fee-recording form can prefill what the office should be charging
+  // without duplicating the whole settings read.
+  rateCard: () => request<{ inspection_fee_rwf: number; report_resale_fee_rwf: number; rental_subscription_monthly_rwf: number; reviewed_on?: string }>('/settings/rate-card'),
 
   // ── Reported messages ──────────────────────────────────────────────────────
   reports: (status: 'open' | 'resolved' | 'dismissed' | 'all' = 'open') =>

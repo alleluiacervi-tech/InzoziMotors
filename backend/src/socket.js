@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
-const { notifyUser } = require('./lib/notify');
 
 module.exports = function attachSocket(io) {
   // Authenticate every socket connection via JWT in handshake
@@ -43,49 +42,13 @@ module.exports = function attachSocket(io) {
       socket.leave(`conv:${conversationId}`);
     });
 
-    // Send a message
-    socket.on('send_message', async ({ conversationId, text }) => {
-      if (!conversationId || !text?.trim()) return;
-      try {
-        // Verify sender belongs to this conversation
-        const convRes = await pool.query(
-          'SELECT * FROM conversations WHERE id = $1 AND (buyer_id = $2 OR seller_id = $2)',
-          [conversationId, socket.user.id]
-        );
-        if (!convRes.rows.length) return;
-        const conv = convRes.rows[0];
-
-        const { rows } = await pool.query(
-          `INSERT INTO messages (conversation_id, sender_id, text)
-           VALUES ($1, $2, $3) RETURNING *`,
-          [conversationId, socket.user.id, text.trim()]
-        );
-        const msg = rows[0];
-
-        await pool.query(
-          `UPDATE conversations SET last_message = $1, last_message_at = NOW() WHERE id = $2`,
-          [text.trim(), conversationId]
-        );
-
-        // Broadcast to everyone in the room (including sender for consistency)
-        io.to(`conv:${conversationId}`).emit('new_message', {
-          ...msg,
-          sender_name: socket.user.name || socket.user.email,
-        });
-
-        // Push notification to the other party if they're not in the room
-        const otherId = socket.user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id;
-        await notifyUser(pool, {
-          user_id: otherId,
-          type: 'new_message',
-          title: 'New message',
-          body: text.trim().slice(0, 80),
-          meta: JSON.stringify({ conversationId }),
-        });
-      } catch (err) {
-        socket.emit('error', { message: 'Failed to send message' });
-      }
-    });
+    // NOTE: message WRITES go through the REST route (POST
+    // /messages/conversations[/:id]) only — never over the socket. That route
+    // is the single writer: it screens the text, persists one row, fans out to
+    // both participants' user rooms, and writes the notification. An earlier
+    // socket 'send_message' handler here did all of that a second way (a second
+    // row, a second notification, delivery to the dead conv: room), so it was
+    // removed. The socket layer is delivery + typing only.
 
     // Typing indicator — lightweight, no DB write
     socket.on('typing', ({ conversationId }) => {

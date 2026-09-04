@@ -10,6 +10,7 @@
 const express = require('express');
 const { loadDutyRates } = require('../lib/duty-rates');
 const { loadAppRelease } = require('../lib/app-release');
+const { loadServiceRates } = require('../lib/service-rates');
 
 const router = express.Router();
 
@@ -46,6 +47,18 @@ router.get('/app-release', async (_req, res) => {
   // cache is not a stop switch.
   res.set('Cache-Control', 'public, max-age=60');
   res.json(release);
+});
+
+// GET /settings/rate-card — what Sawa charges for a walk-in inspection, a
+// resold report and a rental listing subscription.
+//
+// Never throws: loadServiceRates falls back to the reviewed defaults if the
+// row is missing or invalid, because a pricing page that 500s is worse than
+// one showing last-reviewed figures.
+router.get('/rate-card', async (_req, res) => {
+  const rates = await loadServiceRates();
+  res.set('Cache-Control', 'public, max-age=600');
+  res.json(rates);
 });
 
 module.exports = router;

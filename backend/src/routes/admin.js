@@ -20,6 +20,11 @@ const {
   invalidateAppRelease,
 } = require('../lib/app-release');
 const {
+  SETTING_KEY: SERVICE_RATES_KEY,
+  validateRates: validateServiceRates,
+  invalidateServiceRates,
+} = require('../lib/service-rates');
+const {
   slugify, loadMakes, invalidateMakes,
 } = require('../lib/vehicle-makes');
 const { uploadBrandLogo, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
@@ -1170,6 +1175,9 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // Same shape, and the same reason: a form of two version numbers per
     // platform cannot be corrected from "Invalid value for app_release".
     [APP_RELEASE_KEY]: (value) => validateAppRelease(value).length === 0,
+    // Three flat RWF amounts — still names which one is wrong rather than a
+    // generic "invalid value" for a form with three fields.
+    [SERVICE_RATES_KEY]: (value) => validateServiceRates(value).length === 0,
   };
   if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
   if (!validators[key](req.body.value)) {
@@ -1180,6 +1188,10 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     if (key === APP_RELEASE_KEY) {
       const problems = validateAppRelease(req.body.value);
       return res.status(400).json({ error: problems[0], code: 'INVALID_APP_RELEASE', problems });
+    }
+    if (key === SERVICE_RATES_KEY) {
+      const problems = validateServiceRates(req.body.value);
+      return res.status(400).json({ error: problems[0], code: 'INVALID_SERVICE_RATES', problems });
     }
     return res.status(400).json({ error: `Invalid value for ${key}` });
   }
@@ -1217,6 +1229,7 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // cache TTL, and the operator reasonably concludes their edit did not save.
     if (key === DUTY_RATES_KEY) invalidateDutyRates();
     if (key === APP_RELEASE_KEY) invalidateAppRelease();
+    if (key === SERVICE_RATES_KEY) invalidateServiceRates();
     res.json(result);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
@@ -1293,6 +1306,93 @@ router.patch('/fees/:id', requireAdmin, requireUuid('id'), (_req, res) => {
     error: 'The platform fee workflow is retired. Historical records are read-only.',
     code: 'PLATFORM_FEES_RETIRED',
   });
+});
+
+// GET /admin/revenue — what the business actually earned, by month.
+//
+// Five monetizable lines were built and none of them had a place an operator
+// could see all of them together. platform_fees carries the walk-in
+// inspection fee and report resale (fee_type='inspection'|'report' — the
+// other fee_types this table's CHECK constraint still allows, 'commission',
+// 'certification' and 'featured', have no live write path and so never
+// appear here). Rental listing subscriptions live in their own table
+// (rental_subscriptions.amount_rwf, always RWF, no currency column), so this
+// combines both rather than pretending one query covers the business.
+//
+// Only 'paid' fees and non-voided subscriptions count — a due fee or a
+// voided subscription was never actually collected. This is fee revenue,
+// distinct from the GMV disclaimer on GET /admin/analytics: a walk-in
+// inspection fee is money Sawa itself received, not a vehicle's sale price.
+router.get('/revenue', requireAdmin, async (_req, res) => {
+  try {
+    const [fees, subscriptions, unrecordedInspections] = await Promise.all([
+      pool.query(
+        `SELECT fee_type,
+                TO_CHAR(DATE_TRUNC('month', COALESCE(collected_at, created_at)), 'YYYY-MM') AS month,
+                currency, SUM(amount)::bigint AS total, COUNT(*)::int AS count
+         FROM platform_fees
+         WHERE status = 'paid'
+         GROUP BY fee_type, month, currency
+         ORDER BY month DESC, fee_type`
+      ),
+      pool.query(
+        `SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS month,
+                SUM(amount_rwf)::bigint AS total, COUNT(*)::int AS count
+         FROM rental_subscriptions
+         WHERE voided_at IS NULL
+         GROUP BY month
+         ORDER BY month DESC`
+      ),
+      // The reconciliation gap this table can actually detect: a walk-in
+      // whose customer received a completed inspection but whose fee was
+      // never recorded (or was voided and never re-recorded). Nothing else
+      // here is checkable from inside the database alone — a fee this table
+      // has no row for at all leaves no trace by definition, which is why
+      // every other line in the business reassessment starts from "put a
+      // price on it" rather than "detect the missing collection".
+      pool.query(
+        `SELECT i.id, i.vehicle_make, i.vehicle_model, i.vehicle_year, i.completed_at,
+                u.name AS customer_name
+           FROM inspections i
+           LEFT JOIN users u ON u.id = i.customer_user_id
+          WHERE i.kind = 'standalone' AND i.status = 'complete'
+            AND NOT EXISTS (
+              SELECT 1 FROM platform_fees f
+               WHERE f.inspection_id = i.id AND f.fee_type = 'inspection' AND f.status <> 'waived'
+            )
+          ORDER BY i.completed_at DESC
+          LIMIT 100`
+      ),
+    ]);
+
+    // One combined by-type total so the console can render a single ranked
+    // list rather than two disconnected tables. Subscriptions are always RWF.
+    const byType = {};
+    for (const row of fees.rows) {
+      const key = `${row.fee_type}:${row.currency}`;
+      byType[key] = byType[key] || { type: row.fee_type, currency: row.currency, total: 0, count: 0 };
+      byType[key].total += Number(row.total);
+      byType[key].count += row.count;
+    }
+    for (const row of subscriptions.rows) {
+      const key = 'rental_subscription:RWF';
+      byType[key] = byType[key] || { type: 'rental_subscription', currency: 'RWF', total: 0, count: 0 };
+      byType[key].total += Number(row.total);
+      byType[key].count += row.count;
+    }
+
+    res.json({
+      fees: fees.rows,
+      rental_subscriptions: subscriptions.rows,
+      totals_by_type: Object.values(byType).sort((a, b) => b.total - a.total),
+      gaps: {
+        standalone_inspections_missing_fee: unrecordedInspections.rows,
+      },
+    });
+  } catch (err) {
+    log.error('admin revenue error', { error: err.message });
+    res.status(500).json({ error: 'Revenue unavailable' });
+  }
 });
 
 

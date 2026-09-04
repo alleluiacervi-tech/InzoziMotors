@@ -1,3 +1,11 @@
+// This router only reaches real traffic for GET/HEAD — server.js mounts it
+// behind transactionFeatureRetired, which answers 410 to every write. It stays
+// mounted so historical bookings remain readable. Sawa's revenue no longer
+// comes from a cut of the sale (see CLAUDE.md's business-model invariants);
+// /complete used to record a success commission here, which was removed
+// because it was unreachable but still live code — remounting this router
+// without the retirement middleware would have resurrected it by accident.
+
 const express = require('express');
 const { log } = require('../lib/log');
 const pool = require('../db');
@@ -288,44 +296,6 @@ router.patch('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) 
       );
       await recomputeTrustScore(h.seller_id, client);
 
-      // Record the success commission — the revenue event of the business model
-      const rate = parseFloat(process.env.COMMISSION_RATE || '0.05');
-      let commission = Math.round((h.agreed_price || 0) * rate);
-
-      // Referral reward: an unconsumed redemption by this seller discounts
-      // their next commission (blueprint: "commission discount on next listing")
-      if (commission > 0) {
-        const discountRate = parseFloat(process.env.REFERRAL_DISCOUNT || '0.2');
-        const redemption = await client.query(
-          `SELECT id FROM referral_redemptions
-           WHERE redeemed_by = $1 AND consumed_at IS NULL
-           ORDER BY redeemed_at ASC LIMIT 1 FOR UPDATE`,
-          [h.seller_id]
-        );
-        if (redemption.rows.length) {
-          commission = Math.round(commission * (1 - discountRate));
-          await client.query(
-            'UPDATE referral_redemptions SET consumed_at = NOW() WHERE id = $1',
-            [redemption.rows[0].id]
-          );
-          await notifyUser(client, {
-            user_id: h.seller_id,
-            type: 'listing_update',
-            title: 'Referral discount applied',
-            body: `Your referral reward saved you ${Math.round(discountRate * 100)}% on this sale's commission.`,
-            meta: JSON.stringify({ handoverId: h.id }),
-          });
-        }
-      }
-
-      if (commission > 0) {
-        await client.query(
-          `INSERT INTO platform_fees (handover_id, seller_id, fee_type, amount, status)
-           VALUES ($1, $2, 'commission', $3, 'due')`,
-          [h.id, h.seller_id, commission]
-        );
-      }
-
       const carRes = await client.query('SELECT title FROM cars WHERE id = $1', [h.car_id]);
       const carTitle = carRes.rows[0]?.title || 'your car';
 
@@ -338,7 +308,7 @@ router.patch('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) 
       });
       await recordAdminAction(client, {
         actorId: req.user.id, action: 'handover.completed', targetType: 'handover', targetId: h.id,
-        summary: `Sale ${h.booking_id} completed`, metadata: { previous_status: h.status, status: 'complete', car_id: h.car_id, commission },
+        summary: `Sale ${h.booking_id} completed`, metadata: { previous_status: h.status, status: 'complete', car_id: h.car_id },
       });
       await notifyUser(client, {
         user_id: h.seller_id,

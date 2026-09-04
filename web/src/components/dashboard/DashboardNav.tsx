@@ -25,6 +25,7 @@ const PROVIDER_ITEMS: { href: string; labelKey: string; icon: IconName }[] = [
 
 const REST_ITEMS: { href: string; labelKey: string; icon: IconName }[] = [
   { href: '/dashboard/imports', labelKey: 'dashboard.nav.imports', icon: 'clock' },
+  { href: '/dashboard/reports', labelKey: 'dashboard.nav.reports', icon: 'document' },
   { href: '/dashboard/notifications', labelKey: 'dashboard.nav.notifications', icon: 'bell' },
   { href: '/dashboard/selling', labelKey: 'dashboard.nav.selling', icon: 'car' },
   { href: '/dashboard/profile', labelKey: 'dashboard.nav.profile', icon: 'user' },

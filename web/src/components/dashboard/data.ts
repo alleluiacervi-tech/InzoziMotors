@@ -1,8 +1,8 @@
 import 'server-only'
 import { cache } from 'react'
-import { ApiError, notifications } from '@/lib/api'
+import { ApiError, inspections, notifications } from '@/lib/api'
 import { getToken } from '@/lib/session'
-import type { AppNotification } from '@/lib/types'
+import type { AppNotification, ReportEntitlement } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Server-side data helpers for the dashboard.
@@ -30,6 +30,20 @@ export const getNotifications = cache(async (): Promise<AppNotification[]> => {
 export const getUnreadCount = cache(async (): Promise<number> => {
   const list = await getNotifications()
   return list.filter((n) => !n.read).length
+})
+
+/** Inspection reports this account may read — commissioned, resold, or
+ *  granted. Never throws: the dashboard must render even when the API is
+ *  down. */
+export const getMyReports = cache(async (): Promise<ReportEntitlement[]> => {
+  const token = await getToken()
+  if (!token) return []
+  try {
+    return await inspections.myReports(token)
+  } catch (err) {
+    console.error('dashboard reports failed:', (err as Error).message)
+    return []
+  }
 })
 
 /** Unwraps one leg of a Promise.allSettled so a single failed call degrades to

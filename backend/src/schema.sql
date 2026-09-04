@@ -281,6 +281,10 @@ CREATE TABLE IF NOT EXISTS handovers (
 );
 
 -- ─── Conversations & Messages ─────────────────────────────────────────────────
+-- One private 1:1 thread per buyer<->seller pair (Instagram-style DMs), keyed
+-- on the person pair, not the car. car_id is the "first discussed" listing
+-- context only. Direction is meaningful: buyer = the one who reached out,
+-- seller = the car's owner (migration 0041 re-keyed this from per-car).
 CREATE TABLE IF NOT EXISTS conversations (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   car_id          UUID REFERENCES cars(id) ON DELETE SET NULL,
@@ -289,8 +293,10 @@ CREATE TABLE IF NOT EXISTS conversations (
   last_message    TEXT,
   last_message_at TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (car_id, buyer_id, seller_id)
+  CONSTRAINT conversations_buyer_id_seller_id_key UNIQUE (buyer_id, seller_id)
 );
+CREATE INDEX IF NOT EXISTS idx_conversations_buyer  ON conversations(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_seller ON conversations(seller_id);
 
 CREATE TABLE IF NOT EXISTS messages (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -492,13 +498,20 @@ CREATE TABLE IF NOT EXISTS import_orders (
   agreement_accepted_at TIMESTAMPTZ,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- Sawa's own cost, kept apart from quoted_total_rwf so margin is visible.
+  -- One admin-editable figure, not a line-item ledger — see migration 0039.
+  actual_cost_rwf       BIGINT,
+  cost_note             TEXT,
+  cost_recorded_at      TIMESTAMPTZ,
+  cost_recorded_by      UUID REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT import_order_status_check CHECK (status IN (
     'enquiry','quoted','agreement_pending','deposit_due','deposit_review',
     'ordered','inspected_abroad','shipping_booked','in_transit','arrived',
     'kigali_inspection','balance_due','balance_review','customs_clearance',
     'ready_for_handover','completed','cancelled'
   )),
-  CONSTRAINT import_quote_nonnegative CHECK (quoted_total_rwf IS NULL OR quoted_total_rwf >= 0)
+  CONSTRAINT import_quote_nonnegative CHECK (quoted_total_rwf IS NULL OR quoted_total_rwf >= 0),
+  CONSTRAINT import_cost_nonnegative CHECK (actual_cost_rwf IS NULL OR actual_cost_rwf >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS import_payments (
@@ -734,13 +747,11 @@ CREATE INDEX IF NOT EXISTS idx_inspections_vin_key
 CREATE INDEX IF NOT EXISTS idx_cars_vin_key
   ON cars(vin_key) WHERE vin_key IS NOT NULL;
 
--- Certification is billed per SUBMISSION (the car that was inspected), not per
--- handover — it is earned when the 150-point check completes, whether or not
--- the car ever sells. The partial unique index makes re-inspection after
--- remedial work idempotent: one certification fee per car, ever.
+-- submission_id was added for a per-submission 'certification' fee that was
+-- scaffolded in 0001 but never billed by any code path — sellers pay nothing
+-- for a listing inspection. Migration 0040 drops the partial unique index
+-- that existed only to make that fee idempotent; the column stays, unused.
 ALTER TABLE platform_fees ADD COLUMN IF NOT EXISTS submission_id UUID REFERENCES submissions(id);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_platform_fees_certification
-  ON platform_fees(submission_id) WHERE fee_type = 'certification';
 
 -- ── Walk-in inspection fees (migration 0023) ─────────────────────────────────
 -- Collected offline and recorded here. A correction is void-and-re-record, so

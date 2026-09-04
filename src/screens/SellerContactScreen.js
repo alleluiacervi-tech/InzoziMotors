@@ -51,7 +51,7 @@ export default function SellerContactScreen({ navigation, route }) {
     try {
       const disclosure = await carsApi.contactSeller(car.id, channel, true);
       if (channel === 'in_app') {
-        const pendingConvId = await getOrCreateConversation(car.id);
+        const pendingConvId = await getOrCreateConversation(car.id, car.sellerId);
         const convId = await sendMessage(pendingConvId, message.trim(), car.id);
         navigation.replace('Chat', { convId, name: car.seller, car });
         return;

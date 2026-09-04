@@ -2,7 +2,7 @@ import type { DutyRates } from '@/lib/business'
 import type {
   AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement,
   InspectionCenter, InspectionReport,
-  Message, RentalCar, RentalInquiry, Review, SavedSearch, Submission, TrustScore, User,
+  Message, RentalCar, RentalInquiry, ReportEntitlement, Review, SavedSearch, Submission, TrustScore, User,
   Valuation, VehicleHistory,
 } from './types'
 
@@ -138,6 +138,31 @@ export const fx = {
       return await request('/fx', { revalidate: 3600, cache: undefined, timeoutMs: 4000 })
     } catch {
       return { rate: 1470, source: 'client-fallback', fetched_at: null, stale: true }
+    }
+  },
+}
+
+export type RateCard = {
+  inspection_fee_rwf: number
+  report_resale_fee_rwf: number
+  rental_subscription_monthly_rwf: number
+  reviewed_on?: string
+}
+
+export const rateCard = {
+  /**
+   * What Sawa charges for a walk-in inspection, a resold report and a rental
+   * listing subscription. Cached for ten minutes, matching the backend's own
+   * cache header — a correction should reach the public page the same day.
+   *
+   * Returns null rather than throwing, so the pricing page can say "prices
+   * are being updated" instead of failing to render.
+   */
+  get: async (): Promise<RateCard | null> => {
+    try {
+      return await request<RateCard>('/settings/rate-card', { revalidate: 600, cache: undefined, timeoutMs: 4000 })
+    } catch {
+      return null
     }
   },
 }
@@ -393,6 +418,14 @@ export const submissions = {
     request<Submission>(`/submissions/${id}/schedule`, {
       token, method: 'PATCH', body: JSON.stringify(body),
     }),
+}
+
+export const inspections = {
+  /** Every report this account may read — commissioned, resold, or granted.
+   *  Each row's `file_url` is the path the account's own /api/documents/[id]
+   *  route handler proxies (the backend only accepts a Bearer header, which a
+   *  plain <a href> download link cannot send). */
+  myReports: (token: string) => request<ReportEntitlement[]>('/inspections/my-reports', { token }),
 }
 
 export const notifications = {
