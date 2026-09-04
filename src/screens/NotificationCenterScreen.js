@@ -7,6 +7,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
+import { resolveNotificationRoute } from '../utils/notificationRouting';
 
 const TYPE_CONFIG = {
   price_drop: {
@@ -94,9 +95,7 @@ function DateSection({ date, notifications, onPress, onMarkRead }) {
 }
 
 export default function NotificationCenterScreen({ navigation }) {
-  const {
-    notifications, markNotificationRead, markAllNotificationsRead, cars, fetchCarDetail,
-  } = useApp();
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useApp();
   const [activeFilter, setActiveFilter] = useState(null);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -111,42 +110,14 @@ export default function NotificationCenterScreen({ navigation }) {
     return acc;
   }, {});
 
-  // Server notifications may include historical metadata from retired flows.
-  // Route to the thing the notification is actually about.
-  const handlePress = async (notification) => {
+  // Shared with pushNavigation.js's OS-push-tap handler, so an in-app tap and
+  // a push tap on the same notification always land in the same place — a
+  // message goes straight to its thread, price drops and saved-search matches
+  // open the listing (VehicleDetail resolves a bare carId itself).
+  const handlePress = (notification) => {
     if (!notification.read) markNotificationRead(notification.id);
-
-    const meta = notification.meta || {};
-    const carId = meta.carId || notification.carId;
-
-    if (notification.type === 'message' || notification.type === 'new_message') {
-      navigation.navigate('Messages');
-      return;
-    }
-
-    if (carId) {
-      // Price drops and saved-search matches point at a listing — open it.
-      const car = cars.find((c) => c.id === carId) || (await fetchCarDetail(carId));
-      if (car) {
-        navigation.navigate('VehicleDetail', { car });
-        return;
-      }
-    }
-
-    if (meta.disputeId) {
-      navigation.navigate('SawaPromise');
-      return;
-    }
-
-    if (meta.bookingId || notification.type === 'handover') {
-      navigation.navigate('SawaPromise');
-      return;
-    }
-
-    if (notification.type === 'listing_update') {
-      const text = `${notification.title} ${notification.body || ''}`;
-      navigation.navigate(/rental|booking/i.test(text) ? 'MyRentals' : 'SellerDashboard');
-    }
+    const { screen, params } = resolveNotificationRoute(notification);
+    navigation.navigate(screen, params);
   };
 
   return (

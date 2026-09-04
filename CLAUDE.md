@@ -129,11 +129,26 @@ commission.
 | Android | Play App Signing SHA-256 registered in `assetlinks.json`; target/compile SDK 36 |
 | OTA | EAS Update, `runtimeVersion: appVersion`, channel `production` via `.github/workflows/mobile-update.yml` |
 
-**Push notifications are disabled for v1.** `expo-notifications` is not a
-dependency; `src/utils/push.js` is deliberate no-op stubs so App Store
-provisioning stays clean. In-app NotificationCenter carries updates instead.
-Permissions: `CAMERA` only; `RECORD_AUDIO` and `READ_MEDIA_IMAGES` blocked;
-`supportsTablet: false`.
+**Push notifications: code is real, delivery is not live yet.** `expo-notifications`
+is a real dependency; `src/utils/push.js` registers the device, mints an Expo
+push token and syncs it to `POST /devices/token`; `src/utils/pushNavigation.js`
+routes a tap on the OS notification through `navigationRef` (same resolver as
+NotificationCenter's own in-app tap — `src/utils/notificationRouting.js`).
+AppContext's contextual ask (`maybeAskForPush`, fired the first time push has
+an obvious payoff — saving a car) and the Settings toggle were already built
+around this and needed no changes. The backend's fan-out
+(`backend/src/lib/push.js` → Expo's HTTP push API) has been ready the whole
+time. What is still missing is **credentials, not code**: Expo's push service
+is a relay, not a certificate authority — it cannot deliver to a real device
+without an APNs key (iOS) and FCM server config (Android) uploaded via `eas
+credentials`, and because `expo-notifications` is a native module the change
+only takes effect in a **new store build**, never an OTA update. In-app
+NotificationCenter and the home bell already update live over the socket
+either way (`backend/src/lib/notify.js`'s realtime emit) — the OS push layer
+adds delivery while the app isn't open. Permissions: `CAMERA`,
+`POST_NOTIFICATIONS` (Android 13+, declared by `expo-notifications`' own
+manifest — nothing to add by hand); `RECORD_AUDIO` and `READ_MEDIA_IMAGES`
+stay blocked; `supportsTablet: false`.
 
 `src/api/client.js` **refuses to start a release build against a non-HTTPS API**
 and only clears the keychain on `SESSION_EXPIRED`/`SESSION_REVOKED` (so a wrong
@@ -219,10 +234,11 @@ until they are real. Listing galleries are **flexible** (`listing_min_photos=1`,
 ## 9. Human-only tasks (cannot be automated)
 
 Store console setup and submission, developer-account fees and identity checks,
-signing credentials (Play service-account JSON, App Store Connect API key),
-screenshots and store listing media, the content-rating and Data Safety forms,
-pressing **Submit for review**, buying the VPS/domain and DNS records, and
-providing every secret value.
+signing credentials (Play service-account JSON, App Store Connect API key,
+the APNs push key and FCM server config push notifications need — see
+section 5), screenshots and store listing media, the content-rating and Data
+Safety forms, pressing **Submit for review**, buying the VPS/domain and DNS
+records, and providing every secret value.
 
 Store answers are drafted in `docs/STORE-SUBMISSION.md`. Other live docs:
 `PRODUCTION-READINESS.md`, `LAUNCH-TODO.md`, `DEPLOY-PHASE-2.md`,
