@@ -1,6 +1,6 @@
 const pool = require('../db');
 const { log } = require('./log');
-const { pushToUsers } = require('./notify');
+const { pushToUsers, deliverRealtime } = require('./notify');
 
 // Event-driven alert engine — no cron needed at this scale.
 // Called when a listing goes live and when a live listing's price drops.
@@ -27,11 +27,13 @@ async function matchSavedSearches(car) {
          AND (ss.filters->>'maxPrice'   IS NULL OR (ss.filters->>'maxPrice')::int   >= $4)
          AND (ss.filters->>'maxMileage' IS NULL OR (ss.filters->>'maxMileage')::int >= $5)
          AND ss.user_id <> $6
-       RETURNING user_id`,
+       RETURNING *`,
       [car.make || '', car.model || '', car.body_type || '', car.price || 0,
        car.mileage || 0, car.seller_id,
        `${car.title} ($${Number(car.price).toLocaleString('en-US')})`, car.id]
     );
+    // Live in-app delivery to every matched device (bell updates instantly).
+    for (const row of rows) deliverRealtime(row);
     // One push batch for everyone matched. The in-app body names the specific
     // saved search; the push can't (one payload, many searches), so it stays generic.
     pushToUsers(rows.map((r) => r.user_id), {
@@ -62,9 +64,10 @@ async function notifyPriceDrop(carId, oldPrice, newPrice, title = null) {
               json_build_object('carId', $1::uuid, 'oldPrice', $3::numeric, 'newPrice', $4::numeric)::jsonb
        FROM saved_cars sc
        WHERE sc.car_id = $1
-       RETURNING user_id`,
+       RETURNING *`,
       [carId, body, oldPrice, newPrice]
     );
+    for (const row of rows) deliverRealtime(row);
     pushToUsers(rows.map((r) => r.user_id), {
       title: 'Price drop on a saved car',
       body,

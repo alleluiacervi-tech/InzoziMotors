@@ -164,6 +164,21 @@ export default ({ config }) => ({
         android: { compileSdkVersion: 36, targetSdkVersion: 36 },
       },
     ],
+    [
+      // Real push notifications (src/utils/push.js, src/utils/pushNavigation.js).
+      // On Android this plugin is what adds POST_NOTIFICATIONS (API 33+) to the
+      // manifest — nothing to declare by hand. icon must be a white silhouette
+      // on transparency (the OS tints and masks it itself), so it reuses the
+      // adaptive-icon's own foreground rather than a second asset to keep in
+      // sync. This alone does not make push live: it still needs a real APNs
+      // key (iOS) and FCM config (Android) uploaded via `eas credentials`, and
+      // a native rebuild + store resubmission — see CLAUDE.md section 5.
+      'expo-notifications',
+      {
+        icon: './assets/adaptive-icon.png',
+        color: '#CC050F',
+      },
+    ],
   ],
   extra: {
     // Set EXPO_PUBLIC_API_URL in eas.json (per profile) or the shell for local
