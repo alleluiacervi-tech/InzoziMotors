@@ -21,6 +21,27 @@ async function isBlockedBetween(a, b) {
   return rows.length > 0;
 }
 
+// Fan one new message out to BOTH participants' user rooms — every device,
+// whatever screen is open — and report whether the recipient has a live socket.
+// User rooms, not the per-conversation room: that is what keeps the list live
+// for someone who does not have the thread open. The caller uses the return to
+// skip a redundant push (a live recipient already saw it land in-app). This is
+// the single delivery path for both the first message of a thread and every
+// message after, so realtime never depends on which route wrote the row.
+async function emitNewMessage(io, conv, msg, sender, recipientId) {
+  if (!io) return false;
+  io.to(`user:${conv.buyer_id}`).to(`user:${conv.seller_id}`).emit('new_message', {
+    ...msg,
+    sender_name: sender.name || sender.email,
+  });
+  try {
+    const socks = await io.in(`user:${recipientId}`).fetchSockets();
+    return socks.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 // GET /messages/conversations — user's conversation list
 router.get('/conversations', requireAuth, paginate(), async (req, res) => {
   try {
@@ -133,22 +154,22 @@ router.post('/conversations', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Messaging is not available with this user.', code: 'BLOCKED' });
     }
 
-    // Find or create conversation
-    let conv;
-    const existing = await pool.query(
-      'SELECT * FROM conversations WHERE car_id = $1 AND buyer_id = $2 AND seller_id = $3',
+    // Find-or-create the ONE thread for this buyer<->seller pair, atomically.
+    // A conversation is per person now, not per car (migration 0041): messaging
+    // the same seller about a second car continues the same thread. ON CONFLICT
+    // makes a double-tap, a retry, or two concurrent requests reuse the one row
+    // instead of racing two inserts past a check-then-insert. car_id is
+    // refreshed to the listing this message is about, so the thread's pinned
+    // card tracks the most recently discussed car.
+    const { rows: convRows } = await pool.query(
+      `INSERT INTO conversations (car_id, buyer_id, seller_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (buyer_id, seller_id)
+       DO UPDATE SET car_id = EXCLUDED.car_id
+       RETURNING *`,
       [car_id, req.user.id, car.seller_id]
     );
-    if (existing.rows.length) {
-      conv = existing.rows[0];
-    } else {
-      const { rows } = await pool.query(
-        `INSERT INTO conversations (car_id, buyer_id, seller_id)
-         VALUES ($1, $2, $3) RETURNING *`,
-        [car_id, req.user.id, car.seller_id]
-      );
-      conv = rows[0];
-    }
+    const conv = convRows[0];
 
     // Insert message
     const msgRes = await pool.query(
@@ -162,14 +183,18 @@ router.post('/conversations', requireAuth, async (req, res) => {
       [screened.text, conv.id]
     );
 
-    // Notify seller
+    // Deliver in realtime AND notify — emitting here (not only in the append
+    // route) is what makes the first message of a thread land live for the
+    // seller instead of only on their next refresh. The notification row is
+    // always written; the push is skipped when the seller is already connected.
+    const recipientOnline = await emitNewMessage(req.app.get('io'), conv, msgRes.rows[0], req.user, car.seller_id);
     await notifyUser(pool, {
       user_id: car.seller_id,
       type: 'new_message',
       title: 'New message about your car',
       body: `Someone sent you a message about your ${car.title}.`,
       meta: JSON.stringify({ conversationId: conv.id, carId: car_id }),
-    });
+    }, { skipPush: recipientOnline });
 
     res.status(201).json({ conversation: conv, message: msgRes.rows[0] });
   } catch (err) {
@@ -208,23 +233,9 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
       [screened.text, conv.id]
     );
 
-    // Realtime fan-out for the single REST write. Delivery goes to the two
-    // PARTICIPANTS' user rooms (every device, whatever screen is open), not
-    // the conversation room — per-conversation rooms only exist for typing
-    // indicators now. This is what keeps the conversation list live for a
-    // recipient who doesn't have the thread open.
-    const io = req.app.get('io');
-    let recipientOnline = false;
-    if (io) {
-      io.to(`user:${conv.buyer_id}`).to(`user:${conv.seller_id}`).emit('new_message', {
-        ...rows[0],
-        sender_name: req.user.name || req.user.email,
-      });
-      try {
-        const socks = await io.in(`user:${otherId}`).fetchSockets();
-        recipientOnline = socks.length > 0;
-      } catch { /* push simply isn't suppressed */ }
-    }
+    // Single delivery path, shared with the start route: fan out to both
+    // participants' user rooms and learn whether the recipient is connected.
+    const recipientOnline = await emitNewMessage(req.app.get('io'), conv, rows[0], req.user, otherId);
 
     // A recipient with a live socket already saw the message land — a push on
     // top of that is a duplicate ping. The notification ROW is still written

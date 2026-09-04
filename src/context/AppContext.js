@@ -956,26 +956,51 @@ export function AppProvider({ children }) {
             };
           });
 
-          // Refresh conversations summaries. The unread count only grows for
-          // messages from the OTHER party in a thread that is NOT currently
-          // open — before this check the badge over-counted while you were
-          // literally reading the conversation.
+          // Update the conversation list. Unread only grows for a message from
+          // the OTHER party in a thread that is NOT currently open (otherwise
+          // the badge over-counts while you are literally reading it). The
+          // touched thread also moves to the top, so the list orders by recency
+          // like the server does — without waiting for a refetch.
+          const isMe = message.sender_id === currentUser.id;
           const isOpenThread = activeConvRef.current === message.conversation_id;
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === message.conversation_id
-                ? {
-                    ...c,
-                    last: message.text,
-                    time: new Date(message.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-                    unread:
-                      message.sender_id !== currentUser.id && !isOpenThread
-                        ? (c.unread || 0) + 1
-                        : c.unread,
-                  }
-                : c
-            )
-          );
+          const timeStr = new Date(message.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          setConversations((prev) => {
+            const idx = prev.findIndex((c) => c.id === message.conversation_id);
+            if (idx === -1) {
+              // A thread we don't have yet — someone messaged us for the first
+              // time. Pull the authoritative list so it arrives with full car
+              // context, and (for an incoming message) drop in an instant row
+              // so it shows immediately instead of only after the round-trip.
+              messagesApi.getConversations()
+                .then((list) => setConversations(list.map(mapConversation)))
+                .catch(() => {});
+              if (isMe) return prev;
+              return [
+                {
+                  id: message.conversation_id,
+                  name: message.sender_name || 'Sawa User',
+                  last: message.text,
+                  time: timeStr,
+                  unread: isOpenThread ? 0 : 1,
+                  avatar: (message.sender_name || 'S')[0].toUpperCase(),
+                  otherId: message.sender_id,
+                  online: false,
+                  carId: null,
+                  carTitle: null,
+                  carImage: null,
+                },
+                ...prev,
+              ];
+            }
+            const updated = {
+              ...prev[idx],
+              last: message.text,
+              time: timeStr,
+              unread: !isMe && !isOpenThread ? (prev[idx].unread || 0) + 1 : prev[idx].unread,
+            };
+            // Move the touched thread to the top; keep the rest in order.
+            return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
+          });
         });
 
         // Typing indicator: track which conversation the other party is typing in
@@ -994,7 +1019,9 @@ export function AppProvider({ children }) {
       if (liveSocket) liveSocket.disconnect();
       setSocket((prev) => (prev === liveSocket ? null : prev));
     };
-  }, [isLoggedIn, currentUser?.id]);
+    // mapConversation is memoised on currentUser?.id, which is already a dep, so
+    // listing it here adds no extra socket reconnects.
+  }, [isLoggedIn, currentUser?.id, mapConversation]);
 
   // --- Auth operations ---
 
@@ -1402,10 +1429,18 @@ export function AppProvider({ children }) {
 
   // --- Chat & Realtime Messaging ---
 
-  const getOrCreateConversation = useCallback(async (carId) => {
+  const getOrCreateConversation = useCallback(async (carId, sellerId = null) => {
     try {
       const list = await messagesApi.getConversations();
-      const existing = list.find((c) => c.car_id === carId);
+      // Threads are per person now, not per car: there is one conversation with
+      // a seller no matter which listing started it. Resolve by the other party
+      // so returning to the same seller about a different car continues the same
+      // thread instead of looking like a new one. (Falls back to the car match
+      // only when no seller id is available.) If nothing is found the caller
+      // gets a 'new_' sentinel and the server does the real find-or-create.
+      const existing = sellerId
+        ? list.find((c) => c.seller_id === sellerId && c.buyer_id === currentUser?.id)
+        : list.find((c) => c.car_id === carId);
       if (existing) {
         return existing.id;
       }
@@ -1414,7 +1449,7 @@ export function AppProvider({ children }) {
       console.warn('Error resolving conversation:', err);
       return 'new_' + carId;
     }
-  }, []);
+  }, [currentUser?.id]);
 
   // Join the socket room whenever a thread is opened — realtime messages
   // previously only arrived for conversations created this session.

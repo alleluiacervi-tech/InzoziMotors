@@ -281,6 +281,10 @@ CREATE TABLE IF NOT EXISTS handovers (
 );
 
 -- ─── Conversations & Messages ─────────────────────────────────────────────────
+-- One private 1:1 thread per buyer<->seller pair (Instagram-style DMs), keyed
+-- on the person pair, not the car. car_id is the "first discussed" listing
+-- context only. Direction is meaningful: buyer = the one who reached out,
+-- seller = the car's owner (migration 0041 re-keyed this from per-car).
 CREATE TABLE IF NOT EXISTS conversations (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   car_id          UUID REFERENCES cars(id) ON DELETE SET NULL,
@@ -289,8 +293,10 @@ CREATE TABLE IF NOT EXISTS conversations (
   last_message    TEXT,
   last_message_at TIMESTAMPTZ,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (car_id, buyer_id, seller_id)
+  CONSTRAINT conversations_buyer_id_seller_id_key UNIQUE (buyer_id, seller_id)
 );
+CREATE INDEX IF NOT EXISTS idx_conversations_buyer  ON conversations(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_seller ON conversations(seller_id);
 
 CREATE TABLE IF NOT EXISTS messages (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
