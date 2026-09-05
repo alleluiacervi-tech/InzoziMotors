@@ -118,7 +118,7 @@ export const MOCK_INSPECTION_RESULT = {
     { id: 'interior',    name: 'Interior & Comfort',     maxPts: 20, earned: 20, flags: [] },
     { id: 'electronics', name: 'Electronics & Safety',   maxPts: 20, earned: 20, flags: [] },
     { id: 'tyres',       name: 'Tyres & Wheels',         maxPts: 15, earned: 12, flags: ['Front-left tyre tread at 3.2mm — acceptable but nearing replacement', 'Spare tyre shows surface cracking (age)'] },
-    { id: 'docs',        name: 'Documentation',          maxPts: 25, earned: 24, flags: ['Service history partial — 2 years missing records'] },
+    { id: 'documentation', name: 'Documentation',        maxPts: 25, earned: 24, flags: ['Service history partial — 2 years missing records'] },
   ],
 };
 
