@@ -9,43 +9,35 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { resolveNotificationRoute } from '../utils/notificationRouting';
 
-const TYPE_CONFIG = {
-  price_drop: {
-    icon: 'trending-down-outline',
-    color: colors.primary,
-    bg: colors.greenTint,
-    label: 'Price Drop',
-  },
-  message: {
-    icon: 'chatbubble-outline',
-    color: colors.statusScheduled,
-    bg: '#EFF6FF',
-    label: 'Message',
-  },
-  listing_update: {
-    icon: 'megaphone-outline',
-    color: colors.amberText,
-    bg: colors.amberTint,
-    label: 'Update',
-  },
-  search_match: {
-    icon: 'search-outline',
-    color: colors.primary,
-    bg: colors.greenTint,
-    label: 'Match',
-  },
-};
+function NotificationRow({ notification, onPress, onMarkRead, t }) {
+  const typeConfig = {
+    price_drop: {
+      icon: 'trending-down-outline',
+      color: colors.primary,
+      bg: colors.greenTint,
+      label: t('notifications.filterPriceDrops'),
+    },
+    message: {
+      icon: 'chatbubble-outline',
+      color: colors.statusScheduled,
+      bg: '#EFF6FF',
+      label: t('notifications.filterMessages'),
+    },
+    listing_update: {
+      icon: 'megaphone-outline',
+      color: colors.amberText,
+      bg: colors.amberTint,
+      label: t('notifications.filterUpdates'),
+    },
+    search_match: {
+      icon: 'search-outline',
+      color: colors.primary,
+      bg: colors.greenTint,
+      label: t('notifications.filterMatches'),
+    },
+  };
 
-const FILTERS = [
-  { label: 'All', type: null },
-  { label: 'Price Drops', type: 'price_drop' },
-  { label: 'Messages', type: 'message' },
-  { label: 'Updates', type: 'listing_update' },
-  { label: 'Matches', type: 'search_match' },
-];
-
-function NotificationRow({ notification, onPress, onMarkRead }) {
-  const cfg = TYPE_CONFIG[notification.type] || TYPE_CONFIG.listing_update;
+  const cfg = typeConfig[notification.type] || typeConfig.listing_update;
 
   return (
     <Pressable
@@ -76,7 +68,7 @@ function NotificationRow({ notification, onPress, onMarkRead }) {
   );
 }
 
-function DateSection({ date, notifications, onPress, onMarkRead }) {
+function DateSection({ date, notifications, onPress, onMarkRead, t }) {
   return (
     <View style={styles.dateSection}>
       <Text style={styles.dateLabel}>{date}</Text>
@@ -87,6 +79,7 @@ function DateSection({ date, notifications, onPress, onMarkRead }) {
             notification={n}
             onPress={onPress}
             onMarkRead={onMarkRead}
+            t={t}
           />
         ))}
       </View>
@@ -95,9 +88,17 @@ function DateSection({ date, notifications, onPress, onMarkRead }) {
 }
 
 export default function NotificationCenterScreen({ navigation }) {
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useApp();
+  const { t, notifications, markNotificationRead, markAllNotificationsRead } = useApp();
   const [activeFilter, setActiveFilter] = useState(null);
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const filters = [
+    { label: t('notifications.filterAll'), type: null },
+    { label: t('notifications.filterPriceDrops'), type: 'price_drop' },
+    { label: t('notifications.filterMessages'), type: 'message' },
+    { label: t('notifications.filterUpdates'), type: 'listing_update' },
+    { label: t('notifications.filterMatches'), type: 'search_match' },
+  ];
 
   const filtered = activeFilter
     ? notifications.filter((n) => n.type === activeFilter)
@@ -110,10 +111,6 @@ export default function NotificationCenterScreen({ navigation }) {
     return acc;
   }, {});
 
-  // Shared with pushNavigation.js's OS-push-tap handler, so an in-app tap and
-  // a push tap on the same notification always land in the same place — a
-  // message goes straight to its thread, price drops and saved-search matches
-  // open the listing (VehicleDetail resolves a bare carId itself).
   const handlePress = (notification) => {
     if (!notification.read) markNotificationRead(notification.id);
     const { screen, params } = resolveNotificationRoute(notification);
@@ -123,12 +120,12 @@ export default function NotificationCenterScreen({ navigation }) {
   return (
     <Screen background={colors.bg}>
       <BackHeader
-        title="Notifications"
+        title={t('notifications.title')}
         onBack={() => navigation.goBack()}
         right={
           unreadCount > 0 ? (
             <Pressable onPress={markAllNotificationsRead}>
-              <Text style={styles.markAllBtn}>Mark all read</Text>
+              <Text style={styles.markAllBtn}>{t('notifications.markAllRead')}</Text>
             </Pressable>
           ) : null
         }
@@ -141,7 +138,7 @@ export default function NotificationCenterScreen({ navigation }) {
             <Text style={styles.unreadCountText}>{unreadCount}</Text>
           </View>
           <Text style={styles.unreadBannerText}>
-            {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+            {t('notifications.unreadCount', { count: unreadCount, plural: unreadCount !== 1 ? 's' : '' })}
           </Text>
         </View>
       )}
@@ -154,7 +151,7 @@ export default function NotificationCenterScreen({ navigation }) {
           style={styles.filtersScroll}
           contentContainerStyle={styles.filtersContent}
         >
-          {FILTERS.map((filter) => {
+          {filters.map((filter) => {
             const active = activeFilter === filter.type;
             return (
               <Pressable
@@ -173,8 +170,8 @@ export default function NotificationCenterScreen({ navigation }) {
         {filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={56} color={colors.border} />
-            <Text style={styles.emptyTitle}>No notifications yet</Text>
-            <Text style={styles.emptySub}>Price drops, messages, and listing updates will appear here.</Text>
+            <Text style={styles.emptyTitle}>{t('notifications.emptyTitle')}</Text>
+            <Text style={styles.emptySub}>{t('notifications.emptySub')}</Text>
           </View>
         ) : (
           Object.entries(grouped).map(([date, items]) => (
@@ -184,6 +181,7 @@ export default function NotificationCenterScreen({ navigation }) {
               notifications={items}
               onPress={handlePress}
               onMarkRead={markNotificationRead}
+              t={t}
             />
           ))
         )}

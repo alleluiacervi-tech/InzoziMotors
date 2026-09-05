@@ -35,7 +35,7 @@ function ScoreCircle({ score, maxScore }) {
   );
 }
 
-function CategoryRow({ cat, defaultExpanded }) {
+function CategoryRow({ cat, defaultExpanded, t }) {
   const [open, setOpen] = useState(defaultExpanded);
   const pct = cat.maxPts > 0 ? cat.earned / cat.maxPts : 0;
   const status = pct >= 1 ? 'pass' : pct >= 0.85 ? 'minor' : 'warn';
@@ -78,7 +78,7 @@ function CategoryRow({ cat, defaultExpanded }) {
       {open && cat.flags.length === 0 && (
         <View style={styles.allPassRow}>
           <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-          <Text style={styles.allPassText}>All items passed — no issues noted</Text>
+          <Text style={styles.allPassText}>{t('inspection.passedAll')}</Text>
         </View>
       )}
     </Pressable>
@@ -89,7 +89,7 @@ export default function InspectionReportScreen({ navigation, route }) {
   const car = route.params?.car;
   // Deep links (sawa://cars/<id>/inspection) carry carId, not a car object.
   const carId = String(route.params?.carId || car?.id || '');
-  const { demoMode } = useApp();
+  const { demoMode, t } = useApp();
   const isApiCar = carId.includes('-'); // UUID = real listing; '1'…'25' = bundled demo
 
   // The mock report exists for the demo catalogue in dev builds ONLY. A real
@@ -123,15 +123,15 @@ export default function InspectionReportScreen({ navigation, route }) {
   if (!data) {
     return (
       <Screen background={colors.bg}>
-        <BackHeader title="Inspection Report" onBack={() => navigation.goBack()} />
+        <BackHeader title={t('inspection.title')} onBack={() => navigation.goBack()} />
         {failed || !isApiCar ? (
           <ErrorState
             icon="document-text-outline"
-            title="Report not available"
-            sub="We couldn't load the inspection report for this car. Check your connection and try again."
+            title={t('inspection.subtitle')}
+            sub={t('settings.networkError')}
           />
         ) : (
-          <LoadingState label="Loading inspection report…" />
+          <LoadingState label={t('inspection.loadingChecklist')} />
         )}
       </Screen>
     );
@@ -152,7 +152,7 @@ export default function InspectionReportScreen({ navigation, route }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Inspection Report" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('inspection.title')} onBack={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Hero */}
@@ -164,31 +164,31 @@ export default function InspectionReportScreen({ navigation, route }) {
             <ScoreCircle score={data.score} maxScore={data.maxScore} />
             <View style={{ flex: 1, paddingLeft: 8 }}>
               <Text style={styles.heroTitle}>
-                {certified ? 'Inspection Passed' : 'Passed with Flags'}
+                {certified ? t('inspection.statusPassed') : t('inspection.flagsPresent')}
               </Text>
               {car && <Text style={styles.heroCar}>{car.title || car.make + ' ' + car.model}</Text>}
               <Text style={styles.heroDate}>{data.inspector}</Text>
-              <Text style={styles.heroDate}>Inspected {data.date}</Text>
+              <Text style={styles.heroDate}>{t('home.inspected', { score: data.score })}</Text>
             </View>
           </View>
 
           {certified ? (
             <View style={styles.certifiedBadge}>
               <Ionicons name="shield-checkmark" size={16} color="#fff" />
-              <Text style={styles.certifiedText}>Sawa Certified — Scored ≥ 88%</Text>
+              <Text style={styles.certifiedText}>{t('inspection.certifiedScoreNote')}</Text>
             </View>
           ) : (
             <View style={[styles.certifiedBadge, styles.warnBadge]}>
               <Ionicons name="alert-circle" size={16} color="#fff" />
-              <Text style={styles.certifiedText}>Flags present — review before purchase</Text>
+              <Text style={styles.certifiedText}>{t('inspection.flagsPresent')}</Text>
             </View>
           )}
         </LinearGradient>
 
         {/* ── Interactive zone map ── */}
         <View style={styles.zoneCard}>
-          <Text style={styles.zoneTitle}>Vehicle Zone Map</Text>
-          <Text style={styles.zoneSub}>Tap any part of the car to see what our mechanic found</Text>
+          <Text style={styles.zoneTitle}>{t('inspection.zoneMap')}</Text>
+          <Text style={styles.zoneSub}>{t('inspection.zoneMapHint')}</Text>
 
           <CarZoneMap
             categories={data.categories}
@@ -202,7 +202,7 @@ export default function InspectionReportScreen({ navigation, route }) {
             onPress={() => setSelectedZone('documentation')}
           >
             <Ionicons name="document-text-outline" size={16} color={colors.textSecondary} />
-            <Text style={styles.docsRowText}>Documentation & Records</Text>
+            <Text style={styles.docsRowText}>{t('inspection.documentationAndRecords')}</Text>
             <View style={[styles.docsDot, {
               backgroundColor: (() => {
                 const d = data.categories.find((c) => c.id === 'documentation');
@@ -232,7 +232,7 @@ export default function InspectionReportScreen({ navigation, route }) {
               <View style={styles.zoneFlagRow}>
                 <Ionicons name="checkmark-circle" size={13} color={colors.green} />
                 <Text style={[styles.zoneFlagText, { color: colors.greenText }]}>
-                  All items passed — no issues found in this zone
+                  {t('inspection.passedAll')}
                 </Text>
               </View>
             )}
@@ -243,17 +243,17 @@ export default function InspectionReportScreen({ navigation, route }) {
         <View style={styles.chips}>
           <View style={styles.chip}>
             <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-            <Text style={styles.chipText}>{data.categories.filter((c) => c.flags.length === 0).length} categories perfect</Text>
+            <Text style={styles.chipText}>{data.categories.filter((c) => c.flags.length === 0).length} {t('common.verified').toLowerCase()}</Text>
           </View>
           <View style={[styles.chip, allFlags.length > 0 && styles.chipAmber]}>
             <Ionicons name="alert" size={14} color={allFlags.length > 0 ? colors.amber : colors.green} />
             <Text style={[styles.chipText, allFlags.length > 0 && { color: colors.amberText }]}>
-              {allFlags.length} flag{allFlags.length !== 1 ? 's' : ''} noted
+              {allFlags.length} {t('inspection.statusAttention').toLowerCase()}
             </Text>
           </View>
           <View style={styles.chip}>
             <Ionicons name="shield-checkmark" size={14} color={colors.green} />
-            <Text style={styles.chipText}>150 pts checked</Text>
+            <Text style={styles.chipText}>{t('inspection.ptsChecked')}</Text>
           </View>
         </View>
 
@@ -262,7 +262,7 @@ export default function InspectionReportScreen({ navigation, route }) {
           <View style={styles.flagSummary}>
             <View style={styles.flagSummaryHeader}>
               <Ionicons name="alert-circle" size={16} color={colors.amber} />
-              <Text style={styles.flagSummaryTitle}>Flagged Items ({allFlags.length})</Text>
+              <Text style={styles.flagSummaryTitle}>{t('inspection.flagsPresent')} ({allFlags.length})</Text>
             </View>
             {allFlags.map((item, i) => (
               <View key={i} style={styles.flagSummaryRow}>
@@ -276,27 +276,23 @@ export default function InspectionReportScreen({ navigation, route }) {
         )}
 
         {/* Category breakdown */}
-        <Text style={styles.sectionTitle}>Category Breakdown</Text>
+        <Text style={styles.sectionTitle}>{t('inspection.categoryBreakdown')}</Text>
         <View style={styles.categories}>
-          {data.categories.map((cat, i) => (
-            <CategoryRow key={cat.id} cat={cat} defaultExpanded={cat.flags.length > 0} />
+          {data.categories.map((cat) => (
+            <CategoryRow key={cat.id} cat={cat} t={t} defaultExpanded={cat.flags.length > 0} />
           ))}
         </View>
 
         {/* What this means */}
         <View style={styles.explainer}>
-          <Text style={styles.explainerTitle}>What this means for you</Text>
+          <Text style={styles.explainerTitle}>{t('inspection.whatMeansTitle')}</Text>
           <View style={styles.explainerRow}>
             <View style={[styles.explainerDot, { backgroundColor: colors.green }]} />
-            <Text style={styles.explainerText}>Items scored at full marks had zero defects found during physical inspection.</Text>
-          </View>
-          <View style={styles.explainerRow}>
-            <View style={[styles.explainerDot, { backgroundColor: colors.amber }]} />
-            <Text style={styles.explainerText}>Flagged items are real but minor — not disqualifying, but worth knowing before buying.</Text>
+            <Text style={styles.explainerText}>{t('inspection.whatMeansDesc')}</Text>
           </View>
           <View style={styles.explainerRow}>
             <View style={[styles.explainerDot, { backgroundColor: colors.primary }]} />
-            <Text style={styles.explainerText}>This report was completed by a certified Sawa mechanic on-site. Results are not provided by the seller.</Text>
+            <Text style={styles.explainerText}>{t('inspection.subtitle')}</Text>
           </View>
         </View>
 
@@ -309,12 +305,12 @@ export default function InspectionReportScreen({ navigation, route }) {
           />
           <View style={{ flex: 1 }}>
             <Text style={[styles.footerTitle, certified && styles.footerTitleCertified]}>
-              {certified ? 'Sawa Certified Vehicle' : 'Inspected but Not Certified'}
+              {certified ? t('inspection.scoreGrade') : t('inspection.title')}
             </Text>
             <Text style={styles.footerSub}>
               {certified
-                ? 'Scored ≥ 88% · Passed all configured critical safety checks'
-                : 'Scored below 88% threshold · Flags require buyer attention'}
+                ? t('inspection.certifiedScoreNote')
+                : t('inspection.flagsPresent')}
             </Text>
           </View>
         </View>

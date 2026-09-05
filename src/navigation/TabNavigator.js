@@ -34,7 +34,15 @@ const LABELS = {
 
 function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  const { conversations, notifications, comparisonCars } = useApp();
+  const { conversations, notifications, comparisonCars, t } = useApp();
+
+  const labels = {
+    Home: t('common.home'),
+    Search: t('common.cars'),
+    Saved: t('common.saved'),
+    Messages: t('common.messages'),
+    Profile: t('common.account'),
+  };
 
   const messagesBadge = conversations.reduce((sum, c) => sum + (c.unread || 0), 0);
   const notifBadge = notifications.filter((n) => !n.read).length;
@@ -49,7 +57,7 @@ function TabBar({ state, descriptors, navigation }) {
         >
           <Ionicons name="git-compare-outline" size={14} color="#fff" />
           <Text style={styles.compareFloatText}>
-            Compare {comparisonCars.length} car{comparisonCars.length > 1 ? 's' : ''}
+            {t('common.compare')} ({comparisonCars.length})
           </Text>
           <View style={styles.compareFloatDot}>
             <Text style={styles.compareFloatCount}>{comparisonCars.length}</Text>
@@ -87,7 +95,7 @@ function TabBar({ state, descriptors, navigation }) {
               )}
             </View>
             <Text style={[styles.label, { color, fontFamily: focused ? fonts.bold : fonts.medium }]}>
-              {LABELS[route.name]}
+              {labels[route.name] || route.name}
             </Text>
           </Pressable>
         );

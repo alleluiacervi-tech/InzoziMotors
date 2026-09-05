@@ -28,13 +28,13 @@ const QUICK_REPLIES = [
   "Where is the car located?",
 ];
 
-function PinnedCarCard({ car, onViewListing }) {
+function PinnedCarCard({ car, onViewListing, t }) {
   const price = car.type === 'auction' ? car.currentBid : car.price;
   return (
     <View style={styles.pinnedCard}>
       <View style={styles.pinnedLabel}>
         <Ionicons name="pin" size={10} color={colors.textMuted} />
-        <Text style={styles.pinnedLabelText}>Pinned listing</Text>
+        <Text style={styles.pinnedLabelText}>{t('messages.pinnedListing')}</Text>
       </View>
       <View style={styles.pinnedContent}>
         {car.image ? (
@@ -46,12 +46,12 @@ function PinnedCarCard({ car, onViewListing }) {
           {car.inspected && (
             <View style={styles.pinnedBadge}>
               <Ionicons name="shield-checkmark" size={10} color={colors.green} />
-              <Text style={styles.pinnedBadgeText}>150-pt Inspected</Text>
+              <Text style={styles.pinnedBadgeText}>{t('common.verified')}</Text>
             </View>
           )}
         </View>
         <Pressable style={styles.viewListingBtn} onPress={onViewListing}>
-          <Text style={styles.viewListingText}>View</Text>
+          <Text style={styles.viewListingText}>{t('common.view')}</Text>
           <Ionicons name="chevron-forward" size={11} color={colors.primary} />
         </Pressable>
       </View>
@@ -68,13 +68,13 @@ export default function ChatScreen({ navigation, route }) {
   const {
     getMessages, sendMessage, loadConversationMessages, getOrCreateConversation,
     sendTyping, typingConvId, setActiveConversation, conversations,
-    blockUser, reportConversation, getConversationMeta,
+    blockUser, reportConversation, getConversationMeta, t,
   } = useApp();
   const [activeConvId, setActiveConvId] = useState(route.params?.convId);
   // A push tap or deep link carries only convId — resolve the display name
   // from the conversation list rather than a hardcoded demo dealer.
   const conversation = conversations.find((c) => c.id === (activeConvId || convId));
-  const name = route.params?.name || conversation?.name || 'Chat';
+  const name = route.params?.name || conversation?.name || t('common.chat');
   const messages = getMessages(activeConvId || convId);
   const [text, setText] = useState('');
   const scrollRef = useRef(null);
@@ -216,10 +216,6 @@ export default function ChatScreen({ navigation, route }) {
     }
   };
 
-  const handleArrangeViewing = () => {
-    send("I'd like to arrange a viewing. What times work for you this week?");
-  };
-
   return (
     <Screen background={colors.bg}>
       <BackHeader
@@ -230,7 +226,7 @@ export default function ChatScreen({ navigation, route }) {
             {car ? (
               <Pressable
                 style={styles.headerBtn}
-                onPress={() => navigation.navigate('VehicleDetail', { car })} accessibilityRole="button" accessibilityLabel="View listing"
+                onPress={() => navigation.navigate('VehicleDetail', { car })} accessibilityRole="button" accessibilityLabel={t('messages.viewCar')}
               >
                 <Ionicons name="car-outline" size={18} color={colors.textSecondary} />
               </Pressable>
@@ -258,11 +254,12 @@ export default function ChatScreen({ navigation, route }) {
           {car && (
             <PinnedCarCard
               car={car}
+              t={t}
               onViewListing={() => navigation.navigate('VehicleDetail', { car })}
             />
           )}
 
-          <Text style={styles.daySep}>Today</Text>
+          <Text style={styles.daySep}>{t('common.today')}</Text>
 
           {messages.map((m) => (
             <View key={m.id} style={[styles.bubbleRow, m.me ? styles.bubbleRowMe : styles.bubbleRowThem]}>
@@ -289,37 +286,17 @@ export default function ChatScreen({ navigation, route }) {
                 <Text style={styles.senderInitial}>{name[0]}</Text>
               </View>
               <View style={[styles.bubble, styles.bubbleThem]}>
-                <Text style={[styles.bubbleText, { color: colors.textMuted }]}>typing…</Text>
+                <Text style={[styles.bubbleText, { color: colors.textMuted }]}>{t('common.loading')}</Text>
               </View>
             </View>
           )}
         </ScrollView>
 
-        {/* Quick replies */}
-        {showQuickReplies && messages.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.quickRepliesScroll}
-            contentContainerStyle={styles.quickRepliesContent}
-          >
-            <Pressable style={[styles.quickChip, styles.quickChipArrange]} onPress={handleArrangeViewing}>
-              <Ionicons name="calendar-outline" size={13} color="#fff" />
-              <Text style={[styles.quickChipText, { color: '#fff' }]}>Arrange Viewing</Text>
-            </Pressable>
-            {QUICK_REPLIES.map((reply) => (
-              <Pressable key={reply} style={styles.quickChip} onPress={() => handleQuickReply(reply)}>
-                <Text style={styles.quickChipText}>{reply}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-
         {/* Input bar */}
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
-            placeholder="Message…"
+            placeholder={t('messages.typeMessage')}
             placeholderTextColor={colors.textMuted}
             value={text}
             onChangeText={handleTextChange}
@@ -330,7 +307,7 @@ export default function ChatScreen({ navigation, route }) {
           <Pressable
             style={[styles.send, !text.trim() && styles.sendDisabled]}
             onPress={() => send()}
-            disabled={!text.trim()} accessibilityRole="button" accessibilityLabel="Send message"
+            disabled={!text.trim()} accessibilityRole="button" accessibilityLabel={t('messages.send')}
           >
             <Ionicons name="arrow-up" size={20} color="#fff" />
           </Pressable>

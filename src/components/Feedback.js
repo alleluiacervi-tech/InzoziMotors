@@ -3,12 +3,8 @@ import { View, Text, StyleSheet, Animated, Pressable, Modal } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, fonts, shadows } from '../theme';
+import { useApp } from '../context/AppContext';
 
-// Branded feedback layer — replaces OS Alert popups.
-//   showToast(message, 'success' | 'error' | 'info')  — calm bottom snackbar
-//   await showConfirm({ title, message, confirmLabel, cancelLabel, destructive, hideCancel })
-//   await showActionSheet({ title, message, options: [{ label, icon }] }) -> index | -1
-// Mount <FeedbackHost /> once (App.js); the imperative API works anywhere.
 let toastFn = null;
 let confirmFn = null;
 let sheetFn = null;
@@ -21,7 +17,6 @@ export function showConfirm(opts) {
   return confirmFn ? confirmFn(opts) : Promise.resolve(false);
 }
 
-// Resolves with the chosen option's index, or -1 if dismissed.
 export function showActionSheet(opts) {
   return sheetFn ? sheetFn(opts) : Promise.resolve(-1);
 }
@@ -33,6 +28,7 @@ const TOAST_META = {
 };
 
 export default function FeedbackHost() {
+  const { t } = useApp();
   const insets = useSafeAreaInsets();
 
   // ── Toast ──
@@ -110,17 +106,13 @@ export default function FeedbackHost() {
               ]}
               onPress={() => close(true)}
               accessibilityRole="button"
-              accessibilityLabel={confirm?.confirmLabel || 'Confirm'}
+              accessibilityLabel={confirm?.confirmLabel || t('common.confirm')}
             >
-              <Text style={styles.confirmBtnText}>{confirm?.confirmLabel || 'Confirm'}</Text>
+              <Text style={styles.confirmBtnText}>{confirm?.confirmLabel || t('common.confirm')}</Text>
             </Pressable>
-            {/* `hideCancel` for the cases that are an acknowledgement rather
-                than a choice — "your account is closed, here is the date you
-                can reopen it by". A Cancel button under a statement of fact
-                reads as though the fact can be declined. */}
             {confirm?.hideCancel ? null : (
               <Pressable style={({ pressed }) => [styles.cancelBtn, pressed && styles.controlPressed]} onPress={() => close(false)} hitSlop={6} accessibilityRole="button">
-                <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || 'Cancel'}</Text>
+                <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || t('common.cancel')}</Text>
               </Pressable>
             )}
           </Pressable>
@@ -143,7 +135,7 @@ export default function FeedbackHost() {
               ))}
             </View>
             <Pressable style={({ pressed }) => [styles.cancelBtn, pressed && styles.controlPressed]} onPress={() => closeSheet(-1)} hitSlop={6} accessibilityRole="button">
-              <Text style={styles.cancelBtnText}>{sheet?.cancelLabel || 'Cancel'}</Text>
+              <Text style={styles.cancelBtnText}>{sheet?.cancelLabel || t('common.cancel')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>

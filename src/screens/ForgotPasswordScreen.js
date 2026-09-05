@@ -6,14 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
-import { colors, radius, shadows, fonts } from '../theme';
+import { colors, radius, fonts } from '../theme';
 import { showToast } from '../components/Feedback';
 import authApi from '../api/auth';
+import { useApp } from '../context/AppContext';
 
-// Two steps in one screen: request a code, then set the new password. The
-// server never says whether an email exists, so step 2 always follows step 1 —
-// a wrong address simply produces a code that never arrives.
 export default function ForgotPasswordScreen({ navigation, route }) {
+  const { t } = useApp();
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState(route?.params?.email || '');
   const [code, setCode] = useState('');
@@ -21,15 +20,13 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  // Dev builds get the code back in the response — there is no mail provider
-  // yet, and typing a code you cannot receive would make this untestable.
   const [devCode, setDevCode] = useState(null);
 
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
 
   const requestCode = async () => {
     if (!emailValid || busy) {
-      setError('Enter the email address on your account.');
+      setError(t('forgotPassword.errValidEmail'));
       return;
     }
     setBusy(true);
@@ -39,7 +36,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
       if (res?.dev_code) setDevCode(res.dev_code);
       setStep(1);
     } catch (err) {
-      setError(err.message || 'Could not start the reset. Please try again.');
+      setError(err.message || t('forgotPassword.invalidCode'));
     } finally {
       setBusy(false);
     }
@@ -48,25 +45,25 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const submitReset = async () => {
     if (busy) return;
     if (code.trim().length !== 6) {
-      setError('Enter the 6-digit code we sent you.');
+      setError(t('forgotPassword.err6Digit'));
       return;
     }
     if (password.length < 6) {
-      setError('Your new password needs at least 6 characters.');
+      setError(t('forgotPassword.errMinPass'));
       return;
     }
     if (password !== confirm) {
-      setError('Both passwords need to match.');
+      setError(t('forgotPassword.errMatchPass'));
       return;
     }
     setBusy(true);
     setError(null);
     try {
       await authApi.resetPassword(email.trim().toLowerCase(), code.trim(), password);
-      showToast('Password updated — sign in with your new password.', 'success');
+      showToast(t('forgotPassword.successToast'), 'success');
       navigation.replace('SignIn', { email: email.trim().toLowerCase() });
     } catch (err) {
-      setError(err.message || 'That reset code is invalid or has expired.');
+      setError(err.message || t('forgotPassword.invalidCode'));
     } finally {
       setBusy(false);
     }
@@ -75,7 +72,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   return (
     <Screen background={colors.bg}>
       <BackHeader
-        title="Reset password"
+        title={t('forgotPassword.title')}
         onBack={() => (step === 1 ? setStep(0) : navigation.goBack())}
       />
       <KeyboardAvoidingView
@@ -88,20 +85,20 @@ export default function ForgotPasswordScreen({ navigation, route }) {
           </View>
 
           <Text style={styles.title}>
-            {step === 0 ? 'Forgot your password?' : 'Enter your code'}
+            {step === 0 ? t('forgotPassword.forgotTitle') : t('forgotPassword.enterCodeTitle')}
           </Text>
           <Text style={styles.sub}>
             {step === 0
-              ? 'Tell us the email on your account and we will send a 6-digit reset code.'
-              : `If ${email} has a Sawa Cars account, a 6-digit code is on its way. It expires in 30 minutes.`}
+              ? t('forgotPassword.forgotSub')
+              : t('forgotPassword.enterCodeSub', { email })}
           </Text>
 
           {step === 0 ? (
             <>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('forgotPassword.email')}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
-                placeholder="you@email.com"
+                placeholder={t('forgotPassword.emailPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={email}
                 onChangeText={(v) => { setEmail(v); setError(null); }}
@@ -111,7 +108,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
               />
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <Button
-                title={busy ? 'Sending…' : 'Send Reset Code'}
+                title={busy ? t('forgotPassword.sending') : t('forgotPassword.sendResetCode')}
                 onPress={requestCode}
                 disabled={busy}
                 style={{ marginTop: 20 }}
@@ -121,18 +118,18 @@ export default function ForgotPasswordScreen({ navigation, route }) {
             <>
               {devCode ? (
                 <View style={styles.devBox}>
-                  <Text style={styles.devLabel}>Development build</Text>
+                  <Text style={styles.devLabel}>{t('forgotPassword.devBuild')}</Text>
                   <Text style={styles.devCode}>{devCode}</Text>
                   <Text style={styles.devHint}>
-                    Shown because no email provider is connected yet. This never appears in production.
+                    {t('forgotPassword.devHint')}
                   </Text>
                 </View>
               ) : null}
 
-              <Text style={styles.label}>6-digit code</Text>
+              <Text style={styles.label}>{t('forgotPassword.codeLabel')}</Text>
               <TextInput
                 style={[styles.input, styles.codeInput, error && styles.inputError]}
-                placeholder="000000"
+                placeholder={t('forgotPassword.codePlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={code}
                 onChangeText={(v) => { setCode(v.replace(/\D/g, '').slice(0, 6)); setError(null); }}
@@ -140,10 +137,10 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                 maxLength={6}
               />
 
-              <Text style={styles.label}>New password</Text>
+              <Text style={styles.label}>{t('forgotPassword.newPassword')}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
-                placeholder="At least 6 characters"
+                placeholder={t('forgotPassword.newPasswordPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={password}
                 onChangeText={(v) => { setPassword(v); setError(null); }}
@@ -151,10 +148,10 @@ export default function ForgotPasswordScreen({ navigation, route }) {
                 autoCapitalize="none"
               />
 
-              <Text style={styles.label}>Confirm new password</Text>
+              <Text style={styles.label}>{t('forgotPassword.confirmPassword')}</Text>
               <TextInput
                 style={[styles.input, error && styles.inputError]}
-                placeholder="Repeat it"
+                placeholder={t('forgotPassword.confirmPasswordPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={confirm}
                 onChangeText={(v) => { setConfirm(v); setError(null); }}
@@ -165,13 +162,13 @@ export default function ForgotPasswordScreen({ navigation, route }) {
               {error ? <Text style={styles.error}>{error}</Text> : null}
 
               <Button
-                title={busy ? 'Updating…' : 'Set New Password'}
+                title={busy ? t('forgotPassword.updating') : t('forgotPassword.setNewPassword')}
                 onPress={submitReset}
                 disabled={busy}
                 style={{ marginTop: 20 }}
               />
               <Pressable onPress={requestCode} disabled={busy} style={styles.resend}>
-                <Text style={styles.resendText}>Didn't get a code? Send another</Text>
+                <Text style={styles.resendText}>{t('forgotPassword.didntGetCode')}</Text>
               </Pressable>
             </>
           )}

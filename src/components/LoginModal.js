@@ -1,14 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows, fonts } from '../theme';
+import { colors, shadows, fonts } from '../theme';
 import { LogoMark } from './Logo';
 import Button from './Button';
+import { useApp } from '../context/AppContext';
 
-// There is no social sign-in yet — the old "Continue with Google" here did not
-// talk to Google at all, it just dropped the user into the demo account. Both
-// paths below now say exactly what they do.
 export default function LoginModal({ visible, onClose, onSignIn, onContinueAsGuest }) {
+  const { t } = useApp();
+
   return (
     <Modal
       visible={visible}
@@ -19,7 +19,7 @@ export default function LoginModal({ visible, onClose, onSignIn, onContinueAsGue
       <View style={styles.backdrop}>
         <View style={[styles.container, shadows.card]}>
           {/* Close button */}
-          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close">
+          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('common.close')}>
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
 
@@ -27,19 +27,16 @@ export default function LoginModal({ visible, onClose, onSignIn, onContinueAsGue
             <LogoMark size={52} />
           </View>
 
-          <Text style={styles.title}>Sign in to continue</Text>
+          <Text style={styles.title}>{t('auth.signInToContinue')}</Text>
           <Text style={styles.subtitle}>
-            Saving cars and messaging sellers{'\n'}requires an account.
+            {t('auth.signInRequiredSub')}
           </Text>
 
-          <Button title="Sign in" onPress={onSignIn} />
+          <Button title={t('common.signIn')} onPress={onSignIn} />
 
-          {/* The demo account only exists in development builds — see DEMO_MODE
-              in AppContext. Rendering it in a release build would offer a door
-              that leads nowhere. */}
           {onContinueAsGuest && (
             <Button
-              title="Browse with a demo account"
+              title={t('auth.browseDemoAccount')}
               variant="secondary"
               onPress={onContinueAsGuest}
               style={styles.guestBtn}

@@ -11,12 +11,6 @@ import { showToast } from '../components/Feedback';
 import carsApi from '../api/cars';
 import ChipSelect from '../components/ChipSelect';
 
-// The list a seller picks from now comes from the server (GET /makes), so it
-// widens without an App Store release. This stays only as the offline floor —
-// what a submission started on a phone with no signal can still offer. It is
-// deliberately the SHORT list: the twenty everyday brands, no more, because a
-// stale bundled list that looks complete is worse than an obviously partial one
-// next to an "Other brand" field that has always worked.
 const FALLBACK_MAKES = [
   'Toyota', 'Nissan', 'Mitsubishi', 'Suzuki', 'Isuzu', 'Honda', 'Mazda',
   'Subaru', 'Daihatsu', 'Lexus', 'Hyundai', 'Kia', 'Volkswagen',
@@ -25,10 +19,7 @@ const FALLBACK_MAKES = [
 const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 
 export default function CarValuationScreen({ navigation }) {
-  const { cars, makes } = useApp();
-  // Served list when it has arrived, bundled floor when it has not. Names only:
-  // ChipSelect takes strings, and its "Other brand" field means an unlisted
-  // brand has always been submittable either way.
+  const { cars, makes, t } = useApp();
   const MAKES = useMemo(
     () => (makes.length ? makes.map((m) => m.name) : FALLBACK_MAKES),
     [makes]
@@ -47,13 +38,11 @@ export default function CarValuationScreen({ navigation }) {
     setEstimating(true);
     const km = parseInt(mileage.replace(/\D/g, ''), 10) || 0;
     try {
-      // Real market comparables from the platform when the API is up
       const est = await carsApi.getValuation({ make, year, mileage: km });
       if (est && est.comparables >= 2 && est.low && est.high) {
         setResult({ low: est.low, high: est.high, comparables: est.comparables });
         return;
       }
-      // Not enough server-side data → local estimator over bundled inventory
       setResult(localEstimate(km));
     } catch {
       setResult(localEstimate(km));
@@ -62,12 +51,10 @@ export default function CarValuationScreen({ navigation }) {
     }
   };
 
-  // estimateValuation returns null with an empty catalogue (offline) — say so
-  // instead of rendering a "$NaN — $NaN" range.
   const localEstimate = (km) => {
     const est = estimateValuation({ make, year, mileage: km }, cars);
     if (!est) {
-      showToast("We couldn't estimate right now — not enough market data. Check your connection and try again.", 'error');
+      showToast(t('carValuation.notEnoughData'), 'error');
       return null;
     }
     return est;
@@ -77,11 +64,11 @@ export default function CarValuationScreen({ navigation }) {
   if (result) {
     return (
       <Screen background={colors.bg}>
-        <BackHeader title="Your Valuation" onBack={() => setResult(null)} />
+        <BackHeader title={t('carValuation.yourValuation')} onBack={() => setResult(null)} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
           <View style={styles.resultCard}>
-            <Text style={styles.resultEyebrow}>ESTIMATED MARKET VALUE</Text>
+            <Text style={styles.resultEyebrow}>{t('carValuation.estimatedMarketValue')}</Text>
             <Text style={styles.resultCar}>{year} {make} {model || ''}</Text>
             <View style={styles.rangeRow}>
               <Text style={styles.rangeValue}>RWF {result.low.toLocaleString()}</Text>
@@ -90,21 +77,18 @@ export default function CarValuationScreen({ navigation }) {
             </View>
             <Text style={styles.resultBasis}>
               {result.comparables >= 2
-                ? `Based on ${result.comparables} similar ${make} cars on Sawa Cars`
-                : 'Based on current Kigali market data'}
+                ? t('carValuation.basedOnComparables', { count: result.comparables, make })
+                : t('carValuation.basedOnMarket')}
             </Text>
           </View>
 
           <View style={styles.stepsCard}>
-            <Text style={styles.stepsTitle}>Get the certified price</Text>
-            <Text style={styles.stepsSub}>
-              Cars that pass our 150-point inspection sell for up to 12% more —
-              and 3× faster. The inspection is the listing.
-            </Text>
+            <Text style={styles.stepsTitle}>{t('carValuation.getCertifiedPrice')}</Text>
+            <Text style={styles.stepsSub}>{t('carValuation.certifiedPriceSub')}</Text>
             {[
-              { icon: 'calendar-outline', text: 'Book a free inspection slot at any Sawa center' },
-              { icon: 'shield-checkmark-outline', text: 'Pass the 150-point check — we photograph & list it' },
-              { icon: 'cash-outline', text: 'Meet verified buyers, hand over at our center' },
+              { icon: 'calendar-outline', text: t('carValuation.step1') },
+              { icon: 'shield-checkmark-outline', text: t('carValuation.step2') },
+              { icon: 'cash-outline', text: t('carValuation.step3') },
             ].map((s) => (
               <View key={s.text} style={styles.stepRow}>
                 <View style={styles.stepIcon}>
@@ -116,7 +100,7 @@ export default function CarValuationScreen({ navigation }) {
           </View>
 
           <Button
-            title="Submit for Inspection"
+            title={t('carValuation.submitForInspection')}
             icon="calendar-outline"
             onPress={() => navigation.navigate('CarSubmission', {
               prefill: {
@@ -129,7 +113,7 @@ export default function CarValuationScreen({ navigation }) {
             style={{ marginTop: 20 }}
           />
           <Pressable onPress={() => setResult(null)} style={{ marginTop: 14 }}>
-            <Text style={styles.tryAgain}>Value a different car</Text>
+            <Text style={styles.tryAgain}>{t('carValuation.valueAnotherCar')}</Text>
           </Pressable>
         </ScrollView>
       </Screen>
@@ -138,37 +122,34 @@ export default function CarValuationScreen({ navigation }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="What's My Car Worth?" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('carValuation.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-        <Text style={styles.lede}>
-          Get an instant market estimate — free, no account needed. Takes 30 seconds.
-        </Text>
+        <Text style={styles.lede}>{t('carValuation.lede')}</Text>
 
-        {/* Make. Same reasoning as the submission form: someone asking what
-            their Peugeot is worth must be able to say "Peugeot". */}
-        <Text style={styles.label}>Make</Text>
+        {/* Make */}
+        <Text style={styles.label}>{t('carValuation.make')}</Text>
         <ChipSelect
           options={MAKES}
           selected={make}
           onSelect={setMake}
           allowOther
-          otherLabel="Other brand"
-          placeholder="Type the make, e.g. Peugeot"
+          otherLabel={t('carValuation.otherBrand')}
+          placeholder={t('carValuation.makePlaceholder')}
         />
 
         {/* Model */}
-        <Text style={styles.label}>Model (optional)</Text>
+        <Text style={styles.label}>{t('carValuation.model')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. RAV4, Civic, Forester"
+          placeholder={t('carValuation.modelPlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={model}
           onChangeText={setModel}
         />
 
         {/* Year */}
-        <Text style={styles.label}>Year</Text>
+        <Text style={styles.label}>{t('carValuation.year')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {YEARS.map((y) => {
             const on = year === y;
@@ -181,10 +162,10 @@ export default function CarValuationScreen({ navigation }) {
         </ScrollView>
 
         {/* Mileage */}
-        <Text style={styles.label}>Mileage (km)</Text>
+        <Text style={styles.label}>{t('carValuation.mileage')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. 45000"
+          placeholder={t('carValuation.mileagePlaceholder')}
           placeholderTextColor={colors.textMuted}
           value={mileage}
           onChangeText={setMileage}
@@ -192,7 +173,7 @@ export default function CarValuationScreen({ navigation }) {
         />
 
         <Button
-          title={estimating ? 'Checking the market…' : canEstimate ? 'Get My Valuation' : 'Fill in make, year & mileage'}
+          title={estimating ? t('carValuation.checkingMarket') : canEstimate ? t('carValuation.getValuation') : t('carValuation.fillRequired')}
           icon="trending-up-outline"
           onPress={handleEstimate}
           disabled={!canEstimate || estimating}
@@ -201,7 +182,7 @@ export default function CarValuationScreen({ navigation }) {
 
         <View style={styles.privacyRow}>
           <Ionicons name="lock-closed-outline" size={12} color={colors.textMuted} />
-          <Text style={styles.privacyText}>No account required. We never share your details.</Text>
+          <Text style={styles.privacyText}>{t('carValuation.noAccountRequired')}</Text>
         </View>
       </ScrollView>
     </Screen>
@@ -231,7 +212,6 @@ const styles = StyleSheet.create({
   },
   privacyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 14 },
   privacyText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
-  // Result state
   resultCard: {
     backgroundColor: colors.navyMid,
     borderRadius: radius.xxl, padding: 24,

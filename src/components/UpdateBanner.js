@@ -1,15 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// "A new version is ready."
-//
-// Deliberately a banner and not a modal. An update is good news, not an
-// interruption: nobody should have a dialog thrown at them mid-search over a
-// copy fix. It appears only once a new bundle is DOWNLOADED and can be applied
-// instantly, so the button never leads to a progress spinner.
-//
-// It checks on mount and again whenever the app returns to the foreground.
-// The config's ON_LOAD check only runs at a cold start, and a phone that never
-// gets fully closed can otherwise sit on a stale bundle for weeks.
-// ─────────────────────────────────────────────────────────────────────────────
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, AppState } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,42 +7,33 @@ import {
   checkForUpdate, applyUpdate, updatesEnabled, UPDATE_STATUS,
   getUpdateMode, UPDATE_MODE,
 } from '../utils/updates';
+import { useApp } from '../context/AppContext';
 
 export default function UpdateBanner() {
+  const { t } = useApp();
   const [ready, setReady] = useState(false);
   const [applying, setApplying] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const appState = useRef(AppState.currentState);
-  // Set when a bundle is downloaded while the preference is `automatic`, so the
-  // next return to the app can apply it. Held in a ref rather than state: it
-  // must survive a re-render without causing one.
   const pendingAuto = useRef(false);
   const insets = useSafeAreaInsets();
 
   const look = useCallback(async (returning) => {
     const mode = await getUpdateMode();
 
-    // Automatic mode, an update already downloaded, and the person has just
-    // come BACK to the app — the one moment a restart costs them nothing,
-    // because they were not in the middle of anything.
     if (mode === UPDATE_MODE.AUTOMATIC && returning && pendingAuto.current) {
-      if (await applyUpdate()) return;   // the runtime relaunches; nothing below runs
-      pendingAuto.current = false;       // could not relaunch — fall through and ask
+      if (await applyUpdate()) return;
+      pendingAuto.current = false;
     }
 
     const { status } = await checkForUpdate();
     if (status !== UPDATE_STATUS.AVAILABLE) return;
 
     if (mode === UPDATE_MODE.AUTOMATIC) {
-      // Downloaded and armed. Deliberately NOT applied here: this check also
-      // runs on a cold start, and relaunching the app a second after someone
-      // opened it looks like a crash. It applies on the next return instead.
       pendingAuto.current = true;
       return;
     }
 
-    // A new update supersedes an earlier dismissal: the person said "not that
-    // one", not "never tell me again".
     setDismissed(false);
     setReady(true);
   }, []);
@@ -73,10 +52,6 @@ export default function UpdateBanner() {
   if (!ready || dismissed) return null;
 
   return (
-    // Floated over whatever screen is showing rather than inserted into a
-    // layout, so no screen has to make room for something that is absent
-    // almost all of the time. Offset above the tab bar and the home
-    // indicator — a banner under either is a banner nobody can tap.
     <View
       style={[styles.wrap, { bottom: insets.bottom + TAB_BAR_CLEARANCE }]}
       accessibilityLiveRegion="polite"
@@ -84,8 +59,8 @@ export default function UpdateBanner() {
     >
       <Ionicons name="arrow-down-circle" size={20} color="#fff" />
       <View style={styles.copy}>
-        <Text style={styles.title}>A new version is ready</Text>
-        <Text style={styles.body}>Restart to get the latest improvements. It takes a second.</Text>
+        <Text style={styles.title}>{t('updates.newVersionReady')}</Text>
+        <Text style={styles.body}>{t('updates.restartCopy')}</Text>
       </View>
       <Pressable
         accessibilityRole="button"
@@ -93,17 +68,15 @@ export default function UpdateBanner() {
         disabled={applying}
         onPress={async () => {
           setApplying(true);
-          // If the relaunch cannot happen, the banner stays rather than
-          // vanishing as though something had been done.
           const ok = await applyUpdate();
           if (!ok) setApplying(false);
         }}
       >
-        <Text style={styles.actionText}>{applying ? 'Restarting…' : 'Restart'}</Text>
+        <Text style={styles.actionText}>{applying ? t('updates.restarting') : t('updates.restart')}</Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Dismiss"
+        accessibilityLabel={t('updates.dismiss')}
         hitSlop={10}
         onPress={() => setDismissed(true)}
       >
@@ -113,8 +86,6 @@ export default function UpdateBanner() {
   );
 }
 
-// Roughly a tab bar's height. Approximate on purpose: the exact value differs
-// per device and being a few points clear is enough.
 const TAB_BAR_CLEARANCE = 68;
 
 const styles = StyleSheet.create({

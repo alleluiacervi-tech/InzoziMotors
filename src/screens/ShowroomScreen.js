@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, Image, FlatList, Pressable, useWindowDimensions,
+  View, Text, StyleSheet, FlatList, Pressable, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,11 +11,10 @@ import { formatPrice } from '../data/cars';
 import { getCertTier } from '../data/certification';
 import Photo from '../components/Photo';
 import { PHOTO } from '../utils/photo';
+import { useApp } from '../context/AppContext';
 
-// The showroom — a dark, immersive "walk past the glass" experience.
-// One car per page, wide photo, quiet caption. Deliberately the opposite
-// of the white marketplace: this is window-shopping at night.
 export default function ShowroomScreen({ navigation, route }) {
+  const { t } = useApp();
   const { title, subtitle, cars = [] } = route.params || {};
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -30,11 +29,11 @@ export default function ShowroomScreen({ navigation, route }) {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10} accessibilityRole="button" accessibilityLabel="Go back">
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('common.back')}>
           <Ionicons name="chevron-back" size={20} color="#fff" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>{title}</Text>
+          <Text style={styles.headerTitle}>{title || t('showroom.title')}</Text>
           {subtitle ? <Text style={styles.headerSub}>{subtitle}</Text> : null}
         </View>
         <Text style={styles.headerCount}>{idx + 1} / {cars.length}</Text>
@@ -71,7 +70,7 @@ export default function ShowroomScreen({ navigation, route }) {
           <View style={styles.captionRow}>
             {tier && <Badge variant={tier.variant} label={tier.short} />}
             <Text style={styles.captionPrice}>
-              {car.listingType === 'rental' ? `${formatPrice(car.dailyRate || 0)}/day` : formatPrice(car.type === 'auction' ? car.currentBid : car.price)}
+              {car.listingType === 'rental' ? `${formatPrice(car.dailyRate || 0)}${t('home.perDay')}` : formatPrice(car.type === 'auction' ? car.currentBid : car.price)}
             </Text>
           </View>
           <Pressable
@@ -81,7 +80,7 @@ export default function ShowroomScreen({ navigation, route }) {
               { car }
             )}
           >
-            <Text style={styles.viewBtnText}>View This Car</Text>
+            <Text style={styles.viewBtnText}>{t('showroom.viewThisCar')}</Text>
             <Ionicons name="arrow-forward" size={15} color="#fff" />
           </Pressable>
 

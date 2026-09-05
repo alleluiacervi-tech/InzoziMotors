@@ -8,45 +8,45 @@ import { colors, radius, fonts } from '../theme';
 import { useSellerGate } from '../hooks/useSellerGate';
 import { useApp } from '../context/AppContext';
 
-const STEPS = [
-  { icon: 'shield-checkmark-outline', title: 'Zero Paperwork Upfront', sub: 'ID and ownership checked in person at your inspection' },
-  { icon: 'scan-outline', title: '150-Point Curation', sub: 'Get certified by Sawa inspection specialists' },
-  { icon: 'ribbon-outline', title: 'Showcase Premium Status', sub: 'Position your car as high-intent certified property' },
-  { icon: 'people-outline', title: 'Nationwide Client Match', sub: 'Direct connection with verified buyers across Kigali' },
-];
-
-const OPTIONS = [
-  { icon: 'trending-up-outline', title: "What's My Car Worth?", sub: 'Free instant estimate — 30 seconds', accent: colors.green, screen: 'CarValuation' },
-  // Account-gated only: identity approval is enforced later, before publication.
-  { icon: 'shield-checkmark-outline', title: 'Submit for Certification', sub: '150-point inspection, we list it for you', accent: colors.primary, screen: 'CarSubmission', gated: true },
-  { icon: 'grid-outline', title: 'My Submissions', sub: 'Track your cars through the pipeline', accent: colors.amber, screen: 'SellerDashboard' },
-];
-
-const VERIFY_BANNER = {
-  none: {
-    icon: 'shield-outline',
-    title: 'Verify before your listing goes live',
-    body: 'You can submit now. Complete this one-time check before publication and public contact activation.',
-    cta: 'Start verification',
-  },
-  pending: {
-    icon: 'time-outline',
-    title: 'Identity check under review',
-    body: 'Our team is reviewing your documents — usually within 24 hours.',
-    cta: 'View status',
-  },
-  rejected: {
-    icon: 'alert-circle-outline',
-    title: 'Identity check needs attention',
-    body: 'Your documents were not accepted. Send clearer photos and we will re-check.',
-    cta: 'Re-submit documents',
-  },
-};
-
 export default function SellScreen({ navigation }) {
   const gate = useSellerGate(navigation);
-  const { isLoggedIn, idVerificationStatus } = useApp();
-  const banner = isLoggedIn ? VERIFY_BANNER[idVerificationStatus] : null;
+  const { t, isLoggedIn, idVerificationStatus } = useApp();
+
+  const verifyBanner = {
+    none: {
+      icon: 'shield-outline',
+      title: t('sell.verifyBeforeLive'),
+      body: t('sell.verifyBeforeLiveSub'),
+      cta: t('sell.startVerification'),
+    },
+    pending: {
+      icon: 'time-outline',
+      title: t('sell.idCheckPending'),
+      body: t('sell.idCheckPendingSub'),
+      cta: t('sell.viewStatus'),
+    },
+    rejected: {
+      icon: 'alert-circle-outline',
+      title: t('sell.idCheckRejected'),
+      body: t('sell.idCheckRejectedSub'),
+      cta: t('sell.resubmitDocs'),
+    },
+  };
+
+  const banner = isLoggedIn ? verifyBanner[idVerificationStatus] : null;
+
+  const steps = [
+    { icon: 'shield-checkmark-outline', title: t('sell.step1'), sub: t('sell.step1Sub') },
+    { icon: 'scan-outline', title: t('sell.step2'), sub: t('sell.step2Sub') },
+    { icon: 'ribbon-outline', title: t('sell.step3'), sub: t('sell.step3Sub') },
+    { icon: 'people-outline', title: t('sell.step4'), sub: t('sell.step4Sub') },
+  ];
+
+  const options = [
+    { icon: 'trending-up-outline', title: t('sell.optValuationTitle'), sub: t('sell.optValuationSub'), accent: colors.green, screen: 'CarValuation' },
+    { icon: 'shield-checkmark-outline', title: t('sell.optCertificationTitle'), sub: t('sell.optCertificationSub'), accent: colors.primary, screen: 'CarSubmission', gated: true },
+    { icon: 'grid-outline', title: t('sell.optSubmissionsTitle'), sub: t('sell.optSubmissionsSub'), accent: colors.amber, screen: 'SellerDashboard' },
+  ];
 
   const go = (option) =>
     option.gated ? gate(option.screen) : navigation.navigate(option.screen);
@@ -55,11 +55,11 @@ export default function SellScreen({ navigation }) {
     <Screen background={colors.bg}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
         <View style={styles.head}>
-          <Pressable style={styles.dashBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
+          <Pressable style={styles.dashBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={t('common.back')}>
             <Ionicons name="chevron-back" size={20} color={colors.slate700} />
           </Pressable>
-          <Text style={styles.h1}>Sell My Car</Text>
-          <Pressable style={styles.dashBtn} onPress={() => navigation.navigate('SellerDashboard')} accessibilityRole="button" accessibilityLabel="Grid view">
+          <Text style={styles.h1}>{t('sell.sellMyCar')}</Text>
+          <Pressable style={styles.dashBtn} onPress={() => navigation.navigate('SellerDashboard')} accessibilityRole="button" accessibilityLabel={t('sell.optSubmissionsTitle')}>
             <Ionicons name="grid-outline" size={20} color={colors.slate700} />
           </Pressable>
         </View>
@@ -70,12 +70,12 @@ export default function SellScreen({ navigation }) {
             colors={[colors.navyLight, colors.navyMid]}
             style={styles.valCard}
           >
-            <Text style={styles.valEyebrow}>FREE INSTANT VALUATION</Text>
-            <Text style={styles.valTitle}>What's my car worth?</Text>
-            <Text style={styles.valSub}>Instant market estimate in 30 seconds. No account needed.</Text>
+            <Text style={styles.valEyebrow}>{t('sell.freeInstantValuation')}</Text>
+            <Text style={styles.valTitle}>{t('sell.whatsMyCarWorth')}</Text>
+            <Text style={styles.valSub}>{t('sell.instantEstimate30s')}</Text>
             <View style={styles.plate}>
               <Ionicons name="trending-up-outline" size={20} color={colors.blueLight} />
-              <Text style={styles.plateText}>Get my free estimate</Text>
+              <Text style={styles.plateText}>{t('sell.getMyFreeEstimate')}</Text>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </View>
           </LinearGradient>
@@ -97,7 +97,7 @@ export default function SellScreen({ navigation }) {
 
         {/* Options */}
         <View style={styles.options}>
-          {OPTIONS.map((o) => (
+          {options.map((o) => (
             <Pressable key={o.title} style={styles.option} onPress={() => go(o)}>
               <View style={[styles.optionIcon, { backgroundColor: o.accent + '1A' }]}>
                 <Ionicons name={o.icon} size={22} color={o.accent} />
@@ -111,9 +111,9 @@ export default function SellScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>How it works</Text>
+        <Text style={styles.sectionTitle}>{t('sell.howItWorks')}</Text>
         <View style={styles.steps}>
-          {STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <View key={s.title} style={styles.step}>
               <View style={styles.stepNum}>
                 <Text style={styles.stepNumText}>{i + 1}</Text>
@@ -130,7 +130,7 @@ export default function SellScreen({ navigation }) {
         </View>
 
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <Button title="Submit for Inspection" icon="shield-checkmark-outline" onPress={() => gate('CarSubmission')} />
+          <Button title={t('sell.submitForInspection')} icon="shield-checkmark-outline" onPress={() => gate('CarSubmission')} />
         </View>
       </ScrollView>
     </Screen>

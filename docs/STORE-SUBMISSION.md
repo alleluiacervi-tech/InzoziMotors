@@ -154,24 +154,9 @@ Short description (Play):
 
 `Browse inspected cars and rentals, then contact verified providers directly.`
 
-Promotional text (Apple, editable any time without a new build):
+Promotional text (Apple):
 
-`Get real-time alerts on price drops and new listings. Browse staff-inspected vehicles and message verified sellers directly — now in 6 languages including Chinese.`
-
-What's New in This Version (Apple release notes / Play release notes) — version 1.0.3:
-
-> New in this version:
->
-> • Real-time push notifications — get notified instantly when a saved car's price drops, a seller messages you, a new car matching your search is listed, or there's an update on your rental inquiry.
-> • Chinese (中文) added — Sawa Cars now supports English, Kinyarwanda, French, Swahili, Korean and Chinese throughout the app.
-> • Messaging improvements — a conversation with a seller now stays in one thread, so you won't see duplicate conversations with the same person.
-> • Fixed an issue where some 150-point inspection reports could fail to display.
-> • Fixed the account screen not following your chosen language.
-> • General reliability improvements.
-
-Google Play short release notes (≤500 characters), if a shorter variant is needed:
-
-`New: real-time push notifications for price drops, messages, new listings and rental updates. Chinese (中文) added — 6 languages total. Fixed an inspection report display issue, a messaging duplicate-thread bug, and the account screen not translating.`
+`Browse staff-reviewed vehicle listings, read inspection details, and contact verified sellers or rental providers directly in Rwanda.`
 
 Keywords:
 

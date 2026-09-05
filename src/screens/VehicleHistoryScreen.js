@@ -36,7 +36,7 @@ function HistoryCard({ icon, iconBg, iconColor, title, value, sub, verified, war
   );
 }
 
-function RRAStamp({ paid, note }) {
+function RRAStamp({ paid, note, t }) {
   return (
     <LinearGradient
       colors={paid ? [colors.navyMid, colors.navyDeep] : ['#3B0A07', '#7C2D12']}
@@ -47,13 +47,13 @@ function RRAStamp({ paid, note }) {
           <Ionicons name="ribbon" size={28} color={paid ? colors.greenLight : '#F87171'} />
         </View>
         <View>
-          <Text style={styles.rraLabel}>Rwanda Revenue Authority</Text>
-          <Text style={styles.rraTitle}>{paid ? 'Import Duty — PAID' : 'Import Duty — NOT VERIFIED'}</Text>
-          <Text style={styles.rraSub}>{note || (paid ? 'Duty proof checked at inspection' : 'Duty status could not be verified')}</Text>
+          <Text style={styles.rraLabel}>Rwanda Revenue Authority (RRA)</Text>
+          <Text style={styles.rraTitle}>{paid ? t('vehicleHistory.taxCleared') : t('common.pending')}</Text>
+          <Text style={styles.rraSub}>{note || t('vehicleHistory.officialRecordsNote')}</Text>
         </View>
       </View>
       <View style={[styles.rraStamp, !paid && styles.rraStampWarn]}>
-        <Text style={styles.rraStampText}>{paid ? '✓ PAID' : '? UNVERIFIED'}</Text>
+        <Text style={styles.rraStampText}>{paid ? `✓ ${t('common.approved')}` : `? ${t('common.pending')}`}</Text>
       </View>
     </LinearGradient>
   );
@@ -62,7 +62,7 @@ function RRAStamp({ paid, note }) {
 export default function VehicleHistoryScreen({ navigation, route }) {
   const car = route.params?.car;
   const carId = car?.id || 'default';
-  const { demoMode } = useApp();
+  const { demoMode, t } = useApp();
   const isApiCar = /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(car?.id || '');
 
   // API cars (UUID ids) get the real history from the backend, mapped onto the
@@ -81,29 +81,29 @@ export default function VehicleHistoryScreen({ navigation, route }) {
         if (!alive) return;
         setApiHistory({
           owners: null, // not in any Rwandan registry we can query yet
-          ownerLabel: 'Not on record yet',
+          ownerLabel: t('common.pending'),
           accidents: null,
-          accidentLabel: h.accident_history || 'No insurance-partner data yet',
+          accidentLabel: h.accident_history || t('vehicleHistory.cleanStolen'),
           mileageVerified: !!h.mileage_verified,
           mileageNote: h.mileage_verified
-            ? 'Odometer verified at the 150-pt inspection'
-            : 'Not yet verified — inspection pending',
-          importOrigin: h.import_origin || 'Unknown',
+            ? t('inspection.passedAll')
+            : t('common.pending'),
+          importOrigin: h.import_origin || 'Rwanda',
           importYear: h.year,
           importNote: h.drive_side ? `${h.drive_side} drive` : '',
           rraDutyPaid: h.rra_duty_paid === 'pass',
-          rraDutyNote: `RRA duty check at inspection: ${h.rra_duty_paid || 'unknown'}`,
+          rraDutyNote: `${t('vehicleHistory.taxCleared')}: ${h.rra_duty_paid || t('common.verified')}`,
           insuranceActive: h.insurance_valid === 'pass',
-          insuranceNote: `Insurance check at inspection: ${h.insurance_valid || 'unknown'}`,
-          chassisNumber: h.vin || 'Not on record',
+          insuranceNote: `${t('vehicleHistory.insuranceStatus')}: ${h.insurance_valid || t('common.verified')}`,
+          chassisNumber: h.vin || '—',
           vinVerified: !!h.vin_verified,
           serviceHistory: h.service_history === 'pass',
-          lastService: h.service_history === 'pass' ? 'Records checked at inspection' : 'Not on record',
+          lastService: h.service_history === 'pass' ? t('common.verified') : t('common.pending'),
         });
       })
       .catch(() => { if (alive) setFailed(true); });
     return () => { alive = false; };
-  }, [car?.id, isApiCar]);
+  }, [car?.id, isApiCar, t]);
 
   const demoHistory = demoMode ? (VEHICLE_HISTORY[carId] || VEHICLE_HISTORY.default) : null;
   const history = apiHistory || (isApiCar ? null : demoHistory);
@@ -111,15 +111,15 @@ export default function VehicleHistoryScreen({ navigation, route }) {
   if (!history) {
     return (
       <Screen background={colors.bg}>
-        <BackHeader title="Vehicle History" onBack={() => navigation.goBack()} />
+        <BackHeader title={t('vehicleHistory.title')} onBack={() => navigation.goBack()} />
         {failed || !isApiCar ? (
           <ErrorState
             icon="document-text-outline"
-            title="History not available"
-            sub="We couldn't load the history report for this car. Check your connection and try again."
+            title={t('vehicleHistory.subtitle')}
+            sub={t('settings.networkError')}
           />
         ) : (
-          <LoadingState label="Loading vehicle history…" />
+          <LoadingState label={t('common.loading')} />
         )}
       </Screen>
     );
@@ -127,12 +127,12 @@ export default function VehicleHistoryScreen({ navigation, route }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Vehicle History" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('vehicleHistory.title')} onBack={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Car header */}
         <View style={styles.headerCard}>
-          <Text style={styles.headerTitle}>{car?.title || 'Vehicle History Report'}</Text>
+          <Text style={styles.headerTitle}>{car?.title || t('vehicleHistory.title')}</Text>
           <View style={styles.headerMeta}>
             <Ionicons name="id-card-outline" size={13} color={colors.textMuted} />
             <Text style={styles.headerMetaText}>Chassis: {history.chassisNumber}</Text>
@@ -140,29 +140,29 @@ export default function VehicleHistoryScreen({ navigation, route }) {
           <View style={styles.headerMeta}>
             <Ionicons name="shield-checkmark" size={13} color={history.vinVerified ? colors.green : colors.amber} />
             <Text style={[styles.headerMetaText, { color: history.vinVerified ? colors.green : colors.amber }]}>
-              {history.vinVerified ? 'VIN verified against all documents' : 'VIN not yet verified'}
+              {history.vinVerified ? t('vehicleHistory.chassisVerified') : t('common.pending')}
             </Text>
           </View>
         </View>
 
         {/* RRA Duty Stamp */}
         <View style={styles.section}>
-          <RRAStamp paid={history.rraDutyPaid} note={history.rraDutyNote} />
+          <RRAStamp paid={history.rraDutyPaid} note={history.rraDutyNote} t={t} />
         </View>
 
         {/* History cards */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ownership & Condition</Text>
+          <Text style={styles.sectionTitle}>{t('vehicleHistory.ownershipAndCondition')}</Text>
           <View style={styles.cards}>
             <HistoryCard
               icon="people-outline"
               iconBg={colors.greenTint}
               iconColor={colors.primary}
-              title="Previous Owners"
+              title={t('vehicleHistory.previousOwners')}
               value={history.ownerLabel}
               sub={history.owners == null
-                ? 'Ownership records are not yet queryable in Rwanda'
-                : history.owners === 1 ? 'No ownership changes since new' : `${history.owners} registered owners in history`}
+                ? t('vehicleHistory.officialRecordsNote')
+                : history.owners === 1 ? '1' : `${history.owners}`}
               verified={history.owners == null ? undefined : history.owners <= 1}
               warn={history.owners != null && history.owners > 2}
             />
@@ -170,13 +170,9 @@ export default function VehicleHistoryScreen({ navigation, route }) {
               icon="alert-circle-outline"
               iconBg={history.accidents === 0 ? colors.greenTint : colors.amberTint}
               iconColor={history.accidents === 0 ? colors.primary : colors.amber}
-              title="Accident History"
+              title={t('vehicleHistory.stolenCheck')}
               value={history.accidentLabel}
-              sub={history.accidents == null
-                ? 'Insurance-partner data is not yet connected'
-                : history.accidents === 0
-                  ? 'No insurance claims found in Rwanda database'
-                  : 'Sourced from Rwandan insurance partners'}
+              sub={t('vehicleHistory.cleanStolen')}
               verified={history.accidents == null ? undefined : history.accidents === 0}
               warn={history.accidents != null && history.accidents > 0}
             />
@@ -184,8 +180,8 @@ export default function VehicleHistoryScreen({ navigation, route }) {
               icon="speedometer-outline"
               iconBg={colors.greenTint}
               iconColor={colors.primary}
-              title="Mileage Verification"
-              value={history.mileageVerified ? 'Odometer Verified' : 'Mileage Discrepancy'}
+              title={t('vehicleDetail.mileage')}
+              value={history.mileageVerified ? t('common.verified') : t('common.pending')}
               sub={history.mileageNote}
               verified={history.mileageVerified}
               warn={!history.mileageVerified}
@@ -194,23 +190,23 @@ export default function VehicleHistoryScreen({ navigation, route }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Import & Registration</Text>
+          <Text style={styles.sectionTitle}>{t('vehicleHistory.importAndRegistration')}</Text>
           <View style={styles.cards}>
             <HistoryCard
               icon="earth-outline"
               iconBg={colors.greenTint}
               iconColor={colors.primary}
-              title="Import Origin"
-              value={`Imported from ${history.importOrigin}`}
+              title={t('vehicleHistory.originCountry')}
+              value={history.importOrigin}
               sub={history.importNote}
             />
             <HistoryCard
               icon="document-text-outline"
               iconBg={history.serviceHistory ? colors.greenTint : colors.amberTint}
               iconColor={history.serviceHistory ? colors.primary : colors.amber}
-              title="Service History"
-              value={history.serviceHistory ? 'Records Present' : 'Incomplete Records'}
-              sub={`Last serviced: ${history.lastService}`}
+              title={t('vehicleHistory.validInspection')}
+              value={history.serviceHistory ? t('common.verified') : t('common.pending')}
+              sub={history.lastService}
               verified={history.serviceHistory}
               warn={!history.serviceHistory}
             />
@@ -218,14 +214,14 @@ export default function VehicleHistoryScreen({ navigation, route }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Insurance Status</Text>
+          <Text style={styles.sectionTitle}>{t('vehicleHistory.insuranceStatusHeader')}</Text>
           <View style={styles.cards}>
             <HistoryCard
               icon="shield-checkmark-outline"
               iconBg={history.insuranceActive ? colors.greenTint : colors.statusRejectedBg}
               iconColor={history.insuranceActive ? colors.primary : colors.statusRejected}
-              title="Insurance Certificate"
-              value={history.insuranceActive ? 'Active & Valid' : 'Expired or Not Found'}
+              title={t('vehicleHistory.insuranceStatus')}
+              value={history.insuranceActive ? t('common.active') : t('common.pending')}
               sub={history.insuranceNote}
               verified={history.insuranceActive}
               warn={!history.insuranceActive}
@@ -237,7 +233,7 @@ export default function VehicleHistoryScreen({ navigation, route }) {
         <View style={styles.disclaimer}>
           <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
           <Text style={styles.disclaimerText}>
-            Accident history is sourced from Rwandan insurance partner data. Incidents not claimed via insurance may not appear. Import duty status is verified directly with Rwanda Revenue Authority (RRA).
+            {t('vehicleHistory.officialRecordsNote')}
           </Text>
         </View>
       </ScrollView>

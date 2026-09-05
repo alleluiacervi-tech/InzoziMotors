@@ -8,42 +8,38 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { showToast } from '../components/Feedback';
 import { SAWA_WHATSAPP, SAWA_EMAIL, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
-function buildMenuSeller(t) {
-  return [
-    { icon: 'shield-checkmark-outline', label: t('drawer.verifyIdentity'), screen: 'IDVerification' },
-    { icon: 'call-outline', label: t('profile.menuContactVisibility'), screen: 'ContactSettings' },
-    { icon: 'car-outline', label: t('drawer.submissions'), screen: 'SellerDashboard' },
-    { icon: 'trending-up-outline', label: t('profile.menuCarValuation'), screen: 'CarValuation' },
-  ];
-}
+const MENU_SELLER = [
+  { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
+  { icon: 'call-outline', label: 'Contact Visibility', screen: 'ContactSettings' },
+  { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
+  { icon: 'trending-up-outline', label: "What's My Car Worth?", screen: 'CarValuation' },
+];
 
-function buildMenuAccount(t) {
-  return [
-    { icon: 'key-outline', label: t('drawer.rentalInquiries'), screen: 'MyRentals' },
-    { icon: 'boat-outline', label: t('drawer.imports'), screen: 'ImportOrders' },
-    { icon: 'chatbubbles-outline', label: t('profile.menuMessages'), screen: 'Messages' },
-    { icon: 'shield-checkmark-outline', label: t('drawer.marketplaceSafety'), screen: 'SawaPromise' },
-    { icon: 'book-outline', label: t('profile.menuHowBuyingWorks'), screen: 'BuyingGuide' },
-    { icon: 'settings-outline', label: t('common.settings'), screen: 'Settings' },
-    // This row was `screen: null` — it rendered a chevron and did nothing at all.
-    // It now opens the business line, which is the whole point of a Help row.
-    // Gated like every other contact surface: if the line is ever unverified, the
-    // row falls back to the mailbox rather than going dead again.
-    WHATSAPP_VERIFIED
-      ? {
-          icon: 'logo-whatsapp',
-          label: t('profile.menuHelpSupport'),
-          link: `https://wa.me/${SAWA_WHATSAPP}`,
-        }
-      : {
-          icon: 'help-circle-outline',
-          label: t('profile.menuHelpSupport'),
-          link: `mailto:${SAWA_EMAIL}`,
-        },
-  ];
-}
+const MENU_ACCOUNT = [
+  { icon: 'key-outline', label: 'Rental Inquiries', screen: 'MyRentals' },
+  { icon: 'boat-outline', label: 'My Vehicle Imports', screen: 'ImportOrders' },
+  { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
+  { icon: 'shield-checkmark-outline', label: 'Marketplace Safety', screen: 'SawaPromise' },
+  { icon: 'book-outline', label: 'How Buying Works', screen: 'BuyingGuide' },
+  { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
+  // This row was `screen: null` — it rendered a chevron and did nothing at all.
+  // It now opens the business line, which is the whole point of a Help row.
+  // Gated like every other contact surface: if the line is ever unverified, the
+  // row falls back to the mailbox rather than going dead again.
+  WHATSAPP_VERIFIED
+    ? {
+        icon: 'logo-whatsapp',
+        label: 'Help & Support',
+        link: `https://wa.me/${SAWA_WHATSAPP}`,
+      }
+    : {
+        icon: 'help-circle-outline',
+        label: 'Help & Support',
+        link: `mailto:${SAWA_EMAIL}`,
+      },
+];
 
-function MenuSection({ title, items, navigation, t }) {
+function MenuSection({ title, items, navigation }) {
   return (
     <View style={styles.menuSection}>
       <Text style={styles.menuSectionTitle}>{title}</Text>
@@ -56,7 +52,7 @@ function MenuSection({ title, items, navigation, t }) {
               if (m.screen) navigation.navigate(m.screen);
               else if (m.link) {
                 Linking.openURL(m.link).catch(() =>
-                  showToast(t('profile.openFailed'), 'error'),
+                  showToast('Could not open that. Please try again.', 'error'),
                 );
               }
             }}
@@ -83,6 +79,33 @@ export default function ProfileScreen({ navigation }) {
   const salesPts = Math.min(30, soldCount * 3);
   const trustScore = idPts + salesPts + 17 + 18; // response + reviews are estimates until backend
 
+  const menuSeller = [
+    { icon: 'shield-checkmark-outline', label: t('profile.identityVerification'), screen: 'IDVerification' },
+    { icon: 'call-outline', label: t('profile.contactVisibility'), screen: 'ContactSettings' },
+    { icon: 'car-outline', label: t('profile.mySubmissions'), screen: 'SellerDashboard' },
+    { icon: 'trending-up-outline', label: t('profile.carValuation'), screen: 'CarValuation' },
+  ];
+
+  const menuAccount = [
+    { icon: 'key-outline', label: t('profile.rentalInquiries'), screen: 'MyRentals' },
+    { icon: 'boat-outline', label: t('profile.myImports'), screen: 'ImportOrders' },
+    { icon: 'chatbubbles-outline', label: t('profile.messages'), screen: 'Messages' },
+    { icon: 'shield-checkmark-outline', label: t('profile.marketplaceSafety'), screen: 'SawaPromise' },
+    { icon: 'book-outline', label: t('profile.howBuyingWorks'), screen: 'BuyingGuide' },
+    { icon: 'settings-outline', label: t('profile.settings'), screen: 'Settings' },
+    WHATSAPP_VERIFIED
+      ? {
+          icon: 'logo-whatsapp',
+          label: t('profile.helpSupport'),
+          link: `https://wa.me/${SAWA_WHATSAPP}`,
+        }
+      : {
+          icon: 'help-circle-outline',
+          label: t('profile.helpSupport'),
+          link: `mailto:${SAWA_EMAIL}`,
+        },
+  ];
+
   // Guest state — prompt to sign in instead of showing a fake verified profile
   if (!isLoggedIn) {
     return (
@@ -96,11 +119,11 @@ export default function ProfileScreen({ navigation }) {
             {t('profile.guestSub')}
           </Text>
           <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
-            <Text style={styles.guestBtnText}>{t('profile.guestSignIn')}</Text>
+            <Text style={styles.guestBtnText}>{t('profile.signInBtn')}</Text>
           </Pressable>
           {demoMode && (
             <Pressable onPress={() => loginAsGuest()} style={{ marginTop: 14 }}>
-              <Text style={styles.guestSkip}>{t('profile.guestDemo')}</Text>
+              <Text style={styles.guestSkip}>{t('profile.continueDemo')}</Text>
             </Pressable>
           )}
         </View>
@@ -109,9 +132,9 @@ export default function ProfileScreen({ navigation }) {
   }
 
   const STATS = [
-    { label: t('profile.statSubmitted'), value: String(submissions.length) },
-    { label: t('profile.statLive'), value: String(liveCount) },
-    { label: t('profile.statTrust'), value: `${trustScore}/100` },
+    { label: t('drawer.submissions'), value: String(submissions.length) },
+    { label: t('sellerDashboard.live'), value: String(liveCount) },
+    { label: t('profile.trustScoreTitle'), value: `${trustScore}/100` },
   ];
 
   return (
@@ -134,8 +157,8 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.badgeRow}>
               {idVerificationStatus === 'approved' ? (
                 <>
-                  <Badge variant="success" label={t('profile.badgeVerifiedSeller')} />
-                  <Badge variant="live" dot label={t('profile.badgeIdVerified')} />
+                  <Badge variant="success" label={t('vehicleDetail.verifiedSeller')} />
+                  <Badge variant="live" dot label={t('trustScore.idVerified')} />
                 </>
               ) : (
                 <Pressable onPress={() => navigation.navigate('IDVerification')}>
@@ -143,17 +166,17 @@ export default function ProfileScreen({ navigation }) {
                     variant="tag"
                     label={
                       idVerificationStatus === 'pending'
-                        ? t('profile.badgeIdPending')
+                        ? t('settings.underReview')
                         : idVerificationStatus === 'rejected'
-                        ? t('profile.badgeIdRejected')
-                        : t('profile.badgeIdNone')
+                        ? t('settings.actionNeeded')
+                        : t('profile.identityVerification')
                     }
                   />
                 </Pressable>
               )}
             </View>
           </View>
-          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('profile.editLabel')}>
+          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('common.edit')}>
             <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
@@ -174,16 +197,16 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="trending-up" size={22} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.dashBannerTitle}>{t('profile.dashboardTitle')}</Text>
+            <Text style={styles.dashBannerTitle}>{t('profile.sellerDashboard')}</Text>
             <Text style={styles.dashBannerSub}>
-              {t('profile.dashboardSub', { count: submissions.length, live: liveCount })}
+              {submissions.length} {t('drawer.submissions').toLowerCase()} · {liveCount} {t('sellerDashboard.live').toLowerCase()}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
         </Pressable>
 
-        <MenuSection title={t('profile.sectionListings')} items={buildMenuSeller(t)} navigation={navigation} t={t} />
-        <MenuSection title={t('profile.sectionAccount')} items={buildMenuAccount(t)} navigation={navigation} t={t} />
+        <MenuSection title={t('profile.sellerSection')} items={menuSeller} navigation={navigation} />
+        <MenuSection title={t('profile.accountSection')} items={menuAccount} navigation={navigation} />
 
         {/* Team Portal — Sawa staff only. Visible in dev builds for testing;
             in release only an admin account ever sees the entry point (and
@@ -191,7 +214,7 @@ export default function ProfileScreen({ navigation }) {
         {(demoMode || currentUser?.role === 'admin') && (
           <Pressable style={styles.adminAccess} onPress={() => navigation.navigate('AdminPanel')}>
             <Ionicons name="grid-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.adminAccessText}>{t('drawer.teamPortal')}</Text>
+            <Text style={styles.adminAccessText}>{t('profile.teamPortal')}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
         )}
