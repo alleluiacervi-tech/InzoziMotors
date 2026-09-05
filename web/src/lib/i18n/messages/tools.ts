@@ -1393,4 +1393,281 @@ const ko = {
   },
 } as const
 
-export const tools: Record<Locale, Record<string, unknown>> = { en, rw, fr, sw, ko }
+const zh = {
+  hub: {
+    metaTitle: '卢旺达免费车辆估值、分期与进口关税工具',
+    metaDescription:
+      '为在卢旺达购车、卖车或进口车辆的任何人提供的免费计算器：基于 Sawa Cars 真实成交数据的市场估值、完整的 RRA 进口关税明细，以及月供分期估算。',
+    ogTitle: '免费车辆工具 · {{site}}',
+    ogDescription:
+      '面向卢旺达市场的估值、RRA 进口关税及分期计算器。无需注册账户。',
+    eyebrow: '工具',
+    title: '决定之前，先算清楚数字',
+    lede: '三款专为卢旺达市场打造的计算器。无需账户、无需电话号码、事后也不会有回访电话——它们的存在，是因为看懂数字的买家或卖家能做出更好的决定。',
+    open: '打开',
+    valuationMeta: '面向卖家',
+    valuationTitle: '免费估值',
+    valuationBody:
+      '根据 Sawa Cars 上实际上架和成交的车辆，评估您的车今天值多少钱。如果可比车辆不足，我们会如实告知，而不会随意猜测。',
+    dutyMeta: '面向进口商',
+    dutyTitle: '进口关税计算器',
+    dutyBody:
+      '进口车辆的完整 RRA 明细——CIF、关税、按排量计算的消费税、增值税及基础设施税——全部以卢旺达法郎计算。',
+    financeMeta: '面向买家',
+    financeTitle: '分期计算器',
+    financeBody:
+      '根据车价计算月供，或根据您的月度预算反推可负担的车价。包含首付、期限及总利息。',
+    pricingMeta: '我们的收费项目',
+    pricingTitle: '价格',
+    pricingBody:
+      'Sawa Cars 实际收费的项目：上门检测、报告复购、租车信息订阅。浏览及联系卖家始终免费。',
+  },
+
+  financePage: {
+    metaTitle: '车辆分期计算器',
+    metaDescription:
+      '估算在基加利购车贷款的月供，或从您每月能负担的金额反推。首付、期限及总利息，全部以卢旺达法郎计算。',
+    ogTitle: '车辆分期计算器',
+    ogDescription:
+      '基加利购车贷款的月供、首付及总利息——或您月度预算所能负担的车价。',
+    heroEyebrow: '免费工具',
+    heroTitle: '车辆分期计算器',
+    heroLede:
+      '同一个问题的两种算法。从您看中的车出发，看看月供是多少；或者从您每月能负担的金额出发，看看能买到哪些车。',
+    estimateTitle: '估算月供',
+    estimateDescription:
+      '按年利率{{rate}}%计算——这是基加利车贷的代表性利率，也是每张信息卡片上月供数字所依据的同一利率。',
+    beforeEyebrow: '在您去银行之前',
+    beforeTitle: '三件会改变这个数字的事',
+    beforeDescription:
+      'Sawa Cars 不提供贷款，也不从任何贷款机构收取佣金。这款工具的作用，是让您走进银行前大致知道会遇到什么。',
+    rateTitle: '您的利率因人而异',
+    rateBody:
+      '年利率{{rate}}%只是一个市场参考点，并非报价。银行会根据您的收入、职业及与他们的往来记录来定价，实际给出的利率可能高于或低于该值。',
+    feesTitle: '手续费不包含在内',
+    feesBody:
+      '手续费、评估费以及大多数贷款机构要求的综合保险另计。它们通常会加到月供上，而不是加到车价上。',
+    termTitle: '期限越长，成本越高',
+    termBody:
+      '将同一笔贷款分摊到更多月份会降低月供，但会提高总利息。请比较“总还款额”这一行，而不仅仅是月供。',
+    closeTitle: '贷款安排在 Sawa Cars 之外进行',
+    closeBody:
+      '本计算器仅供参考。请直接与银行确认任何贷款，并直接与卖家约定收款方式、所有权过户、交付及书面销售条款。Sawa Cars 不接收资金，也不为交易提供担保。',
+    browse: '浏览已认证车辆',
+    howBuying: '了解购车流程',
+  },
+
+  financeCalc: {
+    yourNumbers: '您的数字',
+    startFrom: '起始方式',
+    fromPrice: '从车价开始',
+    fromBudget: '从预算开始',
+    months: '{{months}}个月',
+    standard: '标准',
+    repaymentTerm: '还款期限',
+    carPrice: '车辆价格',
+    carPriceHint: '信息中标示的要价。',
+    monthlyBudget: '月度预算',
+    monthlyBudgetHint: '您每月能轻松负担的金额。',
+    deposit: '首付',
+    depositHint: '基加利的银行通常要求{{pct}}%的首付，最高可达{{max}}%。',
+    estimatedRepayment: '预计月供',
+    whatYouCanAfford: '您能负担的车价',
+    placeholderPrice:
+      '输入车价即可查看月供、首付及贷款总成本。',
+    placeholderBudget: '输入您每月能支付的金额，即可查看能负担的车价。',
+    overMonths: '按年利率{{rate}}%分{{months}}个月计算',
+    perMonth: '{{amount}}/月',
+    standardNote:
+      '按标准首付{{deposit}}%、分{{months}}个月计算，月供为{{amount}}——这也是信息卡片上显示的数字。',
+    depositRow: '首付',
+    depositRowHint: '车价的{{pct}}%，在中心支付',
+    amountFinanced: '贷款金额',
+    interestRow: '期限内利息',
+    interestHint: '按下方代表利率计算',
+    totalYouPay: '总支付金额',
+    totalHint: '首付加上全部还款',
+    browseUpTo: '浏览{{amount}}以内的已认证车辆',
+    payingMonth: '{{months}}个月内每月支付{{amount}}',
+    upTo: '最高{{amount}}',
+    budgetNote: '假设首付{{deposit}}%，年利率{{rate}}%。',
+    depositNeeded: '所需首付',
+    depositNeededHint: '车价的{{pct}}%',
+    liveResultPrice: '预计{{months}}个月内每月约{{amount}}。',
+    liveResultBudget: '每月{{amount}}的预算可负担最高{{max}}的车辆。',
+    disclaimer:
+      'Sawa Cars 不提供贷款，也不安排融资。年利率{{rate}}%是基加利市场的代表性参考利率——您的银行会根据您的具体情况自行定价，通常还会另加手续费和必需的保险。请将此视为与银行沟通的起点。',
+  },
+
+  dutyPage: {
+    metaTitle: '卢旺达进口关税计算器',
+    metaDescription:
+      '估算车辆进口至卢旺达时的 RRA 进口关税：CIF 价值、关税、按排量计算的消费税、增值税及基础设施税——全部以卢旺达法郎计算。',
+    ogTitle: '卢旺达进口关税计算器',
+    ogDescription:
+      '进口车辆的关税、消费税、增值税及基础设施税——以卢旺达法郎表示的完整 RRA 明细。',
+    heroEyebrow: '免费工具',
+    heroTitle: '卢旺达进口关税计算器',
+    heroLede:
+      '卢旺达大多数车辆都是进口的，因此海外标价只是问题的一半。在您为一辆未曾亲眼见过的车下决定之前，先算清楚 RRA 将额外征收的部分——关税、消费税、增值税及基础设施税。',
+    landedTitle: '计算落地成本',
+    landedDescription:
+      '输入您将支付给出口商的金额并选择排量，明细会随您的输入实时更新。',
+    chainEyebrow: '计算方式',
+    chainTitle: '关税是逐层叠加征收的',
+    chainDescription:
+      '每一步都是在前一步的基础上计算的，这也是为什么总额上升得比人们预期得更快。明细中每一行旁边显示的百分比，都来自同一套计算，而非本页面随意设定。',
+    cifTitle: 'CIF 价值',
+    cifBody:
+      '一切从这里开始：您支付给出口商的价格，加上将车运抵卢旺达的费用——运费和保险。关税是按这个金额征收的，而不仅仅是按您的发票金额。',
+    customsTitle: '关税',
+    customsBody:
+      '东非共同体对外关税，按 CIF 价值的百分比征收。无论排量大小，所有进口车辆的关税率相同。',
+    exciseTitle: '消费税',
+    exciseBody:
+      '唯一会随车辆变化的费用。排量越大，税率越高，这也是为什么同等价值的3.0升SUV和1.5升轿车最终总额会差异很大。',
+    vatTitle: '增值税',
+    vatBody:
+      '按 CIF 价值加上关税和消费税之和征收——因此增值税不仅针对车辆本身，也针对已缴纳的关税。这是大多数人自行计算时最容易漏掉的一步。',
+    infraTitle: '基础设施税',
+    infraBody:
+      'CIF 的一小部分百分比，在此基础上另加。相比其他费用金额较小，但并非为零。',
+    limitsEyebrow: '做预算前请先阅读',
+    limitsTitle: '本计算器无法确知的事项',
+    limitsDescription:
+      '这是一个规划参考数字。请将此估算与实际核定结果之间的差距，视为您需要承担的风险。',
+    rraTitle: 'RRA 会对车辆本身进行估值',
+    rraBody:
+      '核定依据的是 RRA 自身对该车辆的估值，可能高于或低于您发票上的价格。您的购买价格只是一个输入项，并非最终答案。',
+    ageTitle: '车龄和车况会影响估值',
+    ageBody:
+      '折旧减免、出厂年份及车身类型都会影响核定价值。花同样的钱买的两辆车，通关时的总额可能不同。',
+    clearingTitle: '通关费用另外计算',
+    clearingBody:
+      '港口装卸费、从达累斯萨拉姆或蒙巴萨的运输费、报关代理费、注册费及首份保险费都是真实存在的费用，且均不包含在此数字中。',
+    altTitle: '或者直接购买已在本地的车辆',
+    altBody:
+      'Sawa Cars 上的每辆车都已在卢旺达境内，关税已结清。其证件——包括 RRA 关税印章——在150项检测中已核实并公布在信息页面上，因此您看到的价格就是您需要支付的价格。',
+    browse: '浏览已认证车辆',
+    financeCalc: '分期计算器',
+  },
+
+  dutyCalc: {
+    ageUnder2: '不满2年',
+    noAllowance: '无折旧减免',
+    age2to4: '2至4年',
+    age4to6: '4至6年',
+    age6to8: '6至8年',
+    age8to10: '8至10年',
+    ageOver10: '超过10年',
+    exciseWord: '消费税{{pct}}%',
+    theVehicle: '车辆信息',
+    purchasePrice: '购买价格',
+    purchasePriceHint: '运输前支付给车辆的金额，以卢旺达法郎输入。',
+    engineSize: '发动机排量',
+    vehicleAge: '车龄',
+    note: '消费税随排量变化，车龄较大的车辆会按 EAC 折旧标准以折减后的价值核定。其余各项对所有进口车辆的计算方式相同。',
+    estimatedLanded: '预计落地成本',
+    landedLabel: '购买价格加上关税及税费',
+    landedNote: '关税会在您支付给出口商的金额基础上增加{{pct}}%。',
+    assessedValue: '关税核定价值',
+    assessedHint: '按车龄给予{{pct}}%的折旧减免',
+    cifValue: 'CIF 价值',
+    cifHint: '核定价值加上{{pct}}的运费和保险',
+    customsDuty: '关税',
+    customsHint: 'CIF 的{{pct}}',
+    exciseDuty: '消费税',
+    exciseHint: 'CIF 加关税之和的{{pct}}%——按排量确定',
+    vat: '增值税',
+    vatHint: 'CIF 加关税及消费税之和的{{pct}}',
+    withholding: '预扣税',
+    withholdingHint: 'CIF 的{{pct}}',
+    infra: '基础设施税',
+    infraHint: 'CIF 的{{pct}}',
+    totalDuties: '关税及税费总额',
+    disclaimer:
+      '本估算仅供规划参考。RRA 会按其自身对车辆的估值核定关税，可能与您的发票不同——车龄、车身类型及车况均会影响该数值。通关时的核定结果才是最终生效的数字。',
+    ratesReviewed: '税率最后审核于{{date}}。',
+    compareBtn: '与已在卢旺达的车辆进行比较',
+    placeholder:
+      '输入购买价格即可查看完整明细——CIF、关税、消费税、增值税、预扣税及基础设施税。',
+    liveResult:
+      '预计落地成本为{{total}}，其中{{duties}}为关税及税费。',
+  },
+
+  valuationPage: {
+    metaTitle: '免费车辆估值',
+    metaDescription:
+      '您的车今天在基加利值多少钱？基于 Sawa Cars 上实际上架和成交车辆的免费市场估值——绝非查表估算。无需注册账户。',
+    ogTitle: '免费车辆估值 — Sawa Cars',
+    heroEyebrow: '免费工具',
+    heroTitle: '您的车今天值多少钱？',
+    heroLede:
+      '根据 Sawa Cars 上实际上架和成交的车辆定价——绝非查表估算。当可比车辆数量不足以确保准确时，我们会如实说明，而不是编造一个数字。',
+  },
+
+  valuationTool: {
+    yourCar: '您的车',
+    make: '品牌',
+    makeHint: '开始输入——我们会推荐网站上已有的品牌。',
+    year: '年份',
+    mileage: '里程',
+    mileageHint: '选填。留空时，我们按{{km}}进行估值。',
+    checking: '正在核对市场数据…',
+    getValuation: '获取我的估值',
+    noAccount: '无需账户，无需电话号码。之后我们不会致电您。',
+    whatWorth: '车辆价值',
+    notEnoughTitle: '目前可比车辆还不够多',
+    notEnoughBody:
+      '{{message}}。我们根据 Sawa Cars 上实际上架或成交的车辆定价，因此我们尚未处理过的品牌和年份不会给出猜测的数字。',
+    inspectionStill:
+      '检测仍能告诉您您的{{make}}处于什么水平。我们的团队会在其通过认证当天按市场行情定价，最终决定权仍在您手中。',
+    errorTitle: '我们无法完成该估算',
+    placeholder:
+      '输入品牌和年份即可查看 Sawa Cars 上可比车辆的成交价。',
+    liveOk:
+      '基于{{comparables}}辆可比车辆，估计价格区间为{{low}}至{{high}}。',
+    liveEmpty: '该品牌和年份的可比车辆数量不足。',
+    carLabel: '{{year}}款 {{make}}',
+    adjusted: '已根据您输入的里程进行调整。',
+    valuedAt: '按我们的参考里程{{km}}进行估值——添加您的实际里程可获得更精确的范围。',
+    avgPrice: '这些车辆的平均价格',
+    avgHint: '{{make}}，{{from}}–{{to}}',
+    pricesSeen: '实际观察到的价格',
+    pricesSeenHint: '同组车辆中的最低价和最高价',
+    comparablesUsed: '使用的可比车辆数',
+    comparablesHint: '在 Sawa Cars 上架或成交',
+    estimateNote:
+      '这是市场估算，并非报价。最终要价由您决定——我们会在150项检测后、了解车辆真实状况时与您确认。',
+    submitBtn: '提交此车辆进行检测',
+    submissionHint: '提交流程从一次性身份核验开始，该步骤在应用中完成。',
+    orWhatsApp: '或通过 WhatsApp 联系我们',
+  },
+
+  pricingPage: {
+    metaTitle: 'Sawa Cars 价格说明 — 检测、报告及租车信息费用',
+    metaDescription:
+      'Sawa Cars 对上门车辆检测、检测报告复购及租车信息订阅所收取的费用。浏览、购买、出售及联系卖家始终免费。',
+    ogTitle: 'Sawa Cars 价格说明',
+    heroEyebrow: '价格',
+    heroTitle: '我们实际收费的项目',
+    heroLede:
+      '浏览、购买、出售及联系已认证卖家均免费。以下是付费服务：独立检测、获取已有报告的副本，以及保持租车信息可见。',
+    inspectionTitle: '上门检测',
+    inspectionBody:
+      '将任意车辆——包括您准备从他人手中购买的车辆，不限于 Sawa 平台上的信息——带到检测中心，接受完整的150项检测。费用在现场支付；无论结果如何，报告都归您所有。',
+    reportTitle: '报告复购',
+    reportBody:
+      '当一辆车已经检测过，而您想要同一份报告时——无论是作为二手买家，还是想留一份副本的卖家。只需一次付费即可获得阅读权限，无需重新检测。',
+    rentalTitle: '租车信息订阅',
+    rentalBody:
+      '按车辆、按月收费，供已认证的租车提供方保持车辆在租车车队中可见。租车者浏览或咨询始终无需付费。',
+    reviewedNote: '价格最后审核于{{date}}。',
+    disclaimer:
+      '这些费用是 Sawa Cars 自身检测及信息服务的收费，均在我们办公室支付或记录——绝非市场交易手续费。Sawa Cars 不是任何买卖或租赁交易的一方；买家、卖家及租车者直接自行约定价格、付款方式及条款。',
+    bookInspection: '预约上门检测',
+    browseCars: '浏览已检测车辆',
+  },
+} as const
+
+export const tools: Record<Locale, Record<string, unknown>> = { en, rw, fr, sw, ko, zh }

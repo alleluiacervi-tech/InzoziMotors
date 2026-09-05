@@ -48,4 +48,13 @@ export const ui: Record<Locale, Record<string, unknown>> = {
     address: '주소',
     openingHours: '영업 시간',
   },
+  zh: {
+    legalEyebrow: '法律',
+    onThisPage: '本页内容',
+    draftTitle: '草案 — 待法律审核',
+    draftBody:
+      '本文件以通俗语言描述了 Sawa Cars 目前的实际运营方式。目前尚未经过卢旺达合格律师的审核，不构成法律意见。用户在正式上线前，应就自己的合同及受监管义务寻求独立的法律意见。',
+    address: '地址',
+    openingHours: '营业时间',
+  },
 }

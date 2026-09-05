@@ -8,4 +8,5 @@ export const store: Record<Locale, Record<string, unknown>> = {
   fr: { comingBoth: 'Bientôt sur l’App Store et Google Play.', downloadOn: 'Télécharger sur', getItOn: 'Disponible sur', comingSoon: '{{names}} bientôt disponible.' },
   sw: { comingBoth: 'Inakuja kwenye App Store na Google Play.', downloadOn: 'Pakua kwenye', getItOn: 'Ipate kwenye', comingSoon: '{{names}} inakuja hivi karibuni.' },
   ko: { comingBoth: 'App Store와 Google Play에 곧 출시됩니다.', downloadOn: '다운로드', getItOn: '다운로드', comingSoon: '{{names}} 곧 출시.' },
+  zh: { comingBoth: '即将登陆 App Store 和 Google Play。', downloadOn: '下载于', getItOn: '获取于', comingSoon: '{{names}} 即将推出。' },
 }

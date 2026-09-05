@@ -582,4 +582,120 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       minimumStay: '최소 이용 기간',
     },
   },
+
+  zh: {
+    metaTitle: '卢旺达基加利租车 — 已检测车辆',
+    metaDescription:
+      '浏览基加利已验证租赁提供方的车队，比较提供方给出的价格，并通过 Sawa Cars 直接发送可用性咨询。',
+    metaOgTitle: '在基加利租一辆认证车辆 · {{name}}',
+    eyebrow: '租赁',
+    title: '在基加利租一辆认证车辆',
+    introDescription:
+      '与我们出售的车辆采用同样的150项标准。归还检查后押金全额退还。',
+    filter: {
+      ariaLabel: '筛选车队',
+      allCars: '所有车辆',
+      safariReady: '适合越野',
+    },
+    safariExplainer:
+      '“适合越野”是指配备适合公园道路——阿卡盖拉、纽恩威及火山国家公园——离地间隙及轮胎的四驱车。',
+    emptyMatchTitle: '车队中没有符合条件的车辆',
+    emptyUnreachableTitle: '车队信息暂时无法访问',
+    emptyMatchDesc: '试试浏览整个车队——车辆返回后可用情况会随之变化。',
+    emptyUnreachableDesc: '车辆仍然都在。请稍后再来查看，或到中心咨询我们。',
+    seeWholeFleet: '查看整个车队',
+    providerFeaturesEyebrow: '提供方说明的车辆特性',
+    providerFeaturesTitle: '比较已公布的条款，再以书面形式确认',
+    providerDisclaimer:
+      '这些特性与价格均由各租赁提供方提供。付款前，请直接与该提供方确认可用性、保险、里程、税费、押金、取车、还车、取消及损坏赔偿条款。',
+    requestingTitle: '查询可用情况',
+    requestingBody:
+      '打开车辆页面，输入您的日期并发送咨询。由提供方——而非 Sawa Cars——确认可用性及所有租赁条款。',
+    chooseRental: '选择一辆租赁车辆',
+    readProcess: '阅读直接交易流程',
+    howItWorks: {
+      title: '租赁流程说明',
+      steps: {
+        browse: { title: '浏览已检测车辆', body: '每辆车都通过了与我们出售车辆相同的150项检测。' },
+        inquire: { title: '发送可用性咨询', body: '选择您的日期并向提供方发消息——这不是预订。' },
+        confirm: { title: '直接与提供方确认', body: '双方自行商定价格、押金、保险、取车与还车事宜。' },
+      },
+    },
+    includes: {
+      insurance: '全险保障',
+      roadside: '24/7道路救援',
+      unlimitedKm: '不限里程',
+      cleaned: '每次行程之间进行清洁消毒',
+    },
+    requirements: {
+      licence: '有效驾照，持有至少两年',
+      id: '您的身份证或护照',
+      payment: '提供方以书面形式确认的付款及押金安排',
+    },
+    card: {
+      safariReady: '适合越野',
+      alt: '{{title}} — Sawa 租赁车队',
+      unavailableUntil: '至 {{date}} 前不可用',
+      seats: '{{count}} 座',
+      perDay: '/ 天',
+      depositLine: '提供方标明押金 {{amount}}',
+      trips: '{{count}} 次行程',
+      minDays: '最少 {{count}} 天',
+      fromOneDay: '最短一天起租',
+      providerConfirmsDates: '由提供方确认日期',
+      viewDetails: '查看详情并查询可用情况',
+    },
+    detail: {
+      metaTitle: '{{title}} — 每天 {{price}}',
+      metaDescription:
+        '在基加利租赁 {{title}}，每天起价 {{price}}。提供方提供的价格及车辆详情，并可通过 Sawa Cars 直接查询可用情况。',
+      metaOgTitle: '{{title}} — 在基加利租赁',
+      metaUnavailable: '该租赁车辆不可用',
+      breadcrumbHome: '首页',
+      breadcrumbRentals: '租赁',
+      notAvailableBadge: '目前不可用',
+      tripOne: '{{count}} 次行程',
+      tripMany: '{{count}} 次行程',
+      overview: '租赁概览',
+      weeklyRate: '周租金',
+      deposit: '押金',
+      minimumStay: '最短租期',
+      dayOne: '{{count}} 天',
+      days: '{{count}} 天',
+      ratesNote:
+        '价格与押金均由提供方提供，并以其书面确认及租赁合同为准。',
+      signInToRequest: '登录以查询可用情况',
+      openInApp: '在应用中打开',
+      inquiryNote:
+        '咨询并不预留车辆。由提供方确认可用性，并全权负责付款、押金、保险、取车、还车及合同条款。',
+      availabilityTitle: '可用性由提供方确认',
+      availabilityBody:
+        '请以咨询形式发送您的日期。Sawa Cars 不会锁定日历，也不会代替提供方确认租赁。',
+      theCar: '车辆信息',
+      tripCostTitle: '行程费用',
+      rentalWord: '租赁',
+      refundableDeposit: '+ 可退还押金 {{amount}}',
+      tripCostNote:
+        '此为依据提供方公布价格的示例计算。请让提供方以书面形式确认最终价格、税费、押金、里程、保险及其他附加项目。',
+      featuresTitle: '提供方说明的租赁特性',
+      whatToBring: '需携带物品',
+      pickupTitle: '取车与还车',
+      pickupBody:
+        '在付款或取车前，请直接与提供方确认确切地点、车辆状况记录、燃油量、押金处理方式及还车流程。',
+      crossSellTitle: '租车是为了考虑购买吗？',
+      crossSellBody:
+        '比较已检测的出售车源，然后直接联系已验证的卖家。租赁提供方与车辆卖家可能是条款不同的不同商家。',
+      browseCars: '浏览出售中的车辆',
+    },
+    spec: {
+      seats: '座位数',
+      gearbox: '变速箱',
+      fuel: '燃料',
+      year: '年份',
+      category: '类别',
+      odometer: '里程表',
+      keptAt: '停放地点',
+      minimumStay: '最短租期',
+    },
+  },
 }

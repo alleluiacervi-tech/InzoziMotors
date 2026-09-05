@@ -514,4 +514,106 @@ export const home: Record<Locale, Record<string, unknown>> = {
     },
     faq: { eyebrow: '질문', title: '결정하기 전에' },
   },
+
+  zh: {
+    hero: {
+      eyebrow: '卢旺达值得信赖的出行市场',
+      title: '合适的车，出行的信心。',
+      subtitle:
+        '比较经过审核的车源，联系已验证的卖家，凭借提前掌握的清晰信息，自行达成买卖或租赁协议。',
+      navLabel: '选择您想做的事',
+      nav: { buy: '购买', rent: '租赁', sell: '出售', tools: '用车工具' },
+      searchLabel: '搜索认证车辆',
+      searchPlaceholder: '丰田 RAV4，自动挡SUV，柴油…',
+      searchButton: '搜索',
+      trust: {
+        inspection: '150项检测',
+        sellers: '已验证卖家',
+        contact: '直接联系，无需结账',
+      },
+    },
+    browse: {
+      eyebrow: '浏览',
+      title: '从买家的起点开始',
+      family: { suv: 'SUV', sedan: '轿车', hatchback: '掀背车', pickup: '皮卡' },
+      familyMeta: '认证 · 基加利',
+      budget: {
+        under: '低于 10M RWF',
+        band1: '10 – 20M RWF',
+        band2: '20 – 35M RWF',
+        top: '35M+ RWF',
+      },
+    },
+    featured: {
+      eyebrow: '新上架',
+      title: '已认证，现车在售',
+      description: '刚从我们基加利中心完成检测。',
+      viewAll: '查看所有车辆',
+      emptyTitle: '市场暂时无法访问',
+      emptyDescription: '车辆仍然都在——可直接浏览，或稍后再来查看。',
+      emptyAction: '浏览所有车辆',
+    },
+    topDeals: {
+      eyebrow: '精选优惠',
+      title: '本周由我们团队精选',
+      description: '从通过150项检测的车辆中挑选。付费展示位会明确标注。',
+      viewAll: '查看所有车辆',
+    },
+    howItWorks: {
+      eyebrow: '运作方式',
+      title: '从提交到直接咨询，共五步',
+      description:
+        '我们的团队把控证据与发布环节，卖家把控后续的协商。',
+      link: '了解购车安全、直接交易及卖车流程',
+    },
+    trust: {
+      eyebrow: '市场管控',
+      title: '先有证据，再联系',
+      description:
+        'Sawa Cars 负责核实与发布。用户则掌握——也承担——交易本身的控制权与责任。',
+      link: '查看管控内容及其边界',
+      fact: {
+        inspection: '项检测，完整公开',
+        gallery: '张相册图片，每个车源均可上传',
+        payments: '笔由 Sawa Cars 处理的付款',
+        centers: '个基加利检测中心',
+      },
+      ledger: {
+        evidence: {
+          claim: '检测证据',
+          proof:
+            '当平台检测政策启用时，发布审核要求已完成的检测。',
+        },
+        seller: {
+          claim: '已验证的卖家状态',
+          proof:
+            '被暂停、已删除或身份未验证的卖家，其车源无法上线。',
+        },
+        guessing: {
+          claim: '有据可查，绝不臆测',
+          proof:
+            '车辆归属、里程及RRA关税状态均经过核查——未知信息标注为未知，绝不臆测。',
+        },
+        publication: {
+          claim: '受控发布',
+          proof:
+            '只有获授权的管理员才能发布，决定及就绪结果均保留在审计记录中。',
+        },
+        direct: {
+          claim: '直接交易',
+          proof:
+            'Sawa Cars 不接收、不持有、也不转移用户的交易资金，也不代双方拟定合同。',
+        },
+      },
+    },
+    finalCta: {
+      headline:
+        '这里的每一辆车都通过了同样的150项检测，没有未经检测的等级。',
+      browse: '浏览认证车辆',
+      sell: '出售您的车辆',
+      body: '查看车源证据，联系已验证的卖家，然后自行检测、协商并记录您的协议。Sawa Cars 绝不持有交易资金。',
+      imageAlt: '一辆车正在专业检测车间接受车轮定位检测',
+    },
+    faq: { eyebrow: '常见问题', title: '在您决定之前' },
+  },
 }
