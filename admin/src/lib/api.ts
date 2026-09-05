@@ -460,9 +460,18 @@ export const api = {
    *  completed inspection — losing forty minutes to a dropped connection is
    *  what teaches an inspector to hurry. */
   saveChecklistDraft: (id: string, checklist_results: Record<string, string>) =>
-    request<{ saved: true; recorded: number; remaining: number }>(
+    request<{ saved: true; recorded: number; remaining: number; checklist_attestations: Record<string, any> }>(
       `/inspections/${id}/checklist`,
       { method: 'PATCH', body: JSON.stringify({ checklist_results }) },
+    ),
+  /** Bulk-fill the non-critical items in one category as "pass" in a single
+   *  action. The server decides which items that is (never a critical one),
+   *  and records who did it and how many — this is a decision, not a tap, so
+   *  unlike an individual save it lands in the audit log. */
+  attestChecklistCategory: (id: string, category: string) =>
+    request<{ saved: true; recorded: number; remaining: number; checklist_attestations: Record<string, any> }>(
+      `/inspections/${id}/checklist`,
+      { method: 'PATCH', body: JSON.stringify({ attest_category: category }) },
     ),
   inspectorStats: () => request<any[]>('/admin/inspectors'),
 

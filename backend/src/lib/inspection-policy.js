@@ -259,6 +259,26 @@ function evaluateChecklist(checklistResults) {
   return { ...validation, score, raw_score: rawScore, passed, critical_failures, category_scores };
 }
 
+/**
+ * The items in a category that a single attestation may answer: every
+ * non-critical one, and only those.
+ *
+ * This is the structural guarantee behind "a critical check is never
+ * bulk-answered". The caller passes a category id and gets back the exact set
+ * the server is willing to fill, so the rule cannot be weakened by a client
+ * sending a longer list, and cannot drift if the UI is rewritten. A category
+ * whose items are all critical yields an empty array — nothing to attest, which
+ * is the correct answer rather than an error.
+ *
+ * Returns null for an unknown category so a caller must handle it explicitly
+ * instead of silently attesting nothing.
+ */
+function attestableItemIds(categoryId) {
+  const category = CATEGORIES.find((entry) => entry.id === categoryId);
+  if (!category) return null;
+  return category.items.filter((entry) => !entry.critical).map((entry) => entry.id);
+}
+
 function grade(score) {
   return score >= 128 ? 'A' : score >= PUBLISH_THRESHOLD ? 'B' : score >= 83 ? 'C' : 'D';
 }
@@ -287,6 +307,7 @@ module.exports = {
   REQUIRED_ITEM_IDS,
   validateChecklist,
   evaluateChecklist,
+  attestableItemIds,
   grade,
   publicDefinition,
 };

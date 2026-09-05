@@ -1,0 +1,27 @@
+-- Bulk category attestation, recorded so it stays honest.
+--
+-- The checklist is 150 individually-tapped verdicts. On a clean car most of
+-- them are a foregone "pass", and making an inspector tap all 150 anyway is
+-- exactly what teaches them to hurry — the one thing this checklist cannot
+-- survive. So the non-critical items in a category may now be answered in one
+-- action, and the inspector spends their attention on the checks that decide
+-- whether a buyer gets hurt.
+--
+-- The attestation is RECORDED rather than inferred, because a bulk fill and
+-- twenty individual taps are indistinguishable once they are inside
+-- checklist_results, and an inspection nobody can audit afterwards is not
+-- evidence. One entry per category attested:
+--
+--   { "interior": { "at": "2026-09-05T18:00:00.000Z",
+--                   "by": "<admin uuid>",
+--                   "count": 20 } }
+--
+-- Deliberately a SEPARATE column rather than a change to checklist_results.
+-- Scoring, validation and every publication gate read that column, and none of
+-- them should have to learn a new shape to keep working.
+--
+-- Which items an attestation may fill is decided by the server from
+-- inspection-policy.js (non-critical only), never by the client — see
+-- attestableItemIds(). A critical check is never bulk-answered.
+ALTER TABLE inspections
+  ADD COLUMN IF NOT EXISTS checklist_attestations JSONB NOT NULL DEFAULT '{}'::jsonb;
