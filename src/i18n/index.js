@@ -389,6 +389,66 @@ const EXTRA_RENTAL_DETAIL = {
   },
 };
 
+// ProfileScreen — the account tab. Flat per-screen keys, same convention as
+// EXTRA_RENTAL_DETAIL; strings shared with the drawer/common sections are
+// reused there via t('drawer.…')/t('common.…') instead of duplicated here.
+const EXTRA_PROFILE = {
+  en: {
+    guestTitle: "You're browsing as a guest", guestSub: 'Sign in to save cars, contact sellers, manage rental inquiries, and sell your car.', guestSignIn: 'Sign In', guestDemo: 'Continue with a demo account',
+    statSubmitted: 'Submitted', statLive: 'Live', statTrust: 'Trust Score',
+    dashboardTitle: 'Seller Dashboard', dashboardSub: '{{count}} submissions · {{live}} live on marketplace',
+    sectionListings: 'My Listings', sectionAccount: 'Account',
+    menuContactVisibility: 'Contact Visibility', menuCarValuation: "What's My Car Worth?", menuMessages: 'Messages', menuHowBuyingWorks: 'How Buying Works', menuHelpSupport: 'Help & Support',
+    badgeVerifiedSeller: 'Verified Seller', badgeIdVerified: 'ID Verified', badgeIdPending: 'ID under review', badgeIdRejected: 'ID needs attention — tap to resubmit', badgeIdNone: 'Verify your ID to sell',
+    openFailed: 'Could not open that. Please try again.', editLabel: 'Edit',
+  },
+  rw: {
+    guestTitle: 'Uri gushakisha nk’umushyitsi', guestSub: 'Injira kugira ngo ubike imodoka, uvugane n’abagurisha, ugenzure ibyifuzo byo gukodesha, kandi ugurishe imodoka yawe.', guestSignIn: 'Injira', guestDemo: 'Komeza ukoresheje konti y’ikitegererezo',
+    statSubmitted: 'Byatanzwe', statLive: 'Biri kumugaragaro', statTrust: 'Amanota y’icyizere',
+    dashboardTitle: 'Ikibaho cy’umugurisha', dashboardSub: 'Ibyatanzwe {{count}} · {{live}} biri kumugaragaro ku isoko',
+    sectionListings: 'Amatangazo yanjye', sectionAccount: 'Konti',
+    menuContactVisibility: 'Kugaragaza uko wavugana', menuCarValuation: 'Imodoka yanjye ifite agaciro kangana?', menuMessages: 'Ubutumwa', menuHowBuyingWorks: 'Uko kugura bikorwa', menuHelpSupport: 'Ubufasha n’inkunga',
+    badgeVerifiedSeller: 'Umugurisha wemejwe', badgeIdVerified: 'Umwirondoro wagenzuwe', badgeIdPending: 'Umwirondoro uracyasuzumwa', badgeIdRejected: 'Umwirondoro ukeneye kugarukwaho — kanda utange ukundi', badgeIdNone: 'Genzura umwirondoro wawe kugira ngo ugurishe',
+    openFailed: 'Ntibyashobotse gufungura ibyo. Ongera ugerageze.', editLabel: 'Hindura',
+  },
+  fr: {
+    guestTitle: 'Vous naviguez en tant qu’invité', guestSub: 'Connectez-vous pour enregistrer des voitures, contacter des vendeurs, gérer vos demandes de location et vendre votre voiture.', guestSignIn: 'Se connecter', guestDemo: 'Continuer avec un compte de démonstration',
+    statSubmitted: 'Soumises', statLive: 'En ligne', statTrust: 'Score de confiance',
+    dashboardTitle: 'Tableau de bord vendeur', dashboardSub: '{{count}} soumissions · {{live}} en ligne sur le marché',
+    sectionListings: 'Mes annonces', sectionAccount: 'Compte',
+    menuContactVisibility: 'Visibilité du contact', menuCarValuation: 'Combien vaut ma voiture ?', menuMessages: 'Messages', menuHowBuyingWorks: 'Comment fonctionne l’achat', menuHelpSupport: 'Aide et assistance',
+    badgeVerifiedSeller: 'Vendeur vérifié', badgeIdVerified: 'Identité vérifiée', badgeIdPending: 'Identité en cours de vérification', badgeIdRejected: 'Identité à revoir — appuyez pour soumettre à nouveau', badgeIdNone: 'Vérifiez votre identité pour vendre',
+    openFailed: 'Impossible d’ouvrir ce lien. Veuillez réessayer.', editLabel: 'Modifier',
+  },
+  sw: {
+    guestTitle: 'Unavinjari kama mgeni', guestSub: 'Ingia ili kuhifadhi magari, kuwasiliana na wauzaji, kusimamia maombi ya kukodisha, na kuuza gari lako.', guestSignIn: 'Ingia', guestDemo: 'Endelea na akaunti ya onyesho',
+    statSubmitted: 'Yaliyowasilishwa', statLive: 'Yanayoonekana', statTrust: 'Alama ya uaminifu',
+    dashboardTitle: 'Dashibodi ya muuzaji', dashboardSub: 'Mawasilisho {{count}} · {{live}} yanayoonekana sokoni',
+    sectionListings: 'Matangazo yangu', sectionAccount: 'Akaunti',
+    menuContactVisibility: 'Mwonekano wa mawasiliano', menuCarValuation: 'Gari langu lina thamani gani?', menuMessages: 'Ujumbe', menuHowBuyingWorks: 'Jinsi ununuzi unavyofanya kazi', menuHelpSupport: 'Msaada na Usaidizi',
+    badgeVerifiedSeller: 'Muuzaji aliyethibitishwa', badgeIdVerified: 'Utambulisho umethibitishwa', badgeIdPending: 'Utambulisho unakaguliwa', badgeIdRejected: 'Utambulisho unahitaji hatua — gusa kuwasilisha tena', badgeIdNone: 'Thibitisha utambulisho wako ili uuze',
+    openFailed: 'Imeshindikana kufungua hilo. Tafadhali jaribu tena.', editLabel: 'Hariri',
+  },
+  ko: {
+    guestTitle: '게스트로 둘러보는 중입니다', guestSub: '차량 저장, 판매자 연락, 렌트 문의 관리, 차량 판매를 위해 로그인하세요.', guestSignIn: '로그인', guestDemo: '데모 계정으로 계속하기',
+    statSubmitted: '제출됨', statLive: '게시 중', statTrust: '신뢰 점수',
+    dashboardTitle: '판매자 대시보드', dashboardSub: '제출 {{count}}건 · 게시 중 {{live}}건',
+    sectionListings: '내 매물', sectionAccount: '계정',
+    menuContactVisibility: '연락처 공개 설정', menuCarValuation: '내 차량 가치는 얼마일까요?', menuMessages: '메시지', menuHowBuyingWorks: '구매 방법', menuHelpSupport: '고객 지원',
+    badgeVerifiedSeller: '인증 판매자', badgeIdVerified: '신원 인증 완료', badgeIdPending: '신원 확인 검토 중', badgeIdRejected: '신원 확인 재제출 필요 — 눌러서 다시 제출', badgeIdNone: '판매하려면 신원을 인증하세요',
+    openFailed: '열 수 없습니다. 다시 시도해 주세요.', editLabel: '편집',
+  },
+  zh: {
+    guestTitle: '您正在以访客身份浏览', guestSub: '登录后即可收藏车辆、联系卖家、管理租车咨询并出售您的车辆。', guestSignIn: '登录', guestDemo: '使用演示账户继续',
+    statSubmitted: '已提交', statLive: '已上线', statTrust: '信誉评分',
+    dashboardTitle: '卖家控制台', dashboardSub: '{{count}}次提交 · {{live}}个已在市场上线',
+    sectionListings: '我的信息', sectionAccount: '账户',
+    menuContactVisibility: '联系方式可见性', menuCarValuation: '我的车值多少钱？', menuMessages: '消息', menuHowBuyingWorks: '购车流程说明', menuHelpSupport: '帮助与支持',
+    badgeVerifiedSeller: '已认证卖家', badgeIdVerified: '身份已验证', badgeIdPending: '身份审核中', badgeIdRejected: '身份需要重新提交——点击重新提交', badgeIdNone: '验证身份即可出售车辆',
+    openFailed: '无法打开该内容，请重试。', editLabel: '编辑',
+  },
+};
+
 export const TRANSLATIONS = { en: EN, rw: RW, fr: FR, sw: SW, ko: KO, zh: ZH };
 for (const code of Object.keys(TRANSLATIONS)) {
   TRANSLATIONS[code].settings = { ...TRANSLATIONS[code].settings, ...EXTRA_SETTINGS[code] };
@@ -397,6 +457,7 @@ for (const code of Object.keys(TRANSLATIONS)) {
   TRANSLATIONS[code].searchResults = EXTRA_SEARCH[code];
   TRANSLATIONS[code].auth = EXTRA_AUTH[code];
   TRANSLATIONS[code].rentalDetail = EXTRA_RENTAL_DETAIL[code];
+  TRANSLATIONS[code].profile = EXTRA_PROFILE[code];
 }
 
 export function normalizeLanguage(value) {

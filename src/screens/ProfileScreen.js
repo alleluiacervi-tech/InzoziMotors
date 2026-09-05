@@ -8,38 +8,42 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { showToast } from '../components/Feedback';
 import { SAWA_WHATSAPP, SAWA_EMAIL, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
-const MENU_SELLER = [
-  { icon: 'shield-checkmark-outline', label: 'Identity Verification', screen: 'IDVerification' },
-  { icon: 'call-outline', label: 'Contact Visibility', screen: 'ContactSettings' },
-  { icon: 'car-outline', label: 'My Submissions', screen: 'SellerDashboard' },
-  { icon: 'trending-up-outline', label: "What's My Car Worth?", screen: 'CarValuation' },
-];
+function buildMenuSeller(t) {
+  return [
+    { icon: 'shield-checkmark-outline', label: t('drawer.verifyIdentity'), screen: 'IDVerification' },
+    { icon: 'call-outline', label: t('profile.menuContactVisibility'), screen: 'ContactSettings' },
+    { icon: 'car-outline', label: t('drawer.submissions'), screen: 'SellerDashboard' },
+    { icon: 'trending-up-outline', label: t('profile.menuCarValuation'), screen: 'CarValuation' },
+  ];
+}
 
-const MENU_ACCOUNT = [
-  { icon: 'key-outline', label: 'Rental Inquiries', screen: 'MyRentals' },
-  { icon: 'boat-outline', label: 'My Vehicle Imports', screen: 'ImportOrders' },
-  { icon: 'chatbubbles-outline', label: 'Messages', screen: 'Messages' },
-  { icon: 'shield-checkmark-outline', label: 'Marketplace Safety', screen: 'SawaPromise' },
-  { icon: 'book-outline', label: 'How Buying Works', screen: 'BuyingGuide' },
-  { icon: 'settings-outline', label: 'Settings', screen: 'Settings' },
-  // This row was `screen: null` — it rendered a chevron and did nothing at all.
-  // It now opens the business line, which is the whole point of a Help row.
-  // Gated like every other contact surface: if the line is ever unverified, the
-  // row falls back to the mailbox rather than going dead again.
-  WHATSAPP_VERIFIED
-    ? {
-        icon: 'logo-whatsapp',
-        label: 'Help & Support',
-        link: `https://wa.me/${SAWA_WHATSAPP}`,
-      }
-    : {
-        icon: 'help-circle-outline',
-        label: 'Help & Support',
-        link: `mailto:${SAWA_EMAIL}`,
-      },
-];
+function buildMenuAccount(t) {
+  return [
+    { icon: 'key-outline', label: t('drawer.rentalInquiries'), screen: 'MyRentals' },
+    { icon: 'boat-outline', label: t('drawer.imports'), screen: 'ImportOrders' },
+    { icon: 'chatbubbles-outline', label: t('profile.menuMessages'), screen: 'Messages' },
+    { icon: 'shield-checkmark-outline', label: t('drawer.marketplaceSafety'), screen: 'SawaPromise' },
+    { icon: 'book-outline', label: t('profile.menuHowBuyingWorks'), screen: 'BuyingGuide' },
+    { icon: 'settings-outline', label: t('common.settings'), screen: 'Settings' },
+    // This row was `screen: null` — it rendered a chevron and did nothing at all.
+    // It now opens the business line, which is the whole point of a Help row.
+    // Gated like every other contact surface: if the line is ever unverified, the
+    // row falls back to the mailbox rather than going dead again.
+    WHATSAPP_VERIFIED
+      ? {
+          icon: 'logo-whatsapp',
+          label: t('profile.menuHelpSupport'),
+          link: `https://wa.me/${SAWA_WHATSAPP}`,
+        }
+      : {
+          icon: 'help-circle-outline',
+          label: t('profile.menuHelpSupport'),
+          link: `mailto:${SAWA_EMAIL}`,
+        },
+  ];
+}
 
-function MenuSection({ title, items, navigation }) {
+function MenuSection({ title, items, navigation, t }) {
   return (
     <View style={styles.menuSection}>
       <Text style={styles.menuSectionTitle}>{title}</Text>
@@ -52,7 +56,7 @@ function MenuSection({ title, items, navigation }) {
               if (m.screen) navigation.navigate(m.screen);
               else if (m.link) {
                 Linking.openURL(m.link).catch(() =>
-                  showToast('Could not open that. Please try again.', 'error'),
+                  showToast(t('profile.openFailed'), 'error'),
                 );
               }
             }}
@@ -70,7 +74,7 @@ function MenuSection({ title, items, navigation }) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest, demoMode } = useApp();
+  const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest, demoMode, t } = useApp();
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
@@ -87,16 +91,16 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.guestAvatar}>
             <Ionicons name="person-outline" size={36} color={colors.textMuted} />
           </View>
-          <Text style={styles.guestTitle}>You're browsing as a guest</Text>
+          <Text style={styles.guestTitle}>{t('profile.guestTitle')}</Text>
           <Text style={styles.guestSub}>
-            Sign in to save cars, contact sellers, manage rental inquiries, and sell your car.
+            {t('profile.guestSub')}
           </Text>
           <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
-            <Text style={styles.guestBtnText}>Sign In</Text>
+            <Text style={styles.guestBtnText}>{t('profile.guestSignIn')}</Text>
           </Pressable>
           {demoMode && (
             <Pressable onPress={() => loginAsGuest()} style={{ marginTop: 14 }}>
-              <Text style={styles.guestSkip}>Continue with a demo account</Text>
+              <Text style={styles.guestSkip}>{t('profile.guestDemo')}</Text>
             </Pressable>
           )}
         </View>
@@ -105,9 +109,9 @@ export default function ProfileScreen({ navigation }) {
   }
 
   const STATS = [
-    { label: 'Submitted', value: String(submissions.length) },
-    { label: 'Live', value: String(liveCount) },
-    { label: 'Trust Score', value: `${trustScore}/100` },
+    { label: t('profile.statSubmitted'), value: String(submissions.length) },
+    { label: t('profile.statLive'), value: String(liveCount) },
+    { label: t('profile.statTrust'), value: `${trustScore}/100` },
   ];
 
   return (
@@ -130,8 +134,8 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.badgeRow}>
               {idVerificationStatus === 'approved' ? (
                 <>
-                  <Badge variant="success" label="Verified Seller" />
-                  <Badge variant="live" dot label="ID Verified" />
+                  <Badge variant="success" label={t('profile.badgeVerifiedSeller')} />
+                  <Badge variant="live" dot label={t('profile.badgeIdVerified')} />
                 </>
               ) : (
                 <Pressable onPress={() => navigation.navigate('IDVerification')}>
@@ -139,17 +143,17 @@ export default function ProfileScreen({ navigation }) {
                     variant="tag"
                     label={
                       idVerificationStatus === 'pending'
-                        ? 'ID under review'
+                        ? t('profile.badgeIdPending')
                         : idVerificationStatus === 'rejected'
-                        ? 'ID needs attention — tap to resubmit'
-                        : 'Verify your ID to sell'
+                        ? t('profile.badgeIdRejected')
+                        : t('profile.badgeIdNone')
                     }
                   />
                 </Pressable>
               )}
             </View>
           </View>
-          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel="Edit">
+          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('profile.editLabel')}>
             <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
@@ -170,16 +174,16 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="trending-up" size={22} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.dashBannerTitle}>Seller Dashboard</Text>
+            <Text style={styles.dashBannerTitle}>{t('profile.dashboardTitle')}</Text>
             <Text style={styles.dashBannerSub}>
-              {submissions.length} submissions · {liveCount} live on marketplace
+              {t('profile.dashboardSub', { count: submissions.length, live: liveCount })}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
         </Pressable>
 
-        <MenuSection title="My Listings" items={MENU_SELLER} navigation={navigation} />
-        <MenuSection title="Account" items={MENU_ACCOUNT} navigation={navigation} />
+        <MenuSection title={t('profile.sectionListings')} items={buildMenuSeller(t)} navigation={navigation} t={t} />
+        <MenuSection title={t('profile.sectionAccount')} items={buildMenuAccount(t)} navigation={navigation} t={t} />
 
         {/* Team Portal — Sawa staff only. Visible in dev builds for testing;
             in release only an admin account ever sees the entry point (and
@@ -187,7 +191,7 @@ export default function ProfileScreen({ navigation }) {
         {(demoMode || currentUser?.role === 'admin') && (
           <Pressable style={styles.adminAccess} onPress={() => navigation.navigate('AdminPanel')}>
             <Ionicons name="grid-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.adminAccessText}>Team Portal</Text>
+            <Text style={styles.adminAccessText}>{t('drawer.teamPortal')}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
         )}
@@ -201,7 +205,7 @@ export default function ProfileScreen({ navigation }) {
           }}
         >
           <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Log out</Text>
+          <Text style={styles.logoutText}>{t('common.logout')}</Text>
         </Pressable>
 
       </ScrollView>
