@@ -56,7 +56,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   // id — there is no car object to render from until the fetch lands.
   const carId = route.params?.carId || listCar?.id;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail, t } = useApp();
 
   // The browse payload is deliberately lean. The detail endpoint adds price
   // history, the seller's phone and the full market comparison — and counts the
@@ -99,23 +99,23 @@ export default function VehicleDetailScreen({ navigation, route }) {
         {notFound ? (
           <>
             <Ionicons name="car-outline" size={40} color={colors.textMuted} />
-            <Text style={styles.linkStateTitle}>This car isn&apos;t available</Text>
+            <Text style={styles.linkStateTitle}>{t('vehicleDetail.unavailable')}</Text>
             <Text style={styles.linkStateSub}>
-              It may have been sold or taken off the marketplace.
+              {t('vehicleDetail.unavailableSub')}
             </Text>
             <Pressable
               style={styles.linkStateBtn}
               onPress={() => navigation.replace('Main')}
               accessibilityRole="button"
-              accessibilityLabel="Browse cars"
+              accessibilityLabel={t('vehicleDetail.browseCars')}
             >
-              <Text style={styles.linkStateBtnText}>Browse cars</Text>
+              <Text style={styles.linkStateBtnText}>{t('vehicleDetail.browseCars')}</Text>
             </Pressable>
           </>
         ) : (
           <>
             <ActivityIndicator color={colors.primary} />
-            <Text style={styles.linkStateSub}>Loading this car…</Text>
+            <Text style={styles.linkStateSub}>{t('vehicleDetail.loadingCar')}</Text>
           </>
         )}
       </View>
@@ -156,19 +156,19 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
 
   const infoRows = [
-    { label: 'Make', value: car.make },
-    { label: 'Model', value: car.model },
-    { label: 'Year', value: String(car.year) },
-    { label: 'Body Type', value: car.category },
-    { label: 'Transmission', value: car.transmission },
-    { label: 'Fuel', value: car.fuel },
-    { label: 'Mileage', value: formatMiles(car.mileage) },
-    { label: 'Drive', value: `${driveType} drive` },
+    { label: t('vehicleDetail.make'), value: car.make },
+    { label: t('vehicleDetail.model'), value: car.model },
+    { label: t('vehicleDetail.year'), value: String(car.year) },
+    { label: t('vehicleDetail.bodyType'), value: car.category },
+    { label: t('vehicleDetail.transmission'), value: car.transmission },
+    { label: t('vehicleDetail.fuel'), value: car.fuel },
+    { label: t('vehicleDetail.mileage'), value: formatMiles(car.mileage) },
+    { label: t('vehicleDetail.driveSide'), value: `${driveType} drive` },
     {
-      label: 'Inspection',
+      label: t('vehicleDetail.inspectionScore'),
       value: tier
         ? (car.inspectionScore ? `${tier.label} · ${car.inspectionScore}/150` : tier.label)
-        : 'Scheduled',
+        : t('common.pending'),
     },
   ].filter((r) => r.value != null && r.value !== '' && r.value !== 'undefined');
 
@@ -194,21 +194,25 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </ScrollView>
 
           <View style={[styles.galleryBar, { top: insets.top + 8 }]}>
-            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
+            <Pressable style={styles.circleBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={t('common.back')}>
               <Ionicons name="chevron-back" size={20} color={colors.slate700} />
             </Pressable>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Pressable
                 style={[styles.circleBtn, isInComparison && styles.circleBtnActive]}
-                onPress={() => addToComparison(car)} accessibilityRole="button" accessibilityLabel="Compare"
+                onPress={() => addToComparison(car)} accessibilityRole="button" accessibilityLabel={t('common.compare')}
               >
                 <Ionicons name="git-compare-outline" size={18} color={isInComparison ? colors.primary : colors.slate700} />
               </Pressable>
               <Pressable
                 style={styles.circleBtn}
                 onPress={() => Share.share({
-                  message: `${car.title} — ${formatPrice(price)} on Sawa Cars. View the listing and available inspection information in the app.`,
-                }).catch(() => {})} accessibilityRole="button" accessibilityLabel="Share"
+                  message: t('vehicleDetail.shareMessage', {
+                    year: car.year,
+                    title: car.title,
+                    price: formatPrice(price),
+                  }),
+                }).catch(() => {})} accessibilityRole="button" accessibilityLabel={t('common.share')}
               >
                 <Ionicons name="share-outline" size={19} color={colors.slate700} />
               </Pressable>
@@ -216,7 +220,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 style={styles.circleBtn}
                 onPress={() => toggleSaveCar(car.id)}
                 accessibilityRole="button"
-                accessibilityLabel={saved ? 'Remove from saved' : 'Save this car'}
+                accessibilityLabel={saved ? t('home.removeSaved', { title: car.title }) : t('home.saveCar', { title: car.title })}
                 accessibilityState={{ selected: saved }}
               >
                 <Ionicons name={saved ? 'heart' : 'heart-outline'} size={19} color={saved ? '#EF4444' : colors.slate700} />
@@ -253,13 +257,13 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 <Ionicons name="location-outline" size={14} color={colors.textMuted} />
                 <Text style={styles.meta}>{neighborhood}, Kigali</Text>
                 <Text style={styles.metaDot}>·</Text>
-                <Text style={styles.meta}>{listedDaysAgo}d ago</Text>
+                <Text style={styles.meta}>{t('common.daysAgo', { count: listedDaysAgo })}</Text>
                 <Text style={styles.metaDot}>·</Text>
                 <Text style={[styles.meta, { fontFamily: fonts.bold }]}>{driveType}</Text>
               </View>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              {isAuction && <Text style={styles.bidLabel}>CURRENT BID</Text>}
+              {isAuction && <Text style={styles.bidLabel}>{t('vehicleDetail.currentBid').toUpperCase()}</Text>}
               <Text style={styles.price}>{formatPrice(price)}</Text>
               {/* Market diff badge */}
               {/* Null unless the server computed a position from real
@@ -272,7 +276,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
                     color={marketDiff < 0 ? colors.green : colors.alertRed}
                   />
                   <Text style={[styles.marketBadgeText, { color: marketDiff < 0 ? colors.green : colors.alertRed }]}>
-                    {Math.abs(marketDiff)}% {marketDiff < 0 ? 'below' : 'above'} market
+                    {marketDiff < 0
+                      ? t('home.belowMarket', { percent: Math.abs(marketDiff) })
+                      : t('vehicleDetail.aboveMarket', { amount: `${Math.abs(marketDiff)}%` })}
                   </Text>
                 </View>
               )}
@@ -284,12 +290,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
             {savedCount > 0 && (
               <View style={styles.socialItem}>
                 <Ionicons name="heart" size={13} color="#EF4444" />
-                <Text style={styles.socialText}>{savedCount} people saved this</Text>
+                <Text style={styles.socialText}>{t('vehicleDetail.peopleSaved', { count: savedCount })}</Text>
               </View>
             )}
             {savedCount >= 10 && (
               <View style={styles.highDemandBadge}>
-                <Text style={styles.highDemandText}>High Demand</Text>
+                <Text style={styles.highDemandText}>{t('vehicleDetail.highDemand')}</Text>
               </View>
             )}
           </View>
@@ -302,12 +308,12 @@ export default function VehicleDetailScreen({ navigation, route }) {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.financeTitle}>
-                  Bank financing from <Text style={styles.financeAmount}>{formatPrice(monthly)}/mo</Text>
+                  {t('vehicleDetail.bankFinancingFrom', { amount: formatPrice(monthly) })}
                 </Text>
-                <Text style={styles.financeSub}>Loan estimate · 20% down · 60 months · 4 partner banks</Text>
+                <Text style={styles.financeSub}>{t('vehicleDetail.loanEstParams')}</Text>
               </View>
               <View style={styles.financeCta}>
-                <Text style={styles.financeCtaText}>Get pre-qualified</Text>
+                <Text style={styles.financeCtaText}>{t('vehicleDetail.getPrequalified')}</Text>
                 <Ionicons name="arrow-forward" size={12} color={colors.primary} />
               </View>
             </Pressable>
@@ -323,28 +329,28 @@ export default function VehicleDetailScreen({ navigation, route }) {
             <View style={styles.sparklineCard}>
               <View style={styles.sparklineLeft}>
                 <Text style={styles.sparklineTitle}>
-                  {hasPriceHistory ? 'Price history' : 'Market position'}
+                  {hasPriceHistory ? t('vehicleDetail.priceHistory') : t('vehicleDetail.marketPosition')}
                 </Text>
                 {hasPriceHistory ? (
                   priceDrop > 0 ? (
                     <View style={styles.priceDropRow}>
                       <Ionicons name="arrow-down" size={12} color={colors.green} />
-                      <Text style={styles.priceDropText}>Dropped {formatPrice(priceDrop)} since listed</Text>
+                      <Text style={styles.priceDropText}>{t('vehicleDetail.droppedSinceListed', { amount: formatPrice(priceDrop) })}</Text>
                     </View>
                   ) : (
-                    <Text style={styles.sparklineStable}>Stable since listing</Text>
+                    <Text style={styles.sparklineStable}>{t('vehicleDetail.stableSinceListing')}</Text>
                   )
                 ) : null}
                 {realMarket && (
                   <Text style={styles.marketAvgText}>
-                    {`Market avg: ${formatPrice(marketAvg)} · ${car.comparables} similar listed`}
+                    {t('vehicleDetail.marketAvgStats', { avg: formatPrice(marketAvg), count: car.comparables })}
                   </Text>
                 )}
               </View>
               {hasPriceHistory && (
                 <View style={styles.sparklineRight}>
                   <Sparkline data={priceHistory} width={80} height={32} />
-                  <Text style={styles.sparklineNow}>Now</Text>
+                  <Text style={styles.sparklineNow}>{t('common.now')}</Text>
                 </View>
               )}
             </View>
@@ -352,12 +358,15 @@ export default function VehicleDetailScreen({ navigation, route }) {
 
           {/* Specs grid */}
           <View style={styles.specs}>
-            {SPECS.map((s) => (
+            {[
+              { icon: 'speedometer-outline', label: t('vehicleDetail.mileage'), key: 'mileage', val: formatMiles(car.mileage) },
+              { icon: 'flash-outline', label: t('vehicleDetail.fuel'), key: 'fuel', val: String(car.fuel || '') },
+              { icon: 'cog-outline', label: t('vehicleDetail.transmission'), key: 'transmission', val: String(car.transmission || '') },
+              { icon: 'calendar-outline', label: t('vehicleDetail.year'), key: 'year', val: String(car.year || '') },
+            ].map((s) => (
               <View key={s.key} style={styles.specCard}>
                 <Ionicons name={s.icon} size={20} color={colors.textSecondary} />
-                <Text style={styles.specValue}>
-                  {s.key === 'mileage' ? formatMiles(car.mileage) : String(car[s.key])}
-                </Text>
+                <Text style={styles.specValue}>{s.val}</Text>
                 <Text style={styles.specLabel}>{s.label}</Text>
               </View>
             ))}
@@ -367,7 +376,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           <View style={styles.infoCard}>
             <View style={styles.infoHeader}>
               <CarGlyph width={26} body={colors.primary} glass={colors.surface} />
-              <Text style={styles.infoHeaderText}>Vehicle Information</Text>
+              <Text style={styles.infoHeaderText}>{t('vehicleDetail.keyDetails')}</Text>
             </View>
             {infoRows.map((row, i) => (
               <View
@@ -409,8 +418,8 @@ export default function VehicleDetailScreen({ navigation, route }) {
                   color={car.sellerIdVerified ? colors.green : colors.textMuted}
                 />
                 <Text style={styles.ratingText}>
-                  {car.sellerIdVerified ? 'ID verified' : 'Identity not verified'}
-                  {isDealer ? ' · Partner dealer' : ''} · View profile
+                  {car.sellerIdVerified ? t('settings.verified') : t('settings.notVerified')}
+                  {isDealer ? ` · ${t('vehicleDetail.verifiedSeller')}` : ''} · {t('common.profile')}
                 </Text>
               </View>
             </View>
@@ -424,9 +433,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
                 <Ionicons name="shield-checkmark" size={20} color={colors.green} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.inspectionTitle}>150-Point Inspection Report</Text>
+                <Text style={styles.inspectionTitle}>{t('vehicleDetail.inspectionReport')}</Text>
                 <Text style={styles.inspectionSub}>
-                  {car.inspectionScore ? `Scored ${car.inspectionScore}/150 · View full report` : 'Passed · View full report'}
+                  {car.inspectionScore ? t('rentals.inspectionSub', { score: car.inspectionScore }) : t('vehicleDetail.viewReport')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -438,26 +447,26 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.inspectionTitle}>Vehicle History Report</Text>
-              <Text style={[styles.inspectionSub, { color: colors.textMuted }]}>RRA duty · ownership · accident history</Text>
+              <Text style={styles.inspectionTitle}>{t('vehicleDetail.vehicleHistory')}</Text>
+              <Text style={[styles.inspectionSub, { color: colors.textMuted }]}>{t('vehicleDetail.historySub')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
 
           <View style={styles.trustChips}>
-            <Badge variant="tag" label="Direct seller contact" />
+            <Badge variant="tag" label={t('vehicleDetail.directDeal')} />
             <Badge variant="tag" label={`${driveType} drive`} />
             {tier && <Badge variant={tier.variant} label={tier.label} />}
           </View>
 
           <Pressable style={styles.promiseLink} onPress={() => navigation.navigate('SawaPromise')}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-            <Text style={styles.promiseLinkText}>Marketplace safety & responsibilities</Text>
+            <Text style={styles.promiseLinkText}>{t('vehicleDetail.safetyNoticeLink')}</Text>
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
           {/* Description — derived from this car's actual data */}
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <Text style={styles.sectionTitle}>{t('vehicleDetail.overview')}</Text>
           <Text style={styles.desc}>
             {car.year} {car.make} {car.model} · {formatMiles(car.mileage)} · {car.fuel}, {car.transmission?.toLowerCase()} transmission.
             {car.inspected
@@ -469,13 +478,13 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </Text>
 
           {/* Inspection highlights — keyed off this car's data */}
-          <Text style={styles.sectionTitle}>Inspection Highlights</Text>
+          <Text style={styles.sectionTitle}>{t('vehicleDetail.inspectionHighlights')}</Text>
           <View style={styles.highlightGrid}>
             {[
-              { icon: 'cog-outline', title: 'Engine & Mechanicals', desc: `${car.fuel} engine checked — fluids, mounts and diagnostics within spec.` },
-              { icon: 'disc-outline', title: 'Brakes & Tyres', desc: 'Brake wear and tread depth measured on all four wheels.' },
-              { icon: 'color-palette-outline', title: 'Body & Paint', desc: 'Panel gaps and paint depth verified across all panels.' },
-              { icon: 'document-text-outline', title: 'Documentation', desc: `Registration, ${listedDaysAgo < 30 ? 'recent ' : ''}service records and RRA duty status verified.` },
+              { icon: 'cog-outline', title: t('vehicleDetail.engineMechanical'), desc: t('vehicleDetail.engineMechanicalDesc', { fuel: car.fuel || '' }) },
+              { icon: 'disc-outline', title: t('vehicleDetail.brakesTyres'), desc: t('vehicleDetail.brakesTyresDesc') },
+              { icon: 'color-palette-outline', title: t('vehicleDetail.bodyPaint'), desc: t('vehicleDetail.bodyPaintDesc') },
+              { icon: 'document-text-outline', title: t('vehicleDetail.documentation'), desc: t('vehicleDetail.documentationDesc') },
             ].map((item, idx) => (
               <View key={idx} style={styles.highlightCard}>
                 <View style={styles.highlightIcon}>
@@ -492,7 +501,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
           {/* Similar Cars */}
           {similarCars.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Similar Cars</Text>
+              <Text style={styles.sectionTitle}>{t('vehicleDetail.similarCars')}</Text>
               <FlatList
                 horizontal
                 data={similarCars}
@@ -511,7 +520,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
                       {item.inspected && (
                         <View style={styles.similarCert}>
                           <Ionicons name="shield-checkmark" size={10} color={colors.green} />
-                          <Text style={styles.similarCertText}>Certified</Text>
+                          <Text style={styles.similarCertText}>{t('common.verified')}</Text>
                         </View>
                       )}
                     </View>
@@ -527,8 +536,8 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Ionicons name="calculator-outline" size={18} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.dutyLinkTitle}>Estimate import duty</Text>
-              <Text style={styles.dutyLinkSub}>See Rwanda RRA duty on this vehicle</Text>
+              <Text style={styles.dutyLinkTitle}>{t('tools.dutyTitle')}</Text>
+              <Text style={styles.dutyLinkSub}>{t('tools.dutySub')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
@@ -540,26 +549,26 @@ export default function VehicleDetailScreen({ navigation, route }) {
         <View style={styles.ctaInner}>
           <View style={styles.ctaMetaRow}>
             <View style={styles.ctaPrice}>
-              <Text style={styles.ctaPriceLabel}>{isAuction ? 'Current bid' : 'Asking price'}</Text>
+              <Text style={styles.ctaPriceLabel}>{isAuction ? t('vehicleDetail.currentBid') : t('vehicleDetail.askingPrice')}</Text>
               <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>
                 {formatPrice(price)}
               </Text>
               <Text style={styles.ctaContext}>
-                Contact seller directly · no Sawa checkout
+                {t('vehicleDetail.directDealBody')}
               </Text>
             </View>
             <View style={styles.ctaAssurance}>
               <Ionicons name="shield-checkmark" size={14} color={colors.greenText} />
-              <Text style={styles.ctaAssuranceText}>Direct deal</Text>
+              <Text style={styles.ctaAssuranceText}>{t('vehicleDetail.directDeal')}</Text>
             </View>
           </View>
 
           <View style={styles.ctaActions}>
             <Button
-              title="Contact verified seller"
+              title={t('vehicleDetail.contactVerifiedSeller')}
               icon="chatbubble-outline"
               style={styles.requestButton}
-              accessibilityHint="Choose an available contact method and review the direct-deal notice"
+              accessibilityHint={t('sellerContact.directDealNotice')}
               onPress={() => executeWithAuth(() => navigation.navigate('SellerContact', { car }))}
             />
           </View>

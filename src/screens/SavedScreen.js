@@ -12,7 +12,7 @@ import { getPriceDrop, getSavedCount, getListedDaysAgo } from '../data/marketDat
 import { PHOTO } from '../utils/photo';
 import Photo from '../components/Photo';
 
-function SavedCarRow({ car, onPress, onRemove }) {
+function SavedCarRow({ car, onPress, onRemove, t }) {
   const drop = getPriceDrop(car);
   const saves = getSavedCount(car);
   const daysAgo = getListedDaysAgo(car);
@@ -26,38 +26,38 @@ function SavedCarRow({ car, onPress, onRemove }) {
           {car.inspected && (
             <View style={styles.certBadge}>
               <Ionicons name="shield-checkmark" size={10} color={colors.green} />
-              <Text style={styles.certText}>Certified</Text>
+              <Text style={styles.certText}>{t('common.verified')}</Text>
             </View>
           )}
-          <Text style={styles.metaText}>{daysAgo}d ago</Text>
+          <Text style={styles.metaText}>{t('common.daysAgo', { count: daysAgo })}</Text>
           {saves >= 10 && (
             <View style={styles.highDemandChip}>
-              <Text style={styles.highDemandText}>🔥 {saves} saves</Text>
+              <Text style={styles.highDemandText}>🔥 {saves} {t('common.saved').toLowerCase()}</Text>
             </View>
           )}
         </View>
         <View style={styles.rowPriceRow}>
           <Text style={styles.rowPrice}>
             {car.listingType === 'rental'
-              ? `${formatPrice(car.dailyRate || 0)}/day`
+              ? `${formatPrice(car.dailyRate || 0)}${t('common.perDay')}`
               : formatPrice(car.type === 'auction' ? car.currentBid : car.price)}
           </Text>
           {drop > 0 && (
             <View style={styles.dropBadge}>
               <Ionicons name="arrow-down" size={10} color={colors.green} />
-              <Text style={styles.dropText}>Dropped {formatPrice(drop)}</Text>
+              <Text style={styles.dropText}>{t('vehicleDetail.droppedSinceListed', { amount: formatPrice(drop) })}</Text>
             </View>
           )}
         </View>
       </View>
-      <Pressable style={styles.removeBtn} onPress={onRemove} hitSlop={10} accessibilityRole="button" accessibilityLabel="Remove from saved">
+      <Pressable style={styles.removeBtn} onPress={onRemove} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('saved.removeSaved')}>
         <Ionicons name="heart" size={22} color="#EF4444" />
       </Pressable>
     </Pressable>
   );
 }
 
-function SavedSearchRow({ search, onToggleNotify, onDelete }) {
+function SavedSearchRow({ search, onToggleNotify, onDelete, t }) {
   return (
     <View style={styles.searchRow}>
       <View style={styles.searchIcon}>
@@ -66,9 +66,9 @@ function SavedSearchRow({ search, onToggleNotify, onDelete }) {
       <View style={styles.searchBody}>
         <Text style={styles.searchLabel}>{search.label}</Text>
         <View style={styles.searchMeta}>
-          <Text style={styles.searchMatchText}>{search.matchCount} matches</Text>
+          <Text style={styles.searchMatchText}>{search.matchCount} {t('common.cars').toLowerCase()}</Text>
           <Text style={styles.searchDot}>·</Text>
-          <Text style={styles.searchLastText}>Last: {search.lastMatch}</Text>
+          <Text style={styles.searchLastText}>{search.lastMatch || t('common.now')}</Text>
         </View>
       </View>
       <Switch
@@ -78,15 +78,12 @@ function SavedSearchRow({ search, onToggleNotify, onDelete }) {
         thumbColor="#fff"
         style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
       />
-      <Pressable style={styles.deleteBtn} onPress={() => onDelete(search.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Delete">
+      <Pressable style={styles.deleteBtn} onPress={() => onDelete(search.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('common.delete')}>
         <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
       </Pressable>
     </View>
   );
 }
-
-const SAVED_FEATURES = ['Price drop alerts', 'Compare saved cars', 'Track demand'];
-const SEARCH_FEATURES = ['New listing alerts', 'Filter by make & price', 'Re-run anytime'];
 
 function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
   return (
@@ -117,41 +114,44 @@ export default function SavedScreen({ navigation }) {
   const {
     getSavedCars, toggleSaveCar,
     savedSearches, toggleSavedSearchNotify, deleteSavedSearch,
-    refreshCatalogue, refreshing,
+    refreshCatalogue, refreshing, t,
   } = useApp();
   const saved = getSavedCars();
   const [tab, setTab] = useState('saved');
 
   const handleRemove = (carId) => {
     showConfirm({
-      title: 'Remove from saved?',
-      confirmLabel: 'Remove', destructive: true,
+      title: t('saved.removeSaved'),
+      confirmLabel: t('common.delete'), destructive: true,
     }).then((ok) => { if (ok) toggleSaveCar(carId); });
   };
 
   const handleDeleteSearch = (id) => {
     showConfirm({
-      title: 'Delete saved search?',
-      message: 'You will stop receiving alerts for this search.',
-      confirmLabel: 'Delete', destructive: true,
+      title: t('common.delete'),
+      message: t('settings.deleteHint'),
+      confirmLabel: t('common.delete'), destructive: true,
     }).then((ok) => { if (ok) deleteSavedSearch(id); });
   };
+
+  const savedFeatures = [t('vehicleDetail.priceDrop'), t('drawer.compareCars'), t('vehicleDetail.highDemand')];
+  const searchFeatures = [t('saved.searchAlerts'), t('common.filters'), t('drawer.browseAll')];
 
   return (
     <Screen background={colors.bg}>
       <View style={styles.header}>
-        <Text style={styles.h1}>Saved</Text>
+        <Text style={styles.h1}>{t('common.saved')}</Text>
       </View>
 
       <View style={styles.tabs}>
         <Pressable style={[styles.tab, tab === 'saved' && styles.tabActive]} onPress={() => setTab('saved')}>
           <Text style={[styles.tabText, tab === 'saved' && styles.tabTextActive]}>
-            Cars ({saved.length})
+            {t('common.cars')} ({saved.length})
           </Text>
         </Pressable>
         <Pressable style={[styles.tab, tab === 'searches' && styles.tabActive]} onPress={() => setTab('searches')}>
           <Text style={[styles.tabText, tab === 'searches' && styles.tabTextActive]}>
-            Searches ({savedSearches.length})
+            {t('settings.savedSearches')} ({savedSearches.length})
           </Text>
         </Pressable>
       </View>
@@ -170,6 +170,7 @@ export default function SavedScreen({ navigation }) {
           renderItem={({ item }) => (
             <SavedCarRow
               car={item}
+              t={t}
               onPress={() => navigation.navigate(item.listingType === 'rental' ? 'RentalDetail' : 'VehicleDetail', { car: item })}
               onRemove={() => handleRemove(item.id)}
             />
@@ -177,13 +178,10 @@ export default function SavedScreen({ navigation }) {
           ListEmptyComponent={
             <EmptyState
               icon="heart-outline"
-              title="No saved cars yet"
-              sub="Tap the heart on any listing to save it. We'll notify you the moment the price drops."
-              features={SAVED_FEATURES}
-              btnLabel="Browse cars"
-              // 'Main' resolves from both mounts of this screen (tab bar AND
-              // the root-stack instance the drawer opens); 'Home' only existed
-              // inside the tab navigator, so the drawer path was a dead button.
+              title={t('saved.emptyTitle')}
+              sub={t('saved.emptySub')}
+              features={savedFeatures}
+              btnLabel={t('saved.browseCars')}
               onPress={() => navigation.navigate('Main', { screen: 'Home' })}
             />
           }
@@ -198,12 +196,13 @@ export default function SavedScreen({ navigation }) {
           ListHeaderComponent={
             <View style={styles.searchHint}>
               <Ionicons name="notifications-outline" size={14} color={colors.primary} />
-              <Text style={styles.searchHintText}>Toggle the bell to get notified when new matches are listed.</Text>
+              <Text style={styles.searchHintText}>{t('searchResults.savedToast')}</Text>
             </View>
           }
           renderItem={({ item }) => (
             <SavedSearchRow
               search={item}
+              t={t}
               onToggleNotify={toggleSavedSearchNotify}
               onDelete={handleDeleteSearch}
             />
@@ -211,10 +210,10 @@ export default function SavedScreen({ navigation }) {
           ListEmptyComponent={
             <EmptyState
               icon="bookmark-outline"
-              title="No saved searches"
-              sub="Filter by make, model, price or year — then save the filter to get instant alerts."
-              features={SEARCH_FEATURES}
-              btnLabel="Search now"
+              title={t('settings.savedSearches')}
+              sub={t('searchResults.savedToast')}
+              features={searchFeatures}
+              btnLabel={t('common.search')}
               onPress={() => navigation.navigate('SearchResults')}
             />
           }

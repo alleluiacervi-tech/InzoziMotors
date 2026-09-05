@@ -7,12 +7,12 @@ import { useApp } from '../context/AppContext';
 import { colors, fonts } from '../theme';
 
 export default function MessagesScreen({ navigation }) {
-  const { conversations, refreshCatalogue, refreshing } = useApp();
+  const { conversations, refreshCatalogue, refreshing, t } = useApp();
   const canGoBack = navigation.canGoBack && navigation.canGoBack();
 
   return (
     <Screen background={colors.surface}>
-      <BackHeader title="Messages" onBack={canGoBack ? () => navigation.goBack() : null} />
+      <BackHeader title={t('messages.title')} onBack={canGoBack ? () => navigation.goBack() : null} />
       <FlatList
         data={conversations}
         keyExtractor={(c) => c.id}
@@ -50,10 +50,10 @@ export default function MessagesScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="chatbubbles-outline" size={56} color={colors.border} />
-            <Text style={styles.emptyTitle}>No messages yet</Text>
-            <Text style={styles.emptySub}>Message a seller from any car page</Text>
+            <Text style={styles.emptyTitle}>{t('messages.emptyTitle')}</Text>
+            <Text style={styles.emptySub}>{t('messages.emptySub')}</Text>
             <Pressable style={styles.emptyBtn} onPress={() => navigation.navigate('Main')}>
-              <Text style={styles.emptyBtnText}>Browse Cars</Text>
+              <Text style={styles.emptyBtnText}>{t('messages.browseCars')}</Text>
             </Pressable>
           </View>
         }

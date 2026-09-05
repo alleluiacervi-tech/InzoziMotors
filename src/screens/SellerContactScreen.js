@@ -17,20 +17,35 @@ const CHANNELS = [
 
 export default function SellerContactScreen({ navigation, route }) {
   const car = route.params?.car;
-  const { isLoggedIn, getOrCreateConversation, sendMessage } = useApp();
+  const { isLoggedIn, getOrCreateConversation, sendMessage, t } = useApp();
+
+  const channelsConfig = [
+    { id: 'in_app', label: t('vehicleDetail.inAppChat'), icon: 'chatbubble-outline' },
+    { id: 'whatsapp', label: t('common.whatsapp'), icon: 'logo-whatsapp' },
+    { id: 'phone', label: t('common.call'), icon: 'call-outline' },
+  ];
+
   const availability = car?.sellerContactAvailable || { phone: false, whatsapp: false, in_app: true };
   const channels = useMemo(
-    () => CHANNELS.filter((item) => item.id === 'in_app' || availability[item.id]),
-    [availability.phone, availability.whatsapp, availability.in_app]
+    () => channelsConfig.filter((item) => item.id === 'in_app' || availability[item.id]),
+    [availability.phone, availability.whatsapp, availability.in_app, t]
   );
   const [channel, setChannel] = useState(channels[0]?.id || 'in_app');
-  const [message, setMessage] = useState('Hi, is this vehicle still available?');
+  const [message, setMessage] = useState('');
   const [acknowledged, setAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (!car) {
-    return <Screen background={colors.bg}><BackHeader title="Contact seller" onBack={() => navigation.goBack()} /><View style={styles.missing}><Text style={styles.missingTitle}>Vehicle unavailable</Text><Text style={styles.missingText}>Return to the listing and try again.</Text></View></Screen>;
+    return (
+      <Screen background={colors.bg}>
+        <BackHeader title={t('sellerContact.title')} onBack={() => navigation.goBack()} />
+        <View style={styles.missing}>
+          <Text style={styles.missingTitle}>{t('sellerContact.unavailable')}</Text>
+          <Text style={styles.missingText}>{t('vehicleDetail.unavailableSub')}</Text>
+        </View>
+      </Screen>
+    );
   }
 
   const submit = async () => {
@@ -39,11 +54,11 @@ export default function SellerContactScreen({ navigation, route }) {
       return;
     }
     if (!acknowledged) {
-      setError('Read and accept the direct-deal notice to continue.');
+      setError(t('vehicleDetail.directDealNotice'));
       return;
     }
     if (channel === 'in_app' && message.trim().length < 2) {
-      setError('Write a short message for the seller.');
+      setError(t('sellerContact.messagePlaceholder'));
       return;
     }
     setLoading(true);
@@ -52,19 +67,19 @@ export default function SellerContactScreen({ navigation, route }) {
       const disclosure = await carsApi.contactSeller(car.id, channel, true);
       if (channel === 'in_app') {
         const pendingConvId = await getOrCreateConversation(car.id, car.sellerId);
-        const convId = await sendMessage(pendingConvId, message.trim(), car.id);
+        const convId = await sendMessage(pendingConvId, message.trim() || t('sellerContact.messagePlaceholder'), car.id);
         navigation.replace('Chat', { convId, name: car.seller, car });
         return;
       }
       const contact = disclosure?.contact;
-      if (!contact) throw new Error('The seller has not made this contact method available.');
+      if (!contact) throw new Error(t('sellerContact.unavailable'));
       const url = channel === 'whatsapp'
         ? `https://wa.me/${String(contact).replace(/\D/g, '')}`
         : `tel:${contact}`;
       await Linking.openURL(url);
-      showToast('Seller contact opened. Agree and document your transaction directly.', 'success');
+      showToast(t('common.success'), 'success');
     } catch (err) {
-      setError(err?.message || 'We could not connect you to the seller. Please try again.');
+      setError(err?.message || t('settings.genericError'));
     } finally {
       setLoading(false);
     }
@@ -72,14 +87,14 @@ export default function SellerContactScreen({ navigation, route }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Contact seller" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('sellerContact.title')} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.summary}>
           <View style={styles.summaryIcon}><Ionicons name="car-sport-outline" size={23} color={colors.primary} /></View>
-          <View style={{ flex: 1 }}><Text style={styles.carTitle}>{car.title}</Text><Text style={styles.sellerName}>{car.seller || 'Verified seller'}</Text></View>
+          <View style={{ flex: 1 }}><Text style={styles.carTitle}>{car.title}</Text><Text style={styles.sellerName}>{car.seller || t('vehicleDetail.verifiedSeller')}</Text></View>
         </View>
 
-        <Text style={styles.heading}>Choose a contact method</Text>
+        <Text style={styles.heading}>{t('sellerContact.chooseMethod')}</Text>
         <View style={styles.channels}>
           {channels.map((item) => {
             const selected = item.id === channel;
@@ -87,17 +102,50 @@ export default function SellerContactScreen({ navigation, route }) {
           })}
         </View>
 
-        {channel === 'in_app' && <View style={styles.field}><Text style={styles.label}>Your message</Text><TextInput value={message} onChangeText={setMessage} multiline maxLength={1000} style={styles.textarea} placeholder="Ask about availability or arrange a viewing" placeholderTextColor={colors.textMuted} /></View>}
+        {channel === 'in_app' && (
+          <View style={styles.field}>
+            <Text style={styles.label}>{t('sellerContact.yourMessage')}</Text>
+            <TextInput
+              value={message}
+              onChangeText={setMessage}
+              multiline
+              maxLength={1000}
+              style={styles.textarea}
+              placeholder={t('sellerContact.messagePlaceholder')}
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        )}
 
+        {/* Direct-deal marketplace notice */}
         <View style={styles.notice}>
           <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
-          <View style={{ flex: 1 }}><Text style={styles.noticeTitle}>Direct-deal marketplace notice</Text><Text style={styles.noticeText}>Sawa Cars provides listing, verification and inspection information. You and the seller independently agree the price, checks, contract, payment, delivery and ownership transfer. Sawa Cars does not hold funds, guarantee the transaction or decide an external dispute.</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.noticeTitle}>{t('sellerContact.directDealNotice')}</Text>
+            <Text style={styles.noticeText}>{t('vehicleDetail.directDealBody')}</Text>
+          </View>
         </View>
 
-        <Button title={acknowledged ? 'Notice accepted' : 'I understand and accept'} icon={acknowledged ? 'checkmark-circle' : 'ellipse-outline'} variant={acknowledged ? 'secondary' : 'outline'} onPress={() => { setAcknowledged((value) => !value); setError(''); }} />
-        {!!error && <View style={styles.error}><Ionicons name="alert-circle-outline" size={18} color={colors.danger} /><Text style={styles.errorText}>{error}</Text></View>}
-        <Button title={isLoggedIn ? 'Continue to seller' : 'Sign in to continue'} icon="arrow-forward-outline" loading={loading} onPress={submit} style={styles.submit} />
-        <Text style={styles.privacy}>Contact details are shown only when the verified seller has chosen to make that channel visible.</Text>
+        <Button
+          title={acknowledged ? t('common.done') : t('common.confirm')}
+          icon={acknowledged ? 'checkmark-circle' : 'ellipse-outline'}
+          variant={acknowledged ? 'secondary' : 'outline'}
+          onPress={() => { setAcknowledged((value) => !value); setError(''); }}
+        />
+        {!!error && (
+          <View style={styles.error}>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+        <Button
+          title={isLoggedIn ? t('vehicleDetail.contactSeller') : t('common.signIn')}
+          icon="arrow-forward-outline"
+          loading={loading}
+          onPress={submit}
+          style={styles.submit}
+        />
+        <Text style={styles.privacy}>{t('sellerContact.visibilityNotice')}</Text>
       </ScrollView>
     </Screen>
   );

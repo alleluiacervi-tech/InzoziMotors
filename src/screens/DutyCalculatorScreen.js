@@ -7,25 +7,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { colors, radius, shadows, fonts } from '../theme';
 import { calcRwandaDuty, formatRWF, getDutyRates } from '../data/marketData';
-
-// The brackets, their labels AND their percentages all come from the schedule
-// the server holds. They used to be hardcoded here — including the rate badge —
-// so a label could disagree with the arithmetic behind it, and the label is the
-// part a reader believes.
-const CC_DESCRIPTIONS = [
-  'City cars, small hatchbacks',
-  'Most sedans, crossovers',
-  'Mid-size SUVs, luxury, V8+',
-];
-
-const AGE_OPTIONS = [
-  { years: 0, label: 'Under 2 years' },
-  { years: 3, label: '2 – 4 years' },
-  { years: 5, label: '4 – 6 years' },
-  { years: 7, label: '6 – 8 years' },
-  { years: 9, label: '8 – 10 years' },
-  { years: 11, label: 'Over 10 years' },
-];
+import { useApp } from '../context/AppContext';
 
 function DutyRow({ label, amount, accent, bold }) {
   return (
@@ -41,12 +23,29 @@ function DutyRow({ label, amount, accent, bold }) {
 }
 
 export default function DutyCalculatorScreen({ navigation }) {
+  const { t } = useApp();
   const rates = getDutyRates();
+
+  const ccDescriptions = [
+    t('dutyCalculator.ccCity'),
+    t('dutyCalculator.ccSedan'),
+    t('dutyCalculator.ccSuv'),
+  ];
+
+  const ageOptions = [
+    { years: 0, label: t('dutyCalculator.ageUnder2') },
+    { years: 3, label: t('dutyCalculator.age2to4') },
+    { years: 5, label: t('dutyCalculator.age4to6') },
+    { years: 7, label: t('dutyCalculator.age6to8') },
+    { years: 9, label: t('dutyCalculator.age8to10') },
+    { years: 11, label: t('dutyCalculator.ageOver10') },
+  ];
+
   const ccOptions = rates.excise_brackets.map((bracket, index) => ({
     id: bracket.max_cc ?? Number.MAX_SAFE_INTEGER,
     label: bracket.label,
     rate: `${bracket.rate_pct}%`,
-    desc: CC_DESCRIPTIONS[index] || '',
+    desc: ccDescriptions[index] || '',
   }));
 
   const [carValue, setCarValue] = useState('');
@@ -65,145 +64,143 @@ export default function DutyCalculatorScreen({ navigation }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Import Duty Calculator" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('dutyCalculator.title')} onBack={() => navigation.goBack()} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-        {/* Intro */}
-        <View style={styles.introCard}>
-          <Ionicons name="calculator-outline" size={24} color={colors.textSecondary} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.introTitle}>Rwanda RRA Import Duty</Text>
-            <Text style={styles.introSub}>
-              Most cars in Rwanda are imported. This calculator estimates the total duty payable to Rwanda Revenue Authority.{rates.reviewed_on ? ` Rates last reviewed ${rates.reviewed_on}.` : ''}
-            </Text>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+          {/* Intro */}
+          <View style={styles.introCard}>
+            <Ionicons name="calculator-outline" size={24} color={colors.textSecondary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.introTitle}>{t('dutyCalculator.introTitle')}</Text>
+              <Text style={styles.introSub}>
+                {t('dutyCalculator.introSub')}
+                {rates.reviewed_on ? ` ${t('dutyCalculator.lastReviewed', { date: rates.reviewed_on })}` : ''}
+              </Text>
+            </View>
           </View>
-        </View>
 
-        {/* Input: Car value */}
-        <Text style={styles.fieldLabel}>Vehicle value (RWF)</Text>
-        <View style={styles.inputRow}>
-          <Text style={styles.inputCurrency}>RWF</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. 20000"
-            keyboardType="numeric"
-            value={carValue}
-            onChangeText={(t) => { setCarValue(t); setShowResult(false); }}
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
-        <Text style={styles.fieldHint}>Enter the vehicle purchase price (FOB or CIF value)</Text>
+          {/* Input: Car value */}
+          <Text style={styles.fieldLabel}>{t('dutyCalculator.vehicleValue')}</Text>
+          <View style={styles.inputRow}>
+            <Text style={styles.inputCurrency}>RWF</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t('dutyCalculator.valuePlaceholder')}
+              keyboardType="numeric"
+              value={carValue}
+              onChangeText={(val) => { setCarValue(val); setShowResult(false); }}
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <Text style={styles.fieldHint}>{t('dutyCalculator.valueHint')}</Text>
 
-        {/* Engine CC bracket */}
-        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Engine displacement</Text>
-        <View style={styles.ccOptions}>
-          {ccOptions.map((opt) => (
-            <Pressable
-              key={opt.id}
-              style={[styles.ccOption, ccBracket === opt.id && styles.ccOptionActive]}
-              onPress={() => { setCcBracket(opt.id); setShowResult(false); }}
-            >
-              <View style={styles.ccTop}>
-                <Text style={[styles.ccLabel, ccBracket === opt.id && styles.ccLabelActive]}>{opt.label}</Text>
-                <View style={[styles.ccRateBadge, ccBracket === opt.id && styles.ccRateBadgeActive]}>
-                  <Text style={[styles.ccRateText, ccBracket === opt.id && styles.ccRateTextActive]}>
-                    Excise {opt.rate}
-                  </Text>
+          {/* Engine CC bracket */}
+          <Text style={[styles.fieldLabel, { marginTop: 20 }]}>{t('dutyCalculator.engineDisplacement')}</Text>
+          <View style={styles.ccOptions}>
+            {ccOptions.map((opt) => (
+              <Pressable
+                key={opt.id}
+                style={[styles.ccOption, ccBracket === opt.id && styles.ccOptionActive]}
+                onPress={() => { setCcBracket(opt.id); setShowResult(false); }}
+              >
+                <View style={styles.ccTop}>
+                  <Text style={[styles.ccLabel, ccBracket === opt.id && styles.ccLabelActive]}>{opt.label}</Text>
+                  <View style={[styles.ccRateBadge, ccBracket === opt.id && styles.ccRateBadgeActive]}>
+                    <Text style={[styles.ccRateText, ccBracket === opt.id && styles.ccRateTextActive]}>
+                      {t('dutyCalculator.exciseBadge', { rate: opt.rate })}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.ccDesc, ccBracket === opt.id && styles.ccDescActive]}>{opt.desc}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Vehicle age */}
+          <Text style={[styles.fieldLabel, { marginTop: 20 }]}>{t('dutyCalculator.vehicleAge')}</Text>
+          <View style={styles.ccOptions}>
+            {ageOptions.map((opt) => (
+              <Pressable
+                key={opt.years}
+                style={[styles.ccOption, ageYears === opt.years && styles.ccOptionActive]}
+                onPress={() => { setAgeYears(opt.years); setShowResult(false); }}
+              >
+                <View style={styles.ccTop}>
+                  <Text style={[styles.ccLabel, ageYears === opt.years && styles.ccLabelActive]}>{opt.label}</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Calculate button */}
+          <Pressable
+            style={[styles.calcBtn, valueNum <= 0 && styles.calcBtnDisabled]}
+            onPress={handleCalculate}
+            disabled={valueNum <= 0}
+          >
+            <Ionicons name="calculator" size={18} color="#fff" />
+            <Text style={styles.calcBtnText}>{t('dutyCalculator.calcBtn')}</Text>
+          </Pressable>
+
+          {/* Results */}
+          {showResult && duty && (
+            <View style={styles.resultsCard}>
+              <View style={styles.resultHeader}>
+                <Text style={styles.resultTitle}>{t('dutyCalculator.dutyBreakdown')}</Text>
+                <Text style={styles.resultVehicle}>{t('dutyCalculator.vehicleSummary', { val: formatRWF(valueNum) })}</Text>
+              </View>
+
+              {/* CIF value */}
+              {duty.depreciationPct > 0 ? (
+                <DutyRow label={t('dutyCalculator.assessedValue', { pct: duty.depreciationPct })} amount={duty.dutiableValue} />
+              ) : null}
+              <DutyRow label={t('dutyCalculator.cifValue')} amount={duty.cif} />
+
+              <View style={styles.resultDivider} />
+
+              <Text style={styles.resultSectionLabel}>{t('dutyCalculator.dutiesApplied')}</Text>
+              <DutyRow label={t('dutyCalculator.customsDuty')} amount={duty.customs} />
+              <DutyRow label={t('dutyCalculator.exciseDuty', { rate: duty.exciseRatePct })} amount={duty.excise} />
+              <DutyRow label={t('dutyCalculator.vat', { rate: rates.vat_pct })} amount={duty.vat} />
+              <DutyRow label={t('dutyCalculator.withholdingTax', { rate: rates.withholding_pct })} amount={duty.withholding} />
+              <DutyRow label={t('dutyCalculator.infraLevy', { rate: rates.infrastructure_pct })} amount={duty.infra} />
+
+              <View style={styles.resultDivider} />
+
+              <DutyRow label={t('dutyCalculator.totalDuties')} amount={duty.totalDuties} bold accent={colors.amber} />
+              <DutyRow label={t('dutyCalculator.grandTotal')} amount={duty.grandTotal} bold accent={colors.primary} />
+
+              {/* Effective rate */}
+              <View style={styles.effectiveRateCard}>
+                <Text style={styles.effectiveRateTitle}>{t('dutyCalculator.effectiveRate')}</Text>
+                <Text style={styles.effectiveRateValue}>{duty.effectiveRate}%</Text>
+                <Text style={styles.effectiveRateDesc}>
+                  {t('dutyCalculator.effectiveRateDesc', { val: formatRWF(valueNum), rate: duty.effectiveRate })}
+                </Text>
+              </View>
+
+              {/* Landed summary */}
+              <View style={styles.rwfCard}>
+                <Ionicons name="swap-horizontal-outline" size={18} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rwfTitle}>{t('dutyCalculator.estimatedLandedCost')}</Text>
+                  <Text style={styles.rwfValue}>{formatRWF(duty.grandTotal)}</Text>
+                  <Text style={styles.rwfNote}>{t('dutyCalculator.rwfNote')}</Text>
                 </View>
               </View>
-              <Text style={[styles.ccDesc, ccBracket === opt.id && styles.ccDescActive]}>{opt.desc}</Text>
-            </Pressable>
-          ))}
-        </View>
 
-        {/* Vehicle age — an older car is assessed on a reduced value under the
-            EAC depreciation schedule, which the old calculator ignored entirely. */}
-        <Text style={[styles.fieldLabel, { marginTop: 20 }]}>Vehicle age</Text>
-        <View style={styles.ccOptions}>
-          {AGE_OPTIONS.map((opt) => (
-            <Pressable
-              key={opt.years}
-              style={[styles.ccOption, ageYears === opt.years && styles.ccOptionActive]}
-              onPress={() => { setAgeYears(opt.years); setShowResult(false); }}
-            >
-              <View style={styles.ccTop}>
-                <Text style={[styles.ccLabel, ageYears === opt.years && styles.ccLabelActive]}>{opt.label}</Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Calculate button */}
-        <Pressable
-          style={[styles.calcBtn, valueNum <= 0 && styles.calcBtnDisabled]}
-          onPress={handleCalculate}
-          disabled={valueNum <= 0}
-        >
-          <Ionicons name="calculator" size={18} color="#fff" />
-          <Text style={styles.calcBtnText}>Calculate Import Duty</Text>
-        </Pressable>
-
-        {/* Results */}
-        {showResult && duty && (
-          <View style={styles.resultsCard}>
-            <View style={styles.resultHeader}>
-              <Text style={styles.resultTitle}>Duty Breakdown</Text>
-              <Text style={styles.resultVehicle}>{formatRWF(valueNum)} vehicle</Text>
-            </View>
-
-            {/* CIF value */}
-            {duty.depreciationPct > 0 ? (
-              <DutyRow label={`Value assessed for duty (−${duty.depreciationPct}% for age)`} amount={duty.dutiableValue} />
-            ) : null}
-            <DutyRow label="CIF Value (assessed value + freight + insurance)" amount={duty.cif} />
-
-            <View style={styles.resultDivider} />
-
-            <Text style={styles.resultSectionLabel}>DUTIES APPLIED</Text>
-            <DutyRow label="Customs Duty (25% of CIF)" amount={duty.customs} />
-            <DutyRow label={`Excise Duty (${duty.exciseRatePct}% of CIF + customs)`} amount={duty.excise} />
-            <DutyRow label={`VAT — ${rates.vat_pct}% (on CIF + duties)`} amount={duty.vat} />
-            <DutyRow label={`Withholding Tax (${rates.withholding_pct}% of CIF)`} amount={duty.withholding} />
-            <DutyRow label={`Infrastructure Levy (${rates.infrastructure_pct}% of CIF)`} amount={duty.infra} />
-
-            <View style={styles.resultDivider} />
-
-            <DutyRow label="Total Duties" amount={duty.totalDuties} bold accent={colors.amber} />
-            <DutyRow label="Grand Total (vehicle + duties)" amount={duty.grandTotal} bold accent={colors.primary} />
-
-            {/* Effective rate */}
-            <View style={styles.effectiveRateCard}>
-              <Text style={styles.effectiveRateTitle}>Effective duty rate</Text>
-              <Text style={styles.effectiveRateValue}>{duty.effectiveRate}%</Text>
-              <Text style={styles.effectiveRateDesc}>
-                Of the {formatRWF(valueNum)} vehicle value, {duty.effectiveRate}% is added as import duty when bringing this car into Rwanda.
-              </Text>
-            </View>
-
-            {/* RWF summary */}
-            <View style={styles.rwfCard}>
-              <Ionicons name="swap-horizontal-outline" size={18} color={colors.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rwfTitle}>Estimated landed cost</Text>
-                <Text style={styles.rwfValue}>{formatRWF(duty.grandTotal)}</Text>
-                <Text style={styles.rwfNote}>All figures are shown in Rwandan francs</Text>
+              {/* Disclaimer */}
+              <View style={styles.disclaimer}>
+                <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
+                <Text style={styles.disclaimerText}>{t('dutyCalculator.disclaimer')}</Text>
               </View>
             </View>
-
-            {/* Disclaimer */}
-            <View style={styles.disclaimer}>
-              <Ionicons name="information-circle-outline" size={14} color={colors.textMuted} />
-              <Text style={styles.disclaimerText}>
-                This is an estimate based on standard 2026 Rwanda Revenue Authority rates. Actual duty may vary based on the vehicle's age, import origin, and RRA assessment. Consult a licensed clearing agent for a precise figure.
-              </Text>
-            </View>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -277,7 +274,6 @@ const styles = StyleSheet.create({
   dutyLabelBold: { fontFamily: fonts.bold, color: colors.textPrimary },
   dutyUSD: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   dutyUSDBold: { fontSize: 16, fontFamily: fonts.extraBold },
-  dutyRWF: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   resultDivider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
   effectiveRateCard: {
     margin: 16, backgroundColor: '#FEF3C7',

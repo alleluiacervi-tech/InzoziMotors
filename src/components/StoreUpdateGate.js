@@ -1,26 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// "There is a newer version of the app."
-//
-// UpdateBanner handles the other kind of update — a JavaScript bundle that has
-// already downloaded and needs a restart. This one is about a new BINARY, which
-// only a store can give you, so the two say different things and must not be
-// mistaken for each other: one restarts in a second, the other is a trip to the
-// App Store or Play Store.
-//
-// Two levels, and the difference between them is the whole design:
-//
-//   SUGGEST  a quiet card at the bottom. Dismissable, and the dismissal sticks
-//            until a NEWER build appears — "not now" is about this version, not
-//            about being told ever again.
-//   BLOCK    a full screen with no way past. Reserved for a build that is
-//            genuinely broken or unsafe, because it stops somebody where they
-//            stand, possibly mid-message with a seller.
-//
-// It fails open in every direction. No answer from the server, an answer it
-// does not understand, no store link configured — the app carries on. The only
-// thing that produces the blocking screen is a definite, well-formed answer
-// saying this build is below the floor.
-// ─────────────────────────────────────────────────────────────────────────────
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, AppState, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,8 +8,10 @@ import {
   checkStoreRelease, STORE_ACTION,
   getStorePromptDismissal, setStorePromptDismissal,
 } from '../utils/updates';
+import { useApp } from '../context/AppContext';
 
 export default function StoreUpdateGate() {
+  const { t } = useApp();
   const [verdict, setVerdict] = useState({ action: STORE_ACTION.NONE });
   const [dismissed, setDismissed] = useState(true);
   const appState = useRef(AppState.currentState);
@@ -51,9 +30,6 @@ export default function StoreUpdateGate() {
 
   useEffect(() => {
     look();
-    // Also on return, so a person who leaves the app open for a week still
-    // hears about a build published in the meantime. Same reasoning as
-    // UpdateBanner, and cheap — one small GET against a 60-second cache.
     const sub = AppState.addEventListener('change', (next) => {
       const returning = appState.current.match(/inactive|background/) && next === 'active';
       appState.current = next;
@@ -66,25 +42,20 @@ export default function StoreUpdateGate() {
 
   if (verdict.action === STORE_ACTION.BLOCK) {
     return (
-      // Covers everything, including the tab bar. There is deliberately no
-      // close control and no back handling: a floor that can be walked around
-      // is not a floor, and the only reason to raise one is a build that should
-      // not be in use.
       <View style={[styles.blockRoot, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.blockBody}>
           <LogoMark size={92} />
-          <Text style={styles.blockTitle}>Time to update</Text>
+          <Text style={styles.blockTitle}>{t('updates.timeToUpdate')}</Text>
           <Text style={styles.blockCopy}>
-            This version of Sawa Cars is no longer supported. Update from the store to carry
-            on — your saved cars, messages and account are all still here.
+            {t('updates.blockCopy')}
           </Text>
           {verdict.notes ? <Text style={styles.blockNotes}>{verdict.notes}</Text> : null}
         </View>
         <Pressable style={styles.blockButton} onPress={open} accessibilityRole="button">
-          <Text style={styles.blockButtonText}>Update Sawa Cars</Text>
+          <Text style={styles.blockButtonText}>{t('updates.updateSawaCars')}</Text>
         </Pressable>
         <Text style={styles.blockVersion}>
-          You have {verdict.current} · newest is {verdict.latest}
+          {t('updates.versionCompare', { current: verdict.current, latest: verdict.latest })}
         </Text>
       </View>
     );
@@ -100,17 +71,17 @@ export default function StoreUpdateGate() {
     >
       <Ionicons name="sparkles" size={20} color="#fff" />
       <View style={styles.copy}>
-        <Text style={styles.title}>Version {verdict.latest} is out</Text>
+        <Text style={styles.title}>{t('updates.versionOut', { latest: verdict.latest })}</Text>
         <Text style={styles.body} numberOfLines={2}>
-          {verdict.notes || 'Get the newest Sawa Cars from the store.'}
+          {verdict.notes || t('updates.getNewestStore')}
         </Text>
       </View>
       <Pressable accessibilityRole="button" style={styles.action} onPress={open}>
-        <Text style={styles.actionText}>Get it</Text>
+        <Text style={styles.actionText}>{t('updates.getIt')}</Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Not now"
+        accessibilityLabel={t('updates.notNow')}
         hitSlop={10}
         onPress={() => { setDismissed(true); setStorePromptDismissal(verdict.latest); }}
       >
@@ -123,9 +94,6 @@ export default function StoreUpdateGate() {
 const TAB_BAR_CLEARANCE = 68;
 
 const styles = StyleSheet.create({
-  // Sits ABOVE UpdateBanner's z-index so the two can never overlap illegibly.
-  // In practice both showing at once is rare and harmless — one is a restart,
-  // the other a store trip — but "rare" is not "impossible".
   wrap: {
     position: 'absolute', left: 0, right: 0, zIndex: 90,
     flexDirection: 'row', alignItems: 'center', gap: 10,

@@ -76,7 +76,7 @@ const DATES = getDates();
 export default function InspectionSchedulingScreen({ navigation, route }) {
   const carName = route?.params?.carName || 'Your Car';
   const submissionId = route?.params?.submissionId || null;
-  const { scheduleInspection, demoMode } = useApp();
+  const { scheduleInspection, demoMode, t } = useApp();
   const [centers, setCenters] = useState(demoMode ? DEMO_CENTERS : []);
   const [centersError, setCentersError] = useState('');
   const [booking, setBooking] = useState(false);
@@ -107,7 +107,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
     const center = centers.find((c) => c.id === selectedCenter);
     const date = DATES.find((d) => d.key === selectedDate);
     if (!submissionId || !center || !date || !selectedTime) {
-      showToast('Choose a center, date, and time before confirming.', 'error');
+      showToast(t('inspectionScheduling.selectCenterDateTime'), 'error');
       return;
     }
     setBooking(true);
@@ -119,10 +119,10 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
         date: date.key,
         time: selectedTime,
       });
-      showToast(`Inspection booked — ${date.month} ${date.date} at ${selectedTime}, ${center.name}.`, 'success');
+      showToast(`${t('common.success')} — ${date.month} ${date.date} ${selectedTime}, ${center.name}.`, 'success');
       navigation.navigate('SellerDashboard');
     } catch (error) {
-      showToast(error.message || 'The appointment could not be booked. Try another slot.', 'error');
+      showToast(error.message || t('settings.genericError'), 'error');
     } finally {
       setBooking(false);
     }
@@ -130,7 +130,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Book Inspection" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('inspectionScheduling.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* Header info */}
@@ -138,16 +138,16 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
           <Ionicons name="checkmark-circle" size={28} color={colors.blueLight} />
           <View style={{ flex: 1 }}>
             <Text style={styles.heroLabel}>
-              {submissionId ? 'Your submission is ready to schedule' : 'Book a 150-point inspection'}
+              {submissionId ? t('submission.formTitle') : t('inspectionScheduling.title')}
             </Text>
             <Text style={styles.heroTitle}>{carName}</Text>
-            <Text style={styles.heroSub}>The completed report is required before admin approval and publication.</Text>
+            <Text style={styles.heroSub}>{t('inspectionScheduling.reportRequiredNote')}</Text>
           </View>
         </LinearGradient>
 
         {/* Section: Centers */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose Inspection Center</Text>
+          <Text style={styles.sectionTitle}>{t('inspectionScheduling.chooseCenter')}</Text>
           <View style={styles.centerList}>
             {centersError ? <Text style={styles.centerError}>{centersError}</Text> : null}
             {centers.map((c) => (
@@ -164,7 +164,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
                   <Text style={styles.centerAddress}>{c.address}</Text>
                   <View style={styles.centerMeta}>
                     <Ionicons name="time-outline" size={12} color={colors.textMuted} />
-                    <Text style={styles.centerMetaText}>Capacity {c.daily_capacity} inspections per day</Text>
+                    <Text style={styles.centerMetaText}>Capacity {c.daily_capacity} / day</Text>
                   </View>
                 </View>
                 {selectedCenter === c.id && (
@@ -177,7 +177,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
 
         {/* Section: Dates */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose a Date</Text>
+          <Text style={styles.sectionTitle}>{t('inspectionScheduling.chooseDate')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
             {DATES.map((d) => (
               <Pressable
@@ -205,7 +205,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
                   !d.available && { color: colors.textDisabled },
                   selectedDate === d.key && { color: 'rgba(255,255,255,0.8)' },
                 ]}>{d.month}</Text>
-                {!d.available && <Text style={styles.dateUnavailableText}>Closed</Text>}
+                {!d.available && <Text style={styles.dateUnavailableText}>{t('inspectionScheduling.closed')}</Text>}
               </Pressable>
             ))}
           </ScrollView>
@@ -214,25 +214,25 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
         {/* Section: Times */}
         {selectedDate && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Choose a Time Slot</Text>
+            <Text style={styles.sectionTitle}>{t('inspectionScheduling.chooseTimeSlot')}</Text>
             <View style={styles.timeGrid}>
-              {TIME_SLOTS.map((t) => (
+              {TIME_SLOTS.map((tSlot) => (
                 <Pressable
-                  key={t.label}
+                  key={tSlot.label}
                   style={[
                     styles.timeSlot,
-                    !t.available && styles.timeSlotUnavailable,
-                    selectedTime === t.label && styles.timeSlotActive,
+                    !tSlot.available && styles.timeSlotUnavailable,
+                    selectedTime === tSlot.label && styles.timeSlotActive,
                   ]}
-                  onPress={() => t.available && setSelectedTime(t.label)}
-                  disabled={!t.available}
+                  onPress={() => tSlot.available && setSelectedTime(tSlot.label)}
+                  disabled={!tSlot.available}
                 >
                   <Text style={[
                     styles.timeLabel,
-                    !t.available && { color: colors.textDisabled },
-                    selectedTime === t.label && { color: '#fff' },
-                  ]}>{t.label}</Text>
-                  {!t.available && <Text style={styles.timeUnavail}>Booked</Text>}
+                    !tSlot.available && { color: colors.textDisabled },
+                    selectedTime === tSlot.label && { color: '#fff' },
+                  ]}>{tSlot.label}</Text>
+                  {!tSlot.available && <Text style={styles.timeUnavail}>{t('inspectionScheduling.booked')}</Text>}
                 </Pressable>
               ))}
             </View>
@@ -242,30 +242,30 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
         {/* Summary */}
         {canBook && (
           <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>Booking Summary</Text>
+            <Text style={styles.confirmTitle}>{t('inspectionScheduling.bookingSummary')}</Text>
             <View style={styles.confirmRows}>
-              <ConfirmRow icon="business-outline" label="Center" value={centers.find((c) => c.id === selectedCenter)?.name} />
+              <ConfirmRow icon="business-outline" label={t('inspection.inspectionCenter')} value={centers.find((c) => c.id === selectedCenter)?.name} />
               {(() => {
                 const d = DATES.find((x) => x.key === selectedDate);
-                return d ? <ConfirmRow icon="calendar-outline" label="Date" value={`${d.label}, ${d.month} ${d.date}`} /> : null;
+                return d ? <ConfirmRow icon="calendar-outline" label={t('inspectionScheduling.chooseDate')} value={`${d.label}, ${d.month} ${d.date}`} /> : null;
               })()}
-              <ConfirmRow icon="time-outline" label="Time" value={selectedTime} />
+              <ConfirmRow icon="time-outline" label={t('inspectionScheduling.chooseTimeSlot')} value={selectedTime} />
             </View>
             <View style={styles.confirmNote}>
               <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-              <Text style={styles.confirmNoteText}>Please arrive 10 minutes early. Bring all available service records.</Text>
+              <Text style={styles.confirmNoteText}>{t('inspectionScheduling.arrivalNote')}</Text>
             </View>
           </View>
         )}
 
         <View style={styles.footer}>
           <Button
-            title="Confirm Booking"
+            title={t('common.confirm')}
             onPress={handleBook}
             disabled={!canBook}
             loading={booking}
           />
-          {!canBook && <Text style={styles.footerHint}>Select center, date, and time to confirm</Text>}
+          {!canBook && <Text style={styles.footerHint}>{t('inspectionScheduling.selectCenterDateTime')}</Text>}
         </View>
       </ScrollView>
     </Screen>

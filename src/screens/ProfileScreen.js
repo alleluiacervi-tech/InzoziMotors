@@ -70,7 +70,7 @@ function MenuSection({ title, items, navigation }) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest, demoMode } = useApp();
+  const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest, demoMode, t } = useApp();
 
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
@@ -78,6 +78,33 @@ export default function ProfileScreen({ navigation }) {
   const idPts = idVerificationStatus === 'approved' ? 30 : 0;
   const salesPts = Math.min(30, soldCount * 3);
   const trustScore = idPts + salesPts + 17 + 18; // response + reviews are estimates until backend
+
+  const menuSeller = [
+    { icon: 'shield-checkmark-outline', label: t('profile.identityVerification'), screen: 'IDVerification' },
+    { icon: 'call-outline', label: t('profile.contactVisibility'), screen: 'ContactSettings' },
+    { icon: 'car-outline', label: t('profile.mySubmissions'), screen: 'SellerDashboard' },
+    { icon: 'trending-up-outline', label: t('profile.carValuation'), screen: 'CarValuation' },
+  ];
+
+  const menuAccount = [
+    { icon: 'key-outline', label: t('profile.rentalInquiries'), screen: 'MyRentals' },
+    { icon: 'boat-outline', label: t('profile.myImports'), screen: 'ImportOrders' },
+    { icon: 'chatbubbles-outline', label: t('profile.messages'), screen: 'Messages' },
+    { icon: 'shield-checkmark-outline', label: t('profile.marketplaceSafety'), screen: 'SawaPromise' },
+    { icon: 'book-outline', label: t('profile.howBuyingWorks'), screen: 'BuyingGuide' },
+    { icon: 'settings-outline', label: t('profile.settings'), screen: 'Settings' },
+    WHATSAPP_VERIFIED
+      ? {
+          icon: 'logo-whatsapp',
+          label: t('profile.helpSupport'),
+          link: `https://wa.me/${SAWA_WHATSAPP}`,
+        }
+      : {
+          icon: 'help-circle-outline',
+          label: t('profile.helpSupport'),
+          link: `mailto:${SAWA_EMAIL}`,
+        },
+  ];
 
   // Guest state — prompt to sign in instead of showing a fake verified profile
   if (!isLoggedIn) {
@@ -87,16 +114,16 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.guestAvatar}>
             <Ionicons name="person-outline" size={36} color={colors.textMuted} />
           </View>
-          <Text style={styles.guestTitle}>You're browsing as a guest</Text>
+          <Text style={styles.guestTitle}>{t('profile.guestTitle')}</Text>
           <Text style={styles.guestSub}>
-            Sign in to save cars, contact sellers, manage rental inquiries, and sell your car.
+            {t('profile.guestSub')}
           </Text>
           <Pressable style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
-            <Text style={styles.guestBtnText}>Sign In</Text>
+            <Text style={styles.guestBtnText}>{t('profile.signInBtn')}</Text>
           </Pressable>
           {demoMode && (
             <Pressable onPress={() => loginAsGuest()} style={{ marginTop: 14 }}>
-              <Text style={styles.guestSkip}>Continue with a demo account</Text>
+              <Text style={styles.guestSkip}>{t('profile.continueDemo')}</Text>
             </Pressable>
           )}
         </View>
@@ -105,9 +132,9 @@ export default function ProfileScreen({ navigation }) {
   }
 
   const STATS = [
-    { label: 'Submitted', value: String(submissions.length) },
-    { label: 'Live', value: String(liveCount) },
-    { label: 'Trust Score', value: `${trustScore}/100` },
+    { label: t('drawer.submissions'), value: String(submissions.length) },
+    { label: t('sellerDashboard.live'), value: String(liveCount) },
+    { label: t('profile.trustScoreTitle'), value: `${trustScore}/100` },
   ];
 
   return (
@@ -130,8 +157,8 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.badgeRow}>
               {idVerificationStatus === 'approved' ? (
                 <>
-                  <Badge variant="success" label="Verified Seller" />
-                  <Badge variant="live" dot label="ID Verified" />
+                  <Badge variant="success" label={t('vehicleDetail.verifiedSeller')} />
+                  <Badge variant="live" dot label={t('trustScore.idVerified')} />
                 </>
               ) : (
                 <Pressable onPress={() => navigation.navigate('IDVerification')}>
@@ -139,17 +166,17 @@ export default function ProfileScreen({ navigation }) {
                     variant="tag"
                     label={
                       idVerificationStatus === 'pending'
-                        ? 'ID under review'
+                        ? t('settings.underReview')
                         : idVerificationStatus === 'rejected'
-                        ? 'ID needs attention — tap to resubmit'
-                        : 'Verify your ID to sell'
+                        ? t('settings.actionNeeded')
+                        : t('profile.identityVerification')
                     }
                   />
                 </Pressable>
               )}
             </View>
           </View>
-          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel="Edit">
+          <Pressable style={styles.editBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel={t('common.edit')}>
             <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
@@ -170,16 +197,16 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="trending-up" size={22} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.dashBannerTitle}>Seller Dashboard</Text>
+            <Text style={styles.dashBannerTitle}>{t('profile.sellerDashboard')}</Text>
             <Text style={styles.dashBannerSub}>
-              {submissions.length} submissions · {liveCount} live on marketplace
+              {submissions.length} {t('drawer.submissions').toLowerCase()} · {liveCount} {t('sellerDashboard.live').toLowerCase()}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
         </Pressable>
 
-        <MenuSection title="My Listings" items={MENU_SELLER} navigation={navigation} />
-        <MenuSection title="Account" items={MENU_ACCOUNT} navigation={navigation} />
+        <MenuSection title={t('profile.sellerSection')} items={menuSeller} navigation={navigation} />
+        <MenuSection title={t('profile.accountSection')} items={menuAccount} navigation={navigation} />
 
         {/* Team Portal — Sawa staff only. Visible in dev builds for testing;
             in release only an admin account ever sees the entry point (and
@@ -187,7 +214,7 @@ export default function ProfileScreen({ navigation }) {
         {(demoMode || currentUser?.role === 'admin') && (
           <Pressable style={styles.adminAccess} onPress={() => navigation.navigate('AdminPanel')}>
             <Ionicons name="grid-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.adminAccessText}>Team Portal</Text>
+            <Text style={styles.adminAccessText}>{t('profile.teamPortal')}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
         )}
@@ -201,7 +228,7 @@ export default function ProfileScreen({ navigation }) {
           }}
         >
           <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Log out</Text>
+          <Text style={styles.logoutText}>{t('common.logout')}</Text>
         </Pressable>
 
       </ScrollView>
