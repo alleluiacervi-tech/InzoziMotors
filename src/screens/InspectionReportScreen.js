@@ -12,13 +12,13 @@ import inspectionsApi from '../api/inspections';
 import { useApp } from '../context/AppContext';
 
 const CATEGORY_ICONS = {
-  engine:      'cog-outline',
-  brakes:      'disc-outline',
-  body:        'car-outline',
-  interior:    'car-sport-outline',
-  electronics: 'flash-outline',
-  tyres:       'radio-button-on-outline',
-  docs:        'document-text-outline',
+  engine:        'cog-outline',
+  brakes:        'disc-outline',
+  body:          'car-outline',
+  interior:      'car-sport-outline',
+  electronics:   'flash-outline',
+  tyres:         'radio-button-on-outline',
+  documentation: 'document-text-outline',
 };
 
 function ScoreCircle({ score, maxScore }) {
@@ -198,15 +198,16 @@ export default function InspectionReportScreen({ navigation, route }) {
 
           {/* Documentation has no physical zone — dedicated row */}
           <Pressable
-            style={[styles.docsRow, selectedZone === 'docs' && styles.docsRowSelected]}
-            onPress={() => setSelectedZone('docs')}
+            style={[styles.docsRow, selectedZone === 'documentation' && styles.docsRowSelected]}
+            onPress={() => setSelectedZone('documentation')}
           >
             <Ionicons name="document-text-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.docsRowText}>Documentation & Records</Text>
             <View style={[styles.docsDot, {
               backgroundColor: (() => {
-                const d = data.categories.find((c) => c.id === 'docs');
-                const p = d.earned / d.maxPts;
+                const d = data.categories.find((c) => c.id === 'documentation');
+                if (!d) return colors.textMuted;
+                const p = d.maxPts > 0 ? d.earned / d.maxPts : 0;
                 return p >= 1 ? colors.green : p >= 0.85 ? colors.amber : colors.statusRejected;
               })(),
             }]} />

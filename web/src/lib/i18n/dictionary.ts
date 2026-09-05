@@ -322,10 +322,72 @@ const ko = {
   },
 } as const
 
+const zh = {
+  common: {
+    buy: '购买',
+    rent: '租车',
+    sell: '出售',
+    browseCars: '浏览车辆',
+    getApp: '下载应用',
+    signIn: '登录',
+    signOut: '退出登录',
+    createAccount: '创建账户',
+    dashboard: '我的控制台',
+    menu: '菜单',
+    close: '关闭',
+    language: '语言',
+    chooseLanguage: '选择您的语言',
+    admin: '管理员', adminDashboard: '管理员控制台', callUs: '致电我们',
+  },
+  nav: {
+    buy: '购买',
+    rentals: '租车',
+    sell: '出售',
+    tools: '工具',
+    howItWorks: '使用说明',
+    browseCertified: '浏览已认证车辆',
+  },
+  footer: {
+    tagline:
+      '卢旺达的认证车辆市场。我们强化信息依据和卖家责任，让用户可以直接沟通并自行达成协议。',
+    getApp: '下载应用',
+    messageWhatsApp: '通过 WhatsApp 咨询',
+    visitUs: '前来访问',
+    rights: 'All rights reserved.',
+    noCheckout:
+      '没有 Sawa 的结算或资金托管。合同与付款的责任在用户自身。',
+    headings: {
+      Marketplace: '市场',
+      Company: '公司',
+      Account: '账户',
+      Legal: '法律',
+    },
+    links: {
+      '/cars': '浏览已认证车辆',
+      '/rentals': '租车',
+      '/sell': '出售我的车辆',
+      '/tools/valuation': '免费估值',
+      '/tools/import-duty': '进口关税计算器',
+      '/about': '关于 Sawa Cars',
+      '/promise': '市场安全',
+      '/how-it-works': '购车方法',
+      '/contact': '联系方式与中心',
+      '/signin': '登录',
+      '/signup': '创建账户',
+      '/dashboard': '我的控制台',
+      '/dashboard/saved': '收藏的车辆',
+      '/legal/terms': '服务条款',
+      '/legal/privacy': '隐私政策',
+      '/legal/guarantee': '直接交易须知',
+      '/account/delete': '删除账户',
+    },
+  },
+} as const
+
 // Per-page-group message sections (src/lib/i18n/messages/*) are merged in by
 // name on top of the base chrome above, one subtree per locale. English is the
 // fallback for any section a locale has not filled in yet.
-const BASE: Record<Locale, Messages> = { en, rw, fr, sw, ko }
+const BASE: Record<Locale, Messages> = { en, rw, fr, sw, ko, zh }
 
 function withSections(locale: Locale): Messages {
   const out: Messages = { ...BASE[locale] }
@@ -341,6 +403,7 @@ export const DICTIONARY: Record<Locale, Messages> = {
   fr: withSections('fr'),
   sw: withSections('sw'),
   ko: withSections('ko'),
+  zh: withSections('zh'),
 }
 
 function lookup(source: Messages | undefined, key: string): string | undefined {

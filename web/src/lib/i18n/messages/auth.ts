@@ -1175,4 +1175,238 @@ const ko = {
   },
 }
 
-export const auth: Record<Locale, Record<string, unknown>> = { en, rw, fr, sw, ko }
+const zh = {
+  password: {
+    show: '显示密码',
+    hide: '隐藏密码',
+  },
+  layout: {
+    mobileTagline: '每辆车都经过检测。每位卖家都经过验证。',
+    eyebrow: 'Sawa Cars 的不同之处',
+    heading: '为什么这里的每一条信息都是真车。',
+    readSafety: '了解市场安全机制',
+    centersLabel: '检测中心',
+    trust: {
+      inspectionTitle: '150项检测',
+      inspectionDesc:
+        '发动机、刹车、车身、内饰、电子设备、轮胎及证件，在车辆上线前均需现场检查。',
+      publishTitle: '只有 Sawa Cars 才能发布',
+      publishDesc:
+        '卖家提交车辆——但不能自行发布。只有在我们的团队完成检测和拍照后，信息才会上线。',
+      consentTitle: '基于同意的卖家联系方式',
+      consentDesc:
+        '只有当卖家启用了电话或 WhatsApp 联系方式，且已登录的买家确认了直接交易须知后，联系方式才会公开。',
+      noCheckoutTitle: '无结算，也不代管资金',
+      noCheckoutDesc:
+        '合同、付款、交付及所有权转移均由用户自行决定。Sawa Cars 从不持有交易资金。',
+    },
+  },
+  oneAccount: {
+    text:
+      '一个账户，畅行所有平台。您收藏的车辆、保存的搜索、车辆咨询和提交记录，在这里与',
+    appLink: 'Sawa Cars 应用',
+  },
+  signin: {
+    metaTitle: '登录',
+    metaDescription:
+      '登录 Sawa Cars，查看您收藏的车辆、保存的搜索、车辆咨询和提交记录。',
+    title: '欢迎回来',
+    subtitle: '登录以继续查看您收藏的车辆、搜索记录及任何未处理的请求。',
+    expired: '您的登录已过期，因此我们为您退出了登录。请重新登录以继续之前的操作。',
+    switchPrompt: '第一次使用 Sawa Cars？',
+    switchLabel: '创建账户',
+    email: '邮箱',
+    password: '密码',
+    passwordPlaceholder: '您的密码',
+    forgot: '忘记密码？',
+    submit: '登录',
+    submitting: '正在登录…',
+  },
+  signup: {
+    metaTitle: '创建账户',
+    metaDescription:
+      '创建免费的 Sawa Cars 账户，收藏已认证车辆、设置搜索提醒并申请车辆。买家永远无需付费。',
+    title: '创建您的账户',
+    subtitle:
+      '收藏车辆、设置提醒及申请车辆都需要账户。完全免费，买家无需向 Sawa Cars 支付任何费用。',
+    switchPrompt: '已有账户？',
+    switchLabel: '登录',
+    name: '姓名',
+    namePlaceholder: '与您的证件上一致',
+    email: '邮箱',
+    password: '密码',
+    passwordPlaceholder: '至少6个字符',
+    passwordHint:
+      '至少6个字符。越长越安全——一句短语胜过单个单词。请使用您在其他地方未用过的密码。',
+    legend: '您的来意',
+    buyerTitle: '我要买车',
+    buyerDesc: '浏览已认证车辆，收藏并申请您想要的车辆。',
+    sellerTitle: '我要卖车',
+    sellerDesc: '提交车辆进行检测，交由我们的团队发布。',
+    sellerNote:
+      '卖车需要一次性身份核验，该步骤在 Sawa Cars 应用中完成——浏览器无法拍摄您的证件和自拍照。此后从提交车辆到预约检测的所有步骤都可以在这里完成。您可以随时切换为卖家身份。',
+    submit: '创建账户',
+    submitting: '正在创建您的账户…',
+    termsPrefix: '创建账户即表示您同意我们的',
+    termsLink: '服务条款',
+    termsAnd: '与',
+    privacyLink: '隐私政策',
+  },
+  forgot: {
+    metaTitle: '重置密码',
+    metaDescription: '使用一次性验证码重置您 Sawa Cars 账户的密码。',
+    title: '重置您的密码',
+    subtitle: '两个步骤：我们向您的邮箱发送验证码，然后您设置新密码。',
+    switchPrompt: '还没有账户？',
+    switchLabel: '创建一个',
+    doneTitle: '密码已更新',
+    doneBody:
+      '您的新密码已生效。没有其他人被强制退出登录——如果这不是您本人的操作，请立即联系我们。',
+    signIn: '登录',
+    requestIntro:
+      '输入您账户上的邮箱，我们会发送一个6位数验证码，30分钟内有效。',
+    email: '邮箱',
+    sendCode: '发送验证码',
+    sending: '正在发送…',
+    remembered: '想起密码了？',
+    backToSignIn: '返回登录',
+    sentPrefix: '如果',
+    sentSuffix:
+      '有账户，一个6位数验证码正在发送中。有效期30分钟，连续输错5次将使其失效。',
+    devTitle: '开发版本 — 验证码显示于此',
+    devBody:
+      '目前尚未连接邮件或短信服务商，服务器暂时直接返回验证码而非发送。在生产环境中，验证码会通过消息送达，绝不会显示在屏幕上。',
+    codeLabel: '6位数验证码',
+    newPassword: '新密码',
+    newPasswordPlaceholder: '至少6个字符',
+    newPasswordHint: '至少6个字符。请选择您未在其他网站使用过的密码。',
+    confirmPassword: '确认新密码',
+    confirmPlaceholder: '请再次输入',
+    reset: '重置密码',
+    updating: '正在更新…',
+    resend: '发送新验证码',
+    differentEmail: '使用其他邮箱',
+    liveStep2: '第2步，共2步。输入发送至 {{email}} 的6位数验证码。',
+  },
+  activate: {
+    metaTitle: '激活您的账户',
+    eyebrow: '账户激活',
+    title: '创建您的专属密码',
+    intro:
+      'Sawa Cars 已为您创建此账户。此一次性链接将在48小时后过期，您的密码任何管理员都无法看到。',
+    incomplete: '此激活链接不完整。请联系 Sawa Cars 重新发送邀请。',
+    createPassword: '创建密码',
+    createHint: '至少8个字符；请使用您未在其他地方使用过的密码。',
+    confirmPassword: '确认密码',
+    submit: '激活展厅账户',
+    submitting: '正在激活…',
+    errShort: '请使用至少8个字符。',
+    errMatch: '两次输入的密码必须一致。',
+    errGeneric: '无法激活此账户。',
+  },
+  del: {
+    metaTitle: '关闭您的账户',
+    metaDescription:
+      '如何关闭并删除您的 Sawa Cars 账户、您有30天时间可以改变主意，以及您的数据（包括身份证件和已完成交易的记录）会如何处理。',
+    title: '关闭您的 Sawa Cars 账户',
+    intro1:
+      '您可以随时通过应用或本网站关闭您的账户。关闭立即生效，无需任何人批准：您的信息将被下架，电话号码将不再显示，且您会在所有设备上退出登录。',
+    intro2:
+      '30天内不会删除任何内容。在此之前，您可以使用相同的邮箱和密码登录并选择重新开启账户，一切都会恢复。30天后，账户将被永久删除，无法恢复。',
+    howTitle: '如何删除',
+    webLabel: '在本网站上：',
+    webRest: '登录后前往',
+    profileLink: '个人资料 → 关闭账户',
+    appLabel: '在 Sawa Cars 应用中：',
+    appRest: '打开设置，滚动至“危险区域”，然后点击',
+    appAction: '关闭我的账户',
+    howNote:
+      '无论哪种方式，都会要求您输入密码以确认是您本人操作，并询问原因——如实填写与否是您的自由，但确实会真正影响我们接下来改进的方向。',
+    signInButton: '登录以关闭我的账户',
+    removedTitle: '30天后将删除的内容',
+    removed1: '您的姓名、邮箱地址和电话号码',
+    removed2: '您的密码',
+    removed3: '您的身份证照片和自拍照',
+    removed4: '收藏的车辆、保存的搜索及其提醒',
+    removed5: '通知和已注册的设备',
+    removed6:
+      '您在市场上仍存在的任何信息——将在您关闭账户的那一刻下架，而非等到30天后',
+    keptTitle: '保留的内容及原因',
+    kept1:
+      '已通过 Sawa Cars 完成交易的车辆记录，我们有义务保留这些记录',
+    kept2: '针对已完成交易撰写的评价——这些评价归撰写者所有',
+    kept3: '已完成交易的费用记录',
+    keptNote: '这些记录不再包含您的姓名或联系方式。',
+    directTitle: '直接交易不由 Sawa Cars 管理',
+    directBody:
+      '删除账户会将您的信息归档并终止您的平台访问权限。它不会取消、更改或删除您与其他用户达成的任何独立协议；请在删除前保留您所需的记录。',
+    cannotPrefix: '无法登录？请发送邮件至',
+    cannotMid: '（使用您账户上的邮箱地址），我们会代您删除账户。请参阅我们的',
+    privacyLink: '隐私政策',
+    cannotEnd: '了解我们保留哪些信息及原因。',
+  },
+  download: {
+    metaTitle: '获取应用',
+    metaDescription:
+      '适用于 iPhone 和 Android 的 Sawa Cars 应用。浏览已认证车辆，阅读完整检测报告，并获取降价提醒。除拍摄操作外，其他功能在网站上同样可用。',
+    ogTitle: '获取 Sawa Cars 应用',
+    ogDescription:
+      '在手机上浏览已认证车辆，阅读完整检测报告，并获取降价提醒。',
+    eyebrow: 'Sawa Cars 应用',
+    subtitle: '卢旺达的认证二手车',
+    metaPrice: '价格',
+    metaPriceValue: '免费',
+    metaCategory: '类别',
+    metaCategoryValue: '车辆',
+    metaWorks: '适用系统',
+    lead:
+      '同一个认证市场，同一个账户，加上只有手机上才有意义的部分：用于核验的拍摄操作，以及价格变动时的即时提醒。',
+    onlyEyebrow: '仅限应用内',
+    onlyTitle: '应用带来的额外功能',
+    onlyDescription:
+      '浏览器难以妥善实现的三件事。本页面其他内容在两者上都同样可用。',
+    appOnly1Title: '一次性完成身份核验',
+    appOnly1Body:
+      '无需离开屏幕，即可拍摄您的身份证并完成核验自拍。这项检查正是保证 Sawa Cars 每条信息真实性的关键，而手机摄像头是完成这一操作的唯一合理方式。',
+    appOnly2Title: '提交时同步拍照',
+    appOnly2Body:
+      '提交车辆时拍摄清晰的参考照片。管理端相册支持灵活的真实车辆图片组合，而非固定角度的清单要求。',
+    appOnly3Title: '推送通知',
+    appOnly3Body:
+      '降价、卖家消息、租赁咨询更新或检测时段提醒会直接显示在您的锁屏上，而不是被淹没在邮件中。',
+    webEyebrow: '无需安装应用',
+    webTitle: '网站同样能做到的功能',
+    webDescription:
+      '不安装任何东西也绝不会被阻挡。在这里登录，应用会从您离开的地方精确续上。',
+    web1Title: '完整目录',
+    web1Body: '所有上线信息，使用相同的筛选条件和相同的照片。',
+    web2Title: '完整检测报告',
+    web2Body: '全部150项，按类别逐一列出，包括任何被标记的问题。',
+    web3Title: '收藏车辆与搜索提醒',
+    web3Body: '收藏一辆车或一次搜索后，它会一直跟随您到应用中。',
+    web4Title: '与卖家直接联系',
+    web4Body:
+      '在确认直接交易须知后，向已认证卖家发送消息，或使用已启用的电话或 WhatsApp 联系方式。',
+    web5Title: '您的完整账户',
+    web5Body: '个人资料、验证状态、消息及购买历史。',
+    browseCars: '浏览已认证车辆',
+    inkTitle: '无结算、无资金代管、无平台合同',
+    inkBody:
+      'Sawa Cars 从不接收或持有买卖或租赁交易资金。用户自行安排看车、核验、议价、书面条款、付款、过户、提车、归还及交付。应用提供的是信息与沟通渠道——而非对外部协议的担保。',
+    readSafety: '了解市场安全机制',
+    howBuying: '购车流程说明',
+    appStore: '在 App Store 下载',
+    playStore: '在 Google Play 获取',
+    openingTitle: '正在打开应用…',
+    opensInAppTitle: '此链接将在 Sawa Cars 应用中打开',
+    handedOffBody: '如果没有反应，说明应用尚未安装——系统将转而打开应用商店。',
+    notHandedBody: '在您的手机上打开此页面即可直接跳转，或继续在此浏览。',
+    tryAgain: '重新尝试打开应用',
+    continueWeb: '继续使用网页版',
+    otherPhone: '使用其他手机？{{label}}',
+    installHintPrefix: '在您的手机上打开',
+    installHintSuffix: '即可直接安装。',
+  },
+}
+
+export const auth: Record<Locale, Record<string, unknown>> = { en, rw, fr, sw, ko, zh }

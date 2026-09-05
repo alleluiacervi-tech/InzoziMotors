@@ -5,7 +5,7 @@
 // and fallback: a missing translation never renders blank, and a new key can
 // ship before every language is complete.
 
-export type Locale = 'en' | 'rw' | 'fr' | 'sw' | 'ko'
+export type Locale = 'en' | 'rw' | 'fr' | 'sw' | 'ko' | 'zh'
 
 export interface LanguageDef {
   code: Locale
@@ -26,6 +26,7 @@ export const LANGUAGES: LanguageDef[] = [
   { code: 'fr', label: 'French', nativeLabel: 'Français', locale: 'fr-RW', flag: '🇫🇷' },
   { code: 'sw', label: 'Swahili', nativeLabel: 'Kiswahili', locale: 'sw-KE', flag: '🇰🇪' },
   { code: 'ko', label: 'Korean', nativeLabel: '한국어', locale: 'ko-KR', flag: '🇰🇷' },
+  { code: 'zh', label: 'Chinese', nativeLabel: '中文', locale: 'zh-CN', flag: '🇨🇳' },
 ]
 
 export const LOCALES: Locale[] = LANGUAGES.map((l) => l.code)

@@ -16,6 +16,7 @@ export const LANGUAGES = [
   { code: 'fr', label: 'French', nativeLabel: 'Français', locale: 'fr-RW', flag: '🇫🇷' },
   { code: 'sw', label: 'Swahili', nativeLabel: 'Kiswahili', locale: 'sw-KE', flag: '🇰🇪' },
   { code: 'ko', label: 'Korean', nativeLabel: '한국어', locale: 'ko-KR', flag: '🇰🇷' },
+  { code: 'zh', label: 'Chinese', nativeLabel: '中文', locale: 'zh-CN', flag: '🇨🇳' },
 ];
 
 export const DEFAULT_LANGUAGE = 'en';
@@ -127,12 +128,74 @@ const KO = {
   filters: { filters: '필터', clear: '필터 모두 지우기', apply: '차량 보기', noResults: '차량을 찾을 수 없습니다', adjust: '검색을 변경하거나 필터를 제거해 보세요' },
 };
 
+const ZH = {
+  common: {
+    back: '返回', close: '关闭', cancel: '取消', save: '保存', search: '搜索',
+    signIn: '登录', register: '注册', logout: '退出登录', next: '下一步',
+    skip: '跳过', getStarted: '开始使用', loading: '加载中…', retry: '重试',
+    language: '语言', done: '完成', settings: '设置', home: '首页',
+    buy: '购买', rent: '租赁', sell: '出售', profile: '个人资料', menu: '菜单',
+  },
+  language: {
+    title: '选择您的语言',
+    subtitle: '您可以随时在设置中更改。',
+    current: '当前语言',
+    saved: '语言已更新',
+    restartHint: '您的选择已保存在此设备上，并会立即生效。',
+  },
+  welcome: {
+    title: '卢旺达\n最值得信赖的\n汽车市场。',
+    subtitle: '优质车辆，公平价格。\n安心无忧。',
+    trusted: '值得信赖', trustedSub: '每辆车都\n经过检测',
+    fairPrices: '价格公道', fairPricesSub: '物超所值',
+    directContact: '直接联系', directContactSub: '与卖家\n直接交易',
+    exploreCars: '浏览车辆', sellCar: '出售您的车辆',
+    alreadyAccount: '已有账户？',
+    termsPrefix: '继续即表示您同意我们的', terms: '条款', privacy: '隐私政策',
+  },
+  onboarding: {
+    inspectTitle: '每辆车都经过检测', inspectSub: '150项认证检查。',
+    photosTitle: '真实照片，真实规格', photosSub: '由我们团队拍摄。',
+    trustTitle: '联系已验证的卖家', trustSub: '直接协商并完成交易。',
+    updateChoice: '让 Sawa Cars 自动保持最新。新版本会在您下次打开应用时安装——绝不会在您使用过程中安装。',
+  },
+  drawer: {
+    buyCar: '购买车辆', browseAll: '浏览所有车辆', savedCars: '收藏的车辆', compareCars: '比较车辆',
+    rent: '租赁', browseRentals: '浏览租车', rentalInquiries: '租车咨询',
+    financeServices: '金融与服务', financing: '贷款计算器', importDuty: '进口关税', imports: '我的进口车辆',
+    sellCar: '出售车辆', verifyIdentity: '身份验证', submitCar: '提交我的车辆', submissions: '我的提交记录', analytics: '卖家分析', trustScore: '我的信誉评分',
+    trustSafety: '信任与安全', notifications: '通知', marketplaceSafety: '市场安全',
+    teamPortal: '团队门户', version: 'Sawa Cars v1.0 · 基加利，卢旺达', certifiedMarketplace: '卢旺达认证市场',
+  },
+  settings: {
+    title: '设置', account: '账户', preferences: '偏好设置', support: '支持', app: '应用', legal: '法律', danger: '危险区域',
+    verification: '验证与信任', savedSearches: '已保存的搜索', push: '推送通知',
+    language: '语言', checkUpdates: '检查更新', whatsapp: '通过WhatsApp联系我们', call: '致电我们', email: '给我们发邮件', replay: '重新观看介绍',
+    privacy: '隐私政策', terms: '服务条款', directDeal: '直接交易须知', delete: '删除我的账户', deleteHint: '此操作不可撤销，您的数据将被永久删除。',
+    verified: '已验证', underReview: '审核中', actionNeeded: '需要处理', notVerified: '未验证',
+  },
+  home: {
+    location: '位置', kigali: '基加利，卢旺达', buy: '购买', rent: '租赁',
+    offlineTitle: '无法连接到 Sawa Cars', offlineSub: '请检查网络连接以查看最新车源。',
+    search: '搜索品牌、型号、类型…', searchRentals: '搜索租赁车辆…', rentalInquiry: '租车咨询处理中',
+    certifiedRentals: '认证租赁车辆', certifiedRentalsSub: '每一次出行都可靠的车辆。',
+    topDeals: '精选优惠', topDealsSub: '由我们团队精选 · 左右滑动查看更多',
+    certifyCar: '认证我的车辆', importDuty: '进口关税', financing: '贷款', compare: '比较',
+    showroom: 'Sawa 展厅', onDisplay: '本周在尼亚鲁塔拉马展出', carsInShowroom: '展厅内有 {{count}} 辆车',
+    all: '全部', imported: '进口车', local: '本地车', evHybrid: '电动·混动',
+    fresh: '本周新上架', popular: '附近热门', browseAll: '浏览所有车辆',
+    ourPromise: '我们的承诺', aboutUs: '关于我们', login: '登录', copyright: '© 2026 Sawa Cars. 保留所有权利。',
+  },
+  filters: { filters: '筛选', clear: '清除所有筛选', apply: '查看车辆', noResults: '未找到车辆', adjust: '请尝试调整搜索条件或清除筛选' },
+};
+
 const EXTRA_SETTINGS = {
   en: { closeAccount: 'Close my account', closeHint: 'Takes effect straight away. Erased for good after {{days}} days.', closeWhy: 'Why are you closing your account? It genuinely changes what we fix next.', closeNote: 'Anything else? (optional)', password: 'Your password', autoUpdate: 'Install updates automatically', autoUpdateOn: 'New versions will install the next time you open the app.', autoUpdateOff: 'You will be asked before a new version is installed.', pushError: 'Push could not be enabled. Check notification permissions in your phone settings.', wrongPassword: 'That password is not correct.', networkError: "We couldn't reach Sawa Cars. Check your connection and try again.", genericError: 'Something went wrong. Please try again.' },
   rw: { closeAccount: 'Funga konti yanjye', closeHint: 'Bihita bitangira. Izahanagurwa burundu nyuma y’iminsi {{days}}.', closeWhy: 'Kuki ufunga konti yawe? Igisubizo cyawe kidufasha kunoza serivisi.', closeNote: 'Hari ikindi? (si ngombwa)', password: 'Ijambo ry’ibanga', autoUpdate: 'Shyiraho ivugurura ryikora', autoUpdateOn: 'Verisiyo nshya izashyirwaho igihe wongeye gufungura porogaramu.', autoUpdateOff: 'Uzabazwa mbere y’uko verisiyo nshya ishyirwaho.', pushError: 'Ntabwo imenyesha ryakoreshejwe. Reba uburenganzira bw’imenyesha muri telefoni.', wrongPassword: 'Iryo jambo ry’ibanga si ryo.', networkError: 'Ntidushoboye kugera kuri Sawa Cars. Reba umurongo wa interineti wongere ugerageze.', genericError: 'Hari ikitagenda. Ongera ugerageze.' },
   fr: { closeAccount: 'Fermer mon compte', closeHint: 'Prend effet immédiatement. Effacement définitif après {{days}} jours.', closeWhy: 'Pourquoi fermez-vous votre compte ? Votre réponse nous aide à progresser.', closeNote: 'Autre chose ? (facultatif)', password: 'Votre mot de passe', autoUpdate: 'Installer automatiquement les mises à jour', autoUpdateOn: 'Les nouvelles versions s’installeront à votre prochaine ouverture.', autoUpdateOff: 'Une confirmation vous sera demandée avant l’installation.', pushError: 'Les notifications push ne peuvent pas être activées. Vérifiez les autorisations.', wrongPassword: 'Ce mot de passe est incorrect.', networkError: 'Sawa Cars est inaccessible. Vérifiez votre connexion et réessayez.', genericError: 'Une erreur est survenue. Réessayez.' },
   sw: { closeAccount: 'Funga akaunti yangu', closeHint: 'Inaanza mara moja. Data itafutwa kabisa baada ya siku {{days}}.', closeWhy: 'Kwa nini unafunga akaunti yako? Jibu lako hutusaidia kuboresha.', closeNote: 'Kuna kingine? (si lazima)', password: 'Nenosiri lako', autoUpdate: 'Sakinisha masasisho kiotomatiki', autoUpdateOn: 'Matoleo mapya yatawekwa unapofungua programu tena.', autoUpdateOff: 'Utaulizwa kabla ya toleo jipya kuwekwa.', pushError: 'Arifa hazikuwezeshwa. Angalia ruhusa za arifa kwenye simu yako.', wrongPassword: 'Nenosiri hilo si sahihi.', networkError: 'Hatukuweza kufikia Sawa Cars. Angalia muunganisho na ujaribu tena.', genericError: 'Kuna tatizo. Jaribu tena.' },
   ko: { closeAccount: '내 계정 닫기', closeHint: '즉시 적용되며 {{days}}일 후 데이터가 완전히 삭제됩니다.', closeWhy: '계정을 닫는 이유가 무엇인가요? 답변은 서비스 개선에 도움이 됩니다.', closeNote: '추가 의견 (선택사항)', password: '비밀번호', autoUpdate: '업데이트 자동 설치', autoUpdateOn: '앱을 다음에 열 때 새 버전이 설치됩니다.', autoUpdateOff: '새 버전을 설치하기 전에 확인을 요청합니다.', pushError: '푸시 알림을 켤 수 없습니다. 휴대폰 알림 권한을 확인하세요.', wrongPassword: '비밀번호가 올바르지 않습니다.', networkError: 'Sawa Cars에 연결할 수 없습니다. 연결을 확인하고 다시 시도하세요.', genericError: '문제가 발생했습니다. 다시 시도하세요.' },
+  zh: { closeAccount: '注销我的账户', closeHint: '立即生效。{{days}} 天后将被永久删除。', closeWhy: '您为什么要注销账户？您的答案能真正帮助我们改进。', closeNote: '还有其他想说的吗？（可选）', password: '您的密码', autoUpdate: '自动安装更新', autoUpdateOn: '新版本将在您下次打开应用时安装。', autoUpdateOff: '安装新版本前会先询问您。', pushError: '无法启用推送通知。请检查手机设置中的通知权限。', wrongPassword: '密码不正确。', networkError: '无法连接到 Sawa Cars。请检查网络连接后重试。', genericError: '出现问题，请重试。' },
 };
 
 // High-frequency marketplace copy lives here so the first localized pass can
@@ -186,6 +249,15 @@ const EXTRA_HOME = {
     bannerSellBrand: '내 차량 인증', bannerSellTagline: '150개 항목 검사를 신청하면 차량을 등록해 드립니다.', bannerSellTag: '판매',
     providerContacted: '제공자에게 연락함', awaitingProvider: '제공자 답변 대기 중', inspected: '{{score}}/150 검사 완료', perDay: '/일', seats: '좌석', trips: '회 운행', belowMarket: '시장가보다 {{percent}}% 저렴', highDemand: '인기 차량', saveCar: '{{title}} 저장', removeSaved: '{{title}} 저장 취소', carsCount: '{{label}} · 차량 {{count}}대', unavailableUntil: '{{date}}까지 이용 불가',
   },
+  zh: {
+    trying: '正在尝试…', safariReady: '适合越野', suv: 'SUV', sedan: '轿车', truck: '皮卡',
+    safari4x4s: '适合越野的四驱车', availableKigali: '基加利有售', showrooms: '展厅',
+    showroomCarsView: '{{count}} 辆车 · 查看展厅', recentlyViewed: '最近浏览', moreLikeSaved: '与您收藏车辆相似', saved: '已收藏', more: '更多',
+    bannerCertifiedBrand: 'Sawa 认证', bannerCertifiedTagline: '每辆车在上架前都经过检测，绝无例外。', bannerCertifiedTag: '信任',
+    bannerInspectionBrand: '150项检测', bannerInspectionTagline: '认证技师检测，购车前提供完整报告。', bannerInspectionTag: '检测',
+    bannerSellBrand: '认证您的车辆', bannerSellTagline: '提交车辆接受150项检测，我们为您上架。', bannerSellTag: '出售',
+    providerContacted: '已联系提供方', awaitingProvider: '等待提供方回复', inspected: '已检测 {{score}}/150', perDay: '/天', seats: '座', trips: '次行程', belowMarket: '低于市场价 {{percent}}%', highDemand: '热门抢购', saveCar: '收藏 {{title}}', removeSaved: '取消收藏 {{title}}', carsCount: '{{label}} · {{count}} 辆车', unavailableUntil: '至 {{date}} 前不可用',
+  },
 };
 
 const EXTRA_FILTERS = {
@@ -194,6 +266,7 @@ const EXTRA_FILTERS = {
   fr: { price: 'Prix', anyPrice: 'Tous les prix', underPrice: 'Moins de {{amount}} RWF', minimumPrice: 'Prix minimum', noMinimum: 'Sans minimum', minPrice: '{{amount}} M RWF+', year: 'Année', anyYear: 'Toutes les années', newer: '{{year}} ou plus récente', mileage: 'Kilométrage', anyMileage: 'Tout kilométrage', underMileage: 'Moins de {{mileage}} km', inspectionScore: 'Score d’inspection', anyScore: 'Tous les scores', scorePlus: '{{score}}+ / 150', make: 'Marque', location: 'Lieu', bodyType: 'Carrosserie', fuelType: 'Carburant', transmission: 'Transmission', standardNote: 'Les annonces publiques passent les contrôles vendeur, inspection et publication des images. Le rapport d’inspection n’est pas une garantie de transaction.', reset: 'Réinitialiser', viewCount: 'Voir {{count}} voitures' },
   sw: { price: 'Bei', anyPrice: 'Bei yoyote', underPrice: 'Chini ya RWF {{amount}}', minimumPrice: 'Bei ya chini', noMinimum: 'Hakuna kiwango cha chini', minPrice: 'RWF {{amount}}M+', year: 'Mwaka', anyYear: 'Mwaka wowote', newer: '{{year}} au mpya zaidi', mileage: 'Umbali', anyMileage: 'Umbali wowote', underMileage: 'Chini ya {{mileage}} km', inspectionScore: 'Alama ya ukaguzi', anyScore: 'Alama yoyote', scorePlus: '{{score}}+ / 150', make: 'Chapa', location: 'Mahali', bodyType: 'Aina ya mwili', fuelType: 'Aina ya mafuta', transmission: 'Gearbox', standardNote: 'Matangazo ya umma hupitia ukaguzi wa muuzaji, gari na picha. Ushahidi wa ukaguzi si dhamana ya muamala.', reset: 'Weka upya', viewCount: 'Angalia magari {{count}}' },
   ko: { price: '가격', anyPrice: '모든 가격', underPrice: 'RWF {{amount}} 미만', minimumPrice: '최저 가격', noMinimum: '최저 없음', minPrice: 'RWF {{amount}}M 이상', year: '연식', anyYear: '모든 연식', newer: '{{year}}년 이상', mileage: '주행거리', anyMileage: '주행거리 무관', underMileage: '{{mileage}}km 미만', inspectionScore: '검사 점수', anyScore: '모든 점수', scorePlus: '{{score}}+ / 150', make: '제조사', location: '위치', bodyType: '차체 유형', fuelType: '연료 유형', transmission: '변속기', standardNote: '공개 매물은 판매자, 검사 및 이미지 게시 기준을 통과합니다. 검사 자료는 거래를 보증하지 않습니다.', reset: '초기화', viewCount: '{{count}}대 보기' },
+  zh: { price: '价格', anyPrice: '不限价格', underPrice: '低于 {{amount}} 卢旺达法郎', minimumPrice: '最低价格', noMinimum: '无最低限制', minPrice: '{{amount}}百万卢旺达法郎以上', year: '年份', anyYear: '不限年份', newer: '{{year}} 年及以后', mileage: '里程', anyMileage: '不限里程', underMileage: '低于 {{mileage}} 公里', inspectionScore: '检测评分', anyScore: '不限评分', scorePlus: '{{score}}+ / 150', make: '品牌', location: '位置', bodyType: '车身类型', fuelType: '燃料类型', transmission: '变速箱', standardNote: '公开车源均通过卖家、检测及图片发布的审核。检测结果不构成交易担保。', reset: '重置', viewCount: '查看 {{count}} 辆车' },
 };
 
 const EXTRA_SEARCH = {
@@ -202,6 +275,7 @@ const EXTRA_SEARCH = {
   fr: { back: 'Retour', clearSearch: 'Effacer la recherche', filterButton: 'Filtres', carsFound: '{{count}} voitures trouvées', rentalsFound: '{{count}} locations trouvées', plusCars: '{{count}}+ voitures', saveSearch: 'Enregistrer la recherche', savedToast: 'Recherche enregistrée — nous vous préviendrons des nouvelles annonces correspondantes.', allCars: 'Toutes les voitures', everyMatch: 'Voici toutes les annonces correspondantes sur Sawa Cars.', bestMatch: 'Pertinence', priceLow: 'Prix ↑', priceHigh: 'Prix ↓', newest: 'Plus récentes', mileage: 'Kilométrage', showList: 'Afficher en liste', showGrid: 'Afficher en grille' },
   sw: { back: 'Rudi', clearSearch: 'Futa utafutaji', filterButton: 'Vichujio', carsFound: 'Magari {{count}} yamepatikana', rentalsFound: 'Magari ya kukodisha {{count}} yamepatikana', plusCars: 'Magari {{count}}+', saveSearch: 'Hifadhi utafutaji', savedToast: 'Utafutaji umehifadhiwa — tutakujulisha matangazo mapya yanayolingana.', allCars: 'Magari yote', everyMatch: 'Haya ndiyo matangazo yote yanayolingana kwa sasa Sawa Cars.', bestMatch: 'Yanayofaa zaidi', priceLow: 'Bei ↑', priceHigh: 'Bei ↓', newest: 'Mapya zaidi', mileage: 'Umbali', showList: 'Onyesha kama orodha', showGrid: 'Onyesha kama gridi' },
   ko: { back: '뒤로', clearSearch: '검색 지우기', filterButton: '필터', carsFound: '{{count}}대 검색됨', rentalsFound: '{{count}}대 렌트 검색됨', plusCars: '{{count}}대 이상', saveSearch: '검색 저장', savedToast: '검색이 저장되었습니다 — 새 매물이 등록되면 알려드리겠습니다.', allCars: '모든 차량', everyMatch: '현재 Sawa Cars의 모든 검색 결과입니다.', bestMatch: '추천순', priceLow: '가격 ↑', priceHigh: '가격 ↓', newest: '최신순', mileage: '주행거리', showList: '목록으로 보기', showGrid: '격자로 보기' },
+  zh: { back: '返回', clearSearch: '清除搜索', filterButton: '筛选', carsFound: '找到 {{count}} 辆车', rentalsFound: '找到 {{count}} 辆租赁车', plusCars: '{{count}}+ 辆车', saveSearch: '保存搜索', savedToast: '搜索已保存——有符合条件的新车源上架时我们会通知您。', allCars: '所有车辆', everyMatch: '这是 Sawa Cars 目前所有符合条件的车辆。', bestMatch: '最佳匹配', priceLow: '价格 ↑', priceHigh: '价格 ↓', newest: '最新', mileage: '里程', showList: '以列表显示结果', showGrid: '以网格显示结果' },
 };
 
 const EXTRA_AUTH = {
@@ -210,6 +284,7 @@ const EXTRA_AUTH = {
   fr: { signInTitle: 'Bon retour', signInSub: 'Connectez-vous pour continuer sur Sawa Cars.', createTitle: 'Créer un compte', createSub: 'Achetez, enregistrez et échangez avec les vendeurs sur Sawa Cars.', email: 'E-mail', validEmail: 'Saisissez une adresse e-mail valide.', password: 'Mot de passe', passwordMin: 'Le mot de passe doit contenir au moins 6 caractères.', forgot: 'Oublié ?', enterPassword: 'Saisissez votre mot de passe', hidePassword: 'Masquer le mot de passe', showPassword: 'Afficher le mot de passe', signIn: 'Se connecter', noAccount: 'Vous n’avez pas de compte ?', signUp: 'S’inscrire', fullName: 'Nom complet', namePlaceholder: 'Alex Morgan', nameRequired: 'Saisissez votre nom complet.', passwordPlaceholder: 'Au moins 6 caractères', createAccount: 'Créer un compte', termsPrefix: 'En créant un compte, vous acceptez nos', terms: 'Conditions', privacy: 'Politique de confidentialité', alreadyAccount: 'Vous avez déjà un compte ?', accountClosed: 'Ce compte est fermé', accountClosedMessage: 'Vous l’avez fermé, mais rien n’a été effacé. Rouvrez-le pour retrouver vos favoris, messages et annonces.', accountClosedUntil: 'Après le {{date}}, il sera définitivement supprimé.', reopen: 'Rouvrir mon compte', notNow: 'Pas maintenant', welcomeBack: 'Bon retour. Votre compte est de nouveau ouvert.', reopenError: 'Impossible de rouvrir ce compte.', invalidCredentials: 'E-mail ou mot de passe invalide.', createError: 'Impossible de créer le compte. Réessayez.' },
   sw: { signInTitle: 'Karibu tena', signInSub: 'Ingia kuendelea kwenye Sawa Cars.', createTitle: 'Fungua akaunti', createSub: 'Nunua, hifadhi na tuma ujumbe kwa wauzaji kwenye Sawa Cars.', email: 'Barua pepe', validEmail: 'Weka anwani sahihi ya barua pepe.', password: 'Nenosiri', passwordMin: 'Nenosiri lazima liwe na angalau herufi 6.', forgot: 'Umesahau?', enterPassword: 'Weka nenosiri lako', hidePassword: 'Ficha nenosiri', showPassword: 'Onyesha nenosiri', signIn: 'Ingia', noAccount: 'Huna akaunti?', signUp: 'Jisajili', fullName: 'Jina kamili', namePlaceholder: 'Alex Morgan', nameRequired: 'Weka jina lako kamili.', passwordPlaceholder: 'Angalau herufi 6', createAccount: 'Fungua akaunti', termsPrefix: 'Kwa kufungua akaunti unakubali', terms: 'Masharti', privacy: 'Sera ya faragha', alreadyAccount: 'Una akaunti tayari?', accountClosed: 'Akaunti hii imefungwa', accountClosedMessage: 'Uliifunga, lakini hakuna kilichofutwa. Ifungue tena ili upate magari, ujumbe na matangazo uliyohifadhi.', accountClosedUntil: 'Baada ya {{date}} itafutwa kabisa.', reopen: 'Fungua akaunti yangu tena', notNow: 'Si sasa', welcomeBack: 'Karibu tena. Akaunti yako imefunguliwa.', reopenError: 'Akaunti haikuweza kufunguliwa.', invalidCredentials: 'Barua pepe au nenosiri si sahihi.', createError: 'Akaunti haikuweza kuundwa. Jaribu tena.' },
   ko: { signInTitle: '다시 오신 것을 환영합니다', signInSub: 'Sawa Cars를 계속 이용하려면 로그인하세요.', createTitle: '계정 만들기', createSub: 'Sawa Cars에서 차량을 구매하고 저장하고 판매자에게 문의하세요.', email: '이메일', validEmail: '올바른 이메일 주소를 입력하세요.', password: '비밀번호', passwordMin: '비밀번호는 6자 이상이어야 합니다.', forgot: '비밀번호를 잊으셨나요?', enterPassword: '비밀번호 입력', hidePassword: '비밀번호 숨기기', showPassword: '비밀번호 보기', signIn: '로그인', noAccount: '계정이 없으신가요?', signUp: '회원가입', fullName: '이름', namePlaceholder: 'Alex Morgan', nameRequired: '이름을 입력하세요.', passwordPlaceholder: '6자 이상', createAccount: '계정 만들기', termsPrefix: '계정을 만들면 다음에 동의하게 됩니다:', terms: '이용약관', privacy: '개인정보 보호정책', alreadyAccount: '이미 계정이 있으신가요?', accountClosed: '이 계정은 닫혀 있습니다', accountClosedMessage: '계정을 닫았지만 데이터는 삭제되지 않았습니다. 다시 열면 저장한 차량, 메시지와 매물이 복구됩니다.', accountClosedUntil: '{{date}} 후에는 영구 삭제됩니다.', reopen: '계정 다시 열기', notNow: '나중에', welcomeBack: '다시 오신 것을 환영합니다. 계정이 열렸습니다.', reopenError: '계정을 다시 열 수 없습니다.', invalidCredentials: '이메일 또는 비밀번호가 올바르지 않습니다.', createError: '계정을 만들 수 없습니다. 다시 시도하세요.' },
+  zh: { signInTitle: '欢迎回来', signInSub: '登录以继续使用 Sawa Cars。', createTitle: '创建账户', createSub: '在 Sawa Cars 上购买、收藏车辆并联系卖家。', email: '电子邮箱', validEmail: '请输入有效的电子邮箱地址。', password: '密码', passwordMin: '密码至少需要6个字符。', forgot: '忘记密码？', enterPassword: '输入您的密码', hidePassword: '隐藏密码', showPassword: '显示密码', signIn: '登录', noAccount: '还没有账户？', signUp: '注册', fullName: '姓名', namePlaceholder: 'Alex Morgan', nameRequired: '请输入您的姓名。', passwordPlaceholder: '至少6个字符', createAccount: '创建账户', termsPrefix: '创建账户即表示您同意我们的', terms: '条款', privacy: '隐私政策', alreadyAccount: '已有账户？', accountClosed: '此账户已关闭', accountClosedMessage: '您已将其关闭，但数据并未被删除。重新开启后，您收藏的车辆、消息和发布内容都会恢复。', accountClosedUntil: '{{date}} 之后将被永久删除。', reopen: '重新开启我的账户', notNow: '暂不', welcomeBack: '欢迎回来，您的账户已重新开启。', reopenError: '无法重新开启此账户。', invalidCredentials: '邮箱或密码不正确。', createError: '无法创建您的账户，请重试。' },
 };
 
 // RentalDetailScreen — one screen, entirely hand-written copy (it predates the
@@ -296,9 +371,25 @@ const EXTRA_RENTAL_DETAIL = {
     step3Title: '대여 관리하기', step3Desc: '픽업, 결제, 차량 상태, 반납은 제공자와 직접 처리합니다.',
     ctaDailyRental: '일일 렌트', ctaPerDay: '/ 일', ctaRateNote: '제공자가 명시한 요금 · 직접 확인하세요', ctaInquiryOnly: '문의만 가능', ctaRequestAvailability: '이용 가능 여부 요청',
   },
+  zh: {
+    notFoundTitle: '此租赁车辆不可用', notFoundSub: '可能已被暂停或从车队中移除。', goBack: '返回', loading: '正在加载此租赁车辆信息…',
+    forRent: '可租赁', certified: '认证 {{score}}/150', safariReady: '适合越野', share: '分享', shareMessage: '{{title}} — 在 Sawa Cars 每天 {{price}}',
+    seats: '座位数', gearbox: '变速箱', fuel: '燃料', year: '年份',
+    unavailableUntil: '至 {{date}} 前不可用',
+    availability: '可用情况', requestDates: '申请您的日期', availabilityNote: '经过验证的提供方将确认车辆、价格及取车安排。发送咨询并不代表车辆已被预留或预订。',
+    pricing: '价格', dailyRate: '日租金', weeklyRate: '周租金', saveVsDaily: '比日租金节省 {{amount}}', securityDeposit: '押金', depositSub: '金额由提供方说明 · 请确认书面条款', minRental: '最短租期：{{count}} 天',
+    confirmTerms: '请与提供方确认以下条款', insurance: '保险保障', roadside: '道路救援', mileageLimits: '里程限制', depositTerms: '押金与退款条款',
+    safetyLink: '市场安全与责任',
+    inspectionTitle: '150项检测报告', inspectionSub: '得分 {{score}}/150 · 查看完整报告',
+    howItWorks: '租赁流程说明',
+    step1Title: '发送咨询', step1Desc: '告知您的日期及首选联系方式。',
+    step2Title: '直接协商', step2Desc: '提供方将确认车辆是否可用、价格、保险、押金及书面租赁条款。',
+    step3Title: '管理租赁', step3Desc: '取车、付款、车况及还车均由您与提供方直接处理。',
+    ctaDailyRental: '按日租赁', ctaPerDay: '/ 天', ctaRateNote: '价格由提供方说明 · 请直接确认', ctaInquiryOnly: '仅咨询', ctaRequestAvailability: '查询可用情况',
+  },
 };
 
-export const TRANSLATIONS = { en: EN, rw: RW, fr: FR, sw: SW, ko: KO };
+export const TRANSLATIONS = { en: EN, rw: RW, fr: FR, sw: SW, ko: KO, zh: ZH };
 for (const code of Object.keys(TRANSLATIONS)) {
   TRANSLATIONS[code].settings = { ...TRANSLATIONS[code].settings, ...EXTRA_SETTINGS[code] };
   TRANSLATIONS[code].home = { ...TRANSLATIONS[code].home, ...EXTRA_HOME[code] };
