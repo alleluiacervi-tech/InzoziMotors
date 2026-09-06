@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney, formatRwfInput, parseRwfInput } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
-import { useToast } from '@/components/feedback'
+import { useConfirm, useToast } from '@/components/feedback'
 
 const EMPTY = {
   provider_id: '', title: '', make: '', model: '', year: '', daily_rate: '',
@@ -45,7 +45,10 @@ export default function RentalFleetPage() {
   const [providers, setProviders] = useState<any[]>([])
   const [inspections, setInspections] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkRenewing, setBulkRenewing] = useState(false)
   const toast = useToast()
+  const ask = useConfirm()
 
   async function load() {
     setLoading(true); setError(null)
@@ -88,13 +91,94 @@ export default function RentalFleetPage() {
     return () => window.clearTimeout(timer)
   }, [providerQuery])
 
+  // Lowest number = needs an operator soonest. A paid car still sitting off
+  // the public feed is one click from live and the cheapest win on the page;
+  // an unreviewed proposal needs both a look and a payment; an active car
+  // that has already lapsed or is about to is losing bookings right now.
+  // Everything else — paid and live, maintenance, retired — can wait.
+  function urgencyRank(car: any): number {
+    if (car.publishable) return 0
+    if (car.status === 'pending_review') return 1
+    if (car.subscription_status === 'lapsed' || car.subscription_status === 'none') return 2
+    if (car.subscription_status === 'lapsing') return 3
+    return 4
+  }
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return cars.filter((car) => (filter === 'all' || car.status === filter) && (!q || [
-      car.title, car.make, car.model, car.location, car.provider_name,
-      car.provider_business_name, car.id,
-    ].some((value) => String(value || '').toLowerCase().includes(q))))
+    return cars
+      .filter((car) => (filter === 'all' || car.status === filter) && (!q || [
+        car.title, car.make, car.model, car.location, car.provider_name,
+        car.provider_business_name, car.id,
+      ].some((value) => String(value || '').toLowerCase().includes(q))))
+      .sort((a, b) => {
+        const rank = urgencyRank(a) - urgencyRank(b)
+        if (rank) return rank
+        // Within a tier, whichever runs out (or ran out) soonest comes first.
+        const aEnds = a.subscription_ends_on ? new Date(a.subscription_ends_on).getTime() : Infinity
+        const bEnds = b.subscription_ends_on ? new Date(b.subscription_ends_on).getTime() : Infinity
+        return aEnds - bEnds
+      })
   }, [cars, filter, query])
+
+  // A selection narrowed out of view by a filter or search change should
+  // shrink with it — the bulk bar naming a car the operator can no longer
+  // even see would be its own kind of confusing.
+  useEffect(() => {
+    setSelected((prev) => {
+      if (!prev.size) return prev
+      const visibleIds = new Set(visible.map((car) => car.id))
+      const next = new Set([...prev].filter((id) => visibleIds.has(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [visible])
+
+  // Only a car actually missing a live subscription belongs in a bulk renewal
+  // — selecting one that is already paid would just spend money for nothing.
+  const renewable = (car: any) => car.subscription_status !== 'active'
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  async function bulkRenew() {
+    const targets = visible.filter((car) => selected.has(car.id))
+    if (!targets.length) return
+    const ok = await ask({
+      title: `Renew ${targets.length} vehicle${targets.length === 1 ? '' : 's'} for 30 days?`,
+      message: 'Records a 30-day listing subscription on each selected vehicle at its own entered (or default) amount. It does not change any vehicle’s status — a car still in maintenance stays off the public feed.',
+      confirmLabel: `Renew ${targets.length}`,
+    })
+    if (!ok) return
+    setBulkRenewing(true)
+    let succeeded = 0
+    const failures: string[] = []
+    const today = new Date()
+    const ends = new Date(today.getTime() + 30 * 86_400_000)
+    for (const car of targets) {
+      const amount = parseRwfInput(renewAmount[car.id] ?? defaultSubAmount)
+      if (!amount) { failures.push(`${car.title}: no amount entered`); continue }
+      try {
+        await api.recordRentalSubscription(car.id, {
+          amount_rwf: amount, method: 'cash',
+          starts_on: today.toISOString().slice(0, 10), ends_on: ends.toISOString().slice(0, 10),
+        })
+        succeeded += 1
+      } catch (e: any) {
+        failures.push(`${car.title}: ${e.message}`)
+      }
+    }
+    setBulkRenewing(false)
+    setSelected(new Set())
+    if (succeeded) toast(`Renewed ${succeeded} vehicle${succeeded === 1 ? '' : 's'} for 30 days.`, 'success')
+    // Named, not counted — a bulk action that fails silently for one vehicle
+    // in twelve is worse than one that fails loudly for all twelve.
+    failures.forEach((line) => toast(line, 'error'))
+    load()
+  }
 
   function begin(car?: any) {
     setEditing(car || {})
@@ -152,6 +236,43 @@ export default function RentalFleetPage() {
     finally { setPublishing(null) }
   }
 
+  // The provider-proposed review used to be two separate actions in two
+  // different visual states: pay, wait for the page to say the car is now
+  // publishable, then publish. One intention — approve this proposal — gets
+  // one guided button, the same shape as Listings' approve-and-publish: two
+  // server transitions, chained, with an honest fallback if the second one
+  // fails after the first already landed.
+  async function approveAndActivate(car: any) {
+    const amount = parseRwfInput(renewAmount[car.id] ?? defaultSubAmount)
+    if (!amount) { toast('Enter the amount collected, in Rwandan francs, before activating.', 'error'); return }
+    const ok = await ask({
+      title: `Approve and activate ${car.title}?`,
+      message: 'Records a 30-day listing subscription for the amount entered and puts the vehicle on the public rental feed immediately. Check the inspection and images below first.',
+      confirmLabel: 'Approve & activate',
+    })
+    if (!ok) return
+    const today = new Date()
+    const ends = new Date(today.getTime() + 30 * 86_400_000)
+    setRenewing(car.id)
+    try {
+      await api.recordRentalSubscription(car.id, {
+        amount_rwf: amount, method: 'cash',
+        starts_on: today.toISOString().slice(0, 10), ends_on: ends.toISOString().slice(0, 10),
+      })
+      await api.updateRentalCar(car.id, { status: 'active' })
+      toast(`${car.title} is paid for 30 days and live on the public rental feed.`, 'success')
+      setRenewAmount({ ...renewAmount, [car.id]: '' })
+    } catch (e: any) {
+      // A failure between the two can leave the payment recorded but the car
+      // still pending_review — a legitimate resting state. The ordinary
+      // "Publish to the fleet" banner below picks it up from there.
+      toast(`${e.message} — if the payment went through, use “Publish to the fleet” below once it appears to finish.`, 'error')
+    } finally {
+      setRenewing(null)
+      load()
+    }
+  }
+
   async function renew(car: any) {
     const amount = parseRwfInput(renewAmount[car.id] ?? defaultSubAmount)
     if (!amount) { toast('Enter the amount collected, in Rwandan francs.', 'error'); return }
@@ -184,12 +305,33 @@ export default function RentalFleetPage() {
         <button onClick={() => begin()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Add provider vehicle</button>
       </div>
       <QueueSearch value={query} onChange={setQuery} resultCount={visible.length} placeholder="Search vehicle, provider, location or ID" />
+      {selected.size > 0 ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3">
+          <p className="text-sm font-semibold text-gray-900">{selected.size} vehicle{selected.size === 1 ? '' : 's'} selected for renewal</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-brand">Clear</button>
+            <button type="button" onClick={bulkRenew} disabled={bulkRenewing} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-light disabled:opacity-50">
+              {bulkRenewing ? 'Renewing…' : `Renew ${selected.size} for 30 days`}
+            </button>
+          </div>
+        </div>
+      ) : null}
       {loading ? <LoadingState /> : !visible.length ? <EmptyState icon="car" title="No rental vehicles" description="Add inventory for a verified rental-company account." /> : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((car) => (
-          <article key={car.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+          <article key={car.id} className={`overflow-hidden rounded-xl border bg-white shadow-sm ${selected.has(car.id) ? 'border-brand ring-1 ring-brand/30' : 'border-gray-100'}`}>
             {car.images?.[0] ? <img src={car.images[0]} alt="" className="h-40 w-full bg-gray-100 object-contain" /> : <div className="flex h-40 items-center justify-center bg-gray-100 text-sm text-gray-400">No image</div>}
             <div className="p-4">
-              <div className="flex items-start justify-between gap-3"><div><h2 className="font-bold text-gray-900">{car.title}</h2><p className="mt-1 text-xs text-gray-500">{car.provider_business_name || car.provider_name || 'Provider not assigned'}</p></div><span className={`rounded-full px-2 py-1 text-xs font-semibold ${car.status === 'pending_review' ? 'bg-warning-tint text-warning-text' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[car.status] || car.status}</span></div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2">
+                  {renewable(car) ? (
+                    <input type="checkbox" checked={selected.has(car.id)} onChange={() => toggleSelect(car.id)}
+                      aria-label={`Select ${car.title} for bulk renewal`}
+                      className="mt-1 h-4 w-4 accent-brand" />
+                  ) : null}
+                  <div><h2 className="font-bold text-gray-900">{car.title}</h2><p className="mt-1 text-xs text-gray-500">{car.provider_business_name || car.provider_name || 'Provider not assigned'}</p></div>
+                </div>
+                <span className={`rounded-full px-2 py-1 text-xs font-semibold ${car.status === 'pending_review' ? 'bg-warning-tint text-warning-text' : 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[car.status] || car.status}</span>
+              </div>
               <p className="mt-4 text-lg font-extrabold text-gray-900">{fmtMoney(car.daily_rate, car.currency || 'RWF')} <span className="text-xs font-medium text-gray-500">provider rate / day</span></p>
               <p className="mt-2 text-xs text-gray-500">Rates and availability are confirmed directly by the provider.</p>
 
@@ -222,8 +364,7 @@ export default function RentalFleetPage() {
                   <p className="text-xs font-bold text-info">Provider-proposed — awaiting your review</p>
                   <p className="mt-0.5 text-[11px] text-info">
                     {car.provider_business_name || car.provider_name || 'The provider'} proposed this vehicle from
-                    their own passing inspection. Check the inspection and images, record a listing subscription
-                    below, then set the inventory status to Active to publish it.
+                    their own passing inspection. Check the inspection and images below, then approve it.
                   </p>
                 </div>
               ) : null}
@@ -244,17 +385,34 @@ export default function RentalFleetPage() {
               ) : null}
 
               {car.subscription_status !== 'active' ? (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    inputMode="numeric" placeholder="Amount (RWF)"
-                    value={renewAmount[car.id] ?? defaultSubAmount}
-                    onChange={(e) => setRenewAmount({ ...renewAmount, [car.id]: formatRwfInput(e.target.value) })}
-                    className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 px-3 text-sm tabular-nums focus:border-brand focus:outline-none"
-                  />
-                  <button onClick={() => renew(car)} disabled={renewing === car.id}
-                    className="whitespace-nowrap rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
-                    {renewing === car.id ? 'Saving…' : 'Pay 30 days'}
-                  </button>
+                <div className="mt-2">
+                  <div className="flex gap-2">
+                    <input
+                      inputMode="numeric" placeholder="Amount (RWF)"
+                      value={renewAmount[car.id] ?? defaultSubAmount}
+                      onChange={(e) => setRenewAmount({ ...renewAmount, [car.id]: formatRwfInput(e.target.value) })}
+                      className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 px-3 text-sm tabular-nums focus:border-brand focus:outline-none"
+                    />
+                    {car.status === 'pending_review' ? (
+                      <button onClick={() => approveAndActivate(car)} disabled={renewing === car.id}
+                        className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white hover:bg-brand-light disabled:opacity-50">
+                        {renewing === car.id ? 'Activating…' : 'Approve & activate'}
+                      </button>
+                    ) : (
+                      <button onClick={() => renew(car)} disabled={renewing === car.id}
+                        className="whitespace-nowrap rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                        {renewing === car.id ? 'Saving…' : 'Pay 30 days'}
+                      </button>
+                    )}
+                  </div>
+                  {/* Kept for the case where approving is not today's decision —
+                      mirrors Listings' "Approve only" escape hatch. */}
+                  {car.status === 'pending_review' ? (
+                    <button type="button" onClick={() => renew(car)} disabled={renewing === car.id}
+                      className="mt-1.5 text-[11px] font-semibold text-content-muted underline underline-offset-2 hover:text-content disabled:opacity-50">
+                      Just record the payment — decide about publishing later
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 
