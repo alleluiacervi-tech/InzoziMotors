@@ -1,12 +1,12 @@
 {
   "artboards": [
-    { "file": "Before.dc.html", "title": "Today — every card the same weight", "x": 0, "y": 0, "w": 1216, "h": 1500 },
-    { "file": "Main.dc.html", "title": "Reranked — one focal object, direction everywhere", "x": 1340, "y": 0, "w": 1216, "h": 1760 },
-    { "file": "Primitives.dc.html", "title": "The four primitives", "x": 0, "y": 1900, "w": 1000, "h": 1080 }
+    { "file": "Before.dc.html", "title": "Today — every card the same weight", "x": 0, "y": 0, "w": 1216, "h": 1520 },
+    { "file": "Main.dc.html", "title": "Reranked — one focal object, direction everywhere", "x": 1340, "y": 0, "w": 1216, "h": 1860 },
+    { "file": "Primitives.dc.html", "title": "The four primitives", "x": 0, "y": 2020, "w": 1000, "h": 1080 }
   ],
   "annotations": [
-    { "id": "note-before", "x": 0, "y": -150, "w": 420, "text": "BEFORE\nFive cards, one material. The Action Center, the charts and Quick actions all read as equally important, so nothing is. No trend, no deltas, largest type tier unused." },
-    { "id": "note-after", "x": 1340, "y": -150, "w": 460, "text": "AFTER\nThree tiers of material. A today strip answers 'how is the business moving', the Action Center is the single focal object, and every counter carries direction. Red stays reserved for money and primary actions." }
+    { "id": "note-before", "x": 0, "y": -150, "w": 420, "text": "BEFORE\nFive cards, one material. The Action Center, the charts and Quick actions all read as equally important, so nothing is. No trend, no deltas, largest type tier unused, and brand red spent on decorative bullets." },
+    { "id": "note-after", "x": 1340, "y": -150, "w": 460, "text": "AFTER\nThree tiers of material. A today strip answers 'how is the business moving', the Action Center is the single focal object, and every counter carries direction. Red is spent on three things only: money, the primary action, and the 2px hairline marking that one focal object." }
   ],
   "launch": { "view": "canvas" }
 }

@@ -493,8 +493,12 @@ export default function DashboardPage() {
               {activity.slice(0, 6).map((item, index) => (
                 <li key={`${item.kind}-${item.happened_at}-${index}`} className="relative">
                   <Link href={item.href} className="flex items-baseline gap-3 py-2.5 pl-4">
+                    {/* Ink, not brand red: "this one is the most recent" is
+                        information, and red on this product means money, a
+                        primary action or something blocking. Size and weight
+                        carry the emphasis instead. */}
                     <span
-                      className={`absolute top-4 rounded-full border-2 border-surface ${index === 0 ? '-left-[5px] h-[7px] w-[7px] bg-brand' : '-left-1 h-[5px] w-[5px] bg-gray-400'}`}
+                      className={`absolute top-4 rounded-full border-2 border-surface ${index === 0 ? '-left-[5px] h-[7px] w-[7px] bg-ink-900' : '-left-1 h-[5px] w-[5px] bg-gray-400'}`}
                       aria-hidden
                     />
                     <span className="min-w-0 flex-1">
