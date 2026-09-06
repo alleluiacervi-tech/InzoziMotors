@@ -289,3 +289,123 @@ test('a draft refuses anything the completion would reject', async () => {
     .set('Authorization', `Bearer ${outsider.token}`)
     .send({ checklist_results: { [REQUIRED_ITEM_IDS[0]]: 'pass' } }).expect(403);
 });
+
+// ─── Bulk attestation ─────────────────────────────────────────────────────────
+// A category may be filled in one action, but only the non-critical items in
+// it — and it must say, permanently, that this happened rather than pretend
+// every item was tapped by hand.
+
+test('attesting a category fills only the unrated non-critical items, and is recorded', async () => {
+  const adminUser = await register();
+  const admin = await makeAdmin(adminUser);
+  const auth = { Authorization: `Bearer ${admin}` };
+  const inspection = await booked(admin);
+  await api().post(`/inspections/${inspection.id}/start`).set(auth).expect(200);
+
+  // 'interior' is entirely non-critical (20 of 20). Flag one item by hand
+  // first — the attestation must respect it rather than overwrite it back to
+  // pass, whichever order the two actions land in.
+  await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: { i03: 'flag' } }).expect(200);
+
+  const attested = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ attest_category: 'interior' }).expect(200);
+  assert.equal(attested.body.recorded, 20, 'the flagged item plus the 19 filled by attestation');
+  assert.equal(attested.body.checklist_attestations.interior.count, 19, 'the already-flagged item is not re-counted');
+  assert.equal(attested.body.checklist_attestations.interior.by, adminUser.id, 'the acting admin is recorded, not just the count');
+  assert.equal(typeof attested.body.checklist_attestations.interior.at, 'string');
+
+  const { rows } = await pool.query('SELECT checklist_results, checklist_attestations FROM inspections WHERE id=$1', [inspection.id]);
+  assert.equal(rows[0].checklist_results.i03, 'flag', 'the hand-entered flag survives the attestation');
+  for (const id of ['i01', 'i02', 'i04', 'i05', 'i20']) assert.equal(rows[0].checklist_results[id], 'pass');
+  assert.equal(rows[0].checklist_attestations.interior.count, 19);
+
+  // A decision on twenty items at once is exactly the kind of thing the audit
+  // log exists for — unlike the individual taps above, which wrote nothing.
+  const audit = await pool.query(
+    "SELECT metadata FROM admin_audit_log WHERE target_id=$1 AND action='inspection.checklist_attested'",
+    [inspection.id]
+  );
+  assert.equal(audit.rows.length, 1);
+  assert.equal(audit.rows[0].metadata.category, 'interior');
+  assert.equal(audit.rows[0].metadata.count, 19);
+
+  // Re-attesting the same, now-full category is a no-op, not an error.
+  const again = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ attest_category: 'interior' }).expect(200);
+  assert.equal(again.body.checklist_attestations.interior.count, 0);
+});
+
+test('a critical item is never filled by attestation, even for its own category', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const inspection = await booked(admin);
+  await api().post(`/inspections/${inspection.id}/start`).set(auth).expect(200);
+
+  // 'brakes' is 14 critical, 11 not. Attesting it must fill exactly the 11.
+  const attested = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ attest_category: 'brakes' }).expect(200);
+  assert.equal(attested.body.checklist_attestations.brakes.count, 11);
+
+  const { rows } = await pool.query('SELECT checklist_results FROM inspections WHERE id=$1', [inspection.id]);
+  const nonCritical = ['b07', 'b08', 'b12', 'b13', 'b15', 'b16', 'b18', 'b21', 'b22', 'b23', 'b24'];
+  const critical = ['b01', 'b02', 'b03', 'b04', 'b05', 'b06', 'b09', 'b10', 'b11', 'b14', 'b17', 'b19', 'b20', 'b25'];
+  for (const id of nonCritical) assert.equal(rows[0].checklist_results[id], 'pass');
+  for (const id of critical) assert.equal(rows[0].checklist_results[id], undefined, `${id} is critical and must stay unanswered`);
+
+  // The completion gate still demands every critical item individually —
+  // attesting the rest of the checklist changes nothing about that.
+  const restOfChecklist = Object.fromEntries(
+    REQUIRED_ITEM_IDS.filter((itemId) => !critical.includes(itemId) && itemId !== 'i03').map((itemId) => [itemId, 'pass']),
+  );
+  await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: restOfChecklist }).expect(200);
+  const short = await api().post(`/inspections/${inspection.id}/complete`).set(auth)
+    .send({ checklist_results: {} }).expect(400);
+  assert.equal(short.body.code, 'INSPECTION_CHECKLIST_INCOMPLETE');
+  assert.ok(critical.every((id) => short.body.missing.includes(id)), 'every unattested critical brake item is still missing');
+});
+
+test('a category can combine an explicit verdict with an attestation in one request', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const inspection = await booked(admin);
+  await api().post(`/inspections/${inspection.id}/start`).set(auth).expect(200);
+
+  // The explicit verdict in this same request must win over the attestation,
+  // regardless of which the server applies first internally.
+  const combined = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ checklist_results: { i07: 'fail' }, attest_category: 'interior' }).expect(200);
+  assert.equal(combined.body.checklist_attestations.interior.count, 19);
+
+  const { rows } = await pool.query('SELECT checklist_results FROM inspections WHERE id=$1', [inspection.id]);
+  assert.equal(rows[0].checklist_results.i07, 'fail');
+});
+
+test('attestation refuses an unknown category, and a category with only critical items', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const inspection = await booked(admin);
+  await api().post(`/inspections/${inspection.id}/start`).set(auth).expect(200);
+
+  const unknown = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ attest_category: 'suspension' }).expect(400);
+  assert.match(unknown.body.error, /Unknown checklist category/);
+
+  // Every category in the current checklist has at least one non-critical
+  // item, so the "nothing attestable" refusal is exercised at the unit level
+  // (inspection-policy.test.js) rather than through a real category here.
+});
+
+test('a completed inspection refuses attestation just like any other edit', async () => {
+  const admin = await makeAdmin(await register());
+  const auth = { Authorization: `Bearer ${admin}` };
+  const inspection = await booked(admin);
+  await api().post(`/inspections/${inspection.id}/start`).set(auth).expect(200);
+  await api().post(`/inspections/${inspection.id}/complete`).set(auth)
+    .send({ checklist_results: checklist() }).expect(200);
+
+  const refused = await api().patch(`/inspections/${inspection.id}/checklist`).set(auth)
+    .send({ attest_category: 'interior' }).expect(409);
+  assert.equal(refused.body.code, 'INSPECTION_ALREADY_COMPLETE');
+});

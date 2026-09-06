@@ -91,6 +91,17 @@ export default function SubmissionsPage() {
       })
   }, [items, query, order])
 
+  // "What date?" is a real decision, so it is never overridden once an
+  // operator has picked one — but the first time the form opens in a
+  // session, tomorrow (skipping the weekend) is right often enough that
+  // requiring it to be typed every single time was pure friction.
+  function nextBusinessDay(): string {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1)
+    return d.toISOString().slice(0, 10)
+  }
+
   function age(sub: { submitted_at: string; status: string }) {
     const hours = Math.max(0, Math.floor((Date.now() - new Date(sub.submitted_at).getTime()) / 3_600_000))
     if (hours < 24) return { label: `${hours}h waiting`, overdue: false }
@@ -366,7 +377,11 @@ export default function SubmissionsPage() {
                 {sub.status === 'under_review' && (
                   <>
                     <button
-                      onClick={() => setShowScheduleFor(showScheduleFor === sub.id ? null : sub.id)}
+                      onClick={() => {
+                        const next = showScheduleFor === sub.id ? null : sub.id
+                        setShowScheduleFor(next)
+                        if (next && !schedDate) setSchedDate(nextBusinessDay())
+                      }}
                       disabled={actionId === sub.id}
                       className="px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
                     >

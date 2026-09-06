@@ -33,6 +33,7 @@ const {
   REQUIRED_ITEM_IDS,
   ITEM_BY_ID,
   VERDICTS,
+  attestableItemIds,
 } = require('../lib/inspection-policy');
 
 /** Names every entry a draft may not contain. Empty means the draft is safe to
@@ -1027,21 +1028,46 @@ router.post('/:id/start', requireAdmin, requireUuid('id'), async (req, res) => {
 // cannot publish and cannot touch a completed inspection — POST /:id/complete
 // remains the single place any of that happens, and it still demands the full
 // canonical checklist. A draft is a notebook, not a verdict.
+//
+// Body accepts checklist_results (individual taps, as before), or
+// attest_category (bulk-fill the non-critical items in one category), or
+// both — explicit taps in the same request are applied first, so an inspector
+// can flag one item then attest the rest of its category in a single save.
 router.patch('/:id/checklist', requireAdmin, requireUuid('id'), async (req, res) => {
   const results = req.body && req.body.checklist_results;
-  if (!results || typeof results !== 'object' || Array.isArray(results)) {
+  const attestCategory = req.body && req.body.attest_category;
+  if (results !== undefined && (typeof results !== 'object' || results === null || Array.isArray(results))) {
     return res.status(400).json({ error: 'Send checklist_results as an object of item id to verdict' });
+  }
+  if (attestCategory !== undefined && typeof attestCategory !== 'string') {
+    return res.status(400).json({ error: 'attest_category must be a category id' });
+  }
+  if (!results && !attestCategory) {
+    return res.status(400).json({ error: 'Send checklist_results, attest_category, or both' });
   }
   // Partial is expected; malformed is not. Unknown ids and invalid verdicts are
   // refused here rather than silently stored, so a draft can never carry
   // something the completion would later reject.
-  const invalid = validateChecklistDraft(results);
+  const invalid = results ? validateChecklistDraft(results) : [];
   if (invalid.length) {
     return res.status(400).json({
       error: `Unrecognised checklist entries: ${invalid.slice(0, 5).join(', ')}`,
       code: 'INSPECTION_CHECKLIST_INVALID',
       invalid,
     });
+  }
+  // The set an attestation is allowed to fill is decided here, from the
+  // policy module — never by what the client sends. A critical item is never
+  // in this list, whatever category it belongs to.
+  let attestableIds = null;
+  if (attestCategory !== undefined) {
+    attestableIds = attestableItemIds(attestCategory);
+    if (attestableIds === null) {
+      return res.status(400).json({ error: `Unknown checklist category: ${attestCategory}` });
+    }
+    if (!attestableIds.length) {
+      return res.status(400).json({ error: 'Every item in this category is critical and must be checked individually' });
+    }
   }
 
   try {
@@ -1064,21 +1090,55 @@ router.patch('/:id/checklist', requireAdmin, requireUuid('id'), async (req, res)
         e.code = 'INSPECTION_ASSIGNED_TO_ANOTHER_ADMIN'; throw e;
       }
 
+      const existing = inspection.checklist_results || {};
+      const delta = { ...(results || {}) };
+      let attestation = null;
+      if (attestableIds) {
+        // Only fills a gap. An item already answered — individually, or by an
+        // earlier attestation — is never overwritten by this or any later one,
+        // so an inspector who goes back and flags one item afterwards keeps
+        // that flag no matter which order the two actions happened in.
+        const alreadyAnswered = new Set([...Object.keys(existing), ...Object.keys(delta)]);
+        const toFill = attestableIds.filter((itemId) => !alreadyAnswered.has(itemId));
+        for (const itemId of toFill) delta[itemId] = 'pass';
+        attestation = {
+          at: new Date().toISOString(),
+          by: req.user.id,
+          count: toFill.length,
+        };
+      }
+
       // Merged, not replaced: two tabs or a flaky connection must not be able
       // to erase verdicts already recorded by sending a smaller object.
       const { rows } = await client.query(
         `UPDATE inspections
-            SET checklist_results = COALESCE(checklist_results, '{}'::jsonb) || $1::jsonb
-          WHERE id = $2 RETURNING checklist_results`,
-        [JSON.stringify(results), req.params.id]
+            SET checklist_results = COALESCE(checklist_results, '{}'::jsonb) || $1::jsonb,
+                checklist_attestations = CASE WHEN $3::text IS NULL THEN checklist_attestations
+                  ELSE checklist_attestations || jsonb_build_object($3::text, $4::jsonb) END
+          WHERE id = $2 RETURNING checklist_results, checklist_attestations`,
+        [JSON.stringify(delta), req.params.id, attestCategory ?? null, attestation ? JSON.stringify(attestation) : null]
       );
-      return rows[0].checklist_results;
+      if (attestation) {
+        await recordAdminAction(client, {
+          actorId: req.user.id, action: 'inspection.checklist_attested', targetType: 'inspection', targetId: inspection.id,
+          summary: `Attested "${attestCategory}" — ${attestation.count} item(s) marked pass`,
+          metadata: { category: attestCategory, count: attestation.count },
+        });
+      }
+      return rows[0];
     });
 
-    // No audit entry: a draft is not a decision, and one row per tap would bury
-    // the log that records the decisions.
-    const recorded = Object.keys(saved).length;
-    res.json({ saved: true, recorded, remaining: Math.max(0, REQUIRED_ITEM_IDS.length - recorded) });
+    // No per-tap audit entry: a draft is not a decision, and one row per tap
+    // would bury the log that records the decisions. An attestation is the
+    // one exception — it IS a decision, on multiple items at once, and is
+    // logged above.
+    const recorded = Object.keys(saved.checklist_results || {}).length;
+    res.json({
+      saved: true,
+      recorded,
+      remaining: Math.max(0, REQUIRED_ITEM_IDS.length - recorded),
+      checklist_attestations: saved.checklist_attestations || {},
+    });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     log.error('checklist draft save failed', { error: err.message });

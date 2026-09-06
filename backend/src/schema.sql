@@ -222,6 +222,10 @@ CREATE TABLE IF NOT EXISTS inspections (
   started_at        TIMESTAMPTZ,
   completed_at      TIMESTAMPTZ,
   checklist_results JSONB,               -- canonical item id -> pass|flag|fail
+  -- Which categories were answered by a single attestation rather than item by
+  -- item, and by whom (migration 0042). Only NON-critical items can ever be
+  -- filled this way; the server decides which, from inspection-policy.js.
+  checklist_attestations JSONB NOT NULL DEFAULT '{}'::jsonb,
   checklist_version TEXT,
   score             INT CHECK (score IS NULL OR score BETWEEN 0 AND 150),
   passed            BOOLEAN NOT NULL DEFAULT FALSE,
