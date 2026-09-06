@@ -98,10 +98,87 @@ export function Card({ children, className = '', id }: { children: ReactNode; cl
   )
 }
 
+// ─── Direction ───────────────────────────────────────────────────────────────
+// A count says how much is waiting. It cannot say whether that is better or
+// worse than yesterday, which is the fact that decides what to do about it.
+
+/** Which way this number is supposed to move. A backlog falling is good news;
+ *  listings published falling is not. Without this the same arrow would have to
+ *  mean both, so it would mean nothing. */
+export type GoodDirection = 'up' | 'down'
+
+export type Trend = {
+  series: number[]
+  delta: number
+  goodDirection: GoodDirection
+  kind?: 'flow' | 'backlog'
+  /** What the current window totalled. Only a flow has one — a backlog's
+   *  present value is the count on the tile, not a sum over days. */
+  recent?: number
+  previous?: number | null
+}
+
+/**
+ * A movement, coloured by whether it is the movement you wanted.
+ *
+ * Deliberately NOT red when the news is bad: red is reserved across this
+ * product for money, primary actions and blocking states, and a backlog that
+ * grew by two is none of those. Amber carries "look at this"; red would
+ * cry wolf on every ordinary Tuesday.
+ */
+export function Delta({ value, goodDirection, suffix = '' }: {
+  value: number
+  goodDirection: GoodDirection
+  suffix?: string
+}) {
+  if (!value) {
+    return <span className="text-caption font-semibold text-content-muted">no change</span>
+  }
+  const rising = value > 0
+  const good = rising === (goodDirection === 'up')
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-caption font-bold ${good ? 'text-success-text' : 'text-warning-text'}`}>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d={rising ? 'M6 15l6-6 6 6' : 'M18 9l-6 6-6-6'} />
+      </svg>
+      {Math.abs(value)}{suffix}
+    </span>
+  )
+}
+
+/**
+ * Fourteen days of shape, in the space of a line of text.
+ *
+ * No axis, no labels, no tooltip — it is not there to be read off, it is there
+ * so a glance answers "steady, climbing or falling" before the number is even
+ * parsed. A flat series still draws a flat line rather than disappearing.
+ */
+export function Sparkline({ series, className = '' }: { series: number[]; className?: string }) {
+  if (series.length < 2) return null
+  const max = Math.max(...series)
+  const min = Math.min(...series)
+  const span = max - min || 1
+  const step = 100 / (series.length - 1)
+  const points = series
+    .map((value, index) => `${(index * step).toFixed(2)},${(22 - ((value - min) / span) * 20).toFixed(2)}`)
+    .join(' ')
+  return (
+    <svg
+      viewBox="0 0 100 24" preserveAspectRatio="none" fill="none" aria-hidden
+      className={`h-6 w-full text-gray-400 ${className}`}
+    >
+      <polyline
+        points={points} stroke="currentColor" strokeWidth="1.6"
+        strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  )
+}
+
 // ─── Stat tile ───────────────────────────────────────────────────────────────
 
 export function StatCard({
-  label, value, sub, icon, tone = 'neutral', href,
+  label, value, sub, icon, tone = 'neutral', href, trend,
 }: {
   label: string
   value: string | number
@@ -109,6 +186,7 @@ export function StatCard({
   icon: IconName
   tone?: 'neutral' | 'brand' | 'success' | 'warning' | 'info'
   href?: string
+  trend?: Trend
 }) {
   const tones = {
     neutral: 'bg-surface-alt text-content-secondary',
@@ -117,7 +195,23 @@ export function StatCard({
     warning: 'bg-warning-tint text-warning-text',
     info: 'bg-info-tint text-info',
   }
-  const body = (
+  // With a trend the icon becomes a quiet corner mark rather than a tinted
+  // block: four identical coloured squircles in a row were the loudest thing
+  // on the dashboard and the least informative.
+  const body = trend ? (
+    <div className="flex flex-col gap-3 p-5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="truncate text-label font-semibold text-content-muted">{label}</p>
+        <span className="shrink-0 text-gray-400"><Icon name={icon} size={15} /></span>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <p className="text-stat font-extrabold tabular-nums text-content">{value}</p>
+        <Delta value={trend.delta} goodDirection={trend.goodDirection} />
+      </div>
+      <Sparkline series={trend.series} />
+      {sub ? <p className="text-caption text-content-muted">{sub}</p> : null}
+    </div>
+  ) : (
     <div className="flex items-start gap-4 p-5">
       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}>
         <Icon name={icon} size={19} />
@@ -297,35 +391,55 @@ export function AsyncState({
 
 export function BarChart({
   data, height = 140, formatValue = (v) => String(v), emptyLabel = 'No data yet',
+  compare = false,
 }: {
   data: { label: string; value: number }[]
   height?: number
   formatValue?: (v: number) => string
   emptyLabel?: string
+  /** Draw each column against the one before it as a ghost bar. A bar on its
+   *  own says how big; a bar beside its predecessor says which way things are
+   *  going, which is the only reason to look at a time series at all. */
+  compare?: boolean
 }) {
   const max = Math.max(...data.map((d) => d.value), 0)
   if (!data.length || max === 0) {
     return <EmptyState icon="chart" title={emptyLabel} description="This chart fills in as real activity is recorded." />
   }
+  const plot = height - 40
   return (
-    <div className="flex items-end gap-2" style={{ height }}>
-      {data.map((d) => {
-        const h = Math.max(6, Math.round((d.value / max) * (height - 40)))
-        return (
-          <div key={d.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5">
-            <span className="text-micro font-bold text-content-secondary">{formatValue(d.value)}</span>
-            <div
-              // A bar is a graphic, so 3:1 against the surface is the floor.
-              // gray-300 measured 1.27:1 — present in the DOM, absent to the
-              // eye. Solid content-muted is 4.90:1 and still reads as clearly
-              // secondary next to the ink-800 maximum at 15.5:1.
-              className={`w-full max-w-[44px] rounded-t-md ${d.value === max ? 'bg-ink-800' : 'bg-content-muted'}`}
-              style={{ height: h }}
-            />
-            <span className="w-full truncate text-center text-micro text-content-muted">{d.label}</span>
-          </div>
-        )
-      })}
+    <div className="relative" style={{ height }}>
+      {/* One dashed line at the maximum and one solid rule at the floor. Both
+          sit behind the bars so a value can be read against something rather
+          than floating. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-line" />
+      <div className="pointer-events-none absolute inset-x-0 border-t border-line" style={{ bottom: 18 }} />
+      <div className="flex h-full items-end gap-2">
+        {data.map((d, index) => {
+          const h = Math.max(6, Math.round((d.value / max) * plot))
+          const previous = compare && index > 0 ? data[index - 1].value : null
+          const ghost = previous == null ? 0 : Math.max(3, Math.round((previous / max) * plot))
+          return (
+            <div key={d.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5">
+              <span className="text-micro font-bold tabular-nums text-content-secondary">{formatValue(d.value)}</span>
+              <div className="flex w-full items-end justify-center gap-[3px]">
+                {previous == null ? null : (
+                  <div className="w-2 shrink-0 rounded-t-sm bg-line-soft" style={{ height: ghost }} aria-hidden />
+                )}
+                <div
+                  // A bar is a graphic, so 3:1 against the surface is the floor.
+                  // gray-300 measured 1.27:1 — present in the DOM, absent to the
+                  // eye. Solid content-muted is 4.90:1 and still reads as clearly
+                  // secondary next to the ink-800 maximum at 15.5:1.
+                  className={`w-full max-w-[36px] rounded-t-md ${d.value === max ? 'bg-ink-800' : 'bg-content-muted'}`}
+                  style={{ height: h }}
+                />
+              </div>
+              <span className="w-full truncate text-center text-micro text-content-muted">{d.label}</span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

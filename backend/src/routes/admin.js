@@ -386,6 +386,127 @@ router.get('/stats', requireAdmin, async (req, res) => {
     const gmvRow = gmvRes.rows.find((r) => r.currency === gmvCurrency);
     const feeRow = feesRes.rows.find((r) => r.currency === feeCurrency);
 
+    // ─── Direction ───────────────────────────────────────────────────────────
+    // A queue count answers "how much is waiting" and nothing else. Whether the
+    // backlog is growing or shrinking is the fact that decides what an operator
+    // does about it, and until now the dashboard could not say.
+    //
+    // Everything below is DERIVED from timestamps that already exist, never
+    // from a stored snapshot: a submission was in the backlog on day D if it
+    // was filed before D ended and had not been reviewed by then, and the same
+    // reconstruction works for rental inquiries and identity checks. Listings
+    // are the exception — a car that was paused or archived leaves no timestamp
+    // behind, so its stock on a past day cannot be rebuilt honestly. That one
+    // is reported as a FLOW (how many were published each day) and labelled as
+    // such, rather than an approximated stock presented as fact.
+    const backlogSeries = (sql) => pool.query(
+      `SELECT to_char(d, 'YYYY-MM-DD') AS day,
+              (${sql}) AS value
+         FROM generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, INTERVAL '1 day') d
+        ORDER BY d`
+    );
+
+    const [publishedRes, submissionBacklogRes, inquiryBacklogRes, idBacklogRes, paceRes, valueRes] =
+      await Promise.all([
+        pool.query(
+          `SELECT to_char(d, 'YYYY-MM-DD') AS day, COUNT(c.id) AS value
+             FROM generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, INTERVAL '1 day') d
+             LEFT JOIN cars c
+               ON c.listed_at >= d AND c.listed_at < d + INTERVAL '1 day'
+            GROUP BY d ORDER BY d`
+        ),
+        backlogSeries(
+          `SELECT COUNT(*) FROM submissions s
+            WHERE s.submitted_at < d + INTERVAL '1 day'
+              AND (s.reviewed_at IS NULL OR s.reviewed_at >= d + INTERVAL '1 day')`
+        ),
+        backlogSeries(
+          `SELECT COUNT(*) FROM rental_inquiries ri
+            WHERE ri.created_at < d + INTERVAL '1 day'
+              AND (ri.status = 'new' OR ri.updated_at >= d + INTERVAL '1 day')`
+        ),
+        backlogSeries(
+          `SELECT COUNT(*) FROM users u
+            WHERE u.id_submitted_at IS NOT NULL
+              AND u.id_submitted_at < d + INTERVAL '1 day'
+              AND (u.id_verified_at IS NULL OR u.id_verified_at >= d + INTERVAL '1 day')`
+        ),
+        // The promise the product actually makes, measured rather than claimed:
+        // how long a seller waits between filing and being on the marketplace.
+        pool.query(
+          `SELECT
+             percentile_cont(0.5) WITHIN GROUP (
+               ORDER BY EXTRACT(EPOCH FROM (c.listed_at - s.submitted_at)) / 86400.0
+             ) FILTER (WHERE c.listed_at >= NOW() - INTERVAL '30 days')  AS current_days,
+             percentile_cont(0.5) WITHIN GROUP (
+               ORDER BY EXTRACT(EPOCH FROM (c.listed_at - s.submitted_at)) / 86400.0
+             ) FILTER (WHERE c.listed_at <  NOW() - INTERVAL '30 days')  AS previous_days,
+             COUNT(*) FILTER (WHERE c.listed_at >= NOW() - INTERVAL '30 days') AS sample_size
+           FROM submissions s
+           JOIN cars c ON c.id = s.car_id
+          WHERE c.listed_at IS NOT NULL
+            AND c.listed_at >= NOW() - INTERVAL '60 days'
+            AND c.listed_at > s.submitted_at`
+        ),
+        // Grouped by currency for the same reason the GMV query is: a summed
+        // total across currencies is money in none of them.
+        pool.query(
+          `SELECT currency, COALESCE(SUM(price), 0) AS total, COUNT(*) AS listings
+             FROM cars WHERE status = 'live' GROUP BY currency`
+        ),
+      ]);
+
+    const numbers = (rows) => rows.map((row) => parseInt(row.value, 10) || 0);
+    const days = publishedRes.rows.map((row) => row.day);
+    const sum = (list) => list.reduce((total, n) => total + n, 0);
+
+    /** A backlog's movement is the difference between where it stands today and
+     *  where it stood a week ago. A flow's is this week's total against last
+     *  week's. Two different questions, so two different subtractions. */
+    const backlog = (series, goodDirection = 'down') => ({
+      kind: 'backlog',
+      series,
+      delta: series.length >= 8 ? series[series.length - 1] - series[series.length - 8] : 0,
+      previous: series.length >= 8 ? series[series.length - 8] : null,
+      goodDirection,
+    });
+    const flow = (series, goodDirection = 'up') => ({
+      kind: 'flow',
+      series,
+      delta: sum(series.slice(-7)) - sum(series.slice(-14, -7)),
+      previous: sum(series.slice(-14, -7)),
+      recent: sum(series.slice(-7)),
+      goodDirection,
+    });
+
+    const trends = {
+      days,
+      liveListings:           flow(numbers(publishedRes.rows)),
+      pendingSubmissions:     backlog(numbers(submissionBacklogRes.rows)),
+      pendingInquiries:       backlog(numbers(inquiryBacklogRes.rows)),
+      pendingIdVerifications: backlog(numbers(idBacklogRes.rows)),
+    };
+
+    const paceRow = paceRes.rows[0] || {};
+    const valueCurrency = pickCurrency(valueRes.rows);
+    const valueRow = valueRes.rows.find((row) => row.currency === valueCurrency);
+    const round1 = (value) => (value == null ? null : Math.round(Number(value) * 10) / 10);
+    const pace = {
+      // Null rather than zero when nothing has been published in the window —
+      // "0 days to publish" would be a lie an operator could act on.
+      medianDaysToPublish:         round1(paceRow.current_days),
+      medianDaysToPublishPrevious: round1(paceRow.previous_days),
+      sampleSize:                  parseInt(paceRow.sample_size || 0, 10),
+      marketplaceValue:            parseInt(valueRow?.total || 0, 10),
+      marketplaceValueCurrency:    valueCurrency,
+      marketplaceListings:         parseInt(valueRow?.listings || 0, 10),
+      valueByCurrency: valueRes.rows.map((row) => ({
+        currency: row.currency,
+        total: parseInt(row.total, 10),
+        listings: parseInt(row.listings, 10),
+      })),
+    };
+
     res.json({
       liveListings:          parseInt(listingsRes.rows[0].count),
       pendingSubmissions:    parseInt(submissionsRes.rows[0].count),
@@ -405,6 +526,8 @@ router.get('/stats', requireAdmin, async (req, res) => {
       feesByCurrency: feesRes.rows.map((r) => ({
         currency: r.currency, earned: parseInt(r.earned), due: parseInt(r.due),
       })),
+      trends,
+      pace,
     });
   } catch (err) {
     log.error(err.message);

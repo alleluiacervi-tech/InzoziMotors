@@ -1,0 +1,315 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #CC050F; text-decoration: none; }
+    a:hover { color: #A50410; }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="width: 1216px; box-sizing: border-box; background: #FAF8F8; padding: 32px; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; color: #1B1313; -webkit-font-smoothing: antialiased;">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px;">
+    <div>
+      <h1 style="margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -0.02em; font-weight: 800;">Dashboard</h1>
+      <p style="margin: 4px 0 0; font-size: 13px; color: #7A6E6E;">Everything moving through the pipeline right now.</p>
+    </div>
+    <a href="#" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 12px; background: #CC050F; color: #FFFFFF; font-size: 14px; font-weight: 700; box-shadow: 0 2px 8px rgba(26,20,19,0.06);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New listing
+    </a>
+  </div>
+
+  <!-- Action Center — same material as every other card -->
+  <div style="background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); overflow: hidden; margin-bottom: 24px;">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #F0EDED;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 12px; background: #F9EDED; color: #CC050F;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        </span>
+        <div>
+          <h2 style="margin: 0; font-size: 14px; font-weight: 800;">Action Center</h2>
+          <p style="margin: 0; font-size: 12px; color: #7A6E6E;">Your live operating queue, ordered by urgency.</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="border-radius: 999px; background: #FBECEF; color: #B91C1C; padding: 4px 10px; font-size: 12px; font-weight: 700;">2 urgent</span>
+        <span style="border-radius: 999px; background: #FEF3C7; color: #B45309; padding: 4px 10px; font-size: 12px; font-weight: 700;">7 attention</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 4px; padding: 12px 20px; border-bottom: 1px solid #F0EDED;">
+      <span style="border-radius: 8px; background: #17120F; color: #FFFFFF; padding: 6px 12px; font-size: 12px; font-weight: 700;">All <span class="num" style="opacity: 0.7;">14</span></span>
+      <span style="border-radius: 8px; color: #7A6E6E; padding: 6px 12px; font-size: 12px; font-weight: 700;">Urgent <span class="num" style="opacity: 0.7;">2</span></span>
+      <span style="border-radius: 8px; color: #7A6E6E; padding: 6px 12px; font-size: 12px; font-weight: 700;">Attention <span class="num" style="opacity: 0.7;">7</span></span>
+    </div>
+
+    <div style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px;">
+        <span style="width: 10px; height: 10px; border-radius: 999px; background: #B91C1C; flex-shrink: 0;"></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 700;">Land Cruiser Prado inspected in six minutes</span>
+            <span style="border-radius: 999px; background: #FBECEF; color: #B91C1C; padding: 2px 8px; font-size: 11px; font-weight: 700;">Urgent</span>
+          </span>
+          <span style="font-size: 12px; color: #7A6E6E;">Inspection · scored 92/150 far below the twenty-minute floor</span>
+        </span>
+        <span class="num" style="font-size: 12px; font-weight: 600; color: #7A6E6E;">3d waiting</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A6E6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F0EDED;">
+        <span style="width: 10px; height: 10px; border-radius: 999px; background: #B91C1C; flex-shrink: 0;"></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 700;">Nyarutarama Center is overbooked on Thursday</span>
+            <span style="border-radius: 999px; background: #FBECEF; color: #B91C1C; padding: 2px 8px; font-size: 11px; font-weight: 700;">Urgent</span>
+          </span>
+          <span style="font-size: 12px; color: #7A6E6E;">Capacity · nine appointments against eight slots</span>
+        </span>
+        <span class="num" style="font-size: 12px; font-weight: 600; color: #7A6E6E;">2d waiting</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A6E6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F0EDED;">
+        <span style="width: 10px; height: 10px; border-radius: 999px; background: #D97706; flex-shrink: 0;"></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 700;">Kigali Rides listing lapses in two days</span>
+            <span style="border-radius: 999px; background: #FEF3C7; color: #B45309; padding: 2px 8px; font-size: 11px; font-weight: 700;">Attention</span>
+          </span>
+          <span style="font-size: 12px; color: #7A6E6E;">Rental subscription · Toyota Hiace, paid to 08 September</span>
+        </span>
+        <span class="num" style="font-size: 12px; font-weight: 600; color: #7A6E6E;">1d waiting</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A6E6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F0EDED;">
+        <span style="width: 10px; height: 10px; border-radius: 999px; background: #D97706; flex-shrink: 0;"></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 700;">Identity check waiting on a decision</span>
+            <span style="border-radius: 999px; background: #FEF3C7; color: #B45309; padding: 2px 8px; font-size: 11px; font-weight: 700;">Attention</span>
+          </span>
+          <span style="font-size: 12px; color: #7A6E6E;">Users · Jean-Baptiste N., national ID submitted Tuesday</span>
+        </span>
+        <span class="num" style="font-size: 12px; font-weight: 600; color: #7A6E6E;">22h waiting</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A6E6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 14px 24px; border-top: 1px solid #F0EDED;">
+        <span style="width: 10px; height: 10px; border-radius: 999px; background: #1D4ED8; flex-shrink: 0;"></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0;">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 700;">Import milestone evidence uploaded</span>
+            <span style="border-radius: 999px; background: #EFF6FF; color: #1D4ED8; padding: 2px 8px; font-size: 11px; font-weight: 700;">Routine</span>
+          </span>
+          <span style="font-size: 12px; color: #7A6E6E;">Imports · ORD-2291, bank transfer proof for the second half</span>
+        </span>
+        <span class="num" style="font-size: 12px; font-weight: 600; color: #7A6E6E;">5h waiting</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A6E6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat tiles — icon squircle, count, no direction -->
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div style="display: flex; align-items: flex-start; gap: 16px; background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); padding: 20px;">
+      <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5.5A2 2 0 0 1 9.4 10h5.2a2 2 0 0 1 1.9 1.5L18 17"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/></svg>
+      </span>
+      <div>
+        <p style="margin: 0; font-size: 13px; font-weight: 600; color: #7A6E6E;">Live listings</p>
+        <p class="num" style="margin: 4px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 800;">47</p>
+      </div>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 16px; background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); padding: 20px;">
+      <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h7l4 4v12H7z"/><path d="M14 4v4h4"/></svg>
+      </span>
+      <div>
+        <p style="margin: 0; font-size: 13px; font-weight: 600; color: #7A6E6E;">Pending submissions</p>
+        <p class="num" style="margin: 4px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 800;">12</p>
+        <p style="margin: 6px 0 0; font-size: 12px; color: #7A6E6E;">awaiting review</p>
+      </div>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 16px; background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); padding: 20px;">
+      <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>
+      </span>
+      <div>
+        <p style="margin: 0; font-size: 13px; font-weight: 600; color: #7A6E6E;">Rental inquiries</p>
+        <p class="num" style="margin: 4px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 800;">8</p>
+        <p style="margin: 6px 0 0; font-size: 12px; color: #7A6E6E;">awaiting a response</p>
+      </div>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 16px; background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); padding: 20px;">
+      <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+      </span>
+      <div>
+        <p style="margin: 0; font-size: 13px; font-weight: 600; color: #7A6E6E;">ID queue</p>
+        <p class="num" style="margin: 4px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; font-weight: 800;">5</p>
+        <p style="margin: 6px 0 0; font-size: 12px; color: #7A6E6E;">sellers waiting</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts — grey, no baseline, no comparison -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div style="background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); padding: 20px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px;">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 700;">Seller-reported listing value</h2>
+        <span style="font-size: 12px; color: #7A6E6E;">last 6 months, RWF</span>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 8px; height: 160px;">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 11px; font-weight: 700; color: #423737;">RWF 52M</span>
+          <div style="width: 100%; max-width: 44px; height: 58px; border-radius: 6px 6px 0 0; background: #7A6E6E;"></div>
+          <span style="font-size: 11px; color: #7A6E6E;">Apr ’26</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 11px; font-weight: 700; color: #423737;">RWF 40M</span>
+          <div style="width: 100%; max-width: 44px; height: 44px; border-radius: 6px 6px 0 0; background: #7A6E6E;"></div>
+          <span style="font-size: 11px; color: #7A6E6E;">May ’26</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 11px; font-weight: 700; color: #423737;">RWF 65M</span>
+          <div style="width: 100%; max-width: 44px; height: 72px; border-radius: 6px 6px 0 0; background: #7A6E6E;"></div>
+          <span style="font-size: 11px; color: #7A6E6E;">Jun ’26</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 11px; font-weight: 700; color: #423737;">RWF 71M</span>
+          <div style="width: 100%; max-width: 44px; height: 78px; border-radius: 6px 6px 0 0; background: #7A6E6E;"></div>
+          <span style="font-size: 11px; color: #7A6E6E;">Jul ’26</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 11px; font-weight: 700; color: #423737;">RWF 87M</span>
+          <div style="width: 100%; max-width: 44px; height: 96px; border-radius: 6px 6px 0 0; background: #7A6E6E;"></div>
+          <span style="font-size: 11px; color: #7A6E6E;">Aug ’26</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 11px; font-weight: 700; color: #423737;">RWF 97M</span>
+          <div style="width: 100%; max-width: 44px; height: 112px; border-radius: 6px 6px 0 0; background: #281F1C;"></div>
+          <span style="font-size: 11px; color: #7A6E6E;">Sep ’26</span>
+        </div>
+      </div>
+      <p style="margin: 12px 0 0; font-size: 12px; color: #7A6E6E;">9 listings marked sold in this window. Sawa Cars does not process or verify the sale transaction.</p>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); padding: 20px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px;">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 700;">Submission pipeline</h2>
+        <span style="font-size: 12px; color: #7A6E6E;">all time</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
+            <span style="font-weight: 600; color: #423737;">Under review</span><span class="num" style="font-weight: 700;">62</span>
+          </div>
+          <div style="height: 8px; border-radius: 999px; background: #F6F4F4; overflow: hidden;"><div style="height: 100%; width: 100%; border-radius: 999px; background: #7A6E6E;"></div></div>
+        </div>
+        <div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
+            <span style="font-weight: 600; color: #423737;">Inspection booked</span><span class="num" style="font-weight: 700;">51</span>
+          </div>
+          <div style="height: 8px; border-radius: 999px; background: #F6F4F4; overflow: hidden;"><div style="height: 100%; width: 82%; border-radius: 999px; background: #7A6E6E;"></div></div>
+        </div>
+        <div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
+            <span style="font-weight: 600; color: #423737;">Being inspected</span><span class="num" style="font-weight: 700;">44</span>
+          </div>
+          <div style="height: 8px; border-radius: 999px; background: #F6F4F4; overflow: hidden;"><div style="height: 100%; width: 71%; border-radius: 999px; background: #7A6E6E;"></div></div>
+        </div>
+        <div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
+            <span style="font-weight: 600; color: #423737;">Approved</span><span class="num" style="font-weight: 700;">39</span>
+          </div>
+          <div style="height: 8px; border-radius: 999px; background: #F6F4F4; overflow: hidden;"><div style="height: 100%; width: 63%; border-radius: 999px; background: #7A6E6E;"></div></div>
+        </div>
+        <div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
+            <span style="font-weight: 600; color: #423737;">Live</span><span class="num" style="font-weight: 700;">31</span>
+          </div>
+          <div style="height: 8px; border-radius: 999px; background: #F6F4F4; overflow: hidden;"><div style="height: 100%; width: 50%; border-radius: 999px; background: #7A6E6E;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick actions + activity — a fourth and fifth card of the same weight -->
+  <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 16px;">
+    <div style="background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); padding: 20px;">
+      <h2 style="margin: 0 0 16px; font-size: 14px; font-weight: 700;">Quick actions</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px; border: 1px solid #F0EDED; border-radius: 12px; padding: 16px;">
+          <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
+          <span><span style="display: block; font-size: 13px; font-weight: 700;">Create a listing</span><span style="display: block; margin-top: 2px; font-size: 12px; color: #7A6E6E;">Starts from a passed inspection</span></span>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 12px; border: 1px solid #F0EDED; border-radius: 12px; padding: 16px;">
+          <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h7l4 4v12H7z"/><path d="M14 4v4h4"/></svg>
+          </span>
+          <span><span style="display: block; font-size: 13px; font-weight: 700;">Review submissions</span><span style="display: block; margin-top: 2px; font-size: 12px; color: #7A6E6E;">Approve or schedule</span></span>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 12px; border: 1px solid #F0EDED; border-radius: 12px; padding: 16px;">
+          <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 3v4M16 3v4M4 11h16"/></svg>
+          </span>
+          <span><span style="display: block; font-size: 13px; font-weight: 700;">Rental inquiries</span><span style="display: block; margin-top: 2px; font-size: 12px; color: #7A6E6E;">Coordinate availability requests</span></span>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 12px; border: 1px solid #F0EDED; border-radius: 12px; padding: 16px;">
+          <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: #F6F4F4; color: #423737; flex-shrink: 0;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+          </span>
+          <span><span style="display: block; font-size: 13px; font-weight: 700;">ID verification queue</span><span style="display: block; margin-top: 2px; font-size: 12px; color: #7A6E6E;">Approve sellers</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #F0EDED; border-radius: 16px; box-shadow: 0 2px 8px rgba(26,20,19,0.06); overflow: hidden;">
+      <div style="padding: 16px 20px; border-bottom: 1px solid #F0EDED;">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 700;">Recent operational activity</h2>
+        <p style="margin: 2px 0 0; font-size: 12px; color: #7A6E6E;">Latest movement across the whole workflow</p>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 20px;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; background: #CC050F; flex-shrink: 0;"></span>
+          <span style="flex-grow: 1; min-width: 0;"><span style="display: block; font-size: 13px; font-weight: 600;">Inspection completed at 141/150</span><span style="display: block; font-size: 12px; color: #7A6E6E;">2018 Toyota Vitz · Kicukiro Center</span></span>
+          <span style="font-size: 12px; color: #7A6E6E;">6 Sep</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid #F0EDED;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; background: #CC050F; flex-shrink: 0;"></span>
+          <span style="flex-grow: 1; min-width: 0;"><span style="display: block; font-size: 13px; font-weight: 600;">Listing published</span><span style="display: block; font-size: 12px; color: #7A6E6E;">2016 Mazda CX-5 · RWF 18,500,000</span></span>
+          <span style="font-size: 12px; color: #7A6E6E;">6 Sep</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid #F0EDED;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; background: #CC050F; flex-shrink: 0;"></span>
+          <span style="flex-grow: 1; min-width: 0;"><span style="display: block; font-size: 13px; font-weight: 600;">Identity approved</span><span style="display: block; font-size: 12px; color: #7A6E6E;">Alice U. · national ID checked in person</span></span>
+          <span style="font-size: 12px; color: #7A6E6E;">5 Sep</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid #F0EDED;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; background: #CC050F; flex-shrink: 0;"></span>
+          <span style="flex-grow: 1; min-width: 0;"><span style="display: block; font-size: 13px; font-weight: 600;">Rental subscription recorded</span><span style="display: block; font-size: 12px; color: #7A6E6E;">Kigali Rides · 30 days, RWF 45,000</span></span>
+          <span style="font-size: 12px; color: #7A6E6E;">5 Sep</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid #F0EDED;">
+          <span style="width: 8px; height: 8px; border-radius: 999px; background: #CC050F; flex-shrink: 0;"></span>
+          <span style="flex-grow: 1; min-width: 0;"><span style="display: block; font-size: 13px; font-weight: 600;">Submission rejected with a reason</span><span style="display: block; font-size: 12px; color: #7A6E6E;">Mileage could not be verified</span></span>
+          <span style="font-size: 12px; color: #7A6E6E;">4 Sep</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
