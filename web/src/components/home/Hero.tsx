@@ -3,7 +3,10 @@ import Link from 'next/link'
 import { Button, Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { HERO_SLIDES } from '@/lib/imagery'
+import { formatKm, formatUSD } from '@/lib/business'
+import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
+import type { TFunction } from '@/lib/i18n/dictionary'
 
 // The hero is a full-viewport photographic stage with the marketplace's first
 // action ON it. A marketplace's front door is a search box, not a slogan — so
@@ -37,7 +40,70 @@ const JOURNEYS: { key: string; href: string; icon: IconName; active?: boolean }[
   { key: 'home.hero.nav.tools', href: '/tools', icon: 'gauge' },
 ]
 
-export async function Hero() {
+/**
+ * Live stock, inside the first screen.
+ *
+ * The stage was one photograph of a car nobody can buy, and a visitor had to
+ * scroll before the site proved it had any inventory at all. Four real
+ * listings sit beside the search box now — the same cars the page already
+ * fetches for the grid below, so this costs no extra request — and if the
+ * backend is unreachable the rail simply does not render. Never a placeholder
+ * car: a marketplace that invents stock on its front door has nothing left to
+ * be trusted about.
+ */
+function StockRail({ cars, t }: { cars: Car[]; t: TFunction }) {
+  if (!cars.length) return null
+  return (
+    <div
+      className="w-full animate-fade-up lg:max-w-[392px]"
+      style={{ animationDelay: '460ms' }}
+    >
+      <div className="mb-2.5 flex items-baseline justify-between px-1">
+        <span className="text-eyebrow font-bold uppercase text-white/85">
+          {t('home.hero.stockEyebrow')}
+        </span>
+        <Link href="/cars" className="text-caption font-bold text-white hover:underline">
+          {t('home.hero.stockAll')}
+        </Link>
+      </div>
+      <ul className="flex flex-col gap-2.5">
+        {cars.slice(0, 4).map((car) => (
+          <li key={car.id}>
+            <Link
+              href={`/cars/${car.id}`}
+              className="flex items-center gap-3.5 rounded-xl border border-white/12 bg-white/[0.07] p-2.5 transition-colors hover:border-white/25 hover:bg-white/[0.12]"
+            >
+              <span className="relative h-[68px] w-[92px] shrink-0 overflow-hidden rounded-md bg-white/10">
+                {car.images?.[0] ? (
+                  <Image
+                    src={car.images[0]}
+                    alt=""
+                    fill
+                    sizes="92px"
+                    className="object-cover"
+                  />
+                ) : null}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-caption font-bold text-white">{car.title}</span>
+                <span className="mt-0.5 block truncate text-micro text-white/65">
+                  {formatKm(car.mileage)}
+                  {car.location ? ` · ${car.location}` : ''}
+                  {car.inspection_score ? ` · ${car.inspection_score}/150` : ''}
+                </span>
+              </span>
+              <span className="shrink-0 text-caption font-extrabold tabular-nums text-white">
+                {formatUSD(car.price)}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+export async function Hero({ cars = [] }: { cars?: Car[] }) {
   const t = await getServerT()
   return (
     // -mt pulls the stage up UNDER the transparent header (see Header.tsx's
@@ -64,7 +130,10 @@ export async function Hero() {
           hold contrast even when the photograph's sky is bright. */}
       <div className="absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-ink-900/70 to-transparent" />
 
-      <div className="relative mx-auto w-full max-w-content px-5 pb-14 pt-32 sm:px-8 sm:pb-16 lg:px-12">
+      {/* Two columns from lg up: the statement and its search on the left, live
+          stock on the right. Below lg they stack, statement first — on a phone
+          the rail is one thumb-scroll away rather than competing for the fold. */}
+      <div className="relative mx-auto grid w-full max-w-content items-end gap-10 px-5 pb-14 pt-32 sm:px-8 sm:pb-16 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14 lg:px-12">
         <div className="max-w-2xl text-white">
           <p
             className="mb-3 animate-fade-up text-eyebrow font-bold uppercase text-white/85"
@@ -144,6 +213,8 @@ export async function Hero() {
             ))}
           </ul>
         </div>
+
+        <StockRail cars={cars} t={t} />
       </div>
     </section>
   )

@@ -100,22 +100,25 @@ async function BrowseResults({
   const facets = facetSource.length ? buildFacets(facetSource) : EMPTY_FACETS
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-10">
+    // The rail is flush against a hairline, not a floating shadowed box. A
+    // panel that hovers beside a photo grid competes with the cars for depth,
+    // and depth is what tells a visitor where to look. The filters are
+    // structure; the cars are the content.
+    <div className="grid gap-8 lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-12">
       <aside className="hidden lg:block">
-        <div className="sticky top-[calc(var(--header-h)+24px)] rounded-3xl border border-line-soft bg-surface p-6 shadow-card">
-          <div className="mb-6 flex items-center justify-between border-b border-line-soft pb-4">
-            <div>
-              <p className="text-micro font-bold uppercase tracking-[0.14em] text-brand">{t('cars.browse.refineEyebrow')}</p>
-              <h2 className="mt-1 text-title-sm font-extrabold text-content">{t('cars.browse.refineTitle')}</h2>
-            </div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-pill bg-surface-alt text-content-secondary"><Icon name="filter" size={17} /></span>
+        <div className="sticky top-[calc(var(--header-h)+24px)] border-r border-line-soft pr-6">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-title-sm font-extrabold text-content">{t('cars.browse.refineTitle')}</h2>
+            <span className="text-content-muted"><Icon name="filter" size={16} /></span>
           </div>
           <FilterPanel facets={facets} filters={filters} sort={sort} />
         </div>
       </aside>
 
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line-soft bg-surface px-4 py-3 shadow-card sm:px-5">
+        {/* The control row loses its card too: a hairline under it is enough
+            separation, and one less floating surface above the grid. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft pb-4">
           <div className="flex items-center gap-3">
             <FilterSheet facets={facets} filters={filters} sort={sort} />
             {/* "on this page" whenever more may exist — the API returns a
