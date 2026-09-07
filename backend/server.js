@@ -284,6 +284,8 @@ app.use('/admin/journey',   require('./src/routes/journey'));
 // Admin-only: a buyer-facing history carries real privacy weight and must be a
 // deliberate decision, not something that arrives through this route.
 app.use('/admin/vehicles',  require('./src/routes/vehicle-history'));
+app.use('/admin/vehicles',  require('./src/routes/vehicle-intelligence'));
+app.use('/vehicles',        require('./src/routes/public-vehicles'));
 app.use('/admin',           require('./src/routes/admin'));
 app.use('/imports',         require('./src/routes/imports'));
 // Inspection centers. Admin-only CRUD over the table submissions.js already

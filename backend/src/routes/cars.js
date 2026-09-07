@@ -19,6 +19,7 @@ const {
   evaluateChecklist,
 } = require('../lib/inspection-policy');
 const { publicationReadiness } = require('../lib/publication-readiness');
+const { maskVin } = require('../lib/vin-engine/validator');
 
 const router = express.Router();
 
@@ -522,6 +523,14 @@ ${MARKET_LATERALS}
       // sees them. Deleting rather than nulling keeps them off the wire
       // entirely, so their absence is not itself a signal.
       for (const column of INTERNAL_CAR_COLUMNS) delete car[column];
+
+      // Privacy Guardrail: Never expose raw VIN on public surfaces
+      car.vin_masked = maskVin(car.vin);
+      car.vin_verified = Boolean(car.vin && car.has_valid_inspection);
+      delete car.vin;
+    } else {
+      car.vin_masked = maskVin(car.vin);
+      car.vin_verified = Boolean(car.vin && car.has_valid_inspection);
     }
     car.seller_contact_available = available;
     car.direct_deal_notice = DIRECT_DEAL_NOTICE;
