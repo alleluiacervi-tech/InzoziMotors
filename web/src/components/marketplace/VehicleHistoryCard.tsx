@@ -63,10 +63,10 @@ export async function VehicleHistoryCard({ history }: { history: VehicleHistory 
     {
       label: t('cars.history.vin'),
       tone: history.vin_verified ? 'pass' : 'unknown',
-      value: history.vin
+      value: (history.vin_masked || history.vin)
         ? history.vin_verified
-          ? t('cars.history.vinMatches', { vin: history.vin })
-          : t('cars.history.vinNotVerified', { vin: history.vin })
+          ? t('cars.history.vinMatches', { vin: history.vin_masked || 'Verified' })
+          : t('cars.history.vinNotVerified', { vin: history.vin_masked || 'Verified' })
         : t('cars.history.notRecorded'),
     },
     {
@@ -113,6 +113,12 @@ export async function VehicleHistoryCard({ history }: { history: VehicleHistory 
           )
         })}
       </dl>
+
+      <div className="border-t border-line-soft bg-surface-alt/40 p-4 sm:p-5">
+        <p className="text-caption leading-relaxed text-content-muted">
+          <strong className="font-semibold text-content-secondary">Data Coverage &amp; Standards:</strong> Vehicle history records are aggregated from verified inspection stations, customs filings, and manufacturer open databases. No relevant records were found in currently available data sources for accidents or open safety recalls. We do not claim this represents all events in the vehicle’s lifetime. Full VINs are kept private for owner security.
+        </p>
+      </div>
     </Card>
   )
 }

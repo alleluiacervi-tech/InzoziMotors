@@ -655,7 +655,8 @@ function JsonLd({ car, images }: { car: Car; images: string[] }) {
   if (images.length) data.image = images.slice(0, 8)
   if (car.description) data.description = car.description
   if (car.color) data.color = car.color
-  if (car.vin) data.vehicleIdentificationNumber = car.vin
+  // Privacy Guardrail: Never expose raw unmasked VIN in public SEO schema or search indexes
+  if (car.vin_masked || car.vin) data.vehicleIdentificationNumber = car.vin_masked || 'VIN Verified'
   if (car.fuel_type) data.fuelType = car.fuel_type
   if (car.transmission) data.vehicleTransmission = car.transmission
   if (car.body_type) data.bodyType = car.body_type
