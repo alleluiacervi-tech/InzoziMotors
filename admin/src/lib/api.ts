@@ -490,6 +490,62 @@ export const api = {
       }
     }>(`/admin/vehicles/history?vin=${encodeURIComponent(vin)}`),
 
+  // ─── Global VIN Intelligence & Registry Operations ─────────────────────────
+  decodeAndRetrieveVin: (vin: string) =>
+    request<any>('/admin/vehicles/decode-and-retrieve', {
+      method: 'POST',
+      body: JSON.stringify({ vin }),
+    }),
+
+  compareDiscrepancies: (listingInputs: any, verifiedSpecs: any) =>
+    request<{ hasDiscrepancies: boolean; count: number; discrepancies: any[] }>(
+      '/admin/vehicles/compare-discrepancies',
+      {
+        method: 'POST',
+        body: JSON.stringify({ listingInputs, verifiedSpecs }),
+      }
+    ),
+
+  getVehicleIntelligence: (id: string) =>
+    request<any>(`/admin/vehicles/intelligence/${id}`),
+
+  getActiveSignals: (resolved = false) =>
+    request<any[]>(`/admin/vehicles/signals?resolved=${resolved}`),
+
+  resolveSignal: (id: string, note?: string) =>
+    request<{ success: boolean; resolvedSignal: any }>(`/admin/vehicles/signals/${id}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    }),
+
+  addVehicleHistoryEvent: (id: string, eventData: any) =>
+    request<any>(`/admin/vehicles/${id}/events`, {
+      method: 'POST',
+      body: JSON.stringify(eventData),
+    }),
+
+  updateVehicleSpecs: (id: string, specs: any, reason: string) =>
+    request<any>(`/admin/vehicles/${id}/specs`, {
+      method: 'PATCH',
+      body: JSON.stringify({ specs, reason }),
+    }),
+
+  getVehiclesRegistry: (params?: { q?: string; limit?: number; offset?: number }) => {
+    const q = new URLSearchParams()
+    if (params?.q) q.set('q', params.q)
+    if (params?.limit) q.set('limit', String(params.limit))
+    if (params?.offset) q.set('offset', String(params.offset))
+    return request<{ items: any[]; total: number; limit: number; offset: number }>(
+      `/admin/vehicles/registry?${q.toString()}`
+    )
+  },
+
+  reassignListingSeller: (id: string, newSellerId: string, reason: string) =>
+    request<{ success: boolean; car: any }>(`/cars/${id}/reassign-seller`, {
+      method: 'POST',
+      body: JSON.stringify({ new_seller_id: newSellerId, reason }),
+    }),
+
   completeInspection: (id: string, data: any) =>
     request<any>(`/inspections/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
   issueInspectionReport: (id: string) =>
