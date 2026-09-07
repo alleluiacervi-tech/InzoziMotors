@@ -80,7 +80,7 @@ const PUBLIC_CAR_DETAIL_COLUMNS = [...PUBLIC_CAR_COLUMNS, 'description', 'vin'];
 // be gated the same way the seller's phone number already is, further down.
 const INTERNAL_CAR_COLUMNS = [
   'review_notes', 'archive_reason', 'archived_at', 'approved_at', 'approved_by',
-  'registration_plate', 'vin_key',
+  'registration_plate', 'vin_key', 'vehicle_id',
 ];
 
 /** `c.id, c.title, …` for a SELECT list. */

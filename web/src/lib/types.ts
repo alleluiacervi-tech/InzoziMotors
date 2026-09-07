@@ -82,6 +82,7 @@ export interface Car {
   /** RHD = Japanese import, LHD = locally purchased. A real filter in Rwanda. */
   drive_side?: 'RHD' | 'LHD' | null
   vin?: string | null
+  vin_masked?: string | null
   description?: string | null
   images?: string[] | null
   inspected: boolean
@@ -119,6 +120,7 @@ export interface Car {
 
 export interface VehicleHistory {
   vin: string | null
+  vin_masked?: string | null
   vin_verified: boolean
   make: string
   model: string
