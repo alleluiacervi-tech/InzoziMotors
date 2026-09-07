@@ -87,6 +87,7 @@ function resolve(sql) {
     .replace(/\$\{MIN_COMPARABLES\}/g, '3')
     .replace(/\$\{conditions\.join\([^)]*\)\}/g, 'TRUE')
     .replace(/\$\{where\}/g, '')
+    .replace(/\$\{whereClause\}/g, '')
     .replace(/\$\{owner\}/g, '')
     .replace(/\$\{safeSort\}/g, 'listed_at')
     .replace(/\$\{safeOrder\}/g, 'ASC')

@@ -318,16 +318,20 @@ router.get('/registry', async (req, res) => {
   const q = String(req.query.q || '').trim();
 
   try {
-    let whereClause = '';
+    let where = '';
     const params = [limit, offset];
 
     if (q) {
       params.push(`%${q.toUpperCase()}%`);
-      whereClause = `WHERE v.vin_normalized LIKE $3 OR UPPER(v.make) LIKE $3 OR UPPER(v.model) LIKE $3`;
+      where = `WHERE v.vin_normalized LIKE $3 OR UPPER(v.make) LIKE $3 OR UPPER(v.model) LIKE $3`;
     }
 
-    const countQuery = `SELECT COUNT(*) FROM vehicles v ${whereClause}`;
-    const countRes = await pool.query(countQuery, q ? [`%${q.toUpperCase()}%`] : []);
+    const countRes = await pool.query(
+      q
+        ? `SELECT COUNT(*) FROM vehicles v WHERE v.vin_normalized LIKE $1 OR UPPER(v.make) LIKE $1 OR UPPER(v.model) LIKE $1`
+        : 'SELECT COUNT(*) FROM vehicles v',
+      q ? [`%${q.toUpperCase()}%`] : []
+    );
     const total = parseInt(countRes.rows[0].count, 10);
 
     const { rows } = await pool.query(
@@ -338,7 +342,7 @@ router.get('/registry', async (req, res) => {
               (SELECT COUNT(*) FROM vehicle_data_quality_signals WHERE vehicle_id = v.id AND resolved = FALSE) AS active_signals_count,
               (SELECT COUNT(*) FROM cars WHERE vehicle_id = v.id) AS listing_count
          FROM vehicles v
-         ${whereClause}
+         ${where}
         ORDER BY v.created_at DESC
         LIMIT $1 OFFSET $2`,
       params
