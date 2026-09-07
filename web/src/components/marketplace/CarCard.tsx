@@ -2,10 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
-import {
-  formatKm, formatMoneyExact, formatRWF, formatUSD, getCertTier, isDemoListing,
-  listedAgo, marketPosition, priceDrop,
-} from '@/lib/business'
+import { formatKm, formatMoney, getCertTier, isDemoListing, listedAgo, marketPosition, priceDrop } from '@/lib/business'
+import { Price } from '@/components/Price'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 
@@ -132,12 +130,10 @@ export async function CarCard({
           <h3 className="min-w-0 truncate text-title-sm font-extrabold tracking-[-0.01em] text-content transition-colors group-hover:text-brand">
             {car.title}
           </h3>
-          <p
-            className="shrink-0 text-price font-extrabold tracking-[-0.02em] text-brand tabular-nums"
-            title={formatMoneyExact(car.price)}
-          >
-            {formatUSD(car.price)}
-          </p>
+          {/* One component, one conversion. The franc figure is the price;
+              the dollar line under it is an approximation that follows the
+              live rate without this card knowing anything about currency. */}
+          <Price amountRwf={car.price} className="shrink-0 text-right" />
         </div>
 
         {/* Three specs, not five. Year, distance and town decide whether to
@@ -182,10 +178,7 @@ export async function CarCard({
             >
               {market.tone === 'neutral'
                 ? t('cars.card.atMarketPrice', { count: car.comparables ?? 0 })
-                : t(market.tone === 'good' ? 'cars.card.belowAverage' : 'cars.card.aboveAverage', {
-                    amount: formatRWF(Math.abs(car.market_avg - car.price)),
-                    count: car.comparables ?? 0,
-                  })}
+                : t(market.tone === 'good' ? 'cars.card.belowAverage' : 'cars.card.aboveAverage', { amount: formatMoney(Math.abs(car.market_avg - car.price)), count: car.comparables ?? 0 })}
             </p>
           ) : (
             <span className="min-w-0" />

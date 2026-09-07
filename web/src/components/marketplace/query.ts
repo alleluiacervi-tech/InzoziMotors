@@ -1,4 +1,4 @@
-import { formatUSD } from '@/lib/business'
+import { formatMoney } from '@/lib/business'
 import type { CarQuery } from '@/lib/types'
 import type { TFunction } from '@/lib/i18n/dictionary'
 
@@ -196,9 +196,9 @@ export function chipLabel(t: TFunction, field: FilterField, value: string): stri
         ? t('cars.driveSide.lhd.label')
         : value
     case 'min_price':
-      return t('cars.chip.from', { amount: formatUSD(Number(value)) })
+      return t('cars.chip.from', { amount: formatMoney(Number(value)) })
     case 'max_price':
-      return t('cars.chip.upTo', { amount: formatUSD(Number(value)) })
+      return t('cars.chip.upTo', { amount: formatMoney(Number(value)) })
     case 'min_year':
       return t('cars.chip.orNewer', { year: value })
     case 'max_year':

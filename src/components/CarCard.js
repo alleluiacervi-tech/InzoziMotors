@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext';
 import Badge from './Badge';
 import { getCertTier } from '../data/certification';
 import { formatPrice } from '../data/cars';
+import Price from './Price';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
 
@@ -127,7 +128,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
                 <Text style={styles.scoreText}>{t('home.inspected', { score: car.inspectionScore })}</Text>
               </View>
             ) : null}
-            <Text style={styles.price}>{getSawaPrice(car)}</Text>
+            <Price amountRwf={car.price ?? car.currentBid ?? 0} />
           </>
         )}
       </View>

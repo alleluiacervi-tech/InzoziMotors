@@ -5,7 +5,7 @@ import { describeError } from '@/components/dashboard/data'
 import type { ActionState } from '@/components/dashboard/types'
 import { sellerListings } from '@/lib/api'
 import { getToken } from '@/lib/session'
-import { formatUSD } from '@/lib/business'
+import { formatMoney } from '@/lib/business'
 
 /**
  * Change the asking price on a live listing.
@@ -39,5 +39,5 @@ export async function updatePriceAction(
   }
 
   revalidatePath('/dashboard/selling')
-  return { ok: true, message: `Price updated to ${formatUSD(Math.round(price))}.` }
+  return { ok: true, message: `Price updated to ${ formatMoney(Math.round(price)) }.` }
 }

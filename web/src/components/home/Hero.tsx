@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Button, Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { HERO_SLIDES } from '@/lib/imagery'
-import { formatKm, formatUSD } from '@/lib/business'
+import { formatKm, formatMoney } from '@/lib/business'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 import type { TFunction } from '@/lib/i18n/dictionary'
@@ -93,7 +93,7 @@ function StockRail({ cars, t }: { cars: Car[]; t: TFunction }) {
                 </span>
               </span>
               <span className="shrink-0 text-caption font-extrabold tabular-nums text-white">
-                {formatUSD(car.price)}
+                { formatMoney(car.price) }
               </span>
             </Link>
           </li>

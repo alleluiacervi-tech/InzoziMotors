@@ -1,4 +1,4 @@
-import { formatDate, formatUSD } from '@/lib/business'
+import { formatDate, formatMoney } from '@/lib/business'
 import type { PricePoint } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 
@@ -46,8 +46,8 @@ export async function Sparkline({ points, className = '' }: { points: PricePoint
         className="h-14 w-full text-content-muted"
         role="img"
         aria-label={t('cars.sparkline.aria', {
-          from: formatUSD(opening),
-          to: formatUSD(current),
+          from: formatMoney(opening),
+          to: formatMoney(current),
           direction: t(`cars.sparkline.${direction}`),
         })}
       >
@@ -66,10 +66,10 @@ export async function Sparkline({ points, className = '' }: { points: PricePoint
 
       <figcaption className="mt-2 flex items-center justify-between text-micro text-content-muted">
         <span>
-          {formatUSD(opening)} · {formatDate(points[0].at)}
+          { formatMoney(opening) } · {formatDate(points[0].at)}
         </span>
         <span className="font-bold text-content">
-          {formatUSD(current)} · {t('cars.sparkline.today')}
+          { formatMoney(current) } · {t('cars.sparkline.today')}
         </span>
       </figcaption>
     </figure>

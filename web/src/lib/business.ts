@@ -77,7 +77,7 @@ export function inspectionGrade(score: number): 'A' | 'B' | 'C' | 'D' {
 // ~1473 and every converted figure on the site was ~12% wrong, silently.
 //
 // A module variable rather than a parameter because the rate is global truth,
-// not per-request data, and threading it through every formatRWF call site
+// not per-request data, and threading it through every formatMoney call site
 // would put plumbing above readability. The initial value only ever renders if
 // formatting happens before the layout has fetched — and it matches the
 // backend's own floor.
@@ -116,10 +116,39 @@ export function formatMoneyExact(amount?: number | null): string {
   return `RWF ${Math.round(amount).toLocaleString('en-RW')}`
 }
 
-/** @deprecated Use formatMoney. Kept temporarily to make older call sites safe. */
-export const formatUSD = formatMoney
-/** @deprecated Use formatMoney. No conversion is performed. */
-export const formatRWF = formatMoney
+// ─── The one conversion ───────────────────────────────────────────────────────
+// Francs are what a seller asked for and what the database stores. Dollars are
+// a courtesy for the diaspora and for importers, and they are an APPROXIMATION
+// of a rate that moves — so they are computed in exactly one place, from a rate
+// the caller has to supply, and they are always rendered with a "≈".
+//
+// No default rate parameter on purpose: a default is how a figure formatted
+// before the live rate arrived would silently claim to be current. A caller
+// with no rate gets nothing rendered rather than a wrong number.
+
+/** Francs to dollars at a supplied rate. Null when either input is unusable,
+ *  so a caller renders nothing rather than "$NaN" or a figure built on zero. */
+export function usdFromRwf(amountRwf?: number | null, rwfPerUsd?: number | null): number | null {
+  if (amountRwf == null || !Number.isFinite(amountRwf)) return null
+  if (rwfPerUsd == null || !Number.isFinite(rwfPerUsd) || rwfPerUsd <= 0) return null
+  return amountRwf / rwfPerUsd
+}
+
+/**
+ * A dollar approximation, rounded to a precision that does not overstate it.
+ *
+ * A car is priced to the nearest hundred thousand francs at best, so quoting
+ * its dollar equivalent to the cent would imply a precision the underlying
+ * rate does not have. Under a thousand dollars rounds to ten; above it, to a
+ * hundred.
+ */
+export function formatUsdApprox(amountUsd?: number | null): string {
+  if (amountUsd == null || !Number.isFinite(amountUsd)) return '—'
+  const abs = Math.abs(amountUsd)
+  const step = abs >= 1000 ? 100 : 10
+  const rounded = Math.round(amountUsd / step) * step
+  return `$${rounded.toLocaleString('en-US')}`
+}
 
 export function formatKm(km?: number | null): string {
   if (km == null || !Number.isFinite(km)) return '—'

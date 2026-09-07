@@ -5,7 +5,7 @@ import { ApiError, rentals as rentalsApi } from '@/lib/api'
 import { SITE } from '@/lib/site'
 import { getCurrentUser } from '@/lib/session'
 import { breadcrumbNode, graph, organizationNode, ORG_ID } from '@/lib/seo'
-import { formatKm, formatUSD, getCertTier } from '@/lib/business'
+import { formatKm, formatMoney, getCertTier } from '@/lib/business'
 import type { RentalCar } from '@/lib/types'
 import { Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
 import { Gallery } from '@/components/marketplace/Gallery'
@@ -53,12 +53,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const t = await getServerT()
   if (!car) return { title: t('rentals.detail.metaUnavailable'), robots: { index: false, follow: true } }
 
-  const description = t('rentals.detail.metaDescription', { title: car.title, price: formatUSD(car.daily_rate) })
+  const description = t('rentals.detail.metaDescription', { title: car.title, price: formatMoney(car.daily_rate) })
 
   const image = car.images?.[0]
 
   return {
-    title: t('rentals.detail.metaTitle', { title: car.title, price: formatUSD(car.daily_rate) }),
+    title: t('rentals.detail.metaTitle', { title: car.title, price: formatMoney(car.daily_rate) }),
     description,
     alternates: { canonical: `/rentals/${car.id}` },
     robots: car.status === 'active' ? undefined : { index: false, follow: true },
@@ -205,18 +205,18 @@ export default async function RentalDetailPage({ params }: PageProps) {
                 <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
                 <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">{t('rentals.detail.overview')}</p>
                 <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
-                  {formatUSD(car.daily_rate)}
+                  { formatMoney(car.daily_rate) }
                   <span className="text-base font-bold text-content-muted"> {t('rentals.card.perDay')}</span>
                 </p>
 
                 <dl className="mt-5 space-y-2 border-t border-line-soft pt-4 text-caption">
                   <div className="flex items-baseline justify-between gap-4">
                     <dt className="text-content-muted">{t('rentals.detail.weeklyRate')}</dt>
-                    <dd className="font-bold text-content">{formatUSD(weekly)}</dd>
+                    <dd className="font-bold text-content">{ formatMoney(weekly) }</dd>
                   </div>
                   <div className="flex items-baseline justify-between gap-4">
                     <dt className="text-content-muted">{t('rentals.detail.deposit')}</dt>
-                    <dd className="font-bold text-content">{formatUSD(car.deposit)}</dd>
+                    <dd className="font-bold text-content">{ formatMoney(car.deposit) }</dd>
                   </div>
                   <div className="flex items-baseline justify-between gap-4">
                     <dt className="text-content-muted">{t('rentals.detail.minimumStay')}</dt>
@@ -266,11 +266,11 @@ export default async function RentalDetailPage({ params }: PageProps) {
                         {t(quote.days === 1 ? 'rentals.detail.dayOne' : 'rentals.detail.days', { count: quote.days })}
                       </p>
                       <p className="text-caption text-content-secondary">
-                        <span className="font-bold text-content">{formatUSD(quote.subtotal)}</span>{' '}
+                        <span className="font-bold text-content">{ formatMoney(quote.subtotal) }</span>{' '}
                         {t('rentals.detail.rentalWord')}
                         <span className="text-content-muted">
                           {' '}
-                          {t('rentals.detail.refundableDeposit', { amount: formatUSD(quote.deposit) })}
+                          {t('rentals.detail.refundableDeposit', { amount: formatMoney(quote.deposit) })}
                         </span>
                       </p>
                     </li>
