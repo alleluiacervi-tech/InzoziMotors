@@ -143,4 +143,211 @@ router.post('/signals/:id/resolve', async (req, res) => {
   }
 });
 
+/**
+ * GET /admin/vehicles/signals
+ * Lists data quality signals across all vehicles.
+ * Optional query param: ?resolved=false (default: false)
+ */
+router.get('/signals', async (req, res) => {
+  const resolved = req.query.resolved === 'true';
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.*, v.vin_masked, v.make, v.model, v.year, v.verification_status,
+              u.name AS resolver_name
+         FROM vehicle_data_quality_signals s
+         JOIN vehicles v ON v.id = s.vehicle_id
+         LEFT JOIN users u ON u.id = s.resolved_by
+        WHERE s.resolved = $1
+        ORDER BY 
+          CASE s.severity WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END ASC,
+          s.created_at DESC
+        LIMIT 100`,
+      [resolved]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch anomaly signals', message: err.message });
+  }
+});
+
+/**
+ * POST /admin/vehicles/:id/events
+ * Appends a verified real-world provenance event to vehicle history.
+ */
+router.post('/:id/events', async (req, res) => {
+  const {
+    event_type,
+    event_date,
+    odometer_km,
+    odometer_verified = false,
+    provider_id = 'sawa_admin_manual',
+    source_type = 'inspection_station',
+    source_reference,
+    title,
+    public_summary,
+    internal_details,
+    is_public = true,
+  } = req.body;
+
+  if (!event_type || !event_date || !title || !public_summary) {
+    return res.status(400).json({
+      error: 'event_type, event_date, title, and public_summary are required',
+      code: 'MISSING_EVENT_FIELDS',
+    });
+  }
+
+  try {
+    const vehicleRes = await pool.query('SELECT id, vin_raw FROM vehicles WHERE id = $1', [req.params.id]);
+    if (!vehicleRes.rows.length) {
+      return res.status(404).json({ error: 'Vehicle not found' });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO vehicle_history_events (
+        vehicle_id, event_type, event_date, odometer_km, odometer_verified,
+        provider_id, source_type, source_reference, confidence_score,
+        title, public_summary, internal_details, is_public
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1.000, $9, $10, $11, $12)
+      RETURNING *`,
+      [
+        req.params.id,
+        event_type,
+        event_date,
+        odometer_km ? Number(odometer_km) : null,
+        Boolean(odometer_verified),
+        provider_id,
+        source_type,
+        source_reference || null,
+        title.trim(),
+        public_summary.trim(),
+        internal_details ? JSON.stringify(internal_details) : null,
+        Boolean(is_public),
+      ]
+    );
+
+    await logVinAction({
+      userId: req.user.id,
+      action: 'vehicle.event_added',
+      targetVehicleId: req.params.id,
+      rawVin: vehicleRes.rows[0].vin_raw,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      details: { eventId: rows[0].id, eventType: event_type, title },
+    });
+
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to record vehicle event', message: err.message });
+  }
+});
+
+/**
+ * PATCH /admin/vehicles/:id/specs
+ * Overrides or updates canonical vehicle specifications with administrative audit justification.
+ */
+router.patch('/:id/specs', async (req, res) => {
+  const { reason, specs } = req.body;
+  if (!reason || !reason.trim() || !specs || typeof specs !== 'object') {
+    return res.status(400).json({
+      error: 'reason and specs object are required',
+      code: 'MISSING_SPECS_OR_REASON',
+    });
+  }
+
+  const ALLOWED_FIELDS = [
+    'make', 'model', 'year', 'trim', 'body_type',
+    'engine_displacement_cc', 'engine_cylinders', 'engine_description',
+    'fuel_type', 'transmission', 'drivetrain', 'plant_country', 'plant_city',
+    'verification_status'
+  ];
+
+  const updates = [];
+  const params = [req.params.id];
+
+  for (const field of ALLOWED_FIELDS) {
+    if (specs[field] !== undefined) {
+      params.push(specs[field]);
+      updates.push(`${field} = $${params.length}`);
+    }
+  }
+
+  if (!updates.length) {
+    return res.status(400).json({ error: 'No valid spec fields provided for update' });
+  }
+
+  try {
+    const beforeRes = await pool.query('SELECT * FROM vehicles WHERE id = $1', [req.params.id]);
+    if (!beforeRes.rows.length) {
+      return res.status(404).json({ error: 'Vehicle not found' });
+    }
+    const before = beforeRes.rows[0];
+
+    updates.push('updated_at = NOW()');
+    const { rows } = await pool.query(
+      `UPDATE vehicles SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
+      params
+    );
+
+    await logVinAction({
+      userId: req.user.id,
+      action: 'vehicle.override_spec',
+      targetVehicleId: req.params.id,
+      rawVin: before.vin_raw,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      details: {
+        reason: reason.trim(),
+        changedFields: Object.keys(specs).filter(k => ALLOWED_FIELDS.includes(k)),
+        previous: before,
+      },
+    });
+
+    res.json({ success: true, vehicle: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update vehicle specifications', message: err.message });
+  }
+});
+
+/**
+ * GET /admin/vehicles/registry
+ * Paginated browser of canonical vehicles in the registry.
+ */
+router.get('/registry', async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+  const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+  const q = String(req.query.q || '').trim();
+
+  try {
+    let whereClause = '';
+    const params = [limit, offset];
+
+    if (q) {
+      params.push(`%${q.toUpperCase()}%`);
+      whereClause = `WHERE v.vin_normalized LIKE $3 OR UPPER(v.make) LIKE $3 OR UPPER(v.model) LIKE $3`;
+    }
+
+    const countQuery = `SELECT COUNT(*) FROM vehicles v ${whereClause}`;
+    const countRes = await pool.query(countQuery, q ? [`%${q.toUpperCase()}%`] : []);
+    const total = parseInt(countRes.rows[0].count, 10);
+
+    const { rows } = await pool.query(
+      `SELECT v.id, v.vin_masked, v.vin_type, v.make, v.model, v.year, v.trim,
+              v.body_type, v.fuel_type, v.transmission, v.drivetrain,
+              v.verification_status, v.confidence_score, v.created_at,
+              (SELECT COUNT(*) FROM vehicle_history_events WHERE vehicle_id = v.id) AS event_count,
+              (SELECT COUNT(*) FROM vehicle_data_quality_signals WHERE vehicle_id = v.id AND resolved = FALSE) AS active_signals_count,
+              (SELECT COUNT(*) FROM cars WHERE vehicle_id = v.id) AS listing_count
+         FROM vehicles v
+         ${whereClause}
+        ORDER BY v.created_at DESC
+        LIMIT $1 OFFSET $2`,
+      params
+    );
+
+    res.json({ items: rows, total, limit, offset });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load vehicles registry', message: err.message });
+  }
+});
+
 module.exports = router;

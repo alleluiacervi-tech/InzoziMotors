@@ -935,8 +935,8 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   // submission in one transaction so the two cannot diverge.
   const EDITABLE = [
     'seller_id', 'title', 'mileage', 'fuel_type',
-    'transmission', 'body_type', 'color', 'price', 'location', 'drive_side',
-    'vin', 'description', 'images', 'review_notes',
+    'transmission', 'body_type', 'color', 'price', 'currency', 'location', 'drive_side',
+    'vin', 'vehicle_id', 'description', 'images', 'review_notes',
   ];
   const IDENTITY = ['make', 'model', 'year'];
   const attemptedIdentity = IDENTITY.filter((field) => req.body[field] !== undefined);
@@ -948,6 +948,9 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       code: 'USE_VEHICLE_IDENTITY_ROUTE',
       fields: attemptedIdentity,
     });
+  }
+  if (req.body.currency !== undefined && !['RWF', 'USD'].includes(req.body.currency)) {
+    return res.status(400).json({ error: 'currency must be either RWF or USD' });
   }
   const updates = [];
   const params = [];
@@ -1012,6 +1015,64 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, readiness: err.readiness });
     log.error('edit car error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /cars/:id/reassign-seller — Admin reassigns listing ownership to another verified seller.
+router.post('/:id/reassign-seller', requireAdmin, requireUuid('id'), async (req, res) => {
+  const { new_seller_id, reason } = req.body;
+  if (!new_seller_id || !reason?.trim()) {
+    return res.status(400).json({ error: 'new_seller_id and reason are required' });
+  }
+
+  try {
+    const result = await withTransaction(async (client) => {
+      const car = await client.query('SELECT * FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!car.rowCount) {
+        const error = new Error('Car not found');
+        error.status = 404;
+        throw error;
+      }
+
+      const seller = await client.query(
+        `SELECT id, name, email FROM users
+          WHERE id = $1 AND role = 'seller' AND id_verified = 'approved'
+            AND account_status = 'active' AND deleted_at IS NULL
+            AND (COALESCE(seller_type, 'individual') <> 'showroom' OR business_verified = TRUE)`,
+        [new_seller_id]
+      );
+      if (!seller.rowCount) {
+        const error = new Error('New seller must be active, identity-verified, and approved');
+        error.status = 400;
+        throw error;
+      }
+
+      const { rows } = await client.query(
+        'UPDATE cars SET seller_id = $1 WHERE id = $2 RETURNING *',
+        [new_seller_id, req.params.id]
+      );
+
+      await recordAdminAction(client, {
+        actorId: req.user.id,
+        action: 'listing.seller_reassigned',
+        targetType: 'listing',
+        targetId: req.params.id,
+        summary: `Listing ${rows[0].title} reassigned to seller ${seller.rows[0].name}`,
+        metadata: {
+          previous_seller_id: car.rows[0].seller_id,
+          new_seller_id,
+          reason: reason.trim(),
+        },
+      });
+
+      return rows[0];
+    });
+
+    res.json({ success: true, car: result });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('reassign seller error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
