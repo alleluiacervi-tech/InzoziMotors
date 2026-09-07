@@ -15,6 +15,36 @@ export function setRwfRate(rate) {
   if (Number.isFinite(rate) && rate > 100 && rate < 10000) RWF_RATE = rate;
 }
 
+// ─── The one conversion ──────────────────────────────────────────────────────
+// Mirrors web/src/lib/business.ts (usdFromRwf, formatUsdApprox). These two must
+// agree exactly: a buyer who sees one dollar figure in the app and a different
+// one on the site for the same car stops believing both.
+//
+// Francs are the price — what the seller asked for and what the database
+// stores. Dollars are a courtesy, always approximate, always marked as such.
+// The rate is a required argument rather than read from RWF_RATE above, because
+// a screen has to take it from context to re-render when it moves.
+
+/** Francs to dollars at a supplied rate. Null when either input is unusable,
+ *  so a caller renders nothing rather than a figure built on zero. */
+export function usdFromRwf(amountRwf, rwfPerUsd) {
+  const amount = Number(amountRwf);
+  const rate = Number(rwfPerUsd);
+  if (!Number.isFinite(amount)) return null;
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  return amount / rate;
+}
+
+/** A dollar approximation rounded so it does not overstate its own precision:
+ *  a car priced to the nearest hundred thousand francs does not have a dollar
+ *  equivalent that is meaningful to the cent. */
+export function formatUsdApprox(amountUsd) {
+  const amount = Number(amountUsd);
+  if (!Number.isFinite(amount)) return '—';
+  const step = Math.abs(amount) >= 1000 ? 100 : 10;
+  return `$${(Math.round(amount / step) * step).toLocaleString('en-US')}`;
+}
+
 // Kigali neighborhood assignments per car ID
 const NEIGHBORHOOD_MAP = {
   '1': 'Nyarutarama', '2': 'Nyarutarama', '3': 'Nyarutarama', '4': 'Nyarutarama',

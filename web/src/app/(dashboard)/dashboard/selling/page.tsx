@@ -8,13 +8,7 @@ import { PriceEditor } from '@/components/dashboard/PriceEditor'
 import { settled } from '@/components/dashboard/data'
 import { Alert, Button, Card, EmptyState, Icon, StatusPill } from '@/components/ui'
 import { sellerListings, submissions } from '@/lib/api'
-import {
-  CAR_STATUS_LABEL,
-  SUBMISSION_STATUS_LABEL,
-  formatDate,
-  formatKm,
-  formatUSD,
-} from '@/lib/business'
+import { CAR_STATUS_LABEL, SUBMISSION_STATUS_LABEL, formatDate, formatKm, formatMoney } from '@/lib/business'
 import { getCurrentUser, getToken } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
 import { SELLING_STEPS } from '@/lib/site'
@@ -145,7 +139,7 @@ export default async function SellingPage() {
                       <p className="mt-3 text-caption text-content-secondary">
                         {t('dashboard.selling.asking')}{' '}
                         <span className="font-extrabold text-content">
-                          {formatUSD(submission.asking_price)}
+                          { formatMoney(submission.asking_price) }
                         </span>
                       </p>
                     ) : null}
@@ -241,7 +235,7 @@ export default async function SellingPage() {
 
                       <p className="mt-2">
                         <span className="text-price font-extrabold tracking-[-0.02em] text-brand">
-                          {formatUSD(car.price)}
+                          { formatMoney(car.price) }
                         </span>
                       </p>
 
@@ -305,7 +299,7 @@ export default async function SellingPage() {
                     <div className="min-w-0">
                       <p className="truncate text-caption font-bold text-content">{car.title}</p>
                       <p className="text-caption text-content-muted">
-                        {formatUSD(car.price)}
+                        { formatMoney(car.price) }
                         {car.sold_at ? ` · sold ${formatDate(car.sold_at)}` : ''}
                       </p>
                     </div>

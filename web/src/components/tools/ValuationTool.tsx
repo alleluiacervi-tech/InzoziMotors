@@ -3,7 +3,7 @@
 import { useActionState, useState } from 'react'
 import { estimateValuationAction, type ValuationState } from '@/app/sell/actions'
 import { Alert, Button, Field, Icon, Input, LiveRegion } from '@/components/ui'
-import { formatKm, formatUSD } from '@/lib/business'
+import { formatKm, formatMoney } from '@/lib/business'
 import { useT } from '@/lib/i18n/context'
 import { CONTACT } from '@/lib/site'
 import {
@@ -154,7 +154,7 @@ export function ValuationTool({
 
         <LiveRegion>
           {state.status === 'ok'
-            ? t('tools.valuationTool.liveOk', { low: formatUSD(state.low), high: formatUSD(state.high), comparables: state.comparables })
+            ? t('tools.valuationTool.liveOk', { low: formatMoney(state.low), high: formatMoney(state.high), comparables: state.comparables })
             : state.status === 'empty'
               ? t('tools.valuationTool.liveEmpty')
               : state.status === 'error'
@@ -179,7 +179,7 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
     <div className="space-y-5">
       <Headline
         label={`${t('tools.valuationTool.carLabel', { year: state.year, make: state.make })}${state.mileage ? ` · ${formatKm(state.mileage)}` : ''}`}
-        value={`${formatUSD(state.low)} – ${formatUSD(state.high)}`}
+        value={`${ formatMoney(state.low) } – ${ formatMoney(state.high) }`}
         note={
           state.mileage
             ? t('tools.valuationTool.adjusted')
@@ -192,14 +192,14 @@ function ValuationResult({ state }: { state: Extract<ValuationState, { status: '
           <ResultRow
             label={t('tools.valuationTool.avgPrice')}
             hint={t('tools.valuationTool.avgHint', { make: state.make, from, to })}
-            value={formatUSD(state.market_avg)}
+            value={ formatMoney(state.market_avg) }
           />
         ) : null}
         {state.range_seen ? (
           <ResultRow
             label={t('tools.valuationTool.pricesSeen')}
             hint={t('tools.valuationTool.pricesSeenHint')}
-            value={`${formatUSD(state.range_seen.low)} – ${formatUSD(state.range_seen.high)}`}
+            value={`${ formatMoney(state.range_seen.low) } – ${ formatMoney(state.range_seen.high) }`}
           />
         ) : null}
         <ResultRow

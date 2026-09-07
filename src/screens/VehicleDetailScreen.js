@@ -9,6 +9,7 @@ import { useApp } from '../context/AppContext';
 import Button from '../components/Button';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatPrice, formatMiles } from '../data/cars';
+import Price, { RateNote } from '../components/Price';
 import LoginModal from '../components/LoginModal';
 import PhotoViewer from '../components/PhotoViewer';
 import { getCertTier } from '../data/certification';
@@ -264,7 +265,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               {isAuction && <Text style={styles.bidLabel}>{t('vehicleDetail.currentBid').toUpperCase()}</Text>}
-              <Text style={styles.price}>{formatPrice(price)}</Text>
+              <Price amountRwf={price} size="detail" align="right" />
               {/* Market diff badge */}
               {/* Null unless the server computed a position from real
                   comparables — see getMarketDiff. */}
@@ -301,6 +302,11 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </View>
 
           {/* Financing strip — own it monthly */}
+          {/* Where the dollar line under the price came from. A converted
+              figure without its rate and its date is how the old hardcoded
+              1300 drifted 12% from reality unnoticed. */}
+          <RateNote style={{ paddingHorizontal: 20, marginBottom: 16 }} />
+
           {monthly && !isAuction && (
             <Pressable style={styles.financeStrip} onPress={() => navigation.navigate('Financing', { carPrice: car.price })}>
               <View style={styles.financeIcon}>

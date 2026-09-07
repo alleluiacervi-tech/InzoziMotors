@@ -266,6 +266,13 @@ export function AppProvider({ children }) {
 
   // Recently viewed — powers the Home personalization rail
   const [recentlyViewedIds, setRecentlyViewedIds] = useState([]);
+  // The live USD⇄RWF rate WITH its provenance, in state rather than only in
+  // marketData's module binding — a module variable cannot re-render a screen,
+  // which is why the rate was being fetched and cached for months while no
+  // price in the app ever followed it. Seeded with the same floor the backend
+  // uses so the very first frame formats correctly, and flagged stale until a
+  // provider has actually answered.
+  const [fx, setFx] = useState({ rate: 1470, source: 'builtin-floor', fetched_at: null, stale: true });
   // The brand list, served rather than bundled. Empty until the first fetch or
   // cache read lands, and every consumer treats empty as "fall back to free
   // text" rather than as "no brands exist".
@@ -316,12 +323,30 @@ export function AppProvider({ children }) {
       // Last known exchange rate first (offline starts format correctly),
       // then the live one. Both best-effort: a rate is a display aid and must
       // never delay or break boot.
-      if (fxCached?.rate) setRwfRate(fxCached.rate);
+      // setRwfRate keeps the module binding in step for the calculators that
+      // read it directly; setFx is what actually moves a price on screen, since
+      // a module variable cannot re-render anything. Both, every time.
+      if (fxCached?.rate) {
+        setRwfRate(fxCached.rate);
+        setFx({
+          rate: fxCached.rate,
+          source: fxCached.source || 'cached',
+          fetched_at: fxCached.fetched_at || null,
+          // A cached rate of unknown age is exactly what "stale" is for.
+          stale: true,
+        });
+      }
       api.get('/fx')
         .then((fx) => {
           if (fx?.rate) {
             setRwfRate(fx.rate);
-            setJSON('fxRate', { rate: fx.rate, fetched_at: fx.fetched_at });
+            setFx({
+              rate: fx.rate,
+              source: fx.source || 'unknown',
+              fetched_at: fx.fetched_at || null,
+              stale: Boolean(fx.stale),
+            });
+            setJSON('fxRate', { rate: fx.rate, source: fx.source, fetched_at: fx.fetched_at });
           }
         })
         .catch(() => {});
@@ -1711,6 +1736,8 @@ export function AppProvider({ children }) {
   }, []);
 
   const value = {
+    // Currency — one rate, one place, every price follows it
+    fx,
     // Cars
     cars, savedCarIds, toggleSaveCar, isCarSaved, getSavedCars,
     // Seller Listings

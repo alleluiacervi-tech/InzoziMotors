@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Button, Icon, LiveRegion } from '@/components/ui'
-import { calcRwandaDuty, formatUSD, getDutyRates } from '@/lib/business'
+import { calcRwandaDuty, formatMoney, getDutyRates } from '@/lib/business'
 import { useT } from '@/lib/i18n/context'
 import {
   ChipGroup,
@@ -123,7 +123,7 @@ export function DutyCalculator() {
             <div className="space-y-5">
               <Headline
                 label={t('tools.dutyCalc.landedLabel')}
-                value={formatUSD(duty.grandTotal)}
+                value={ formatMoney(duty.grandTotal) }
                 note={t('tools.dutyCalc.landedNote', { pct: duty.effectiveRate })}
               />
 
@@ -132,42 +132,42 @@ export function DutyCalculator() {
                   <ResultRow
                     label={t('tools.dutyCalc.assessedValue')}
                     hint={t('tools.dutyCalc.assessedHint', { pct: duty.depreciationPct })}
-                    value={formatUSD(duty.dutiableValue)}
+                    value={ formatMoney(duty.dutiableValue) }
                   />
                 ) : null}
                 <ResultRow
                   label={t('tools.dutyCalc.cifValue')}
                   hint={t('tools.dutyCalc.cifHint', { pct: share(duty.cif - duty.dutiableValue, duty.dutiableValue) })}
-                  value={formatUSD(duty.cif)}
+                  value={ formatMoney(duty.cif) }
                 />
                 <ResultRow
                   label={t('tools.dutyCalc.customsDuty')}
                   hint={t('tools.dutyCalc.customsHint', { pct: share(duty.customs, duty.cif) })}
-                  value={formatUSD(duty.customs)}
+                  value={ formatMoney(duty.customs) }
                 />
                 <ResultRow
                   label={t('tools.dutyCalc.exciseDuty')}
                   hint={t('tools.dutyCalc.exciseHint', { pct: duty.exciseRatePct })}
-                  value={formatUSD(duty.excise)}
+                  value={ formatMoney(duty.excise) }
                 />
                 <ResultRow
                   label={t('tools.dutyCalc.vat')}
                   hint={t('tools.dutyCalc.vatHint', { pct: share(duty.vat, duty.cif + duty.customs + duty.excise) })}
-                  value={formatUSD(duty.vat)}
+                  value={ formatMoney(duty.vat) }
                 />
                 <ResultRow
                   label={t('tools.dutyCalc.withholding')}
                   hint={t('tools.dutyCalc.withholdingHint', { pct: share(duty.withholding, duty.cif) })}
-                  value={formatUSD(duty.withholding)}
+                  value={ formatMoney(duty.withholding) }
                 />
                 <ResultRow
                   label={t('tools.dutyCalc.infra')}
                   hint={t('tools.dutyCalc.infraHint', { pct: share(duty.infra, duty.cif) })}
-                  value={formatUSD(duty.infra)}
+                  value={ formatMoney(duty.infra) }
                 />
                 <ResultRow
                   label={t('tools.dutyCalc.totalDuties')}
-                  value={formatUSD(duty.totalDuties)}
+                  value={ formatMoney(duty.totalDuties) }
                   emphasis
                 />
               </div>
@@ -198,7 +198,7 @@ export function DutyCalculator() {
 
         <LiveRegion>
           {hasValue
-            ? t('tools.dutyCalc.liveResult', { total: formatUSD(duty.grandTotal), duties: formatUSD(duty.totalDuties) })
+            ? t('tools.dutyCalc.liveResult', { total: formatMoney(duty.grandTotal), duties: formatMoney(duty.totalDuties) })
             : ''}
         </LiveRegion>
       </div>

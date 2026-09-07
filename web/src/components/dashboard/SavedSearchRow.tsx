@@ -8,7 +8,7 @@ import {
   toggleSearchNotifyAction,
 } from '@/app/(dashboard)/dashboard/saved/actions'
 import { Button, Icon } from '@/components/ui'
-import { formatKm, formatUSD } from '@/lib/business'
+import { formatKm, formatMoney } from '@/lib/business'
 import { useT } from '@/lib/i18n/context'
 import type { TFunction } from '@/lib/i18n/dictionary'
 import type { SavedSearch } from '@/lib/types'
@@ -35,7 +35,7 @@ function summarise(filters: SavedSearch['filters'], t: TFunction): string[] {
   if (filters.make) parts.push(filters.make)
   if (filters.model) parts.push(filters.model)
   if (filters.category) parts.push(filters.category)
-  if (typeof filters.maxPrice === 'number') parts.push(t('dashboard.saved.under', { value: formatUSD(filters.maxPrice) }))
+  if (typeof filters.maxPrice === 'number') parts.push(t('dashboard.saved.under', { value: formatMoney(filters.maxPrice) }))
   if (typeof filters.maxMileage === 'number') parts.push(t('dashboard.saved.under', { value: formatKm(filters.maxMileage) }))
   if (filters.query) parts.push(`“${filters.query}”`)
   return parts

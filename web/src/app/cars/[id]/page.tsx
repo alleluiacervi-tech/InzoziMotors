@@ -5,25 +5,11 @@ import { ApiError, cars as carsApi } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
 import { BUYING_STEPS, SITE } from '@/lib/site'
 import { breadcrumbNode, graph, offerAvailability, organizationNode, ORG_ID } from '@/lib/seo'
-import {
-  CAR_STATUS_LABEL,
-  FINANCE_TERMS,
-  formatKm,
-  formatMoneyExact,
-  formatRWF,
-  formatUSD,
-  getCertTier,
-  isDemoListing,
-  isHighDemand,
-  isNewListing,
-  listedAgo,
-  marketPosition,
-  monthlyEstimate,
-  priceDrop,
-} from '@/lib/business'
+import { CAR_STATUS_LABEL, FINANCE_TERMS, formatKm, formatMoneyExact, formatMoney, getCertTier, isDemoListing, isHighDemand, isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop } from '@/lib/business'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 import { Alert, Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
+import { Price, RateNote } from '@/components/Price'
 import { CarCard } from '@/components/marketplace/CarCard'
 import { Gallery } from '@/components/marketplace/Gallery'
 import { InspectionReportCard } from '@/components/marketplace/InspectionReportCard'
@@ -105,19 +91,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .join(' · ')
 
   const description = car.inspected
-    ? t('cars.detail.metaDescriptionInspected', { title: car.title, facts, price: formatUSD(car.price) })
-    : t('cars.detail.metaDescriptionListed', { title: car.title, facts, price: formatUSD(car.price) })
+    ? t('cars.detail.metaDescriptionInspected', { title: car.title, facts, price: formatMoney(car.price) })
+    : t('cars.detail.metaDescriptionListed', { title: car.title, facts, price: formatMoney(car.price) })
 
   const image = car.images?.[0]
 
   return {
-    title: `${car.title} — ${formatUSD(car.price)}`,
+    title: `${car.title} — ${ formatMoney(car.price) }`,
     description,
     alternates: { canonical: `/cars/${car.id}` },
     robots: car.status === 'live' ? undefined : { index: false, follow: true },
     openGraph: {
       type: 'website',
-      title: `${car.title} — ${formatUSD(car.price)}`,
+      title: `${car.title} — ${ formatMoney(car.price) }`,
       description,
       url: `/cars/${car.id}`,
       images: image ? [{ url: image, alt: car.title }] : undefined,
@@ -285,12 +271,14 @@ export default async function CarDetailPage({ params }: PageProps) {
                 <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">{t('cars.detail.purchaseOverview')}</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
-                <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
-                  {formatUSD(car.price)}
-                </p>
+                <Price amountRwf={car.price} size="detail" />
                 <p className="mt-2 text-caption text-content-secondary">
-                  {t('cars.detail.monthlyFinance', { amount: formatUSD(monthly) })}
+                  {t('cars.detail.monthlyFinance', { amount: formatMoney(monthly) })}
                 </p>
+                {/* Where the dollar line above comes from. A converted figure
+                    without its rate and its date is how the old hardcoded 1300
+                    drifted 12% from reality unnoticed. */}
+                <RateNote className="mt-3" />
 
                 {market && car.market_avg ? (
                   <p
@@ -304,16 +292,13 @@ export default async function CarDetailPage({ params }: PageProps) {
                   >
                     {market.tone === 'neutral'
                       ? t('cars.card.atMarketPrice', { count: car.comparables ?? 0 })
-                      : t(market.tone === 'good' ? 'cars.card.belowAverage' : 'cars.card.aboveAverage', {
-                          amount: formatRWF(Math.abs(car.market_avg - car.price)),
-                          count: car.comparables ?? 0,
-                        })}
+                      : t(market.tone === 'good' ? 'cars.card.belowAverage' : 'cars.card.aboveAverage', { amount: formatMoney(Math.abs(car.market_avg - car.price)), count: car.comparables ?? 0 })}
                   </p>
                 ) : null}
 
                 {drop > 0 ? (
                   <p className="mt-2 text-caption font-semibold text-warning-text">
-                    {t('cars.detail.reducedBy', { amount: formatUSD(drop) })}
+                    {t('cars.detail.reducedBy', { amount: formatMoney(drop) })}
                   </p>
                 ) : null}
 
@@ -387,7 +372,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     ) : null}
 
                     <p className="text-caption text-content-secondary">
-                      <span className="font-bold text-content">{t('cars.detail.perMonthBold', { amount: formatUSD(monthly) })}</span>{' '}
+                      <span className="font-bold text-content">{t('cars.detail.perMonthBold', { amount: formatMoney(monthly) })}</span>{' '}
                       {t('cars.detail.ifFinanced')}
                     </p>
                     <p className="mt-1 text-micro leading-relaxed text-content-muted">
@@ -531,7 +516,7 @@ export default async function CarDetailPage({ params }: PageProps) {
           <div className="mx-auto flex max-w-content items-center gap-4">
             <div className="min-w-0 flex-1">
               <p className="truncate text-micro font-semibold text-content-muted">{car.title}</p>
-              <p className="text-title-sm font-extrabold text-brand" aria-label={formatMoneyExact(car.price)}>{formatUSD(car.price)}</p>
+              <p className="text-title-sm font-extrabold text-brand" aria-label={ formatMoneyExact(car.price) }>{ formatMoney(car.price) }</p>
             </div>
             <Button href="#purchase-panel" size="compact" trailingIcon={<Icon name="arrow-right" size={16} />}>
               {t('cars.detail.requestThisCar')}

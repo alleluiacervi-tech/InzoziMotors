@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
-import { formatMoneyExact, formatUSD, getCertTier } from '@/lib/business'
+import { formatMoneyExact, formatMoney, getCertTier } from '@/lib/business'
 import type { RentalCar } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 import { formatRating } from './rental-math'
@@ -105,13 +105,13 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
           <div className="min-w-0">
             <p
               className="text-price font-extrabold tracking-[-0.02em] text-brand"
-              title={formatMoneyExact(car.daily_rate)}
+              title={ formatMoneyExact(car.daily_rate) }
             >
-              {formatUSD(car.daily_rate)}
+              { formatMoney(car.daily_rate) }
               <span className="text-caption font-bold text-content-muted"> {t('rentals.card.perDay')}</span>
             </p>
             <p className="mt-0.5 text-micro text-content-muted">
-              {t('rentals.card.depositLine', { amount: formatUSD(car.deposit) })}
+              {t('rentals.card.depositLine', { amount: formatMoney(car.deposit) })}
             </p>
           </div>
 

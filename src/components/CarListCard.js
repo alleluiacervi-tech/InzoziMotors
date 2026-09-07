@@ -6,6 +6,7 @@ import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
 import { formatPrice } from '../data/cars';
+import Price from './Price';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
 
@@ -88,7 +89,7 @@ export default function CarListCard({ car, onPress }) {
               </View>
             )}
           </View>
-          <Text style={styles.price}>{formatPrice(price)}</Text>
+          <Price amountRwf={price} />
         </View>
       </View>
     </Pressable>

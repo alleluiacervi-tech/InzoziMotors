@@ -8,6 +8,7 @@ import { duty, fx } from '@/lib/api'
 import { setDutyRates, setRwfRate } from '@/lib/business'
 import { DutySync } from '@/components/DutySync'
 import { FxSync } from '@/components/FxSync'
+import { CurrencyProvider } from '@/components/CurrencyProvider'
 import { SITE } from '@/lib/site'
 import { getLocale } from '@/lib/i18n/server'
 import { LanguageProvider } from '@/lib/i18n/context'
@@ -140,13 +141,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </a>
         <FxSync rate={rate.rate} />
         <DutySync rates={dutyRates} />
-        <LanguageProvider initialLocale={locale}>
-          <Header user={user} />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <Footer />
-        </LanguageProvider>
+        {/* Seeded with the very rate the server just formatted with, so the
+            first paint and the crawler agree, and the provider only ever
+            confirms or moves it from there. Every <Price/> below subscribes,
+            which is what makes a rate change reach the screen without a
+            reload. */}
+        <CurrencyProvider initial={rate}>
+          <LanguageProvider initialLocale={locale}>
+            <Header user={user} />
+            <main id="main" className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </LanguageProvider>
+        </CurrencyProvider>
       </body>
     </html>
   )

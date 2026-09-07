@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Button, Icon, LiveRegion } from '@/components/ui'
-import { FINANCE_TERMS, formatUSD, monthlyEstimate } from '@/lib/business'
+import { FINANCE_TERMS, formatMoney, monthlyEstimate } from '@/lib/business'
 import { useT } from '@/lib/i18n/context'
 import {
   ChipGroup,
@@ -178,15 +178,11 @@ export function FinanceCalculator() {
             <div className="space-y-5">
               <Headline
                 label={t('tools.financeCalc.overMonths', { months, rate: FINANCE_TERMS.annualRatePct })}
-                value={t('tools.financeCalc.perMonth', { amount: formatUSD(fromPrice.monthly) })}
+                value={t('tools.financeCalc.perMonth', { amount: formatMoney(fromPrice.monthly) })}
                 note={
                   onStandardTerms
                     ? undefined
-                    : t('tools.financeCalc.standardNote', {
-                        deposit: FINANCE_TERMS.downPaymentPct,
-                        months: FINANCE_TERMS.termMonths,
-                        amount: formatUSD(monthlyEstimate(fromPrice.carPrice)),
-                      })
+                    : t('tools.financeCalc.standardNote', { deposit: FINANCE_TERMS.downPaymentPct, months: FINANCE_TERMS.termMonths, amount: formatMoney(monthlyEstimate(fromPrice.carPrice)) })
                 }
               />
 
@@ -194,21 +190,21 @@ export function FinanceCalculator() {
                 <ResultRow
                   label={t('tools.financeCalc.depositRow')}
                   hint={t('tools.financeCalc.depositRowHint', { pct: depositPct })}
-                  value={formatUSD(fromPrice.depositAmount)}
+                  value={ formatMoney(fromPrice.depositAmount) }
                 />
                 <ResultRow
                   label={t('tools.financeCalc.amountFinanced')}
-                  value={formatUSD(fromPrice.financed)}
+                  value={ formatMoney(fromPrice.financed) }
                 />
                 <ResultRow
                   label={t('tools.financeCalc.interestRow')}
                   hint={t('tools.financeCalc.interestHint')}
-                  value={formatUSD(fromPrice.totalInterest)}
+                  value={ formatMoney(fromPrice.totalInterest) }
                 />
                 <ResultRow
                   label={t('tools.financeCalc.totalYouPay')}
                   hint={t('tools.financeCalc.totalHint')}
-                  value={formatUSD(fromPrice.totalRepaid)}
+                  value={ formatMoney(fromPrice.totalRepaid) }
                   emphasis
                 />
               </div>
@@ -222,15 +218,15 @@ export function FinanceCalculator() {
                   className={WRAPPING_LABEL}
                   trailingIcon={<Icon name="arrow-right" size={18} />}
                 >
-                  {t('tools.financeCalc.browseUpTo', { amount: formatUSD(fromPrice.carPrice) })}
+                  {t('tools.financeCalc.browseUpTo', { amount: formatMoney(fromPrice.carPrice) })}
                 </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-5">
               <Headline
-                label={t('tools.financeCalc.payingMonth', { amount: formatUSD(fromBudget.monthly), months })}
-                value={t('tools.financeCalc.upTo', { amount: formatUSD(fromBudget.maxPrice) })}
+                label={t('tools.financeCalc.payingMonth', { amount: formatMoney(fromBudget.monthly), months })}
+                value={t('tools.financeCalc.upTo', { amount: formatMoney(fromBudget.maxPrice) })}
                 note={t('tools.financeCalc.budgetNote', { deposit: depositPct, rate: FINANCE_TERMS.annualRatePct })}
               />
 
@@ -238,16 +234,16 @@ export function FinanceCalculator() {
                 <ResultRow
                   label={t('tools.financeCalc.depositNeeded')}
                   hint={t('tools.financeCalc.depositNeededHint', { pct: depositPct })}
-                  value={formatUSD(fromBudget.depositNeeded)}
+                  value={ formatMoney(fromBudget.depositNeeded) }
                 />
                 <ResultRow
                   label={t('tools.financeCalc.amountFinanced')}
-                  value={formatUSD(fromBudget.financed)}
+                  value={ formatMoney(fromBudget.financed) }
                 />
                 <ResultRow
                   label={t('tools.financeCalc.totalYouPay')}
                   hint={t('tools.financeCalc.totalHint')}
-                  value={formatUSD(fromBudget.depositNeeded + fromBudget.monthly * months)}
+                  value={ formatMoney(fromBudget.depositNeeded + fromBudget.monthly * months) }
                   emphasis
                 />
               </div>
@@ -261,7 +257,7 @@ export function FinanceCalculator() {
                   className={WRAPPING_LABEL}
                   trailingIcon={<Icon name="arrow-right" size={18} />}
                 >
-                  {t('tools.financeCalc.browseUpTo', { amount: formatUSD(fromBudget.maxPrice) })}
+                  {t('tools.financeCalc.browseUpTo', { amount: formatMoney(fromBudget.maxPrice) })}
                 </Button>
               </div>
             </div>
@@ -272,8 +268,8 @@ export function FinanceCalculator() {
           {!hasResult
             ? ''
             : mode === 'price'
-              ? t('tools.financeCalc.liveResultPrice', { amount: formatUSD(fromPrice.monthly), months })
-              : t('tools.financeCalc.liveResultBudget', { amount: formatUSD(fromBudget.monthly), max: formatUSD(fromBudget.maxPrice) })}
+              ? t('tools.financeCalc.liveResultPrice', { amount: formatMoney(fromPrice.monthly), months })
+              : t('tools.financeCalc.liveResultBudget', { amount: formatMoney(fromBudget.monthly), max: formatMoney(fromBudget.maxPrice) })}
         </LiveRegion>
       </div>
     </div>
