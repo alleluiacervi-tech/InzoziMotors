@@ -4,7 +4,7 @@ import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
 import {
   formatKm, formatMoneyExact, formatRWF, formatUSD, getCertTier, isDemoListing,
-  isHighDemand, isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop,
+  listedAgo, marketPosition, priceDrop,
 } from '@/lib/business'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
@@ -44,14 +44,17 @@ export async function CarCard({
   return (
     <Link
       href={`/cars/${car.id}`}
-      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card
+      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card
                   transition-all duration-500 ease-brand
                   hover:-translate-y-1.5 hover:border-line hover:shadow-float
                   ${isRow ? 'sm:flex-row' : ''}`}
     >
       <div
+        // 4/3 rather than 16/10: the photograph is what a car is bought on, and
+        // the elements removed from the body below are given back to it. The
+        // card still ends up shorter than it was.
         className={`relative shrink-0 overflow-hidden bg-surface-alt ${
-          isRow ? 'aspect-[16/10] sm:w-72' : 'aspect-[16/10]'
+          isRow ? 'aspect-[16/10] sm:w-72' : 'aspect-[4/3]'
         }`}
       >
         {/* Multi-photo listings preview their available gallery on hover or tap.
@@ -78,58 +81,72 @@ export async function CarCard({
           />
         )}
 
-        {/* Trust badges sit top-left; urgency signals top-right, so the two
-            never compete for the same corner. */}
-        <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
+        {/* ONE badge per corner, hard limit.
+            Top-left is the score, because the score is the product: 141/150 is
+            a fact a buyer can compare across two cars without first learning
+            what "Certified+" means in our vocabulary. The tier word survives on
+            the detail page, where there is room to explain it.
+            Top-right is reserved for a price drop and nothing else — "new" and
+            "high demand" could fire alongside it, and three chips stacked in
+            one corner is how a listing starts to look like an advert instead of
+            a record. Both still render on the detail page. */}
+        <div className="absolute left-3 top-3 flex max-w-[62%]">
           {demo ? (
             <Badge tone="preview" className="max-w-full truncate">
               {t('cars.card.previewListing')}
             </Badge>
+          ) : car.inspection_score ? (
+            <span className="inline-flex items-center gap-1.5 rounded-pill bg-ink-900/85 px-2.5 py-1 text-micro font-bold tabular-nums text-white backdrop-blur-sm">
+              <Icon name="shield-check" size={12} />
+              {car.inspection_score}/150
+            </span>
           ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
               {tier.short}
             </Badge>
           ) : null}
         </div>
-        <div className="absolute right-3 top-3 flex flex-wrap justify-end gap-1.5">
-          {drop > 0 ? <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge> : null}
-          {!demo && isNewListing(car) && drop === 0 ? <Badge tone="info">{t('cars.card.new')}</Badge> : null}
-          {isHighDemand(car) ? <Badge tone="danger">{t('cars.card.highDemand')}</Badge> : null}
-        </div>
+        {drop > 0 ? (
+          <div className="absolute right-3 top-3">
+            <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge>
+          </div>
+        ) : null}
 
-        {/* The 36-angle standard is the signature — advertise it on every card.
-            Only a real count renders; one fallback image is not a photo set. */}
+        {/* The photo set is the signature — advertise it on every card, as a
+            count rather than a sentence. Only a real count renders; one
+            fallback image is not a photo set. */}
         {(car.images?.length ?? 0) >= 2 ? (
-          <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-pill bg-ink-900/70 px-2 py-1 text-micro font-bold text-white backdrop-blur-sm">
+          <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-pill bg-ink-900/70 px-2 py-1 text-micro font-bold tabular-nums text-white backdrop-blur-sm">
             <Icon name="camera" size={11} />
-            {t('cars.card.photos', { count: car.images!.length })}
+            {car.images!.length}
           </span>
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-5">
-        <h3 className="truncate text-title-sm font-extrabold tracking-[-0.015em] text-content transition-colors group-hover:text-brand">
-          {car.title}
-        </h3>
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-5">
+        {/* Title and price share a line. People scan a grid for price down its
+            right edge, so putting the price under the spec strip made them
+            travel the card twice; here one eye path answers both questions,
+            and tabular figures line the prices up across adjacent cards. */}
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="min-w-0 truncate text-title-sm font-extrabold tracking-[-0.01em] text-content transition-colors group-hover:text-brand">
+            {car.title}
+          </h3>
+          <p
+            className="shrink-0 text-price font-extrabold tracking-[-0.02em] text-brand tabular-nums"
+            title={formatMoneyExact(car.price)}
+          >
+            {formatUSD(car.price)}
+          </p>
+        </div>
 
-        {/* Spec strip — fixed order on every card: year · km · fuel ·
-            transmission · location. Sameness is the point. */}
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-content-secondary">
+        {/* Three specs, not five. Year, distance and town decide whether to
+            open a listing; fuel and transmission decide whether to buy it, and
+            that decision is made on the detail page. */}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-content-secondary">
           <span>{car.year}</span>
           <span aria-hidden className="text-line">·</span>
           <span>{formatKm(car.mileage)}</span>
-          {car.fuel_type ? (
-            <>
-              <span aria-hidden className="text-line">·</span>
-              <span>{car.fuel_type}</span>
-            </>
-          ) : null}
-          {car.transmission ? (
-            <>
-              <span aria-hidden className="text-line">·</span>
-              <span>{car.transmission}</span>
-            </>
-          ) : null}
           {car.location ? (
             <>
               <span aria-hidden className="text-line">·</span>
@@ -142,32 +159,22 @@ export async function CarCard({
         </p>
 
         {isRow && car.description ? (
-          <p className="mt-3 line-clamp-2 text-body leading-relaxed text-content-secondary">
+          <p className="line-clamp-2 text-body leading-relaxed text-content-secondary">
             {car.description}
           </p>
         ) : null}
 
-        <div className="mt-auto pt-5">
-          {/* Price is one of the few places brand red is allowed. */}
-          {/* tabular-nums so prices line up digit-for-digit down a grid of
-              cards — Satoshi defaults to proportional figures. */}
-          <p
-            className="text-price font-extrabold tracking-[-0.02em] text-brand tabular-nums"
-            title={formatMoneyExact(car.price)}
-          >
-            {formatUSD(car.price)}
-          </p>
-          <p className="mt-0.5 text-micro text-content-muted tabular-nums">
-            {t('cars.card.monthlyEst', { amount: formatUSD(monthlyEstimate(car.price)) })}
-          </p>
-
-          {/* The market line shows its work — amount and sample size, never a
-              bare percentage. Its own line; it never crowds the price. */}
+        {/* The market line shows its work — an amount and a sample size, never
+            a bare percentage — and nobody else in this market prints it. It is
+            the one number that earns its place on a card, so it takes the
+            footer the "View car" arrow used to occupy: the whole card is the
+            link, and the arrow only ever restated that. */}
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-line-soft pt-3">
           {market && car.market_avg ? (
             <p
-              className={`mt-2 text-micro font-semibold ${
+              className={`min-w-0 truncate text-micro font-semibold ${
                 market.tone === 'good'
-                  ? 'text-success'
+                  ? 'text-success-text'
                   : market.tone === 'high'
                   ? 'text-warning-text'
                   : 'text-content-muted'
@@ -180,16 +187,12 @@ export async function CarCard({
                     count: car.comparables ?? 0,
                   })}
             </p>
-          ) : null}
-        </div>
-
-        <div className="mt-4 flex items-center justify-between border-t border-line-soft pt-3">
-          <p className="text-micro text-content-muted">
-            {listedAgo(car) || t('cars.card.availableNow')}{car.saves_count ? ` · ${t('cars.card.saved', { count: car.saves_count })}` : ''}
+          ) : (
+            <span className="min-w-0" />
+          )}
+          <p className="shrink-0 text-micro text-content-muted">
+            {listedAgo(car) || t('cars.card.availableNow')}
           </p>
-          <span className="inline-flex items-center gap-1 text-micro font-bold text-content-secondary transition-colors group-hover:text-brand">
-            {t('cars.card.viewCar')} <Icon name="arrow-right" size={13} />
-          </span>
         </div>
       </div>
     </Link>

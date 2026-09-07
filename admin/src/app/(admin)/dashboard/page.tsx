@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { api, type ActionCenterResponse } from '@/lib/api'
 import {
-  Card, StatCard, PageHeader, EmptyState, BarChart, Icon,
-  fmtMoneyShort, type IconName,
+  Card, StatCard, PageHeader, EmptyState, BarChart, Icon, Delta, Sparkline,
+  LoadingState, Skeleton, fmtMoneyShort, type IconName, type Trend,
 } from '@/components/ui'
 
 interface Stats {
@@ -13,6 +14,24 @@ interface Stats {
   pendingSubmissions: number
   pendingInquiries: number
   pendingIdVerifications: number
+  // Derived server-side from timestamps that already exist — see the comment
+  // above the trend queries in backend/src/routes/admin.js. Optional, because
+  // an older API build simply will not send them and the page must still work.
+  trends?: {
+    days: string[]
+    liveListings: Trend
+    pendingSubmissions: Trend
+    pendingInquiries: Trend
+    pendingIdVerifications: Trend
+  }
+  pace?: {
+    medianDaysToPublish: number | null
+    medianDaysToPublishPrevious: number | null
+    sampleSize: number
+    marketplaceValue: number
+    marketplaceValueCurrency: string
+    marketplaceListings: number
+  }
 }
 
 interface Analytics {
@@ -38,12 +57,13 @@ const FUNNEL_LABELS: Record<string, string> = {
 
 const QUICK_ACTIONS: { href: string; label: string; sub: string; icon: IconName }[] = [
   { href: '/listings/new', label: 'Create a listing', sub: 'Starts from a passed inspection', icon: 'plus' },
-  { href: '/submissions', label: 'Review submissions', sub: 'Approve or schedule', icon: 'document' },
-  { href: '/rentals/inquiries', label: 'Rental inquiries', sub: 'Coordinate availability requests', icon: 'calendar' },
-  { href: '/users', label: 'ID verification queue', sub: 'Approve sellers', icon: 'user' },
+  { href: '/submissions', label: 'Take in a vehicle', sub: 'Files the submission for a walk-in seller', icon: 'document' },
+  { href: '/inspections', label: 'Book an inspection', sub: 'Listing or standalone walk-in', icon: 'settings' },
+  { href: '/users', label: 'Verify an identity', sub: 'Sellers cannot publish until you do', icon: 'user' },
 ]
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [stats, setStats] = useState<Stats | null>(null)
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [activity, setActivity] = useState<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>([])
@@ -59,8 +79,95 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="text-sm text-content-muted">Loading dashboard…</div>
-  if (error || !stats) {
+  // ─── Work that arrives while you are looking at the page ───────────────────
+  // Nothing reorders under the operator's cursor: new items are held aside and
+  // announced, and it takes a deliberate click to merge them into the list they
+  // are reading. A queue that rearranges itself mid-decision is how the wrong
+  // row gets clicked.
+  const [incoming, setIncoming] = useState<ActionCenterResponse['items']>([])
+  const knownIds = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!actions) return
+    if (!knownIds.current.size) actions.items.forEach((item) => knownIds.current.add(item.id))
+  }, [actions])
+
+  useEffect(() => {
+    if (loading || !actions) return
+    const poll = window.setInterval(() => {
+      api.actionCenter()
+        .then((fresh) => {
+          const arrived = fresh.items.filter((item) => !knownIds.current.has(item.id))
+          if (arrived.length) setIncoming(arrived)
+        })
+        .catch(() => { /* the badge simply does not update; the page is unharmed */ })
+    }, 60_000)
+    return () => window.clearInterval(poll)
+  }, [loading, actions])
+
+  const mergeIncoming = useCallback(() => {
+    if (!incoming.length) return
+    incoming.forEach((item) => knownIds.current.add(item.id))
+    setActions((current) => current && {
+      ...current,
+      items: [...incoming, ...current.items],
+      summary: {
+        ...current.summary,
+        total: current.summary.total + incoming.length,
+        urgent: current.summary.urgent + incoming.filter((i) => i.priority === 'urgent').length,
+        attention: current.summary.attention + incoming.filter((i) => i.priority === 'attention').length,
+      },
+    })
+    setIncoming([])
+  }, [incoming])
+
+  const s = stats
+  const visibleActions = useMemo(
+    () => (actions?.items ?? []).filter((item) => actionFilter === 'all' || item.priority === actionFilter).slice(0, 8),
+    [actions, actionFilter],
+  )
+
+  // ─── Keyboard ──────────────────────────────────────────────────────────────
+  // The same grammar as the inspection checklist: hands stay on the keys. j and
+  // k walk the queue, Enter opens what is under the cursor.
+  const [cursor, setCursor] = useState(-1)
+  useEffect(() => { setCursor(-1) }, [actionFilter])
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      if (!visibleActions.length) return
+      if (event.key === 'j') {
+        event.preventDefault()
+        setCursor((current) => Math.min(visibleActions.length - 1, current + 1))
+      } else if (event.key === 'k') {
+        event.preventDefault()
+        setCursor((current) => Math.max(0, current - 1))
+      } else if (event.key === 'Enter' && cursor >= 0 && visibleActions[cursor]) {
+        event.preventDefault()
+        router.push(visibleActions[cursor].href)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [visibleActions, cursor, router])
+
+  if (loading) {
+    return (
+      <div>
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div className="flex flex-col gap-2"><Skeleton className="h-7 w-40" /><Skeleton className="h-4 w-72" /></div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="mb-6 h-28 w-full rounded-2xl" />
+        <Card className="mb-6 p-5"><LoadingState rows={5} label="Loading the action queue…" /></Card>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((n) => <Skeleton key={n} className="h-32 rounded-2xl" />)}
+        </div>
+      </div>
+    )
+  }
+  if (error || !s) {
     return (
       <Card>
         <EmptyState icon="alert" title="Couldn’t load the dashboard" description={error || 'The API did not respond.'} />
@@ -68,7 +175,6 @@ export default function DashboardPage() {
     )
   }
 
-  const s = stats
   const salesCurrency: string = analytics?.salesCurrency || 'RWF'
   const monthly = (analytics?.monthlySales ?? []).map((m) => ({
     label: monthLabel(m.month),
@@ -81,13 +187,40 @@ export default function DashboardPage() {
     value: funnelRaw.get(st)!,
   }))
   const funnelMax = Math.max(...funnel.map((f) => f.value), 1)
-  const visibleActions = (actions?.items ?? []).filter((item) => actionFilter === 'all' || item.priority === actionFilter)
-  const actionTone = {
-    urgent: { dot: 'bg-danger-strong', badge: 'bg-danger-tint text-danger-strong', label: 'Urgent' },
-    attention: { dot: 'bg-warning', badge: 'bg-warning-tint text-warning-text', label: 'Attention' },
-    routine: { dot: 'bg-info', badge: 'bg-info-tint text-info', label: 'Routine' },
-  } as const
+  // The gap between two stages is the thing worth acting on; the counts on
+  // their own only say how busy the pipeline is. The widest gap is named so an
+  // operator is not left to eyeball which bar shrank most.
+  const drops = funnel.slice(1).map((stage, index) => {
+    const previous = funnel[index].value
+    return previous > 0 ? Math.round(((previous - stage.value) / previous) * 100) : 0
+  })
+  const widestDrop = drops.length ? Math.max(...drops) : 0
+  const throughput = funnel.length > 1 && funnel[0].value > 0
+    ? Math.round((funnel[funnel.length - 1].value / funnel[0].value) * 100)
+    : null
+
+  const pace = s.pace
+  const trends = s.trends
+  // A median under a day rounds to "0 days", which reads as a broken figure
+  // rather than a fast one. Below a day the same number is told in hours, and
+  // the movement is told in the same unit so the two agree.
+  const paceIn = (days: number | null | undefined, asHours: boolean) =>
+    days == null ? null : asHours ? Math.max(1, Math.round(days * 24)) : Math.round(days * 10) / 10
+  const paceAsHours = pace?.medianDaysToPublish != null && pace.medianDaysToPublish < 1
+  const paceValue = paceIn(pace?.medianDaysToPublish, paceAsHours)
+  const pacePrevious = paceIn(pace?.medianDaysToPublishPrevious, paceAsHours)
+  const paceUnit = paceValue == null ? '' : paceAsHours ? (paceValue === 1 ? 'hour' : 'hours') : (paceValue === 1 ? 'day' : 'days')
+  const ageRule = (hours: number) =>
+    hours >= 48 ? 'bg-danger-strong' : hours >= 24 ? 'bg-warning' : 'bg-line'
+  const ageText = (hours: number) =>
+    hours >= 48 ? 'font-bold text-danger-strong' : hours >= 24 ? 'font-bold text-warning-text' : 'text-content-muted'
   const ageLabel = (hours: number) => hours < 1 ? 'Just now' : hours < 24 ? `${hours}h waiting` : `${Math.floor(hours / 24)}d waiting`
+  const priorityLabel = { urgent: 'Urgent', attention: 'Attention', routine: 'Routine' } as const
+  const priorityBadge = {
+    urgent: 'bg-danger-tint text-danger-strong',
+    attention: 'bg-warning-tint text-warning-text',
+    routine: 'bg-surface-alt text-content-secondary',
+  } as const
 
   return (
     <div>
@@ -97,7 +230,7 @@ export default function DashboardPage() {
         action={
           <Link
             href="/listings/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-white shadow-card transition-colors hover:bg-brand-deep"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-white shadow-card transition-colors hover:bg-brand-deep"
           >
             <Icon name="plus" size={16} />
             New listing
@@ -105,26 +238,87 @@ export default function DashboardPage() {
         }
       />
 
-      {/* The Super Admin's working surface: decisions before reporting. */}
-      <Card className="mb-6 overflow-hidden">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line-soft px-5 py-5 sm:px-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-tint text-brand">
-                <Icon name="bell" size={18} />
+      {/* ─── Today ────────────────────────────────────────────────────────────
+          The page could say what was queued and never what was happening. These
+          three answer "how is the business moving" before any queue is opened,
+          and they are the only figures on the page at the largest type tier. */}
+      {trends || pace ? (
+        <div className="mb-6 grid gap-px overflow-hidden rounded-2xl border border-line bg-line-soft sm:grid-cols-3">
+          <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
+            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Live on the marketplace</span>
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-stat-lg font-extrabold tabular-nums text-content">{s.liveListings}</span>
+                {trends ? <Delta value={trends.liveListings.delta} goodDirection="up" /> : null}
+              </div>
+              {trends ? <div className="w-20 shrink-0"><Sparkline series={trends.liveListings.series} /></div> : null}
+            </div>
+            <span className="text-caption text-content-muted">
+              {trends ? `${trends.liveListings.recent ?? 0} published in the last seven days` : 'vehicles a buyer can see today'}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
+            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Seller-stated value listed</span>
+            <div className="flex items-end justify-between gap-4">
+              <span className="text-stat-lg font-extrabold tabular-nums text-brand">
+                {pace ? fmtMoneyShort(pace.marketplaceValue, pace.marketplaceValueCurrency) : '—'}
               </span>
-              <div>
-                <h2 className="text-body font-extrabold text-content">Action Center</h2>
-                <p className="text-caption text-content-muted">Your live operating queue, ordered by urgency.</p>
+            </div>
+            <span className="text-caption text-content-muted">
+              across {pace?.marketplaceListings ?? 0} live listings · Sawa is not a party to any sale
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
+            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Submission to published</span>
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-stat-lg font-extrabold tabular-nums text-content">
+                  {paceValue ?? '—'}
+                  {paceValue != null ? <span className="text-section font-bold text-content-secondary"> {paceUnit}</span> : null}
+                </span>
+                {paceValue != null && pacePrevious != null ? (
+                  <Delta value={Math.round((paceValue - pacePrevious) * 10) / 10} goodDirection="down" />
+                ) : null}
               </div>
             </div>
+            <span className="text-caption text-content-muted">
+              {pace?.sampleSize ? `median of ${pace.sampleSize} published in the last 30 days` : 'nothing published in the last 30 days yet'}
+            </span>
           </div>
-          {actions && (
-            <div className="flex items-center gap-2" aria-label="Action center summary">
-              <span className="rounded-full bg-danger-tint px-2.5 py-1 text-caption font-bold text-danger-strong">{actions.summary.urgent} urgent</span>
-              <span className="rounded-full bg-warning-tint px-2.5 py-1 text-caption font-bold text-warning-text">{actions.summary.attention} attention</span>
-            </div>
-          )}
+        </div>
+      ) : null}
+
+      {/* ─── The focal object ─────────────────────────────────────────────────
+          Deeper shadow, a full border and a brand hairline along the top edge.
+          Every other card on this page steps down from here deliberately: the
+          Action Center used to be made of exactly the same material as Quick
+          actions, so nothing on the screen claimed to matter more. */}
+      <div className="mb-7 overflow-hidden rounded-2xl border border-line border-t-2 border-t-brand bg-surface shadow-card-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 pb-4 pt-5">
+          <div>
+            <h2 className="text-section font-extrabold text-content">Action Center</h2>
+            <p className="text-caption text-content-muted">Your live operating queue, oldest and most urgent first.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {incoming.length ? (
+              <button
+                type="button"
+                onClick={mergeIncoming}
+                className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-caption font-bold text-content-secondary transition-colors hover:border-content-muted"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+                {incoming.length} new since you opened
+              </button>
+            ) : null}
+            {actions ? (
+              <div className="flex items-center gap-2" aria-label="Action center summary">
+                <span className="rounded-full bg-danger-tint px-2.5 py-1 text-caption font-bold text-danger-strong">{actions.summary.urgent} urgent</span>
+                <span className="rounded-full bg-warning-tint px-2.5 py-1 text-caption font-bold text-warning-text">{actions.summary.attention} attention</span>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {!actions ? (
@@ -133,7 +327,7 @@ export default function DashboardPage() {
           <EmptyState icon="check-circle" title="Everything is under control" description="There are no approvals, exceptions or overdue workflows requiring action." />
         ) : (
           <>
-            <div className="flex gap-1 overflow-x-auto border-b border-line-soft px-5 py-3" role="tablist" aria-label="Filter actions">
+            <div className="flex gap-1.5 overflow-x-auto px-6 pb-3.5" role="tablist" aria-label="Filter actions">
               {([
                 ['all', 'All', actions.summary.total],
                 ['urgent', 'Urgent', actions.summary.urgent],
@@ -147,138 +341,179 @@ export default function DashboardPage() {
                   onClick={() => setActionFilter(key)}
                   className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-caption font-bold transition-colors ${actionFilter === key ? 'bg-ink-900 text-white' : 'text-content-muted hover:bg-surface-alt hover:text-content'}`}
                 >
-                  {label} <span className="ml-1 opacity-70">{count}</span>
+                  {label} <span className="ml-1 tabular-nums opacity-70">{count}</span>
                 </button>
               ))}
             </div>
             {visibleActions.length ? (
-              <ul className="divide-y divide-line-soft">
-                {visibleActions.slice(0, 8).map((action) => {
-                  const tone = actionTone[action.priority]
-                  return (
-                    <li key={action.id}>
-                      <Link href={action.href} className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-surface-alt sm:px-6">
-                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${tone.dot}`} aria-hidden />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center gap-2">
-                            <span className="truncate text-label font-bold text-content">{action.title}</span>
-                            <span className={`rounded-full px-2 py-0.5 text-micro font-bold ${tone.badge}`}>{tone.label}</span>
-                          </span>
-                          <span className="mt-0.5 block truncate text-caption text-content-muted">{action.kind} · {action.detail}</span>
+              <ul>
+                {visibleActions.map((action, index) => (
+                  <li key={action.id}>
+                    <Link
+                      href={action.href}
+                      onMouseEnter={() => setCursor(index)}
+                      className={`group flex items-stretch gap-3.5 border-t border-line-soft px-6 py-3.5 transition-colors ${cursor === index ? 'bg-surface-alt' : 'hover:bg-surface-alt'}`}
+                    >
+                      {/* Waiting time, made pre-attentive. The old priority dot
+                          repeated what the badge beside it already said; this
+                          carries the one thing nothing else showed. */}
+                      <span className={`w-[3px] shrink-0 rounded-full ${ageRule(action.age_hours)}`} aria-hidden />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-label font-bold text-content">{action.title}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-micro font-bold ${priorityBadge[action.priority]}`}>{priorityLabel[action.priority]}</span>
                         </span>
-                        <span className="hidden shrink-0 text-caption font-semibold text-content-muted sm:block">{ageLabel(action.age_hours)}</span>
-                        <span className="text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={16} /></span>
-                      </Link>
-                    </li>
-                  )
-                })}
+                        <span className="mt-0.5 block truncate text-caption text-content-muted">{action.kind} · {action.detail}</span>
+                      </span>
+                      <span className={`hidden shrink-0 self-center text-caption tabular-nums sm:block ${ageText(action.age_hours)}`}>{ageLabel(action.age_hours)}</span>
+                      <span className="self-center text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={16} /></span>
+                    </Link>
+                  </li>
+                ))}
               </ul>
             ) : (
-              <div className="px-6 py-8 text-center text-caption text-content-muted">No {actionFilter} actions right now.</div>
+              <div className="border-t border-line-soft px-6 py-8 text-center text-caption text-content-muted">No {actionFilter} actions right now.</div>
             )}
-            {visibleActions.length > 8 && (
-              <div className="border-t border-line-soft bg-surface-alt px-6 py-3 text-center text-caption font-semibold text-content-muted">
-                Showing the 8 most important of {visibleActions.length} actions
-              </div>
-            )}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-surface-alt px-6 py-3">
+              <span className="text-caption font-semibold text-content-muted">
+                {actions.summary.total > visibleActions.length
+                  ? `Showing the ${visibleActions.length} most important of ${actions.summary.total}`
+                  : `${visibleActions.length} waiting on you`}
+              </span>
+              <span className="flex items-center gap-1.5 text-caption font-semibold text-content-muted">
+                <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 text-micro">J</kbd>
+                <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 text-micro">K</kbd>
+                to move
+                <kbd className="ml-1 rounded border border-line bg-surface px-1.5 py-0.5 text-micro">↵</kbd>
+                to open
+              </span>
+            </div>
           </>
         )}
-      </Card>
-
-      {/* Operational counts — each one is a doorway, not a decoration */}
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Live listings" value={s.liveListings} icon="car" href="/listings" />
-        <StatCard label="Pending submissions" value={s.pendingSubmissions} icon="document" href="/submissions" sub="awaiting review" />
-        <StatCard label="Rental inquiries" value={s.pendingInquiries} icon="calendar" href="/rentals/inquiries" sub="awaiting a response" />
-        <StatCard label="ID queue" value={s.pendingIdVerifications} icon="user" href="/users" sub="sellers waiting" />
       </div>
 
-      {/* Charts */}
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-sm font-bold text-content">Seller-reported listing value</h2>
-            <span className="text-caption text-content-muted">last 6 months, {salesCurrency}</span>
+      {/* Operational counts — each one is a doorway, and now says which way it is moving */}
+      <div className="mb-7 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Live listings" value={s.liveListings} icon="car" href="/listings" trend={trends?.liveListings} sub={trends ? 'published per day, 14 days' : undefined} />
+        <StatCard label="Pending submissions" value={s.pendingSubmissions} icon="document" href="/submissions" trend={trends?.pendingSubmissions} sub="awaiting review" />
+        <StatCard label="Rental inquiries" value={s.pendingInquiries} icon="calendar" href="/rentals/inquiries" trend={trends?.pendingInquiries} sub="awaiting a response" />
+        <StatCard label="Identity queue" value={s.pendingIdVerifications} icon="user" href="/users" trend={trends?.pendingIdVerifications} sub="sellers waiting" />
+      </div>
+
+      {/* Reporting tier — quiet material, but each chart now carries a comparison */}
+      <div className="mb-7 grid gap-4 lg:grid-cols-2">
+        <Card className="border-line-soft p-5 shadow-none">
+          <div className="mb-1 flex items-baseline justify-between gap-3">
+            <h2 className="text-label font-bold text-content">Seller-stated listing value</h2>
+            <span className="text-caption text-content-muted">six months, {salesCurrency}</span>
           </div>
+          <p className="mb-4 text-caption text-content-muted">Each month against the one before it.</p>
           <BarChart
             data={monthly}
-            height={160}
+            height={170}
+            compare
             formatValue={(v) => fmtMoneyShort(v, salesCurrency)}
             emptyLabel="No listings have been marked sold yet"
           />
           {monthly.length > 0 && (
-            <p className="mt-3 text-xs text-content-muted">
+            <p className="mt-3 text-caption text-content-muted">
               {monthly.reduce((n, m) => n + m.sold, 0)} listing
               {monthly.reduce((n, m) => n + m.sold, 0) === 1 ? '' : 's'} marked sold in this window. Sawa Cars does not process or verify the sale transaction.
             </p>
           )}
         </Card>
 
-        <Card className="p-5">
-          <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="text-sm font-bold text-content">Submission pipeline</h2>
-            <span className="text-xs text-content-muted">all time</span>
+        <Card className="border-line-soft p-5 shadow-none">
+          <div className="mb-1 flex items-baseline justify-between gap-3">
+            <h2 className="text-label font-bold text-content">Submission pipeline</h2>
+            <span className="text-caption text-content-muted">all time</span>
           </div>
           {funnel.length === 0 ? (
             <EmptyState icon="document" title="No submissions yet" description="Seller submissions appear here as they enter the pipeline." />
           ) : (
-            <div className="space-y-3">
-              {funnel.map((f) => (
-                <div key={f.label}>
-                  <div className="mb-1 flex items-baseline justify-between text-xs">
-                    <span className="font-semibold text-content-secondary">{f.label}</span>
-                    <span className="font-bold text-content">{f.value}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-surface-alt">
+            <>
+              <div className="mb-4 flex items-baseline gap-2.5">
+                <span className="text-stat font-extrabold tabular-nums text-content">{throughput == null ? '—' : `${throughput}%`}</span>
+                <span className="text-caption font-semibold text-content-muted">reach the stage below</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {funnel.map((f, index) => (
+                  <div key={f.label} className="flex flex-col gap-1.5">
+                    {index > 0 ? (
+                      <div className="flex justify-end">
+                        <span className={`text-micro font-bold tabular-nums ${drops[index - 1] === widestDrop && widestDrop > 0 ? 'text-warning-text' : 'text-content-muted'}`}>
+                          {drops[index - 1]}% drop{drops[index - 1] === widestDrop && widestDrop > 0 ? ' · the widest gap' : ''}
+                        </span>
+                      </div>
+                    ) : null}
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-caption font-semibold text-content-secondary">{f.label}</span>
+                      <span className="text-caption font-bold tabular-nums text-content">{f.value}</span>
+                    </div>
                     <div
-                      className="h-full rounded-full bg-gray-500"
+                      className={`h-2.5 rounded-full ${index === 0 ? 'bg-ink-900' : index < 3 ? 'bg-ink-700' : 'bg-content-muted'}`}
                       style={{ width: `${Math.max(4, Math.round((f.value / funnelMax) * 100))}%` }}
                     />
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-      {/* Quick actions */}
-      <Card className="p-5">
-        <h2 className="mb-4 text-sm font-bold text-content">Quick actions</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {QUICK_ACTIONS.map(({ href, label, sub, icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="group flex items-start gap-3 rounded-xl border border-line-soft p-4 transition-colors hover:border-brand hover:bg-brand-tint"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-alt text-content-secondary transition-colors group-hover:bg-white group-hover:text-brand">
-                <Icon name={icon} size={17} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[13px] font-bold text-content">{label}</span>
-                <span className="mt-0.5 block text-xs text-content-muted">{sub}</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-      </Card>
-      <Card className="overflow-hidden">
-        <div className="border-b border-line-soft px-5 py-4">
-          <h2 className="text-sm font-bold text-content">Recent operational activity</h2>
-          <p className="mt-0.5 text-xs text-content-muted">Latest movement across the whole workflow</p>
-        </div>
-        {activity.length ? <ul className="divide-y divide-line-soft">{activity.slice(0, 7).map((item, index) => (
-          <li key={`${item.kind}-${item.happened_at}-${index}`}>
-            <Link href={item.href} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-alt">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-brand" aria-hidden />
-              <span className="min-w-0 flex-1"><span className="block truncate text-label font-semibold text-content">{item.title}</span><span className="block truncate text-caption text-content-muted">{item.kind} · {item.detail.replaceAll('_', ' ')}</span></span>
-              <time className="shrink-0 text-caption text-content-muted" dateTime={item.happened_at}>{new Date(item.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
-            </Link>
-          </li>
-        ))}</ul> : <EmptyState icon="chart" title="No activity yet" description="Workflow changes will collect here." />}
-      </Card>
+        {/* Quick actions — a list, not four more tinted squircles */}
+        <Card className="border-line-soft p-5 shadow-none">
+          <h2 className="mb-3 text-label font-bold text-content">Start something</h2>
+          <div className="flex flex-col">
+            {QUICK_ACTIONS.map(({ href, label, sub }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group flex items-center gap-3 border-b border-line-soft py-2.5 last:border-0"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-label font-bold text-content group-hover:text-brand">{label}</span>
+                  <span className="mt-0.5 block text-caption text-content-muted">{sub}</span>
+                </span>
+                <span className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={15} /></span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border-line-soft p-5 shadow-none">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="text-label font-bold text-content">Recent operational activity</h2>
+            <span className="text-caption text-content-muted">across the whole workflow</span>
+          </div>
+          {activity.length ? (
+            <ul className="border-l border-line-soft pl-0">
+              {activity.slice(0, 6).map((item, index) => (
+                <li key={`${item.kind}-${item.happened_at}-${index}`} className="relative">
+                  <Link href={item.href} className="flex items-baseline gap-3 py-2.5 pl-4">
+                    {/* Ink, not brand red: "this one is the most recent" is
+                        information, and red on this product means money, a
+                        primary action or something blocking. Size and weight
+                        carry the emphasis instead. */}
+                    <span
+                      className={`absolute top-4 rounded-full border-2 border-surface ${index === 0 ? '-left-[5px] h-[7px] w-[7px] bg-ink-900' : '-left-1 h-[5px] w-[5px] bg-gray-400'}`}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-label font-semibold text-content">{item.title}</span>
+                      <span className="block truncate text-caption text-content-muted">{item.kind} · {item.detail.replaceAll('_', ' ')}</span>
+                    </span>
+                    <time className="shrink-0 text-caption text-content-muted" dateTime={item.happened_at}>
+                      {new Date(item.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </time>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : <EmptyState icon="chart" title="No activity yet" description="Workflow changes will collect here." />}
+        </Card>
       </div>
     </div>
   )

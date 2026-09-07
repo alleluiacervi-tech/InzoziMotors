@@ -1,0 +1,14 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Home — the first two screens", "x": 0, "y": 0, "w": 1440, "h": 2000 },
+    { "file": "Marketplace.dc.html", "title": "Browse — flush rail, count as subject", "x": 1580, "y": 0, "w": 1440, "h": 1560 },
+    { "file": "Card.dc.html", "title": "The card — today against redesigned", "x": 0, "y": 2160, "w": 1080, "h": 900 },
+    { "file": "Mobile.dc.html", "title": "Phone — 390px", "x": 1240, "y": 2160, "w": 390, "h": 1560 }
+  ],
+  "annotations": [
+    { "id": "note-home", "x": 0, "y": -160, "w": 520, "text": "HOME\nThe stage keeps the photograph, but the first screen now carries live stock beside it. A marketplace whose front door shows one press photo of a car nobody can buy has spent its best screen on atmosphere." },
+    { "id": "note-browse", "x": 1580, "y": -160, "w": 520, "text": "BROWSE\nThe filter panel stops being a floating card and becomes a flush rail against a hairline. The page opens at display scale with the vehicle count as its subject, because the count is the reason to stay." },
+    { "id": "note-dark", "x": 560, "y": -160, "w": 460, "text": "One dark band, low on the page. The brand owns a warm ink and spends it only on the hero; a second appearance gives the page rhythm and stops six white sections reading as one long scroll." }
+  ],
+  "launch": { "view": "canvas" }
+}

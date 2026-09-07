@@ -70,7 +70,7 @@ export default async function HomePage() {
           marketplace (browse, live listings), then how it works, then ONE
           trust section. Ten sections used to live here; a landing page that
           says everything twice persuades half as well. */}
-      <Hero />
+      <Hero cars={featured} />
       <BrowseEntry cars={featured} />
       <TopDeals placements={placements} />
       <FeaturedCars cars={featured} />

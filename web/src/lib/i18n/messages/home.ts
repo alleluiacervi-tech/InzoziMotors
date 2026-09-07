@@ -14,6 +14,8 @@ export const home: Record<Locale, Record<string, unknown>> = {
       searchLabel: 'Search certified cars',
       searchPlaceholder: 'Toyota RAV4, automatic SUV, diesel…',
       searchButton: 'Search',
+      stockEyebrow: 'Just published',
+      stockAll: 'See all',
       trust: {
         inspection: '150-point inspection',
         sellers: 'Verified sellers',
@@ -115,6 +117,8 @@ export const home: Record<Locale, Record<string, unknown>> = {
       searchLabel: 'Shakisha imodoka zemewe',
       searchPlaceholder: 'Toyota RAV4, SUV ya automatique, mazutu…',
       searchButton: 'Shakisha',
+      stockEyebrow: 'Biheruka gushyirwaho',
+      stockAll: 'Reba byose',
       trust: {
         inspection: 'Isuzuma ry’ingingo 150',
         sellers: 'Abagurisha bemejwe',
@@ -218,6 +222,8 @@ export const home: Record<Locale, Record<string, unknown>> = {
       searchLabel: 'Rechercher des voitures certifiées',
       searchPlaceholder: 'Toyota RAV4, SUV automatique, diesel…',
       searchButton: 'Rechercher',
+      stockEyebrow: 'Publiées récemment',
+      stockAll: 'Voir tout',
       trust: {
         inspection: 'Inspection en 150 points',
         sellers: 'Vendeurs vérifiés',
@@ -321,6 +327,8 @@ export const home: Record<Locale, Record<string, unknown>> = {
       searchLabel: 'Tafuta magari yaliyothibitishwa',
       searchPlaceholder: 'Toyota RAV4, SUV ya automatiki, dizeli…',
       searchButton: 'Tafuta',
+      stockEyebrow: 'Zilizochapishwa hivi karibuni',
+      stockAll: 'Tazama zote',
       trust: {
         inspection: 'Ukaguzi wa pointi 150',
         sellers: 'Wauzaji waliothibitishwa',
@@ -424,6 +432,8 @@ export const home: Record<Locale, Record<string, unknown>> = {
       searchLabel: '인증 차량 검색',
       searchPlaceholder: 'Toyota RAV4, 자동 SUV, 디젤…',
       searchButton: '검색',
+      stockEyebrow: '최근 등록',
+      stockAll: '전체 보기',
       trust: {
         inspection: '150개 항목 검사',
         sellers: '인증된 판매자',
@@ -526,6 +536,8 @@ export const home: Record<Locale, Record<string, unknown>> = {
       searchLabel: '搜索认证车辆',
       searchPlaceholder: '丰田 RAV4，自动挡SUV，柴油…',
       searchButton: '搜索',
+      stockEyebrow: '最新发布',
+      stockAll: '查看全部',
       trust: {
         inspection: '150项检测',
         sellers: '已验证卖家',
