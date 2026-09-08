@@ -499,6 +499,7 @@ export default function HomeScreen({ navigation }) {
             ))}
           </View>
         </View>
+      ) : null}
 
         {/* ── TOOLS ROW ── */}
         <View style={styles.toolsRow}>
