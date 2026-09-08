@@ -87,7 +87,8 @@ export const TRANSLATIONS = {
       "welcomeBack": "Welcome back. Your account is open again.",
       "signInToContinue": "Sign in to continue",
       "signInRequiredSub": "Saving cars and messaging sellers\nrequires an account.",
-      "browseDemoAccount": "Browse with a demo account"
+      "browseDemoAccount": "Browse with a demo account",
+      "validPhone": "Please enter a valid phone number with country code."
     },
     "buyingGuide": {
       "boundaryText": "Sawa Cars does not hold transaction funds, issue the users' contract, promise delivery, guarantee the vehicle or payment, process ownership transfer, or decide an external dispute.",
@@ -236,7 +237,8 @@ export const TRANSLATIONS = {
       "whatsapp": "WhatsApp",
       "yes": "Yes",
       "yesterday": "Yesterday",
-      "vehicleListing": "Vehicle listing"
+      "vehicleListing": "Vehicle listing",
+      "perWeek": "/week"
     },
     "comparison": {
       "addCar": "Add Vehicle",
@@ -475,7 +477,11 @@ export const TRANSLATIONS = {
       "trips": "trips",
       "truck": "Truck",
       "trying": "Trying…",
-      "unavailableUntil": "Unavailable until {{date}}"
+      "unavailableUntil": "Unavailable until {{date}}",
+      "hotDeals": "Hot Deals & Featured Cars",
+      "hotDealsSub": "Hand-picked deals & verified negotiable offers",
+      "premiumBadge": "PREMIUM",
+      "hotDealBadge": "HOT DEAL"
     },
     "idVerification": {
       "add3Photos": "Add all 3 photos to continue",
@@ -1399,6 +1405,14 @@ export const TRANSLATIONS = {
       "restarting": "Restarting…",
       "dismiss": "Dismiss",
       "versionCompare": "You have {{current}} · newest is {{latest}}"
+    },
+    "price": {
+      "approxUsdLabel": "approximately {{usd}} at today's exchange rate",
+      "rateMayBeOutOfDate": "  rate may be out of date",
+      "rateNoteIntro": "Dollar figures are approximate, at",
+      "rateNoteUpdated": "(updated {{stamp}})",
+      "rateNoteStale": "(last confirmed {{stamp}}; the rate service is unreachable)",
+      "rateNoteAgreedInRwf": ". Prices are set and agreed in Rwandan francs."
     }
   },
   "rw": {
@@ -1438,7 +1452,8 @@ export const TRANSLATIONS = {
       "welcomeBack": "Murakaza neza. Konti yawe yongeye gufunguka.",
       "signInToContinue": "Injira kugira ngo ukomeze",
       "signInRequiredSub": "Kubika imodoka no kwandikira abagurisha\nbisaba kugira konti.",
-      "browseDemoAccount": "Shakisha ukoresheje konti y’ikitegererezo"
+      "browseDemoAccount": "Shakisha ukoresheje konti y’ikitegererezo",
+      "validPhone": "Nyamuneka andika nimero ya telefone yuzuye irimo n’igipimo cy’igihugu."
     },
     "buyingGuide": {
       "boundaryText": "Sawa Cars ntabwo ifata amafaranga, ngo itange amasezerano, cyangwa ngo ikemure amakimbirane yo hanze.",
@@ -1587,7 +1602,8 @@ export const TRANSLATIONS = {
       "whatsapp": "WhatsApp",
       "yes": "Yego",
       "yesterday": "Ejo hashize",
-      "vehicleListing": "Imodoka iri ku isoko"
+      "vehicleListing": "Imodoka iri ku isoko",
+      "perWeek": "/icyumweru"
     },
     "comparison": {
       "addCar": "Ongeraho imodoka",
@@ -1826,7 +1842,11 @@ export const TRANSLATIONS = {
       "trips": "ingendo",
       "truck": "Ikamyo",
       "trying": "Biragerageza…",
-      "unavailableUntil": "Ntiboneka kugeza {{date}}"
+      "unavailableUntil": "Ntiboneka kugeza {{date}}",
+      "hotDeals": "Ibyiza bidasanzwe n'imodoka zatoranyijwe",
+      "hotDealsSub": "Imodoka zatoranyijwe zifite ibiciro byiza kandi byumvikanwaho",
+      "premiumBadge": "PREMIUM",
+      "hotDealBadge": "IGICIRO CYIZA"
     },
     "idVerification": {
       "add3Photos": "Shyiraho amafoto yose 3 ngo ukomeze",
@@ -2750,6 +2770,14 @@ export const TRANSLATIONS = {
       "restarting": "Birongera gufunguka…",
       "dismiss": "Kureka",
       "versionCompare": "Ufite {{current}} · Inshya ni {{latest}}"
+    },
+    "price": {
+      "approxUsdLabel": "hafi {{usd}} ku gipimo cy'ivunjisha cy'uyu munsi",
+      "rateMayBeOutOfDate": "  igipimo gishobora kuba kitakigezweho",
+      "rateNoteIntro": "Amafaranga y'amadolari ni igereranya, ahinduwe kuri",
+      "rateNoteUpdated": "(byavuguruwe {{stamp}})",
+      "rateNoteStale": "(byemejwe bwa nyuma {{stamp}}; serivisi y'ivunjisha ntiri kuboneka)",
+      "rateNoteAgreedInRwf": ". Ibiciro bishyirwaho kandi byumvikanyweho mu mafaranga y'u Rwanda."
     }
   },
   "fr": {
@@ -2789,7 +2817,8 @@ export const TRANSLATIONS = {
       "welcomeBack": "Bon retour. Votre compte est de nouveau ouvert.",
       "signInToContinue": "Connectez-vous pour continuer",
       "signInRequiredSub": "Enregistrer des véhicules et contacter des vendeurs\nnécessite un compte.",
-      "browseDemoAccount": "Parcourir avec un compte de démonstration"
+      "browseDemoAccount": "Parcourir avec un compte de démonstration",
+      "validPhone": "Veuillez entrer un numéro de téléphone valide avec l’indicatif pays."
     },
     "buyingGuide": {
       "boundaryText": "Sawa Cars ne détient pas les fonds, n'émet pas le contrat de vente, ne garantit pas la livraison et ne tranche pas les litiges externes.",
@@ -2938,7 +2967,8 @@ export const TRANSLATIONS = {
       "whatsapp": "WhatsApp",
       "yes": "Oui",
       "yesterday": "Hier",
-      "vehicleListing": "Annonce du véhicule"
+      "vehicleListing": "Annonce du véhicule",
+      "perWeek": "/semaine"
     },
     "comparison": {
       "addCar": "Ajouter un véhicule",
@@ -3177,7 +3207,11 @@ export const TRANSLATIONS = {
       "trips": "trajets",
       "truck": "Pick-up",
       "trying": "Tentative…",
-      "unavailableUntil": "Indisponible jusqu’au {{date}}"
+      "unavailableUntil": "Indisponible jusqu’au {{date}}",
+      "hotDeals": "Offres Vedettes & Voitures en Promotion",
+      "hotDealsSub": "Offres sélectionnées et prix négociables avec contrôle transparent",
+      "premiumBadge": "PREMIUM",
+      "hotDealBadge": "BONNE AFFAIRE"
     },
     "idVerification": {
       "add3Photos": "Ajoutez les 3 photos requises pour continuer",
@@ -4101,6 +4135,14 @@ export const TRANSLATIONS = {
       "restarting": "Redémarrage en cours…",
       "dismiss": "Ignorer",
       "versionCompare": "Vous avez la version {{current}} · la plus récente est {{latest}}"
+    },
+    "price": {
+      "approxUsdLabel": "environ {{usd}} au taux de change du jour",
+      "rateMayBeOutOfDate": "  le taux peut être obsolète",
+      "rateNoteIntro": "Les montants en dollars sont approximatifs, convertis à",
+      "rateNoteUpdated": "(mis à jour le {{stamp}})",
+      "rateNoteStale": "(dernier cours confirmé le {{stamp}} ; le service de taux est inaccessible)",
+      "rateNoteAgreedInRwf": ". Les prix sont fixés et convenus en francs rwandais."
     }
   },
   "sw": {
@@ -4140,7 +4182,8 @@ export const TRANSLATIONS = {
       "welcomeBack": "Karibu tena. Akaunti yako imefunguliwa.",
       "signInToContinue": "Ingia ili uendelee",
       "signInRequiredSub": "Kuhifadhi magari na kuwatumia wauzaji ujumbe\nkunahitaji akaunti.",
-      "browseDemoAccount": "Vinjari ukitumia akaunti ya onyesho"
+      "browseDemoAccount": "Vinjari ukitumia akaunti ya onyesho",
+      "validPhone": "Tafadhali weka nambari ya simu sahihi yenye msimbo wa nchi."
     },
     "buyingGuide": {
       "boundaryText": "Sawa Cars haishikilii fedha, haitoi mkataba wa mauzo, haihakikishi usafirishaji na haitatui migogoro ya nje.",
@@ -4289,7 +4332,8 @@ export const TRANSLATIONS = {
       "whatsapp": "WhatsApp",
       "yes": "Ndiyo",
       "yesterday": "Jana",
-      "vehicleListing": "Tangazo la gari"
+      "vehicleListing": "Tangazo la gari",
+      "perWeek": "/wiki"
     },
     "comparison": {
       "addCar": "Ongeza gari",
@@ -4528,7 +4572,11 @@ export const TRANSLATIONS = {
       "trips": "safari",
       "truck": "Lori",
       "trying": "Inajaribu…",
-      "unavailableUntil": "Haipatikani hadi {{date}}"
+      "unavailableUntil": "Haipatikani hadi {{date}}",
+      "hotDeals": "Ofa Kabambe & Magari Yanayovuma",
+      "hotDealsSub": "Magari yaliyoteuliwa yenye bei nzuri na maelewano ya moja kwa moja",
+      "premiumBadge": "PREMIUM",
+      "hotDealBadge": "OFA MAALUM"
     },
     "idVerification": {
       "add3Photos": "Ongeza picha zote 3 ili kuendelea",
@@ -5452,6 +5500,14 @@ export const TRANSLATIONS = {
       "restarting": "Inaanza upya…",
       "dismiss": "Ondoa",
       "versionCompare": "Una {{current}} · mpya zaidi ni {{latest}}"
+    },
+    "price": {
+      "approxUsdLabel": "takriban {{usd}} kwa kiwango cha ubadilishaji cha leo",
+      "rateMayBeOutOfDate": "  kiwango kinaweza kuwa kimepitwa na wakati",
+      "rateNoteIntro": "Takwimu za dola ni za kukadiria, zikibadilishwa kwa",
+      "rateNoteUpdated": "(imesasishwa {{stamp}})",
+      "rateNoteStale": "(imethibitishwa mwisho {{stamp}}; huduma ya viwango haipatikani)",
+      "rateNoteAgreedInRwf": ". Bei huwekwa na kukubaliwa katika faranga za Rwanda."
     }
   },
   "ko": {
@@ -5491,7 +5547,8 @@ export const TRANSLATIONS = {
       "welcomeBack": "다시 오신 것을 환영합니다. 계정이 열렸습니다.",
       "signInToContinue": "로그인 후 이용해 주세요",
       "signInRequiredSub": "차량 저장 및 판매자 문의 기능은\n로그인이 필요합니다.",
-      "browseDemoAccount": "체험 계정으로 둘러보기"
+      "browseDemoAccount": "체험 계정으로 둘러보기",
+      "validPhone": "국가 번호가 포함된 올바른 전화번호를 입력해 주세요."
     },
     "buyingGuide": {
       "boundaryText": "Sawa Cars는 거래 대금을 예치(에스크로)받지 않으며, 매매 계약서 발행, 차량 배송 보증, 대금 지급 보증 또는 외부 분쟁 판결을 직접 수행하지 않습니다.",
@@ -5640,7 +5697,8 @@ export const TRANSLATIONS = {
       "whatsapp": "WhatsApp",
       "yes": "예",
       "yesterday": "어제",
-      "vehicleListing": "차량 등록 정보"
+      "vehicleListing": "차량 등록 정보",
+      "perWeek": "/주"
     },
     "comparison": {
       "addCar": "차량 추가",
@@ -5879,7 +5937,11 @@ export const TRANSLATIONS = {
       "trips": "회 운행",
       "truck": "트럭",
       "trying": "시도 중…",
-      "unavailableUntil": "{{date}}까지 이용 불가"
+      "unavailableUntil": "{{date}}까지 이용 불가",
+      "hotDeals": "특가 차량 및 프리미엄 추천",
+      "hotDealsSub": "엄선된 특가 매물 및 투명한 진단 기반 협의 가능 매물",
+      "premiumBadge": "프리미엄",
+      "hotDealBadge": "초특가"
     },
     "idVerification": {
       "add3Photos": "계속 진행하려면 3장의 사진을 모두 첨부해 주세요",
@@ -6803,6 +6865,14 @@ export const TRANSLATIONS = {
       "restarting": "다시 시작하는 중…",
       "dismiss": "닫기",
       "versionCompare": "현재 버전: {{current}} · 최신 버전: {{latest}}"
+    },
+    "price": {
+      "approxUsdLabel": "오늘 환율 기준 약 {{usd}}",
+      "rateMayBeOutOfDate": "  환율 정보가 최신이 아닐 수 있습니다",
+      "rateNoteIntro": "달러 금액은 근사치이며, 환산 기준은",
+      "rateNoteUpdated": "(업데이트: {{stamp}})",
+      "rateNoteStale": "(마지막 확인: {{stamp}}; 환율 서비스를 일시적으로 이용할 수 없습니다)",
+      "rateNoteAgreedInRwf": "입니다. 거래 가격은 르완다 프랑(RWF)으로 결정되고 합의됩니다."
     }
   },
   "zh": {
@@ -6842,7 +6912,8 @@ export const TRANSLATIONS = {
       "welcomeBack": "欢迎回来，您的账户已重新开启。",
       "signInToContinue": "登录以继续",
       "signInRequiredSub": "收藏车辆和联系卖家\n需要先登录账户。",
-      "browseDemoAccount": "使用演示账户浏览"
+      "browseDemoAccount": "使用演示账户浏览",
+      "validPhone": "请输入包含国家代码的有效电话号码。"
     },
     "buyingGuide": {
       "boundaryText": "Sawa Cars 自身不代收买卖车款，不签署买卖合同，不承诺车辆交付，不为车况或付款提供担保，亦不裁决外部民事纠纷。",
@@ -6991,7 +7062,8 @@ export const TRANSLATIONS = {
       "whatsapp": "WhatsApp 联系",
       "yes": "是",
       "yesterday": "昨天",
-      "vehicleListing": "车辆刊登信息"
+      "vehicleListing": "车辆刊登信息",
+      "perWeek": "/周"
     },
     "comparison": {
       "addCar": "添加对比车辆",
@@ -7230,7 +7302,11 @@ export const TRANSLATIONS = {
       "trips": "次行程",
       "truck": "皮卡",
       "trying": "正在尝试…",
-      "unavailableUntil": "至 {{date}} 前不可用"
+      "unavailableUntil": "至 {{date}} 前不可用",
+      "hotDeals": "超值特价与精选推荐",
+      "hotDealsSub": "精选超值好车及附带透明报告的可议价车辆",
+      "premiumBadge": "精选臻品",
+      "hotDealBadge": "超值好价"
     },
     "idVerification": {
       "add3Photos": "请完整上传 3 张认证照片后继续",
@@ -8154,6 +8230,14 @@ export const TRANSLATIONS = {
       "restarting": "正在重启…",
       "dismiss": "忽略",
       "versionCompare": "当前版本 {{current}} · 最新版本 {{latest}}"
+    },
+    "price": {
+      "approxUsdLabel": "按今日汇率折算约为 {{usd}}",
+      "rateMayBeOutOfDate": "  汇率可能已过期",
+      "rateNoteIntro": "美元金额为估算值，按以下汇率折算：",
+      "rateNoteUpdated": "（已更新于 {{stamp}}）",
+      "rateNoteStale": "（最后确认为 {{stamp}}；汇率服务暂不可用）",
+      "rateNoteAgreedInRwf": "。最终价格以卢旺达法郎为准并达成协议。"
     }
   }
 };
