@@ -62,15 +62,19 @@ async function revokeSessions(client, userId) {
 
 // POST /auth/register
 router.post('/register', async (req, res) => {
-  const { name, email, password, role = 'buyer' } = req.body;
+  const { name, email, password, role = 'buyer', phone } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'name, email, and password are required' });
+  }
+  if (!phone || typeof phone !== 'string' || !/^\+[1-9]\d{7,14}$/.test(phone.replace(/[\s-]/g, ''))) {
+    return res.status(400).json({ error: 'A valid phone number with country code is required (e.g. +250788123456)' });
+  }
+  const cleanPhone = phone.replace(/[\s-]/g, '');
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
   if (password && password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
-  }
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'name, email, and password are required' });
   }
   if (!['buyer', 'seller'].includes(role)) {
     return res.status(400).json({ error: 'role must be buyer or seller' });
@@ -82,10 +86,10 @@ router.post('/register', async (req, res) => {
     }
     const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
-      `INSERT INTO users (name, email, password_hash, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role, id_verified, trust_score, token_version, created_at`,
-      [name, email.toLowerCase(), hash, role]
+      `INSERT INTO users (name, email, password_hash, role, phone)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, email, phone, role, id_verified, trust_score, token_version, created_at`,
+      [name, email.toLowerCase(), hash, role, cleanPhone]
     );
     const user = rows[0];
     // Fire-and-forget: a slow mail server must never slow a signup down, and
