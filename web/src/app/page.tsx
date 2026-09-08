@@ -5,7 +5,6 @@ import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { TopDeals } from '@/components/home/TopDeals'
 import { BrowseEntry } from '@/components/home/BrowseEntry'
 import { TrustGuarantees } from '@/components/home/TrustGuarantees'
-import { VinAuditBanner } from '@/components/home/VinAuditBanner'
 import { InspectionShowcase } from '@/components/home/InspectionShowcase'
 import { HowItWorks } from '@/components/home/HowItWorks'
 import { FinalCta } from '@/components/home/FinalCta'
@@ -13,6 +12,7 @@ import { FaqAccordion } from '@/components/marketing/FaqAccordion'
 import { cars } from '@/lib/api'
 import { FAQS } from '@/lib/site'
 import { graph, organizationNode, websiteNode } from '@/lib/seo'
+import { getServerT } from '@/lib/i18n/server'
 import type { Car, FeaturedPlacement } from '@/lib/types'
 
 // The homepage is a Server Component so the live inventory below the fold is in
@@ -50,48 +50,48 @@ async function getPlacements(): Promise<FeaturedPlacement[]> {
 
 export default async function HomePage() {
   const [featured, placements] = await Promise.all([getFeatured(), getPlacements()])
+  const t = await getServerT()
   const organizationLd = graph(organizationNode(), websiteNode())
 
   return (
     <>
-      {/* 1. Multi-Intent Hero Command Deck on Real-Camera Photographic Stage */}
-      <Hero cars={featured} />
+      {/* One statement, one search, and a photograph of an inspection. The
+          hero is deliberately shorter than the viewport so the first scroll
+          lands on stock rather than on more argument. */}
+      <Hero />
 
-      {/* 2. Top Deals / Operator Placements (if active) */}
+      {/* Operator placements first, then the newest inspected cars. Inventory
+          is the whole point of the page and it starts in the second section. */}
       <TopDeals placements={placements} />
-
-      {/* 3. Live Certified Inventory Grid — CARS DIRECTLY UNDER HERO */}
       <FeaturedCars cars={featured} />
 
-      {/* 4. Categorized Browse by Body Type & Budget Bands */}
-      <BrowseEntry cars={featured} />
-
-      {/* 5. Sawa Certified Guarantees — 4-Pillar Trust Grid (No Competitor Mentions) */}
+      {/* Then, and only then, the case for the inspection: four claims that
+          are each enforced in code, and the checklist's real shape. These two
+          used to be four sections — a pillar grid, a VIN banner, a showcase
+          and a stat band — arguing the same point over three and a half phone
+          screens. */}
       <TrustGuarantees />
-
-      {/* 6. Instant Free VIN & Chassis Audit Banner */}
-      <VinAuditBanner />
-
-      {/* 7. Physical 150-Point Diagnostic Inspection Showcase */}
       <InspectionShowcase />
 
-      {/* 8. Verified Handover Pipeline */}
+      {/* Photographic entry by body type. Its budget chips moved out: the
+          hero's search box and /cars' own filter panel already cover that, and
+          three sets of price bands on one page disagreed with each other. */}
+      <BrowseEntry cars={featured} />
+
       <HowItWorks />
 
-      {/* 9. Frequently Asked Questions */}
+      {/* Five of the eight; the full set lives on /how-it-works. These two
+          strings were hardcoded English while the rest of the page translated,
+          and the keys already existed in all six locales. */}
       <Section tone="page">
         <Container>
-          <SectionHeading
-            eyebrow="Questions"
-            title="Before you commit"
-          />
+          <SectionHeading eyebrow={t('home.faq.eyebrow')} title={t('home.faq.title')} />
           <div className="mt-12">
             <FaqAccordion items={FAQS.slice(0, 5)} structuredData />
           </div>
         </Container>
       </Section>
 
-      {/* 10. Final Call to Action */}
       <FinalCta />
 
       <script

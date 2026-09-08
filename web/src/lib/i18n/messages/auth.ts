@@ -187,7 +187,7 @@ const en = {
     metaCategoryValue: 'Vehicles',
     metaWorks: 'Works with',
     lead:
-      'The same certified marketplace and the same account, with the parts that only make sense on a phone: the camera work for verification, and alerts the moment a price moves.',
+      'The same marketplace and the same account. The app adds what only works on a phone: camera capture for verification, and alerts when a price moves.',
     onlyEyebrow: 'Only in the app',
     onlyTitle: 'What the app adds',
     onlyDescription:

@@ -1,7 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
-import { ChipLink } from '@/components/ui/Chip'
 import { Reveal } from '@/components/ui/Reveal'
 import { isDemoListing } from '@/lib/business'
 import { BODY_TYPE_IMAGES } from '@/lib/imagery'
@@ -26,18 +25,15 @@ const FAMILIES = [
   { value: 'Pickup', labelKey: 'home.browse.family.pickup' },
 ] as const
 
-// Computed per render, not at import: at import time the live rate has not
-// been fetched yet, and budget chips built on a stale rate would filter to the
-// wrong price band (~12% off, at the drift the old constant had accumulated).
-const budgets = () => {
-  const rwf = (rwfMillions: number) => rwfMillions * 1_000_000
-  return [
-    { labelKey: 'home.browse.budget.under', href: `/cars?max_price=${rwf(10)}` },
-    { labelKey: 'home.browse.budget.band1', href: `/cars?min_price=${rwf(10)}&max_price=${rwf(20)}` },
-    { labelKey: 'home.browse.budget.band2', href: `/cars?min_price=${rwf(20)}&max_price=${rwf(35)}` },
-    { labelKey: 'home.browse.budget.top', href: `/cars?min_price=${rwf(35)}` },
-  ]
-}
+// The budget chips that lived here are gone, along with the `budgets()` helper
+// that built them. They were the third set of price bands on one homepage and
+// the three sets disagreed. Price is a filter, and filtering belongs in the
+// hero's search box and in /cars' own filter panel — not repeated in three
+// places with three different definitions of "affordable".
+//
+// What this section keeps is the thing it alone does: a photographic way in,
+// by the four families people actually shop by, wearing a real listing's own
+// photograph wherever one exists.
 
 export async function BrowseEntry({ cars }: { cars: Car[] }) {
   const t = await getServerT()
@@ -64,7 +60,7 @@ export async function BrowseEntry({ cars }: { cars: Car[] }) {
       <Container>
         <SectionHeading eyebrow={t('home.browse.eyebrow')} title={t('home.browse.title')} />
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {FAMILIES.map((family, i) => {
             const photo = familyImage(family.value)
             return (
@@ -81,17 +77,17 @@ export async function BrowseEntry({ cars }: { cars: Car[] }) {
                       src={photo.image}
                       alt={photo.alt}
                       fill
-                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                      sizes="(min-width: 1024px) 25vw, 50vw"
                       className="object-contain p-4 transition-transform duration-500 ease-brand group-hover:scale-[1.04]"
                       {...(typeof photo.image !== 'string' ? { placeholder: 'blur' as const } : {})}
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-3 p-5">
-                    <div>
-                      <h3 className="text-title-sm font-extrabold text-content">{t(family.labelKey)}</h3>
-                      <p className="mt-0.5 text-caption text-content-muted">{t('home.browse.familyMeta')}</p>
+                  <div className="flex items-center justify-between gap-2 p-3 sm:p-5">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-title-sm font-extrabold text-content">{t(family.labelKey)}</h3>
+                      <p className="mt-0.5 truncate text-caption text-content-muted">{t('home.browse.familyMeta')}</p>
                     </div>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill border border-line text-content-secondary transition-colors group-hover:border-content-muted group-hover:bg-surface-alt">
+                    <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-pill border border-line text-content-secondary transition-colors group-hover:border-content-muted group-hover:bg-surface-alt sm:flex">
                       <Icon name="arrow-right" size={16} />
                     </span>
                   </div>
@@ -101,14 +97,6 @@ export async function BrowseEntry({ cars }: { cars: Car[] }) {
           })}
         </div>
 
-        {/* Budgets stay — quiet, one row, under the photography */}
-        <div className="mt-6 flex flex-wrap gap-2.5">
-          {budgets().map((b) => (
-            <ChipLink key={b.labelKey} href={b.href}>
-              {t(b.labelKey)}
-            </ChipLink>
-          ))}
-        </div>
       </Container>
     </Section>
   )

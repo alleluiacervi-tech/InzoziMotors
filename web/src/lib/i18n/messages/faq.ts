@@ -14,7 +14,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     inspection: {
       q: 'What does the 150-point inspection actually cover?',
-      a: 'Seven categories: engine and drivetrain, brakes and steering, body and exterior, interior and comfort, electronics and safety, tyres and wheels, and documentation. Every item is graded pass, flag or fail, and the full report is published on the listing before you commit.',
+      a: 'Seven categories, 150 items, one point each. Every item is graded pass, flag or fail. The full report is on the listing before you commit.',
     },
     guarantee: {
       q: 'Does Sawa Cars guarantee the transaction?',
@@ -48,7 +48,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     inspection: {
       q: 'Isuzuma ry’ingingo 150 rirebana n’iki koko?',
-      a: 'Ibyiciro birindwi: moteri n’ibiyikwereza, feri n’imikorere yo kuyobora, umubiri n’inyuma, imbere n’ineza, ibyuma bikoresha amashanyarazi n’umutekano, amapine n’amapfundo, n’inyandiko. Buri kintu gihabwa amanota (byatsinze, gukurikiranwa cyangwa byanze), kandi raporo yuzuye ishyirwa ku itangazo mbere y’uko wemeza.',
+      a: 'Ibyiciro birindwi, ibintu 150, buri kimwe inota rimwe. Buri kimwe gihabwa amanota: byatsinze, gukurikiranwa cyangwa byanze. Raporo yuzuye iri ku itangazo mbere y’uko wemeza.',
     },
     guarantee: {
       q: 'Ese Sawa Cars iratanga icyemezo ku bucuruzi?',
@@ -82,7 +82,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     inspection: {
       q: 'Que couvre réellement l’inspection en 150 points ?',
-      a: 'Sept catégories : moteur et transmission, freins et direction, carrosserie et extérieur, intérieur et confort, électronique et sécurité, pneus et roues, et documentation. Chaque point est noté réussi, signalé ou échoué, et le rapport complet est publié sur l’annonce avant que vous ne vous engagiez.',
+      a: 'Sept catégories, 150 points, un point chacun. Chaque point est noté réussi, signalé ou échoué. Le rapport complet figure sur l’annonce avant que vous ne vous engagiez.',
     },
     guarantee: {
       q: 'Sawa Cars garantit-elle la transaction ?',
@@ -116,7 +116,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     inspection: {
       q: 'Ukaguzi wa pointi 150 unahusu nini hasa?',
-      a: 'Makundi saba: injini na mfumo wa uendeshaji, breki na usukani, mwili na nje, ndani na starehe, elektroniki na usalama, matairi na magurudumu, na nyaraka. Kila kipengele hupewa alama (kimefaulu, kimeonywa au kimeshindwa), na ripoti kamili huchapishwa kwenye tangazo kabla hujaamua.',
+      a: 'Makundi saba, vipengele 150, kila kimoja pointi moja. Kila kipengele hupimwa: kimefaulu, kimeonywa au kimefeli. Ripoti kamili ipo kwenye tangazo kabla ya kujitolea.',
     },
     guarantee: {
       q: 'Je, Sawa Cars inadhamini muamala?',
@@ -150,7 +150,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     inspection: {
       q: '150개 항목 검사는 실제로 무엇을 다루나요?',
-      a: '일곱 가지 범주: 엔진과 구동계, 브레이크와 조향, 차체와 외관, 실내와 편의, 전자장치와 안전, 타이어와 휠, 서류. 각 항목은 합격·주의·불합격으로 평가되며, 전체 보고서는 구매를 결정하기 전에 매물에 공개됩니다.',
+      a: '일곱 개 항목군, 150개 항목, 각 1점입니다. 모든 항목은 합격·주의·불합격으로 채점됩니다. 전체 보고서는 결정 전에 매물 페이지에 게시됩니다.',
     },
     guarantee: {
       q: 'Sawa Cars가 거래를 보증하나요?',
@@ -184,7 +184,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     inspection: {
       q: '150项检测究竟包括哪些内容？',
-      a: '七大类别：发动机与传动系统、制动与转向、车身与外观、内饰与舒适性、电子与安全、轮胎与车轮，以及文件资料。每一项均评为通过、警示或不合格，完整报告会在您做出决定前发布在车源页面上。',
+      a: '七大类别，150 个项目，每项 1 分。每一项均评为通过、警示或不合格。完整报告会在您做出决定前发布在车源页面上。',
     },
     guarantee: {
       q: 'Sawa Cars 对交易提供担保吗？',

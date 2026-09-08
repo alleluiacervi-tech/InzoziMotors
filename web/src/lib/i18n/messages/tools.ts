@@ -12,7 +12,7 @@ const en = {
   hub: {
     metaTitle: 'Free car valuation, finance and import-duty tools for Rwanda',
     metaDescription:
-      'Free calculators for anyone buying, selling or importing a car in Rwanda: a market valuation from real Sawa Cars sales, the full RRA import duty breakdown, and a monthly finance estimate.',
+      'Free calculators for buying, selling or importing a car in Rwanda. A market valuation from real sales, the full RRA duty breakdown, and a monthly finance estimate.',
     ogTitle: 'Free car tools · {{site}}',
     ogDescription:
       'Valuation, RRA import duty and finance calculators for the Rwandan market. No account needed.',
@@ -48,10 +48,10 @@ const en = {
     heroEyebrow: 'Free tool',
     heroTitle: 'Car finance calculator',
     heroLede:
-      'Two ways round the same question. Start from a car you have found and see the monthly payment, or start from what you can pay each month and see which cars that reaches.',
+      'Two ways round the same question. Start from a car and see the monthly payment. Or start from your monthly budget and see which cars it reaches.',
     estimateTitle: 'Estimate a repayment',
     estimateDescription:
-      'Calculated at {{rate}}% a year — a representative rate for car lending in Kigali, and the same rate behind the monthly figure on every listing card.',
+      'Calculated at {{rate}}% a year, a representative rate for car lending in Kigali. It is the same rate behind the monthly figure on every listing card.',
     beforeEyebrow: 'Before you take it to a bank',
     beforeTitle: 'Three things that will change this number',
     beforeDescription:
@@ -111,13 +111,13 @@ const en = {
     liveResultPrice: 'Estimated {{amount}} a month over {{months}} months.',
     liveResultBudget: 'A budget of {{amount}} a month supports a car up to {{max}}.',
     disclaimer:
-      'Sawa Cars does not lend and does not arrange finance. {{rate}}% a year is a representative Kigali market rate — your bank sets its own based on your profile, and usually adds arrangement fees and required insurance on top. Treat this as a starting point for that conversation.',
+      'Sawa Cars does not lend and does not arrange finance. {{rate}}% a year is a representative Kigali market rate. Your bank sets its own from your profile, and usually adds arrangement fees and insurance on top. Treat this as a starting point for that conversation.',
   },
 
   dutyPage: {
     metaTitle: 'Rwanda import duty calculator',
     metaDescription:
-      'Estimate RRA import duty on a vehicle brought into Rwanda: CIF value, customs duty, excise by engine size, VAT and the infrastructure levy — all in RWF.',
+      'Estimate RRA import duty on a vehicle brought into Rwanda. CIF value, customs duty, excise by engine size, VAT and the infrastructure levy, all in francs.',
     ogTitle: 'Rwanda import duty calculator',
     ogDescription:
       'Customs, excise, VAT and the infrastructure levy on an imported vehicle — the full RRA breakdown in RWF.',
@@ -159,10 +159,10 @@ const en = {
       'Depreciation allowances, the year of manufacture and the body type all affect the assessed value. Two cars bought for the same money can clear at different totals.',
     clearingTitle: 'Clearing costs sit on top',
     clearingBody:
-      'Port handling, transport from Dar es Salaam or Mombasa, clearing agent fees, registration and first insurance are all real and none of them are in this figure.',
+      'This figure leaves out port handling, transport from Dar es Salaam or Mombasa, clearing agent fees, registration and first insurance. All of them are real costs.',
     altTitle: 'Or buy a car that has already landed',
     altBody:
-      'Every car on Sawa Cars is already in Rwanda, duty settled. Its documentation — including the RRA duty stamp — is checked during the 150-point inspection and published on the listing, so the price you see is the price you pay.',
+      'Every car on Sawa Cars is already in Rwanda, duty settled. The documentation, including the RRA duty stamp, is checked during the 150-point inspection and published on the listing. The price you see is the price you pay.',
     browse: 'Browse certified cars',
     financeCalc: 'Finance calculator',
   },
@@ -201,7 +201,7 @@ const en = {
     infraHint: '{{pct}} of CIF',
     totalDuties: 'Total duties and taxes',
     disclaimer:
-      'An estimate for planning. RRA assesses duty against its own valuation of the vehicle, which can differ from your invoice — age, body type and condition all move the figure. The assessment at clearing is the one that counts.',
+      'An estimate for planning. RRA assesses duty against its own valuation, which can differ from your invoice. Age, body type and condition all move the figure. The assessment at clearing is the one that counts.',
     ratesReviewed: 'Rates last reviewed {{date}}.',
     compareBtn: 'Compare against cars already in Rwanda',
     placeholder:

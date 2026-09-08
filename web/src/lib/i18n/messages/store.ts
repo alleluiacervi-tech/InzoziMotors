@@ -3,10 +3,10 @@
 import type { Locale } from '../config'
 
 export const store: Record<Locale, Record<string, unknown>> = {
-  en: { comingBoth: 'Coming to the App Store and Google Play.', downloadOn: 'Download on the', getItOn: 'Get it on', comingSoon: '{{names}} coming soon.' },
-  rw: { comingBoth: 'Iraza kuri App Store na Google Play.', downloadOn: 'Ikure kuri', getItOn: 'Iboneka kuri', comingSoon: '{{names}} iraza.' },
-  fr: { comingBoth: 'Bientôt sur l’App Store et Google Play.', downloadOn: 'Télécharger sur', getItOn: 'Disponible sur', comingSoon: '{{names}} bientôt disponible.' },
-  sw: { comingBoth: 'Inakuja kwenye App Store na Google Play.', downloadOn: 'Pakua kwenye', getItOn: 'Ipate kwenye', comingSoon: '{{names}} inakuja hivi karibuni.' },
-  ko: { comingBoth: 'App Store와 Google Play에 곧 출시됩니다.', downloadOn: '다운로드', getItOn: '다운로드', comingSoon: '{{names}} 곧 출시.' },
-  zh: { comingBoth: '即将登陆 App Store 和 Google Play。', downloadOn: '下载于', getItOn: '获取于', comingSoon: '{{names}} 即将推出。' },
+  en: { comingBoth: 'Coming to the App Store and Google Play.', downloadOn: 'Download on the', getItOn: 'Get it on', comingCaption: 'Coming soon to', comingSoon: '{{names}} coming soon.' },
+  rw: { comingBoth: 'Iraza kuri App Store na Google Play.', downloadOn: 'Ikure kuri', getItOn: 'Iboneka kuri', comingCaption: 'Iraza kuri', comingSoon: '{{names}} iraza.' },
+  fr: { comingBoth: 'Bientôt sur l’App Store et Google Play.', downloadOn: 'Télécharger sur', getItOn: 'Disponible sur', comingCaption: 'Bientôt sur', comingSoon: '{{names}} bientôt disponible.' },
+  sw: { comingBoth: 'Inakuja kwenye App Store na Google Play.', downloadOn: 'Pakua kwenye', getItOn: 'Ipate kwenye', comingCaption: 'Inakuja kwenye', comingSoon: '{{names}} inakuja hivi karibuni.' },
+  ko: { comingBoth: 'App Store와 Google Play에 곧 출시됩니다.', downloadOn: '다운로드', getItOn: '다운로드', comingCaption: '출시 예정', comingSoon: '{{names}} 곧 출시.' },
+  zh: { comingBoth: '即将登陆 App Store 和 Google Play。', downloadOn: '下载于', getItOn: '获取于', comingCaption: '即将上线', comingSoon: '{{names}} 即将推出。' },
 }
