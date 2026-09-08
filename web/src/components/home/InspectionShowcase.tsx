@@ -6,32 +6,32 @@ const TIERS = [
   {
     icon: 'gauge',
     title: 'Powertrain & Transmission',
-    desc: 'Engine compression test, turbo boost pressure, fluid viscosity, cold-start telemetry, and smooth automatic gear engagement.',
+    desc: 'Engine compression, turbo boost, fluid levels, and smooth transmission shifting.',
   },
   {
     icon: 'shield-check',
     title: 'Structural Chassis & Unibody',
-    desc: 'Laser-measured frame alignment, zero underside rust or weld repairs, crash crumple zones, and suspension subframe integrity.',
+    desc: 'Laser-measured frame alignment, zero underside rust, and unibody structural integrity.',
   },
   {
     icon: 'search',
     title: 'OBD-II Computer Diagnostics',
-    desc: 'Complete electronic sensor scan across engine ECU, ABS, SRS airbags, electronic steering, and catalytic emissions.',
+    desc: 'Complete electronic sensor scans across engine ECU, ABS, SRS airbags, and emissions.',
   },
   {
     icon: 'car',
     title: 'Laser Optical Alignment & Tires',
-    desc: 'Hunter computerized four-wheel laser alignment, uniform tire tread depth verification, and alloy wheel balance.',
+    desc: 'Hunter computerized 4-wheel laser alignment, uniform tire tread depth, and wheel balance.',
   },
   {
     icon: 'check',
     title: 'Braking & Hydraulic Dynamics',
-    desc: 'Disc rotor runout measurements, caliper hydraulic line pressure, emergency handbrake hold, and ABS pulsing test.',
+    desc: 'Disc rotor runout measurements, caliper hydraulic pressure, and ABS road testing.',
   },
   {
     icon: 'sparkles',
     title: 'Battery Health & Electrical Systems',
-    desc: 'Alternator charging voltage under load, starter motor cranking amps, climate control temperature, and full lighting harness.',
+    desc: 'Alternator charging voltage under load, starter battery health, and full wiring harness.',
   },
 ]
 
@@ -78,7 +78,7 @@ export function InspectionShowcase() {
             <SectionHeading
               eyebrow="The 150-Point Inspection Standard"
               title="A car is 30,000 parts. We inspect every critical one."
-              description="Beforward sends foreign auction sheets written in codes; local street dealers let you test drive for 5 minutes around the block. Sawa mechanics perform a comprehensive 2-hour physical diagnostic in Kigali."
+              description="Every certified vehicle undergoes a comprehensive 2-hour physical diagnostic, computerized OBD-II scan, and laser optical alignment at our Kigali facility."
             />
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
