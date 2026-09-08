@@ -14,7 +14,7 @@ export const sell: Record<Locale, Record<string, unknown>> = {
       eyebrow: 'Sell your car',
       title: "What's your car worth in Kigali?",
       subtitle:
-        'Priced from cars actually listed and sold on Sawa Cars — never a lookup table. If the number works, we inspect it, create a useful gallery and publish only after admin review. You then manage verified buyer enquiries and any agreement directly.',
+        'Priced from cars actually listed and sold here, never a lookup table. If the number works, we inspect the car and publish it after an admin review. You then deal with buyers directly.',
       bullet1: 'The valuation takes about ten seconds and needs no account',
       bullet2: 'You keep control of the price the whole way',
       bullet3: 'You control whether buyers can request phone or WhatsApp contact',
@@ -26,7 +26,7 @@ export const sell: Record<Locale, Record<string, unknown>> = {
       eyebrow: 'The work we do',
       title: 'Six jobs you no longer have to do yourself',
       description:
-        'Selling privately in Kigali means photographing the car, fielding calls, meeting strangers, and hoping the paperwork goes through. This is the same sale without any of that.',
+        'Selling privately means photographing the car, fielding calls and meeting strangers. This is the same sale without any of that.',
       inspect: {
         title: 'We inspect it properly',
         body: 'A 150-point check across engine and drivetrain, brakes and steering, body, interior, electronics, tyres and documentation. Every item is graded pass, flag or fail, and the full report is published with your listing.',
@@ -83,7 +83,7 @@ export const sell: Record<Locale, Record<string, unknown>> = {
       eyebrow: 'Before you start',
       title: 'One step has to happen in the app',
       body1:
-        'You can submit the car first. Before the listing or your direct contact details can become public, complete a one-time identity check: a photo of your national ID, front and back, and a selfie. The capture happens in the Sawa Cars app, takes about two minutes, and only needs to be approved once.',
+        'You can submit the car first. Before the listing or your contact details go public, you complete a one-time identity check. It needs a photo of your national ID, front and back, plus a selfie. The capture happens in the app and is approved once.',
       body2:
         'It is also the reason there are no fake listings on Sawa Cars. Every seller on this marketplace is a verified person, checked by our team.',
       whereTitle: 'Where each step happens',

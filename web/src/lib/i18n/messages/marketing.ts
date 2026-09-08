@@ -11,7 +11,7 @@ const en = {
     header: {
       eyebrow: 'About',
       title: 'A stronger marketplace, with clear boundaries.',
-      lede: 'Buying a used car in Kigali can mean trusting information that is difficult to verify. Sawa Cars adds seller checks, inspection evidence and controlled publication while leaving the final decision and transaction with the users.',
+      lede: 'Buying a used car in Kigali means trusting information you cannot check. We add seller verification, inspection evidence and controlled publication. The decision, and the deal, stay yours.',
       browse: 'Browse certified cars',
       visit: 'Visit a center',
     },
@@ -19,9 +19,9 @@ const en = {
       eyebrow: 'Why it exists',
       title: 'Provenance is the hard problem here',
       description: 'Not price. Not choice. Knowing what the car in front of you has actually been through.',
-      p1: 'A large share of the cars on Rwandan roads arrived as used imports, many of them right-hand drive from Japan. They come with a service history written somewhere else, an odometer that is difficult to verify, and paperwork that a private buyer has no practical way to audit before handing over money.',
-      p2: 'A classifieds site does not solve that. It carries whatever is posted to it: the seller writes the description, the seller takes the photographs, and the seller is the only person who has ever looked under the bonnet.',
-      p3: 'So Sawa Cars took the opposite position. We take the car in, run a 150-point check across its mechanics, body, electronics and documents, photograph it in a fixed useful photo gallery, and publish the listing only after an admin review. The seller keeps control of the price. We keep control of the truth.',
+      p1: 'Most cars on Rwandan roads arrived as used imports, many of them right-hand drive from Japan. Their service history was written somewhere else. The odometer is hard to verify. And a private buyer has no practical way to audit the paperwork before handing over money.',
+      p2: 'A classifieds site does not solve that. It carries whatever is posted to it. The seller writes the description, takes the photographs, and is the only person who has looked under the bonnet.',
+      p3: 'So Sawa Cars took the opposite position. We take the car in and run a 150-point check on its mechanics, body, electronics and documents. We photograph it. The listing goes live only after an admin review. The seller keeps control of the price. We keep control of the truth.',
     },
     pipeline: {
       eyebrow: 'How a car gets on the site',
@@ -299,7 +299,7 @@ const en = {
     },
     page: {
       title: 'Privacy policy',
-      lede: 'What we collect, why we hold it, who can see it — and the particular care taken with the identity documents that make this marketplace work.',
+      lede: 'What we collect, why we hold it and who can see it. Plus the particular care taken with the identity documents this marketplace runs on.',
     },
     scope: {
       heading: 'Scope',

@@ -4,11 +4,34 @@ import type { Locale } from '../config'
 
 export const home: Record<Locale, Record<string, unknown>> = {
   en: {
+    inspection: {
+      eyebrow: 'The 150-point check',
+      title: 'What the score is made of',
+      description:
+        'Seven categories, weighted as the checklist weights them.',
+      category: {
+        engine: 'Engine & drivetrain',
+        brakes: 'Brakes & steering',
+        body: 'Body & exterior',
+        interior: 'Interior & comfort',
+        electronics: 'Electronics & safety',
+        tyres: 'Tyres & wheels',
+        documentation: 'Documentation & roadworthiness',
+      },
+      criticalCount: '{{count}} critical',
+      ruleScore:
+        'Each item is one point, so a car is scored out of {{total}}. A listing needs {{threshold}} to be published.',
+      ruleCritical:
+        '{{critical}} items are critical. One failure blocks publication at any score.',
+      link: 'Read the full inspection standard',
+    },
     hero: {
+      photoAlt:
+        'A car raised on a workshop lift with wheel-alignment heads clamped to its wheels',
       eyebrow: "Rwanda's trusted mobility marketplace",
       title: 'The right car. The confidence to move.',
       subtitle:
-        'Compare reviewed listings, contact verified sellers and agree your own sale or rental with clear information upfront.',
+        'Every car inspected at our Kigali centres. You deal with the seller directly.',
       navLabel: 'Choose what you want to do',
       nav: { buy: 'Buy', rent: 'Rent', sell: 'Sell', tools: 'Car tools' },
       searchLabel: 'Search certified cars',
@@ -69,6 +92,11 @@ export const home: Record<Locale, Record<string, unknown>> = {
         centers: 'Kigali inspection centers',
       },
       ledger: {
+        independent: {
+          claim: 'Independent inspection',
+          proof:
+            'Sawa Cars inspects the car but never sells it, and earns nothing from the sale.',
+        },
         evidence: {
           claim: 'Inspection evidence',
           proof:
@@ -107,11 +135,34 @@ export const home: Record<Locale, Record<string, unknown>> = {
   },
 
   rw: {
+    inspection: {
+      eyebrow: 'Isuzuma ry’ingingo 150',
+      title: 'Ibigize amanota',
+      description:
+        'Ibyiciro birindwi, bipimwe nk’uko urutonde rw’isuzuma rubipima.',
+      category: {
+        engine: 'Moteri n’ibiyikwereza',
+        brakes: 'Feri n’ubuyobozi',
+        body: 'Umubiri n’inyuma',
+        interior: 'Imbere n’ineza',
+        electronics: 'Amashanyarazi n’umutekano',
+        tyres: 'Amapine n’amapfundo',
+        documentation: 'Impapuro n’ubushobozi bwo kugenda',
+      },
+      criticalCount: '{{count}} by’ingenzi',
+      ruleScore:
+        'Buri kintu ni inota rimwe, bityo imodoka ipimwa kuri {{total}}. Itangazo risaba {{threshold}} kugira ngo ritangazwe.',
+      ruleCritical:
+        'Ibintu {{critical}} ni by’ingenzi. Kimwe kidatsinze kibuza gutangaza uko amanota ari.',
+      link: 'Soma urwego rw’isuzuma rwuzuye',
+    },
     hero: {
+      photoAlt:
+        'Imodoka izamuwe ku gikoresho cyo mu ruganda, ifite ibyuma bipima ubushyuhe bw’amapine bifatanye n’amapine yayo',
       eyebrow: 'Isoko ry’imodoka ryizewe mu Rwanda',
       title: 'Imodoka ikwiye. Icyizere cyo kugenda.',
       subtitle:
-        'Gereranya amatangazo yasuzumwe, uvugane n’abagurisha bemejwe, kandi wumvikane wenyine ku igurisha cyangwa ubukode hamwe n’amakuru asobanutse mbere.',
+        'Imodoka zose zisuzumwa mu bigo byacu i Kigali. Uvugana n’umugurisha ku buryo butaziguye.',
       navLabel: 'Hitamo icyo ushaka gukora',
       nav: { buy: 'Gura', rent: 'Kodesha', sell: 'Gurisha', tools: 'Ibikoresho' },
       searchLabel: 'Shakisha imodoka zemewe',
@@ -173,6 +224,11 @@ export const home: Record<Locale, Record<string, unknown>> = {
         centers: 'ibigo by’isuzuma i Kigali',
       },
       ledger: {
+        independent: {
+          claim: 'Isuzuma ryigenga',
+          proof:
+            'Sawa Cars isuzuma imodoka ariko ntiyigurisha, kandi nta nyungu ibona ku igurishwa.',
+        },
         evidence: {
           claim: 'Ibimenyetso by’isuzuma',
           proof:
@@ -212,11 +268,34 @@ export const home: Record<Locale, Record<string, unknown>> = {
   },
 
   fr: {
+    inspection: {
+      eyebrow: 'Le contrôle en 150 points',
+      title: 'De quoi la note est faite',
+      description:
+        'Sept catégories, pondérées comme la liste de contrôle les pondère.',
+      category: {
+        engine: 'Moteur et transmission',
+        brakes: 'Freins et direction',
+        body: 'Carrosserie et extérieur',
+        interior: 'Intérieur et confort',
+        electronics: 'Électronique et sécurité',
+        tyres: 'Pneus et roues',
+        documentation: 'Documents et conformité',
+      },
+      criticalCount: '{{count}} critiques',
+      ruleScore:
+        'Chaque point vaut un point, la voiture est donc notée sur {{total}}. Une annonce doit atteindre {{threshold}} pour être publiée.',
+      ruleCritical:
+        '{{critical}} points sont critiques. Un seul échec bloque la publication, quelle que soit la note.',
+      link: 'Lire la norme d’inspection complète',
+    },
     hero: {
+      photoAlt:
+        'Une voiture levée sur un pont d’atelier, têtes de géométrie fixées à ses roues',
       eyebrow: 'Le marché de la mobilité de confiance au Rwanda',
       title: 'La bonne voiture. La confiance d’avancer.',
       subtitle:
-        'Comparez des annonces vérifiées, contactez des vendeurs certifiés et convenez vous-même de votre vente ou de votre location avec des informations claires dès le départ.',
+        'Chaque voiture inspectée dans nos centres de Kigali. Vous traitez directement avec le vendeur.',
       navLabel: 'Choisissez ce que vous voulez faire',
       nav: { buy: 'Acheter', rent: 'Louer', sell: 'Vendre', tools: 'Outils auto' },
       searchLabel: 'Rechercher des voitures certifiées',
@@ -278,6 +357,11 @@ export const home: Record<Locale, Record<string, unknown>> = {
         centers: 'centres d’inspection à Kigali',
       },
       ledger: {
+        independent: {
+          claim: 'Inspection indépendante',
+          proof:
+            'Sawa Cars inspecte la voiture sans jamais la vendre, et ne gagne rien sur la vente.',
+        },
         evidence: {
           claim: 'Preuves d’inspection',
           proof:
@@ -317,11 +401,34 @@ export const home: Record<Locale, Record<string, unknown>> = {
   },
 
   sw: {
+    inspection: {
+      eyebrow: 'Ukaguzi wa pointi 150',
+      title: 'Alama inaundwa na nini',
+      description:
+        'Kategoria saba, zenye uzito kama orodha ya ukaguzi inavyoziweka.',
+      category: {
+        engine: 'Injini na usafirishaji',
+        brakes: 'Breki na uelekezaji',
+        body: 'Mwili na nje',
+        interior: 'Ndani na starehe',
+        electronics: 'Elektroniki na usalama',
+        tyres: 'Matairi na magurudumu',
+        documentation: 'Nyaraka na ubora wa barabara',
+      },
+      criticalCount: '{{count}} muhimu',
+      ruleScore:
+        'Kila kipengele ni pointi moja, hivyo gari hupimwa kwa {{total}}. Tangazo linahitaji {{threshold}} kuchapishwa.',
+      ruleCritical:
+        'Vipengele {{critical}} ni muhimu sana. Kushindwa kimoja kuzuia uchapishaji bila kujali alama.',
+      link: 'Soma kiwango kamili cha ukaguzi',
+    },
     hero: {
+      photoAlt:
+        'Gari lililoinuliwa kwenye lifti ya karakana, vichwa vya kupima mpangilio wa magurudumu vimebanwa kwenye magurudumu yake',
       eyebrow: 'Soko la usafiri linaloaminika la Rwanda',
       title: 'Gari sahihi. Ujasiri wa kusonga.',
       subtitle:
-        'Linganisha matangazo yaliyokaguliwa, wasiliana na wauzaji waliothibitishwa na ukubaliane mwenyewe kuhusu mauzo au ukodishaji wako kwa taarifa wazi tangu mwanzo.',
+        'Kila gari hukaguliwa katika vituo vyetu vya Kigali. Unashughulika na muuzaji moja kwa moja.',
       navLabel: 'Chagua unachotaka kufanya',
       nav: { buy: 'Nunua', rent: 'Kodisha', sell: 'Uza', tools: 'Zana za gari' },
       searchLabel: 'Tafuta magari yaliyothibitishwa',
@@ -383,6 +490,11 @@ export const home: Record<Locale, Record<string, unknown>> = {
         centers: 'vituo vya ukaguzi Kigali',
       },
       ledger: {
+        independent: {
+          claim: 'Ukaguzi huru',
+          proof:
+            'Sawa Cars hukagua gari lakini haliuzi kamwe, na haipati faida yoyote kutokana na mauzo.',
+        },
         evidence: {
           claim: 'Ushahidi wa ukaguzi',
           proof:
@@ -422,11 +534,34 @@ export const home: Record<Locale, Record<string, unknown>> = {
   },
 
   ko: {
+    inspection: {
+      eyebrow: '150개 항목 점검',
+      title: '점수를 구성하는 항목',
+      description:
+        '체크리스트가 부여한 비중에 따른 일곱 개 항목군입니다.',
+      category: {
+        engine: '엔진 및 구동계',
+        brakes: '제동 및 조향',
+        body: '차체 및 외관',
+        interior: '실내 및 편의',
+        electronics: '전자장치 및 안전',
+        tyres: '타이어 및 휠',
+        documentation: '서류 및 운행 적합성',
+      },
+      criticalCount: '중대 {{count}}건',
+      ruleScore:
+        '항목당 1점이므로 차량은 {{total}}점 만점으로 채점됩니다. 매물 게시에는 {{threshold}}점이 필요합니다.',
+      ruleCritical:
+        '{{critical}}개 항목은 중대 항목입니다. 하나만 불합격해도 점수와 무관하게 게시가 차단됩니다.',
+      link: '전체 점검 기준 보기',
+    },
     hero: {
+      photoAlt:
+        '정비소 리프트에 올려진 차량, 바퀴에 휠 얼라인먼트 헤드가 장착되어 있습니다',
       eyebrow: '르완다의 신뢰받는 모빌리티 마켓플레이스',
       title: '알맞은 차. 나아갈 자신감.',
       subtitle:
-        '검토된 매물을 비교하고, 인증된 판매자에게 연락해, 처음부터 명확한 정보를 바탕으로 직접 판매나 렌트를 합의하세요.',
+        '모든 차량은 키갈리 센터에서 점검합니다. 판매자와 직접 거래하십시오.',
       navLabel: '원하는 작업을 선택하세요',
       nav: { buy: '구매', rent: '렌트', sell: '판매', tools: '차량 도구' },
       searchLabel: '인증 차량 검색',
@@ -487,6 +622,11 @@ export const home: Record<Locale, Record<string, unknown>> = {
         centers: '개 키갈리 검사 센터',
       },
       ledger: {
+        independent: {
+          claim: '독립적인 점검',
+          proof:
+            'Sawa Cars는 차량을 점검하지만 판매하지 않으며, 판매로 어떠한 수익도 얻지 않습니다.',
+        },
         evidence: {
           claim: '검사 증빙',
           proof:
@@ -526,11 +666,34 @@ export const home: Record<Locale, Record<string, unknown>> = {
   },
 
   zh: {
+    inspection: {
+      eyebrow: '150 项检测',
+      title: '评分由什么构成',
+      description:
+        '七个类别，权重与检查清单一致。',
+      category: {
+        engine: '发动机与传动',
+        brakes: '制动与转向',
+        body: '车身与外观',
+        interior: '内饰与舒适',
+        electronics: '电子与安全',
+        tyres: '轮胎与轮毂',
+        documentation: '文件与适路性',
+      },
+      criticalCount: '{{count}} 项关键',
+      ruleScore:
+        '每项计 1 分，因此车辆满分为 {{total}} 分。房源需达到 {{threshold}} 分方可发布。',
+      ruleCritical:
+        '其中 {{critical}} 项为关键项。任一项不合格，无论总分多少均不得发布。',
+      link: '阅读完整检测标准',
+    },
     hero: {
+      photoAlt:
+        '车辆被举升在维修车间的举升机上，车轮上夹装着四轮定位仪',
       eyebrow: '卢旺达值得信赖的出行市场',
       title: '合适的车，出行的信心。',
       subtitle:
-        '比较经过审核的车源，联系已验证的卖家，凭借提前掌握的清晰信息，自行达成买卖或租赁协议。',
+        '每辆车都在我们的基加利中心完成检测。您与卖家直接交易。',
       navLabel: '选择您想做的事',
       nav: { buy: '购买', rent: '租赁', sell: '出售', tools: '用车工具' },
       searchLabel: '搜索认证车辆',
@@ -591,6 +754,11 @@ export const home: Record<Locale, Record<string, unknown>> = {
         centers: '个基加利检测中心',
       },
       ledger: {
+        independent: {
+          claim: '独立检测',
+          proof:
+            'Sawa Cars 检测车辆，但从不出售车辆，也不从交易中获取任何收益。',
+        },
         evidence: {
           claim: '检测证据',
           proof:

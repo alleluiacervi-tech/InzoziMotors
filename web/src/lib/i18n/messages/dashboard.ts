@@ -355,7 +355,7 @@ const en = {
     submitInApp: 'Submit in the app',
     verifyTitle: 'Complete identity verification before publication',
     verifyBody:
-      'You may submit a car and book its inspection now. Before an administrator can publish it or enable your direct contact details, complete the one-time check in the Sawa Cars app: a photo of your national ID and a selfie. Nothing else on your account is affected.',
+      'You may submit a car and book its inspection now. Before an administrator can publish it or enable your contact details, complete the one-time check in the app. It needs a photo of your national ID and a selfie. Nothing else on your account is affected.',
     openSellerApp: 'Open the seller app',
     howSellingWorks: 'How selling works',
     pipelineHeading: 'In the pipeline',

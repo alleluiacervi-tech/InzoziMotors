@@ -1,123 +1,130 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
+import { getServerT } from '@/lib/i18n/server'
 
-const TIERS = [
-  {
-    icon: 'gauge',
-    title: 'Powertrain & Transmission',
-    desc: 'Engine compression, turbo boost, fluid levels, and smooth transmission shifting.',
-  },
-  {
-    icon: 'shield-check',
-    title: 'Structural Chassis & Unibody',
-    desc: 'Laser-measured frame alignment, zero underside rust, and unibody structural integrity.',
-  },
-  {
-    icon: 'search',
-    title: 'OBD-II Computer Diagnostics',
-    desc: 'Complete electronic sensor scans across engine ECU, ABS, SRS airbags, and emissions.',
-  },
-  {
-    icon: 'car',
-    title: 'Laser Optical Alignment & Tires',
-    desc: 'Hunter computerized 4-wheel laser alignment, uniform tire tread depth, and wheel balance.',
-  },
-  {
-    icon: 'check',
-    title: 'Braking & Hydraulic Dynamics',
-    desc: 'Disc rotor runout measurements, caliper hydraulic pressure, and ABS road testing.',
-  },
-  {
-    icon: 'sparkles',
-    title: 'Battery Health & Electrical Systems',
-    desc: 'Alternator charging voltage under load, starter battery health, and full wiring harness.',
-  },
-]
+// ─────────────────────────────────────────────────────────────────────────────
+// The 150 points, as the 150 points.
+//
+// This section and the four-pillar grid above it used to make the same
+// argument twice across three and a half phone screens, in prose, using
+// specifics nobody outside the building could check: "Hunter Optical Rack
+// #02", "Hunter computerized 4-wheel laser alignment", "a comprehensive
+// 2-hour physical diagnostic", "Cryptographic Odometer Audit", "Algorithmic
+// mileage regression analysis". Some of the underlying work is real — the
+// checklist genuinely grades an OBD scan (el06), wheel alignment behaviour
+// (b24) and brake-rotor wear (b05) — but the equipment names and the two-hour
+// figure were not in the repository anywhere, and the system's own integrity
+// check flags an inspection as too fast under TWENTY minutes. Publishing a
+// number the software never verifies is how a trust product loses trust.
+//
+// What replaced all of it is the checklist's own shape. Every figure below is
+// transcribed from backend/src/lib/inspection-policy.js, which throws at
+// require-time if its own counts do not reconcile — so these numbers cannot
+// drift from the inspection a mechanic actually performs. Seven categories,
+// their real weights, and the 49 items that are marked critical, meaning one
+// failure blocks publication at any score.
+//
+// It is also roughly a quarter of the words, because a table of true numbers
+// needs no adjectives. That is the trade this whole pass is built on.
+//
+// KEEPING IT HONEST: if the checklist changes, these counts must change with
+// it. They are duplicated here rather than fetched because the homepage must
+// render during a backend outage — but backend/test/inspection-policy.test.js
+// pins the totals, so a change there fails CI and sends someone to this file.
+// ─────────────────────────────────────────────────────────────────────────────
 
-export function InspectionShowcase() {
+/** Transcribed from inspection-policy.js CATEGORIES. 150 points, 49 critical. */
+const CATEGORIES = [
+  { key: 'engine', points: 25, critical: 4 },
+  { key: 'brakes', points: 25, critical: 14 },
+  { key: 'body', points: 20, critical: 7 },
+  { key: 'interior', points: 20, critical: 0 },
+  { key: 'electronics', points: 20, critical: 8 },
+  { key: 'tyres', points: 15, critical: 8 },
+  { key: 'documentation', points: 25, critical: 8 },
+] as const
+
+const TOTAL = CATEGORIES.reduce((n, c) => n + c.points, 0)
+const CRITICAL = CATEGORIES.reduce((n, c) => n + c.critical, 0)
+
+export async function InspectionShowcase() {
+  const t = await getServerT()
+
   return (
-    <Section tone="surface" className="overflow-hidden">
+    <Section tone="surface">
       <Container>
-        <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr] items-center">
-          
-          {/* Left Column: 100% Real-Camera Workshop Photography */}
-          <div className="relative overflow-hidden rounded-3xl border border-line-soft bg-ink-900 shadow-card-lg">
-            <div className="relative aspect-[4/5] sm:aspect-[4/3] lg:aspect-[4/5] w-full">
-              <Image
-                src="/img/inspection-alignment.jpg"
-                alt="Vehicle elevated on a computerized Hunter laser alignment lift inside certified diagnostic workshop"
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink-900/90 via-ink-900/25 to-transparent" />
-            </div>
+        <SectionHeading
+          eyebrow={t('home.inspection.eyebrow')}
+          title={t('home.inspection.title')}
+          description={t('home.inspection.description')}
+        />
 
-            {/* Live Inspection Badge Overlay */}
-            <div className="absolute bottom-6 left-6 right-6 rounded-2xl border border-white/20 bg-ink-900/80 p-4 text-white backdrop-blur-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-caption font-extrabold uppercase tracking-wider text-emerald-300">
-                    Kigali Diagnostic Facility
-                  </span>
+        {/* A ledger, not six cards. Each row carries its own weight as a bar,
+            so the shape of the inspection is readable before any of it is
+            read: brakes and documentation are the heaviest sections, interior
+            is the only one with nothing critical in it. */}
+        <ul className="mt-12">
+          {CATEGORIES.map((cat) => (
+            <li
+              key={cat.key}
+              className="grid grid-cols-[1fr_auto] items-center gap-x-5 gap-y-2 border-t border-line-soft py-4 sm:grid-cols-[minmax(0,15rem)_1fr_auto]"
+            >
+              <h3 className="min-w-0 text-body font-bold text-content">
+                {t(`home.inspection.category.${cat.key}`)}
+              </h3>
+
+              {/* Weight as a proportion of the whole check. Neutral ink, not
+                  the accent: this is information, and red is for prices and
+                  actions. */}
+              <div
+                className="order-3 col-span-2 flex items-center gap-3 sm:order-none sm:col-span-1"
+                aria-hidden
+              >
+                <div className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-alt">
+                  <div
+                    className="h-full rounded-pill bg-ink-700"
+                    style={{ width: `${(cat.points / 25) * 100}%` }}
+                  />
                 </div>
-                <span className="rounded bg-white/10 px-2 py-0.5 text-micro font-mono text-white/80">
-                  Hunter Optical Rack #02
-                </span>
               </div>
-              <p className="mt-2 text-micro leading-relaxed text-white/80">
-                Real physical inspection: Every car is lifted, scanned with computerized diagnostics, and road-tested before publication.
-              </p>
-            </div>
-          </div>
 
-          {/* Right Column: 6 Inspection Tiers */}
-          <div>
-            <SectionHeading
-              eyebrow="The 150-Point Inspection Standard"
-              title="A car is 30,000 parts. We inspect every critical one."
-              description="Every certified vehicle undergoes a comprehensive 2-hour physical diagnostic, computerized OBD-II scan, and laser optical alignment at our Kigali facility."
-            />
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {TIERS.map((tier) => (
-                <div
-                  key={tier.title}
-                  className="rounded-2xl border border-line-soft bg-surface-alt/60 p-4 transition-all hover:bg-surface hover:shadow-card"
-                >
-                  <div className="flex items-center gap-2.5 text-title-sm font-extrabold text-content">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-tint text-brand">
-                      <Icon name={tier.icon as any} size={15} />
+              <p className="whitespace-nowrap text-right text-caption tabular-nums text-content-secondary">
+                <span className="font-bold text-content">{cat.points}</span>
+                {cat.critical > 0 ? (
+                  <>
+                    {' · '}
+                    <span className="text-warning-text">
+                      {t('home.inspection.criticalCount', { count: cat.critical })}
                     </span>
-                    <h4 className="text-caption font-bold text-content">{tier.title}</h4>
-                  </div>
-                  <p className="mt-2 text-micro leading-relaxed text-content-secondary">
-                    {tier.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
+                  </>
+                ) : null}
+              </p>
+            </li>
+          ))}
+        </ul>
 
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                href="/how-it-works"
-                className="flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-caption font-bold text-white transition-all hover:bg-ink-800"
-              >
-                <span>Read Full Inspection Protocol</span>
-                <Icon name="arrow-right" size={14} />
-              </Link>
-              <Link
-                href="/cars"
-                className="text-caption font-bold text-brand hover:underline"
-              >
-                Browse 150-Point Certified Inventory →
-              </Link>
-            </div>
-          </div>
+        {/* The two rules that make the score mean something. Stated once. */}
+        <div className="mt-8 grid gap-x-10 gap-y-4 border-t-2 border-ink-900 pt-6 sm:grid-cols-2">
+          <p className="text-caption leading-relaxed text-content-secondary">
+            {t('home.inspection.ruleScore', { total: TOTAL, threshold: 105 })}
+          </p>
+          <p className="text-caption leading-relaxed text-content-secondary">
+            {t('home.inspection.ruleCritical', { critical: CRITICAL })}
+          </p>
         </div>
+
+        <p className="mt-8 text-body">
+          <Link
+            href="/how-it-works"
+            className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
+          >
+            {t('home.inspection.link')}
+            <Icon name="arrow-right" size={16} />
+          </Link>
+        </p>
       </Container>
     </Section>
   )
 }
+
+export default InspectionShowcase

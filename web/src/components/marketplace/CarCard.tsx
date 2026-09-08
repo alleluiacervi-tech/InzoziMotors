@@ -94,10 +94,9 @@ export async function CarCard({
               {t('cars.card.previewListing')}
             </Badge>
           ) : car.inspection_score ? (
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-ink-900/90 border border-emerald-500/30 px-2.5 py-1 text-micro font-bold tabular-nums text-emerald-300 backdrop-blur-md shadow-md">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <Icon name="shield-check" size={12} className="text-emerald-400" />
-              {car.inspection_score}/150 Certified
+            <span className="inline-flex max-w-full items-center gap-1.5 truncate rounded-pill bg-ink-900/85 px-2.5 py-1 text-micro font-bold tabular-nums text-white backdrop-blur-sm">
+              <Icon name="shield-check" size={12} />
+              {car.inspection_score}/150
             </span>
           ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
@@ -109,14 +108,6 @@ export async function CarCard({
           <div className="absolute right-3 top-3">
             <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge>
           </div>
-        ) : null}
-
-        {/* Cryptographically verified VIN badge proves canonical registry record */}
-        {car.vin_masked ? (
-          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-pill bg-ink-900/85 px-2.5 py-1 text-micro font-bold text-white backdrop-blur-md border border-white/15 shadow-sm">
-            <Icon name="shield-check" size={11} className="text-emerald-400" />
-            <span className="font-mono text-[11px] tracking-tight">{car.vin_masked}</span>
-          </span>
         ) : null}
 
         {/* The photo set is the signature — advertise it on every card, as a
@@ -176,20 +167,19 @@ export async function CarCard({
             link, and the arrow only ever restated that. */}
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-line-soft pt-3">
           {market && car.market_avg ? (
-            <span
-              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold tracking-tight ${
+            <p
+              className={`min-w-0 truncate text-micro font-semibold ${
                 market.tone === 'good'
-                  ? 'bg-emerald-50 text-emerald-800'
+                  ? 'text-success-text'
                   : market.tone === 'high'
-                  ? 'bg-amber-50 text-amber-800'
-                  : 'bg-surface-alt text-content-muted'
+                  ? 'text-warning-text'
+                  : 'text-content-muted'
               }`}
             >
-              {market.tone === 'good' && <Icon name="trending-down" size={11} className="text-emerald-600" />}
               {market.tone === 'neutral'
                 ? t('cars.card.atMarketPrice', { count: car.comparables ?? 0 })
                 : t(market.tone === 'good' ? 'cars.card.belowAverage' : 'cars.card.aboveAverage', { amount: formatMoney(Math.abs(car.market_avg - car.price)), count: car.comparables ?? 0 })}
-            </span>
+            </p>
           ) : (
             <span className="min-w-0" />
           )}
