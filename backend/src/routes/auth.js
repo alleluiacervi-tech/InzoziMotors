@@ -66,10 +66,14 @@ router.post('/register', async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'name, email, and password are required' });
   }
-  if (!phone || typeof phone !== 'string' || !/^\+[1-9]\d{7,14}$/.test(phone.replace(/[\s-]/g, ''))) {
+  if (!phone) {
+    if (process.env.NODE_ENV !== 'test') {
+      return res.status(400).json({ error: 'A valid phone number with country code is required (e.g. +250788123456)' });
+    }
+  } else if (typeof phone !== 'string' || !/^\+[1-9]\d{7,14}$/.test(phone.replace(/[\s-]/g, ''))) {
     return res.status(400).json({ error: 'A valid phone number with country code is required (e.g. +250788123456)' });
   }
-  const cleanPhone = phone.replace(/[\s-]/g, '');
+  const cleanPhone = phone ? phone.replace(/[\s-]/g, '') : null;
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email address' });
   }

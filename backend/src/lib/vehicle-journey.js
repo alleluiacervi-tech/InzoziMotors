@@ -184,16 +184,17 @@ function inspectionStage(inspection) {
   if (inspection.status === 'complete') {
     const score = Number(inspection.score);
     const criticals = Array.isArray(inspection.critical_failures) ? inspection.critical_failures : [];
-    const detail = criticals.length > 0
-      ? `${score}/150 (${criticals.length} defect${criticals.length === 1 ? '' : 's'} disclosed)`
-      : `${score}/150 (clean)`;
-    return {
-      state: 'done',
-      actor: 'none',
-      at: inspection.completed_at,
-      detail,
-      blockers: [],
-    };
+    if (inspection.passed && score >= PUBLISH_THRESHOLD && criticals.length === 0) {
+      return { state: 'done', actor: 'none', at: inspection.completed_at,
+        detail: `${score}/150`, blockers: [] };
+    }
+    const blockers = criticals.length
+      ? criticals.map((failure) => ({
+          label: `Critical failure: ${failure.label || failure.id}. A critical failure blocks publication at any score.`,
+          fix: `/inspections/${inspection.id}`,
+        }))
+      : [{ label: `Scored ${score}/150, below the ${PUBLISH_THRESHOLD}/150 publication threshold`, fix: `/inspections/${inspection.id}` }];
+    return { state: 'blocked', actor: 'none', at: inspection.completed_at, detail: 'Inspection did not pass', blockers };
   }
 
   if (inspection.status === 'in_progress') {
