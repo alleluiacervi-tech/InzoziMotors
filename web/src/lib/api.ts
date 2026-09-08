@@ -281,10 +281,10 @@ export const auth = {
       cache: 'no-store',
     }),
 
-  register: (name: string, email: string, password: string, role: 'buyer' | 'seller' = 'buyer') =>
+  register: (name: string, email: string, password: string, role: 'buyer' | 'seller' = 'buyer', phone?: string) =>
     request<{ user: User; token: string }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password, role }),
+      body: JSON.stringify({ name, email, password, role, phone }),
       cache: 'no-store',
     }),
 

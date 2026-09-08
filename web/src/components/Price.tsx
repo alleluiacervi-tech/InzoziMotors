@@ -1,6 +1,7 @@
 'use client'
 
 import { formatMoney, formatMoneyExact, formatUsdApprox, usdFromRwf } from '@/lib/business'
+import { useT } from '@/lib/i18n/context'
 import { useCurrency } from './CurrencyProvider'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,12 +27,17 @@ export function Price({
   size?: 'card' | 'detail'
   className?: string
 }) {
+  const t = useT()
   const fx = useCurrency()
   const usd = usdFromRwf(amountRwf, fx?.rate)
 
   const priceClass = size === 'detail'
     ? 'text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand tabular-nums'
     : 'text-price font-extrabold tracking-[-0.02em] text-brand tabular-nums'
+
+  const formattedUsd = usd != null ? formatUsdApprox(usd) : ''
+  const approxLabel = t('ui.approxUsdLabel', { usd: formattedUsd })
+  const staleLabel = t('ui.rateMayBeOutOfDate')
 
   return (
     <span className={`block ${className}`}>
@@ -43,10 +49,10 @@ export function Price({
           className={`mt-1 block tabular-nums text-content-muted ${size === 'detail' ? 'text-caption' : 'text-micro'}`}
           // The accessible name says the quiet part out loud: this is an
           // approximation at today's rate, not a second price.
-          aria-label={`approximately ${formatUsdApprox(usd)} at today's exchange rate`}
+          aria-label={approxLabel}
         >
-          ≈ {formatUsdApprox(usd)}
-          {fx?.stale ? <span className="ml-1 text-warning-text">· rate may be out of date</span> : null}
+          ≈ {formattedUsd}
+          {fx?.stale ? <span className="ml-1 text-warning-text">{staleLabel}</span> : null}
         </span>
       )}
     </span>
@@ -62,6 +68,7 @@ export function Price({
  * where, and when.
  */
 export function RateNote({ className = '' }: { className?: string }) {
+  const t = useT()
   const fx = useCurrency()
   if (!fx) return null
 
@@ -72,14 +79,14 @@ export function RateNote({ className = '' }: { className?: string }) {
 
   return (
     <p className={`text-micro text-content-muted ${className}`}>
-      Dollar figures are approximate, converted at{' '}
+      {t('ui.rateNoteIntro')}{' '}
       <span className="font-semibold tabular-nums text-content-secondary">
         1 USD = {Math.round(fx.rate).toLocaleString('en-RW')} RWF
       </span>{' '}
       {fx.stale
-        ? <span className="font-semibold text-warning-text">(last confirmed {stamp}; the rate service is unreachable)</span>
-        : <>(updated {stamp})</>}
-      . Prices are set and agreed in Rwandan francs.
+        ? <span className="font-semibold text-warning-text">{t('ui.rateNoteStale', { stamp })}</span>
+        : <>{t('ui.rateNoteUpdated', { stamp })}</>}
+      {t('ui.rateNoteAgreedInRwf')}
     </p>
   )
 }
