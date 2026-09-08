@@ -165,13 +165,13 @@ export default function RentalDetailScreen({ navigation, route }) {
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>{t('rentalDetail.dailyRate')}</Text>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.priceValue}>{formatRWF(car.dailyRate)}/day</Text>
+                <Text style={styles.priceValue}>{formatRWF(car.dailyRate)}{t('common.perDay') || '/day'}</Text>
               </View>
             </View>
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>{t('rentalDetail.weeklyRate')}</Text>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.priceValue}>{formatRWF(car.weeklyRate)}/week</Text>
+                <Text style={styles.priceValue}>{formatRWF(car.weeklyRate)}{t('common.perWeek') || '/week'}</Text>
                 <Text style={styles.priceSave}>
                   {t('rentalDetail.saveVsDaily', { amount: formatRWF(car.dailyRate * 7 - car.weeklyRate) })}
                 </Text>

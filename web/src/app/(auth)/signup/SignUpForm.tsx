@@ -56,6 +56,25 @@ function RoleCard({
   )
 }
 
+const COUNTRY_CODES = [
+  { code: '+250', flag: '🇷🇼', name: 'Rwanda (+250)' },
+  { code: '+254', flag: '🇰🇪', name: 'Kenya (+254)' },
+  { code: '+256', flag: '🇺🇬', name: 'Uganda (+256)' },
+  { code: '+255', flag: '🇹🇿', name: 'Tanzania (+255)' },
+  { code: '+257', flag: '🇧🇮', name: 'Burundi (+257)' },
+  { code: '+243', flag: '🇨🇩', name: 'DR Congo (+243)' },
+  { code: '+211', flag: '🇸🇸', name: 'South Sudan (+211)' },
+  { code: '+1', flag: '🇺🇸', name: 'USA / Canada (+1)' },
+  { code: '+44', flag: '🇬🇧', name: 'United Kingdom (+44)' },
+  { code: '+86', flag: '🇨🇳', name: 'China (+86)' },
+  { code: '+82', flag: '🇰🇷', name: 'South Korea (+82)' },
+  { code: '+33', flag: '🇫🇷', name: 'France (+33)' },
+  { code: '+971', flag: '🇦🇪', name: 'UAE (+971)' },
+  { code: '+91', flag: '🇮🇳', name: 'India (+91)' },
+  { code: '+27', flag: '🇿🇦', name: 'South Africa (+27)' },
+  { code: '+234', flag: '🇳🇬', name: 'Nigeria (+234)' },
+]
+
 export function SignUpForm({ next }: { next: string }) {
   const t = useT()
   const [state, formAction] = useActionState<AuthState, FormData>(signUpAction, null)
@@ -79,6 +98,36 @@ export function SignUpForm({ next }: { next: string }) {
           error={Boolean(fieldErrors.name)}
           aria-describedby={fieldErrors.name ? 'name-error' : undefined}
         />
+      </Field>
+
+      <Field label={t('auth.signup.phone') || 'Phone number'} htmlFor="phone" error={fieldErrors.phone}>
+        <div className="flex gap-2">
+          <select
+            name="countryCode"
+            defaultValue="+250"
+            aria-label="Country calling code"
+            className="h-11 rounded-xl border border-line bg-surface px-3 text-caption font-semibold text-content focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+          >
+            {COUNTRY_CODES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.flag} {c.code}
+              </option>
+            ))}
+          </select>
+          <div className="flex-1">
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              required
+              placeholder={t('auth.signup.phonePlaceholder') || '0788 123 456'}
+              error={Boolean(fieldErrors.phone)}
+              aria-describedby={fieldErrors.phone ? 'phone-error' : undefined}
+            />
+          </div>
+        </div>
       </Field>
 
       <Field label={t('auth.signup.email')} htmlFor="email" error={fieldErrors.email}>

@@ -39,9 +39,6 @@ function validInspectionExists(carAlias = 'c') {
        AND evidence_submission.year = ${carAlias}.year
        AND evidence.status = 'complete'
        AND evidence.checklist_version = '${CHECKLIST_VERSION}'
-       AND evidence.passed = TRUE
-       AND evidence.score >= ${PUBLISH_THRESHOLD}
-       AND jsonb_array_length(COALESCE(evidence.critical_failures, '[]'::jsonb)) = 0
   )`;
 }
 

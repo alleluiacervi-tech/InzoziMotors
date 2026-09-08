@@ -97,11 +97,25 @@ export default function HomeScreen({ navigation }) {
     let alive = true;
     carsApi.getFeatured(6)
       .then((rows) => { if (alive && Array.isArray(rows)) setFeatured(rows); })
-      .catch(() => {});   // the fallback is already on screen; nothing to say
+      .catch(() => {});
     return () => { alive = false; };
   }, []);
 
-  const slides = featured.length ? featured : BANNER_SLIDES;
+  // Hot deals and promoted cars: real vehicles only, never static generic website hero slides
+  const slides = useMemo(() => {
+    if (featured.length) return featured;
+    if (cars && cars.length) {
+      return cars.slice(0, 5).map((car, idx) => ({
+        ...car,
+        placement_id: `deal-${car.id}`,
+        headline: `${car.year} ${car.make} ${car.model}`,
+        title: `${car.year} ${car.make} ${car.model}`,
+        sponsored: idx === 0,
+        label: idx === 0 ? (t('home.premiumBadge') || 'PREMIUM') : (t('home.hotDealBadge') || 'HOT DEAL'),
+      }));
+    }
+    return [];
+  }, [featured, cars, t]);
 
   React.useEffect(() => {
     const t = setTimeout(() => setLoading(false), 700);
@@ -410,83 +424,70 @@ export default function HomeScreen({ navigation }) {
         {/* Titled only when these are cars an operator actually placed. The
             fallback slides are true statements about the service, not deals,
             and calling them one would be the first dishonest label in the app. */}
-        {featured.length ? (
+        {/* ── HOT DEALS & PROMOTED CARS ── */}
+        {slides.length ? (
           <View style={styles.topDealsHead}>
-            <Text style={styles.topDealsTitle}>{t('home.topDeals')}</Text>
-            <Text style={styles.topDealsSub}>{t('home.topDealsSub')}</Text>
+            <Text style={styles.topDealsTitle}>{t('home.hotDeals') || t('home.topDeals')}</Text>
+            <Text style={styles.topDealsSub}>{t('home.hotDealsSub') || t('home.topDealsSub')}</Text>
           </View>
         ) : null}
-        <View style={styles.carouselContainer}>
-          <ScrollView
-            ref={carouselRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleCarouselScroll}
-            scrollEventThrottle={16}
-          >
-            {slides.map((slide) => {
-              // A placement from the server, or one of the fallback slides.
-              const isCar = Boolean(slide.placement_id);
-              const image = isCar ? slide.images?.[0] : slide.image;
-              const heading = isCar ? (slide.headline || slide.title) : t(`home.${slide.brandKey}`);
-              const sub = isCar
-                ? `${formatPrice(slide.price)}${slide.location ? ` · ${slide.location}` : ''}`
-                : t(`home.${slide.taglineKey}`);
-              const tag = isCar ? slide.label : t(`home.${slide.tagKey}`);
+        {slides.length ? (
+          <View style={styles.carouselContainer}>
+            <ScrollView
+              ref={carouselRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleCarouselScroll}
+              scrollEventThrottle={16}
+            >
+              {slides.map((slide) => {
+                const image = slide.images?.[0] || slide.image;
+                const heading = slide.headline || slide.title;
+                const sub = `${formatPrice(slide.price)}${slide.location ? ` · ${slide.location}` : ''}`;
+                const tag = slide.label || (slide.sponsored ? 'PREMIUM' : 'HOT DEAL');
 
-              const Slide = (
-                <ImageBackground
-                  source={photoSource(image, PHOTO.WIDE)}
-                  style={styles.carouselSlide}
-                  contentFit={isCar ? 'cover' : 'contain'}
-                  cachePolicy="memory-disk"
-                >
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.72)']}
-                    style={styles.slideScrim}
-                  />
+                return (
+                  <Pressable
+                    key={slide.placement_id || slide.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${heading}. ${slide.sponsored ? 'Sponsored listing.' : ''}`}
+                    onPress={() => navigation.navigate('VehicleDetail', { carId: slide.id })}
+                  >
+                    <ImageBackground
+                      source={photoSource(image, PHOTO.WIDE)}
+                      style={styles.carouselSlide}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    >
+                      <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.75)']}
+                        style={styles.slideScrim}
+                      />
 
-                  {/* A paid placement says so. The server decides `sponsored`,
-                      so this cannot be got wrong by forgetting to check the
-                      kind — and for a company selling independent verification,
-                      an unlabelled paid slot is the one thing not to ship. */}
-                  <View style={[styles.slideTag, slide.sponsored && styles.slideTagSponsored]}>
-                    <Text style={[styles.slideTagText, slide.sponsored && styles.slideTagTextSponsored]}>
-                      {tag}
-                    </Text>
-                  </View>
-
-                  <View style={styles.slideText}>
-                    <Text style={styles.slideBrand} numberOfLines={1}>{heading}</Text>
-                    <Text style={styles.slideTagline} numberOfLines={2}>{sub}</Text>
-                    {isCar && slide.inspection_score ? (
-                      <View style={styles.slideScore}>
-                        <Ionicons name="shield-checkmark" size={11} color="#fff" />
-                        <Text style={styles.slideScoreText}>
-                          {t('home.inspected', { score: slide.inspection_score })}
+                      <View style={[styles.slideTag, slide.sponsored && styles.slideTagSponsored]}>
+                        <Text style={[styles.slideTagText, slide.sponsored && styles.slideTagTextSponsored]}>
+                          {tag}
                         </Text>
                       </View>
-                    ) : null}
-                  </View>
-                </ImageBackground>
-              );
 
-              // A banner nobody can tap is a poster. A placed car opens.
-              return isCar ? (
-                <Pressable
-                  key={slide.placement_id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${heading}. ${slide.sponsored ? 'Sponsored listing.' : ''}`}
-                  onPress={() => navigation.navigate('VehicleDetail', { carId: slide.id })}
-                >
-                  {Slide}
-                </Pressable>
-              ) : (
-                <View key={slide.id}>{Slide}</View>
-              );
-            })}
-          </ScrollView>
+                      <View style={styles.slideText}>
+                        <Text style={styles.slideBrand} numberOfLines={1}>{heading}</Text>
+                        <Text style={styles.slideTagline} numberOfLines={1}>{sub}</Text>
+                        {slide.inspection_score ? (
+                          <View style={styles.slideScore}>
+                            <Ionicons name="shield-checkmark" size={11} color="#fff" />
+                            <Text style={styles.slideScoreText}>
+                              {t('home.inspected', { score: slide.inspection_score })}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </ImageBackground>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
 
           {/* Dot pagination */}
           <View style={styles.dotsRow}>

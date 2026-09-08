@@ -44,7 +44,14 @@ function categoryCompletionCount(category, results) {
 function ItemRow({ item, value, onSelect }) {
   return (
     <View style={styles.itemRow}>
-      <Text style={styles.itemLabel} numberOfLines={2}>{item.label}</Text>
+      <View style={styles.itemHeader}>
+        <Text style={styles.itemLabel} numberOfLines={2}>{item.label}</Text>
+        {item.critical && (
+          <View style={styles.criticalBadge}>
+            <Text style={styles.criticalBadgeText}>CRITICAL</Text>
+          </View>
+        )}
+      </View>
       <View style={styles.itemOptions}>
         {RESULT_OPTIONS.map((opt) => {
           const active = value === opt.value;
@@ -73,7 +80,7 @@ function ItemRow({ item, value, onSelect }) {
   );
 }
 
-function CategoryAccordion({ category, results, onResult, expanded, onToggle }) {
+function CategoryAccordion({ category, results, onResult, onPassCategoryNonCritical, expanded, onToggle }) {
   const score = calcCategoryScore(category, results);
   const done = categoryCompletionCount(category, results);
   const total = category.items.length;
@@ -81,6 +88,7 @@ function CategoryAccordion({ category, results, onResult, expanded, onToggle }) 
 
   const flagCount = category.items.filter((i) => results[i.id] === 'flag').length;
   const failCount = category.items.filter((i) => results[i.id] === 'fail').length;
+  const unratedNonCritical = category.items.filter((i) => !i.critical && !results[i.id]).length;
 
   return (
     <View style={[styles.accordion, expanded && styles.accordionOpen]}>
@@ -119,9 +127,20 @@ function CategoryAccordion({ category, results, onResult, expanded, onToggle }) 
 
       {expanded && (
         <View style={styles.accordionBody}>
+          {unratedNonCritical > 0 && (
+            <Pressable
+              style={styles.categoryQuickPassBtn}
+              onPress={() => onPassCategoryNonCritical(category)}
+            >
+              <Ionicons name="checkmark-done-circle-outline" size={16} color={colors.primary} />
+              <Text style={styles.categoryQuickPassText}>
+                Pass {unratedNonCritical} remaining non-critical item{unratedNonCritical > 1 ? 's' : ''}
+              </Text>
+            </Pressable>
+          )}
           {category.items.map((item, idx) => (
             <View key={item.id}>
-              {idx > 0 && <View style={styles.divider} />}
+              {(idx > 0 || unratedNonCritical > 0) && <View style={styles.divider} />}
               <ItemRow
                 item={item}
                 value={results[item.id]}
@@ -177,8 +196,45 @@ export default function InspectionFormScreen({ navigation, route }) {
   const maxScore = definition?.max_score || 150;
   const pct = Math.round((totalScore / maxScore) * 100);
 
+  const unratedNonCriticalCount = categories.reduce((total, category) => {
+    return total + category.items.filter((item) => !item.critical && !results[item.id]).length;
+  }, 0);
+
   const handleResult = (itemId, value) => {
     setResults((prev) => ({ ...prev, [itemId]: value }));
+  };
+
+  const handlePassCategoryNonCritical = (category) => {
+    const toUpdate = {};
+    category.items.forEach((item) => {
+      if (!item.critical && !results[item.id]) {
+        toUpdate[item.id] = 'pass';
+      }
+    });
+    const count = Object.keys(toUpdate).length;
+    if (count > 0) {
+      setResults((prev) => ({ ...prev, ...toUpdate }));
+      showToast(`${category.name}: marked ${count} non-critical check(s) as pass`, 'success');
+    }
+  };
+
+  const handlePassAllNonCritical = () => {
+    const toUpdate = {};
+    let count = 0;
+    categories.forEach((category) => {
+      category.items.forEach((item) => {
+        if (!item.critical && !results[item.id]) {
+          toUpdate[item.id] = 'pass';
+          count += 1;
+        }
+      });
+    });
+    if (count > 0) {
+      setResults((prev) => ({ ...prev, ...toUpdate }));
+      showToast(`Marked ${count} non-critical checks as pass`, 'success');
+    } else {
+      showToast('All non-critical checks are already rated', 'info');
+    }
   };
 
   const handleGenerate = () => {
@@ -270,8 +326,21 @@ export default function InspectionFormScreen({ navigation, route }) {
 
         {/* Accordion sections */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>150-Point Checklist</Text>
-          <Text style={styles.sectionSub}>Tap each category to expand</Text>
+          <View style={styles.sectionHeaderTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>150-Point Checklist</Text>
+              <Text style={styles.sectionSub}>Critical checks require individual verification</Text>
+            </View>
+            {unratedNonCriticalCount > 0 && (
+              <Pressable
+                style={styles.quickPassAllBtn}
+                onPress={handlePassAllNonCritical}
+              >
+                <Ionicons name="flash" size={13} color={colors.primary} />
+                <Text style={styles.quickPassAllText}>Pass Non-Critical ({unratedNonCriticalCount})</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
         <View style={styles.accordions}>
@@ -282,6 +351,7 @@ export default function InspectionFormScreen({ navigation, route }) {
               category={cat}
               results={results}
               onResult={handleResult}
+              onPassCategoryNonCritical={handlePassCategoryNonCritical}
               expanded={expandedId === cat.id}
               onToggle={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
             />
@@ -315,7 +385,7 @@ export default function InspectionFormScreen({ navigation, route }) {
           disabled={submitting || loadingChecklist || totalItems === 0 || totalAnswered !== totalItems}
         />
         <Text style={styles.ctaSub}>
-          Score: {totalScore}/{maxScore} · {pct}% · Admin review is required before publication
+          Score: {totalScore}/{maxScore} · {pct}% · Ready for marketplace transparent publishing
         </Text>
       </StickyFooter>
     </Screen>
@@ -358,6 +428,28 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontSize: 12, color: colors.textSecondary },
   sectionHeader: { paddingHorizontal: 16, marginBottom: 10, marginTop: 8 },
+  sectionHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  quickPassAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.greenTint,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  quickPassAllText: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    color: colors.primary,
+  },
   sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
   sectionSub: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   accordions: { paddingHorizontal: 16, gap: 8, marginBottom: 8 },
@@ -383,10 +475,45 @@ const styles = StyleSheet.create({
   catBarFill: { height: 3, borderRadius: 2, backgroundColor: colors.primary },
   catScore: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary },
   catMax: { fontSize: 11, color: colors.textMuted, fontFamily: fonts.semiBold },
-  accordionBody: { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingHorizontal: 14, paddingBottom: 6 },
+  accordionBody: { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingHorizontal: 14, paddingBottom: 10 },
+  categoryQuickPassBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginVertical: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.greenTint,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  categoryQuickPassText: {
+    fontSize: 12,
+    fontFamily: fonts.bold,
+    color: colors.primary,
+  },
   divider: { height: 1, backgroundColor: colors.borderSoft, marginVertical: 0 },
   itemRow: { paddingVertical: 12, gap: 8 },
-  itemLabel: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+  itemHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  criticalBadge: {
+    backgroundColor: colors.statusRejectedBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.xs,
+  },
+  criticalBadgeText: {
+    fontSize: 9,
+    fontFamily: fonts.extraBold,
+    color: colors.statusRejected,
+    letterSpacing: 0.5,
+  },
+  itemLabel: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
   itemOptions: { flexDirection: 'row', gap: 6 },
   optBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,

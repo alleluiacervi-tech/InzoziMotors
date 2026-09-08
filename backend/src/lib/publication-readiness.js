@@ -161,14 +161,21 @@ async function publicationReadiness(client, carId) {
           || Number(car.evidence_year) !== Number(car.year)) missing.push('inspection linked to this vehicle make, model and year');
       if (!evaluated.valid) missing.push('complete 150-point inspection checklist');
       if (evaluated.score !== Number(car.inspection_score)) missing.push('consistent inspection score');
-      if (!car.inspection_passed || !evaluated.passed) missing.push(`passing inspection (${PUBLISH_THRESHOLD}/150 with no critical failures)`);
+      // Under Sawa Cars' transparency business model, critical defects or scores below the certified threshold
+      // do not block publication; they are disclosed on the listing so buyers and sellers can negotiate price.
     }
+  }
+  const baseWarnings = contentWarnings(car, await loadMakes());
+  if (evaluated?.critical_failures?.length) {
+    baseWarnings.push(`${evaluated.critical_failures.length} critical defect(s) flagged — disclosed on listing for price negotiation`);
+  } else if (evaluated && evaluated.score < PUBLISH_THRESHOLD) {
+    baseWarnings.push(`Inspection scored ${evaluated.score}/${SCORE_MAX} — disclosed on listing for price negotiation`);
   }
   return {
     ready: missing.length === 0,
     missing: [...new Set(missing)],
     // Things worth fixing that are not worth refusing over.
-    warnings: contentWarnings(car, await loadMakes()),
+    warnings: baseWarnings,
     photo_count: photoCount,
     min_photos: minPhotos,
     inspection_required: inspectionRequired,

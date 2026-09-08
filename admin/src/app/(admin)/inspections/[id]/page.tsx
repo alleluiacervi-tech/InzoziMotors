@@ -233,9 +233,9 @@ export default function InspectionDetailPage() {
     try {
       const completed = await api.completeInspection(id, { checklist_results: results, notes })
       toast(completed.passed
-        ? `Inspection passed at ${completed.score}/150. An admin may now review the listing for publication.`
-        : `Inspection recorded at ${completed.score}/150. The listing remains blocked.`,
-      completed.passed ? 'success' : 'error')
+        ? `Inspection passed at ${completed.score}/150. Ready for publication.`
+        : `Inspection recorded at ${completed.score}/150 with defect disclosures. Ready for transparent publication.`,
+      'success')
       router.push('/inspections')
     } catch (error: any) { toast(error.message, 'error') }
     finally { setSaving(false) }
@@ -334,7 +334,7 @@ export default function InspectionDetailPage() {
             <span className="text-green-600">✓ {counts.pass} Pass</span>
             <span className="text-amber-600">⚠ {counts.flag} Flag</span>
             <span className="text-red-600">✗ {counts.fail} Fail</span>
-            {criticalFailures.length > 0 && <span className="font-semibold text-red-700">{criticalFailures.length} critical failure(s) block publication</span>}
+            {criticalFailures.length > 0 && <span className="font-semibold text-amber-700">{criticalFailures.length} critical defect(s) disclosed for price negotiation</span>}
           </div>
         </div>
         {insp.status === 'scheduled' && <button onClick={startInspection} disabled={saving} className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Starting…' : 'Start Physical Inspection'}</button>}

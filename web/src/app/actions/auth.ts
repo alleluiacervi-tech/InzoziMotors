@@ -57,17 +57,25 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
   const name = String(formData.get('name') || '').trim()
   const email = String(formData.get('email') || '').trim().toLowerCase()
   const password = String(formData.get('password') || '')
+  const countryCode = String(formData.get('countryCode') || '+250').trim()
+  const rawPhone = String(formData.get('phone') || '').trim().replace(/[\s-]/g, '')
   const role = formData.get('role') === 'seller' ? 'seller' : 'buyer'
   const next = safeNext(formData.get('next'))
+
+  // Construct standard E.164 phone
+  const cleanPhone = rawPhone.startsWith('+') ? rawPhone : `${countryCode}${rawPhone.replace(/^0+/, '')}`
 
   const fieldErrors: Record<string, string> = {}
   if (name.length < 2) fieldErrors.name = 'Tell us your full name.'
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fieldErrors.email = 'Enter a valid email address.'
+  if (!rawPhone || !/^\+[1-9]\d{7,14}$/.test(cleanPhone)) {
+    fieldErrors.phone = 'Enter a valid phone number.'
+  }
   if (password.length < 6) fieldErrors.password = 'Use at least 6 characters.'
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 
   try {
-    const { token } = await authApi.register(name, email, password, role)
+    const { token } = await authApi.register(name, email, password, role, cleanPhone)
     await setSession(token)
   } catch (err) {
     if (err instanceof ApiError) {

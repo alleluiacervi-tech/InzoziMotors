@@ -3,8 +3,8 @@ import { appendImage } from '../utils/media';
 
 export const auth = {
   // Register a new buyer or seller
-  register: async (name, email, password, role = 'buyer') => {
-    const data = await api.post('/auth/register', { name, email, password, role });
+  register: async (name, email, password, role = 'buyer', phone) => {
+    const data = await api.post('/auth/register', { name, email, password, role, phone });
     if (data.token) {
       await setToken(data.token);
     }

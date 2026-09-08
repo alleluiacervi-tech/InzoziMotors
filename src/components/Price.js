@@ -24,8 +24,11 @@ import { formatUsdApprox, usdFromRwf } from '../data/marketData';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Price({ amountRwf, size = 'card', align = 'left', style }) {
-  const { fx } = useApp();
+  const { fx, t } = useApp();
   const usd = usdFromRwf(amountRwf, fx?.rate);
+  const formattedUsd = usd != null ? formatUsdApprox(usd) : '';
+  const approxLabel = t ? t('price.approxUsdLabel', { usd: formattedUsd }) : `approximately ${formattedUsd} at today's exchange rate`;
+  const staleLabel = t ? t('price.rateMayBeOutOfDate') : '  rate may be out of date';
 
   return (
     <View style={[align === 'right' && styles.right, style]}>
@@ -37,10 +40,10 @@ export default function Price({ amountRwf, size = 'card', align = 'left', style 
           style={size === 'detail' ? styles.usdDetail : styles.usd}
           // Says the quiet part out loud for a screen reader: this is an
           // approximation at today's rate, not a second price.
-          accessibilityLabel={`approximately ${formatUsdApprox(usd)} at today's exchange rate`}
+          accessibilityLabel={approxLabel}
         >
-          {`≈ ${formatUsdApprox(usd)}`}
-          {fx?.stale ? <Text style={styles.staleMark}>{'  rate may be out of date'}</Text> : null}
+          {`≈ ${formattedUsd}`}
+          {fx?.stale ? <Text style={styles.staleMark}>{staleLabel}</Text> : null}
         </Text>
       )}
     </View>
@@ -55,20 +58,25 @@ export default function Price({ amountRwf, size = 'card', align = 'left', style 
  * going to print dollars, it has to be able to say which rate and when.
  */
 export function RateNote({ style }) {
-  const { fx } = useApp();
+  const { fx, t } = useApp();
   if (!fx?.rate) return null;
 
   const stamp = fx.fetched_at
     ? new Date(fx.fetched_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : 'unknown';
 
+  const intro = t ? t('price.rateNoteIntro') : 'Dollar figures are approximate, at';
+  const updatedText = t ? t('price.rateNoteUpdated', { stamp }) : `(updated ${stamp})`;
+  const staleText = t ? t('price.rateNoteStale', { stamp }) : `(last confirmed ${stamp}; the rate service is unreachable)`;
+  const agreedInRwf = t ? t('price.rateNoteAgreedInRwf') : '. Prices are set and agreed in Rwandan francs.';
+
   return (
     <Text style={[styles.note, style]}>
-      {`Dollar figures are approximate, at 1 USD = ${Math.round(fx.rate).toLocaleString('en-RW')} RWF `}
+      {`${intro} 1 USD = ${Math.round(fx.rate).toLocaleString('en-RW')} RWF `}
       {fx.stale
-        ? <Text style={styles.staleMark}>{`(last confirmed ${stamp}; the rate service is unreachable)`}</Text>
-        : `(updated ${stamp})`}
-      {'. Prices are set and agreed in Rwandan francs.'}
+        ? <Text style={styles.staleMark}>{staleText}</Text>
+        : updatedText}
+      {agreedInRwf}
     </Text>
   );
 }

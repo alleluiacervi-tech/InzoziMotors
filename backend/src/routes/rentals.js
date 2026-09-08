@@ -70,10 +70,7 @@ const VALID_RENTAL_INSPECTION = `
     AND lower(evidence_submission.model) = lower(rc.model)
     AND evidence_submission.year = rc.year
     AND evidence.status = 'complete'
-    AND evidence.checklist_version = '${CHECKLIST_VERSION}'
-    AND evidence.passed = TRUE
-    AND evidence.score >= ${PUBLISH_THRESHOLD}
-    AND jsonb_array_length(COALESCE(evidence.critical_failures, '[]'::jsonb)) = 0`;
+    AND evidence.checklist_version = '${CHECKLIST_VERSION}'`;
 
 // A car is publicly listed only while a paid, un-voided subscription covers
 // today. This is EXPIRY BY PREDICATE: nothing sweeps rows, nothing has to run

@@ -1122,11 +1122,11 @@ export function AppProvider({ children }) {
     return true;
   }, []);
 
-  const signUpUser = useCallback(async (name, email, password, role = 'buyer') => {
+  const signUpUser = useCallback(async (name, email, password, role = 'buyer', phone) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await authApi.register(name, email, password, role);
+      const data = await authApi.register(name, email, password, role, phone);
       const user = data.user;
       setCurrentUser(withInitials(user));
       setIsLoggedIn(true);
