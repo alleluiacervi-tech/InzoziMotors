@@ -44,28 +44,36 @@ export interface MarketingSlide {
 /** Hero fallback slides — shown only when no live listing exists to lead with. */
 export const HERO_SLIDES: MarketingSlide[] = [
   {
-    image: heroSedanStudio,
-    alt: 'Grand-touring sedan in a violet studio',
+    image: heroSuvCourtyard,
+    alt: 'Modern luxury SUVs in an ultra-modern architectural courtyard',
     headline: 'Every car inspected. Every seller verified.',
-    caption: '150 points, published in full — on every single listing.',
+    caption: '150 physical diagnostic points, published in full on every single listing.',
     href: '/cars',
     cta: 'Browse certified cars',
   },
   {
-    image: heroSuvCourtyard,
-    alt: 'Two SUVs in a modern architectural courtyard',
-    headline: 'Sell it once. We do the rest.',
-    caption: 'Inspection, photography, buyers and RRA transfer — handled.',
-    href: '/sell',
-    cta: 'Value my car',
+    image: '/img/inspection-alignment.jpg',
+    alt: 'Vehicle undergoing computerized 150-point laser wheel alignment diagnostics',
+    headline: 'Physical 150-Point Inspection Diagnostics',
+    caption: 'Laser wheel alignment, powertrain diagnostics, and zero odometer rollbacks.',
+    href: '/how-it-works',
+    cta: 'See inspection standards',
+  },
+  {
+    image: '/img/lot.jpg',
+    alt: 'Inspected and certified vehicle inventory ready for immediate delivery in Kigali',
+    headline: 'Verified Title. 48-Hour RRA Registration.',
+    caption: 'Direct title transfer, clear customs status, and local test drives in Kigali.',
+    href: '/cars',
+    cta: 'Explore verified stock',
   },
   {
     image: heroGtCoast,
-    alt: 'Sedan driving a coastal road past an orange wall',
+    alt: 'Sports sedan driving an open road',
     headline: 'Rent the same certified standard.',
-    caption: 'Deposits back in full after the return check.',
+    caption: 'Deposits back in full after the digital return check.',
     href: '/rentals',
-    cta: 'See the fleet',
+    cta: 'See rental fleet',
   },
 ]
 

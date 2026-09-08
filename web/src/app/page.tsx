@@ -2,8 +2,11 @@ import type { Metadata } from 'next'
 import { Container, Section, SectionHeading } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
 import { BrowseEntry } from '@/components/home/BrowseEntry'
-import { FeaturedCars } from '@/components/home/FeaturedCars'
+import { CompetitorComparison } from '@/components/home/CompetitorComparison'
 import { TopDeals } from '@/components/home/TopDeals'
+import { VinHeroDemo } from '@/components/home/VinHeroDemo'
+import { InspectionShowcase } from '@/components/home/InspectionShowcase'
+import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { HowItWorks } from '@/components/home/HowItWorks'
 import { TrustBand } from '@/components/home/TrustBand'
 import { FinalCta } from '@/components/home/FinalCta'
@@ -66,15 +69,31 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Inventory-first: search on the hero stage, then two routes into the
-          marketplace (browse, live listings), then how it works, then ONE
-          trust section. Ten sections used to live here; a landing page that
-          says everything twice persuades half as well. */}
+      {/* 1. Multi-Intent Hero Command Deck on Real-Camera Photographic Stage */}
       <Hero cars={featured} />
+
+      {/* 2. Categorized Browse by Body Type & Budget Bands */}
       <BrowseEntry cars={featured} />
+
+      {/* 3. The Sawa Advantage: Why We Beat Beforward & Auto24 */}
+      <CompetitorComparison />
+
+      {/* 4. Top Deals / Verified Placements */}
       <TopDeals placements={placements} />
+
+      {/* 5. Proprietary VIN Intelligence & History Demonstration */}
+      <VinHeroDemo />
+
+      {/* 6. Physical 150-Point Inspection Standards & Diagnostic Lift Showcase */}
+      <InspectionShowcase />
+
+      {/* 7. Fresh Live Certified Inventory Grid */}
       <FeaturedCars cars={featured} />
+
+      {/* 8. Verified Handover Pipeline */}
       <HowItWorks />
+
+      {/* 9. Verified Marketplace Metrics & Guarantees */}
       <TrustBand />
 
       <Section tone="page">
