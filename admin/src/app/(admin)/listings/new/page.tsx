@@ -49,7 +49,7 @@ function InspectionPicker() {
       .filter(Boolean).join(' ').toLowerCase().includes(q)
   })
 
-  if (rows === null) return <div className="text-sm text-gray-400">Loading passed inspections…</div>
+  if (rows === null) return <div className="text-sm text-gray-400">Loading inspections…</div>
 
   return (
     <div className="max-w-2xl">
@@ -63,7 +63,7 @@ function InspectionPicker() {
         <div className="mt-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-900">No inspection is waiting for a listing</p>
           <p className="mt-2 text-sm text-gray-500">
-            A listing needs a completed, passing 150-point inspection that has not been used yet.
+            A listing needs a completed 150-point inspection that has not been used yet.
             Complete one first and it will appear here.
           </p>
           <Link href="/inspections" className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-deep">
