@@ -15,7 +15,11 @@ const VARIANTS: Record<Variant, string> = {
   // it made every red button shout over the content. A saturated red fill on a
   // warm-neutral page needs no help being seen; the confident version is flat.
   primary:
-    'bg-brand text-white hover:bg-brand-bright active:scale-[0.99]',
+    // text-brand-on, not text-white: the accent lightens in dark mode so
+    // white-on-red drops to 3.05:1 there. The token carries dark ink in
+    // that theme and white in light, which keeps the CTA above 4.5:1 in
+    // both.
+    'bg-brand text-brand-on hover:bg-brand-bright active:scale-[0.99]',
   secondary:
     'bg-surface-alt text-content hover:bg-line-soft active:scale-[0.99]',
   outline:

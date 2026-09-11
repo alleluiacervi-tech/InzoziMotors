@@ -9,9 +9,9 @@ import { CarPaths } from './Logo'
 // homepage hero fallback and the trust pages. Decorative — always aria-hidden;
 // neighbouring copy carries the meaning.
 
-const INK = '#3A2D29'
-const LINE = '#E8E3E3'
-const FIELD = '#F2F0EF'
+const INK = '#38302C'
+const LINE = '#E3DDD5'
+const FIELD = '#F2EFEA'
 const SUCCESS = '#16A34A'
 
 /** A completed-check node on the measurement ring. */

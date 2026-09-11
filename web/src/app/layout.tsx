@@ -132,7 +132,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{if(sessionStorage.getItem('sawa-splash'))document.documentElement.classList.add('splash-done')}catch(e){}",
+              "try{if(sessionStorage.getItem('sawa-splash'))document.documentElement.classList.add('splash-done')}catch(e){}" +
+              // Theme, resolved before the first pixel is painted. A stored
+              // choice wins; otherwise the OS preference decides. Doing this
+              // in <body> rather than a component is the only way to avoid a
+              // white flash on a dark-mode visitor's first paint.
+              "try{var t=localStorage.getItem('sawa-theme');" +
+              "var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches);" +
+              "document.documentElement.classList.toggle('dark',d);}catch(e){}",
           }}
         />
         <BrandSplash />

@@ -53,6 +53,7 @@ export async function TrustGuarantees() {
           eyebrow={t('home.trust.eyebrow')}
           title={t('home.trust.title')}
           description={t('home.trust.description')}
+          layout="split"
         />
 
         <div className="mt-12 grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-4">

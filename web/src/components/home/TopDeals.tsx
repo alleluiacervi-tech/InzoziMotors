@@ -39,6 +39,7 @@ export async function TopDeals({ placements }: { placements: FeaturedPlacement[]
             eyebrow={t('home.topDeals.eyebrow')}
             title={t('home.topDeals.title')}
             description={t('home.topDeals.description')}
+          layout="split"
           />
           <Link
             href="/cars"

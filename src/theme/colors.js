@@ -2,11 +2,18 @@
 // Bold, trustworthy red identity — confident and modern for East Africa's
 // premier certified car marketplace.
 // Rebranded Jul 18 2026: transitioned from Forest Green to Signal Red.
+//
+// Editorial Showroom pass, Sep 11 2026: Signal Red is unchanged and keeps its
+// discipline. What moved is the neutral ramp — the pink-grey surfaces became
+// warm bone paper and the ink went darker and less brown, so photography of a
+// car sits on a showroom wall rather than on a tinted screen. These values are
+// mirrored one-for-one by the light theme in web/src/app/globals.css; change
+// them here first, then there, or the two products stop looking alike.
 export const colors = {
   // Dark surfaces (Welcome hero gradient — premium warm charcoal, red kept as accent)
-  navyDeep: '#17120F',
-  navyMid: '#281F1C',
-  navyLight: '#3A2D29',
+  navyDeep: '#14110F',
+  navyMid: '#241F1D',
+  navyLight: '#38302C',
 
   // Brand Red — Sawa signal red #CC050F, taken from the master vector assets/sawa.svg.
   // DISCIPLINE: red appears ONLY as (1) a price, (2) a primary action,
@@ -69,23 +76,23 @@ export const colors = {
   dangerTint: '#FBECEF',
 
   // Neutrals — very slightly red-warm
-  bg: '#FAF8F8',
+  bg: '#FBFAF8',
   surface: '#FFFFFF',
-  surfaceAlt: '#F6F4F4',
-  border: '#E8E3E3',
-  borderSoft: '#F0EDED',
+  surfaceAlt: '#F2EFEA',
+  border: '#E3DDD5',
+  borderSoft: '#EFEAE3',
 
   // Text
-  textPrimary: '#1B1313',
-  textSecondary: '#423737',
-  textMuted: '#7A6E6E',
+  textPrimary: '#14110F',
+  textSecondary: '#3D3733',
+  textMuted: '#6E6660',
   // For genuinely de-emphasised text (closed dates, booked slots, disabled
   // steps). Screens used to reach for `border` (#E8E3E3, 1.3:1 — invisible);
   // this stays clearly quieter than textMuted while remaining legible.
-  textDisabled: '#A39797',
+  textDisabled: '#9C938B',
   textOnDark: '#FFFFFF',
-  slate700: '#1B1313',
-  slate600: '#423737',
+  slate700: '#14110F',
+  slate600: '#3D3733',
 
   white: '#FFFFFF',
   black: '#000000',

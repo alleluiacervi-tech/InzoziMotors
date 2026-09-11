@@ -87,7 +87,7 @@ export function FilterSheet({
         <Icon name="filter" size={17} className="text-content-secondary" />
         {t('cars.filterSheet.filters')}
         {count > 0 ? (
-          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-pill bg-brand px-1.5 text-micro font-extrabold text-white">
+          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-pill bg-brand px-1.5 text-micro font-extrabold text-brand-on">
             {count}
           </span>
         ) : null}

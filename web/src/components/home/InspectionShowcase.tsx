@@ -57,6 +57,7 @@ export async function InspectionShowcase() {
           eyebrow={t('home.inspection.eyebrow')}
           title={t('home.inspection.title')}
           description={t('home.inspection.description')}
+          layout="split"
         />
 
         {/* A ledger, not six cards. Each row carries its own weight as a bar,

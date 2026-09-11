@@ -2,70 +2,82 @@ import type { Config } from 'tailwindcss'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SOURCE OF TRUTH: src/theme/colors.js and src/theme/index.js (the Expo app).
-// Every value below is a literal port. If the mobile brand changes, change it
-// there first, then mirror it here — the two must never drift, because a buyer
-// who sees the site and then installs the app has to recognise the same product.
+// The palette itself now lives in src/app/globals.css as CSS variables, because
+// the web has two themes and the app has one; this file only names them. The
+// light-theme values there and the values in colors.js must stay identical — a
+// buyer who sees the site and then installs the app has to recognise the same
+// product.
 // ─────────────────────────────────────────────────────────────────────────────
 const config: Config = {
+  darkMode: 'class',
   content: ['./src/**/*.{ts,tsx,mdx}'],
   theme: {
     extend: {
       colors: {
-        // Brand red — Encar crimson, sampled from encar.com's own mark.
-        // DISCIPLINE (carried over from mobile): red appears ONLY as a price, a
-        // primary action, a selected/active state, the Certified+ badge, or an
-        // inline action link. Never as decoration.
+        // Every colour resolves through a CSS variable declared in
+        // src/app/globals.css, as an "R G B" triplet so /opacity modifiers
+        // (bg-brand/10, bg-ink-900/70) still compose. Swapping .dark on <html>
+        // reskins the entire site without touching a single component.
         brand: {
-          DEFAULT: '#CC050F',
-          bright: '#DE0714',
-          deep: '#A50410',
-          light: '#EE8B90',
-          // The app's primaryTint — a soft red wash. This was #F3F2F2, which
-          // was actually mobile's (gray) blueTint pasted into the brand slot.
-          tint: '#FDEBEC',
+          DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+          bright: 'rgb(var(--brand-bright) / <alpha-value>)',
+          deep: 'rgb(var(--brand-deep) / <alpha-value>)',
+          light: 'rgb(var(--brand-light) / <alpha-value>)',
+          tint: 'rgb(var(--brand-tint) / <alpha-value>)',
+          on: 'rgb(var(--on-brand) / <alpha-value>)',
         },
-        // Dark surfaces — premium warm charcoal, red stays the accent
         ink: {
-          900: '#17120F',
-          800: '#281F1C',
-          700: '#3A2D29',
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
         },
-        // Semantic — true success green. Never used for brand moments.
-        // `text` variants clear 4.5:1 on white and on their tints — use them
-        // for copy; DEFAULT is for icons/graphics.
-        success: { DEFAULT: '#16A34A', light: '#4ADE80', tint: '#EAF6EE', text: '#166534' },
-        warning: { DEFAULT: '#D97706', tint: '#FEF3C7', text: '#B45309' },
-        danger: { DEFAULT: '#B4233A', tint: '#FBECEF', strong: '#B91C1C' },
-        info: { DEFAULT: '#1D4ED8', tint: '#EFF6FF' },
-
-        // Pipeline status tokens — identical keys to colors.js so a status
-        // string coming off the API renders the same on web and mobile.
+        success: {
+          DEFAULT: 'rgb(var(--success) / <alpha-value>)',
+          light: 'rgb(var(--success-light) / <alpha-value>)',
+          tint: 'rgb(var(--success-tint) / <alpha-value>)',
+          text: 'rgb(var(--success-text) / <alpha-value>)',
+        },
+        warning: {
+          DEFAULT: 'rgb(var(--warning) / <alpha-value>)',
+          tint: 'rgb(var(--warning-tint) / <alpha-value>)',
+          text: 'rgb(var(--warning-text) / <alpha-value>)',
+        },
+        danger: {
+          DEFAULT: 'rgb(var(--danger) / <alpha-value>)',
+          tint: 'rgb(var(--danger-tint) / <alpha-value>)',
+          strong: 'rgb(var(--danger-strong) / <alpha-value>)',
+        },
+        info: {
+          DEFAULT: 'rgb(var(--info) / <alpha-value>)',
+          tint: 'rgb(var(--info-tint) / <alpha-value>)',
+        },
         status: {
-          pending: '#B45309',
-          pendingBg: '#FEF3C7',
-          scheduled: '#1D4ED8',
-          scheduledBg: '#EFF6FF',
-          live: '#166534',
-          liveBg: '#EAF6EE',
-          reserved: '#7C3AED',
-          reservedBg: '#F5F3FF',
-          sold: '#57606C',
-          soldBg: '#F5F5F5',
-          rejected: '#B91C1C',
-          rejectedBg: '#FEF2F2',
+          pending: 'rgb(var(--status-pending) / <alpha-value>)',
+          pendingBg: 'rgb(var(--status-pending-bg) / <alpha-value>)',
+          scheduled: 'rgb(var(--status-scheduled) / <alpha-value>)',
+          scheduledBg: 'rgb(var(--status-scheduled-bg) / <alpha-value>)',
+          live: 'rgb(var(--status-live) / <alpha-value>)',
+          liveBg: 'rgb(var(--status-live-bg) / <alpha-value>)',
+          reserved: 'rgb(var(--status-reserved) / <alpha-value>)',
+          reservedBg: 'rgb(var(--status-reserved-bg) / <alpha-value>)',
+          sold: 'rgb(var(--status-sold) / <alpha-value>)',
+          soldBg: 'rgb(var(--status-sold-bg) / <alpha-value>)',
+          rejected: 'rgb(var(--status-rejected) / <alpha-value>)',
+          rejectedBg: 'rgb(var(--status-rejected-bg) / <alpha-value>)',
         },
-
-        // Neutrals — very slightly red-warm, matching the app
         surface: {
-          DEFAULT: '#FFFFFF',
-          alt: '#F6F4F4',
-          page: '#FAF8F8',
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          alt: 'rgb(var(--surface-alt) / <alpha-value>)',
+          page: 'rgb(var(--surface-page) / <alpha-value>)',
         },
-        line: { DEFAULT: '#E8E3E3', soft: '#F0EDED' },
+        line: {
+          DEFAULT: 'rgb(var(--line) / <alpha-value>)',
+          soft: 'rgb(var(--line-soft) / <alpha-value>)',
+        },
         content: {
-          DEFAULT: '#1B1313',
-          secondary: '#423737',
-          muted: '#7A6E6E',
+          DEFAULT: 'rgb(var(--content) / <alpha-value>)',
+          secondary: 'rgb(var(--content-secondary) / <alpha-value>)',
+          muted: 'rgb(var(--content-muted) / <alpha-value>)',
         },
       },
 

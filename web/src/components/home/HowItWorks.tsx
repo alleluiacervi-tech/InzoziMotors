@@ -16,6 +16,7 @@ export async function HowItWorks() {
           eyebrow={t('home.howItWorks.eyebrow')}
           title={t('home.howItWorks.title')}
           description={t('home.howItWorks.description')}
+          layout="split"
         />
 
         <div className="mt-12">

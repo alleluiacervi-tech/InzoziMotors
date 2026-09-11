@@ -19,6 +19,7 @@ export type IconName =
   | 'menu' | 'grid' | 'chart' | 'gauge' | 'fuel' | 'settings' | 'logout'
   | 'sparkles' | 'trending-down' | 'trending-up' | 'lock' | 'apple' | 'play-store'
   | 'alert' | 'info' | 'plus' | 'minus' | 'external' | 'compass'
+  | 'sun' | 'moon'
 
 // React 19 removed the global JSX namespace — ReactElement is the supported type.
 const PATHS: Record<IconName, ReactElement> = {
@@ -36,6 +37,13 @@ const PATHS: Record<IconName, ReactElement> = {
     </>
   ),
   check: <path d="M5 13l4 4L19 7" />,
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </>
+  ),
+  moon: <path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" />,
   'check-circle': (
     <>
       <circle cx="12" cy="12" r="9" />

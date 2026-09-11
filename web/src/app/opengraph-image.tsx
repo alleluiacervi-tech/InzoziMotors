@@ -19,12 +19,12 @@ export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 const BRAND = '#CC050F'
-const FIELD = '#F2F0EF'
+const FIELD = '#F2EFEA'
 const INK = '#1B1313'
 const SECONDARY = '#423737'
 const MUTED = '#7A6E6E'
-const PAGE = '#FAF8F8'
-const LINE = '#E8E3E3'
+const PAGE = '#FBFAF8'
+const LINE = '#E3DDD5'
 
 /** The Sawa mark, generated from assets/sawa.svg. Satori cannot draw
  *  arbitrary SVG children, so the mark is handed to it as a data-URI image. */

@@ -15,7 +15,7 @@ import { getServerT } from '@/lib/i18n/server'
 const FALLBACK_IMAGE =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#F6F4F4"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#F2EFEA"/></svg>`
   )
 
 export async function CarCard({

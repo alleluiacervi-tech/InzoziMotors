@@ -77,7 +77,7 @@ export function InkClose({
       ) : (
         // The mark, finally used at size. Decorative — hidden from readers.
         <div aria-hidden="true" className="pointer-events-none absolute -right-16 top-1/2 -translate-y-1/2 opacity-[0.07]">
-          <CarGlyph width={480} body="#3A2D29" glass="#281F1C" />
+          <CarGlyph width={480} body="#38302C" glass="#241F1D" />
         </div>
       )}
 
