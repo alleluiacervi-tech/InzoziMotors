@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   passwordInput: { flex: 1, fontSize: 15, fontFamily: fonts.medium, color: colors.textPrimary },
-  errorText: { fontSize: 12.5, color: colors.textSecondary, marginTop: 5, marginLeft: 4, lineHeight: 17 },
+  errorText: { fontSize: 13, color: colors.textSecondary, marginTop: 5, marginLeft: 4, lineHeight: 17 },
   footer: { textAlign: 'center', fontSize: 14, color: colors.textSecondary },
   link: { color: colors.primary, fontFamily: fonts.bold },
 });

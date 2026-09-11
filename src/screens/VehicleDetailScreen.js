@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   sparklineStable: { fontSize: 11, color: colors.textMuted },
   marketAvgText: { fontSize: 11, color: colors.textMuted },
   sparklineRight: { alignItems: 'flex-end', gap: 2 },
-  sparklineNow: { fontSize: 10, color: colors.textMuted },
+  sparklineNow: { fontSize: 11, color: colors.textMuted },
   specs: { flexDirection: 'row', gap: 10, marginTop: 18 },
   specCard: {
     flex: 1, backgroundColor: colors.surface,
@@ -696,9 +696,9 @@ const styles = StyleSheet.create({
     paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.borderSoft,
   },
   infoRowLast: { borderBottomWidth: 0 },
-  infoLabel: { fontSize: 13.5, color: colors.textMuted },
+  infoLabel: { fontSize: 13, color: colors.textMuted },
   infoValue: {
-    fontSize: 13.5, fontFamily: fonts.semiBold, color: colors.textPrimary,
+    fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary,
     maxWidth: '55%', textAlign: 'right',
   },
   sellerCard: {
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
   similarTitle: { fontSize: 11, fontFamily: fonts.bold, color: colors.textPrimary, lineHeight: 15 },
   similarPrice: { fontVariant: ['tabular-nums'], fontSize: 13, fontFamily: fonts.extraBold, color: colors.primary },
   similarCert: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  similarCertText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
+  similarCertText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   dutyLink: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.greenTint, borderWidth: 1, borderColor: colors.border,
@@ -793,7 +793,7 @@ const styles = StyleSheet.create({
   },
   ctaPrice: { flex: 1, minWidth: 0 },
   ctaPriceLabel: {
-    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
+    fontSize: 11, lineHeight: 14, fontFamily: fonts.extraBold, color: colors.textMuted,
     letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
   },
   ctaPriceValue: {

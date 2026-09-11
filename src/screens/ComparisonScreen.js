@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
-  certPillText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
+  certPillText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   removeChip: {
     position: 'absolute', top: 0, right: 0, zIndex: 2,
     width: 22, height: 22, borderRadius: 11,

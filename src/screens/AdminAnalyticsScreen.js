@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   heroStats: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   heroStatItem: { flex: 1, alignItems: 'center' },
   heroStatValue: { fontSize: 22, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5 },
-  heroStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2, textAlign: 'center' },
+  heroStatLabel: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 2, textAlign: 'center' },
   heroDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.15)' },
   conversionBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

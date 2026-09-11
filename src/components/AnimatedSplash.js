@@ -88,7 +88,7 @@ export default function AnimatedSplash({ onFinish }) {
 const styles = StyleSheet.create({
   root: { backgroundColor: '#FFFFFF', zIndex: 100, elevation: 100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  word: { marginTop: 26, fontSize: 26, fontFamily: fonts.black, color: colors.textPrimary, letterSpacing: -0.5 },
-  tag: { marginTop: 10, fontSize: 12.5, fontFamily: fonts.semiBold, color: colors.textMuted, letterSpacing: 0.4 },
+  word: { marginTop: 26, fontSize: 24, fontFamily: fonts.black, color: colors.textPrimary, letterSpacing: -0.5 },
+  tag: { marginTop: 10, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textMuted, letterSpacing: 0.4 },
   footer: { paddingHorizontal: 24 },
 });

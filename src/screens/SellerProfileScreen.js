@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   trustScore: { fontSize: 22, fontFamily: fonts.extraBold },
-  trustMax: { fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: -3 },
+  trustMax: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: -3 },
   gradeChip: {
     paddingHorizontal: 10, paddingVertical: 3,
     borderRadius: radius.pill, borderWidth: 1,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.greenTint, alignSelf: 'flex-start',
     paddingHorizontal: 7, paddingVertical: 3, borderRadius: radius.pill,
   },
-  listingBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
+  listingBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   reviews: { gap: 10 },
   reviewCard: {
     backgroundColor: colors.surface,

@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   typePill: {
     paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill,
   },
-  typePillText: { fontSize: 10, fontFamily: fonts.extraBold, textTransform: 'uppercase', letterSpacing: 0.3 },
+  typePillText: { fontSize: 11, fontFamily: fonts.extraBold, textTransform: 'uppercase', letterSpacing: 0.3 },
   notifTime: { fontSize: 11, color: colors.textMuted },
   notifTitle: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary },
   notifTitleUnread: { fontFamily: fonts.extraBold },

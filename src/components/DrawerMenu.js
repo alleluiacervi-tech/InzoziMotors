@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   },
   newBadgeText: {
     fontFamily: fonts.black,
-    fontSize: 10,
+    fontSize: 11,
     color: '#fff',
     letterSpacing: 0.5,
   },

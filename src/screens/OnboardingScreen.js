@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   artMark: { marginBottom: 44 },
   title: {
-    fontSize: 25, fontFamily: fonts.black, color: colors.textPrimary,
+    fontSize: 24, fontFamily: fonts.black, color: colors.textPrimary,
     letterSpacing: -0.5, textAlign: 'center',
   },
   sub: {

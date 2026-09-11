@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   ref: { fontFamily: fonts.extraBold, fontSize: 11, color: colors.primary },
   pill: { backgroundColor: colors.statusScheduledBg, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 5 },
-  pillText: { fontFamily: fonts.bold, fontSize: 10, color: colors.statusScheduled },
+  pillText: { fontFamily: fonts.bold, fontSize: 11, color: colors.statusScheduled },
   title: { marginTop: 12, fontFamily: fonts.extraBold, fontSize: 17, color: colors.textPrimary },
   meta: { marginTop: 3, fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
   amount: { marginTop: 12, fontFamily: fonts.extraBold, fontSize: 20, color: colors.textPrimary },

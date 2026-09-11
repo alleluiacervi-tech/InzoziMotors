@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   pinnedTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   pinnedPrice: { fontVariant: ['tabular-nums'], fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary, marginTop: 2 },
   pinnedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
-  pinnedBadgeText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
+  pinnedBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   viewListingBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     backgroundColor: colors.greenTint,

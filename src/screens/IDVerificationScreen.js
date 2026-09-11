@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statusTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontFamily: fonts.extraBold,
     color: colors.textPrimary,
     letterSpacing: -0.5,

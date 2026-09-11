@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   itemBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   itemIcon: { width: 36, alignItems: 'center' },
   itemLabel: { flex: 1, fontSize: 15, fontFamily: fonts.semiBold, color: colors.textPrimary },
-  itemHint: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
+  itemHint: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 },
   modalCard: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: 22 },
   modalTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary },

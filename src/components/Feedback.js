@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     zIndex: 200, elevation: 200,
     ...shadows.floating,
   },
-  toastText: { flex: 1, fontSize: 13.5, fontFamily: fonts.semiBold, color: '#FFFFFF', lineHeight: 19 },
+  toastText: { flex: 1, fontSize: 13, fontFamily: fonts.semiBold, color: '#FFFFFF', lineHeight: 19 },
 
   backdrop: { flex: 1, backgroundColor: 'rgba(15,12,10,0.45)', justifyContent: 'flex-end' },
   sheet: {

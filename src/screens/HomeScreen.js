@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   },
   locationContainer: { flex: 1, justifyContent: 'center' },
   locationLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.semiBold,
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
     borderColor: colors.amber,
   },
   offlineTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  offlineSub: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
+  offlineSub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
   offlineRetry: {
     paddingHorizontal: 12, paddingVertical: 7,
     borderRadius: radius.pill, backgroundColor: colors.primary,
@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
   slideScoreText: {
     color: colors.white,
     fontFamily: fonts.bold,
-    fontSize: 10.5,
+    fontSize: 11,
   },
   slideText: {
     position: 'absolute',
@@ -1005,7 +1005,7 @@ const styles = StyleSheet.create({
   showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
   showroomCaption: { position: 'absolute', left: 16, right: 16, bottom: 14 },
   showroomBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  showroomBrand: { fontSize: 19, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
+  showroomBrand: { fontSize: 18, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
   showroomCount: { fontSize: 12, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },
   originChip: {

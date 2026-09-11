@@ -100,11 +100,11 @@ const styles = StyleSheet.create({
   },
   copy: { flex: 1 },
   title: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
-  body: { color: 'rgba(255,255,255,0.78)', fontSize: 11.5, fontFamily: fonts.regular, marginTop: 1 },
+  body: { color: 'rgba(255,255,255,0.78)', fontSize: 12, fontFamily: fonts.regular, marginTop: 1 },
   action: {
     backgroundColor: colors.primary,
     paddingHorizontal: 14, paddingVertical: 8,
     borderRadius: radius.pill,
   },
-  actionText: { color: '#fff', fontSize: 12.5, fontFamily: fonts.bold },
+  actionText: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
 });

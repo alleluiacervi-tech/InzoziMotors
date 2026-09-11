@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   codeInput: { fontSize: 22, fontFamily: fonts.extraBold, letterSpacing: 8, textAlign: 'center' },
   inputError: { borderColor: colors.danger },
-  error: { fontSize: 12.5, color: colors.danger, marginTop: 10, lineHeight: 18 },
+  error: { fontSize: 13, color: colors.danger, marginTop: 10, lineHeight: 18 },
   devBox: {
     backgroundColor: colors.amberTint,
     borderRadius: radius.lg, padding: 14, alignItems: 'center', gap: 4,
@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
     fontSize: 11, fontFamily: fonts.bold, color: colors.amberText,
     textTransform: 'uppercase', letterSpacing: 1,
   },
-  devCode: { fontSize: 26, fontFamily: fonts.extraBold, color: colors.amberText, letterSpacing: 6 },
+  devCode: { fontSize: 24, fontFamily: fonts.extraBold, color: colors.amberText, letterSpacing: 6 },
   devHint: { fontSize: 11, color: colors.amberText, textAlign: 'center', lineHeight: 16 },
   resend: { alignItems: 'center', paddingVertical: 16 },
-  resendText: { fontSize: 13.5, fontFamily: fonts.bold, color: colors.primary },
+  resendText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
 });

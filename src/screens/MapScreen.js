@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 3,
     backgroundColor: colors.greenTint, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
   },
-  inspChipText: { fontSize: 10, fontFamily: fonts.bold, color: colors.greenText },
+  inspChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   listingDays: { fontSize: 11, color: colors.textMuted },
   listingPrice: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.primary },
   viewAllBtn: {
