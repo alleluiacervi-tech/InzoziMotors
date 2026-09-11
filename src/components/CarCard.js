@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows, fonts } from '../theme';
+import { colors, radius, shadows, spacing, typography } from '../theme';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
 import { getCertTier } from '../data/certification';
@@ -49,13 +49,13 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
       accessibilityLabel={`${car.title}, ${getSawaPrice(car)}`}
     >
       <View style={styles.imageWrap}>
-        <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="contain" />
+        <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="cover" />
 
         {!hideOverlay && (
           <>
             {tier ? (
               <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
-                <Ionicons name="shield-checkmark" size={10} color="#fff" />
+                <Ionicons name="shield-checkmark" size={11} color={colors.white} />
                 <Text style={styles.certBadgeText}>{tier.short}</Text>
               </View>
             ) : isContract ? (
@@ -75,7 +75,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
                 size={18}
-                color={saved ? '#EF4444' : '#555'}
+                color={saved ? colors.primary : colors.textSecondary}
               />
             </Pressable>
           </>
@@ -89,7 +89,7 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 
         {unavailableUntil && (
           <View style={styles.unavailableBadge}>
-            <Ionicons name="time-outline" size={10} color="#fff" />
+            <Ionicons name="time-outline" size={11} color={colors.white} />
             <Text style={styles.unavailableBadgeText} numberOfLines={1}>
               {t('home.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
             </Text>
@@ -139,9 +139,9 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    margin: 6,
+    margin: spacing.xs + 2,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
@@ -153,28 +153,20 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   image: { width: '100%', height: '100%' },
-  topLeft: { position: 'absolute', top: 6, left: 6, paddingHorizontal: 5, paddingVertical: 2 },
+
+  // Every overlay sits on the same inset. These were 6, 7 and 6 — one pixel
+  // apart, which reads as misalignment rather than as a decision.
+  topLeft: { position: 'absolute', top: spacing.sm, left: spacing.sm, paddingHorizontal: 6, paddingVertical: 2 },
   certBadge: {
-    position: 'absolute', top: 7, left: 7,
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: 'rgba(23,18,15,0.78)',
-    paddingHorizontal: 7, paddingVertical: 3,
-    borderRadius: 5,
+    position: 'absolute', top: spacing.sm, left: spacing.sm,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.scrim,
+    paddingHorizontal: spacing.sm, paddingVertical: 3,
+    borderRadius: radius.sm,
   },
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 3,
-  },
-  scoreText: {
-    fontSize: 11.5,
-    fontFamily: fonts.bold,
-    color: colors.green,
-  },
-  certBadgeText: { color: '#fff', fontSize: 10, fontFamily: fonts.extraBold },
+  certBadgeText: { ...typography.badge, color: colors.white },
   heart: {
-    position: 'absolute', top: 6, right: 6,
+    position: 'absolute', top: spacing.sm, right: spacing.sm,
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center', justifyContent: 'center',
@@ -183,24 +175,34 @@ const styles = StyleSheet.create({
   heartPressed: { opacity: 0.76, transform: [{ scale: 0.92 }] },
   rankBadge: {
     position: 'absolute', bottom: 0, left: 0,
-    backgroundColor: 'rgba(23,18,15,0.85)',
-    width: 26, height: 26,
+    backgroundColor: colors.scrimStrong,
+    width: 28, height: 28,
     alignItems: 'center', justifyContent: 'center',
   },
-  rankText: { fontFamily: fonts.extraBold, color: '#FFFFFF', fontSize: 12 },
+  rankText: { ...typography.badge, color: colors.white },
   unavailableBadge: {
-    position: 'absolute', bottom: 6, right: 6, maxWidth: '70%',
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: 'rgba(23,18,15,0.78)',
-    paddingHorizontal: 7, paddingVertical: 3,
-    borderRadius: 5,
+    position: 'absolute', bottom: spacing.sm, right: spacing.sm, maxWidth: '70%',
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.scrim,
+    paddingHorizontal: spacing.sm, paddingVertical: 3,
+    borderRadius: radius.sm,
   },
-  unavailableBadgeText: { color: '#fff', fontSize: 9.5, fontFamily: fonts.extraBold },
-  body: { paddingHorizontal: 10, paddingVertical: 10, flex: 1, gap: 2 },
-  title: { fontFamily: fonts.bold, fontSize: 13, color: colors.textPrimary },
-  meta: { fontFamily: fonts.regular, fontSize: 11, color: colors.textMuted },
-  price: { fontVariant: ['tabular-nums'], fontFamily: fonts.extraBold, fontSize: 15, color: colors.primary, marginTop: 4, letterSpacing: -0.3 },
-  rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
-  perDay: { fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted, marginLeft: 2 },
-  monthly: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  // Was 9.5px. Nothing in this product should render under 11.
+  unavailableBadgeText: { ...typography.badge, color: colors.white },
+
+  body: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flex: 1, gap: 2 },
+  title: { ...typography.cardTitle, color: colors.textPrimary },
+  meta: { ...typography.cardMeta, color: colors.textMuted },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.xs,
+  },
+  // The inspection score is the one fact separating a Sawa car from a
+  // WhatsApp-group car, so it sits at meta weight but in the pass colour.
+  scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
+  price: { ...typography.cardPrice, color: colors.primary, marginTop: spacing.xs },
+  rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.xs },
+  perDay: { ...typography.cardMeta, color: colors.textMuted, marginLeft: 3 },
 });

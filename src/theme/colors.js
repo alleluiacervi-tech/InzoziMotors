@@ -94,6 +94,12 @@ export const colors = {
   slate700: '#14110F',
   slate600: '#3D3733',
 
+  // Photo scrims. Derived from navyDeep — these were three separate hand-typed
+  // rgba(23,18,15,…) strings in CarCard, left pointing at the pre-Editorial
+  // ink after the palette moved.
+  scrim: 'rgba(20,17,15,0.78)',
+  scrimStrong: 'rgba(20,17,15,0.85)',
+
   white: '#FFFFFF',
   black: '#000000',
 };

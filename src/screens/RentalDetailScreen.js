@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   },
   unavailablePill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(23,18,15,0.78)',
+    backgroundColor: colors.scrim,
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
   },
   rentPillText: { color: '#fff', fontSize: 11, fontFamily: fonts.extraBold },
