@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     alignItems: 'center', justifyContent: 'center', marginBottom: 18,
   },
-  guestTitle: { fontSize: 19, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.3 },
+  guestTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.3 },
   guestSub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted, textAlign: 'center', marginTop: 8, lineHeight: 19 },
   guestBtn: {
     alignSelf: 'stretch', backgroundColor: colors.primary,

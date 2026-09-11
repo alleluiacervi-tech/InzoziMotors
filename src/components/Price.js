@@ -84,7 +84,7 @@ export function RateNote({ style }) {
 const styles = StyleSheet.create({
   right: { alignItems: 'flex-end' },
   price: {
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.4,
     color: colors.primary,

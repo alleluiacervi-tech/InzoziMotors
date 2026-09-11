@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, fontFamily: fonts.semiBold },
   standardNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 24, borderRadius: radius.xl, backgroundColor: colors.blueTint, padding: 14 },
-  standardText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
+  standardText: { flex: 1, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   reset: { paddingHorizontal: 22, paddingVertical: 16, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border },
   resetText: { fontSize: 15, fontFamily: fonts.bold, color: colors.slate700 },

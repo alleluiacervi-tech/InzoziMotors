@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   aiSuggestHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   aiSuggestTitle: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
   aiSuggestBeta: { marginLeft: 'auto', backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2 },
-  aiSuggestBetaText: { fontSize: 10, fontFamily: fonts.bold, color: '#fff', textTransform: 'uppercase' },
+  aiSuggestBetaText: { fontSize: 11, fontFamily: fonts.bold, color: '#fff', textTransform: 'uppercase' },
   aiSuggestRange: { fontSize: 22, fontFamily: fonts.black, color: colors.primary, letterSpacing: -0.5, marginBottom: 2 },
   aiSuggestSub: { fontSize: 12, color: colors.textSecondary },
   aiSuggestCheck: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radius.lg, padding: 8, marginTop: 10 },

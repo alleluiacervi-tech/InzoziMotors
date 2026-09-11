@@ -127,6 +127,12 @@ const config: Config = {
         'price-lg': ['2rem', { lineHeight: '1.15', letterSpacing: '-0.03em' }], //      32px — detail-page price
         'stat': ['1.75rem', { lineHeight: '1.15', letterSpacing: '-0.02em' }], //       28px — stat tiles
         'body': ['0.9375rem', { lineHeight: '1.6' }], //                                15px — default copy
+        // 16px, and it exists for exactly one reason: iOS Safari zooms the
+        // whole viewport when a focused form control is set below 16px. Every
+        // field on the site was at `body` (15px), so tapping the hero search
+        // on an iPhone jerked the page. Fields use this below `sm` and drop to
+        // `body` above it, where no phone keyboard is involved.
+        'field': ['1rem', { lineHeight: '1.5' }],
         'caption': ['0.8125rem', { lineHeight: '1.5' }], //                             13px — spec strips, meta
         'micro': ['0.75rem', { lineHeight: '1.4' }], //                                 12px — footnotes, logistics
         'eyebrow': ['0.75rem', { lineHeight: '1', letterSpacing: '0.14em' }],

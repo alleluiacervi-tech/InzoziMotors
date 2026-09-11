@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
     marginTop: 8,
   },
-  heroInitials: { fontSize: 26, fontFamily: fonts.black, color: '#fff' },
+  heroInitials: { fontSize: 24, fontFamily: fonts.black, color: '#fff' },
   heroName: { fontSize: 22, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.5, textAlign: 'center' },
   heroTagline: { fontSize: 13, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
   heroStats: { flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: radius.xl, padding: 14, alignSelf: 'stretch' },

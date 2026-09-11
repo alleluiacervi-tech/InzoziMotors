@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xs,
   },
   criticalBadgeText: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.extraBold,
     color: colors.statusRejected,
     letterSpacing: 0.5,

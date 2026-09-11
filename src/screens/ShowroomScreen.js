@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 19, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
+  headerTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   headerSub: { fontSize: 12, fontFamily: fonts.medium, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
   headerCount: { fontSize: 13, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.6)' },
 

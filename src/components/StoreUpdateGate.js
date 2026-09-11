@@ -105,13 +105,13 @@ const styles = StyleSheet.create({
   },
   copy: { flex: 1 },
   title: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
-  body: { color: 'rgba(255,255,255,0.78)', fontSize: 11.5, fontFamily: fonts.regular, marginTop: 1 },
+  body: { color: 'rgba(255,255,255,0.78)', fontSize: 12, fontFamily: fonts.regular, marginTop: 1 },
   action: {
     backgroundColor: colors.primary,
     paddingHorizontal: 14, paddingVertical: 8,
     borderRadius: radius.pill,
   },
-  actionText: { color: '#fff', fontSize: 12.5, fontFamily: fonts.bold },
+  actionText: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
 
   blockRoot: {
     ...StyleSheet.absoluteFillObject,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   blockBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
   blockTitle: { fontSize: 24, fontFamily: fonts.black, color: colors.textPrimary, letterSpacing: -0.5, marginTop: 8 },
   blockCopy: {
-    fontSize: 14.5, lineHeight: 22, fontFamily: fonts.regular,
+    fontSize: 15, lineHeight: 22, fontFamily: fonts.regular,
     color: colors.textSecondary, textAlign: 'center',
   },
   blockNotes: {
@@ -136,5 +136,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16, borderRadius: radius.lg,
   },
   blockButtonText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
-  blockVersion: { marginTop: 12, fontSize: 11.5, fontFamily: fonts.regular, color: colors.textMuted },
+  blockVersion: { marginTop: 12, fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted },
 });

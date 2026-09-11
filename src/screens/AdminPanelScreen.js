@@ -487,8 +487,8 @@ const styles = StyleSheet.create({
   statsHero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
   fullConsole: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 4, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: radius.xl, backgroundColor: colors.surface, padding: 14, ...shadows.card },
   fullConsoleIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.blueTint },
-  fullConsoleTitle: { fontSize: 14.5, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  fullConsoleText: { marginTop: 3, fontSize: 11.5, lineHeight: 16, color: colors.textSecondary },
+  fullConsoleTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  fullConsoleText: { marginTop: 3, fontSize: 12, lineHeight: 16, color: colors.textSecondary },
   statsHeroTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   statsHeroSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2, marginBottom: 16 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: radius.pill,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  inspBadgeText: { fontSize: 10, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5 },
+  inspBadgeText: { fontSize: 11, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: 0.5 },
   confirmBtn: {
     minHeight: 48, justifyContent: 'center',
     backgroundColor: colors.surface,
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   listingFilterOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  listingFilterText: { fontSize: 12.5, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  listingFilterText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textSecondary },
   listingFilterTextOn: { color: '#fff' },
   listingEmpty: {
     textAlign: 'center', paddingVertical: 28,

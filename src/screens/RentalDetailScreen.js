@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   },
   unavailablePill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(23,18,15,0.78)',
+    backgroundColor: colors.scrim,
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
   },
   rentPillText: { color: '#fff', fontSize: 11, fontFamily: fonts.extraBold },
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 24, marginBottom: 12, letterSpacing: -0.3 },
   availabilityNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.surface, padding: 15 },
   availabilityTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  availabilityText: { marginTop: 4, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
+  availabilityText: { marginTop: 4, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
   priceCard: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   },
   ctaPrice: { flex: 1, minWidth: 0 },
   ctaPriceLabel: {
-    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
+    fontSize: 11, lineHeight: 14, fontFamily: fonts.extraBold, color: colors.textMuted,
     letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
   },
   ctaPriceLine: { flexDirection: 'row', alignItems: 'baseline', minWidth: 0 },

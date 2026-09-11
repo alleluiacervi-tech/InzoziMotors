@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   rraStampWarn: { borderColor: '#F87171' },
-  rraStampText: { fontSize: 10, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: 0.3 },
+  rraStampText: { fontSize: 11, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: 0.3 },
   disclaimer: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     marginHorizontal: 16, marginTop: 4,

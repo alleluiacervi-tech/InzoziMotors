@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   verifyTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  verifyBody: { fontSize: 12.5, color: colors.textSecondary, marginTop: 3, lineHeight: 18 },
-  verifyCta: { fontSize: 12.5, fontFamily: fonts.bold, color: colors.primary, marginTop: 8 },
+  verifyBody: { fontSize: 13, color: colors.textSecondary, marginTop: 3, lineHeight: 18 },
+  verifyCta: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary, marginTop: 8 },
   options: { paddingHorizontal: 20, gap: 10 },
   option: {
     flexDirection: 'row', alignItems: 'center', gap: 14,

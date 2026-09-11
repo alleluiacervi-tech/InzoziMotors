@@ -119,6 +119,9 @@ async function FleetResults({
               ])
             )}
           />
+          {/* Same heading gap as /cars: every card is an h3 and the page's
+              first h2 sits further down, in the "how it works" band. */}
+          <h2 className="sr-only">{t('rentals.list.resultsTitle')}</h2>
           <ul className="stagger mt-8 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {visible.map((car, index) => (
               <li key={car.id} className="min-w-0">
@@ -129,6 +132,7 @@ async function FleetResults({
         </>
       ) : (
         <EmptyState
+          headingLevel={2}
           icon="key"
           title={fleet.length ? t('rentals.emptyMatchTitle') : t('rentals.emptyUnreachableTitle')}
           description={fleet.length ? t('rentals.emptyMatchDesc') : t('rentals.emptyUnreachableDesc')}

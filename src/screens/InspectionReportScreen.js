@@ -329,10 +329,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  scoreValue: { fontSize: 26, fontFamily: fonts.extraBold },
+  scoreValue: { fontSize: 24, fontFamily: fonts.extraBold },
   scoreMax: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: -3 },
   scorePct: { fontSize: 12, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.7)' },
-  heroTitle: { fontSize: 19, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
+  heroTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   heroCar: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
   heroDate: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 3 },
   certifiedBadge: {

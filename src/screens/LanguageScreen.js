@@ -133,5 +133,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.greenTint,
   },
-  noteText: { flex: 1, fontFamily: fonts.regular, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
+  noteText: { flex: 1, fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
 });

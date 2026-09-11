@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, fonts } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
   imageWrap: {
     // Fixed size — iOS lets an unconstrained image's natural dimensions
@@ -116,36 +116,39 @@ const styles = StyleSheet.create({
   },
   image: { width: '100%', height: '100%' },
   certBadge: {
-    position: 'absolute', top: 6, left: 6,
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: 'rgba(23,18,15,0.78)',
-    paddingHorizontal: 6, paddingVertical: 2.5,
-    borderRadius: 4,
+    position: 'absolute', top: spacing.sm, left: spacing.sm,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.scrim,
+    paddingHorizontal: 6, paddingVertical: 3,
+    borderRadius: radius.sm,
   },
-  certBadgeText: { color: '#fff', fontSize: 10, fontFamily: fonts.extraBold },
-  body: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 2, justifyContent: 'center' },
+  certBadgeText: { ...typography.badge, color: colors.white },
+  body: { flex: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: 2, justifyContent: 'center' },
   titleRow: {
     flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', gap: 8, marginBottom: 2,
+    justifyContent: 'space-between', gap: spacing.sm, marginBottom: 2,
   },
-  title: { flex: 1, fontFamily: fonts.bold, fontSize: 14, color: colors.textPrimary },
-  meta: { fontFamily: fonts.regular, fontSize: 11.5, color: colors.textMuted, lineHeight: 17 },
+  title: { flex: 1, ...typography.cardTitle, color: colors.textPrimary },
+  meta: { ...typography.cardMeta, color: colors.textMuted, lineHeight: 17 },
   bottomRow: {
     flexDirection: 'row', alignItems: 'flex-end',
-    justifyContent: 'space-between', gap: 8, marginTop: 6,
+    justifyContent: 'space-between', gap: spacing.sm, marginTop: 6,
   },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, flex: 1 },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  scoreText: { fontSize: 11, fontFamily: fonts.bold, color: colors.green },
+  scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
   tagGreen: {
     backgroundColor: colors.greenTint,
-    paddingHorizontal: 6, paddingVertical: 2.5, borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
   },
-  tagGreenText: { fontSize: 10, fontFamily: fonts.bold, color: colors.primary },
+  // Was colors.primary — brand red lettering on a green "pass" chip. It cleared
+  // contrast but said the wrong thing, and red is reserved for prices, primary
+  // actions, selected states and the Certified+ badge. None of those is a tag.
+  tagGreenText: { ...typography.badge, color: colors.greenText },
   tagAmber: {
     backgroundColor: colors.amberTint,
-    paddingHorizontal: 6, paddingVertical: 2.5, borderRadius: 4,
+    paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
   },
-  tagAmberText: { fontSize: 10, fontFamily: fonts.bold, color: colors.amberText },
-  price: { fontVariant: ['tabular-nums'], fontFamily: fonts.extraBold, fontSize: 16, color: colors.primary, letterSpacing: -0.3 },
+  tagAmberText: { ...typography.badge, color: colors.amberText },
+  price: { ...typography.cardPrice, color: colors.primary },
 });

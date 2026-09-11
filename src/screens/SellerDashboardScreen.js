@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   pipelineDotActive: { backgroundColor: colors.primary },
   pipelineDotUpcoming: { backgroundColor: colors.border },
   pipelineDotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted },
-  pipelineLabel: { fontSize: 10, color: colors.textMuted, textAlign: 'center', maxWidth: 52 },
+  pipelineLabel: { fontSize: 11, color: colors.textMuted, textAlign: 'center', maxWidth: 52 },
   pipelineLine: { flex: 1, height: 2, backgroundColor: colors.border, marginTop: 10, marginHorizontal: 2 },
   pipelineLineDone: { backgroundColor: colors.primary },
   statusDetail: {

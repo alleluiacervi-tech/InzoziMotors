@@ -51,6 +51,18 @@ export const typography = {
   label: { fontFamily: fonts.semiBold, fontSize: 13 },
   caption: { fontFamily: fonts.medium, fontSize: 12 },
   micro: { fontFamily: fonts.semiBold, fontSize: 11, letterSpacing: 0.3 },
+
+  // ── The dense tier ────────────────────────────────────────────────────────
+  // Grid cells (two cards per row on a phone) cannot carry `title`/`body` at
+  // full size, and every card in the app had been inventing its own ladder
+  // instead — 13, 11.5, 9.5 and so on, sizes that exist nowhere in this file.
+  // Naming the tier is what stops that: a card reaches for `cardTitle`, not a
+  // number it guessed. Nothing here drops below 11, which is the floor for
+  // legible secondary text at arm's length.
+  cardTitle: { fontFamily: fonts.bold, fontSize: 15, letterSpacing: -0.2, lineHeight: 19 },
+  cardMeta: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 16 },
+  cardPrice: { fontVariant: ['tabular-nums'], fontFamily: fonts.extraBold, fontSize: 17, letterSpacing: -0.3 },
+  badge: { fontFamily: fonts.extraBold, fontSize: 11, letterSpacing: 0.2 },
 };
 
 // Shadow presets — subtle, brand-warm, realistic depth

@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center',
   },
-  heroTitle: { fontSize: 26, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: -0.5 },
+  heroTitle: { fontSize: 24, fontFamily: fonts.black, color: '#fff', textAlign: 'center', letterSpacing: -0.5 },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 20 },
   codeBox: {
     backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: radius.xl,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   redeemBtnText: { fontSize: 14, fontFamily: fonts.bold, color: '#fff' },
   redeemHint: {
-    fontSize: 11.5, color: colors.textMuted, lineHeight: 17,
+    fontSize: 12, color: colors.textMuted, lineHeight: 17,
     marginHorizontal: 16, marginTop: 8,
   },
   tracker: {

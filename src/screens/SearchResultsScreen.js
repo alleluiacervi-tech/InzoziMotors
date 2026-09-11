@@ -332,7 +332,7 @@ export default function SearchResultsScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   endOfList: {
     textAlign: 'center', paddingVertical: 22,
-    fontSize: 12.5, fontFamily: fonts.medium, color: colors.textMuted,
+    fontSize: 13, fontFamily: fonts.medium, color: colors.textMuted,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
   backBtn: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
