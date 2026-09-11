@@ -27,3 +27,7 @@ play-service-account.json
 backend/uploads/*
 !backend/uploads/seed/
 .logs/
+
+# Python bytecode from bundled skill scripts
+__pycache__/
+*.pyc
