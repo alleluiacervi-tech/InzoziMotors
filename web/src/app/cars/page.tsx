@@ -142,6 +142,7 @@ async function BrowseResults({
 
         {apiDown ? (
           <EmptyState
+            headingLevel={2}
             icon="alert"
             title={t('cars.browse.apiDownTitle')}
             description={t('cars.browse.apiDownDesc')}
@@ -169,6 +170,11 @@ async function BrowseResults({
                 )
               )}
             />
+            {/* Names the results region, and closes a heading gap: the only
+                other h2 on this page is the filter sidebar's, which is
+                hidden below lg — so on a phone the document jumped straight
+                from the page h1 to the h3 on each card. */}
+            <h2 className="sr-only">{t('cars.browse.resultsTitle')}</h2>
             <ul className="stagger mt-6 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, index) => (
                 <li key={car.id} className="min-w-0">
@@ -188,6 +194,7 @@ async function BrowseResults({
           </>
         ) : (
           <EmptyState
+            headingLevel={2}
             icon="search"
             title={t('cars.browse.emptyTitle')}
             description={offset > 0 ? t('cars.browse.emptyMoreDesc') : t('cars.browse.emptyDesc')}

@@ -106,7 +106,7 @@ export function SignUpForm({ next }: { next: string }) {
             name="countryCode"
             defaultValue="+250"
             aria-label="Country calling code"
-            className="h-11 rounded-xl border border-line bg-surface px-3 text-caption font-semibold text-content focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+            className="h-12 rounded-xl border border-line bg-surface px-3 text-field sm:text-caption font-semibold text-content focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           >
             {COUNTRY_CODES.map((c) => (
               <option key={c.code} value={c.code}>

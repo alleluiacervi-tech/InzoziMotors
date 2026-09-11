@@ -212,7 +212,7 @@ export function StatusPill({ status, label }: { status: string; label?: string }
 // ─── Forms ───────────────────────────────────────────────────────────────────
 
 const FIELD_BASE =
-  'w-full rounded-xl border bg-surface px-4 text-body text-content placeholder:text-content-muted ' +
+  'w-full rounded-xl border bg-surface px-4 text-field sm:text-body text-content placeholder:text-content-muted ' +
   'transition-colors duration-200 disabled:opacity-60'
 
 export function Field({
@@ -330,20 +330,29 @@ export function Alert({
 }
 
 export function EmptyState({
-  icon = 'search', title, description, action, className = '',
+  icon = 'search', title, description, action, className = '', headingLevel = 3,
 }: {
   icon?: IconName
   title: string
   description?: string
   action?: ReactNode
   className?: string
+  /**
+   * An empty state is a heading in the document, so it has to sit at the
+   * right depth. It hardcoded h3, which is correct inside a section that
+   * already has an h2 and a level skip directly under a page h1 — which is
+   * exactly where /cars and /rentals put it when the marketplace has
+   * nothing to show.
+   */
+  headingLevel?: 2 | 3 | 4
 }) {
+  const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4'
   return (
     <div className={`flex flex-col items-center px-6 py-16 text-center ${className}`}>
       <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-alt text-content-muted">
         <Icon name={icon} size={28} />
       </div>
-      <h3 className="text-title-sm font-extrabold text-content">{title}</h3>
+      <Heading className="text-title-sm font-extrabold text-content">{title}</Heading>
       {description ? (
         <p className="mt-2 max-w-sm text-caption leading-relaxed text-content-secondary">{description}</p>
       ) : null}

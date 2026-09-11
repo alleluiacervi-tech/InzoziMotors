@@ -97,7 +97,7 @@ export async function Hero() {
               type="search"
               autoComplete="off"
               placeholder={t('home.hero.searchPlaceholder')}
-              className="h-11 min-w-0 flex-1 bg-transparent text-body text-content placeholder:text-content-muted"
+              className="h-11 min-w-0 flex-1 bg-transparent text-field sm:text-body text-content placeholder:text-content-muted"
             />
             <Button type="submit" size="sm">
               {t('home.hero.searchButton')}

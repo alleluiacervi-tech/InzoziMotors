@@ -12,6 +12,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     title: 'Rent a certified car in Kigali',
     introDescription:
       'The same 150-point standard as the cars we sell. Deposits back in full after the return check.',
+    list: { resultsTitle: 'Available rentals' },
     filter: {
       ariaLabel: 'Filter the fleet',
       allCars: 'All cars',
@@ -128,6 +129,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     title: 'Kodesha imodoka yemewe i Kigali',
     introDescription:
       'Ipimo rimwe ry’ingingo 150 nk’iry’imodoka tugurisha. Ingwate igarurwa yose nyuma y’isuzuma ryo kugarura.',
+    list: { resultsTitle: 'Imodoka zikodeshwa ziboneka' },
     filter: {
       ariaLabel: 'Yungurura ububiko',
       allCars: 'Imodoka zose',
@@ -244,6 +246,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     title: 'Louez une voiture certifiée à Kigali',
     introDescription:
       'Le même standard en 150 points que les voitures que nous vendons. Cautions intégralement restituées après le contrôle de retour.',
+    list: { resultsTitle: 'Locations disponibles' },
     filter: {
       ariaLabel: 'Filtrer la flotte',
       allCars: 'Toutes les voitures',
@@ -360,6 +363,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     title: 'Kodisha gari lililothibitishwa Kigali',
     introDescription:
       'Kiwango kile kile cha pointi 150 kama magari tunayouza. Amana hurudishwa kikamilifu baada ya ukaguzi wa kurudisha.',
+    list: { resultsTitle: 'Magari ya kukodisha yanayopatikana' },
     filter: {
       ariaLabel: 'Chuja kundi la magari',
       allCars: 'Magari yote',
@@ -476,6 +480,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     title: '키갈리에서 인증 차량을 렌트하세요',
     introDescription:
       '판매 차량과 동일한 150개 항목 기준입니다. 반납 점검 후 보증금은 전액 환불됩니다.',
+    list: { resultsTitle: '이용 가능한 렌트' },
     filter: {
       ariaLabel: '차량 목록 필터',
       allCars: '전체 차량',
@@ -592,6 +597,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     title: '在基加利租一辆认证车辆',
     introDescription:
       '与我们出售的车辆采用同样的150项标准。归还检查后押金全额退还。',
+    list: { resultsTitle: '可租车辆' },
     filter: {
       ariaLabel: '筛选车队',
       allCars: '所有车辆',
