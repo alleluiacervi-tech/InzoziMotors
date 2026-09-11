@@ -135,7 +135,7 @@ export function ChipGroup<T extends string | number>({
                          bg-surface px-3 py-2 text-center text-caption font-bold leading-tight text-content-secondary
                          transition-all duration-200 ease-brand sm:px-4 sm:text-caption
                          peer-hover:border-content-muted
-                         peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white
+                         peer-checked:border-brand peer-checked:bg-brand peer-checked:text-brand-on
                          peer-focus-visible:ring-2 peer-focus-visible:ring-brand peer-focus-visible:ring-offset-2"
             >
               {option.label}

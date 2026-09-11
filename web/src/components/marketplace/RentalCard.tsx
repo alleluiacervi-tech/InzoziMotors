@@ -9,7 +9,7 @@ import { formatRating } from './rental-math'
 const FALLBACK_IMAGE =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#F6F4F4"/></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#F2EFEA"/></svg>`
   )
 
 /**
@@ -126,7 +126,7 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
 
         <div className="mt-4 border-t border-line-soft pt-4">
           <p className="mb-3 text-micro text-content-muted">{car.min_days > 1 ? t('rentals.card.minDays', { count: car.min_days }) : t('rentals.card.fromOneDay')} · {t('rentals.card.providerConfirmsDates')}</p>
-          <span className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-caption font-extrabold text-white shadow-card transition-colors group-hover:bg-brand-deep">
+          <span className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-caption font-extrabold text-brand-on shadow-card transition-colors group-hover:bg-brand-deep">
             {t('rentals.card.viewDetails')} <Icon name="arrow-right" size={15} />
           </span>
         </div>

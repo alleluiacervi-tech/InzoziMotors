@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
-import { Button, Icon } from '@/components/ui'
+import { Button, Icon, ThemeToggle } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
 import { useT } from '@/lib/i18n/context'
 import { APP, CONTACT, NAV_LINKS, STORES_LIVE } from '@/lib/site'
@@ -218,6 +218,12 @@ export function Header({ user }: { user: User | null }) {
             <LanguageSwitcher tone={overlay ? 'dark' : 'light'} />
           </div>
 
+          {/* Over a hero photograph the header chrome is white-on-image, so the
+              toggle borrows the same treatment the menu button uses. */}
+          <ThemeToggle
+            className={overlay ? 'text-white hover:bg-white/10' : 'text-content'}
+          />
+
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -327,6 +333,11 @@ export function Header({ user }: { user: User | null }) {
               <div className="flex items-center justify-between pt-1">
                 <span className="text-caption font-semibold text-content-secondary">{t('common.language')}</span>
                 <LanguageSwitcher tone="light" />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-caption font-semibold text-content-secondary">Appearance</span>
+                <ThemeToggle className="text-content" />
               </div>
             </div>
           </nav>

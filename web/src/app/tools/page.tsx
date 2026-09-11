@@ -84,7 +84,7 @@ export default async function ToolsPage() {
             <Link
               key={tool.href}
               href={tool.href}
-              className="group flex flex-col rounded-3xl border border-white/10 bg-white p-7 text-content shadow-float
+              className="group flex flex-col rounded-3xl border border-line-soft bg-surface p-7 text-content shadow-float
                          transition-all duration-500 ease-brand
                          hover:-translate-y-1.5 hover:border-white/30"
             >

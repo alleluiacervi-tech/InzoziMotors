@@ -35,7 +35,14 @@ export function Section({
     'ink-soft': 'bg-ink-800 text-white',
   }
   return (
-    <section id={id} className={`py-16 sm:py-24 ${tones[tone]} ${className}`}>
+    <section
+      id={id}
+      className={`${tones[tone]} ${className}`}
+      // One vertical rhythm for the whole site, set once in globals.css.
+      // Editorial layouts live or die on section spacing being a system
+      // rather than a per-page guess.
+      style={{ paddingBlock: 'var(--space-section)' }}
+    >
       {children}
     </section>
   )
@@ -58,31 +65,72 @@ export function Eyebrow({
     invert: 'text-white/50',
     muted: 'text-content-muted',
   }
+  // The short rule before the label is the one piece of magazine furniture the
+  // site uses everywhere. It is decorative, so it is drawn with a pseudo
+  // element and never lands in the accessibility tree.
   return (
-    <p className={`mb-3 text-eyebrow font-bold uppercase ${tones[tone]} ${className}`}>
+    <p
+      className={`mb-4 flex items-center gap-3 text-eyebrow font-bold uppercase
+                  before:h-px before:w-8 before:shrink-0 before:bg-current before:opacity-40
+                  before:content-[''] ${tones[tone]} ${className}`}
+    >
       {children}
     </p>
   )
 }
 
 export function SectionHeading({
-  eyebrow, title, description, align = 'left', className = '',
+  eyebrow, title, description, align = 'left', layout = 'stack', className = '',
 }: {
   eyebrow?: string
   title: ReactNode
   description?: ReactNode
   align?: 'left' | 'center'
+  /**
+   * `split` sets the title and its standfirst as two unequal columns, the
+   * magazine masthead move. It only works when the heading owns the full
+   * content width — inside a narrow sidebar column the twelve tracks collapse
+   * and the two children overlap, so `stack` stays the default.
+   */
+  layout?: 'stack' | 'split'
   className?: string
 }) {
+  // Centred headings stay a single stacked column — they are used for short
+  // closing statements where a split would read as a mistake.
+  if (align === 'center') {
+    return (
+      <div className={`mx-auto max-w-2xl text-center ${className}`}>
+        {eyebrow ? <Eyebrow className="justify-center">{eyebrow}</Eyebrow> : null}
+        <h2 className="text-headline font-extrabold text-content">{title}</h2>
+        {description ? (
+          <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">{description}</p>
+        ) : null}
+      </div>
+    )
+  }
+
+  // A hairline across the full measure, then the title. In `split` the
+  // standfirst is set beside the title as the narrower of two unequal
+  // columns; below lg it always drops underneath.
+  const split = layout === 'split' && Boolean(description)
+
   return (
-    <div
-      className={`${align === 'center' ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'} ${className}`}
-    >
+    <div className={`border-t border-line pt-6 ${className}`}>
       {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-      <h2 className="text-headline font-extrabold text-content">{title}</h2>
-      {description ? (
-        <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">{description}</p>
-      ) : null}
+      <div className={split ? 'grid gap-x-12 gap-y-4 lg:grid-cols-12' : ''}>
+        <h2 className={`text-headline font-extrabold text-content ${split ? 'lg:col-span-7' : ''}`}>
+          {title}
+        </h2>
+        {description ? (
+          <p
+            className={`max-w-prose text-title-sm leading-relaxed text-content-secondary ${
+              split ? 'lg:col-span-5 lg:pt-2' : 'mt-4'
+            }`}
+          >
+            {description}
+          </p>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -115,10 +163,10 @@ type BadgeTone =
 const BADGE_TONES: Record<BadgeTone, string> = {
   // Certified+ is the only tier that earns brand red — matches the app's
   // "red discipline" rule, where the top tier is the brand moment.
-  certPlus: 'bg-brand text-white',
-  cert: 'bg-success-tint text-success ring-1 ring-inset ring-success/20',
+  certPlus: 'bg-brand text-brand-on',
+  cert: 'bg-success-tint text-success-text ring-1 ring-inset ring-success/20',
   inspected: 'bg-surface-alt text-content-secondary ring-1 ring-inset ring-line',
-  success: 'bg-success-tint text-success ring-1 ring-inset ring-success/20',
+  success: 'bg-success-tint text-success-text ring-1 ring-inset ring-success/20',
   warning: 'bg-warning-tint text-warning-text ring-1 ring-inset ring-warning/20',
   danger: 'bg-danger-tint text-danger ring-1 ring-inset ring-danger/20',
   info: 'bg-info-tint text-info ring-1 ring-inset ring-info/20',
@@ -262,7 +310,7 @@ export function Alert({
 }) {
   const tones = {
     info: { box: 'bg-info-tint border-info/20 text-info', icon: 'info' as IconName },
-    success: { box: 'bg-success-tint border-success/20 text-success', icon: 'check-circle' as IconName },
+    success: { box: 'bg-success-tint border-success/20 text-success-text', icon: 'check-circle' as IconName },
     warning: { box: 'bg-warning-tint border-warning/25 text-warning-text', icon: 'alert' as IconName },
     danger: { box: 'bg-danger-tint border-danger/20 text-danger', icon: 'alert' as IconName },
   }
@@ -320,3 +368,4 @@ export function LiveRegion({ children }: { children: ReactNode }) {
 export { Icon }
 export type { IconName }
 export { Button } from './Button'
+export { ThemeToggle } from './ThemeToggle'

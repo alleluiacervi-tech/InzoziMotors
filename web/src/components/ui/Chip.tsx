@@ -12,7 +12,7 @@ const BASE =
   'transition-colors duration-200 ease-brand select-none'
 
 const UNSELECTED = 'border-line bg-surface text-content-secondary hover:border-content-muted'
-const SELECTED = 'border-brand bg-brand text-white'
+const SELECTED = 'border-brand bg-brand text-brand-on'
 
 function chipClass(selected: boolean, className: string) {
   return `${BASE} ${selected ? SELECTED : UNSELECTED} ${className}`

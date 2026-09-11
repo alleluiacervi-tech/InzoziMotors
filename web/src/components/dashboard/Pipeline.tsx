@@ -54,7 +54,7 @@ export function Pipeline({ current }: { current: number }) {
                 aria-hidden="true"
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
                   active
-                    ? 'border-brand bg-brand text-white'
+                    ? 'border-brand bg-brand text-brand-on'
                     : done
                     ? 'border-ink-900 bg-ink-900 text-white'
                     : 'border-line bg-surface'

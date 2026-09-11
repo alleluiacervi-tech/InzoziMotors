@@ -3,9 +3,131 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * ───────────────────────────────────────────────────────────────────────
+   * EDITORIAL SHOWROOM — the token layer.
+   *
+   * Every colour on the site resolves through one of these variables, as an
+   * unprefixed "R G B" triplet so Tailwind's /opacity modifiers keep working
+   * (see tailwind.config.ts, which wraps each one in rgb(... / <alpha-value>)).
+   *
+   * The neutrals are warm and paper-like rather than blue-grey: this is a
+   * showroom, and photography of a car sits better on bone than on cold white.
+   * Signal Red is untouched and keeps its old discipline — price, primary
+   * action, active state, certified badge. Never decoration.
+   *
+   * Both themes are defined here in full. Dark is not an inversion: the
+   * accent lightens to #FF5A61 so it still clears 4.5:1 on a dark surface,
+   * which #CC050F does not. Every pair below was measured, not eyeballed.
+   * ───────────────────────────────────────────────────────────────────────
+   */
   :root {
+    color-scheme: light;
+
     /* Header height, so anchor links and sticky offsets agree everywhere */
     --header-h: 68px;
+
+    /* Accent ------------------------------------------------------------ */
+    --brand: 204 5 15;          /* #CC050F — 5.60:1 on paper */
+    --brand-bright: 222 7 20;
+    --brand-deep: 165 4 16;
+    --brand-light: 238 139 144;
+    --brand-tint: 253 235 236;
+    --on-brand: 255 255 255;    /* 5.84:1 on Signal Red */
+
+    /* Surfaces — bone, not white ---------------------------------------- */
+    --surface-page: 251 250 248;  /* #FBFAF8 paper */
+    --surface: 255 255 255;
+    --surface-alt: 242 239 234;   /* #F2EFEA tinted panel */
+
+    /* Ink ---------------------------------------------------------------- */
+    --content: 20 17 15;          /* #14110F — 18.03:1 on paper */
+    --content-secondary: 61 55 51;/* #3D3733 — 11.23:1 */
+    --content-muted: 110 102 96;  /* #6E6660 — 5.39:1 on paper, 4.91:1 on alt */
+
+    /* Rules — an editorial layout is held together by hairlines ---------- */
+    --line: 227 221 213;
+    --line-soft: 239 234 227;
+
+    /* Dark chrome (footers, photo scrims) -------------------------------- */
+    --ink-900: 20 17 15;
+    --ink-800: 36 31 29;
+    --ink-700: 56 48 44;
+
+    /* Semantic ----------------------------------------------------------- */
+    --success: 22 163 74;
+    --success-light: 74 222 128;
+    --success-tint: 234 246 238;
+    --success-text: 22 101 52;
+    --warning: 217 119 6;
+    --warning-tint: 254 243 199;
+    --warning-text: 180 83 9;
+    --danger: 180 35 58;
+    --danger-tint: 251 236 239;
+    --danger-strong: 185 28 28;
+    --info: 29 78 216;
+    --info-tint: 239 246 255;
+
+    /* Pipeline status — same keys as the app's colors.js ------------------ */
+    --status-pending: 180 83 9;      --status-pending-bg: 254 243 199;
+    --status-scheduled: 29 78 216;   --status-scheduled-bg: 239 246 255;
+    --status-live: 22 101 52;        --status-live-bg: 234 246 238;
+    --status-reserved: 124 58 237;   --status-reserved-bg: 245 243 255;
+    --status-sold: 87 96 108;        --status-sold-bg: 245 245 245;
+    --status-rejected: 185 28 28;    --status-rejected-bg: 254 242 242;
+
+    /* Editorial vertical rhythm — section spacing tiers ------------------- */
+    --space-section: clamp(4rem, 9vw, 8rem);
+    --space-block: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --brand: 255 90 97;          /* #FF5A61 — 6.40:1 on the dark page */
+    --brand-bright: 255 122 128;
+    --brand-deep: 214 58 66;
+    --brand-light: 255 168 172;
+    --brand-tint: 47 22 24;
+    --on-brand: 20 17 15;        /* 6.17:1 — dark ink on the lightened accent */
+
+    --surface-page: 14 12 11;    /* #0E0C0B */
+    --surface: 23 20 19;         /* #171413 */
+    --surface-alt: 34 29 27;
+
+    --content: 245 241 236;      /* 17.36:1 on the page */
+    --content-secondary: 201 192 184;
+    --content-muted: 148 138 130; /* 5.43:1 on a card */
+
+    --line: 46 40 37;
+    --line-soft: 36 31 29;
+
+    /* Chrome inverts to the lightest surfaces so "dark band" sections still
+       read as a deliberate change of register rather than vanishing. */
+    --ink-900: 8 7 6;
+    --ink-800: 18 15 14;
+    --ink-700: 30 26 24;
+
+    /* Semantics desaturate and lighten rather than invert. */
+    --success: 74 222 128;
+    --success-light: 134 239 172;
+    --success-tint: 20 45 31;
+    --success-text: 134 239 172;
+    --warning: 251 191 36;
+    --warning-tint: 56 41 12;
+    --warning-text: 253 224 71;
+    --danger: 248 113 133;
+    --danger-tint: 56 22 28;
+    --danger-strong: 252 165 165;
+    --info: 125 165 255;
+    --info-tint: 22 32 56;
+
+    --status-pending: 253 224 71;    --status-pending-bg: 56 41 12;
+    --status-scheduled: 147 181 255; --status-scheduled-bg: 22 32 56;
+    --status-live: 134 239 172;      --status-live-bg: 20 45 31;
+    --status-reserved: 196 168 255;  --status-reserved-bg: 38 28 58;
+    --status-sold: 166 175 188;      --status-sold-bg: 32 34 38;
+    --status-rejected: 252 165 165;  --status-rejected-bg: 56 20 20;
   }
 
   html {

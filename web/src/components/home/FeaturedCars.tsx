@@ -20,6 +20,7 @@ export async function FeaturedCars({ cars }: { cars: Car[] }) {
             eyebrow={t('home.featured.eyebrow')}
             title={t('home.featured.title')}
             description={t('home.featured.description')}
+          layout="split"
           />
           <Link
             href="/cars"
