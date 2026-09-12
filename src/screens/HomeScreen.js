@@ -14,7 +14,8 @@ import BrandMark from '../components/BrandMark';
 import DrawerMenu from '../components/DrawerMenu';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
-import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
+import { getListedDaysAgo, getSavedCount, getDriveType, RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
+import { FALLBACK_IMPORT_CATALOG } from '../data/importCatalog';
 import { photoSource, PHOTO } from '../utils/photo';
 import { cars as carsApi } from '../api/cars';
 import { formatPrice } from '../data/cars';
@@ -517,6 +518,70 @@ export default function HomeScreen({ navigation }) {
           ))}
         </View>
 
+        {/* ── GLOBAL IMPORT SHOWCASE — Korea, Dubai, China ── */}
+        <View style={styles.sectionContainer}>
+          <SectionHeader
+            title="Import Direct: Korea · Dubai · China"
+            actionLabel="Explore All"
+            onAction={() => navigation.navigate('SearchResults', { mode: 'import' })}
+          />
+          <FlatList
+            horizontal
+            data={FALLBACK_IMPORT_CATALOG.slice(0, 8)}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalListPadding}
+            renderItem={({ item }) => {
+              const vehicleValueRwf = (item.typicalFobUsd || 15000) * RWF_RATE;
+              const freightRwf = (item.typicalFreightUsd || 2800) * RWF_RATE;
+              const ageYears = Math.max(0, new Date().getFullYear() - (item.yearEnd || 2022));
+              const duty = calcRwandaDuty(vehicleValueRwf, item.engineCc || 2000, ageYears);
+              const estimatedLandedRwf = (duty ? duty.grandTotal : vehicleValueRwf) + freightRwf;
+              const flag = item.originCountry === 'South Korea' ? '🇰🇷' : item.originCountry === 'China' ? '🇨🇳' : item.originCountry === 'United Arab Emirates' ? '🇦🇪' : '🇯🇵';
+
+              return (
+                <Pressable
+                  style={styles.importHomeCard}
+                  onPress={() => navigation.navigate('ImportVehicleDetail', { item })}
+                >
+                  <Photo uri={item.images[0]} width={PHOTO.CARD} style={styles.importHomePhoto} />
+                  <View style={styles.importHomeOriginBadge}>
+                    <Text style={styles.importHomeOriginText}>{flag} {item.originCountry}</Text>
+                  </View>
+                  <View style={styles.importHomeContent}>
+                    <Text style={styles.importHomeTitle} numberOfLines={1}>
+                      {item.yearStart}–{item.yearEnd} {item.make} {item.model}
+                    </Text>
+                    <Text style={styles.importHomeTrim} numberOfLines={1}>{item.trim || item.bodyType}</Text>
+                    <View style={styles.importHomePriceRow}>
+                      <Text style={styles.importHomePrice}>{formatRWF(estimatedLandedRwf)}</Text>
+                      <View style={styles.importHomeTransitBadge}>
+                        <Ionicons name="boat-outline" size={11} color="#1D4ED8" />
+                        <Text style={styles.importHomeTransitText}>{item.estimatedTransitDays || 35}d</Text>
+                      </View>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            }}
+          />
+
+          {/* Bank Escrow Reassurance Strip */}
+          <Pressable
+            style={styles.homeEscrowStrip}
+            onPress={() => navigation.navigate('DutyCalculator')}
+          >
+            <View style={styles.homeEscrowIcon}>
+              <Ionicons name="shield-checkmark" size={16} color="#166534" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.homeEscrowTitle}>100% Protected by Bank Escrow Guarantee</Text>
+              <Text style={styles.homeEscrowSub}>50% deposit held securely with Bank of Kigali / I&M Bank until physical Kigali inspection.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </Pressable>
+        </View>
+
         {/* ── SHOWROOMS — walk past the glass ── */}
         {showroomWindows.length > 0 && (
           <View style={styles.sectionContainer}>
@@ -759,7 +824,7 @@ const styles = StyleSheet.create({
   },
   locationContainer: { flex: 1, justifyContent: 'center' },
   locationLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: fonts.semiBold,
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -799,7 +864,7 @@ const styles = StyleSheet.create({
     borderColor: colors.amber,
   },
   offlineTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
-  offlineSub: { fontSize: 13, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
+  offlineSub: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.textSecondary, marginTop: 2 },
   offlineRetry: {
     paddingHorizontal: 12, paddingVertical: 7,
     borderRadius: radius.pill, backgroundColor: colors.primary,
@@ -945,7 +1010,7 @@ const styles = StyleSheet.create({
   slideScoreText: {
     color: colors.white,
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: 10.5,
   },
   slideText: {
     position: 'absolute',
@@ -1005,7 +1070,7 @@ const styles = StyleSheet.create({
   showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
   showroomCaption: { position: 'absolute', left: 16, right: 16, bottom: 14 },
   showroomBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  showroomBrand: { fontSize: 18, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
+  showroomBrand: { fontSize: 19, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
   showroomCount: { fontSize: 12, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },
   originChip: {
@@ -1030,6 +1095,107 @@ const styles = StyleSheet.create({
   gridCardWrapper: { width: '50%' },
   horizontalListPadding: { paddingHorizontal: 8 },
   horizontalCardWrapper: { width: 145 },
+
+  // ── Import Direct Showcase ──
+  importHomeCard: {
+    width: 220,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    marginRight: 12,
+    position: 'relative',
+  },
+  importHomePhoto: {
+    width: '100%',
+    height: 125,
+    backgroundColor: colors.surfaceAlt,
+  },
+  importHomeOriginBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(23, 18, 15, 0.85)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  importHomeOriginText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: '#FFFFFF',
+  },
+  importHomeContent: {
+    padding: 12,
+  },
+  importHomeTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  importHomeTrim: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  importHomePriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  importHomePrice: {
+    fontFamily: fonts.extraBold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  importHomeTransitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
+  importHomeTransitText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: '#1D4ED8',
+  },
+  homeEscrowStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#F0FDF4',
+    borderRadius: radius.lg,
+    padding: 12,
+    marginTop: 14,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  homeEscrowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  homeEscrowTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    color: '#14532D',
+  },
+  homeEscrowSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: '#166534',
+    marginTop: 1,
+  },
 
   // ── Footer ──
   footerContainer: {

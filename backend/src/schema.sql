@@ -1011,3 +1011,34 @@ ALTER TABLE users ADD CONSTRAINT users_closure_reason_check CHECK (
 
 CREATE INDEX IF NOT EXISTS idx_users_purge_due
   ON users (purge_after) WHERE closed_at IS NOT NULL AND deleted_at IS NULL;
+
+-- ─── Global import catalog (0044) ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS global_import_catalog (
+  id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  make                    VARCHAR(80) NOT NULL,
+  model                   VARCHAR(80) NOT NULL,
+  year_start              SMALLINT NOT NULL,
+  year_end                SMALLINT NOT NULL,
+  trim                    VARCHAR(80),
+  body_type               VARCHAR(50) NOT NULL,
+  engine_cc               INT NOT NULL,
+  fuel_type               VARCHAR(30) NOT NULL,
+  transmission            VARCHAR(50) NOT NULL DEFAULT 'Automatic',
+  drive_side              VARCHAR(10) NOT NULL DEFAULT 'LHD',
+  origin_country          VARCHAR(80) NOT NULL,
+  origin_port             VARCHAR(80) NOT NULL,
+  typical_fob_usd         INT NOT NULL,
+  typical_freight_usd     INT NOT NULL,
+  estimated_transit_days  INT NOT NULL DEFAULT 35,
+  images                  TEXT[] NOT NULL DEFAULT '{}',
+  highlights              TEXT[] NOT NULL DEFAULT '{}',
+  description             TEXT,
+  display_order           INT NOT NULL DEFAULT 100,
+  active                  BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_global_import_catalog_make_model ON global_import_catalog (lower(make), lower(model));
+CREATE INDEX IF NOT EXISTS idx_global_import_catalog_origin ON global_import_catalog (origin_country);
+CREATE INDEX IF NOT EXISTS idx_global_import_catalog_active ON global_import_catalog (active, display_order);

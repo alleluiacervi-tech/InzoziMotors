@@ -156,6 +156,109 @@ router.get('/mine', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Could not load import orders' }); }
 });
 
+router.get('/catalog', async (req, res) => {
+  const q = clean(req.query.q || req.query.query, 80);
+  const make = clean(req.query.make, 80);
+  const origin = clean(req.query.origin || req.query.origin_country, 80);
+  const bodyType = clean(req.query.body_type, 50);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+  const params = [];
+  const conditions = ['active = TRUE'];
+
+  if (q) {
+    params.push(`%${q.toLowerCase()}%`);
+    const idx = params.length;
+    conditions.push(`(lower(make) LIKE $${idx} OR lower(model) LIKE $${idx} OR lower(COALESCE(trim, '')) LIKE $${idx} OR lower(body_type) LIKE $${idx} OR lower(origin_country) LIKE $${idx})`);
+  }
+
+  if (make) {
+    params.push(make.toLowerCase());
+    conditions.push(`lower(make) = $${params.length}`);
+  }
+
+  if (origin) {
+    params.push(origin.toLowerCase());
+    conditions.push(`lower(origin_country) = $${params.length}`);
+  }
+
+  if (bodyType) {
+    params.push(bodyType.toLowerCase());
+    conditions.push(`lower(body_type) = $${params.length}`);
+  }
+
+  params.push(limit);
+  params.push(offset);
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, make, model, year_start, year_end, trim, body_type, engine_cc, fuel_type,
+              transmission, drive_side, origin_country, origin_port, typical_fob_usd,
+              typical_freight_usd, estimated_transit_days, images, highlights, description, display_order
+         FROM global_import_catalog
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY display_order ASC, make ASC, model ASC
+        LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+    res.json({ items: rows, count: rows.length });
+  } catch (err) {
+    log.error('catalog load error', { error: err.message });
+    res.status(500).json({ error: 'Could not load global import catalog' });
+  }
+});
+
+router.get('/catalog/:id', requireUuid('id'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, make, model, year_start, year_end, trim, body_type, engine_cc, fuel_type,
+              transmission, drive_side, origin_country, origin_port, typical_fob_usd,
+              typical_freight_usd, estimated_transit_days, images, highlights, description, display_order
+         FROM global_import_catalog
+        WHERE id = $1 AND active = TRUE`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Vehicle model not found in global catalog' });
+    res.json(rows[0]);
+  } catch (err) {
+    log.error('catalog detail load error', { error: err.message });
+    res.status(500).json({ error: 'Could not load global vehicle details' });
+  }
+});
+
+router.get('/escrow-guarantee', async (_req, res) => {
+  res.json({
+    escrow_partner_bank: 'Bank of Kigali / I&M Bank Rwanda',
+    escrow_account_name: 'Inzozi Motors Vehicle Import Escrow',
+    escrow_account_type: 'Regulated Tripartite Custody Escrow',
+    guarantee_title: '100% Bank Escrow Protection Guarantee',
+    milestones: [
+      {
+        milestone: 'initial_50',
+        label: 'Initial Sourcing & Shipping Commitment',
+        percent: 50,
+        held_in_escrow: true,
+        description: 'Deposited directly into our partner bank escrow account. Secured until overseas pre-shipment inspection pass and container dispatch.',
+      },
+      {
+        milestone: 'final_50',
+        label: 'Kigali Physical Inspection & Final Handover',
+        percent: 50,
+        held_in_escrow: false,
+        description: 'Due ONLY after the vehicle lands in Kigali, completes RRA customs clearance, and passes your personal hands-on 150-point inspection and test drive.',
+      },
+    ],
+    protection_points: [
+      'Your deposit is safeguarded in a regulated Rwandan bank escrow account.',
+      'Comprehensive pre-shipment multi-point inspection with high-definition video & photos before vessel loading.',
+      'GPS vessel and overland container tracking from port of origin to Kigali dry port.',
+      'Full RRA customs duty assessment and yellow card registration managed by Inzozi Motors.',
+      'Zero-risk handover: if the vehicle does not match the signed contract or fails Kigali inspection, you are entitled to full remedy or escrow refund.',
+    ],
+  });
+});
+
 router.get('/admin/all', requireAdmin, async (req, res) => {
   const status = clean(req.query.status, 40);
   try {

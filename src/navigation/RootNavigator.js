@@ -52,6 +52,7 @@ import BuyingGuideScreen from '../screens/BuyingGuideScreen';
 import ShowroomScreen from '../screens/ShowroomScreen';
 import ImportOrdersScreen from '../screens/ImportOrdersScreen';
 import ImportOrderDetailScreen from '../screens/ImportOrderDetailScreen';
+import ImportVehicleDetailScreen from '../screens/ImportVehicleDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -118,6 +119,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="Showroom" component={ShowroomScreen} options={{ animation: 'fade' }} />
       <Stack.Screen name="ImportOrders" component={ImportOrdersScreen} />
       <Stack.Screen name="ImportOrderDetail" component={ImportOrderDetailScreen} />
+      <Stack.Screen name="ImportVehicleDetail" component={ImportVehicleDetailScreen} />
     </Stack.Navigator>
   );
 }

@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarListCard from '../components/CarListCard';
 import CarCard from '../components/CarCard';
+import ImportCarCard from '../components/ImportCarCard';
 import SkeletonCard from '../components/SkeletonCard';
-import { colors, radius, fonts } from '../theme';
+import { colors, radius, fonts, shadows } from '../theme';
 import { showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
+import { searchImportCatalog } from '../data/importCatalog';
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
 const SORT_LABEL_KEYS = {
@@ -15,12 +17,9 @@ const SORT_LABEL_KEYS = {
   Newest: 'newest', Mileage: 'mileage',
 };
 
-// Price works for both inventories: rentals sort by daily rate
 const priceOf = (c) =>
   c.listingType === 'rental' ? c.dailyRate : c.type === 'auction' ? c.currentBid : c.price;
 
-// Applied to the local set when the API is unreachable, and always to rentals
-// (a small in-memory fleet with no server-side filtering).
 function filterLocally(list, { query, filters, sort }) {
   let out = list;
   if (query?.trim()) {
@@ -40,8 +39,6 @@ function filterLocally(list, { query, filters, sort }) {
     if (filters.transmission) {
       out = out.filter((c) => String(c.transmission || '').toLowerCase() === filters.transmission.toLowerCase());
     }
-    // `includes`, matching the server's ILIKE — sellers type this field
-    // themselves, so "Kicukiro" must still find "Kicukiro, Kigali".
     if (filters.location) {
       out = out.filter((c) => String(c.location || '').toLowerCase()
         .includes(filters.location.toLowerCase()));
@@ -49,10 +46,6 @@ function filterLocally(list, { query, filters, sort }) {
     if (filters.maxPrice) out = out.filter((c) => priceOf(c) <= filters.maxPrice);
     if (filters.minPrice) out = out.filter((c) => priceOf(c) >= filters.minPrice);
     if (filters.minYear) out = out.filter((c) => Number(c.year) >= filters.minYear);
-    // Mileage and inspection score are applied here only: the browse endpoint
-    // has no parameter for either, so a server round trip would silently ignore
-    // them. At this catalogue size filtering the fetched page is honest and
-    // exact; when the inventory outgrows a page, both need a query parameter.
     if (filters.maxMileage) out = out.filter((c) => Number(c.mileage ?? Infinity) <= filters.maxMileage);
     if (filters.minScore) out = out.filter((c) => Number(c.inspectionScore || 0) >= filters.minScore);
   }
@@ -63,22 +56,26 @@ function filterLocally(list, { query, filters, sort }) {
   return out;
 }
 
+const SCOPES = [
+  { id: 'all', label: 'All', icon: 'apps-outline' },
+  { id: 'local', label: 'In Rwanda', icon: 'location-outline' },
+  { id: 'import', label: 'Import Direct', icon: 'globe-outline' },
+];
+
 export default function SearchResultsScreen({ navigation, route }) {
   const { cars, rentalCars, createSavedSearch, searchCars, t } = useApp();
   const isRentMode = route.params?.mode === 'rent';
+  const [scope, setScope] = useState(route.params?.mode === 'import' ? 'import' : 'all');
   const [sort, setSort] = useState('Best match');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(route.params?.query || '');
   const [activeFilters, setActiveFilters] = useState(route.params?.filters || null);
-  const [layout, setLayout] = useState('list'); // 'list' | 'grid'
+  const [layout, setLayout] = useState('list');
   const isGrid = layout === 'grid';
 
-  // Server-backed result set. `null` means "no server answer yet or ever" —
-  // the local list is rendered instead, so the screen is never empty.
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [exhausted, setExhausted] = useState(false);
-  // Guards against a slow earlier query overwriting a newer one
   const requestId = useRef(0);
 
   useEffect(() => {
@@ -87,14 +84,13 @@ export default function SearchResultsScreen({ navigation, route }) {
     }
   }, [route.params?.filters]);
 
-  // Debounced first page — typing shouldn't fire a request per keystroke.
   useEffect(() => {
     if (isRentMode) return;
     const id = ++requestId.current;
     setLoading(true);
     const timer = setTimeout(async () => {
       const page = await searchCars({ query: searchQuery, filters: activeFilters, sort, offset: 0 });
-      if (id !== requestId.current) return; // a newer query already won
+      if (id !== requestId.current) return;
       setResults(page ? page.items : null);
       setExhausted(page ? page.exhausted : true);
       setLoading(false);
@@ -110,8 +106,6 @@ export default function SearchResultsScreen({ navigation, route }) {
       query: searchQuery, filters: activeFilters, sort, offset: results.length,
     });
     if (id === requestId.current && page) {
-      // De-dupe defensively: a listing published mid-scroll shifts the offset
-      // window and would otherwise appear twice.
       setResults((prev) => {
         const seen = new Set((prev || []).map((c) => c.id));
         return [...(prev || []), ...page.items.filter((c) => !seen.has(c.id))];
@@ -133,12 +127,6 @@ export default function SearchResultsScreen({ navigation, route }) {
 
   const serverBacked = !isRentMode && results !== null;
 
-  // Two filters the browse endpoint has no parameter for. On the local path
-  // filterLocally already applies them; on the server path the results come
-  // back unfiltered by these, and returning them as-is would mean a chip the
-  // user tapped quietly did nothing. Narrowing the page here is exact at this
-  // catalogue size — when the inventory outgrows one page, both need a real
-  // query parameter rather than this.
   const narrowUnsupported = (list) => {
     if (!activeFilters) return list;
     let out = list;
@@ -156,6 +144,20 @@ export default function SearchResultsScreen({ navigation, route }) {
     : filterLocally(isRentMode ? rentalCars : cars, {
         query: searchQuery, filters: activeFilters, sort,
       });
+
+  // Global import matches
+  const filteredImportCars = useMemo(() => {
+    if (isRentMode) return [];
+    return searchImportCatalog(searchQuery, {
+      make: activeFilters?.make,
+      bodyType: activeFilters?.body,
+    });
+  }, [searchQuery, activeFilters, isRentMode]);
+
+  const showLocal = isRentMode || scope === 'all' || scope === 'local';
+  const showImport = !isRentMode && (scope === 'all' || scope === 'import');
+
+  const displayLocalCars = showLocal ? filteredCars : [];
 
   return (
     <Screen background={colors.bg}>
@@ -189,24 +191,42 @@ export default function SearchResultsScreen({ navigation, route }) {
         </Pressable>
       </View>
 
+      {/* Scope selector tabs (All | In Rwanda | Import Direct) */}
+      {!isRentMode && (
+        <View style={styles.scopeRow}>
+          {SCOPES.map((s) => {
+            const on = scope === s.id;
+            return (
+              <Pressable
+                key={s.id}
+                style={[styles.scopeTab, on && styles.scopeTabOn]}
+                onPress={() => setScope(s.id)}
+                accessibilityRole="tab"
+              >
+                <Ionicons name={s.icon} size={14} color={on ? '#FFFFFF' : colors.textSecondary} />
+                <Text style={[styles.scopeText, on && styles.scopeTextOn]}>{s.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
       <FlatList
         key={layout}
         numColumns={isGrid ? 2 : 1}
-        data={filteredCars}
+        data={displayLocalCars}
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: isGrid ? 10 : 16, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingHorizontal: isGrid ? 10 : 16, paddingBottom: 30 }}
         onEndReached={loadMore}
         onEndReachedThreshold={0.6}
         ListHeaderComponent={
           <View style={isGrid && { paddingHorizontal: 6 }}>
             <View style={styles.resultRow}>
               <Text style={styles.resultCount}>
-                {/* With paging, the count is what's loaded so far — say so rather
-                    than implying the whole catalogue fits on screen. */}
-                {serverBacked && !exhausted
-                  ? t('searchResults.plusCars', { count: filteredCars.length })
-                  : t(isRentMode ? 'searchResults.rentalsFound' : 'searchResults.carsFound', { count: filteredCars.length })}
+                {isRentMode
+                  ? t('searchResults.rentalsFound', { count: filteredCars.length })
+                  : `${(showLocal ? filteredCars.length : 0) + (showImport ? filteredImportCars.length : 0)} vehicles found`}
               </Text>
               <View style={styles.resultActions}>
                 {(searchQuery.trim() || activeFilters) && !isRentMode && (
@@ -284,6 +304,27 @@ export default function SearchResultsScreen({ navigation, route }) {
                 );
               }}
             />
+
+            {/* Notice if 0 local cars in Kigali but import models exist */}
+            {!isRentMode && showLocal && filteredCars.length === 0 && filteredImportCars.length > 0 && (
+              <View style={styles.noLocalNotice}>
+                <Ionicons name="information-circle-outline" size={20} color="#1D4ED8" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.noLocalTitle}>0 in Rwanda stock · {filteredImportCars.length} available to import</Text>
+                  <Text style={styles.noLocalSub}>
+                    You can import these models on-demand directly from South Korea, Dubai & China with our 100% Bank Escrow Guarantee.
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Local Section Header in 'all' mode */}
+            {!isRentMode && scope === 'all' && filteredCars.length > 0 && (
+              <View style={styles.sectionHeader}>
+                <Ionicons name="location" size={16} color={colors.primary} />
+                <Text style={styles.sectionTitle}>In Rwanda Physical Stock ({filteredCars.length})</Text>
+              </View>
+            )}
           </View>
         }
         renderItem={({ item }) => {
@@ -295,24 +336,71 @@ export default function SearchResultsScreen({ navigation, route }) {
           );
         }}
         ListFooterComponent={
-          loadingMore ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 20 }} />
-          ) : serverBacked && exhausted && filteredCars.length > 0 ? (
-            <Text style={styles.endOfList}>{t('searchResults.everyMatch')}</Text>
-          ) : null
+          <View>
+            {loadingMore ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 20 }} />
+            ) : null}
+
+            {/* Import On-Demand Section */}
+            {showImport && filteredImportCars.length > 0 && (
+              <View style={styles.importSection}>
+                <View style={styles.importSectionHeader}>
+                  <View style={styles.importHeaderLeft}>
+                    <Ionicons name="boat" size={18} color="#1D4ED8" />
+                    <View>
+                      <Text style={styles.importSectionTitle}>
+                        Import Direct from Korea, Dubai & China ({filteredImportCars.length})
+                      </Text>
+                      <Text style={styles.importSectionSub}>
+                        🛡️ 100% Protected by Bank of Kigali / I&M Bank Escrow
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {filteredImportCars.map((importCar) => (
+                  <ImportCarCard
+                    key={importCar.id}
+                    item={importCar}
+                    onPress={() => navigation.navigate('ImportVehicleDetail', { item: importCar })}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* Custom Sourcing Concierge Banner */}
+            {!isRentMode && (
+              <View style={styles.customSourcingCard}>
+                <View style={styles.sourcingIconCircle}>
+                  <Ionicons name="search" size={22} color="#FFFFFF" />
+                </View>
+                <Text style={styles.sourcingTitle}>Can't find your exact trim or model?</Text>
+                <Text style={styles.sourcingDesc}>
+                  Our global sourcing team in South Korea, Dubai, and China will find your exact vehicle, verify its condition, and provide an official escrow-protected quotation.
+                </Text>
+                <Pressable
+                  style={styles.sourcingBtn}
+                  onPress={() => {
+                    navigation.navigate('ImportOrderDetail', { isNewCustom: true });
+                  }}
+                >
+                  <Text style={styles.sourcingBtnText}>Request Custom Vehicle Sourcing</Text>
+                  <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
+                </Pressable>
+              </View>
+            )}
+          </View>
         }
         ListEmptyComponent={
           loading ? (
             <View style={{ gap: 12, paddingTop: 4 }}>
               {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
             </View>
-          ) : (
+          ) : (!showImport || filteredImportCars.length === 0) && displayLocalCars.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="car-outline" size={52} color={colors.border} />
               <Text style={styles.emptyTitle}>{t('filters.noResults')}</Text>
-              <Text style={styles.emptySub}>
-                {t('filters.adjust')}
-              </Text>
+              <Text style={styles.emptySub}>{t('filters.adjust')}</Text>
               {(activeFilters || searchQuery) && (
                 <Pressable
                   style={styles.clearBtn}
@@ -322,7 +410,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                 </Pressable>
               )}
             </View>
-          )
+          ) : null
         }
       />
     </Screen>
@@ -330,10 +418,6 @@ export default function SearchResultsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  endOfList: {
-    textAlign: 'center', paddingVertical: 22,
-    fontSize: 13, fontFamily: fonts.medium, color: colors.textMuted,
-  },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
   backBtn: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   searchBar: {
@@ -350,29 +434,163 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, fontFamily: fonts.medium, color: colors.textPrimary, padding: 0 },
   filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  resultCount: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  scopeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  scopeTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  scopeTabOn: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  scopeText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  scopeTextOn: {
+    color: '#FFFFFF',
+  },
+  resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 4 },
+  resultCount: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   resultActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   layoutBtn: {
-    width: 44, height: 44, borderRadius: radius.pill,
+    width: 40, height: 40, borderRadius: radius.pill,
     backgroundColor: colors.greenTint,
     alignItems: 'center', justifyContent: 'center',
   },
-  activeFiltersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
+  activeFiltersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.blueTint,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    minHeight: 44,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: colors.primaryTint,
+    paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.pill,
   },
   filterChipText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
-  sortChip: { minHeight: 44, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill },
+  sortChip: { minHeight: 40, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.pill },
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   sortText: { fontSize: 13, fontFamily: fonts.semiBold },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  noLocalNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#EFF6FF',
+    borderRadius: radius.lg,
+    padding: 14,
+    marginVertical: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  noLocalTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13.5,
+    color: '#1D4ED8',
+  },
+  noLocalSub: {
+    fontFamily: fonts.regular,
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: '#1E40AF',
+    marginTop: 2,
+  },
+  importSection: {
+    marginTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderSoft,
+    paddingTop: 20,
+  },
+  importSectionHeader: {
+    marginBottom: 16,
+  },
+  importHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  importSectionTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 17,
+    color: colors.textPrimary,
+  },
+  importSectionSub: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.greenText,
+    marginTop: 2,
+  },
+  customSourcingCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 20,
+    ...shadows.card,
+  },
+  sourcingIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  sourcingTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 16,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  sourcingDesc: {
+    fontFamily: fonts.regular,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  sourcingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: radius.pill,
+  },
+  sourcingBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
@@ -380,7 +598,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 8 },
-  emptySub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  emptySub: { fontSize: 14, fontFamily: fonts.regular, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
   clearBtn: {
     marginTop: 12,
     backgroundColor: colors.primary,
