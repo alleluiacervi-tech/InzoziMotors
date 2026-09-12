@@ -24,6 +24,17 @@ interface Stats {
     pendingInquiries: Trend
     pendingIdVerifications: Trend
   }
+  /** Money the business has actually recorded — see the comment on `money`
+   *  in backend/src/routes/admin.js. Optional, because an older API build
+   *  will not send it and this tile must degrade rather than render NaN. */
+  money?: {
+    currency: string
+    feesCollected: number
+    feesOutstanding: number
+    importVerified: number
+    importAwaiting: number
+    importAwaitingCount: number
+  }
   pace?: {
     medianDaysToPublish: number | null
     medianDaysToPublishPrevious: number | null
@@ -216,6 +227,12 @@ export default function DashboardPage() {
 
   const pace = s.pace
   const trends = s.trends
+  const money = s.money
+  // Collected is what has been confirmed; awaiting is what is owed or claimed
+  // and not yet checked. Kept apart on purpose — adding them would restate the
+  // exact error this tile was changed to fix.
+  const collected = money ? money.feesCollected + money.importVerified : 0
+  const awaiting = money ? money.feesOutstanding + money.importAwaiting : 0
   // A median under a day rounds to "0 days", which reads as a broken figure
   // rather than a fast one. Below a day the same number is told in hours, and
   // the movement is told in the same unit so the two agree.
@@ -270,18 +287,35 @@ export default function DashboardPage() {
             </div>
             <span className="text-caption text-content-muted">
               {trends ? `${trends.liveListings.recent ?? 0} published in the last seven days` : 'vehicles a buyer can see today'}
+              {pace && pace.marketplaceValue > 0
+                ? ` · ${fmtMoneyShort(pace.marketplaceValue, pace.marketplaceValueCurrency)} asked, not transacted`
+                : ''}
             </span>
           </div>
 
+          {/* Money, and only money.
+              This tile used to show the sum of every live listing's asking
+              price — roughly RWF 2.8bn on a normal day — in the red this
+              product reserves for prices. Nobody had paid any of it, Sawa
+              never touches it, and it moves whenever a seller edits a number.
+              A headline figure on an operations console gets believed, so it
+              now shows what the business has actually recorded: fees marked
+              paid, plus import payments an admin verified against an uploaded
+              bank transfer. What is merely owed or claimed sits underneath,
+              counted separately. */}
           <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
-            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Seller-stated value listed</span>
+            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Recorded by Sawa</span>
             <div className="flex items-end justify-between gap-4">
               <span className="text-stat-lg font-extrabold tabular-nums text-brand">
-                {pace ? fmtMoneyShort(pace.marketplaceValue, pace.marketplaceValueCurrency) : '—'}
+                {money ? fmtMoneyShort(collected, money.currency) : '—'}
               </span>
             </div>
             <span className="text-caption text-content-muted">
-              across {pace?.marketplaceListings ?? 0} live listings · Sawa is not a party to any sale
+              {money
+                ? awaiting > 0
+                  ? `fees paid and verified import transfers · ${fmtMoneyShort(awaiting, money.currency)} still awaiting confirmation`
+                  : 'fees paid and verified import transfers · nothing outstanding'
+                : 'inspection fees and verified import transfers'}
             </span>
           </div>
 

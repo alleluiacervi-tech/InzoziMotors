@@ -354,7 +354,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
   try {
     const [
       listingsRes, submissionsRes, inquiriesRes,
-      idQueueRes, soldRes, gmvRes, feesRes,
+      idQueueRes, soldRes, gmvRes, feesRes, importMoneyRes,
     ] = await Promise.all([
       pool.query("SELECT COUNT(*) FROM cars WHERE status = 'live'"),
       pool.query("SELECT COUNT(*) FROM submissions WHERE status IN ('under_review','pending')"),
@@ -369,8 +369,19 @@ router.get('/stats', requireAdmin, async (req, res) => {
                   FROM cars WHERE status = 'sold' GROUP BY currency`),
       pool.query(`SELECT currency,
                     COALESCE(SUM(amount) FILTER (WHERE status IN ('due','paid')), 0) AS earned,
+                    COALESCE(SUM(amount) FILTER (WHERE status = 'paid'), 0) AS collected,
                     COALESCE(SUM(amount) FILTER (WHERE status = 'due'), 0) AS due
                   FROM platform_fees GROUP BY currency`),
+      // The only money in this product that a human has checked against a
+      // bank transfer. `verified` means an admin opened the uploaded proof and
+      // confirmed it, so it is the one import figure safe to call collected;
+      // 'submitted' and 'reviewed' are claims waiting on that check. Stored in
+      // whole RWF by the column's own definition, so no currency join.
+      pool.query(`SELECT
+                    COALESCE(SUM(amount_rwf) FILTER (WHERE status = 'verified'), 0)::bigint AS verified,
+                    COALESCE(SUM(amount_rwf) FILTER (WHERE status IN ('submitted','reviewed')), 0)::bigint AS awaiting,
+                    COUNT(*) FILTER (WHERE status IN ('submitted','reviewed'))::int AS awaiting_count
+                  FROM import_payments`),
     ]);
 
     // Report the dominant currency's figures in the flat fields the dashboard
@@ -520,6 +531,24 @@ router.get('/stats', requireAdmin, async (req, res) => {
       totalRevenue:          parseInt(feeRow?.earned || 0),
       feesOutstanding:       parseInt(feeRow?.due || 0),
       feeCurrency,
+      /* Money the business has actually recorded, as opposed to the sum of
+       * what sellers are asking for their cars — which is not money at all,
+       * has never moved, and changes when a seller edits a price. The
+       * dashboard's headline figure used to be that asking-price total,
+       * formatted in the same red this product reserves for prices.
+       *
+       * `collected` is fees marked paid plus import payments an admin has
+       * verified against an uploaded bank transfer. `awaiting` is what is
+       * owed or claimed but not yet confirmed — shown beside it rather than
+       * folded into it, because an invoice is not a payment. */
+      money: {
+        currency:            feeCurrency,
+        feesCollected:       parseInt(feeRow?.collected || 0, 10),
+        feesOutstanding:     parseInt(feeRow?.due || 0, 10),
+        importVerified:      parseInt(importMoneyRes.rows[0]?.verified || 0, 10),
+        importAwaiting:      parseInt(importMoneyRes.rows[0]?.awaiting || 0, 10),
+        importAwaitingCount: parseInt(importMoneyRes.rows[0]?.awaiting_count || 0, 10),
+      },
       // Present so the dashboard can say "and 4 more in USD" instead of
       // pretending a single figure is the whole truth.
       gmvByCurrency:  gmvRes.rows.map((r) => ({ currency: r.currency, total: parseInt(r.total) })),
