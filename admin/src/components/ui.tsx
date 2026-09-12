@@ -152,6 +152,13 @@ export function Delta({ value, goodDirection, suffix = '' }: {
  * No axis, no labels, no tooltip — it is not there to be read off, it is there
  * so a glance answers "steady, climbing or falling" before the number is even
  * parsed. A flat series still draws a flat line rather than disappearing.
+ *
+ * It used to be a bare hairline in mid-grey, which on four cards in a row read
+ * as decoration rather than data. Three things fix that without making it
+ * loud: a soft fill anchored to the series floor, so the shape has a body; a
+ * baseline, so a rise reads as a rise rather than a squiggle; and a solid dot
+ * on the final point, because "where it ended" is the one value a glance
+ * actually wants.
  */
 export function Sparkline({ series, className = '' }: { series: number[]; className?: string }) {
   if (series.length < 2) return null
@@ -159,18 +166,37 @@ export function Sparkline({ series, className = '' }: { series: number[]; classN
   const min = Math.min(...series)
   const span = max - min || 1
   const step = 100 / (series.length - 1)
-  const points = series
-    .map((value, index) => `${(index * step).toFixed(2)},${(22 - ((value - min) / span) * 20).toFixed(2)}`)
-    .join(' ')
+  const H = 24
+  const TOP = 2
+  const FLOOR = 22
+  const y = (v: number) => FLOOR - ((v - min) / span) * (FLOOR - TOP)
+  const pts = series.map((v, i) => [i * step, y(v)] as const)
+  const line = pts.map(([x, py]) => `${x.toFixed(2)},${py.toFixed(2)}`).join(' ')
+  const area = `0,${FLOOR} ${line} 100,${FLOOR}`
+  const [lastX, lastY] = pts[pts.length - 1]
+  const id = `spark-${series.length}-${Math.round(min)}-${Math.round(max)}`
   return (
     <svg
-      viewBox="0 0 100 24" preserveAspectRatio="none" fill="none" aria-hidden
-      className={`h-6 w-full text-gray-400 ${className}`}
+      viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" fill="none" aria-hidden
+      className={`h-6 w-full overflow-visible text-content-muted ${className}`}
     >
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.20" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {/* The floor the fill sits on — without it a rise and a fall look alike. */}
+      <line x1="0" y1={FLOOR} x2="100" y2={FLOOR} stroke="currentColor" strokeOpacity="0.22" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      <polygon points={area} fill={`url(#${id})`} />
       <polyline
-        points={points} stroke="currentColor" strokeWidth="1.6"
+        points={line} stroke="currentColor" strokeWidth="1.6"
         strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
       />
+      {/* Where it ended. Drawn in the viewBox's own units on x, but given a
+          non-scaling stroke ring so the preserveAspectRatio="none" squash
+          cannot turn it into an ellipse. */}
+      <circle cx={lastX} cy={lastY} r="2" fill="currentColor" vectorEffect="non-scaling-stroke" />
     </svg>
   )
 }

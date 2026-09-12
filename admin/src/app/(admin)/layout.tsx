@@ -10,6 +10,13 @@ import { Icon, type IconName } from '@/components/Icon'
 import { FeedbackProvider } from '@/components/feedback'
 
 // Grouped navigation — the shape of the business, not a flat list.
+//
+// One glyph, one destination. An icon in a sidebar is an identifier, and it
+// stops identifying anything the moment two rows share it: `car` sat on
+// Vehicle imports, Listings and Brands at once, and `settings`, `calendar`
+// and `user` were each on two rows. Each is now the thing it actually names —
+// a shield-check for the 150-point inspection, a key for rental inventory,
+// a marque-shaped shield for brands.
 const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label: string }[] }[] = [
   {
     title: 'Operations',
@@ -18,8 +25,8 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/pipeline', icon: 'grid', label: 'Pipeline' },
       { href: '/inbox', icon: 'mail', label: 'Inbox' },
       { href: '/submissions', icon: 'document', label: 'Submissions' },
-      { href: '/imports', icon: 'car', label: 'Vehicle imports' },
-      { href: '/inspections', icon: 'settings', label: 'Inspections' },
+      { href: '/imports', icon: 'external', label: 'Vehicle imports' },
+      { href: '/inspections', icon: 'shield-check', label: 'Inspections' },
       { href: '/rentals/inquiries', icon: 'calendar', label: 'Rental inquiries' },
       { href: '/reports', icon: 'alert', label: 'Reported chats' },
       { href: '/activity', icon: 'clock', label: 'Activity history' },
@@ -30,9 +37,9 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     items: [
       { href: '/listings', icon: 'car', label: 'Listings' },
       { href: '/banner', icon: 'star', label: 'Home banner' },
-      { href: '/brands', icon: 'car', label: 'Brands' },
-      { href: '/account-closures', icon: 'user', label: 'Closures' },
-      { href: '/rentals/fleet', icon: 'calendar', label: 'Rental inventory' },
+      { href: '/brands', icon: 'shield', label: 'Brands' },
+      { href: '/account-closures', icon: 'close-circle', label: 'Closures' },
+      { href: '/rentals/fleet', icon: 'key', label: 'Rental inventory' },
       { href: '/settings', icon: 'settings', label: 'Platform settings' },
     ],
   },
@@ -40,7 +47,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     title: 'People & Oversight',
     items: [
       { href: '/users', icon: 'user', label: 'Users & ID checks' },
-      { href: '/vehicles', icon: 'search', label: 'Vehicle history' },
+      { href: '/vehicles', icon: 'eye', label: 'Vehicle history' },
       { href: '/analytics', icon: 'chart', label: 'Analytics' },
       { href: '/revenue', icon: 'cash', label: 'Revenue' },
       { href: '/centers', icon: 'location', label: 'Centers' },
