@@ -382,9 +382,9 @@ jobs:
           sha="${{ github.event.workflow_run.head_sha || github.sha }}"
           msg="${sha:0:8} ${{ github.event.workflow_run.head_commit.message || github.event.head_commit.message || 'manual publish' }}"
 
-          # Publish for current runtime 1.0.3 and all legacy runtimes (1.0.2, 1.0.1, 1.0.0)
+          # Publish for current runtime 1.0.4 and all legacy runtimes (1.0.3, 1.0.2, 1.0.1, 1.0.0)
           # so every existing install receives this update regardless of native build version.
-          for rt in 1.0.3 1.0.2 1.0.1 1.0.0; do
+          for rt in 1.0.4 1.0.3 1.0.2 1.0.1 1.0.0; do
             echo "── Publishing update for runtime ${rt} on branch ${branch} ──"
             APP_VERSION="${rt}" npx eas-cli update \
               --branch "$branch" \
