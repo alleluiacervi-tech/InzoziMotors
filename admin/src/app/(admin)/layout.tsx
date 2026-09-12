@@ -4,11 +4,19 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { api, signOut, getApiStatus, onApiStatus, type ApiStatus } from '@/lib/api'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
 import { FeedbackProvider } from '@/components/feedback'
 
 // Grouped navigation — the shape of the business, not a flat list.
+//
+// One glyph, one destination. An icon in a sidebar is an identifier, and it
+// stops identifying anything the moment two rows share it: `car` sat on
+// Vehicle imports, Listings and Brands at once, and `settings`, `calendar`
+// and `user` were each on two rows. Each is now the thing it actually names —
+// a shield-check for the 150-point inspection, a key for rental inventory,
+// a marque-shaped shield for brands.
 const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label: string }[] }[] = [
   {
     title: 'Operations',
@@ -17,8 +25,8 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/pipeline', icon: 'grid', label: 'Pipeline' },
       { href: '/inbox', icon: 'mail', label: 'Inbox' },
       { href: '/submissions', icon: 'document', label: 'Submissions' },
-      { href: '/imports', icon: 'car', label: 'Vehicle imports' },
-      { href: '/inspections', icon: 'settings', label: 'Inspections' },
+      { href: '/imports', icon: 'external', label: 'Vehicle imports' },
+      { href: '/inspections', icon: 'shield-check', label: 'Inspections' },
       { href: '/rentals/inquiries', icon: 'calendar', label: 'Rental inquiries' },
       { href: '/reports', icon: 'alert', label: 'Reported chats' },
       { href: '/activity', icon: 'clock', label: 'Activity history' },
@@ -29,9 +37,9 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     items: [
       { href: '/listings', icon: 'car', label: 'Listings' },
       { href: '/banner', icon: 'star', label: 'Home banner' },
-      { href: '/brands', icon: 'car', label: 'Brands' },
-      { href: '/account-closures', icon: 'user', label: 'Closures' },
-      { href: '/rentals/fleet', icon: 'calendar', label: 'Rental inventory' },
+      { href: '/brands', icon: 'shield', label: 'Brands' },
+      { href: '/account-closures', icon: 'close-circle', label: 'Closures' },
+      { href: '/rentals/fleet', icon: 'key', label: 'Rental inventory' },
       { href: '/settings', icon: 'settings', label: 'Platform settings' },
     ],
   },
@@ -39,7 +47,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     title: 'People & Oversight',
     items: [
       { href: '/users', icon: 'user', label: 'Users & ID checks' },
-      { href: '/vehicles', icon: 'search', label: 'Vehicle history' },
+      { href: '/vehicles', icon: 'eye', label: 'Vehicle history' },
       { href: '/analytics', icon: 'chart', label: 'Analytics' },
       { href: '/revenue', icon: 'cash', label: 'Revenue' },
       { href: '/centers', icon: 'location', label: 'Centers' },
@@ -232,7 +240,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       onClick={() => setSidebarOpen(false)}
                       className={`
                         group flex items-center gap-3 rounded-lg px-3 py-2 text-label font-semibold transition-colors
-                        ${active ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/5 hover:text-white'}
+                        ${active ? 'bg-surface/10 text-white' : 'text-white/55 hover:bg-surface/5 hover:text-white'}
                       `}
                     >
                       <span className={active ? 'text-brand-bright' : 'text-white/60 group-hover:text-white/80'}>
@@ -240,7 +248,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </span>
                       {label}
                       {badgeFor(href) > 0 && (
-                        <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-white">
+                        <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-brand-on">
                           {badgeFor(href)}
                         </span>
                       )}
@@ -255,7 +263,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* User footer */}
         <div className="border-t border-white/10 px-4 py-4">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-label font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-label font-bold text-brand-on">
               {(user?.name || 'A')[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -268,14 +276,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               because that is where someone looks for their own account. */}
           <Link
             href="/account"
-            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-surface/5 hover:text-white"
           >
             <Icon name="lock" size={15} />
             My account
           </Link>
           <button
             onClick={logout}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-surface/5 hover:text-white"
           >
             <Icon name="logout" size={15} />
             Sign out
@@ -324,6 +332,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             ) : null}
           </div>
+          <ThemeToggle />
           <ApiStatusBadge />
         </header>
 

@@ -25,8 +25,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={satoshi.variable}>
-      <body className="font-sans antialiased">{children}</body>
+    <html lang="en" className={satoshi.variable} suppressHydrationWarning>
+      <body className="font-sans antialiased">
+        {/* Runs before the first pixel: a stored choice wins, otherwise the
+            operating system decides. Doing this in <body> rather than in a
+            component is the only way to avoid a white flash. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('sawa-admin-theme');" +
+              "var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches);" +
+              "document.documentElement.classList.toggle('dark',d);}catch(e){}",
+          }}
+        />
+        {children}
+      </body>
     </html>
   )
 }

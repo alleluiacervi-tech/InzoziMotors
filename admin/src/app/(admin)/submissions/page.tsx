@@ -197,7 +197,7 @@ export default function SubmissionsPage() {
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." />
         <button type="button" onClick={() => { setIntake(intake ? null : { ...EMPTY_INTAKE }); setSellerQuery(''); setSellerHits([]) }}
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light">
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on hover:bg-brand-light">
           {intake ? 'Cancel intake' : 'Take in a vehicle'}
         </button>
       </div>
@@ -281,7 +281,7 @@ export default function SubmissionsPage() {
             </label>
             <button disabled={actionId === 'intake'
               || (!intake.seller_id && !(intake.new_name.trim() && intake.new_email.trim()))}
-              className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
+              className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-brand-on disabled:opacity-50 sm:col-span-2">
               {actionId === 'intake' ? 'Filing…' : 'File the submission'}
             </button>
           </form>
@@ -311,7 +311,7 @@ export default function SubmissionsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              tab === t ? 'bg-brand text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-brand'
+              tab === t ? 'bg-brand text-brand-on' : 'bg-surface text-gray-600 border border-gray-200 hover:border-brand'
             }`}
           >
             {t === 'all' ? 'All' : t.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -330,7 +330,7 @@ export default function SubmissionsPage() {
           {visible.map((sub) => {
             const waiting = age(sub)
             return (
-            <div key={sub.id} id={`row-${sub.id}`} className={`bg-white rounded-xl border border-gray-100 shadow-sm p-5 ${focusProps(sub.id).className}`}>
+            <div key={sub.id} id={`row-${sub.id}`} className={`bg-surface rounded-xl border border-gray-100 shadow-sm p-5 ${focusProps(sub.id).className}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -383,7 +383,7 @@ export default function SubmissionsPage() {
                         if (next && !schedDate) setSchedDate(nextBusinessDay())
                       }}
                       disabled={actionId === sub.id}
-                      className="px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
                     >
                       Schedule Inspection
                     </button>
@@ -410,7 +410,7 @@ export default function SubmissionsPage() {
                     <select
                       value={schedCenter}
                       onChange={(e) => setSchedCenter(e.target.value)}
-                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-surface"
                     >
                       {centers.length ? centers.map((center) => (
                         <option key={center.id} value={center.name}>{center.name}</option>
@@ -423,7 +423,7 @@ export default function SubmissionsPage() {
                       type="date"
                       value={schedDate}
                       onChange={(e) => setSchedDate(e.target.value)}
-                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-surface"
                     />
                   </label>
                   <label className="text-xs text-gray-600">
@@ -431,7 +431,7 @@ export default function SubmissionsPage() {
                     <select
                       value={schedTime}
                       onChange={(e) => setSchedTime(e.target.value)}
-                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-white"
+                      className="block mt-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg bg-surface"
                     >
                       {['8:00 AM','9:00 AM','10:00 AM','11:00 AM','1:00 PM','2:00 PM','3:00 PM','4:00 PM'].map((t) => (
                         <option key={t}>{t}</option>
@@ -450,7 +450,7 @@ export default function SubmissionsPage() {
                       setShowScheduleFor(null)
                     }}
                     disabled={actionId === sub.id || !schedCenter}
-                    className="px-4 py-2 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
                   >
                     Book Appointment
                   </button>

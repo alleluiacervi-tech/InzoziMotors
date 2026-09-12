@@ -135,7 +135,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
   const revenue = sold.reduce((sum, r) => sum + Number(r.amount_rwf || 0), 0)
 
   return (
-    <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div className="mb-6 rounded-xl border border-gray-100 bg-surface p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-bold text-gray-900">Who can read this report</h2>
@@ -147,7 +147,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
         </div>
         {complete ? (
           <button type="button" onClick={() => setOpen(!open)}
-            className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white hover:bg-brand-light">
+            className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-brand-on hover:bg-brand-light">
             {open ? 'Cancel' : 'Give or sell a copy'}
           </button>
         ) : null}
@@ -169,7 +169,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
               className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm" />
             {form.user_id ? <p className="mt-1 text-xs font-semibold text-success-text">{form.user_label} selected</p> : null}
             {people.length && !form.user_id ? (
-              <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+              <div className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-surface">
                 {people.map((p) => (
                   <button key={p.id} type="button"
                     onClick={() => { setForm({ ...form, user_id: p.id, user_label: p.name }); setPersonQuery(p.name); setPeople([]) }}
@@ -184,7 +184,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
 
           <div className="grid gap-2 sm:grid-cols-3">
             {GRANT_OPTIONS.map((o) => (
-              <label key={o.value} className={`cursor-pointer rounded-lg border p-2.5 ${form.source === o.value ? 'border-brand bg-white' : 'border-gray-200'}`}>
+              <label key={o.value} className={`cursor-pointer rounded-lg border p-2.5 ${form.source === o.value ? 'border-brand bg-surface' : 'border-gray-200'}`}>
                 <input type="radio" name="grant-source" className="sr-only" checked={form.source === o.value}
                   onChange={() => setForm({ ...form, source: o.value })} />
                 <span className="block text-xs font-bold text-gray-900">{o.label}</span>
@@ -221,7 +221,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
           ) : null}
 
           <button disabled={busy || !form.user_id}
-            className="rounded-lg bg-brand px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">
+            className="rounded-lg bg-brand px-4 py-2.5 text-xs font-bold text-brand-on disabled:opacity-50">
             {busy ? 'Saving…' : form.source === 'purchased' ? 'Record the sale' : 'Grant access'}
           </button>
         </form>

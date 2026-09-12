@@ -25,8 +25,8 @@ export default function RentalsLayout({ children }: { children: React.ReactNode 
               href={href}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                 pathname === href
-                  ? 'bg-brand text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-brand'
+                  ? 'bg-brand text-brand-on'
+                  : 'bg-surface text-gray-600 border border-gray-200 hover:border-brand'
               }`}
             >
               {label}

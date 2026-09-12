@@ -59,14 +59,14 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-surface/10 mb-4">
             <LogoMark size={40} />
           </div>
           <h1 className="text-2xl font-bold text-white">Sawa Cars</h1>
           <p className="text-white/60 text-sm mt-1">Admin Dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-xl">
+        <form onSubmit={handleSubmit} className="bg-surface rounded-2xl p-8 shadow-xl">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in</h2>
 
           {error && (
@@ -103,7 +103,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full py-2.5 bg-brand text-white font-semibold rounded-lg hover:bg-brand-light transition-colors disabled:opacity-50"
+            className="mt-6 w-full py-2.5 bg-brand text-brand-on font-semibold rounded-lg hover:bg-brand-light transition-colors disabled:opacity-50"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>

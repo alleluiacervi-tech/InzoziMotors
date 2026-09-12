@@ -291,7 +291,7 @@ export default function InspectionDetailPage() {
         </>
       ) : null}
 
-      <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="mb-6 rounded-xl border border-gray-100 bg-surface p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold text-gray-900">150-Point Inspection</h1>
@@ -352,7 +352,7 @@ export default function InspectionDetailPage() {
             if (!items.length) return null
             const answered = items.filter((item) => results[item.id]).length
             return (
-              <section key={category.id} className="overflow-hidden rounded-xl border border-red-100 bg-white shadow-sm">
+              <section key={category.id} className="overflow-hidden rounded-xl border border-red-100 bg-surface shadow-sm">
                 <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-5 py-3">
                   <h3 className="text-sm font-semibold text-red-800">{category.name}</h3>
                   <span className="text-xs text-red-700">{answered}/{items.length} critical</span>
@@ -378,7 +378,7 @@ export default function InspectionDetailPage() {
           const remaining = items.filter((item) => !results[item.id]).length
           const attestation = insp.checklist_attestations?.[category.id]
           return (
-            <section key={category.id} className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+            <section key={category.id} className="overflow-hidden rounded-xl border border-gray-100 bg-surface shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700">{category.name}</h3>
@@ -410,10 +410,10 @@ export default function InspectionDetailPage() {
         })}
       </div>
 
-      <div className="mt-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="mt-6 rounded-xl border border-gray-100 bg-surface p-5 shadow-sm">
         <label className="mb-2 block text-sm font-medium text-gray-700">Inspector notes (optional)</label>
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} disabled={readOnly} rows={4} className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-50" placeholder="Record observations and recommendations for the report…" />
-        {!readOnly && <button onClick={submit} disabled={saving || insp.status !== 'in_progress' || counts.answered !== definition.item_count} className="mt-4 w-full rounded-xl bg-brand py-3 font-semibold text-white transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-50">{saving ? 'Submitting…' : 'Complete Inspection for Admin Review'}</button>}
+        {!readOnly && <button onClick={submit} disabled={saving || insp.status !== 'in_progress' || counts.answered !== definition.item_count} className="mt-4 w-full rounded-xl bg-brand py-3 font-semibold text-brand-on transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-50">{saving ? 'Submitting…' : 'Complete Inspection for Admin Review'}</button>}
         <p className="mt-2 text-center text-xs text-gray-500">Completion records evidence only. Publication is a separate, audited admin decision.</p>
       </div>
     </div>

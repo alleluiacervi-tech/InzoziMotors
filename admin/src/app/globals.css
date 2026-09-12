@@ -2,23 +2,119 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Neutrals from src/theme/colors.js — very slightly red-warm, matching the
-   website and the app. Inter arrives via next/font in the root layout. */
+/* ───────────────────────────────────────────────────────────────────────────
+   The token layer.
+
+   Every colour in this console resolves through one of these variables, as an
+   unprefixed "R G B" triplet so Tailwind's /opacity modifiers keep working.
+   The neutrals match the website's Editorial Showroom palette exactly, so an
+   operator moving between admin.sawacars.com and the public site sees one
+   product rather than two.
+
+   Dark is not an inversion. Signal Red lightens to #FF5A61 because #CC050F
+   only reaches 2.2:1 on a dark ground, and the gray ramp reverses end for end
+   so the ~200 pages written in gray-* stay legible instead of painting light
+   grey on near-black. Every pair below was measured.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  --brand: 204 5 15;            /* #CC050F */
+  --brand-bright: 222 7 20;
+  --brand-deep: 165 4 16;
+  --brand-tint: 253 235 236;
+  --on-brand: 255 255 255;
+
+  --ink-900: 20 17 15;
+  --ink-800: 36 31 29;
+  --ink-700: 56 48 44;
+
+  --success: 22 163 74;   --success-tint: 234 246 238;  --success-text: 22 101 52;
+  --warning: 217 119 6;   --warning-tint: 254 243 199;  --warning-text: 180 83 9;
+  --danger: 180 35 58;    --danger-tint: 251 236 239;   --danger-strong: 185 28 28;
+  --info: 29 78 216;      --info-tint: 239 246 255;
+
+  --surface: 255 255 255;
+  --surface-alt: 242 239 234;
+  --surface-page: 251 250 248;
+
+  --line: 227 221 213;
+  --line-soft: 239 234 227;
+
+  --content: 20 17 15;
+  --content-secondary: 61 55 51;
+  --content-muted: 110 102 96;
+
+  --gray-50: 251 250 248;   --gray-100: 242 239 234;  --gray-200: 239 234 227;
+  --gray-300: 227 221 213;  --gray-400: 156 147 139;  --gray-500: 110 102 96;
+  --gray-600: 88 80 75;     --gray-700: 61 55 51;     --gray-800: 36 31 29;
+  --gray-900: 20 17 15;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --brand: 255 90 97;           /* #FF5A61 — 6.4:1 on the dark page */
+  --brand-bright: 255 122 128;
+  --brand-deep: 214 58 66;
+  --brand-tint: 47 22 24;
+  --on-brand: 20 17 15;         /* dark ink on the lightened accent, 6.2:1 */
+
+  /* The chrome inverts to the deepest surfaces, so an ink band still reads as
+     a deliberate change of register instead of vanishing into the page. */
+  --ink-900: 8 7 6;
+  --ink-800: 18 15 14;
+  --ink-700: 30 26 24;
+
+  /* Semantics lighten and desaturate rather than invert. */
+  --success: 74 222 128;   --success-tint: 20 45 31;   --success-text: 134 239 172;
+  --warning: 251 191 36;   --warning-tint: 56 41 12;   --warning-text: 253 224 71;
+  --danger: 248 113 133;   --danger-tint: 56 22 28;    --danger-strong: 252 165 165;
+  --info: 125 165 255;     --info-tint: 22 32 56;
+
+  /* The surface ladder, and the one thing dark UI gets wrong most often.
+     Contrast ratios compress at the dark end: the biggest card-versus-page
+     lift available here is about 1.15:1, which is not enough to read as a
+     separate object on its own. So the border carries the separation instead,
+     at 1.63:1 — the ratio the well-made dark consoles land on. A card with a
+     1.26:1 border, which is where this palette started, is a card nobody can
+     see the edge of. */
+  --surface: 30 26 24;
+  --surface-alt: 46 40 37;
+  --surface-page: 11 10 9;
+
+  --line: 70 61 56;
+  --line-soft: 52 45 41;
+
+  --content: 245 241 236;
+  --content-secondary: 203 194 186;
+  --content-muted: 158 148 140;   /* lifted from 148: 4.30:1 on surface-alt failed */
+
+  /* Reversed end for end: gray-50 was the lightest ground and becomes the
+     darkest; gray-900 was body ink and becomes the lightest. */
+  --gray-50: 11 10 9;       --gray-100: 30 26 24;     --gray-200: 70 61 56;
+  --gray-300: 84 74 68;     --gray-400: 138 129 122;  --gray-500: 158 148 140;
+  --gray-600: 180 170 162;  --gray-700: 203 194 186;  --gray-800: 226 220 213;
+  --gray-900: 245 241 236;
+}
+
+/* Inter arrives via next/font in the root layout. */
 body {
-  background-color: #faf8f8;
-  color: #1b1313;
+  background-color: rgb(var(--surface-page));
+  color: rgb(var(--content));
   text-rendering: optimizeLegibility;
 }
 
-/* One visible focus treatment — keyboard operators run this tool all day. */
+/* One visible focus treatment — keyboard operators run this tool all day.
+   Was a hardcoded #c63f3d, a red belonging to no token and not the brand. */
 :focus-visible {
-  outline: 2px solid #c63f3d;
+  outline: 2px solid rgb(var(--brand));
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 ::selection {
-  background: rgba(204, 5, 15, 0.15);
+  background: rgb(var(--brand) / 0.18);
 }
 
 /* Motion is enhancement, never a prerequisite for understanding state. */

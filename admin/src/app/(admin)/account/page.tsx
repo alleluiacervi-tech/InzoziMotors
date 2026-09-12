@@ -116,7 +116,7 @@ export default function AccountPage() {
           </p>
 
           <button disabled={!ready || saving}
-            className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-white hover:bg-brand-bright disabled:opacity-50">
+            className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50">
             {saving ? 'Changing…' : 'Change password'}
           </button>
         </form>
