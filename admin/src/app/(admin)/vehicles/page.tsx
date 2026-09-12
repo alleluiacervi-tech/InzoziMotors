@@ -282,7 +282,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 <button
                   disabled={decoding || !vinInput.trim()}
                   onClick={() => handleDecode()}
-                  className="flex items-center gap-2 rounded-xl bg-brand px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-brand-bright disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl bg-brand px-6 py-3 text-xs font-bold text-brand-on shadow-sm hover:bg-brand-bright disabled:opacity-50"
                 >
                   {decoding ? (
                     <>
@@ -539,7 +539,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 <button
                   disabled={diffing || !decodeResult?.normalizedSpecs}
                   onClick={handleCompare}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-2.5 text-xs font-bold text-white hover:bg-brand-bright disabled:opacity-50"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-2.5 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
                 >
                   <Icon name="refresh" className="h-4 w-4" />
                   Run Discrepancy Diff Check
@@ -694,7 +694,7 @@ export default function VehicleIntelligenceCommandCenter() {
                     <button
                       type="submit"
                       disabled={resolving || !resolutionNote.trim()}
-                      className="rounded-xl bg-brand px-5 py-2 text-xs font-bold text-white hover:bg-brand-bright disabled:opacity-50"
+                      className="rounded-xl bg-brand px-5 py-2 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
                     >
                       {resolving ? 'Recording...' : 'Confirm Resolution'}
                     </button>
@@ -790,7 +790,7 @@ export default function VehicleIntelligenceCommandCenter() {
               <button
                 type="submit"
                 disabled={recordingEvent || !eventForm.vehicleId}
-                className="flex items-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-xs font-bold text-white hover:bg-brand-bright disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
               >
                 <Icon name="plus" className="h-4 w-4" />
                 {recordingEvent ? 'Recording...' : 'Append Event to Ledger'}
@@ -816,7 +816,7 @@ export default function VehicleIntelligenceCommandCenter() {
               </label>
               <button
                 disabled={loadingHistory}
-                className="self-end rounded-xl bg-brand px-5 py-3 text-xs font-bold text-white hover:bg-brand-bright disabled:opacity-50"
+                className="self-end rounded-xl bg-brand px-5 py-3 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
               >
                 {loadingHistory ? 'Searching...' : 'Search Archive'}
               </button>

@@ -300,7 +300,7 @@ export default function InboxPage() {
           <button
             type="button"
             onClick={() => { setComposing(true); setOpenUid(null); setMessage(null); setSent(null); setReplyError(null) }}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-label font-bold text-white transition-colors hover:bg-brand-bright"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-label font-bold text-brand-on transition-colors hover:bg-brand-bright"
           >
             <Icon name="plus" size={16} /> Compose
           </button>
@@ -338,7 +338,7 @@ export default function InboxPage() {
               {t.label}
               {t.key === 'inbox' && info && info.unread > 0 ? (
                 <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-micro font-bold ${
-                  active ? 'bg-white/20 text-white' : 'bg-brand text-white'
+                  active ? 'bg-surface/20 text-white' : 'bg-brand text-brand-on'
                 }`}>
                   {info.unread}
                 </span>
@@ -506,7 +506,7 @@ export default function InboxPage() {
                 <input ref={fileInput} type="file" multiple onChange={(e) => { setReplyError(null); addFiles(e.target.files) }} className="hidden" aria-hidden />
                 <button type="button" disabled={sending || !composeTo.trim() || !composeSubject.trim() || !composeBody.trim()}
                   onClick={sendComposedMessage}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-label font-bold text-white hover:bg-brand-bright disabled:opacity-50">
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-label font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50">
                   <Icon name="mail" size={16} />{sending ? 'Sending…' : 'Send message'}
                 </button>
                 <button type="button" disabled={sending || files.length >= 5} onClick={() => fileInput.current?.click()}
@@ -694,7 +694,7 @@ export default function InboxPage() {
                         type="button"
                         disabled={sending || !reply.trim()}
                         onClick={sendReply}
-                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-label font-bold text-white transition-colors hover:bg-brand-bright disabled:opacity-50"
+                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-label font-bold text-brand-on transition-colors hover:bg-brand-bright disabled:opacity-50"
                       >
                         <Icon name="mail" size={16} />
                         {sending ? 'Sending…' : 'Send reply'}

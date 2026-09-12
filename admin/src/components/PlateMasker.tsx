@@ -244,7 +244,7 @@ export function PlateMasker({ carId, photo, onDone, onCancel }: {
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button onClick={save} disabled={saving}
-            className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-white hover:bg-brand-bright disabled:opacity-50">
+            className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50">
             {saving ? 'Saving…' : masked ? 'Save new position' : 'Hide the plate'}
           </button>
           <button onClick={noPlate} disabled={saving}

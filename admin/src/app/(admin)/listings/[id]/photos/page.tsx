@@ -132,7 +132,7 @@ export default function CarPhotosPage() {
         </div>
         <button
           onClick={() => router.push('/listings')}
-          className="px-4 py-2 text-sm font-semibold bg-brand text-white rounded-lg hover:bg-brand-light transition-colors"
+          className="px-4 py-2 text-sm font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light transition-colors"
         >
           Back to listings
         </button>
@@ -191,7 +191,7 @@ export default function CarPhotosPage() {
           </div>
 
           {/* Current Gallery */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-surface rounded-xl border border-gray-100 shadow-sm p-5">
             <h2 className="text-sm font-bold text-gray-900 mb-4">Uploaded Gallery ({currentCount} photos)</h2>
             {currentCount === 0 ? (
               <p className="text-xs text-gray-400 italic py-4">{`No images uploaded yet. Add ${minPhotos} clear image${minPhotos === 1 ? '' : 's'} before publishing.`}</p>
@@ -225,11 +225,11 @@ export default function CarPhotosPage() {
                               Masking unavailable
                             </span>
                           ) : (
-                            <button type="button" onClick={() => setMasking(photo)} className="rounded bg-brand px-2 py-1 text-[10px] font-bold text-white">
+                            <button type="button" onClick={() => setMasking(photo)} className="rounded bg-brand px-2 py-1 text-[10px] font-bold text-brand-on">
                               {photo.plate_state === 'masked' ? 'Move cover' : 'Hide plate'}
                             </button>
                           )}
-                          {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-white px-2 py-1 text-[10px] font-bold text-gray-800">Make cover</button>}
+                          {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-surface px-2 py-1 text-[10px] font-bold text-gray-800">Make cover</button>}
                           <button type="button" onClick={() => removePhoto(photo.id)} className="rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white">Remove</button>
                         </div>
                       </div>
@@ -242,7 +242,7 @@ export default function CarPhotosPage() {
         </div>
 
         {/* Publication guidance */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 h-fit">
+        <div className="bg-surface rounded-xl border border-gray-100 shadow-sm p-5 h-fit">
           <h2 className="text-sm font-bold text-gray-900 mb-2">Photo quality checklist</h2>
           <p className="text-xs text-gray-500 mb-4">There is no fixed angle requirement. Use the images that best represent this vehicle.</p>
           <ul className="space-y-3 text-xs text-gray-600">

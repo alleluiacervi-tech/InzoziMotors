@@ -230,7 +230,7 @@ export default function DashboardPage() {
         action={
           <Link
             href="/listings/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-white shadow-card transition-colors hover:bg-brand-deep"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on shadow-card transition-colors hover:bg-brand-deep"
           >
             <Icon name="plus" size={16} />
             New listing

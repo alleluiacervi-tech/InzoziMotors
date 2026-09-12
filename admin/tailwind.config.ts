@@ -5,53 +5,89 @@ import type { Config } from 'tailwindcss'
 // pre-rebrand forest-green palette; an internal tool still represents the brand
 // to the people who run the business every day.
 const config: Config = {
+  darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
+        // Every colour resolves through a CSS variable declared in
+        // src/app/globals.css, as an "R G B" triplet so Tailwind's /opacity
+        // modifiers still compose. 2015 class usages across this console
+        // already route through these semantic names, so swapping the
+        // variables re-skins the whole tool — including dark mode — without
+        // editing a single page.
         brand: {
-          DEFAULT: '#CC050F',
-          bright: '#DE0714',
-          deep: '#A50410',
-          tint: '#F9EDED',
-          // Legacy aliases still referenced across older pages:
-          // "dark" was the sidebar/login ground (now warm ink),
-          // "light" was the hover fill (now the bright red).
-          dark: '#17120F',
-          light: '#DE0714',
+          DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+          bright: 'rgb(var(--brand-bright) / <alpha-value>)',
+          deep: 'rgb(var(--brand-deep) / <alpha-value>)',
+          tint: 'rgb(var(--brand-tint) / <alpha-value>)',
+          on: 'rgb(var(--on-brand) / <alpha-value>)',
+          // Legacy aliases still referenced across older pages.
+          dark: 'rgb(var(--ink-900) / <alpha-value>)',
+          light: 'rgb(var(--brand-bright) / <alpha-value>)',
         },
-        ink: { 900: '#17120F', 800: '#281F1C', 700: '#3A2D29' },
+        ink: {
+          900: 'rgb(var(--ink-900) / <alpha-value>)',
+          800: 'rgb(var(--ink-800) / <alpha-value>)',
+          700: 'rgb(var(--ink-700) / <alpha-value>)',
+        },
         // `text` is the readable-on-tint variant, and it is NOT optional: the
         // DEFAULT green on success-tint measures 2.97:1, which fails AA, and
-        // that pair is the single most common pill in this dashboard —
-        // live, complete, approved, paid, active, resolved and signed all map
-        // to it. #166534 on the same tint is 5.9:1. The website's config has
-        // carried this variant for a while; the admin never received it.
+        // that pair is the single most common pill in this dashboard.
         // Use `text-success-text` for TEXT and `text-success` only for icons
         // and graphics, where 3:1 is the bar.
-        success: { DEFAULT: '#16A34A', tint: '#EAF6EE', text: '#166534' },
-        warning: { DEFAULT: '#D97706', tint: '#FEF3C7', text: '#B45309' },
-        danger: { DEFAULT: '#B4233A', tint: '#FBECEF', strong: '#B91C1C' },
-        info: { DEFAULT: '#1D4ED8', tint: '#EFF6FF' },
-        surface: { DEFAULT: '#FFFFFF', alt: '#F6F4F4', page: '#FAF8F8' },
-        line: { DEFAULT: '#E8E3E3', soft: '#F0EDED' },
-        content: { DEFAULT: '#1B1313', secondary: '#423737', muted: '#7A6E6E' },
+        success: {
+          DEFAULT: 'rgb(var(--success) / <alpha-value>)',
+          tint: 'rgb(var(--success-tint) / <alpha-value>)',
+          text: 'rgb(var(--success-text) / <alpha-value>)',
+        },
+        warning: {
+          DEFAULT: 'rgb(var(--warning) / <alpha-value>)',
+          tint: 'rgb(var(--warning-tint) / <alpha-value>)',
+          text: 'rgb(var(--warning-text) / <alpha-value>)',
+        },
+        danger: {
+          DEFAULT: 'rgb(var(--danger) / <alpha-value>)',
+          tint: 'rgb(var(--danger-tint) / <alpha-value>)',
+          strong: 'rgb(var(--danger-strong) / <alpha-value>)',
+        },
+        info: {
+          DEFAULT: 'rgb(var(--info) / <alpha-value>)',
+          tint: 'rgb(var(--info-tint) / <alpha-value>)',
+        },
+        surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          alt: 'rgb(var(--surface-alt) / <alpha-value>)',
+          page: 'rgb(var(--surface-page) / <alpha-value>)',
+        },
+        line: {
+          DEFAULT: 'rgb(var(--line) / <alpha-value>)',
+          soft: 'rgb(var(--line-soft) / <alpha-value>)',
+        },
+        content: {
+          DEFAULT: 'rgb(var(--content) / <alpha-value>)',
+          secondary: 'rgb(var(--content-secondary) / <alpha-value>)',
+          muted: 'rgb(var(--content-muted) / <alpha-value>)',
+        },
 
-        // Remap Tailwind's gray scale onto the warm neutrals so every page
-        // written in gray-* re-skins to the brand without touching each file.
+        // Tailwind's gray scale, remapped onto the same warm neutrals so the
+        // ~200 pages still written in gray-* re-skin with everything else —
+        // and, crucially, invert correctly in dark mode rather than staying
+        // light grey on a dark ground.
         gray: {
-          50: '#FAF8F8',
-          100: '#F6F4F4',
-          200: '#F0EDED',
-          300: '#E8E3E3',
-          400: '#A99C9C',
-          500: '#7A6E6E',
-          600: '#5C5050',
-          700: '#423737',
-          800: '#2B2222',
-          900: '#1B1313',
+          50:  'rgb(var(--gray-50) / <alpha-value>)',
+          100: 'rgb(var(--gray-100) / <alpha-value>)',
+          200: 'rgb(var(--gray-200) / <alpha-value>)',
+          300: 'rgb(var(--gray-300) / <alpha-value>)',
+          400: 'rgb(var(--gray-400) / <alpha-value>)',
+          500: 'rgb(var(--gray-500) / <alpha-value>)',
+          600: 'rgb(var(--gray-600) / <alpha-value>)',
+          700: 'rgb(var(--gray-700) / <alpha-value>)',
+          800: 'rgb(var(--gray-800) / <alpha-value>)',
+          900: 'rgb(var(--gray-900) / <alpha-value>)',
         },
       },
+
       fontFamily: {
         sans: ['var(--font-satoshi)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },

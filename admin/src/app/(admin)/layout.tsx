@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { api, signOut, getApiStatus, onApiStatus, type ApiStatus } from '@/lib/api'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
 import { FeedbackProvider } from '@/components/feedback'
@@ -232,7 +233,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       onClick={() => setSidebarOpen(false)}
                       className={`
                         group flex items-center gap-3 rounded-lg px-3 py-2 text-label font-semibold transition-colors
-                        ${active ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/5 hover:text-white'}
+                        ${active ? 'bg-surface/10 text-white' : 'text-white/55 hover:bg-surface/5 hover:text-white'}
                       `}
                     >
                       <span className={active ? 'text-brand-bright' : 'text-white/60 group-hover:text-white/80'}>
@@ -240,7 +241,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </span>
                       {label}
                       {badgeFor(href) > 0 && (
-                        <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-white">
+                        <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-brand-on">
                           {badgeFor(href)}
                         </span>
                       )}
@@ -255,7 +256,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* User footer */}
         <div className="border-t border-white/10 px-4 py-4">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-label font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-label font-bold text-brand-on">
               {(user?.name || 'A')[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -268,14 +269,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               because that is where someone looks for their own account. */}
           <Link
             href="/account"
-            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+            className="mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-surface/5 hover:text-white"
           >
             <Icon name="lock" size={15} />
             My account
           </Link>
           <button
             onClick={logout}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-label font-semibold text-white/60 transition-colors hover:bg-surface/5 hover:text-white"
           >
             <Icon name="logout" size={15} />
             Sign out
@@ -324,6 +325,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             ) : null}
           </div>
+          <ThemeToggle />
           <ApiStatusBadge />
         </header>
 

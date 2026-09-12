@@ -154,7 +154,7 @@ export default function InspectionsPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-gray-900">Inspections</h1>
         <button type="button" onClick={() => setWalkInOpen((open) => !open)}
-          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-white hover:bg-brand-bright">
+          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on hover:bg-brand-bright">
           {walkInOpen ? 'Close form' : 'Book a walk-in inspection'}
         </button>
       </div>
@@ -225,7 +225,7 @@ export default function InspectionsPage() {
       ) : null}
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap gap-4 items-end">
+      <div className="bg-surface rounded-xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap gap-4 items-end">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Center</label>
           <select
@@ -270,7 +270,7 @@ export default function InspectionsPage() {
       ) : (
         <div className="space-y-3">
           {visible.map((insp) => (
-            <div key={insp.id} id={`row-${insp.id}`} className={`bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4 ${focusProps(insp.id).className}`}>
+            <div key={insp.id} id={`row-${insp.id}`} className={`bg-surface rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4 ${focusProps(insp.id).className}`}>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-semibold text-gray-900 text-sm">
@@ -300,7 +300,7 @@ export default function InspectionsPage() {
               {insp.status !== 'complete' && (
                 <Link
                   href={`/inspections/${insp.id}`}
-                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
+                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
                 >
                   {insp.status === 'scheduled' ? 'Start Checklist' : 'Continue'}
                 </Link>
@@ -349,7 +349,7 @@ export default function InspectionsPage() {
                     // concludes the rental side simply does not work.
                     <Link
                       href={`/rentals/fleet?inspectionId=${insp.id}`}
-                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
+                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
                     >
                       Add to rental fleet
                     </Link>
@@ -357,7 +357,7 @@ export default function InspectionsPage() {
                     <div className="flex flex-shrink-0 flex-wrap justify-end gap-2">
                       <Link
                         href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
-                        className="px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:bg-brand-light"
+                        className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
                       >
                         Create Listing
                       </Link>

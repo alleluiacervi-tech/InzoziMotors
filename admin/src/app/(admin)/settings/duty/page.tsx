@@ -191,7 +191,7 @@ export default function DutyRatesPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <button onClick={save} disabled={saving}
-          className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-white hover:bg-brand-bright disabled:opacity-50">
+          className="rounded-xl bg-brand px-5 py-3 text-label font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50">
           {saving ? 'Saving…' : 'Save rates'}
         </button>
         <Link href="/settings" className="text-label font-semibold text-content-muted hover:text-content">

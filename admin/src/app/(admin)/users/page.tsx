@@ -314,7 +314,7 @@ export default function UsersPage() {
 
       <div className="mb-5 flex justify-end">
         <button type="button" onClick={() => setShowroomOpen((v) => !v)}
-          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-white hover:bg-brand-bright">
+          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on hover:bg-brand-bright">
           {showroomOpen ? 'Close form' : 'Create an account'}
         </button>
       </div>
@@ -481,7 +481,7 @@ export default function UsersPage() {
                 className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:border-content-muted focus:outline-none" />
             </label>
             <button disabled={actionId === `verify-${verifying.user.id}` || verifying.note.trim().length < MIN_ATTESTATION}
-              className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50">
+              className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-brand-on disabled:opacity-50">
               {actionId === `verify-${verifying.user.id}` ? 'Recording…' : 'Record verification'}
             </button>
           </form>
@@ -521,7 +521,7 @@ export default function UsersPage() {
                 <span><span className="block text-label font-bold text-content">{label}</span><span className="text-caption text-content-muted">{sub}</span></span>
               </label>
             ))}
-            <button disabled={actionId === `edit-${editing.id}`} className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-white disabled:opacity-50 sm:col-span-2">
+            <button disabled={actionId === `edit-${editing.id}`} className="rounded-xl bg-brand px-4 py-3 text-label font-bold text-brand-on disabled:opacity-50 sm:col-span-2">
               {actionId === `edit-${editing.id}` ? 'Saving…' : 'Save account controls'}
             </button>
             {/* Outside the form's own submit: a cap is set by its own route,
@@ -567,7 +567,7 @@ export default function UsersPage() {
                   <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>
                   <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2"><Pill status={u.account_status === 'suspended' ? 'rejected' : 'approved'} label={u.account_status === 'suspended' ? 'suspended' : 'active'} />
-                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button>{u.id_verified === 'approved' ? <button type="button" onClick={() => revokeIdentity(u)} disabled={actionId === `revoke-${u.id}`} className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">{actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID'}</button> : <button type="button" onClick={() => setVerifying({ user: u, method: OFFLINE_METHODS[0].value, note: '', reference: '' })} className="rounded-lg border border-success px-2.5 py-1.5 text-caption font-bold text-success-text hover:bg-success-tint">Verify identity</button>}<button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-white hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
+                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button>{u.id_verified === 'approved' ? <button type="button" onClick={() => revokeIdentity(u)} disabled={actionId === `revoke-${u.id}`} className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">{actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID'}</button> : <button type="button" onClick={() => setVerifying({ user: u, method: OFFLINE_METHODS[0].value, note: '', reference: '' })} className="rounded-lg border border-success px-2.5 py-1.5 text-caption font-bold text-success-text hover:bg-success-tint">Verify identity</button>}<button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-brand-on hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
                   <td className="px-5 py-4 text-label text-content-muted">{new Date(u.created_at).toLocaleDateString()}</td>
                 </tr>)}
               </tbody>
@@ -592,7 +592,7 @@ export default function UsersPage() {
                 </div>
               </div>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                <button onClick={() => decide(u.id, 'approved')} disabled={actionId === u.id} className="flex-1 rounded-xl bg-brand py-2.5 text-label font-bold text-white hover:bg-brand-bright disabled:opacity-50">Approve seller</button>
+                <button onClick={() => decide(u.id, 'approved')} disabled={actionId === u.id} className="flex-1 rounded-xl bg-brand py-2.5 text-label font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50">Approve seller</button>
                 <button onClick={() => decide(u.id, 'rejected')} disabled={actionId === u.id} className="flex-1 rounded-xl border border-danger-border bg-danger-tint py-2.5 text-label font-bold text-danger-strong hover:opacity-80 disabled:opacity-50">Reject documents</button>
               </div>
             </Card>

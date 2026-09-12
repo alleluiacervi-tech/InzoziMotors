@@ -267,7 +267,7 @@ export default function BannerPage() {
         <button
           onClick={place}
           disabled={busy === 'place' || !draft.car_id}
-          className="mt-5 rounded-xl bg-brand px-5 py-3 text-label font-bold text-white disabled:opacity-40"
+          className="mt-5 rounded-xl bg-brand px-5 py-3 text-label font-bold text-brand-on disabled:opacity-40"
         >
           {busy === 'place' ? 'Placing…' : `Place as ${chosen.shown}`}
         </button>

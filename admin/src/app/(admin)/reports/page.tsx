@@ -154,7 +154,7 @@ export default function ReportsPage() {
             onClick={() => setSurface(s)}
             className={`inline-flex h-9 items-center rounded-xl px-4 text-label font-bold capitalize transition-colors ${
               surface === s
-                ? 'bg-brand text-white'
+                ? 'bg-brand text-brand-on'
                 : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'
             }`}
           >

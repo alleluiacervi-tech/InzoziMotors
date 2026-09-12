@@ -38,7 +38,7 @@ function Mark({ make, size = 40 }: { make: MakeRow; size?: number }) {
   const box = { width: size, height: size }
   if (make.logo_url) {
     return (
-      <span className="flex flex-none items-center justify-center rounded-lg border border-line-soft bg-white p-1" style={box}>
+      <span className="flex flex-none items-center justify-center rounded-lg border border-line-soft bg-surface p-1" style={box}>
         {/* Plain <img>: these are operator uploads on an arbitrary host, and
             next/image would need every one of them in remotePatterns. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -167,7 +167,7 @@ export default function BrandsPage() {
           <button
             onClick={add}
             disabled={busy === 'new' || !newName.trim()}
-            className="h-11 rounded-xl bg-brand px-5 text-label font-bold text-white disabled:opacity-40"
+            className="h-11 rounded-xl bg-brand px-5 text-label font-bold text-brand-on disabled:opacity-40"
           >
             {busy === 'new' ? 'Adding…' : 'Add'}
           </button>

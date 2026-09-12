@@ -129,7 +129,7 @@ export default function CentersPage() {
           <button
             type="button"
             onClick={() => { setAdding((v) => !v); setProblem(null) }}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-label font-bold text-white transition-colors hover:bg-brand-bright"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-4 text-label font-bold text-brand-on transition-colors hover:bg-brand-bright"
           >
             <Icon name={adding ? 'close' : 'plus'} size={16} />
             {adding ? 'Cancel' : 'Add a center'}

@@ -300,17 +300,17 @@ export default function RentalFleetPage() {
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1">{['all', 'pending_review', 'active', 'maintenance', 'retired'].map((status) => (
-          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-brand text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
+          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-brand text-brand-on' : 'border border-gray-200 bg-surface text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
         ))}</div>
-        <button onClick={() => begin()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Add provider vehicle</button>
+        <button onClick={() => begin()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on">Add provider vehicle</button>
       </div>
       <QueueSearch value={query} onChange={setQuery} resultCount={visible.length} placeholder="Search vehicle, provider, location or ID" />
       {selected.size > 0 ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3">
           <p className="text-sm font-semibold text-gray-900">{selected.size} vehicle{selected.size === 1 ? '' : 's'} selected for renewal</p>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-brand">Clear</button>
-            <button type="button" onClick={bulkRenew} disabled={bulkRenewing} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-light disabled:opacity-50">
+            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-brand">Clear</button>
+            <button type="button" onClick={bulkRenew} disabled={bulkRenewing} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
               {bulkRenewing ? 'Renewing…' : `Renew ${selected.size} for 30 days`}
             </button>
           </div>
@@ -318,7 +318,7 @@ export default function RentalFleetPage() {
       ) : null}
       {loading ? <LoadingState /> : !visible.length ? <EmptyState icon="car" title="No rental vehicles" description="Add inventory for a verified rental-company account." /> : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((car) => (
-          <article key={car.id} className={`overflow-hidden rounded-xl border bg-white shadow-sm ${selected.has(car.id) ? 'border-brand ring-1 ring-brand/30' : 'border-gray-100'}`}>
+          <article key={car.id} className={`overflow-hidden rounded-xl border bg-surface shadow-sm ${selected.has(car.id) ? 'border-brand ring-1 ring-brand/30' : 'border-gray-100'}`}>
             {car.images?.[0] ? <img src={car.images[0]} alt="" className="h-40 w-full bg-gray-100 object-contain" /> : <div className="flex h-40 items-center justify-center bg-gray-100 text-sm text-gray-400">No image</div>}
             <div className="p-4">
               <div className="flex items-start justify-between gap-3">
@@ -378,7 +378,7 @@ export default function RentalFleetPage() {
                     in the workshop should stay parked.
                   </p>
                   <button type="button" onClick={() => publish(car)} disabled={publishing === car.id}
-                    className="mt-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-light disabled:opacity-50">
+                    className="mt-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
                     {publishing === car.id ? 'Publishing…' : 'Publish to the fleet'}
                   </button>
                 </div>
@@ -395,7 +395,7 @@ export default function RentalFleetPage() {
                     />
                     {car.status === 'pending_review' ? (
                       <button onClick={() => approveAndActivate(car)} disabled={renewing === car.id}
-                        className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white hover:bg-brand-light disabled:opacity-50">
+                        className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
                         {renewing === car.id ? 'Activating…' : 'Approve & activate'}
                       </button>
                     ) : (
@@ -423,11 +423,11 @@ export default function RentalFleetPage() {
       )}
 
       {editing && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(null) }}>
-        <form onSubmit={save} className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl sm:p-6">
+        <form onSubmit={save} className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-surface p-5 shadow-xl sm:rounded-2xl sm:p-6">
           <div className="mb-5 flex items-center justify-between"><div><h2 className="text-lg font-bold text-gray-900">{editing.id ? 'Edit rental vehicle' : 'Add rental vehicle'}</h2><p className="mt-1 text-xs text-gray-500">Every vehicle must belong to a verified rental company.</p></div><button type="button" onClick={() => setEditing(null)} className="text-gray-500">Close</button></div>
           <div className="mb-4"><label className={label}>Verified provider</label><input value={providerQuery} onChange={(e) => { setProviderQuery(e.target.value); setForm((old) => ({ ...old, provider_id: '', inspection_id: '' })) }} placeholder="Search showroom or contact" className={input} />
             {form.provider_id && <p className="mt-1 text-xs font-semibold text-success">Provider selected</p>}
-            {providers.length > 0 && <div className="mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-white">{providers.map((provider) => provider.blockers.length === 0 ? (
+            {providers.length > 0 && <div className="mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-surface">{providers.map((provider) => provider.blockers.length === 0 ? (
               <button key={provider.id} type="button" onClick={() => { setForm((old) => ({ ...old, provider_id: provider.id, inspection_id: '' })); setProviderQuery(provider.business_name || provider.name); setProviders([]) }} className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-0 hover:bg-gray-50">
                 <span className="font-semibold">{provider.business_name || provider.name}</span><span className="ml-2 text-xs text-gray-500">{provider.email}</span>
               </button>
@@ -457,7 +457,7 @@ export default function RentalFleetPage() {
             <div className="sm:col-span-2"><label className={label}>Image URLs, one per line</label><textarea rows={4} value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className={input} required /><p className="mt-1 text-xs text-gray-500">At least one HTTPS image is required while the vehicle is active; up to 40 are supported.</p></div>
             {editing.id && <div className="sm:col-span-2"><label className={label}>Inventory status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={input}><option value="pending_review">Pending review</option><option value="active">Active</option><option value="maintenance">Maintenance</option><option value="retired">Retired</option></select></div>}
           </div>
-          <div className="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-4"><button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600">Cancel</button><button disabled={saving} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save vehicle'}</button></div>
+          <div className="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-4"><button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600">Cancel</button><button disabled={saving} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-on disabled:opacity-50">{saving ? 'Saving…' : 'Save vehicle'}</button></div>
         </form>
       </div>}
     </div>

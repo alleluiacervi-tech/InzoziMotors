@@ -391,7 +391,7 @@ export function AsyncState({
 
 export function BarChart({
   data, height = 140, formatValue = (v) => String(v), emptyLabel = 'No data yet',
-  compare = false,
+  compare = false, seriesLabel = 'Value', compareLabel = 'Previous period',
 }: {
   data: { label: string; value: number }[]
   height?: number
@@ -401,46 +401,114 @@ export function BarChart({
    *  own says how big; a bar beside its predecessor says which way things are
    *  going, which is the only reason to look at a time series at all. */
   compare?: boolean
+  /** Names the two marks. Two marks on a plot need a legend — without one the
+   *  ghost bar is an unexplained shape. */
+  seriesLabel?: string
+  compareLabel?: string
 }) {
   const max = Math.max(...data.map((d) => d.value), 0)
   if (!data.length || max === 0) {
     return <EmptyState icon="chart" title={emptyLabel} description="This chart fills in as real activity is recorded." />
   }
   const plot = height - 40
+
+  // One sentence that carries the chart's point in text. A bar chart is a
+  // picture; a screen reader gets nothing from it, and neither does anyone
+  // reading a printout. The table below is the exact-value fallback.
+  const peak = data.reduce((a, b) => (b.value > a.value ? b : a))
+  const first = data[0]
+  const last = data[data.length - 1]
+  const summary =
+    `${seriesLabel} across ${data.length} periods, ${first.label} to ${last.label}. ` +
+    `Highest ${peak.label} at ${formatValue(peak.value)}. ` +
+    `Latest ${last.label} at ${formatValue(last.value)}.`
+
   return (
-    <div className="relative" style={{ height }}>
-      {/* One dashed line at the maximum and one solid rule at the floor. Both
-          sit behind the bars so a value can be read against something rather
-          than floating. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-line" />
-      <div className="pointer-events-none absolute inset-x-0 border-t border-line" style={{ bottom: 18 }} />
-      <div className="flex h-full items-end gap-2">
-        {data.map((d, index) => {
-          const h = Math.max(6, Math.round((d.value / max) * plot))
-          const previous = compare && index > 0 ? data[index - 1].value : null
-          const ghost = previous == null ? 0 : Math.max(3, Math.round((previous / max) * plot))
-          return (
-            <div key={d.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5">
-              <span className="text-micro font-bold tabular-nums text-content-secondary">{formatValue(d.value)}</span>
-              <div className="flex w-full items-end justify-center gap-[3px]">
-                {previous == null ? null : (
-                  <div className="w-2 shrink-0 rounded-t-sm bg-line-soft" style={{ height: ghost }} aria-hidden />
-                )}
-                <div
-                  // A bar is a graphic, so 3:1 against the surface is the floor.
-                  // gray-300 measured 1.27:1 — present in the DOM, absent to the
-                  // eye. Solid content-muted is 4.90:1 and still reads as clearly
-                  // secondary next to the ink-800 maximum at 15.5:1.
-                  className={`w-full max-w-[36px] rounded-t-md ${d.value === max ? 'bg-ink-800' : 'bg-content-muted'}`}
-                  style={{ height: h }}
-                />
+    <figure className="m-0">
+      {compare ? (
+        <div className="mb-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          <span className="flex items-center gap-1.5 text-micro font-semibold text-content-muted">
+            <span className="h-2.5 w-2.5 rounded-sm bg-content-muted" aria-hidden />
+            {seriesLabel}
+          </span>
+          <span className="flex items-center gap-1.5 text-micro font-semibold text-content-muted">
+            <span className="h-2.5 w-2.5 rounded-sm bg-line-soft ring-1 ring-inset ring-line" aria-hidden />
+            {compareLabel}
+          </span>
+        </div>
+      ) : null}
+
+      <div className="relative" style={{ height }}>
+        {/* One dashed line at the maximum and one solid rule at the floor. Both
+            sit behind the bars so a value can be read against something rather
+            than floating. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-line" />
+        <div className="pointer-events-none absolute inset-x-0 border-t border-line" style={{ bottom: 18 }} />
+        <div className="flex h-full items-end gap-2">
+          {data.map((d, index) => {
+            const h = Math.max(6, Math.round((d.value / max) * plot))
+            const previous = compare && index > 0 ? data[index - 1].value : null
+            const ghost = previous == null ? 0 : Math.max(3, Math.round((previous / max) * plot))
+            const delta = previous == null || previous === 0 ? null
+              : Math.round(((d.value - previous) / previous) * 100)
+            // Focusable, so the exact values are reachable from the keyboard
+            // and not only from a pointer that happens to hover.
+            const tip = previous == null
+              ? `${d.label}: ${formatValue(d.value)}`
+              : `${d.label}: ${formatValue(d.value)} · ${compareLabel.toLowerCase()} ${formatValue(previous)}` +
+                (delta == null ? '' : ` · ${delta > 0 ? '+' : ''}${delta}%`)
+            return (
+              <div
+                key={d.label}
+                tabIndex={0}
+                title={tip}
+                aria-label={tip}
+                className="group relative flex min-w-0 flex-1 cursor-default flex-col items-center justify-end gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                {/* Hover and focus both raise it. A tooltip only a mouse can
+                    reach is not a tooltip. */}
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-ink-900 px-2.5 py-1.5 text-micro font-semibold text-white shadow-card-lg group-hover:block group-focus-visible:block"
+                >
+                  {tip}
+                </span>
+                <span className="text-micro font-bold tabular-nums text-content-secondary">{formatValue(d.value)}</span>
+                <div className="flex w-full items-end justify-center gap-[3px]">
+                  {previous == null ? null : (
+                    <div className="w-2 shrink-0 rounded-t-sm bg-line-soft ring-1 ring-inset ring-line" style={{ height: ghost }} aria-hidden />
+                  )}
+                  <div
+                    // A bar is a graphic, so 3:1 against the surface is the floor.
+                    // gray-300 measured 1.27:1 — present in the DOM, absent to the
+                    // eye. Solid content-muted is 4.90:1 and still reads as clearly
+                    // secondary next to the ink-800 maximum at 15.5:1.
+                    className={`w-full max-w-[36px] rounded-t-md ${d.value === max ? 'bg-ink-800' : 'bg-content-muted'}`}
+                    style={{ height: h }}
+                  />
+                </div>
+                <span className="w-full truncate text-center text-micro text-content-muted">{d.label}</span>
               </div>
-              <span className="w-full truncate text-center text-micro text-content-muted">{d.label}</span>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* The exact numbers, for a screen reader and for anyone who wants to
+          read rather than estimate off a bar. Visually hidden, never absent. */}
+      <figcaption className="sr-only">{summary}</figcaption>
+      <table className="sr-only">
+        <caption>{seriesLabel} by period</caption>
+        <thead>
+          <tr><th scope="col">Period</th><th scope="col">{seriesLabel}</th></tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.label}><th scope="row">{d.label}</th><td>{formatValue(d.value)}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </figure>
   )
 }
 

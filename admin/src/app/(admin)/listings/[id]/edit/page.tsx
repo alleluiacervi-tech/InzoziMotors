@@ -142,7 +142,7 @@ export default function EditListingPage() {
     <div className="max-w-4xl space-y-6">
       <JourneyRail subjectType="car" id={id} className="mb-5" />
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-surface rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-start justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
           <div>
             <h1 className="text-xl font-extrabold text-gray-900">Edit Listing</h1>
@@ -172,7 +172,7 @@ export default function EditListingPage() {
             <button
               type="button"
               onClick={() => setCorrecting(!correcting)}
-              className="rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-800 hover:bg-gray-50"
+              className="rounded-xl border border-gray-300 bg-surface px-3 py-1.5 text-xs font-bold text-gray-800 hover:bg-gray-50"
             >
               {correcting ? 'Cancel' : 'Correct vehicle details'}
             </button>
@@ -193,7 +193,7 @@ export default function EditListingPage() {
                 type="button"
                 onClick={correctIdentity}
                 disabled={saving || correctionReason.trim().length < 4}
-                className="rounded-xl bg-brand px-4 py-2 text-xs font-bold text-white disabled:opacity-50 sm:col-span-4 hover:bg-brand-light"
+                className="rounded-xl bg-brand px-4 py-2 text-xs font-bold text-brand-on disabled:opacity-50 sm:col-span-4 hover:bg-brand-light"
               >
                 {saving ? 'Saving…' : 'Confirm & Save Identity Correction'}
               </button>
@@ -384,14 +384,14 @@ export default function EditListingPage() {
             <button
               type="button"
               onClick={() => router.push('/listings')}
-              className="px-4 py-2 text-xs font-bold bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50"
+              className="px-4 py-2 text-xs font-bold bg-surface border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 text-xs font-bold bg-brand text-white rounded-xl hover:bg-brand-light disabled:opacity-50 shadow-sm"
+              className="px-6 py-2.5 text-xs font-bold bg-brand text-brand-on rounded-xl hover:bg-brand-light disabled:opacity-50 shadow-sm"
             >
               {saving ? 'Saving…' : 'Save Changes'}
             </button>

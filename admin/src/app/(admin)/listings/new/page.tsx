@@ -60,13 +60,13 @@ function InspectionPicker() {
       </p>
 
       {rows.length === 0 ? (
-        <div className="mt-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="mt-6 rounded-xl border border-gray-100 bg-surface p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-900">No inspection is waiting for a listing</p>
           <p className="mt-2 text-sm text-gray-500">
             A listing needs a completed 150-point inspection that has not been used yet.
             Complete one first and it will appear here.
           </p>
-          <Link href="/inspections" className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-deep">
+          <Link href="/inspections" className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-bold text-brand-on hover:bg-brand-deep">
             Go to Inspections
           </Link>
         </div>
@@ -84,7 +84,7 @@ function InspectionPicker() {
                 <button
                   type="button"
                   onClick={() => router.push(`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`)}
-                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white p-4 text-left shadow-sm transition-colors hover:border-brand"
+                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-gray-100 bg-surface p-4 text-left shadow-sm transition-colors hover:border-brand"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold text-gray-900">
@@ -231,7 +231,7 @@ function ListingCreatorForm() {
   }
 
   return (
-    <div className="max-w-2xl bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+    <div className="max-w-2xl bg-surface rounded-xl border border-gray-100 shadow-sm p-6">
       <h1 className="text-xl font-bold text-gray-900 mb-6">Create Car Listing</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -260,7 +260,7 @@ function ListingCreatorForm() {
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
                 />
                 {sellerQuery.trim().length >= 2 && (
-                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-surface shadow-lg">
                     {sellerSearching ? (
                       <p className="px-3 py-2.5 text-xs text-gray-400">Searching…</p>
                     ) : sellerResults.length === 0 ? (
@@ -448,14 +448,14 @@ function ListingCreatorForm() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2 text-sm font-semibold bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-55"
+            className="px-4 py-2 text-sm font-semibold bg-surface border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-55"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="px-5 py-2 text-sm font-semibold bg-brand text-white rounded-lg hover:bg-brand-light disabled:opacity-50"
+            className="px-5 py-2 text-sm font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
           >
             {submitting ? 'Creating Listing…' : 'Create & Upload Photos'}
           </button>
