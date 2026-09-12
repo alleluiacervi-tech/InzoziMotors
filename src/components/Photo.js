@@ -38,6 +38,7 @@ export default function Photo({
   transition = 180,
   placeholder = PLACEHOLDER,
   recyclingKey,
+  priority,
   ...rest
 }) {
   // Three ways a caller can name the image, because all three already exist in
@@ -58,6 +59,7 @@ export default function Photo({
       // memory-disk is the point of the whole exercise: a photo seen once is
       // not fetched again, across app launches.
       cachePolicy="memory-disk"
+      priority={priority}
       // In a recycled list row, this tells expo-image the view is now showing a
       // different photo, so it clears rather than briefly showing the previous
       // car's picture.

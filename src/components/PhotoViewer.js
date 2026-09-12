@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { fonts } from '../theme';
-import { PHOTO } from '../utils/photo';
+import { Image as ExpoImage } from 'expo-image';
+import { PHOTO, photoUrl } from '../utils/photo';
 import Photo from './Photo';
 
 // Full-screen photo viewer — opens on the tapped photo, swipe left/right
@@ -19,6 +20,16 @@ export default function PhotoViewer({ visible, images = [], initialIndex = 0, on
   React.useEffect(() => {
     if (visible) setIdx(initialIndex);
   }, [visible, initialIndex]);
+
+  React.useEffect(() => {
+    if (!visible || !Array.isArray(images) || images.length === 0) return;
+    const urls = images
+      .map((img) => photoUrl(img, PHOTO.ZOOM))
+      .filter((u) => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://')));
+    if (urls.length > 0) {
+      ExpoImage.prefetch(urls, 'memory-disk').catch(() => {});
+    }
+  }, [visible, images]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>

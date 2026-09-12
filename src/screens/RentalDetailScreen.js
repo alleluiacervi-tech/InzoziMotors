@@ -9,8 +9,9 @@ import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatRWF } from '../data/marketData';
 import { useApp } from '../context/AppContext';
+import { Image as ExpoImage } from 'expo-image';
 import Photo from '../components/Photo';
-import { PHOTO } from '../utils/photo';
+import { PHOTO, photoUrl } from '../utils/photo';
 
 export default function RentalDetailScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
@@ -57,7 +58,20 @@ export default function RentalDetailScreen({ navigation, route }) {
     );
   }
 
-  const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
+  const imageList = car?.images && car.images.length > 0 ? car.images : (car?.image ? [car.image] : []);
+
+  // Preload and prefetch gallery images into memory-disk cache immediately on mount
+  // so when the user swipes/scrolls right, all photos appear with 0ms latency.
+  React.useEffect(() => {
+    if (!Array.isArray(imageList) || imageList.length <= 1) return;
+    const urls = imageList
+      .map((img) => photoUrl(img, PHOTO.WIDE))
+      .filter((u) => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://')));
+    if (urls.length > 0) {
+      ExpoImage.prefetch(urls, 'memory-disk').catch(() => {});
+    }
+  }, [imageList]);
+
   // Future-dated and unparsed-safe: a bad or past value must never render.
   // Informational only — the provider set this, it never hides the car or
   // blocks an inquiry. See backend migration 0037.
@@ -84,7 +98,13 @@ export default function RentalDetailScreen({ navigation, route }) {
           >
             {imageList.map((img, index) => (
               <Pressable key={index} onPress={() => setViewerIdx(index)}>
-                <Photo uri={img} width={PHOTO.WIDE} style={[styles.heroImage, { width }]} resizeMode="contain" />
+                <Photo
+                  uri={img}
+                  width={PHOTO.WIDE}
+                  style={[styles.heroImage, { width }]}
+                  resizeMode="contain"
+                  priority={index < 2 ? 'high' : 'normal'}
+                />
               </Pressable>
             ))}
           </ScrollView>
@@ -320,7 +340,7 @@ const styles = StyleSheet.create({
   },
   unavailablePill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.scrim,
+    backgroundColor: 'rgba(23,18,15,0.78)',
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: 6,
   },
   rentPillText: { color: '#fff', fontSize: 11, fontFamily: fonts.extraBold },
@@ -350,7 +370,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 24, marginBottom: 12, letterSpacing: -0.3 },
   availabilityNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.surface, padding: 15 },
   availabilityTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  availabilityText: { marginTop: 4, fontSize: 13, lineHeight: 18, color: colors.textSecondary },
+  availabilityText: { marginTop: 4, fontSize: 12.5, lineHeight: 18, color: colors.textSecondary },
   priceCard: {
     backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -418,7 +438,7 @@ const styles = StyleSheet.create({
   },
   ctaPrice: { flex: 1, minWidth: 0 },
   ctaPriceLabel: {
-    fontSize: 11, lineHeight: 14, fontFamily: fonts.extraBold, color: colors.textMuted,
+    fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
     letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
   },
   ctaPriceLine: { flexDirection: 'row', alignItems: 'baseline', minWidth: 0 },

@@ -7,9 +7,7 @@ const isConfigured = Boolean(
 
 if (isConfigured) {
   if (process.env.CLOUDINARY_URL) {
-    cloudinary.config({
-      cloudinary_url: process.env.CLOUDINARY_URL,
-    });
+    cloudinary.config(true);
   } else {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -31,9 +29,10 @@ async function uploadToCloudinary(filePath, folder = 'general') {
   if (!isConfigured) return null;
   const result = await cloudinary.uploader.upload(filePath, {
     folder: `sawa/${folder}`,
-    resource_type: 'auto',
+    resource_type: 'image',
     use_filename: true,
     unique_filename: true,
+    overwrite: false,
   });
   if (!result?.secure_url || !/^https:\/\//i.test(result.secure_url)) {
     throw new Error('Cloudinary did not return a secure media URL');

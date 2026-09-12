@@ -25,11 +25,43 @@ export const PHOTO = {
   ZOOM: 1200,   // the gallery viewer
 };
 
-/** Only OUR uploads are resizable. Cloudinary and Unsplash URLs already carry
- *  their own transformation syntax, and appending `?w=` to them does nothing at
- *  best and breaks a signed URL at worst. */
-function isOwnUpload(url) {
+/** Only OUR uploads are resizable via query param ?w=. */
+export function isOwnUpload(url) {
   return typeof url === 'string' && url.includes('/uploads/');
+}
+
+/** Detect Cloudinary delivery URLs. */
+export function isCloudinaryUrl(url) {
+  return typeof url === 'string' && url.includes('res.cloudinary.com') && url.includes('/upload/');
+}
+
+/**
+ * Injects dynamic Cloudinary transformations for high-speed delivery:
+ *  - f_auto: best format supported by client (WebP/AVIF)
+ *  - q_auto: optimal perceptual quality compression
+ *  - w_${width},c_limit: downscale to viewport width without upscaling
+ */
+export function transformCloudinaryUrl(url, width) {
+  if (!isCloudinaryUrl(url)) return url;
+  const marker = '/upload/';
+  const idx = url.indexOf(marker);
+  if (idx === -1) return url;
+
+  const prefix = url.slice(0, idx + marker.length);
+  const remainder = url.slice(idx + marker.length);
+
+  const transform = `f_auto,q_auto${width ? `,w_${width},c_limit` : ''}`;
+
+  // If already has transformation parameters right after /upload/ (e.g. w_400,q_auto/v123):
+  const firstSlash = remainder.indexOf('/');
+  if (firstSlash !== -1) {
+    const segment = remainder.slice(0, firstSlash);
+    if (/(?:^|,)(?:[a-z]{1,2}_|f_auto|q_auto)/.test(segment)) {
+      return `${prefix}${transform}/${remainder.slice(firstSlash + 1)}`;
+    }
+  }
+
+  return `${prefix}${transform}/${remainder}`;
 }
 
 /**
@@ -38,6 +70,10 @@ function isOwnUpload(url) {
  * @returns {string} the same URL, asking for that width where that is possible
  */
 export function photoUrl(url, width) {
+  if (!url || typeof url !== 'string') return url;
+  if (isCloudinaryUrl(url)) {
+    return transformCloudinaryUrl(url, width);
+  }
   if (!isOwnUpload(url) || !width) return url;
   // A URL that already carries a width — from a cached list, say — must not
   // gain a second one.
