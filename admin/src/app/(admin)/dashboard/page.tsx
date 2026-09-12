@@ -47,8 +47,17 @@ const monthLabel = (ym: string) => {
   return `${MONTH_NAMES[m - 1] ?? ym} ’${ym.slice(2, 4)}`
 }
 
-// Fixed pipeline order — a funnel reads top-of-funnel first, not by count.
-const FUNNEL_ORDER = ['draft', 'under_review', 'scheduled', 'inspecting', 'approved', 'live', 'paused', 'sold', 'rejected', 'archived']
+// A funnel measures FLOW: each stage is work on its way to the next one, so a
+// stage-to-stage drop is meaningful. These five are that.
+const WORKFLOW_STAGES = ['draft', 'under_review', 'scheduled', 'inspecting', 'approved']
+
+// These are where a submission ENDS UP, not a further step. Counting them as
+// funnel stages is what produced a "-574% drop" between 19 approved and 128
+// live on a real screen: `live` is every listing on the marketplace, a
+// standing total, not the 19 that just came through review. They are shown as
+// outcomes, separately, and never carry a drop.
+const OUTCOME_STAGES = ['live', 'paused', 'sold', 'rejected', 'archived']
+
 const FUNNEL_LABELS: Record<string, string> = {
   draft: 'Draft', under_review: 'Under review', scheduled: 'Inspection booked',
   inspecting: 'Being inspected', approved: 'Approved', live: 'Live', paused: 'Paused',
@@ -182,19 +191,25 @@ export default function DashboardPage() {
     sold: Number(m.total_sold) || 0,
   }))
   const funnelRaw = new Map((analytics?.pipelineFunnel ?? []).map((f) => [f.status, Number(f.count) || 0]))
-  const funnel = FUNNEL_ORDER.filter((st) => funnelRaw.has(st)).map((st) => ({
-    label: FUNNEL_LABELS[st] ?? st,
-    value: funnelRaw.get(st)!,
-  }))
+  const toRow = (st: string) => ({ label: FUNNEL_LABELS[st] ?? st, value: funnelRaw.get(st)! })
+  const funnel = WORKFLOW_STAGES.filter((st) => funnelRaw.has(st)).map(toRow)
+  const outcomes = OUTCOME_STAGES.filter((st) => funnelRaw.has(st) && funnelRaw.get(st)! > 0).map(toRow)
   const funnelMax = Math.max(...funnel.map((f) => f.value), 1)
   // The gap between two stages is the thing worth acting on; the counts on
   // their own only say how busy the pipeline is. The widest gap is named so an
   // operator is not left to eyeball which bar shrank most.
+  //
+  // A stage can legitimately be BIGGER than the one above it — a backlog
+  // clearing, or a batch arriving — so a negative "drop" is real and must not
+  // be reported as one. Those read as growth and are excluded from the widest-
+  // gap comparison, which is about where work is getting stuck.
   const drops = funnel.slice(1).map((stage, index) => {
     const previous = funnel[index].value
     return previous > 0 ? Math.round(((previous - stage.value) / previous) * 100) : 0
   })
-  const widestDrop = drops.length ? Math.max(...drops) : 0
+  const widestDrop = drops.length ? Math.max(...drops, 0) : 0
+  // Reaching approval is the pipeline's job. Measuring to the last row of a
+  // list that ended in "rejected" measured the opposite.
   const throughput = funnel.length > 1 && funnel[0].value > 0
     ? Math.round((funnel[funnel.length - 1].value / funnel[0].value) * 100)
     : null
@@ -225,7 +240,7 @@ export default function DashboardPage() {
   return (
     <div>
       <PageHeader
-        title="Dashboard"
+        title="Action Center"
         description="Everything moving through the pipeline right now."
         action={
           <Link
@@ -298,8 +313,8 @@ export default function DashboardPage() {
       <div className="mb-7 overflow-hidden rounded-2xl border border-line border-t-2 border-t-brand bg-surface shadow-card-lg">
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 pb-4 pt-5">
           <div>
-            <h2 className="text-section font-extrabold text-content">Action Center</h2>
-            <p className="text-caption text-content-muted">Your live operating queue, oldest and most urgent first.</p>
+            <h2 className="text-section font-extrabold text-content">Waiting on you</h2>
+            <p className="text-caption text-content-muted">Oldest and most urgent first.</p>
           </div>
           <div className="flex items-center gap-2">
             {incoming.length ? (
@@ -312,12 +327,7 @@ export default function DashboardPage() {
                 {incoming.length} new since you opened
               </button>
             ) : null}
-            {actions ? (
-              <div className="flex items-center gap-2" aria-label="Action center summary">
-                <span className="rounded-full bg-danger-tint px-2.5 py-1 text-caption font-bold text-danger-strong">{actions.summary.urgent} urgent</span>
-                <span className="rounded-full bg-warning-tint px-2.5 py-1 text-caption font-bold text-warning-text">{actions.summary.attention} attention</span>
-              </div>
-            ) : null}
+
           </div>
         </div>
 
@@ -341,7 +351,18 @@ export default function DashboardPage() {
                   onClick={() => setActionFilter(key)}
                   className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-caption font-bold transition-colors ${actionFilter === key ? 'bg-ink-900 text-white' : 'text-content-muted hover:bg-surface-alt hover:text-content'}`}
                 >
-                  {label} <span className="ml-1 tabular-nums opacity-70">{count}</span>
+                  {label}{' '}
+                  <span
+                    className={`ml-1 rounded-full px-1.5 py-0.5 text-micro tabular-nums ${
+                      actionFilter === key
+                        ? 'bg-white/15 text-white'
+                        : key === 'urgent' ? 'bg-danger-tint text-danger-strong'
+                        : key === 'attention' ? 'bg-warning-tint text-warning-text'
+                        : 'bg-surface-alt text-content-secondary'
+                    }`}
+                  >
+                    {count}
+                  </span>
                 </button>
               ))}
             </div>
@@ -401,7 +422,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Reporting tier — quiet material, but each chart now carries a comparison */}
-      <div className="mb-7 grid gap-4 lg:grid-cols-2">
+      <div className="mb-7 grid items-start gap-4 lg:grid-cols-2">
         <Card className="border-line-soft p-5 shadow-none">
           <div className="mb-1 flex items-baseline justify-between gap-3">
             <h2 className="text-label font-bold text-content">Seller-stated listing value</h2>
@@ -434,16 +455,25 @@ export default function DashboardPage() {
             <>
               <div className="mb-4 flex items-baseline gap-2.5">
                 <span className="text-stat font-extrabold tabular-nums text-content">{throughput == null ? '—' : `${throughput}%`}</span>
-                <span className="text-caption font-semibold text-content-muted">reach the stage below</span>
+                <span className="text-caption font-semibold text-content-muted">of drafts reach approval</span>
               </div>
               <div className="flex flex-col gap-1">
                 {funnel.map((f, index) => (
                   <div key={f.label} className="flex flex-col gap-1.5">
                     {index > 0 ? (
                       <div className="flex justify-end">
-                        <span className={`text-micro font-bold tabular-nums ${drops[index - 1] === widestDrop && widestDrop > 0 ? 'text-warning-text' : 'text-content-muted'}`}>
-                          {drops[index - 1]}% drop{drops[index - 1] === widestDrop && widestDrop > 0 ? ' · the widest gap' : ''}
-                        </span>
+                        {drops[index - 1] > 0 ? (
+                          <span className={`text-micro font-bold tabular-nums ${drops[index - 1] === widestDrop ? 'text-warning-text' : 'text-content-muted'}`}>
+                            {drops[index - 1]}% drop{drops[index - 1] === widestDrop ? ' · the widest gap' : ''}
+                          </span>
+                        ) : (
+                          // More work sitting here than in the stage above it.
+                          // That is a backlog forming, not a drop, and saying
+                          // "-574% drop" is how the old version put it.
+                          <span className="text-micro font-bold tabular-nums text-content-muted">
+                            +{Math.abs(drops[index - 1])}% more waiting here
+                          </span>
+                        )}
                       </div>
                     ) : null}
                     <div className="flex items-baseline justify-between">
@@ -457,12 +487,31 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+
+              {outcomes.length ? (
+                <div className="mt-5 border-t border-line-soft pt-4">
+                  <p className="mb-2.5 text-micro font-bold uppercase tracking-[0.1em] text-content-muted">
+                    Where submissions ended up
+                  </p>
+                  <dl className="flex flex-wrap gap-x-6 gap-y-2">
+                    {outcomes.map((o) => (
+                      <div key={o.label} className="flex items-baseline gap-1.5">
+                        <dt className="text-caption text-content-muted">{o.label}</dt>
+                        <dd className="text-caption font-bold tabular-nums text-content">{o.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="mt-2 text-micro text-content-muted">
+                    Standing totals across the whole marketplace, not a next step in the queue above.
+                  </p>
+                </div>
+              ) : null}
             </>
           )}
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
         {/* Quick actions — a list, not four more tinted squircles */}
         <Card className="border-line-soft p-5 shadow-none">
           <h2 className="mb-3 text-label font-bold text-content">Start something</h2>
