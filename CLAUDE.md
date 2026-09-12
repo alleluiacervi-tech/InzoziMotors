@@ -145,9 +145,9 @@ credentials`, and because `expo-notifications` is a native module the change
 only takes effect in a **new store build**, never an OTA update. In-app
 NotificationCenter and the home bell already update live over the socket
 either way (`backend/src/lib/notify.js`'s realtime emit) — the OS push layer
-adds delivery while the app isn't open. Permissions: `CAMERA`,
-`POST_NOTIFICATIONS` (Android 13+, declared by `expo-notifications`' own
-manifest — nothing to add by hand); `RECORD_AUDIO` and `READ_MEDIA_IMAGES`
+adds delivery while the app isn't open. Permissions: `CAMERA` and
+`android.permission.POST_NOTIFICATIONS` (Android 13+, declared in
+`app.config.js` `android.permissions`); `RECORD_AUDIO` and `READ_MEDIA_IMAGES`
 stay blocked; `supportsTablet: false`.
 
 `src/api/client.js` **refuses to start a release build against a non-HTTPS API**

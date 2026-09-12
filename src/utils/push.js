@@ -18,8 +18,8 @@ import api from '../api/client';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 
@@ -33,9 +33,12 @@ async function ensureAndroidChannel() {
   if (Platform.OS !== 'android' || androidChannelReady) return;
   await Notifications.setNotificationChannelAsync('default', {
     name: 'Sawa Cars',
-    importance: Notifications.AndroidImportance.DEFAULT,
+    importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 200, 200, 200],
     lightColor: '#CC050F',
+    sound: 'default',
+    enableVibrate: true,
+    showBadge: true,
   });
   androidChannelReady = true;
 }

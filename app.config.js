@@ -89,7 +89,10 @@ export default ({ config }) => ({
       backgroundColor: '#CC050F',
     },
     package: 'com.sawacars.app',
-    permissions: ['CAMERA'],
+    permissions: [
+      'CAMERA',
+      'android.permission.POST_NOTIFICATIONS',
+    ],
     // The merged manifest must match what the app actually does:
     //  · RECORD_AUDIO — injected by expo-image-picker for video capture, but
     //    every picker call in src/utils/media.js is mediaTypes: ['images'].
