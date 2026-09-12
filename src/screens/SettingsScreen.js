@@ -199,7 +199,7 @@ export default function SettingsScreen({ navigation }) {
     VERIFICATION_LABELS[idVerificationStatus] || t('settings.notVerified'),
     // The row doubles as the progress indicator: a tap that changes nothing on
     // screen is indistinguishable from a tap that missed.
-    checkingUpdate ? t('common.loading') : build.label,
+    checkingUpdate ? t('common.loading') : `v${build.version}`,
     languageInfo.nativeLabel,
   );
 
@@ -393,7 +393,7 @@ export default function SettingsScreen({ navigation }) {
         )}
 
         <Text style={styles.version}>
-          Sawa Cars v{build.version}{build.updateId ? ` · ${String(build.updateId).slice(0, 8)}` : ''}
+          Sawa Cars v{build.version}
         </Text>
       </ScrollView>
 

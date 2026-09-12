@@ -15,13 +15,19 @@ import api from '../api/client';
 // A push that arrives while the app is open would otherwise vanish silently —
 // this is what makes it still show as a banner. Set once at module load
 // (Expo's documented pattern), not inside a component.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+try {
+  if (Notifications && typeof Notifications.setNotificationHandler === 'function') {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  }
+} catch {
+  // Gracefully degrade if native notifications module is absent in older builds
+}
 
 // Same identity app.config.js publishes at extra.eas.projectId — the push
 // token is meaningless without it (Expo needs to know which project's

@@ -380,14 +380,18 @@ jobs:
           set -euo pipefail
           branch="${{ github.event.inputs.branch || 'production' }}"
           sha="${{ github.event.workflow_run.head_sha || github.sha }}"
-          # The SHA is in the message so an update in the Expo dashboard can be
-          # traced back to a commit — "which code is on that phone" is otherwise
-          # unanswerable.
-          npx eas-cli update \
-            --branch "$branch" \
-            --platform all \
-            --message "${sha:0:8} ${{ github.event.workflow_run.head_commit.message || github.event.head_commit.message || 'manual publish' }}" \
-            --non-interactive
+          msg="${sha:0:8} ${{ github.event.workflow_run.head_commit.message || github.event.head_commit.message || 'manual publish' }}"
+
+          # Publish for current runtime 1.0.3 and all legacy runtimes (1.0.2, 1.0.1, 1.0.0)
+          # so every existing install receives this update regardless of native build version.
+          for rt in 1.0.3 1.0.2 1.0.1 1.0.0; do
+            echo "── Publishing update for runtime ${rt} on branch ${branch} ──"
+            APP_VERSION="${rt}" npx eas-cli update \
+              --branch "$branch" \
+              --platform all \
+              --message "${msg} [rt:${rt}]" \
+              --non-interactive
+          done
 
       - name: Confirm the update is subscribed to by real builds
         if: steps.scope.outputs.publish == 'true'

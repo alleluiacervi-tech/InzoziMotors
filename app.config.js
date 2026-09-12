@@ -13,7 +13,7 @@ export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
   slug: 'sawa-cars',
-  version: '1.0.3',
+  version: process.env.APP_VERSION || '1.0.3',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
