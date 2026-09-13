@@ -13,7 +13,16 @@ export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
   slug: 'sawa-cars',
-  version: process.env.APP_VERSION || '1.0.4',
+  // A literal, deliberately. This briefly read
+  // `process.env.APP_VERSION || '1.0.4'`, which existed only so the publish
+  // workflow could force a runtime version and fan one bundle out to every
+  // historical runtime — the change that crashed the app on launch. With the
+  // override in place, `runtimeVersion` below silently becomes whatever an
+  // environment variable says, and Constants.expoConfig.version reports that
+  // forged value rather than the binary's real one, so the app misreports its
+  // own version. The build and the publish must agree on this number, and the
+  // only way to guarantee that is for it not to be configurable.
+  version: '1.0.5',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
