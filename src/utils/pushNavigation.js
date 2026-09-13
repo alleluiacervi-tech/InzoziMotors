@@ -1,4 +1,4 @@
-import * as Notifications from 'expo-notifications';
+import { callNotifications } from './nativeNotifications';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import { resolveNotificationRoute } from './notificationRouting';
 
@@ -34,22 +34,37 @@ export function flushPendingPushNavigation() {
 // cleanup function, matching what App.js's `useEffect(() =>
 // initPushNavigation(), [])` expects.
 export function initPushNavigation() {
+  // App.js runs this in an effect on EVERY launch, so nothing in here may
+  // throw. On a binary built before expo-notifications existed these are not
+  // functions at all, and calling one is a white screen rather than a missing
+  // feature — see src/utils/nativeNotifications.js.
+
   // Cold start: tapping the notification is what launched the app. Expo only
   // answers this once per app process, so it's asked for explicitly here
   // rather than relying on the listener below, which only fires for a tap
   // while some JS is already running.
-  Notifications.getLastNotificationResponseAsync()
-    .then((response) => {
-      const data = response?.notification?.request?.content?.data;
-      if (data) go(resolveNotificationRoute(data));
-    })
-    .catch(() => {});
+  const pendingResponse = callNotifications('getLastNotificationResponseAsync');
+  if (pendingResponse && typeof pendingResponse.then === 'function') {
+    pendingResponse
+      .then((response) => {
+        const data = response?.notification?.request?.content?.data;
+        if (data) go(resolveNotificationRoute(data));
+      })
+      .catch(() => {});
+  }
 
   // Warm: the app was already running (foreground or backgrounded).
-  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+  const subscription = callNotifications('addNotificationResponseReceivedListener', (response) => {
     const data = response?.notification?.request?.content?.data;
     if (data) go(resolveNotificationRoute(data));
   });
 
-  return () => subscription.remove();
+  // The teardown runs on unmount and must survive the same absence.
+  return () => {
+    try {
+      if (subscription && typeof subscription.remove === 'function') subscription.remove();
+    } catch {
+      // Nothing was ever subscribed.
+    }
+  };
 }
