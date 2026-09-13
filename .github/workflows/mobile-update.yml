@@ -382,16 +382,27 @@ jobs:
           sha="${{ github.event.workflow_run.head_sha || github.sha }}"
           msg="${sha:0:8} ${{ github.event.workflow_run.head_commit.message || github.event.head_commit.message || 'manual publish' }}"
 
-          # Publish for current runtime 1.0.4 and all legacy runtimes (1.0.3, 1.0.2, 1.0.1, 1.0.0)
-          # so every existing install receives this update regardless of native build version.
-          for rt in 1.0.4 1.0.3 1.0.2 1.0.1 1.0.0; do
-            echo "── Publishing update for runtime ${rt} on branch ${branch} ──"
-            APP_VERSION="${rt}" npx eas-cli update \
-              --branch "$branch" \
-              --platform all \
-              --message "${msg} [rt:${rt}]" \
-              --non-interactive
-          done
+          # ── Never loop over historical runtimes ─────────────────────────────
+          # This step briefly published the SAME bundle to runtimes 1.0.4,
+          # 1.0.3, 1.0.2, 1.0.1 and 1.0.0 by forcing APP_VERSION, so that
+          # "every existing install receives this update regardless of native
+          # build version". That is the precise thing runtimeVersion exists to
+          # prevent, and it is why the app crashed on launch.
+          #
+          # This bundle imports expo-notifications, a NATIVE module added
+          # during the 1.0.2 line. The 1.0.0 and 1.0.1 binaries do not contain
+          # it, and App.js touches it on every launch. A JavaScript bundle
+          # cannot add a native module to a binary that shipped without one —
+          # the header of this file says exactly that, and the native-change
+          # guard above exists for this failure.
+          #
+          # Reaching older installs is a STORE BUILD's job. An update reaches
+          # the runtime it was built for, and only that one.
+          npx eas-cli update \
+            --branch "$branch" \
+            --platform all \
+            --message "$msg" \
+            --non-interactive
 
       - name: Confirm the update is subscribed to by real builds
         if: steps.scope.outputs.publish == 'true'

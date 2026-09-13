@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { available, callNotifications, notificationsConstant } from './nativeNotifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import api from '../api/client';
@@ -15,19 +15,17 @@ import api from '../api/client';
 // A push that arrives while the app is open would otherwise vanish silently —
 // this is what makes it still show as a banner. Set once at module load
 // (Expo's documented pattern), not inside a component.
-try {
-  if (Notifications && typeof Notifications.setNotificationHandler === 'function') {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
-    });
-  }
-} catch {
-  // Gracefully degrade if native notifications module is absent in older builds
-}
+// AppContext imports this file, so this runs at launch. The previous guard
+// wrapped only the CALL; the static `import` above it could still throw while
+// the native module initialised, which no try/catch around the call can catch.
+// The import is now a guarded require — see ./nativeNotifications.
+callNotifications('setNotificationHandler', {
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 // Same identity app.config.js publishes at extra.eas.projectId — the push
 // token is meaningless without it (Expo needs to know which project's
@@ -37,9 +35,9 @@ const PROJECT_ID = Constants.expoConfig?.extra?.eas?.projectId || Constants.easC
 let androidChannelReady = false;
 async function ensureAndroidChannel() {
   if (Platform.OS !== 'android' || androidChannelReady) return;
-  await Notifications.setNotificationChannelAsync('default', {
+  await callNotifications('setNotificationChannelAsync', 'default', {
     name: 'Sawa Cars',
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: notificationsConstant('AndroidImportance.HIGH', 4),
     vibrationPattern: [0, 200, 200, 200],
     lightColor: '#CC050F',
     sound: 'default',
@@ -57,22 +55,26 @@ async function ensureAndroidChannel() {
 // decline, or a missing project id.
 export async function registerForPush({ prompt = true } = {}) {
   if (!Device.isDevice) return null;
+  // A binary built before the dependency existed cannot do push at all. Saying
+  // so here keeps the rest of this function from probing a module that is not
+  // there, and is the honest answer rather than a swallowed error.
+  if (!available()) return null;
   if (!PROJECT_ID) {
     console.warn('Push token skipped: no EAS project id configured');
     return null;
   }
   try {
     await ensureAndroidChannel();
-    const current = await Notifications.getPermissionsAsync();
-    let status = current.status;
+    const current = await callNotifications('getPermissionsAsync');
+    let status = current?.status;
     if (status !== 'granted') {
       if (!prompt) return null;
-      const requested = await Notifications.requestPermissionsAsync();
-      status = requested.status;
+      const requested = await callNotifications('requestPermissionsAsync');
+      status = requested?.status;
     }
     if (status !== 'granted') return null;
-    const { data } = await Notifications.getExpoPushTokenAsync({ projectId: PROJECT_ID });
-    return data || null;
+    const minted = await callNotifications('getExpoPushTokenAsync', { projectId: PROJECT_ID });
+    return minted?.data || null;
   } catch (err) {
     console.warn('Push registration failed:', err?.message);
     return null;
