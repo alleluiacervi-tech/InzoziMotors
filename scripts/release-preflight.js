@@ -159,6 +159,20 @@ if (process.env.RELEASE_REQUIRE_ENV === '1') {
   }
 }
 
+// Loading the bundle, not just parsing it. Kept as a child process so the
+// check has one implementation and can also run on its own in CI, and so a
+// module that throws cannot take this script down with it.
+const moduleScope = require('child_process').spawnSync(
+  process.execPath, [path.join(__dirname, 'check-module-scope.js')],
+  { cwd: root, encoding: 'utf8' },
+);
+if (moduleScope.status !== 0) {
+  failures.push(
+    'The app throws while its bundle loads, so a build from this tree would ' +
+    'crash on launch. Run `npm run mobile:module-scope` for the module and the error.',
+  );
+}
+
 if (failures.length) {
   console.error('Release preflight failed:');
   for (const failure of failures) console.error(`- ${failure}`);

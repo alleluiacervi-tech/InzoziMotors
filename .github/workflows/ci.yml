@@ -127,6 +127,20 @@ jobs:
       - name: Every relative mobile import resolves
         run: npm run mobile:imports
 
+      # Parsing is not loading. The step above proves every file is valid
+      # JavaScript and every import resolves; neither runs a line of it. A
+      # style object spreading a token the file forgot to import parses
+      # perfectly and throws the instant Hermes evaluates the module — before
+      # React mounts, so ErrorBoundary never sees it and the app is simply
+      # dead on launch. That is what shipped as 1.0.4 and 1.0.5.
+      #
+      # Invoked as a file rather than an npm script on purpose: a new entry in
+      # package.json reads as native-sensitive to mobile-update.yml's guard,
+      # which would have blocked the over-the-air fix this check was written
+      # for. Nothing about the check needs package.json to change.
+      - name: The bundle survives being loaded
+        run: node scripts/check-module-scope.js
+
       # The release preflight was only ever run by hand, which is the same as
       # not having it: it guards against leaked provider keys in committed
       # templates, retired transaction APIs coming back, and — since the OTA

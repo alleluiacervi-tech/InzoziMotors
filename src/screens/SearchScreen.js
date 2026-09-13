@@ -5,7 +5,7 @@ import Screen from '../components/Screen';
 import CarListCard from '../components/CarListCard';
 import CarCard from '../components/CarCard';
 import ImportCarCard from '../components/ImportCarCard';
-import { colors, radius, fonts } from '../theme';
+import { colors, radius, fonts, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
 import { searchImportCatalog } from '../data/importCatalog';
 
