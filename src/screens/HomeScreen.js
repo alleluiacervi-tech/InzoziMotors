@@ -12,10 +12,10 @@ import SkeletonCard from '../components/SkeletonCard';
 import SectionHeader from '../components/SectionHeader';
 import BrandMark from '../components/BrandMark';
 import DrawerMenu from '../components/DrawerMenu';
-import { colors, radius, fonts } from '../theme';
+import { colors, radius, fonts, typography } from '../theme';
 import { useApp } from '../context/AppContext';
-import { getListedDaysAgo, getSavedCount, getDriveType, RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
-import { FALLBACK_IMPORT_CATALOG } from '../data/importCatalog';
+import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
+import { importCatalogMakes } from '../data/importCatalog';
 import { photoSource, PHOTO } from '../utils/photo';
 import { cars as carsApi } from '../api/cars';
 import { formatPrice } from '../data/cars';
@@ -187,6 +187,13 @@ export default function HomeScreen({ navigation }) {
       return byName.get(key) || byAlias.get(key) || null;
     };
   }, [makes]);
+
+  // Brands first, most models first: the marques with the deepest ranges are
+  // the ones worth entering, and the strip is a doorway rather than a ranking.
+  const importBrands = useMemo(
+    () => importCatalogMakes().sort((a, b) => b.modelCount - a.modelCount).slice(0, 12),
+    [],
+  );
 
   const centerWindow = useMemo(() => ({
     brand: 'Sawa Center',
@@ -518,65 +525,56 @@ export default function HomeScreen({ navigation }) {
           ))}
         </View>
 
-        {/* ── GLOBAL IMPORT SHOWCASE — Korea, Dubai, China ── */}
+        {/* ── IMPORT, ENTERED THROUGH THE BRAND ──────────────────────────
+            This was a horizontal strip of eight vehicles out of twenty-nine,
+            each captioned with a landed-cost figure computed from
+            `item.typicalFobUsd || 15000` — so any model without a price was
+            given an invented $15,000 and the duty maths dressed the guess up
+            as a calculation. Every card also drew one of seven recycled stock
+            photographs, which is why a Hilux and an Atto 3 looked identical.
+
+            Brands answer the question people actually arrive with ("what
+            Hyundais can I get?"), reach all 233 models instead of 8, and need
+            neither a price nor a photograph to be useful. ── */}
         <View style={styles.sectionContainer}>
           <SectionHeader
-            title="Import Direct: Korea · Dubai · China"
-            actionLabel="Explore All"
-            onAction={() => navigation.navigate('SearchResults', { mode: 'import' })}
+            title="Import brand new"
+            actionLabel="All brands"
+            onAction={() => navigation.navigate('ImportBrands')}
           />
           <FlatList
             horizontal
-            data={FALLBACK_IMPORT_CATALOG.slice(0, 8)}
-            keyExtractor={(item) => item.id}
+            data={importBrands}
+            keyExtractor={(b) => b.make}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalListPadding}
-            renderItem={({ item }) => {
-              const vehicleValueRwf = (item.typicalFobUsd || 15000) * RWF_RATE;
-              const freightRwf = (item.typicalFreightUsd || 2800) * RWF_RATE;
-              const ageYears = Math.max(0, new Date().getFullYear() - (item.yearEnd || 2022));
-              const duty = calcRwandaDuty(vehicleValueRwf, item.engineCc || 2000, ageYears);
-              const estimatedLandedRwf = (duty ? duty.grandTotal : vehicleValueRwf) + freightRwf;
-              const flag = item.originCountry === 'South Korea' ? '🇰🇷' : item.originCountry === 'China' ? '🇨🇳' : item.originCountry === 'United Arab Emirates' ? '🇦🇪' : '🇯🇵';
-
-              return (
-                <Pressable
-                  style={styles.importHomeCard}
-                  onPress={() => navigation.navigate('ImportVehicleDetail', { item })}
-                >
-                  <Photo uri={item.images[0]} width={PHOTO.CARD} style={styles.importHomePhoto} />
-                  <View style={styles.importHomeOriginBadge}>
-                    <Text style={styles.importHomeOriginText}>{flag} {item.originCountry}</Text>
-                  </View>
-                  <View style={styles.importHomeContent}>
-                    <Text style={styles.importHomeTitle} numberOfLines={1}>
-                      {item.yearStart}–{item.yearEnd} {item.make} {item.model}
-                    </Text>
-                    <Text style={styles.importHomeTrim} numberOfLines={1}>{item.trim || item.bodyType}</Text>
-                    <View style={styles.importHomePriceRow}>
-                      <Text style={styles.importHomePrice}>{formatRWF(estimatedLandedRwf)}</Text>
-                      <View style={styles.importHomeTransitBadge}>
-                        <Ionicons name="boat-outline" size={11} color="#1D4ED8" />
-                        <Text style={styles.importHomeTransitText}>{item.estimatedTransitDays || 35}d</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Pressable>
-              );
-            }}
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.importBrandCard}
+                onPress={() => navigation.navigate('ImportBrandModels', { make: item.make })}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.make}, ${item.modelCount} models`}
+              >
+                <BrandMark name={item.make} size={40} />
+                <Text style={styles.importBrandName} numberOfLines={1}>{item.make}</Text>
+                <Text style={styles.importBrandCount}>{item.modelCount} models</Text>
+              </Pressable>
+            )}
           />
 
-          {/* Bank Escrow Reassurance Strip */}
           <Pressable
-            style={styles.homeEscrowStrip}
+            style={styles.importNoteStrip}
             onPress={() => navigation.navigate('DutyCalculator')}
           >
-            <View style={styles.homeEscrowIcon}>
-              <Ionicons name="shield-checkmark" size={16} color="#166534" />
+            <View style={styles.importNoteIcon}>
+              <Ionicons name="calculator-outline" size={16} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.homeEscrowTitle}>100% Protected by Bank Escrow Guarantee</Text>
-              <Text style={styles.homeEscrowSub}>50% deposit held securely with Bank of Kigali / I&M Bank until physical Kigali inspection.</Text>
+              <Text style={styles.importNoteTitle}>Estimate your duty before you commit</Text>
+              <Text style={styles.importNoteSub}>
+                Brand new, zero kilometres, shipped from Japan, South Korea or China.
+                We quote each order individually.
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
@@ -798,6 +796,39 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  importBrandCard: {
+    width: 104,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    marginRight: 10,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  importBrandName: { ...typography.cardTitle, color: colors.textPrimary, marginTop: 8 },
+  importBrandCount: { ...typography.micro, color: colors.textSecondary, marginTop: 2 },
+  importNoteStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  importNoteIcon: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  importNoteTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  importNoteSub: { ...typography.caption, color: colors.textSecondary, marginTop: 2, lineHeight: 16 },
+
   // ── Top Bar ──
   topBar: {
     minHeight: 64,
@@ -1097,105 +1128,6 @@ const styles = StyleSheet.create({
   horizontalCardWrapper: { width: 145 },
 
   // ── Import Direct Showcase ──
-  importHomeCard: {
-    width: 220,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    marginRight: 12,
-    position: 'relative',
-  },
-  importHomePhoto: {
-    width: '100%',
-    height: 125,
-    backgroundColor: colors.surfaceAlt,
-  },
-  importHomeOriginBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(23, 18, 15, 0.85)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-  },
-  importHomeOriginText: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    color: '#FFFFFF',
-  },
-  importHomeContent: {
-    padding: 12,
-  },
-  importHomeTitle: {
-    fontFamily: fonts.extraBold,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  importHomeTrim: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  importHomePriceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  importHomePrice: {
-    fontFamily: fonts.extraBold,
-    fontSize: 14,
-    color: colors.primary,
-  },
-  importHomeTransitBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  importHomeTransitText: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    color: '#1D4ED8',
-  },
-  homeEscrowStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#F0FDF4',
-    borderRadius: radius.lg,
-    padding: 12,
-    marginTop: 14,
-    marginHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#DCFCE7',
-  },
-  homeEscrowIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#DCFCE7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  homeEscrowTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 12.5,
-    color: '#14532D',
-  },
-  homeEscrowSub: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    color: '#166534',
-    marginTop: 1,
-  },
 
   // ── Footer ──
   footerContainer: {

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, fonts } from '../theme';
 import { RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
 import { transformCloudinaryUrl } from '../utils/photo';
+import BrandMark from './BrandMark';
 
 const COUNTRY_FLAGS = {
   'South Korea': '🇰🇷',
@@ -15,17 +16,26 @@ const COUNTRY_FLAGS = {
 
 export default function ImportCarCard({ item, onPress }) {
   const flag = COUNTRY_FLAGS[item.originCountry] || '🌐';
-  
-  // Calculate estimated landed cost
-  const vehicleValueRwf = (item.typicalFobUsd || 15000) * RWF_RATE;
-  const freightRwf = (item.typicalFreightUsd || 2800) * RWF_RATE;
-  const ageYears = Math.max(0, new Date().getFullYear() - (item.yearEnd || 2022));
-  const duty = calcRwandaDuty(vehicleValueRwf, item.engineCc || 2000, ageYears);
-  const estimatedLandedRwf = (duty ? duty.grandTotal : vehicleValueRwf) + freightRwf;
-  const estimatedLandedUsd = Math.round(estimatedLandedRwf / RWF_RATE);
 
-  const mainImage = (item.images && item.images[0]) || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=80';
-  const optimizedImage = transformCloudinaryUrl(mainImage, { width: 640 });
+  // A landed cost only when there is a price to land.
+  //
+  // This read `(item.typicalFobUsd || 15000)`, so a model with no price was
+  // given an invented $15,000, run through the RRA duty calculation, and
+  // captioned "Est. Landed in Kigali (Taxes Included)" — the most confident
+  // possible presentation of a number nobody had quoted.
+  const fobUsd = Number(item.typicalFobUsd) > 0 ? Number(item.typicalFobUsd) : null;
+  const freightUsd = Number(item.typicalFreightUsd) > 0 ? Number(item.typicalFreightUsd) : null;
+  const landed = fobUsd && freightUsd && item.engineCc ? (() => {
+    const vehicleValueRwf = fobUsd * RWF_RATE;
+    const duty = calcRwandaDuty(vehicleValueRwf, item.engineCc, 0); // brand new: no age band
+    const rwf = (duty ? duty.grandTotal : vehicleValueRwf) + freightUsd * RWF_RATE;
+    return { rwf, usd: Math.round(rwf / RWF_RATE) };
+  })() : null;
+
+  // No stock-photo fallback: a picture of a different car is a claim about
+  // what the buyer is getting. BrandMark draws the marque instead.
+  const mainImage = (Array.isArray(item.images) && item.images[0]) || null;
+  const optimizedImage = mainImage ? transformCloudinaryUrl(mainImage, { width: 640 }) : null;
 
   return (
     <Pressable
@@ -36,12 +46,19 @@ export default function ImportCarCard({ item, onPress }) {
     >
       {/* Image container */}
       <View style={styles.imageContainer}>
-        <ExpoImage
-          source={{ uri: optimizedImage }}
-          style={styles.image}
-          contentFit="cover"
-          transition={200}
-        />
+        {optimizedImage ? (
+          <ExpoImage
+            source={{ uri: optimizedImage }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+          />
+        ) : (
+          <View style={styles.imageFallback}>
+            <BrandMark name={item.make} size={48} />
+            <Text style={styles.imageFallbackText}>Photos on request</Text>
+          </View>
+        )}
         {/* Origin Hub Badge */}
         <View style={styles.originBadge}>
           <Text style={styles.originBadgeText}>
@@ -49,10 +66,10 @@ export default function ImportCarCard({ item, onPress }) {
           </Text>
         </View>
 
-        {/* Escrow Tag */}
-        <View style={styles.escrowBadge}>
-          <Ionicons name="shield-checkmark" size={11} color="#166534" />
-          <Text style={styles.escrowBadgeText}>Bank Escrow</Text>
+        {/* Brand new, which is the whole proposition — not a guarantee claim. */}
+        <View style={styles.conditionBadge}>
+          <Ionicons name="sparkles-outline" size={11} color="#166534" />
+          <Text style={styles.conditionBadgeText}>Brand new · 0 km</Text>
         </View>
       </View>
 
@@ -61,7 +78,7 @@ export default function ImportCarCard({ item, onPress }) {
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title} numberOfLines={1}>
-              {item.yearStart && item.yearEnd ? `${item.yearStart}–${item.yearEnd} ` : ''}{item.make} {item.model}
+              {item.make} {item.model}
             </Text>
             {item.trim ? (
               <Text style={styles.trim} numberOfLines={1}>
@@ -73,27 +90,38 @@ export default function ImportCarCard({ item, onPress }) {
 
         {/* Specs Pill Row */}
         <View style={styles.specsRow}>
-          <View style={styles.specPill}>
-            <Text style={styles.specText}>{item.engineCc ? `${(item.engineCc / 1000).toFixed(1)}L` : 'EV'}</Text>
-          </View>
-          <View style={styles.specPill}>
-            <Text style={styles.specText}>{item.fuelType}</Text>
-          </View>
-          <View style={styles.specPill}>
-            <Text style={styles.specText}>{item.transmission}</Text>
-          </View>
-          <View style={styles.specPill}>
-            <Text style={styles.specText}>{item.driveSide || 'LHD'}</Text>
-          </View>
+          {item.bodyType ? (
+            <View style={styles.specPill}>
+              <Text style={styles.specText}>{item.bodyType}</Text>
+            </View>
+          ) : null}
+          {item.engineCc ? (
+            <View style={styles.specPill}>
+              <Text style={styles.specText}>{`${(item.engineCc / 1000).toFixed(1)}L`}</Text>
+            </View>
+          ) : null}
+          {(item.fuelTypes || []).map((fuel) => (
+            <View key={fuel} style={styles.specPill}>
+              <Text style={styles.specText}>{fuel}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Price & Transit Breakdown */}
         <View style={styles.priceContainer}>
           <View>
-            <Text style={styles.priceLabel}>Est. Landed in Kigali (Taxes Included)</Text>
+            <Text style={styles.priceLabel}>
+              {landed ? 'Est. landed in Kigali (taxes included)' : 'Price'}
+            </Text>
             <View style={styles.priceRow}>
-              <Text style={styles.priceRwf}>{formatRWF(estimatedLandedRwf)}</Text>
-              <Text style={styles.priceUsd}>~${estimatedLandedUsd.toLocaleString('en-US')}</Text>
+              {landed ? (
+                <>
+                  <Text style={styles.priceRwf}>{formatRWF(landed.rwf)}</Text>
+                  <Text style={styles.priceUsd}>~${landed.usd.toLocaleString('en-US')}</Text>
+                </>
+              ) : (
+                <Text style={styles.priceOnRequest}>On request</Text>
+              )}
             </View>
           </View>
 
@@ -105,7 +133,7 @@ export default function ImportCarCard({ item, onPress }) {
 
         {/* Action button */}
         <View style={styles.actionRow}>
-          <Text style={styles.actionText}>View Cost Breakdown & Sourcing Quote</Text>
+          <Text style={styles.actionText}>{landed ? 'View cost breakdown' : 'Request details'}</Text>
           <Ionicons name="chevron-forward" size={14} color={colors.primary} />
         </View>
       </View>
@@ -114,6 +142,10 @@ export default function ImportCarCard({ item, onPress }) {
 }
 
 const styles = StyleSheet.create({
+  imageFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.surfaceAlt },
+  imageFallbackText: { fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted },
+  priceOnRequest: { fontFamily: fonts.bold, fontSize: 17, color: colors.textPrimary, letterSpacing: -0.3 },
+
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
@@ -147,7 +179,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#FFFFFF',
   },
-  escrowBadge: {
+  conditionBadge: {
     position: 'absolute',
     top: 12,
     right: 12,
@@ -159,7 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  escrowBadgeText: {
+  conditionBadgeText: {
     fontFamily: fonts.bold,
     fontSize: 10.5,
     color: '#166534',
