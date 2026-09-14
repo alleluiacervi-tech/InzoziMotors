@@ -14,7 +14,9 @@ const { sendImportUpdate } = require('../lib/mailer');
 const { UPLOAD_DIR } = require('../lib/storage');
 const { issueImportPack, issueImportReceipt } = require('../lib/documents/import-documents');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
-const { rendersEnabled, resolveRender } = require('../lib/vehicle-renders');
+const { rendersEnabled, fetchRender, slug: renderSlug } = require('../lib/vehicle-renders');
+const { storage } = require('../lib/storage');
+const { publicApiOrigin } = require('../lib/public-origin');
 
 const router = express.Router();
 
@@ -315,9 +317,30 @@ router.post('/admin/catalog/resolve-renders', requireAdmin, async (req, res) => 
     );
 
     const counts = { found: 0, no_match: 0, unreachable: 0, timeout: 0 };
+    const origin = publicApiOrigin(req);
+
     for (const row of rows) {
-      const { found, url, reason } = await resolveRender(row.make, row.model);
-      const status = found ? 'found' : (reason === 'found' ? 'no_match' : reason);
+      const result = await fetchRender(row.make, row.model);
+      let url = null;
+      let status = result.status;
+
+      if (status === 'found') {
+        // Store OUR copy. The vendor URL carries the commercial key and this
+        // catalogue is public, so the vendor URL must never reach a row.
+        try {
+          const ext = (result.contentType.split('/')[1] || 'webp').replace(/[^a-z0-9]/gi, '');
+          const key = `renders/${renderSlug(row.make)}-${renderSlug(row.model)}.${ext}`;
+          await storage.save(result.buffer, key);
+          url = `${origin}${storage.url(key)}`;
+        } catch (err) {
+          // Storing failed, so there is no image to point at. Transient by
+          // nature (a full disk, a permission), so it is retried rather than
+          // recorded as the library not having the model.
+          log.warn('could not store render', { make: row.make, model: row.model, error: err.message });
+          status = 'unreachable';
+        }
+      }
+
       counts[status] = (counts[status] || 0) + 1;
       await pool.query(
         `UPDATE global_import_catalog
