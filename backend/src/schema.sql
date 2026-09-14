@@ -1017,18 +1017,21 @@ CREATE TABLE IF NOT EXISTS global_import_catalog (
   id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   make                    VARCHAR(80) NOT NULL,
   model                   VARCHAR(80) NOT NULL,
-  year_start              SMALLINT NOT NULL,
-  year_end                SMALLINT NOT NULL,
+  year_start              SMALLINT,
+  year_end                SMALLINT,
   trim                    VARCHAR(80),
   body_type               VARCHAR(50) NOT NULL,
-  engine_cc               INT NOT NULL,
-  fuel_type               VARCHAR(30) NOT NULL,
+  engine_cc               INT,
+  fuel_types              TEXT[] NOT NULL DEFAULT '{}',
+  condition               VARCHAR(20) NOT NULL DEFAULT 'new',
   transmission            VARCHAR(50) NOT NULL DEFAULT 'Automatic',
   drive_side              VARCHAR(10) NOT NULL DEFAULT 'LHD',
   origin_country          VARCHAR(80) NOT NULL,
   origin_port             VARCHAR(80) NOT NULL,
-  typical_fob_usd         INT NOT NULL,
-  typical_freight_usd     INT NOT NULL,
+  -- Nullable on purpose: a model with no exporter quotation yet must be
+  -- representable as "no price", or the schema forces a guess. See 0045.
+  typical_fob_usd         INT,
+  typical_freight_usd     INT,
   estimated_transit_days  INT NOT NULL DEFAULT 35,
   images                  TEXT[] NOT NULL DEFAULT '{}',
   highlights              TEXT[] NOT NULL DEFAULT '{}',
@@ -1042,3 +1045,5 @@ CREATE TABLE IF NOT EXISTS global_import_catalog (
 CREATE INDEX IF NOT EXISTS idx_global_import_catalog_make_model ON global_import_catalog (lower(make), lower(model));
 CREATE INDEX IF NOT EXISTS idx_global_import_catalog_origin ON global_import_catalog (origin_country);
 CREATE INDEX IF NOT EXISTS idx_global_import_catalog_active ON global_import_catalog (active, display_order);
+CREATE INDEX IF NOT EXISTS idx_global_import_catalog_body ON global_import_catalog (body_type);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_global_import_catalog_make_model_unique ON global_import_catalog (lower(make), lower(model));

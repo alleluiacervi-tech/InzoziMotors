@@ -1,0 +1,409 @@
+{
+  "$comment": [
+    "Brand-new (0 km) import catalogue, organised brand -> models.",
+    "",
+    "Only facts are recorded here: which models a marque currently builds, what",
+    "body style they are, and which fuels they are offered in. Price, engine",
+    "displacement and photographs are deliberately ABSENT — those vary by trim,",
+    "by exporter and by week, and the previous catalogue invented all three.",
+    "An admin supplies them per model; until then the app says so plainly.",
+    "",
+    "Ordering within a make is roughly by segment, small to large, then EV."
+  ],
+  "makes": [
+    {
+      "name": "Toyota",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "Vitz",              "body_type": "Hatchback", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Yaris",             "body_type": "Hatchback", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Yaris Cross",       "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Corolla",           "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Corolla Cross",     "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Camry",             "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Raize",             "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Rush",              "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "C-HR",              "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "RAV4",              "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Harrier",           "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Fortuner",          "body_type": "SUV",       "fuel_types": ["Diesel", "Petrol"] },
+        { "model": "Land Cruiser Prado","body_type": "SUV",       "fuel_types": ["Diesel", "Petrol"] },
+        { "model": "Land Cruiser 300",  "body_type": "SUV",       "fuel_types": ["Diesel", "Petrol"] },
+        { "model": "Land Cruiser 70",   "body_type": "SUV",       "fuel_types": ["Diesel"] },
+        { "model": "Hilux",             "body_type": "Pickup",    "fuel_types": ["Diesel", "Petrol"] },
+        { "model": "Hiace",             "body_type": "Van",       "fuel_types": ["Diesel", "Petrol"] },
+        { "model": "Coaster",           "body_type": "Bus",       "fuel_types": ["Diesel"] },
+        { "model": "Avanza",            "body_type": "MPV",       "fuel_types": ["Petrol"] },
+        { "model": "Noah",              "body_type": "MPV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Alphard",           "body_type": "MPV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Dyna",              "body_type": "Truck",     "fuel_types": ["Diesel"] },
+        { "model": "bZ4X",              "body_type": "SUV",       "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Lexus",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "UX",      "body_type": "SUV",   "fuel_types": ["Hybrid", "Electric"] },
+        { "model": "NX",      "body_type": "SUV",   "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "RX",      "body_type": "SUV",   "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "GX",      "body_type": "SUV",   "fuel_types": ["Petrol"] },
+        { "model": "LX",      "body_type": "SUV",   "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "TX",      "body_type": "SUV",   "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "ES",      "body_type": "Sedan", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "LS",      "body_type": "Sedan", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "LM",      "body_type": "MPV",   "fuel_types": ["Hybrid"] },
+        { "model": "RZ",      "body_type": "SUV",   "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Nissan",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "March",     "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Note",      "body_type": "Hatchback", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Sunny",     "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Sentra",    "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Altima",    "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Juke",      "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Kicks",     "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Qashqai",   "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "X-Trail",   "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Pathfinder","body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Patrol",    "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "Navara",    "body_type": "Pickup",    "fuel_types": ["Diesel"] },
+        { "model": "NV350 Urvan","body_type": "Van",      "fuel_types": ["Diesel", "Petrol"] },
+        { "model": "Leaf",      "body_type": "Hatchback", "fuel_types": ["Electric"] },
+        { "model": "Ariya",     "body_type": "SUV",       "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Honda",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "Fit",      "body_type": "Hatchback", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Civic",    "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Accord",   "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "WR-V",     "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "HR-V",     "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "CR-V",     "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Pilot",    "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Odyssey",  "body_type": "MPV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Freed",    "body_type": "MPV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "e:Ny1",    "body_type": "SUV",       "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Mazda",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "Mazda2", "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Mazda3", "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Mazda6", "body_type": "Sedan",     "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "CX-3",   "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "CX-30",  "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "CX-5",   "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "CX-60",  "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel", "Hybrid"] },
+        { "model": "CX-8",   "body_type": "SUV",       "fuel_types": ["Diesel"] },
+        { "model": "CX-9",   "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "BT-50",  "body_type": "Pickup",    "fuel_types": ["Diesel"] }
+      ]
+    },
+    {
+      "name": "Mitsubishi",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "Mirage",          "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Attrage",         "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Xpander",         "body_type": "MPV",       "fuel_types": ["Petrol"] },
+        { "model": "ASX",             "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Eclipse Cross",   "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Outlander",       "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Montero Sport",   "body_type": "SUV",       "fuel_types": ["Diesel"] },
+        { "model": "Pajero Sport",    "body_type": "SUV",       "fuel_types": ["Diesel"] },
+        { "model": "L200 Triton",     "body_type": "Pickup",    "fuel_types": ["Diesel"] },
+        { "model": "Canter",          "body_type": "Truck",     "fuel_types": ["Diesel"] }
+      ]
+    },
+    {
+      "name": "Suzuki",
+      "origin_country": "Japan",
+      "origin_port": "Kobe",
+      "models": [
+        { "model": "Alto",      "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Wagon R",   "body_type": "Hatchback", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Swift",     "body_type": "Hatchback", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Baleno",    "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Dzire",     "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Ciaz",      "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Ignis",     "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Jimny",     "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Vitara",    "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Grand Vitara","body_type": "SUV",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Ertiga",    "body_type": "MPV",       "fuel_types": ["Petrol"] },
+        { "model": "APV",       "body_type": "Van",       "fuel_types": ["Petrol"] },
+        { "model": "Carry",     "body_type": "Truck",     "fuel_types": ["Petrol"] }
+      ]
+    },
+    {
+      "name": "Subaru",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "Impreza",   "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Crosstrek", "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Forester",  "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Outback",   "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Legacy",    "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Ascent",    "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "WRX",       "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Solterra",  "body_type": "SUV",       "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Isuzu",
+      "origin_country": "Japan",
+      "origin_port": "Yokohama",
+      "models": [
+        { "model": "D-Max",   "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "MU-X",    "body_type": "SUV",    "fuel_types": ["Diesel"] },
+        { "model": "NPR",     "body_type": "Truck",  "fuel_types": ["Diesel"] },
+        { "model": "NQR",     "body_type": "Truck",  "fuel_types": ["Diesel"] },
+        { "model": "FVR",     "body_type": "Truck",  "fuel_types": ["Diesel"] },
+        { "model": "FRR",     "body_type": "Truck",  "fuel_types": ["Diesel"] }
+      ]
+    },
+    {
+      "name": "Hyundai",
+      "origin_country": "South Korea",
+      "origin_port": "Incheon",
+      "models": [
+        { "model": "Grand i10", "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "i20",       "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "i30",       "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Accent",    "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Avante",    "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Elantra",   "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Sonata",    "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Grandeur",  "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Venue",     "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Bayon",     "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Kona",      "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid", "Electric"] },
+        { "model": "Creta",     "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "Tucson",    "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel", "Hybrid"] },
+        { "model": "Santa Fe",  "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel", "Hybrid"] },
+        { "model": "Palisade",  "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "Staria",    "body_type": "Van",       "fuel_types": ["Diesel"] },
+        { "model": "H-1 Starex","body_type": "Van",       "fuel_types": ["Diesel"] },
+        { "model": "Porter",    "body_type": "Truck",     "fuel_types": ["Diesel"] },
+        { "model": "Mighty",    "body_type": "Truck",     "fuel_types": ["Diesel"] },
+        { "model": "Ioniq 5",   "body_type": "SUV",       "fuel_types": ["Electric"] },
+        { "model": "Ioniq 6",   "body_type": "Sedan",     "fuel_types": ["Electric"] },
+        { "model": "Ioniq 9",   "body_type": "SUV",       "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Kia",
+      "origin_country": "South Korea",
+      "origin_port": "Incheon",
+      "models": [
+        { "model": "Picanto",  "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Rio",      "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "K3",       "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "K5",       "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "K8",       "body_type": "Sedan",     "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Soul",     "body_type": "Hatchback", "fuel_types": ["Petrol"] },
+        { "model": "Stonic",   "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Seltos",   "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "Niro",     "body_type": "SUV",       "fuel_types": ["Hybrid", "Electric"] },
+        { "model": "Sportage", "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel", "Hybrid"] },
+        { "model": "Sorento",  "body_type": "SUV",       "fuel_types": ["Petrol", "Diesel", "Hybrid"] },
+        { "model": "Mohave",   "body_type": "SUV",       "fuel_types": ["Diesel"] },
+        { "model": "Telluride","body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Carnival", "body_type": "MPV",       "fuel_types": ["Petrol", "Diesel", "Hybrid"] },
+        { "model": "Bongo",    "body_type": "Truck",     "fuel_types": ["Diesel"] },
+        { "model": "EV3",      "body_type": "SUV",       "fuel_types": ["Electric"] },
+        { "model": "EV6",      "body_type": "SUV",       "fuel_types": ["Electric"] },
+        { "model": "EV9",      "body_type": "SUV",       "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Genesis",
+      "origin_country": "South Korea",
+      "origin_port": "Incheon",
+      "models": [
+        { "model": "G70",  "body_type": "Sedan", "fuel_types": ["Petrol"] },
+        { "model": "G80",  "body_type": "Sedan", "fuel_types": ["Petrol", "Electric"] },
+        { "model": "G90",  "body_type": "Sedan", "fuel_types": ["Petrol"] },
+        { "model": "GV60", "body_type": "SUV",   "fuel_types": ["Electric"] },
+        { "model": "GV70", "body_type": "SUV",   "fuel_types": ["Petrol", "Electric"] },
+        { "model": "GV80", "body_type": "SUV",   "fuel_types": ["Petrol", "Diesel"] }
+      ]
+    },
+    {
+      "name": "BYD",
+      "origin_country": "China",
+      "origin_port": "Shanghai",
+      "models": [
+        { "model": "Dolphin",    "body_type": "Hatchback", "fuel_types": ["Electric"] },
+        { "model": "Seagull",    "body_type": "Hatchback", "fuel_types": ["Electric"] },
+        { "model": "Atto 3",     "body_type": "SUV",       "fuel_types": ["Electric"] },
+        { "model": "Yuan Plus",  "body_type": "SUV",       "fuel_types": ["Electric"] },
+        { "model": "Seal",       "body_type": "Sedan",     "fuel_types": ["Electric"] },
+        { "model": "Seal U",     "body_type": "SUV",       "fuel_types": ["Electric", "Hybrid"] },
+        { "model": "Han",        "body_type": "Sedan",     "fuel_types": ["Electric", "Hybrid"] },
+        { "model": "Qin Plus",   "body_type": "Sedan",     "fuel_types": ["Electric", "Hybrid"] },
+        { "model": "Song Plus",  "body_type": "SUV",       "fuel_types": ["Electric", "Hybrid"] },
+        { "model": "Song Pro",   "body_type": "SUV",       "fuel_types": ["Electric", "Hybrid"] },
+        { "model": "Tang",       "body_type": "SUV",       "fuel_types": ["Electric", "Hybrid"] },
+        { "model": "Sealion 6",  "body_type": "SUV",       "fuel_types": ["Hybrid"] },
+        { "model": "Sealion 7",  "body_type": "SUV",       "fuel_types": ["Electric"] },
+        { "model": "Shark",      "body_type": "Pickup",    "fuel_types": ["Hybrid"] },
+        { "model": "M6",         "body_type": "MPV",       "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Chery",
+      "origin_country": "China",
+      "origin_port": "Shanghai",
+      "models": [
+        { "model": "QQ",          "body_type": "Hatchback", "fuel_types": ["Petrol", "Electric"] },
+        { "model": "Arrizo 5",    "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Arrizo 6",    "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Arrizo 8",    "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "Tiggo 2 Pro", "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Tiggo 4 Pro", "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "Tiggo 7 Pro", "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Tiggo 8 Pro", "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Tiggo 9",     "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Omoda 5",     "body_type": "SUV",       "fuel_types": ["Petrol", "Electric"] },
+        { "model": "Jaecoo 7",    "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] }
+      ]
+    },
+    {
+      "name": "Geely",
+      "origin_country": "China",
+      "origin_port": "Ningbo",
+      "models": [
+        { "model": "Coolray",    "body_type": "SUV",   "fuel_types": ["Petrol"] },
+        { "model": "Azkarra",    "body_type": "SUV",   "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Okavango",   "body_type": "SUV",   "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Monjaro",    "body_type": "SUV",   "fuel_types": ["Petrol"] },
+        { "model": "Emgrand",    "body_type": "Sedan", "fuel_types": ["Petrol"] },
+        { "model": "Preface",    "body_type": "Sedan", "fuel_types": ["Petrol"] },
+        { "model": "Starray",    "body_type": "SUV",   "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Geometry C", "body_type": "SUV",   "fuel_types": ["Electric"] },
+        { "model": "EX5",        "body_type": "SUV",   "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Haval",
+      "origin_country": "China",
+      "origin_port": "Tianjin",
+      "models": [
+        { "model": "Jolion", "body_type": "SUV", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "H6",     "body_type": "SUV", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "H9",     "body_type": "SUV", "fuel_types": ["Petrol", "Diesel"] },
+        { "model": "Dargo",  "body_type": "SUV", "fuel_types": ["Petrol"] },
+        { "model": "H7",     "body_type": "SUV", "fuel_types": ["Petrol"] }
+      ]
+    },
+    {
+      "name": "GWM",
+      "origin_country": "China",
+      "origin_port": "Tianjin",
+      "models": [
+        { "model": "Poer",       "body_type": "Pickup", "fuel_types": ["Diesel", "Petrol"] },
+        { "model": "Wingle 5",   "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "Wingle 7",   "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "Tank 300",   "body_type": "SUV",    "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Tank 500",   "body_type": "SUV",    "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "Ora 03",     "body_type": "Hatchback", "fuel_types": ["Electric"] }
+      ]
+    },
+    {
+      "name": "Changan",
+      "origin_country": "China",
+      "origin_port": "Shanghai",
+      "models": [
+        { "model": "Alsvin",   "body_type": "Sedan",  "fuel_types": ["Petrol"] },
+        { "model": "Eado",     "body_type": "Sedan",  "fuel_types": ["Petrol"] },
+        { "model": "CS35 Plus","body_type": "SUV",    "fuel_types": ["Petrol"] },
+        { "model": "CS55 Plus","body_type": "SUV",    "fuel_types": ["Petrol"] },
+        { "model": "CS75 Plus","body_type": "SUV",    "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "CS85",     "body_type": "SUV",    "fuel_types": ["Petrol"] },
+        { "model": "UNI-K",    "body_type": "SUV",    "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "UNI-T",    "body_type": "SUV",    "fuel_types": ["Petrol"] },
+        { "model": "Hunter",   "body_type": "Pickup", "fuel_types": ["Diesel"] }
+      ]
+    },
+    {
+      "name": "Jetour",
+      "origin_country": "China",
+      "origin_port": "Shanghai",
+      "models": [
+        { "model": "X50",     "body_type": "SUV", "fuel_types": ["Petrol"] },
+        { "model": "X70",     "body_type": "SUV", "fuel_types": ["Petrol"] },
+        { "model": "X90",     "body_type": "SUV", "fuel_types": ["Petrol"] },
+        { "model": "Dashing", "body_type": "SUV", "fuel_types": ["Petrol"] },
+        { "model": "T2",      "body_type": "SUV", "fuel_types": ["Petrol", "Hybrid"] }
+      ]
+    },
+    {
+      "name": "MG",
+      "origin_country": "China",
+      "origin_port": "Shanghai",
+      "models": [
+        { "model": "MG3",      "body_type": "Hatchback", "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "MG5",      "body_type": "Sedan",     "fuel_types": ["Petrol"] },
+        { "model": "ZS",       "body_type": "SUV",       "fuel_types": ["Petrol", "Electric"] },
+        { "model": "HS",       "body_type": "SUV",       "fuel_types": ["Petrol", "Hybrid"] },
+        { "model": "RX5",      "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "RX8",      "body_type": "SUV",       "fuel_types": ["Petrol"] },
+        { "model": "MG4",      "body_type": "Hatchback", "fuel_types": ["Electric"] },
+        { "model": "Extender", "body_type": "Pickup",    "fuel_types": ["Diesel"] }
+      ]
+    },
+    {
+      "name": "Foton",
+      "origin_country": "China",
+      "origin_port": "Tianjin",
+      "models": [
+        { "model": "Tunland",   "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "Aumark",    "body_type": "Truck",  "fuel_types": ["Diesel"] },
+        { "model": "Ollin",     "body_type": "Truck",  "fuel_types": ["Diesel"] },
+        { "model": "Auman",     "body_type": "Truck",  "fuel_types": ["Diesel"] },
+        { "model": "View",      "body_type": "Van",    "fuel_types": ["Diesel"] }
+      ]
+    },
+    {
+      "name": "JAC",
+      "origin_country": "China",
+      "origin_port": "Shanghai",
+      "models": [
+        { "model": "T6",   "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "T8",   "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "T9",   "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "JS4",  "body_type": "SUV",    "fuel_types": ["Petrol"] },
+        { "model": "N-Series", "body_type": "Truck", "fuel_types": ["Diesel"] }
+      ]
+    },
+    {
+      "name": "Dongfeng",
+      "origin_country": "China",
+      "origin_port": "Shanghai",
+      "models": [
+        { "model": "Rich 6",  "body_type": "Pickup", "fuel_types": ["Diesel"] },
+        { "model": "Glory 580","body_type": "SUV",   "fuel_types": ["Petrol"] },
+        { "model": "Forthing T5","body_type": "SUV", "fuel_types": ["Petrol"] },
+        { "model": "Captain",  "body_type": "Truck", "fuel_types": ["Diesel"] }
+      ]
+    }
+  ]
+}

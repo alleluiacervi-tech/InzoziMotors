@@ -156,12 +156,40 @@ router.get('/mine', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Could not load import orders' }); }
 });
 
+// Browsing starts at the brand, not at a flat list of vehicles: somebody
+// importing a car knows they want a Hyundai long before they know which
+// Hyundai. This returns every marque with how many models sit under it, so the
+// brand grid can be drawn in one request and no brand is a dead end.
+router.get('/catalog/makes', async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT make,
+              origin_country,
+              COUNT(*)::int                                        AS model_count,
+              COUNT(typical_fob_usd)::int                          AS priced_count,
+              ARRAY_AGG(DISTINCT body_type ORDER BY body_type)     AS body_types
+         FROM global_import_catalog
+        WHERE active = TRUE
+        GROUP BY make, origin_country
+        ORDER BY make ASC`
+    );
+    res.json({ items: rows, count: rows.length });
+  } catch (err) {
+    log.error('catalog makes load error', { error: err.message });
+    res.status(500).json({ error: 'Could not load import brands' });
+  }
+});
+
 router.get('/catalog', async (req, res) => {
   const q = clean(req.query.q || req.query.query, 80);
   const make = clean(req.query.make, 80);
   const origin = clean(req.query.origin || req.query.origin_country, 80);
   const bodyType = clean(req.query.body_type, 50);
-  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 100);
+  // 250, not 100. The cap exists to stop an unbounded scan, but a buyer who
+  // taps a brand is asking for that brand's whole range -- Toyota alone is 23
+  // models -- and a silently truncated model list is the same failure as an
+  // incomplete catalogue. The largest marque must fit in one page.
+  const limit = Math.min(Math.max(Number(req.query.limit) || 250, 1), 250);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
 
   const params = [];
@@ -170,7 +198,7 @@ router.get('/catalog', async (req, res) => {
   if (q) {
     params.push(`%${q.toLowerCase()}%`);
     const idx = params.length;
-    conditions.push(`(lower(make) LIKE $${idx} OR lower(model) LIKE $${idx} OR lower(COALESCE(trim, '')) LIKE $${idx} OR lower(body_type) LIKE $${idx} OR lower(origin_country) LIKE $${idx})`);
+    conditions.push(`(lower(make) LIKE $${idx} OR lower(model) LIKE $${idx} OR lower(COALESCE(trim, '')) LIKE $${idx} OR lower(body_type) LIKE $${idx} OR lower(origin_country) LIKE $${idx} OR EXISTS (SELECT 1 FROM unnest(fuel_types) f WHERE lower(f) LIKE $${idx}))`);
   }
 
   if (make) {
@@ -188,14 +216,21 @@ router.get('/catalog', async (req, res) => {
     conditions.push(`lower(body_type) = $${params.length}`);
   }
 
+  const fuel = clean(req.query.fuel || req.query.fuel_type, 30);
+  if (fuel) {
+    params.push(fuel.toLowerCase());
+    conditions.push(`EXISTS (SELECT 1 FROM unnest(fuel_types) f WHERE lower(f) = $${params.length})`);
+  }
+
   params.push(limit);
   params.push(offset);
 
   try {
     const { rows } = await pool.query(
-      `SELECT id, make, model, year_start, year_end, trim, body_type, engine_cc, fuel_type,
-              transmission, drive_side, origin_country, origin_port, typical_fob_usd,
-              typical_freight_usd, estimated_transit_days, images, highlights, description, display_order
+      `SELECT id, make, model, body_type, fuel_types, condition, trim,
+              engine_cc, transmission, drive_side, origin_country, origin_port,
+              typical_fob_usd, typical_freight_usd, estimated_transit_days,
+              images, highlights, description, display_order
          FROM global_import_catalog
         WHERE ${conditions.join(' AND ')}
         ORDER BY display_order ASC, make ASC, model ASC
@@ -212,9 +247,10 @@ router.get('/catalog', async (req, res) => {
 router.get('/catalog/:id', requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, make, model, year_start, year_end, trim, body_type, engine_cc, fuel_type,
-              transmission, drive_side, origin_country, origin_port, typical_fob_usd,
-              typical_freight_usd, estimated_transit_days, images, highlights, description, display_order
+      `SELECT id, make, model, body_type, fuel_types, condition, trim,
+              engine_cc, transmission, drive_side, origin_country, origin_port,
+              typical_fob_usd, typical_freight_usd, estimated_transit_days,
+              images, highlights, description, display_order
          FROM global_import_catalog
         WHERE id = $1 AND active = TRUE`,
       [req.params.id]
@@ -227,37 +263,17 @@ router.get('/catalog/:id', requireUuid('id'), async (req, res) => {
   }
 });
 
-router.get('/escrow-guarantee', async (_req, res) => {
-  res.json({
-    escrow_partner_bank: 'Bank of Kigali / I&M Bank Rwanda',
-    escrow_account_name: 'Inzozi Motors Vehicle Import Escrow',
-    escrow_account_type: 'Regulated Tripartite Custody Escrow',
-    guarantee_title: '100% Bank Escrow Protection Guarantee',
-    milestones: [
-      {
-        milestone: 'initial_50',
-        label: 'Initial Sourcing & Shipping Commitment',
-        percent: 50,
-        held_in_escrow: true,
-        description: 'Deposited directly into our partner bank escrow account. Secured until overseas pre-shipment inspection pass and container dispatch.',
-      },
-      {
-        milestone: 'final_50',
-        label: 'Kigali Physical Inspection & Final Handover',
-        percent: 50,
-        held_in_escrow: false,
-        description: 'Due ONLY after the vehicle lands in Kigali, completes RRA customs clearance, and passes your personal hands-on 150-point inspection and test drive.',
-      },
-    ],
-    protection_points: [
-      'Your deposit is safeguarded in a regulated Rwandan bank escrow account.',
-      'Comprehensive pre-shipment multi-point inspection with high-definition video & photos before vessel loading.',
-      'GPS vessel and overland container tracking from port of origin to Kigali dry port.',
-      'Full RRA customs duty assessment and yellow card registration managed by Inzozi Motors.',
-      'Zero-risk handover: if the vehicle does not match the signed contract or fails Kigali inspection, you are entitled to full remedy or escrow refund.',
-    ],
-  });
-});
+// GET /escrow-guarantee is gone, deliberately.
+//
+// It advertised an "Inzozi Motors Vehicle Import Escrow" account at named
+// Rwandan banks, a "Regulated Tripartite Custody Escrow", and a "zero-risk
+// handover ... full remedy or escrow refund". Sawa is not a party to any deal
+// and holds no funds -- see the top of CLAUDE.md and the retired-features list
+// -- so the endpoint described an arrangement that does not exist, while
+// naming real banks and the word "regulated" next to a guarantee somebody
+// could be expected to honour. Import payment milestones remain what they
+// always were: the buyer pays the exporter, and an admin reviews the uploaded
+// transfer proof.
 
 router.get('/admin/all', requireAdmin, async (req, res) => {
   const status = clean(req.query.status, 40);

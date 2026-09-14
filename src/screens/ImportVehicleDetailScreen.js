@@ -15,8 +15,8 @@ import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
-import EscrowGuaranteeCard from '../components/EscrowGuaranteeCard';
-import { colors, radius, shadows, fonts } from '../theme';
+import { colors, radius, shadows, fonts, typography } from '../theme';
+import BrandMark from '../components/BrandMark';
 import { RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
 import { transformCloudinaryUrl } from '../utils/photo';
 import { useApp } from '../context/AppContext';
@@ -54,36 +54,54 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
 
   const flag = COUNTRY_FLAGS[item.originCountry] || '🌐';
 
-  // Cost calculation
-  const fobUsd = item.typicalFobUsd || 15000;
-  const freightUsd = item.typicalFreightUsd || 2800;
-  const insuranceUsd = Math.round(fobUsd * 0.015);
-  const clearingUsd = 650; // Port handling, radar, clearing agent & registration
+  // ── Cost, only when there is a cost ───────────────────────────────────────
+  //
+  // This block used to open `const fobUsd = item.typicalFobUsd || 15000`, then
+  // run the full RRA duty calculation on that number and present the result as
+  // a landed total, a 50% deposit and a final balance. For a catalogue in which
+  // no vehicle had a price, every figure on this screen was arithmetic
+  // performed on a made-up $15,000 — and the more detailed the breakdown, the
+  // more convincing the invention looked.
+  //
+  // A price now exists only when an admin has entered one against the model,
+  // from a real exporter quotation. When there is none, `quote` is null and the
+  // screen says so instead of computing.
+  const fobUsd = Number(item.typicalFobUsd) > 0 ? Number(item.typicalFobUsd) : null;
+  const freightUsd = Number(item.typicalFreightUsd) > 0 ? Number(item.typicalFreightUsd) : null;
 
-  const vehicleValueRwf = fobUsd * RWF_RATE;
-  const freightRwf = freightUsd * RWF_RATE;
-  const insuranceRwf = insuranceUsd * RWF_RATE;
-  const clearingRwf = clearingUsd * RWF_RATE;
+  const quote = fobUsd && freightUsd ? (() => {
+    const insuranceUsd = Math.round(fobUsd * 0.015);
+    const clearingUsd = 650; // Port handling, radar, clearing agent & registration
+    const vehicleValueRwf = fobUsd * RWF_RATE;
+    const freightRwf = freightUsd * RWF_RATE;
+    const insuranceRwf = insuranceUsd * RWF_RATE;
+    const clearingRwf = clearingUsd * RWF_RATE;
+    // Brand new: zero years old, so no depreciation band applies.
+    const duty = item.engineCc ? calcRwandaDuty(vehicleValueRwf, item.engineCc, 0) : null;
+    const totalDutiesRwf = duty ? duty.totalDuties : 0;
+    const grandTotalRwf = vehicleValueRwf + freightRwf + insuranceRwf + totalDutiesRwf + clearingRwf;
+    return {
+      fobUsd, freightUsd, insuranceUsd, clearingUsd,
+      vehicleValueRwf, freightRwf, insuranceRwf, clearingRwf,
+      totalDutiesRwf,
+      dutyKnown: Boolean(duty),
+      grandTotalRwf,
+      grandTotalUsd: Math.round(grandTotalRwf / RWF_RATE),
+      initialDepositRwf: Math.floor(grandTotalRwf / 2),
+      finalBalanceRwf: grandTotalRwf - Math.floor(grandTotalRwf / 2),
+    };
+  })() : null;
 
-  const ageYears = Math.max(0, new Date().getFullYear() - (item.yearEnd || 2022));
-  const duty = calcRwandaDuty(vehicleValueRwf, item.engineCc || 2000, ageYears);
-  const totalDutiesRwf = duty ? duty.totalDuties : 0;
-
-  const grandTotalRwf = vehicleValueRwf + freightRwf + insuranceRwf + totalDutiesRwf + clearingRwf;
-  const grandTotalUsd = Math.round(grandTotalRwf / RWF_RATE);
-
-  const initialDepositRwf = Math.floor(grandTotalRwf / 2);
-  const finalBalanceRwf = grandTotalRwf - initialDepositRwf;
-
-  const images = item.images && item.images.length > 0
-    ? item.images
-    : ['https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=80'];
+  // No stock-photo fallback. A photograph of a different car is worse than no
+  // photograph: it is a claim about what the buyer is getting. BrandMark draws
+  // the marque instead, the same way an unlogo'd brand is drawn everywhere else.
+  const images = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
 
   const handleRequestQuote = async () => {
     if (!user) {
       Alert.alert(
         'Sign In Required',
-        'Please sign in or create an account to request an official import quotation with escrow protection.',
+        'Please sign in or create an account to request an import quotation.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
@@ -98,17 +116,17 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
         origin_country: item.originCountry,
         make: item.make,
         model: item.model,
-        year: item.yearEnd || new Date().getFullYear(),
+        year: new Date().getFullYear(), // brand new: the current model year
         specification: {
           catalog_id: item.id,
           trim: item.trim,
           engine_cc: item.engineCc,
-          fuel_type: item.fuelType,
+          fuel_type: (item.fuelTypes || [])[0] || null,
           transmission: item.transmission,
           drive_side: item.driveSide,
           typical_fob_usd: fobUsd,
           typical_freight_usd: freightUsd,
-          estimated_landed_rwf: grandTotalRwf,
+          estimated_landed_rwf: quote ? quote.grandTotalRwf : null,
           origin_port: item.originPort,
         },
         customer_notes: customerNotes.trim() || `Interested in importing ${item.make} ${item.model} (${item.trim || ''}).`,
@@ -142,16 +160,29 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
             }}
             scrollEventThrottle={16}
           >
-            {images.map((img, idx) => (
-              <View key={idx} style={styles.slide}>
-                <ExpoImage
-                  source={{ uri: transformCloudinaryUrl(img, { width: 900 }) }}
-                  style={styles.slideImage}
-                  contentFit="cover"
-                  priority="high"
-                />
+            {images.length > 0 ? (
+              images.map((img, idx) => (
+                <View key={idx} style={styles.slide}>
+                  <ExpoImage
+                    source={{ uri: transformCloudinaryUrl(img, { width: 900 }) }}
+                    style={styles.slideImage}
+                    contentFit="cover"
+                    priority="high"
+                  />
+                </View>
+              ))
+            ) : (
+              /* Deliberately blank of vehicle imagery. Filling this with a stock
+                 photograph of some other car is what made the old catalogue show
+                 a Hilux for an Atto 3. */
+              <View style={[styles.slide, styles.slideFallback]}>
+                <BrandMark name={item.make} size={72} />
+                <Text style={styles.slideFallbackTitle}>{item.make} {item.model}</Text>
+                <Text style={styles.slideFallbackText}>
+                  Photographs of the exact unit come with your quotation
+                </Text>
               </View>
-            ))}
+            )}
           </ScrollView>
 
           {/* Dots */}
@@ -179,7 +210,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
           <View style={styles.rowBetween}>
             <View style={{ flex: 1 }}>
               <Text style={styles.carTitle}>
-                {item.yearStart && item.yearEnd ? `${item.yearStart}–${item.yearEnd} ` : ''}{item.make} {item.model}
+                {item.make} {item.model}
               </Text>
               {item.trim ? <Text style={styles.carTrim}>{item.trim}</Text> : null}
             </View>
@@ -207,11 +238,15 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
           <View style={styles.specGrid}>
             <View style={styles.specBox}>
               <Text style={styles.specBoxLabel}>Displacement</Text>
-              <Text style={styles.specBoxVal}>{item.engineCc ? `${item.engineCc} cc` : 'EV'}</Text>
+              <Text style={[styles.specBoxVal, !item.engineCc && styles.specBoxValUnknown]}>
+                {item.engineCc ? `${item.engineCc} cc` : 'By trim'}
+              </Text>
             </View>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Fuel Type</Text>
-              <Text style={styles.specBoxVal}>{item.fuelType}</Text>
+              <Text style={styles.specBoxLabel}>Fuel</Text>
+              <Text style={styles.specBoxVal}>
+                {(item.fuelTypes || []).join(' · ') || '—'}
+              </Text>
             </View>
             <View style={styles.specBox}>
               <Text style={styles.specBoxLabel}>Transmission</Text>
@@ -226,8 +261,8 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
               <Text style={styles.specBoxVal}>{item.bodyType}</Text>
             </View>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Year Band</Text>
-              <Text style={styles.specBoxVal}>{item.yearStart}–{item.yearEnd}</Text>
+              <Text style={styles.specBoxLabel}>Condition</Text>
+              <Text style={styles.specBoxVal}>Brand new · 0 km</Text>
             </View>
           </View>
 
@@ -253,57 +288,98 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
               <Ionicons name="calculator-outline" size={20} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.sectionTitle}>Transparent Landed Cost</Text>
-              <Text style={styles.costSub}>All-inclusive estimate delivered to Kigali</Text>
+              <Text style={styles.sectionTitle}>
+                {quote ? 'Landed cost estimate' : 'Pricing'}
+              </Text>
+              <Text style={styles.costSub}>
+                {quote
+                  ? 'Estimate, delivered and cleared in Kigali'
+                  : 'Quoted per order — ask and we will come back to you'}
+              </Text>
             </View>
           </View>
 
-          <View style={styles.costTable}>
-            <View style={styles.costRow}>
-              <Text style={styles.costLabel}>1. Vehicle Purchase Price (FOB)</Text>
-              <Text style={styles.costVal}>{formatRWF(vehicleValueRwf)}</Text>
-            </View>
-            <Text style={styles.costNote}>Source market vehicle cost (${fobUsd.toLocaleString()} USD)</Text>
-
-            <View style={styles.costRow}>
-              <Text style={styles.costLabel}>2. Ocean & Overland Freight</Text>
-              <Text style={styles.costVal}>{formatRWF(freightRwf)}</Text>
-            </View>
-            <Text style={styles.costNote}>Container transport to Kigali Dry Port (${freightUsd.toLocaleString()} USD)</Text>
-
-            <View style={styles.costRow}>
-              <Text style={styles.costLabel}>3. Marine Transit Insurance</Text>
-              <Text style={styles.costVal}>{formatRWF(insuranceRwf)}</Text>
-            </View>
-
-            <View style={styles.costRow}>
-              <Text style={styles.costLabel}>4. RRA Customs Duties & Taxes</Text>
-              <Text style={styles.costVal}>{formatRWF(totalDutiesRwf)}</Text>
-            </View>
-            <Text style={styles.costNote}>
-              Official RRA Tariff: 25% Customs, {duty?.exciseRatePct || 10}% Excise, 18% VAT, 5% WHT, 1.5% Infra
-            </Text>
-
-            <View style={styles.costRow}>
-              <Text style={styles.costLabel}>5. Port Clearance & Registration</Text>
-              <Text style={styles.costVal}>{formatRWF(clearingRwf)}</Text>
-            </View>
-            <Text style={styles.costNote}>RADEX, clearing agents, plate inspection & RRA Yellow Card</Text>
-
-            <View style={styles.totalDivider} />
-
-            <View style={styles.costRowTotal}>
-              <View>
-                <Text style={styles.totalLabel}>Total Landed Price</Text>
-                <Text style={styles.totalUsd}>~${grandTotalUsd.toLocaleString('en-US')} USD</Text>
+          {quote ? (
+            <View style={styles.costTable}>
+              <View style={styles.costRow}>
+                <Text style={styles.costLabel}>1. Vehicle price (FOB)</Text>
+                <Text style={styles.costVal}>{formatRWF(quote.vehicleValueRwf)}</Text>
               </View>
-              <Text style={styles.totalVal}>{formatRWF(grandTotalRwf)}</Text>
+              <Text style={styles.costNote}>Source market vehicle cost (${quote.fobUsd.toLocaleString()} USD)</Text>
+
+              <View style={styles.costRow}>
+                <Text style={styles.costLabel}>2. Ocean & overland freight</Text>
+                <Text style={styles.costVal}>{formatRWF(quote.freightRwf)}</Text>
+              </View>
+              <Text style={styles.costNote}>Container transport to Kigali Dry Port (${quote.freightUsd.toLocaleString()} USD)</Text>
+
+              <View style={styles.costRow}>
+                <Text style={styles.costLabel}>3. Marine transit insurance</Text>
+                <Text style={styles.costVal}>{formatRWF(quote.insuranceRwf)}</Text>
+              </View>
+
+              {/* Duty needs the engine size. Without it the line would be a
+                  guess dressed as a tariff calculation, so it says what is
+                  missing instead of printing a number. */}
+              <View style={styles.costRow}>
+                <Text style={styles.costLabel}>4. RRA customs duties & taxes</Text>
+                <Text style={[styles.costVal, !quote.dutyKnown && styles.costValUnknown]}>
+                  {quote.dutyKnown ? formatRWF(quote.totalDutiesRwf) : 'Not yet known'}
+                </Text>
+              </View>
+              <Text style={styles.costNote}>
+                {quote.dutyKnown
+                  ? 'Official RRA tariff: 25% customs, excise by engine size, 18% VAT, 5% WHT, 1.5% infrastructure'
+                  : 'Depends on the engine size of the trim you choose — confirmed with your quotation.'}
+              </Text>
+
+              <View style={styles.costRow}>
+                <Text style={styles.costLabel}>5. Port clearance & registration</Text>
+                <Text style={styles.costVal}>{formatRWF(quote.clearingRwf)}</Text>
+              </View>
+              <Text style={styles.costNote}>RADEX, clearing agents, plate inspection & RRA yellow card</Text>
+
+              <View style={styles.totalDivider} />
+
+              <View style={styles.costRowTotal}>
+                <View>
+                  <Text style={styles.totalLabel}>
+                    {quote.dutyKnown ? 'Estimated landed price' : 'Estimated, before duty'}
+                  </Text>
+                  <Text style={styles.totalUsd}>~${quote.grandTotalUsd.toLocaleString('en-US')} USD</Text>
+                </View>
+                <Text style={styles.totalVal}>{formatRWF(quote.grandTotalRwf)}</Text>
+              </View>
             </View>
-          </View>
+          ) : (
+            /* No price, and no invented one. The catalogue this replaced filled
+               the gap with $15,000 and ran the duty maths on it, which turned a
+               blank into a figure a buyer could plan around. */
+            <View style={styles.noQuoteBox}>
+              <Text style={styles.noQuoteTitle}>We quote this model per order</Text>
+              <Text style={styles.noQuoteBody}>
+                What a brand-new {item.make} {item.model} costs landed in Kigali depends on
+                the trim, the exporter and the shipping week. Rather than show you a
+                number we would have to take back, we price your exact specification
+                and send it to you.
+              </Text>
+              <View style={styles.noQuoteList}>
+                {[
+                  'Exact trim, colour and options you choose',
+                  'FOB price from the exporter, freight and insurance',
+                  'RRA duty, clearance and yellow-card registration',
+                ].map((line) => (
+                  <View key={line} style={styles.noQuoteItem}>
+                    <Ionicons name="checkmark-circle-outline" size={15} color={colors.green} />
+                    <Text style={styles.noQuoteItemText}>{line}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Bank Escrow Guarantee Card */}
-        <EscrowGuaranteeCard />
 
         {/* 4-Step Sourcing Stepper */}
         <View style={styles.sectionCard}>
@@ -328,9 +404,11 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
                 <Text style={styles.stepNumText}>2</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>Bank Escrow Deposit (50%)</Text>
+                <Text style={styles.stepTitle}>Deposit to the exporter (50%)</Text>
                 <Text style={styles.stepDesc}>
-                  Deposit {formatRWF(initialDepositRwf)} into the partner bank escrow account. Funds are safeguarded by law.
+                  {quote
+                    ? `You pay ${formatRWF(quote.initialDepositRwf)} directly to the exporter and upload the bank transfer proof, which we check before sourcing begins.`
+                    : 'You pay half directly to the exporter and upload the bank transfer proof, which we check before sourcing begins.'}
                 </Text>
               </View>
             </View>
@@ -356,9 +434,11 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
                 <Text style={styles.stepNumText}>4</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>Kigali Inspection & Final Handover (50%)</Text>
+                <Text style={styles.stepTitle}>Kigali arrival & final payment (50%)</Text>
                 <Text style={styles.stepDesc}>
-                  Inspect and test drive in Kigali. Once approved, the remaining {formatRWF(finalBalanceRwf)} is settled and yellow card handed over.
+                  {quote
+                    ? `Inspect the vehicle in Kigali, then settle the remaining ${formatRWF(quote.finalBalanceRwf)} with the exporter and take the yellow card.`
+                    : 'Inspect the vehicle in Kigali, then settle the balance with the exporter and take the yellow card.'}
                 </Text>
               </View>
             </View>
@@ -371,8 +451,12 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
       {/* Bottom Sticky CTA Bar */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomPriceCol}>
-          <Text style={styles.bottomPriceLabel}>Est. Landed in Kigali</Text>
-          <Text style={styles.bottomPriceRwf}>{formatRWF(grandTotalRwf)}</Text>
+          <Text style={styles.bottomPriceLabel}>
+            {quote ? 'Est. landed in Kigali' : 'Brand new · 0 km'}
+          </Text>
+          <Text style={styles.bottomPriceRwf}>
+            {quote ? formatRWF(quote.grandTotalRwf) : 'Price on request'}
+          </Text>
         </View>
 
         <Pressable
@@ -445,6 +529,26 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  specBoxValUnknown: { color: colors.textMuted },
+
+  slideFallback: { alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.surfaceAlt, paddingHorizontal: 32 },
+  slideFallbackTitle: { ...typography.h4, color: colors.textPrimary },
+  slideFallbackText: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
+
+  costValUnknown: { color: colors.textMuted, fontFamily: fonts.medium },
+  noQuoteBox: {
+    padding: 16,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  noQuoteTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  noQuoteBody: { ...typography.body, color: colors.textSecondary, marginTop: 6, lineHeight: 21 },
+  noQuoteList: { marginTop: 14, gap: 8 },
+  noQuoteItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  noQuoteItemText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 18 },
+
   scroll: {
     paddingBottom: 40,
   },

@@ -6,7 +6,6 @@ export default {
   get: (id) => api.get(`/imports/${id}`),
   getCatalog: (params) => api.get('/imports/catalog', { params }),
   getCatalogItem: (id) => api.get(`/imports/catalog/${id}`),
-  getEscrowGuarantee: () => api.get('/imports/escrow-guarantee'),
   create: (data) => api.post('/imports', data),
   acceptAgreement: (id) => api.post(`/imports/${id}/accept-agreement`, {}),
   submitPaymentProof: (orderId, paymentId, bankReference, proof) => {
