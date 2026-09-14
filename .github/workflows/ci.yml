@@ -141,6 +141,16 @@ jobs:
       - name: The bundle survives being loaded
         run: node scripts/check-module-scope.js
 
+      # And one level deeper. The step above evaluates each module's top level,
+      # so it catches a missing import in a StyleSheet but not the identical
+      # mistake inside a component body — that only throws when the code path
+      # renders. `useMemo` used without being imported in AppContext shipped
+      # exactly that way: AppProvider wraps every screen, so the whole app hit
+      # ErrorBoundary on launch. This resolves every identifier against the
+      # scope chain, which is the whole class at any depth.
+      - name: Every identifier resolves
+        run: node scripts/check-undefined-refs.js
+
       # The release preflight was only ever run by hand, which is the same as
       # not having it: it guards against leaked provider keys in committed
       # templates, retired transaction APIs coming back, and — since the OTA

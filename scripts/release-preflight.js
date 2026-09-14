@@ -173,6 +173,17 @@ if (moduleScope.status !== 0) {
   );
 }
 
+const undefinedRefs = require('child_process').spawnSync(
+  process.execPath, [path.join(__dirname, 'check-undefined-refs.js')],
+  { cwd: root, encoding: 'utf8' },
+);
+if (undefinedRefs.status !== 0) {
+  failures.push(
+    'The app uses a name it never imports, so that code path throws the first '
+    + 'time it runs. Run `node scripts/check-undefined-refs.js` for the file and line.',
+  );
+}
+
 if (failures.length) {
   console.error('Release preflight failed:');
   for (const failure of failures) console.error(`- ${failure}`);
