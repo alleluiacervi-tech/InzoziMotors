@@ -14,6 +14,7 @@ const { sendImportUpdate } = require('../lib/mailer');
 const { UPLOAD_DIR } = require('../lib/storage');
 const { issueImportPack, issueImportReceipt } = require('../lib/documents/import-documents');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
+const { rendersEnabled, resolveRender } = require('../lib/vehicle-renders');
 
 const router = express.Router();
 
@@ -230,7 +231,7 @@ router.get('/catalog', async (req, res) => {
       `SELECT id, make, model, body_type, fuel_types, condition, trim,
               engine_cc, transmission, drive_side, origin_country, origin_port,
               typical_fob_usd, typical_freight_usd, estimated_transit_days,
-              images, highlights, description, display_order
+              images, render_url, highlights, description, display_order
          FROM global_import_catalog
         WHERE ${conditions.join(' AND ')}
         ORDER BY display_order ASC, make ASC, model ASC
@@ -250,7 +251,7 @@ router.get('/catalog/:id', requireUuid('id'), async (req, res) => {
       `SELECT id, make, model, body_type, fuel_types, condition, trim,
               engine_cc, transmission, drive_side, origin_country, origin_port,
               typical_fob_usd, typical_freight_usd, estimated_transit_days,
-              images, highlights, description, display_order
+              images, render_url, highlights, description, display_order
          FROM global_import_catalog
         WHERE id = $1 AND active = TRUE`,
       [req.params.id]
@@ -274,6 +275,72 @@ router.get('/catalog/:id', requireUuid('id'), async (req, res) => {
 // could be expected to honour. Import payment milestones remain what they
 // always were: the buyer pays the exporter, and an admin reviews the uploaded
 // transfer proof.
+
+// Resolve studio renders for catalogue models.
+//
+// Deliberately a button an admin presses rather than something that runs on a
+// timer or on read. It costs one upstream request per model and the answer
+// changes about as often as a manufacturer launches a car, so re-asking on a
+// schedule would spend the licence on re-confirming what we already know.
+//
+// Safe to run repeatedly: it only asks about rows that have never been asked
+// or that failed for a transient reason, so a run interrupted halfway is
+// resumed by running it again rather than started over.
+router.post('/admin/catalog/resolve-renders', requireAdmin, async (req, res) => {
+  if (!rendersEnabled()) {
+    return res.status(503).json({
+      error: 'Vehicle renders are not configured',
+      detail: 'Set VEHICLE_RENDER_CUSTOMER to a commercial key. Without one the '
+            + 'library returns watermarked demo images, so this stays switched off.',
+    });
+  }
+
+  // Bounded per call. 233 sequential upstream requests would hold an admin
+  // request open for minutes and time out behind the proxy; the admin runs it
+  // again to continue, and the status column makes that resumable.
+  const limit = Math.min(Math.max(Number(req.body?.limit) || 60, 1), 120);
+  const retryFailures = req.body?.retry_failures !== false;
+  const statuses = retryFailures
+    ? ['pending', 'unreachable', 'timeout']
+    : ['pending'];
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, make, model
+         FROM global_import_catalog
+        WHERE active = TRUE AND render_status = ANY($1)
+        ORDER BY make, display_order
+        LIMIT $2`,
+      [statuses, limit]
+    );
+
+    const counts = { found: 0, no_match: 0, unreachable: 0, timeout: 0 };
+    for (const row of rows) {
+      const { found, url, reason } = await resolveRender(row.make, row.model);
+      const status = found ? 'found' : (reason === 'found' ? 'no_match' : reason);
+      counts[status] = (counts[status] || 0) + 1;
+      await pool.query(
+        `UPDATE global_import_catalog
+            SET render_url = $2, render_status = $3, render_checked_at = NOW(), updated_at = NOW()
+          WHERE id = $1`,
+        [row.id, url, status]
+      );
+    }
+
+    const { rows: [tally] } = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE render_status = 'found')::int    AS resolved,
+              COUNT(*) FILTER (WHERE render_status = 'pending')::int  AS remaining,
+              COUNT(*)::int                                           AS total
+         FROM global_import_catalog WHERE active = TRUE`
+    );
+
+    log.info('catalog renders resolved', { checked: rows.length, ...counts });
+    res.json({ checked: rows.length, ...counts, ...tally });
+  } catch (err) {
+    log.error('catalog render resolve error', { error: err.message });
+    res.status(500).json({ error: 'Could not resolve vehicle renders' });
+  }
+});
 
 router.get('/admin/all', requireAdmin, async (req, res) => {
   const status = clean(req.query.status, 40);

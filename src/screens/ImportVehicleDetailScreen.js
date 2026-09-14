@@ -95,7 +95,8 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
   // No stock-photo fallback. A photograph of a different car is worse than no
   // photograph: it is a claim about what the buyer is getting. BrandMark draws
   // the marque instead, the same way an unlogo'd brand is drawn everywhere else.
-  const images = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
+  const uploaded = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
+  const images = uploaded.length ? uploaded : (item.renderUrl ? [item.renderUrl] : []);
 
   const handleRequestQuote = async () => {
     if (!user) {
