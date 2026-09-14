@@ -33,7 +33,7 @@ const COUNTRY_FLAGS = {
 };
 
 export default function ImportVehicleDetailScreen({ navigation, route }) {
-  const { user, t } = useApp();
+  const { user, t, brandLogo } = useApp();
   const item = route.params?.item;
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -95,7 +95,8 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
   // No stock-photo fallback. A photograph of a different car is worse than no
   // photograph: it is a claim about what the buyer is getting. BrandMark draws
   // the marque instead, the same way an unlogo'd brand is drawn everywhere else.
-  const images = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
+  const uploaded = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
+  const images = uploaded.length ? uploaded : (item.renderUrl ? [item.renderUrl] : []);
 
   const handleRequestQuote = async () => {
     if (!user) {
@@ -176,7 +177,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
                  photograph of some other car is what made the old catalogue show
                  a Hilux for an Atto 3. */
               <View style={[styles.slide, styles.slideFallback]}>
-                <BrandMark name={item.make} size={72} />
+                <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={72} />
                 <Text style={styles.slideFallbackTitle}>{item.make} {item.model}</Text>
                 <Text style={styles.slideFallbackText}>
                   Photographs of the exact unit come with your quotation

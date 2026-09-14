@@ -161,9 +161,20 @@ test('GET /makes is public, cached, and carries only what a client renders', asy
   const res = await api().get('/makes').expect(200);
   assert.ok(Array.isArray(res.body) && res.body.length >= 50);
   assert.match(res.headers['cache-control'], /max-age=\d+/);
-  // Not the raw row: no id, no aliases, no `active`. The car route once
-  // published every future column by selecting *; this list does not repeat it.
-  assert.deepEqual(Object.keys(res.body[0]).sort(), ['logo_url', 'name', 'slug']);
+  // Not the raw row: no id, no `active`. The car route once published every
+  // future column by selecting *; this list does not repeat it.
+  //
+  // `aliases` IS carried, and the exclusion it replaces was a real bug rather
+  // than a tidy contract. Clients match a catalogue's spelling of a marque
+  // against this list to find its logo, and aliases are what make "benz",
+  // "VW" and "Mercedes-Benz" resolve to one row. Withheld, every client
+  // iterating `m.aliases || []` iterated nothing, so a logo an operator
+  // uploaded for Mercedes-Benz appeared only on rows spelled exactly that.
+  assert.deepEqual(Object.keys(res.body[0]).sort(), ['aliases', 'logo_url', 'name', 'slug']);
+  assert.ok(
+    res.body.some((m) => Array.isArray(m.aliases) && m.aliases.length),
+    'at least one brand must carry its aliases, or client-side matching is blind again',
+  );
 });
 
 test('an admin adds a brand, sets a logo, and switches it off without touching listings', async () => {

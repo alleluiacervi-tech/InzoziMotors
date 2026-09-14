@@ -19,6 +19,7 @@ import BrandMark from '../components/BrandMark';
 import { EmptyState } from '../components/StateViews';
 import { colors, radius, fonts, spacing, typography, shadows } from '../theme';
 import { importCatalogMakes, searchImportCatalog } from '../data/importCatalog';
+import { useApp } from '../context/AppContext';
 
 const ORIGIN_LABEL = {
   'South Korea': 'South Korea',
@@ -26,7 +27,7 @@ const ORIGIN_LABEL = {
   China: 'China',
 };
 
-function BrandTile({ entry, onPress }) {
+function BrandTile({ entry, logoUrl, onPress }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
@@ -34,7 +35,7 @@ function BrandTile({ entry, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={`${entry.make}, ${entry.modelCount} models from ${entry.originCountry}`}
     >
-      <BrandMark name={entry.make} size={44} />
+      <BrandMark name={entry.make} logoUrl={logoUrl} size={44} />
       <Text style={styles.tileName} numberOfLines={1}>{entry.make}</Text>
       <Text style={styles.tileMeta} numberOfLines={1}>
         {entry.modelCount} {entry.modelCount === 1 ? 'model' : 'models'}
@@ -47,6 +48,7 @@ function BrandTile({ entry, onPress }) {
 }
 
 export default function ImportBrandsScreen({ navigation }) {
+  const { brandLogo } = useApp();
   const [query, setQuery] = useState('');
   const makes = useMemo(() => importCatalogMakes(), []);
 
@@ -96,7 +98,9 @@ export default function ImportBrandsScreen({ navigation }) {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => <BrandTile entry={item} onPress={() => openBrand(item.make)} />}
+        renderItem={({ item }) => (
+          <BrandTile entry={item} logoUrl={brandLogo(item.make)} onPress={() => openBrand(item.make)} />
+        )}
         ListHeaderComponent={
           <View style={styles.intro}>
             <Text style={styles.introText}>
@@ -118,7 +122,7 @@ export default function ImportBrandsScreen({ navigation }) {
                   style={styles.modelRow}
                   onPress={() => navigation.navigate('ImportVehicleDetail', { item: m })}
                 >
-                  <BrandMark name={m.make} size={30} />
+                  <BrandMark name={m.make} logoUrl={brandLogo(m.make)} size={30} />
                   <View style={styles.modelRowBody}>
                     <Text style={styles.modelRowName}>{m.make} {m.model}</Text>
                     <Text style={styles.modelRowMeta}>

@@ -6,6 +6,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
 import { transformCloudinaryUrl } from '../utils/photo';
 import BrandMark from './BrandMark';
+import { useApp } from '../context/AppContext';
 
 const COUNTRY_FLAGS = {
   'South Korea': '🇰🇷',
@@ -15,6 +16,7 @@ const COUNTRY_FLAGS = {
 };
 
 export default function ImportCarCard({ item, onPress }) {
+  const { brandLogo } = useApp();
   const flag = COUNTRY_FLAGS[item.originCountry] || '🌐';
 
   // A landed cost only when there is a price to land.
@@ -32,9 +34,11 @@ export default function ImportCarCard({ item, onPress }) {
     return { rwf, usd: Math.round(rwf / RWF_RATE) };
   })() : null;
 
-  // No stock-photo fallback: a picture of a different car is a claim about
-  // what the buyer is getting. BrandMark draws the marque instead.
-  const mainImage = (Array.isArray(item.images) && item.images[0]) || null;
+  // An operator's own photograph of the actual unit first — it is the better
+  // picture and somebody went to the trouble of taking it. Then the resolved
+  // studio render. Then nothing: a picture of a different car is a claim about
+  // what the buyer is getting, so BrandMark draws the marque instead.
+  const mainImage = (Array.isArray(item.images) && item.images[0]) || item.renderUrl || null;
   const optimizedImage = mainImage ? transformCloudinaryUrl(mainImage, { width: 640 }) : null;
 
   return (
@@ -55,7 +59,7 @@ export default function ImportCarCard({ item, onPress }) {
           />
         ) : (
           <View style={styles.imageFallback}>
-            <BrandMark name={item.make} size={48} />
+            <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={48} />
             <Text style={styles.imageFallbackText}>Photos on request</Text>
           </View>
         )}

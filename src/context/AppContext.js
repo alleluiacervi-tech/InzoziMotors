@@ -1735,6 +1735,31 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  // One brand lookup for the whole app.
+  //
+  // HomeScreen grew its own name+alias index and every other screen simply did
+  // without, which is why a logo an operator had already uploaded appeared on
+  // the filter sheet and nowhere else. Resolving in one place also makes the
+  // aliases in vehicle_makes earn their keep everywhere: "benz", "VW" and
+  // "Mercedes" all land on the same row, so a logo uploaded once is found
+  // however a catalogue happens to spell the marque.
+  const findMake = useMemo(() => {
+    const index = new Map();
+    for (const m of makes) {
+      index.set(String(m.name || '').toLowerCase(), m);
+      for (const alias of m.aliases || []) index.set(String(alias).toLowerCase(), m);
+    }
+    return (name) => index.get(String(name || '').trim().toLowerCase()) || null;
+  }, [makes]);
+
+  // The logo on its own, which is what nearly every caller wants. Undefined
+  // rather than null: BrandMark reads a missing logo as "draw the lettermark",
+  // and that is the correct rendering until an operator uploads one.
+  const brandLogo = useMemo(
+    () => (name) => findMake(name)?.logo_url || undefined,
+    [findMake],
+  );
+
   const value = {
     // Currency — one rate, one place, every price follows it
     fx,
@@ -1755,7 +1780,7 @@ export function AppProvider({ children }) {
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
-    fetchCarDetail, searchCars, makes,
+    fetchCarDetail, searchCars, makes, findMake, brandLogo,
     homeMode, setHomeMode, rentalCars, rentalInquiries, sendRentalInquiry, cancelRentalInquiry,
     recentlyViewedIds, recordCarView,
     currency, toggleCurrency,

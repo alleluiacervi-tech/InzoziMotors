@@ -23,7 +23,18 @@ router.get('/', async (_req, res) => {
   // filters), and ids are of no use to a client that addresses brands by slug.
   // Sending only what is rendered keeps this payload from silently growing a
   // column the way SELECT c.* did on the car route.
-  res.json(makes.map(({ name, slug, logo_url }) => ({ name, slug, logo_url })));
+  //
+  // `aliases` IS sent, and has to be. It is what collapses "benz", "Mercedes"
+  // and "Mercedes-Benz" onto one row, and the clients are where that matching
+  // happens — a catalogue spells a marque however its source spelled it, then
+  // asks this list for the logo. Withholding the column did not make the
+  // payload smaller so much as make the lookup silently wrong: HomeScreen has
+  // been iterating `m.aliases || []` over an undefined field, so an operator
+  // who uploaded a Mercedes logo saw it on rows spelled exactly "Mercedes" and
+  // nowhere else.
+  res.json(makes.map(({ name, slug, logo_url, aliases }) => ({
+    name, slug, logo_url, aliases: aliases || [],
+  })));
 });
 
 module.exports = router;
