@@ -19,6 +19,7 @@ import BackHeader from '../components/BackHeader';
 import BrandMark from '../components/BrandMark';
 import { colors, radius, fonts, spacing, typography, shadows } from '../theme';
 import { importCatalogModelsForMake } from '../data/importCatalog';
+import { useApp } from '../context/AppContext';
 
 // Small to large, then the commercial shapes. A buyer scanning a marque reads
 // down a size gradient; alphabetical would interleave a pickup with a hatchback.
@@ -63,6 +64,7 @@ function ModelRow({ item, onPress }) {
 }
 
 export default function ImportBrandModelsScreen({ route, navigation }) {
+  const { brandLogo } = useApp();
   const make = route?.params?.make;
   const models = useMemo(() => importCatalogModelsForMake(make), [make]);
 
@@ -96,7 +98,7 @@ export default function ImportBrandModelsScreen({ route, navigation }) {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.header}>
-            <BrandMark name={make} size={52} />
+            <BrandMark name={make} logoUrl={brandLogo(make)} size={52} />
             <View style={styles.headerText}>
               <Text style={styles.headerCount}>
                 {models.length} {models.length === 1 ? 'model' : 'models'}

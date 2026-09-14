@@ -6,6 +6,7 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
 import { transformCloudinaryUrl } from '../utils/photo';
 import BrandMark from './BrandMark';
+import { useApp } from '../context/AppContext';
 
 const COUNTRY_FLAGS = {
   'South Korea': '🇰🇷',
@@ -15,6 +16,7 @@ const COUNTRY_FLAGS = {
 };
 
 export default function ImportCarCard({ item, onPress }) {
+  const { brandLogo } = useApp();
   const flag = COUNTRY_FLAGS[item.originCountry] || '🌐';
 
   // A landed cost only when there is a price to land.
@@ -55,7 +57,7 @@ export default function ImportCarCard({ item, onPress }) {
           />
         ) : (
           <View style={styles.imageFallback}>
-            <BrandMark name={item.make} size={48} />
+            <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={48} />
             <Text style={styles.imageFallbackText}>Photos on request</Text>
           </View>
         )}

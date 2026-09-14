@@ -555,7 +555,7 @@ export default function HomeScreen({ navigation }) {
                 accessibilityRole="button"
                 accessibilityLabel={`${item.make}, ${item.modelCount} models`}
               >
-                <BrandMark name={item.make} size={40} />
+                <BrandMark name={item.make} logoUrl={brandRow(item.make)?.logo_url} size={40} />
                 <Text style={styles.importBrandName} numberOfLines={1}>{item.make}</Text>
                 <Text style={styles.importBrandCount}>{item.modelCount} models</Text>
               </Pressable>
