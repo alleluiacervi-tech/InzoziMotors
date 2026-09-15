@@ -55,6 +55,14 @@ export default function useImportCatalog(make) {
         id: row.id || item.id,
         renderUrl: row.render_url || undefined,
         images: Array.isArray(row.images) && row.images.length ? row.images : item.images,
+        // Only ever present on an approved Commons photo -- see the photo
+        // review queue (migration 0047). CC BY / BY-SA require crediting the
+        // photographer and licence, so these ride along wherever the image
+        // does rather than needing a second fetch on the detail screen.
+        imageCreditAuthor: row.image_credit_author || undefined,
+        imageCreditLicense: row.image_credit_license || undefined,
+        imageCreditLicenseUrl: row.image_credit_license_url || undefined,
+        imageCreditSourceUrl: row.image_credit_source_url || undefined,
         typicalFobUsd: row.typical_fob_usd ?? undefined,
         typicalFreightUsd: row.typical_freight_usd ?? undefined,
         engineCc: row.engine_cc ?? undefined,

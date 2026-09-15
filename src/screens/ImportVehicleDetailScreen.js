@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -204,6 +205,24 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
               {flag} Direct Import from {item.originCountry}
             </Text>
           </View>
+
+          {/* Photo credit -- present only on an approved Commons photograph
+              (see the photo review queue). CC BY / BY-SA require naming the
+              photographer, the licence, and a link back to the source; this is
+              that disclosure, not decoration. An operator's own upload or a
+              resolved render carries no author, so this renders nothing then. */}
+          {item.imageCreditAuthor ? (
+            <Pressable
+              onPress={() => item.imageCreditSourceUrl && Linking.openURL(item.imageCreditSourceUrl)}
+              style={styles.photoCreditRow}
+              accessibilityRole="link"
+              accessibilityLabel={`Photo by ${item.imageCreditAuthor}, ${item.imageCreditLicense || 'licensed'}`}
+            >
+              <Text style={styles.photoCreditText} numberOfLines={1}>
+                Photo: {item.imageCreditAuthor} · {item.imageCreditLicense || 'Wikimedia Commons'}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
 
         {/* Title & Overview Card */}
@@ -535,6 +554,17 @@ const styles = StyleSheet.create({
   slideFallback: { alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.surfaceAlt, paddingHorizontal: 32 },
   slideFallbackTitle: { ...typography.h4, color: colors.textPrimary },
   slideFallbackText: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
+  photoCreditRow: {
+    position: 'absolute',
+    right: 12,
+    bottom: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(20,17,15,0.55)',
+    maxWidth: '70%',
+  },
+  photoCreditText: { fontFamily: fonts.medium, fontSize: 10.5, color: '#FFFFFF' },
 
   costValUnknown: { color: colors.textMuted, fontFamily: fonts.medium },
   noQuoteBox: {
