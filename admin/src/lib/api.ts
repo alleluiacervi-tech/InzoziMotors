@@ -889,6 +889,38 @@ export const api = {
   uploadMakeLogo: (id: string, data: FormData) =>
     request<MakeRow>(`/admin/makes/${id}/logo`, { method: 'POST', body: data }),
 
+  // ── Import catalogue photography ────────────────────────────────────────
+  // A propose/approve queue, not an automatic pipeline. A random sample of
+  // this catalogue's own 233 models put the right car in Commons' top result
+  // 38 times out of 44 -- good, not perfect, and "not perfect" is the exact
+  // failure the catalogue was rebuilt to remove. So findImageCandidates only
+  // STORES what it finds; nothing reaches a buyer until approveImage.
+
+  findImageCandidates: (limit = 25) =>
+    request<{
+      checked: number; with_candidates: number; with_none: number
+      awaiting_review: number; not_yet_searched: number; approved: number; skipped: number; total: number
+    }>('/imports/admin/catalog/find-images', { method: 'POST', body: JSON.stringify({ limit }) }),
+
+  imageQueue: () => request<{
+    items: {
+      id: string; make: string; model: string; body_type: string; origin_country: string
+      candidates: {
+        id: string; image_url: string; thumb_url: string; page_url: string
+        title: string; author: string | null; license_name: string | null; license_url: string | null
+      }[]
+    }[]
+    awaiting_review: number; not_yet_searched: number; approved: number; skipped: number; total: number
+  }>('/imports/admin/catalog/image-queue'),
+
+  approveImage: (catalogId: string, candidateId: string) =>
+    request<any>(`/imports/admin/catalog/${catalogId}/approve-image`, {
+      method: 'POST', body: JSON.stringify({ candidate_id: candidateId }),
+    }),
+
+  skipImage: (catalogId: string) =>
+    request<any>(`/imports/admin/catalog/${catalogId}/skip-image`, { method: 'POST', body: JSON.stringify({}) }),
+
   // ── Inspection centers ─────────────────────────────────────────────────────
   // Booking capacity is enforced against daily_capacity on every scheduling
   // request, so this is the difference between changing a centre's capacity in a

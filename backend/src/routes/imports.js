@@ -15,6 +15,7 @@ const { UPLOAD_DIR } = require('../lib/storage');
 const { issueImportPack, issueImportReceipt } = require('../lib/documents/import-documents');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
 const { rendersEnabled, fetchRender, slug: renderSlug } = require('../lib/vehicle-renders');
+const { findCandidates } = require('../lib/commons-images');
 const { storage } = require('../lib/storage');
 const { publicApiOrigin } = require('../lib/public-origin');
 
@@ -233,7 +234,8 @@ router.get('/catalog', async (req, res) => {
       `SELECT id, make, model, body_type, fuel_types, condition, trim,
               engine_cc, transmission, drive_side, origin_country, origin_port,
               typical_fob_usd, typical_freight_usd, estimated_transit_days,
-              images, render_url, highlights, description, display_order
+              images, render_url, highlights, description, display_order,
+              image_credit_author, image_credit_license, image_credit_license_url, image_credit_source_url
          FROM global_import_catalog
         WHERE ${conditions.join(' AND ')}
         ORDER BY display_order ASC, make ASC, model ASC
@@ -253,7 +255,8 @@ router.get('/catalog/:id', requireUuid('id'), async (req, res) => {
       `SELECT id, make, model, body_type, fuel_types, condition, trim,
               engine_cc, transmission, drive_side, origin_country, origin_port,
               typical_fob_usd, typical_freight_usd, estimated_transit_days,
-              images, render_url, highlights, description, display_order
+              images, render_url, highlights, description, display_order,
+              image_credit_author, image_credit_license, image_credit_license_url, image_credit_source_url
          FROM global_import_catalog
         WHERE id = $1 AND active = TRUE`,
       [req.params.id]
@@ -362,6 +365,185 @@ router.post('/admin/catalog/resolve-renders', requireAdmin, async (req, res) => 
   } catch (err) {
     log.error('catalog render resolve error', { error: err.message });
     res.status(500).json({ error: 'Could not resolve vehicle renders' });
+  }
+});
+
+// ── The photo review queue ───────────────────────────────────────────────────
+//
+// Three routes, one shape: find candidates, list what needs a decision,
+// record the decision. Nothing here writes to `images` except the approve
+// route, and that only after a human looked at the specific picture.
+
+// Find candidate photographs for models that have none yet.
+//
+// Bounded and resumable, the same shape as resolve-renders: Commons is a
+// shared public service, not ours to hammer, so this runs in small batches
+// with a short pause between requests rather than firing 233 at once. A run
+// interrupted halfway is continued by calling it again -- it only asks about
+// rows still at image_status='pending'.
+router.post('/admin/catalog/find-images', requireAdmin, async (req, res) => {
+  const limit = Math.min(Math.max(Number(req.body?.limit) || 25, 1), 50);
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, make, model
+         FROM global_import_catalog
+        WHERE active = TRUE AND image_status = 'pending' AND cardinality(images) = 0
+        ORDER BY make, display_order
+        LIMIT $1`,
+      [limit]
+    );
+
+    let withCandidates = 0;
+    let withNone = 0;
+
+    for (let i = 0; i < rows.length; i += 1) {
+      const row = rows[i];
+      const candidates = await findCandidates(row.make, row.model, { limit: 3 });
+      if (candidates.length) withCandidates += 1; else withNone += 1;
+
+      await withTransaction(async (client) => {
+        for (const c of candidates) {
+          await client.query(
+            `INSERT INTO catalog_image_candidates
+               (catalog_id, source, image_url, thumb_url, page_url, title, author, license_name, license_url, width, height)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+            [row.id, c.source, c.image_url, c.thumb_url, c.page_url, c.title, c.author, c.license_name, c.license_url, c.width, c.height]
+          );
+        }
+        // 'searched' whether or not anything was found: a model with zero
+        // candidates still needs a human decision (skip, or upload one), and
+        // must not be re-queried on every call after this one.
+        await client.query(
+          `UPDATE global_import_catalog SET image_status = 'searched', updated_at = NOW() WHERE id = $1`,
+          [row.id]
+        );
+      });
+
+      // A short, polite pause between requests -- Commons is a shared public
+      // service the whole web relies on, not a dedicated resource of ours.
+      if (i < rows.length - 1) await new Promise((r) => setTimeout(r, 350));
+    }
+
+    const { rows: [tally] } = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE image_status = 'searched')::int AS awaiting_review,
+              COUNT(*) FILTER (WHERE image_status = 'pending')::int  AS not_yet_searched,
+              COUNT(*) FILTER (WHERE image_status = 'approved')::int AS approved,
+              COUNT(*) FILTER (WHERE image_status = 'skipped')::int  AS skipped,
+              COUNT(*)::int                                          AS total
+         FROM global_import_catalog WHERE active = TRUE`
+    );
+
+    log.info('catalog image search', { checked: rows.length, withCandidates, withNone });
+    res.json({ checked: rows.length, with_candidates: withCandidates, with_none: withNone, ...tally });
+  } catch (err) {
+    log.error('catalog image search error', { error: err.message });
+    res.status(500).json({ error: 'Could not search for catalogue photographs' });
+  }
+});
+
+// The queue itself: every model awaiting a decision, each with its candidates.
+router.get('/admin/catalog/image-queue', requireAdmin, async (req, res) => {
+  try {
+    const { rows: models } = await pool.query(
+      `SELECT id, make, model, body_type, origin_country, image_status
+         FROM global_import_catalog
+        WHERE active = TRUE AND image_status = 'searched'
+        ORDER BY make, display_order`
+    );
+    const ids = models.map((m) => m.id);
+    const { rows: candidates } = ids.length
+      ? await pool.query(
+          `SELECT id, catalog_id, image_url, thumb_url, page_url, title, author, license_name, license_url
+             FROM catalog_image_candidates
+            WHERE catalog_id = ANY($1) AND status = 'pending'
+            ORDER BY created_at ASC`,
+          [ids]
+        )
+      : { rows: [] };
+
+    const byModel = new Map(models.map((m) => [m.id, { ...m, candidates: [] }]));
+    for (const c of candidates) byModel.get(c.catalog_id)?.candidates.push(c);
+
+    const { rows: [tally] } = await pool.query(
+      `SELECT COUNT(*) FILTER (WHERE image_status = 'searched')::int AS awaiting_review,
+              COUNT(*) FILTER (WHERE image_status = 'pending')::int  AS not_yet_searched,
+              COUNT(*) FILTER (WHERE image_status = 'approved')::int AS approved,
+              COUNT(*) FILTER (WHERE image_status = 'skipped')::int  AS skipped,
+              COUNT(*)::int                                          AS total
+         FROM global_import_catalog WHERE active = TRUE`
+    );
+
+    res.json({ items: [...byModel.values()], ...tally });
+  } catch (err) {
+    log.error('image queue load error', { error: err.message });
+    res.status(500).json({ error: 'Could not load the photo review queue' });
+  }
+});
+
+// A human confirms one candidate. This is the only place a Commons URL
+// reaches `images` -- the one row a buyer's phone will ever request.
+router.post('/admin/catalog/:id/approve-image', requireAdmin, requireUuid('id'), async (req, res) => {
+  const candidateId = clean(req.body?.candidate_id, 100);
+  if (!candidateId) return res.status(400).json({ error: 'candidate_id is required' });
+
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows: [candidate] } = await client.query(
+        `SELECT * FROM catalog_image_candidates WHERE id = $1 AND catalog_id = $2 AND status = 'pending' FOR UPDATE`,
+        [candidateId, req.params.id]
+      );
+      if (!candidate) return null;
+
+      const { rows: [updated] } = await client.query(
+        `UPDATE global_import_catalog
+            SET images = ARRAY[$2::text],
+                image_status = 'approved',
+                image_credit_author = $3,
+                image_credit_license = $4,
+                image_credit_license_url = $5,
+                image_credit_source_url = $6,
+                updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, make, model, images, image_status, image_credit_author, image_credit_license, image_credit_license_url, image_credit_source_url`,
+        [req.params.id, candidate.image_url, candidate.author, candidate.license_name, candidate.license_url, candidate.page_url]
+      );
+
+      await client.query(`UPDATE catalog_image_candidates SET status = 'approved' WHERE id = $1`, [candidateId]);
+      await client.query(
+        `UPDATE catalog_image_candidates SET status = 'rejected' WHERE catalog_id = $1 AND id != $2 AND status = 'pending'`,
+        [req.params.id, candidateId]
+      );
+
+      return updated;
+    });
+
+    if (!result) return res.status(404).json({ error: 'That candidate is no longer available for this model' });
+    res.json(result);
+  } catch (err) {
+    log.error('approve image error', { error: err.message });
+    res.status(500).json({ error: 'Could not approve that photograph' });
+  }
+});
+
+// No candidate was right (or none were found). Leaves the lettermark, which
+// is already a finished-looking state -- an operator can still upload their
+// own photo of the actual unit later, which always wins in the UI regardless
+// of this status.
+router.post('/admin/catalog/:id/skip-image', requireAdmin, requireUuid('id'), async (req, res) => {
+  try {
+    const { rows: [updated] } = await pool.query(
+      `UPDATE global_import_catalog SET image_status = 'skipped', updated_at = NOW()
+        WHERE id = $1 AND active = TRUE
+        RETURNING id, make, model, image_status`,
+      [req.params.id]
+    );
+    if (!updated) return res.status(404).json({ error: 'Vehicle model not found in global catalog' });
+    await pool.query(`UPDATE catalog_image_candidates SET status = 'rejected' WHERE catalog_id = $1 AND status = 'pending'`, [req.params.id]);
+    res.json(updated);
+  } catch (err) {
+    log.error('skip image error', { error: err.message });
+    res.status(500).json({ error: 'Could not update that model' });
   }
 });
 

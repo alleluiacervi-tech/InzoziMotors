@@ -1039,7 +1039,19 @@ CREATE TABLE IF NOT EXISTS global_import_catalog (
   display_order           INT NOT NULL DEFAULT 100,
   active                  BOOLEAN NOT NULL DEFAULT TRUE,
   created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- Resolved once by an admin action, never on read. See 0046.
+  render_url              TEXT,
+  render_status           VARCHAR(20) NOT NULL DEFAULT 'pending',
+  render_checked_at       TIMESTAMPTZ,
+  -- The propose/approve photo queue. See 0047 -- catalog_image_candidates is
+  -- the queue itself; these columns are where an APPROVED choice lands, plus
+  -- the attribution its licence requires.
+  image_status             VARCHAR(20) NOT NULL DEFAULT 'pending',
+  image_credit_author      TEXT,
+  image_credit_license     TEXT,
+  image_credit_license_url TEXT,
+  image_credit_source_url  TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_global_import_catalog_make_model ON global_import_catalog (lower(make), lower(model));
@@ -1047,3 +1059,25 @@ CREATE INDEX IF NOT EXISTS idx_global_import_catalog_origin ON global_import_cat
 CREATE INDEX IF NOT EXISTS idx_global_import_catalog_active ON global_import_catalog (active, display_order);
 CREATE INDEX IF NOT EXISTS idx_global_import_catalog_body ON global_import_catalog (body_type);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_global_import_catalog_make_model_unique ON global_import_catalog (lower(make), lower(model));
+CREATE INDEX IF NOT EXISTS idx_global_import_catalog_image_status ON global_import_catalog (image_status) WHERE image_status IN ('pending', 'searched');
+
+-- The candidate photographs a search proposed for a model, awaiting an
+-- admin's Approve or Skip. See 0047.
+CREATE TABLE IF NOT EXISTS catalog_image_candidates (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  catalog_id    UUID NOT NULL REFERENCES global_import_catalog(id) ON DELETE CASCADE,
+  source        VARCHAR(30) NOT NULL DEFAULT 'wikimedia_commons',
+  image_url     TEXT NOT NULL,
+  thumb_url     TEXT NOT NULL,
+  page_url      TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  author        TEXT,
+  license_name  TEXT,
+  license_url   TEXT,
+  width         INT,
+  height        INT,
+  status        VARCHAR(20) NOT NULL DEFAULT 'pending',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_catalog_image_candidates_catalog ON catalog_image_candidates (catalog_id, status);

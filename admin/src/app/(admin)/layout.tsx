@@ -26,6 +26,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/inbox', icon: 'mail', label: 'Inbox' },
       { href: '/submissions', icon: 'document', label: 'Submissions' },
       { href: '/imports', icon: 'external', label: 'Vehicle imports' },
+      { href: '/imports/photos', icon: 'camera', label: 'Catalogue photos' },
       { href: '/inspections', icon: 'shield-check', label: 'Inspections' },
       { href: '/rentals/inquiries', icon: 'calendar', label: 'Rental inquiries' },
       { href: '/reports', icon: 'alert', label: 'Reported chats' },
