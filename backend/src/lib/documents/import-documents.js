@@ -2,6 +2,7 @@ const PDFDocument = require('pdfkit');
 const pool = require('../../db');
 const { FONTS, assertFontsPresent } = require('../contract/fonts');
 const { issuePdf, DocumentError } = require('./service');
+const { paymentReference } = require('../payment-reference');
 
 const COMPANY = {
   legal_name: process.env.COMPANY_LEGAL_NAME || 'Sawa Cars Ltd',
@@ -127,7 +128,7 @@ function renderImportDocument(snapshot, record, type) {
       heading('Acceptance record'); paragraph(snapshot.agreement.accepted_at ? `Accepted electronically on ${date(snapshot.agreement.accepted_at)}. The system preserves this version and its commercial snapshot as an immutable operational record.` : 'Awaiting electronic acceptance by the customer. Payment instructions do not replace acceptance of this agreement.');
     } else if(type==='invoice'){
       heading('Amount due'); const iy=doc.y; doc.roundedRect(margin,iy,width,64,6).fillColor(pale).fill(); doc.font('body').fontSize(8).fillColor(muted).text('INITIAL 50% PAYMENT',margin+16,iy+13); doc.font('heavy').fontSize(21).fillColor(ink).text(exactRwf(snapshot.money.initial_payment_rwf),margin+16,iy+30); doc.y=iy+78;
-      heading('Payment reference'); paragraph(`Use ${snapshot.order.order_ref} as the bank payment reference. Sawa Cars verifies uploaded proof against the bank record before an order is placed.`);
+      heading('Payment reference'); paragraph(`Use ${paymentReference(snapshot.order.order_ref, 'initial_50')} as the bank payment reference. Sawa Cars verifies uploaded proof against the bank record before an order is placed.`);
       heading('Bank instructions'); paragraph(snapshot.bank.account_name && snapshot.bank.account_number ? `${snapshot.bank.name}\nAccount name: ${snapshot.bank.account_name}\nAccount number: ${snapshot.bank.account_number}` : `${snapshot.bank.name}. Confirm the official account details shown in your authenticated Sawa Cars account or directly with Sawa Cars before sending funds. Bank credentials are intentionally not guessed on this invoice.`);
       heading('Important'); paragraph('This invoice is a request for payment, not proof of payment. An official receipt is issued only after finance verification. Never send funds to account details received from an unverified third party.');
     } else {
@@ -157,4 +158,4 @@ async function issueImportPack(orderId, adminId) {
 
 async function issueImportReceipt(orderId,paymentId,adminId){ const snapshot=await snapshotForReceipt(orderId,paymentId); return issuePdf({ kind:'import_payment_receipt',subjectType:'import_payment',subjectId:paymentId,ownerUserId:snapshot.buyer.id,title:`Payment receipt — ${snapshot.order.order_ref}`,snapshot,generatedBy:adminId,render:renderPaymentReceipt }); }
 
-module.exports={ exactRwf,normaliseItems,snapshotForImport,snapshotForReceipt,renderQuotation,renderAgreement,renderDepositInvoice,renderPaymentReceipt,issueImportPack,issueImportReceipt };
+module.exports={ exactRwf,normaliseItems,snapshotForImport,snapshotForReceipt,renderQuotation,renderAgreement,renderDepositInvoice,renderPaymentReceipt,issueImportPack,issueImportReceipt,BANK };

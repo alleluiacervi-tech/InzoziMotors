@@ -399,8 +399,6 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
           )}
         </View>
 
-        {/* Bank Escrow Guarantee Card */}
-
         {/* 4-Step Sourcing Stepper */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>How Your Import Works</Text>
@@ -526,7 +524,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
             <View style={styles.modalEscrowNote}>
               <Ionicons name="shield-checkmark" size={16} color={colors.greenText} />
               <Text style={styles.modalEscrowText}>
-                Protected by Bank of Kigali / I&M Bank Escrow Guarantee. No payment is required today.
+                No payment is required to submit this request — Sawa reviews it and sends a formal quotation first.
               </Text>
             </View>
 

@@ -312,7 +312,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.noLocalTitle}>0 in Rwanda stock · {filteredImportCars.length} available to import</Text>
                   <Text style={styles.noLocalSub}>
-                    You can import these models on-demand directly from South Korea, Dubai & China with our 100% Bank Escrow Guarantee.
+                    You can import these models on-demand directly from South Korea, Dubai & China — get a formal landed-price quotation before you pay anything.
                   </Text>
                 </View>
               </View>
@@ -352,7 +352,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                         Import Direct from Korea, Dubai & China ({filteredImportCars.length})
                       </Text>
                       <Text style={styles.importSectionSub}>
-                        🛡️ 100% Protected by Bank of Kigali / I&M Bank Escrow
+                        Verified sourcing, transparent landed pricing, 50/50 payment schedule
                       </Text>
                     </View>
                   </View>
@@ -376,7 +376,7 @@ export default function SearchResultsScreen({ navigation, route }) {
                 </View>
                 <Text style={styles.sourcingTitle}>Can't find your exact trim or model?</Text>
                 <Text style={styles.sourcingDesc}>
-                  Our global sourcing team in South Korea, Dubai, and China will find your exact vehicle, verify its condition, and provide an official escrow-protected quotation.
+                  Our global sourcing team in South Korea, Dubai, and China will find your exact vehicle, verify its condition, and provide a formal landed-price quotation.
                 </Text>
                 <Pressable
                   style={styles.sourcingBtn}

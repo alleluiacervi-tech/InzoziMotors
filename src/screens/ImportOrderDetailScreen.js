@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Linking } from 'react-native';
+import Constants from 'expo-constants';
 import { useFocusEffect } from '@react-navigation/native';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
@@ -10,11 +11,23 @@ import { formatRWF } from '../data/marketData';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 
+const SITE_URL = (Constants.expoConfig?.extra?.siteUrl || 'https://sawacars.com').replace(/\/+$/, '');
+
+const GENERATED_DOCUMENT_LABELS = {
+  import_quotation: 'Quotation',
+  import_agreement: 'Service agreement',
+  import_deposit_invoice: '50% deposit invoice',
+};
+const GENERATED_DOCUMENT_ORDER = ['import_quotation', 'import_agreement', 'import_deposit_invoice'];
+
 export default function ImportOrderDetailScreen({ navigation, route }) {
   const { t } = useApp();
   const [id] = useState(route.params.id);
   const [order, setOrder] = useState(null);
-  const [ref, setRef] = useState('');
+  // Per-payment reference text, not one shared field — a single `ref` state
+  // meant typing a reference for one milestone silently filled it in on every
+  // other due milestone too. See docs/IMPORTS-AUDIT.md, P2.
+  const [refs, setRefs] = useState({});
   const [busy, setBusy] = useState(false);
 
   const getStatusLabel = (status) => {
@@ -48,7 +61,8 @@ export default function ImportOrderDetailScreen({ navigation, route }) {
   }
 
   async function proof(payment) {
-    if (!ref.trim()) {
+    const reference = (refs[payment.id] || '').trim();
+    if (!reference) {
       showToast(t('importOrderDetail.enterRef'), 'error');
       return;
     }
@@ -56,9 +70,9 @@ export default function ImportOrderDetailScreen({ navigation, route }) {
     if (!image) return;
     setBusy(true);
     try {
-      await importsApi.submitPaymentProof(id, payment.id, ref.trim(), image);
+      await importsApi.submitPaymentProof(id, payment.id, reference, image);
       showToast(t('importOrderDetail.proofSubmitted'), 'success');
-      setRef('');
+      setRefs((prev) => ({ ...prev, [payment.id]: '' }));
       await load();
     } catch (e) {
       showToast(e.message, 'error');
@@ -77,6 +91,8 @@ export default function ImportOrderDetailScreen({ navigation, route }) {
   }
 
   const agreement = order.agreements?.[0];
+  const generatedByKind = new Map((order.generated_documents || []).map((d) => [d.kind, d]));
+  const anyGenerated = GENERATED_DOCUMENT_ORDER.some((kind) => generatedByKind.has(kind)) || (order.documents || []).length > 0;
 
   return (
     <Screen>
@@ -105,29 +121,93 @@ export default function ImportOrderDetailScreen({ navigation, route }) {
 
         <View style={styles.card}>
           <Text style={styles.heading}>{t('importOrderDetail.paymentsTitle')}</Text>
-          {order.payments.map((p) => (
-            <View key={p.id} style={styles.payment}>
-              <View>
-                <Text style={styles.paymentName}>{p.milestone.replaceAll('_', ' ')}</Text>
-                <Text style={styles.meta}>{p.status}</Text>
-              </View>
-              <Text style={styles.paymentAmount}>{formatRWF(Number(p.amount_rwf))}</Text>
-              {['due', 'rejected'].includes(p.status) && order.agreement_accepted_at ? (
-                <View style={styles.proof}>
-                  <TextInput
-                    value={ref}
-                    onChangeText={setRef}
-                    placeholder={t('importOrderDetail.bankTransferRef')}
-                    style={styles.input}
-                  />
-                  <Pressable disabled={busy} style={styles.secondary} onPress={() => proof(p)}>
-                    <Text style={styles.secondaryText}>{t('importOrderDetail.addProofPhoto')}</Text>
-                  </Pressable>
+          {order.payments.map((p) => {
+            const awaitingProof = ['due', 'rejected'].includes(p.status) && order.agreement_accepted_at;
+            return (
+              <View key={p.id} style={styles.payment}>
+                <View>
+                  <Text style={styles.paymentName}>{p.milestone.replaceAll('_', ' ')}</Text>
+                  <Text style={styles.meta}>{p.status}</Text>
                 </View>
-              ) : null}
-            </View>
-          ))}
+                <Text style={styles.paymentAmount}>{formatRWF(Number(p.amount_rwf))}</Text>
+                {p.status === 'rejected' && p.rejection_reason ? (
+                  <Text style={styles.rejection}>{p.rejection_reason}</Text>
+                ) : null}
+                {/* The "pay now" card — closes the gap where a buyer accepted
+                    the agreement and was told to pay "using the corporate
+                    bank instructions displayed on your official order" while
+                    no client ever displayed any. See docs/IMPORTS-AUDIT.md,
+                    P0. */}
+                {awaitingProof && p.payment_instructions ? (
+                  <View style={styles.payNowCard}>
+                    <Text style={styles.payNowTitle}>{t('importOrderDetail.payNow')}</Text>
+                    <View style={styles.payNowRow}>
+                      <Text style={styles.payNowLabel}>{t('importOrderDetail.bankName')}</Text>
+                      <Text style={styles.payNowValue}>{p.payment_instructions.name}</Text>
+                    </View>
+                    {p.payment_instructions.account_name && p.payment_instructions.account_number ? (
+                      <>
+                        <View style={styles.payNowRow}>
+                          <Text style={styles.payNowLabel}>{t('importOrderDetail.accountName')}</Text>
+                          <Text style={styles.payNowValue}>{p.payment_instructions.account_name}</Text>
+                        </View>
+                        <View style={styles.payNowRow}>
+                          <Text style={styles.payNowLabel}>{t('importOrderDetail.accountNumber')}</Text>
+                          <Text style={styles.payNowValueMono}>{p.payment_instructions.account_number}</Text>
+                        </View>
+                      </>
+                    ) : (
+                      <Text style={styles.payNowPending}>{t('importOrderDetail.bankDetailsPending')}</Text>
+                    )}
+                    <View style={styles.payNowRow}>
+                      <Text style={styles.payNowLabel}>{t('importOrderDetail.paymentReference')}</Text>
+                      <Text style={styles.payNowValueMono}>{p.reference}</Text>
+                    </View>
+                    <Text style={styles.payNowWarning}>{t('importOrderDetail.payNowWarning')}</Text>
+                  </View>
+                ) : null}
+                {awaitingProof ? (
+                  <View style={styles.proof}>
+                    <TextInput
+                      value={refs[p.id] || ''}
+                      onChangeText={(value) => setRefs((prev) => ({ ...prev, [p.id]: value }))}
+                      placeholder={t('importOrderDetail.bankTransferRef')}
+                      style={styles.input}
+                    />
+                    <Pressable disabled={busy} style={styles.secondary} onPress={() => proof(p)}>
+                      <Text style={styles.secondaryText}>{t('importOrderDetail.addProofPhoto')}</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
         </View>
+
+        {/* No in-app PDF viewer exists on mobile today (see
+            docs/IMPORTS-AUDIT.md) — the website already renders the same
+            quotation, agreement and receipts securely, so this bridges to
+            that rather than leaving generated documents invisible here. */}
+        {anyGenerated ? (
+          <View style={styles.card}>
+            <Text style={styles.heading}>{t('importOrderDetail.documentsTitle')}</Text>
+            {GENERATED_DOCUMENT_ORDER.map((kind) => {
+              const doc = generatedByKind.get(kind);
+              return (
+                <View key={kind} style={styles.documentRow}>
+                  <Text style={styles.paymentName}>{GENERATED_DOCUMENT_LABELS[kind]}</Text>
+                  <Text style={styles.meta}>{doc ? `${doc.document_number} · v${doc.version}` : t('importOrderDetail.documentNotIssued')}</Text>
+                </View>
+              );
+            })}
+            <Pressable
+              style={styles.linkButton}
+              onPress={() => Linking.openURL(`${SITE_URL}/dashboard/imports/${id}`).catch(() => showToast(t('importOrderDetail.viewDocumentsOnWeb'), 'info'))}
+            >
+              <Text style={styles.linkButtonText}>{t('importOrderDetail.viewDocumentsOnWeb')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.heading}>{t('importOrderDetail.timelineTitle')}</Text>
@@ -158,9 +238,21 @@ const styles = StyleSheet.create({
   payment: { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: 13, marginTop: 13 },
   paymentName: { fontFamily: fonts.bold, fontSize: 13, color: colors.textPrimary },
   paymentAmount: { position: 'absolute', right: 0, top: 13, fontFamily: fonts.extraBold, fontSize: 14, color: colors.textPrimary },
+  rejection: { marginTop: 10, fontFamily: fonts.medium, fontSize: 12, lineHeight: 17, color: colors.primary },
+  payNowCard: { marginTop: 12, padding: 13, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary, backgroundColor: colors.statusScheduledBg },
+  payNowTitle: { fontFamily: fonts.extraBold, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: colors.primary },
+  payNowRow: { marginTop: 7, flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  payNowLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
+  payNowValue: { fontFamily: fonts.bold, fontSize: 12, color: colors.textPrimary },
+  payNowValueMono: { fontFamily: fonts.bold, fontSize: 12, color: colors.textPrimary },
+  payNowPending: { marginTop: 7, fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted },
+  payNowWarning: { marginTop: 10, fontFamily: fonts.regular, fontSize: 11, lineHeight: 16, color: colors.textMuted },
   proof: { marginTop: 12, gap: 8 },
   input: { height: 44, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: 12, fontFamily: fonts.regular },
   secondary: { height: 42, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   secondaryText: { fontFamily: fonts.bold, color: colors.primary },
+  documentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 9, borderTopWidth: 1, borderTopColor: colors.borderSoft, marginTop: 9 },
+  linkButton: { marginTop: 14, alignItems: 'center' },
+  linkButtonText: { fontFamily: fonts.bold, fontSize: 12, color: colors.primary },
   event: { borderLeftWidth: 2, borderLeftColor: colors.border, paddingLeft: 12, marginTop: 14 },
 });
