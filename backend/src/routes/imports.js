@@ -12,7 +12,8 @@ const { uploadImportDocs, verifyImportDocument } = require('../middleware/upload
 const { notifyUser } = require('../lib/notify');
 const { sendImportUpdate } = require('../lib/mailer');
 const { UPLOAD_DIR } = require('../lib/storage');
-const { issueImportPack, issueImportReceipt } = require('../lib/documents/import-documents');
+const { issueImportPack, issueImportReceipt, BANK } = require('../lib/documents/import-documents');
+const { paymentReference } = require('../lib/payment-reference');
 const { documentForSubject, downloadableDocument, DocumentError } = require('../lib/documents/service');
 const { rendersEnabled, fetchRender, slug: renderSlug } = require('../lib/vehicle-renders');
 const { findCandidates } = require('../lib/commons-images');
@@ -71,7 +72,24 @@ async function fullOrder(client, id, user) {
     client.query(`SELECT id,version,terms_snapshot,issued_at,accepted_at FROM import_agreements WHERE import_order_id=$1 AND superseded_at IS NULL ORDER BY version DESC`, [id]),
     client.query(`SELECT * FROM import_shipments WHERE import_order_id=$1`, [id]),
   ]);
-  const order = { ...rows[0], payments: payments.rows, documents: documents.rows, generated_documents: generatedDocuments.rows, events: events.rows, agreements: agreements.rows, shipment: shipment.rows[0] || null };
+  const order = {
+    ...rows[0],
+    // Each payment carries its own deterministic reference and, while due or
+    // rejected, the bank details to pay it to — closing the gap where a
+    // buyer was told to pay "using the corporate bank instructions displayed
+    // on your official order" and no client ever displayed any. See
+    // docs/IMPORTS-AUDIT.md, P0.
+    payments: payments.rows.map((p) => ({
+      ...p,
+      reference: paymentReference(rows[0].order_ref, p.milestone),
+      payment_instructions: ['due', 'rejected'].includes(p.status) ? BANK : null,
+    })),
+    documents: documents.rows,
+    generated_documents: generatedDocuments.rows,
+    events: events.rows,
+    agreements: agreements.rows,
+    shipment: shipment.rows[0] || null,
+  };
   if (!admin) {
     // Sawa's own operating detail, never the buyer's business: what they were
     // quoted, not what it cost Sawa to deliver, and not the desk's own notes
@@ -682,6 +700,13 @@ router.post('/:id/accept-agreement', requireAuth, requireUuid('id'), async (req,
       if (!['quoted','agreement_pending'].includes(order.rows[0].status)) throw Object.assign(new Error('This agreement is not awaiting acceptance'), { status: 409 });
       const agreement = await client.query(`SELECT * FROM import_agreements WHERE import_order_id=$1 AND superseded_at IS NULL AND accepted_at IS NULL ORDER BY version DESC LIMIT 1 FOR UPDATE`, [req.params.id]);
       if (!agreement.rows.length) throw Object.assign(new Error('No active agreement is available'), { status: 409 });
+      // quote_expires_at was stored and printed on the PDF but never
+      // enforced — an expired quote stayed acceptable indefinitely. See
+      // docs/IMPORTS-AUDIT.md, P3.
+      const expiresAt = agreement.rows[0].terms_snapshot?.quote_expires_at || order.rows[0].quote_expires_at;
+      if (expiresAt && new Date(expiresAt).getTime() < Date.now()) {
+        throw Object.assign(new Error('This quotation has expired. Ask Sawa Cars for a fresh quote before accepting.'), { status: 409, code: 'QUOTE_EXPIRED' });
+      }
       await client.query(`UPDATE import_agreements SET accepted_by=$1,accepted_at=NOW(),acceptance_ip=$2 WHERE id=$3`, [req.user.id, req.ip, agreement.rows[0].id]);
       const updated = await client.query(`UPDATE import_orders SET status='deposit_due',agreement_accepted_at=NOW(),updated_at=NOW() WHERE id=$1 RETURNING *`, [req.params.id]);
       await client.query(`INSERT INTO import_order_events (import_order_id,actor_id,event_type,from_status,to_status,summary) VALUES ($1,$2,'agreement_accepted',$3,'deposit_due','Import agreement accepted; first 50% is now due')`, [req.params.id, req.user.id, order.rows[0].status]);
@@ -692,18 +717,47 @@ router.post('/:id/accept-agreement', requireAuth, requireUuid('id'), async (req,
   } catch (err) { res.status(err.status || 500).json({ error: err.message || 'Could not accept agreement' }); }
 });
 
+// A milestone's payment can only be proved once the order has actually
+// reached that milestone's stage. Without this, both rows are created 'due'
+// the moment a quote is issued, so a buyer could upload final-50 proof
+// immediately after accepting the agreement — pushing the order straight to
+// customs_clearance while skipping ordered/shipping_booked/in_transit/
+// arrived/kigali_inspection entirely. See docs/IMPORTS-AUDIT.md, P1.
+const PROOF_REQUIRES_ORDER_STATUS = {
+  initial_50: ['deposit_due', 'deposit_review'],
+  final_50: ['balance_due', 'balance_review'],
+};
+
 router.post('/:id/payments/:paymentId/proof', requireAuth, requireUuid('id'), requireUuid('paymentId'), uploadImportDocs.single('proof'), verifyImportDocument, async (req, res) => {
   if (!req.file || !clean(req.body.bank_reference, 120)) return res.status(400).json({ error: 'Payment proof and bank reference are required' });
   try {
-    const { rows } = await pool.query(
-      `UPDATE import_payments p SET status='submitted',proof_url=$1,bank_reference=$2,submitted_at=NOW(),rejection_reason=NULL
-       FROM import_orders o WHERE p.id=$3 AND p.import_order_id=o.id AND o.id=$4 AND o.buyer_id=$5 AND p.status IN ('due','rejected') RETURNING p.*`,
-      [`imports/${req.params.id}/${req.file.filename}`, clean(req.body.bank_reference, 120), req.params.paymentId, req.params.id, req.user.id]
-    );
-    if (!rows.length) return res.status(409).json({ error: 'This payment is not awaiting proof' });
-    await pool.query(`UPDATE import_orders SET status=CASE WHEN $1='initial_50' THEN 'deposit_review' ELSE 'balance_review' END,updated_at=NOW() WHERE id=$2`, [rows[0].milestone, req.params.id]);
-    res.json(rows[0]);
-  } catch (err) { res.status(500).json({ error: 'Could not submit payment proof' }); }
+    const result = await withTransaction(async (client) => {
+      const current = await client.query(
+        `SELECT p.*, o.status AS order_status
+           FROM import_payments p JOIN import_orders o ON o.id = p.import_order_id
+          WHERE p.id = $1 AND p.import_order_id = $2 AND o.buyer_id = $3 FOR UPDATE OF p`,
+        [req.params.paymentId, req.params.id, req.user.id]
+      );
+      if (!current.rows.length || !['due', 'rejected'].includes(current.rows[0].status)) {
+        throw Object.assign(new Error('This payment is not awaiting proof'), { status: 409 });
+      }
+      const expected = PROOF_REQUIRES_ORDER_STATUS[current.rows[0].milestone];
+      if (expected && !expected.includes(current.rows[0].order_status)) {
+        throw Object.assign(new Error('This payment is not yet due at the current stage of the order'), { status: 409 });
+      }
+      const { rows } = await client.query(
+        `UPDATE import_payments SET status='submitted',proof_url=$1,bank_reference=$2,submitted_at=NOW(),rejection_reason=NULL
+         WHERE id=$3 RETURNING *`,
+        [`imports/${req.params.id}/${req.file.filename}`, clean(req.body.bank_reference, 120), req.params.paymentId]
+      );
+      await client.query(
+        `UPDATE import_orders SET status=CASE WHEN $1='initial_50' THEN 'deposit_review' ELSE 'balance_review' END,updated_at=NOW() WHERE id=$2`,
+        [rows[0].milestone, req.params.id]
+      );
+      return rows[0];
+    });
+    res.json(result);
+  } catch (err) { res.status(err.status || 500).json({ error: err.message || 'Could not submit payment proof' }); }
 });
 
 router.post('/:id/documents', requireAdmin, requireUuid('id'), uploadImportDocs.single('document'), verifyImportDocument, async (req, res) => {
@@ -719,8 +773,18 @@ router.get('/documents/:documentId/file', requireAuth, requireUuid('documentId')
   try {
     const { rows } = await pool.query(`SELECT d.file_url,d.label,d.customer_visible,o.buyer_id FROM import_documents d JOIN import_orders o ON o.id=d.import_order_id WHERE d.id=$1`, [req.params.documentId]);
     if (!rows.length || (req.user.role !== 'admin' && (!rows[0].customer_visible || rows[0].buyer_id !== req.user.id))) return res.status(404).json({ error: 'Document not found' });
+    // Defense in depth: file_url is written only by the upload routes above
+    // (always `imports/<uuid>/<generated filename>`), but resolving it
+    // against UPLOAD_DIR and refusing anything that escapes the directory
+    // costs nothing and closes the class of bug entirely, rather than
+    // relying on every future writer of this column to stay disciplined.
+    const resolved = path.resolve(UPLOAD_DIR, rows[0].file_url);
+    if (resolved !== UPLOAD_DIR && !resolved.startsWith(UPLOAD_DIR + path.sep)) {
+      log.error('import document path escaped upload dir', { documentId: req.params.documentId });
+      return res.status(404).json({ error: 'Document not found' });
+    }
     res.set('Cache-Control', 'no-store, private'); res.set('Referrer-Policy', 'no-referrer');
-    res.sendFile(path.join(UPLOAD_DIR, rows[0].file_url));
+    res.sendFile(resolved);
   } catch (err) { res.status(500).json({ error: 'Could not open document' }); }
 });
 

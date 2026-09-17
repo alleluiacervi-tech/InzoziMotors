@@ -246,6 +246,9 @@ app.use('/messages', postOnly(writeLimiter));
 app.use('/reviews', postOnly(writeLimiter));
 app.use('/disputes', postOnly(writeLimiter));
 app.use('/id-verification', postOnly(writeLimiter));
+// Enquiry creation and the multipart payment-proof upload were sitting
+// behind only the 15-minute global backstop. See docs/IMPORTS-AUDIT.md, P1.
+app.use('/imports', postOnly(writeLimiter));
 
 const transactionFeatureRetired = (req, res, next) => {
   if (['GET', 'HEAD'].includes(req.method)) return next();

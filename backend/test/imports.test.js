@@ -9,6 +9,8 @@ const { app } = require('../server');
 const pool = require('../src/db');
 const api = () => request(app);
 const unique = (p) => `${p}-${Date.now()}-${Math.floor(Math.random()*1e6)}@test.local`;
+// A 1x1 PNG, just enough to pass verifyImportDocument's magic-byte check.
+const PNG_1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
 async function register(name='Buyer'){const email=unique('import');const password='password123';const r=await api().post('/auth/register').send({name,email,password,role:'buyer'}).expect(201);return{id:r.body.user.id,email,password,token:r.body.token};}
 async function admin(){const u=await register('Admin');await pool.query("UPDATE users SET role='admin' WHERE id=$1",[u.id]);const r=await api().post('/auth/login').send({email:u.email,password:u.password}).expect(200);return{...u,token:r.body.token};}
 test.after(async()=>pool.end());
@@ -74,6 +76,57 @@ test('actual cost stays separate from the quote, and never reaches the buyer',as
   const mine=await api().get('/imports/mine').set('Authorization',`Bearer ${buyer.token}`).expect(200);
   const own=mine.body.find((o)=>o.id===created.body.id);
   assert.equal('actual_cost_rwf' in own,false);
+});
+
+test('final-50 proof cannot jump ahead of the pipeline, and each payment carries its own deterministic reference',async()=>{
+  const buyer=await register();const operator=await admin();
+  const created=await api().post('/imports').set('Authorization',`Bearer ${buyer.token}`).send({origin_country:'China',make:'BYD',model:'Atto 3',year:2024}).expect(201);
+  await api().post(`/imports/${created.body.id}/quote`).set('Authorization',`Bearer ${operator.token}`).send({quoted_total_rwf:20000000}).expect(200);
+  await api().post(`/imports/${created.body.id}/accept-agreement`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
+
+  const quoted=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
+  const initial=quoted.body.payments.find((p)=>p.milestone==='initial_50');
+  const final=quoted.body.payments.find((p)=>p.milestone==='final_50');
+  assert.equal(initial.reference,`${created.body.order_ref}-D1`);
+  assert.equal(final.reference,`${created.body.order_ref}-D2`);
+  // Bank details are shown while a payment is due -- the P0 fix: a buyer was
+  // told to "pay using the corporate bank instructions displayed on your
+  // official order" and no client ever displayed any.
+  assert.ok(initial.payment_instructions);
+  assert.ok(initial.payment_instructions.name);
+
+  // Both milestones are 'due' the moment a quote is issued, but the order is
+  // only at deposit_due -- final-50 proof must not be accepted yet, or it
+  // would skip ordered/shipping_booked/in_transit/arrived/kigali_inspection
+  // entirely. See docs/IMPORTS-AUDIT.md, P1.
+  await api().post(`/imports/${created.body.id}/payments/${final.id}/proof`).set('Authorization',`Bearer ${buyer.token}`)
+    .field('bank_reference','BK-TOO-EARLY').attach('proof',PNG_1x1,{filename:'proof.png',contentType:'image/png'}).expect(409);
+
+  const stillDue=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
+  assert.equal(stillDue.body.payments.find((p)=>p.milestone==='final_50').status,'due');
+
+  // The initial-50 proof, by contrast, is legitimately due right now.
+  const submitted=await api().post(`/imports/${created.body.id}/payments/${initial.id}/proof`).set('Authorization',`Bearer ${buyer.token}`)
+    .field('bank_reference','BK-ON-TIME').attach('proof',PNG_1x1,{filename:'proof.png',contentType:'image/png'}).expect(200);
+  assert.equal(submitted.body.status,'submitted');
+
+  // Once submitted, the payment is no longer 'due', so instructions to pay
+  // it again are gone -- there is nothing left to instruct.
+  const afterSubmit=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
+  assert.equal(afterSubmit.body.payments.find((p)=>p.milestone==='initial_50').payment_instructions,null);
+});
+
+test('an expired quote cannot be accepted',async()=>{
+  const buyer=await register();const operator=await admin();
+  const created=await api().post('/imports').set('Authorization',`Bearer ${buyer.token}`).send({origin_country:'Japan',make:'Suzuki',model:'Swift',year:2023}).expect(201);
+  await api().post(`/imports/${created.body.id}/quote`).set('Authorization',`Bearer ${operator.token}`).send({quoted_total_rwf:12000000,quote_expires_at:'2020-01-01T00:00:00.000Z'}).expect(200);
+
+  const expired=await api().post(`/imports/${created.body.id}/accept-agreement`).set('Authorization',`Bearer ${buyer.token}`).expect(409);
+  assert.match(expired.body.error,/expired/i);
+
+  // A fresh quotation supersedes the expired one and can be accepted.
+  await api().post(`/imports/${created.body.id}/quote`).set('Authorization',`Bearer ${operator.token}`).send({quoted_total_rwf:12000000,quote_expires_at:'2099-01-01T00:00:00.000Z'}).expect(200);
+  await api().post(`/imports/${created.body.id}/accept-agreement`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
 });
 
 test('only an admin can create a pre-verified showroom account',async()=>{
