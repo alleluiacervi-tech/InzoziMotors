@@ -74,6 +74,65 @@ const config: Config = {
         // ~200 pages still written in gray-* re-skin with everything else —
         // and, crucially, invert correctly in dark mode rather than staying
         // light grey on a dark ground.
+        // The semantic ramps, remapped for exactly the reason gray is: ~60
+        // class usages across pages that were never rewritten in semantic
+        // names still say bg-red-50 / text-green-700 / border-amber-200, and
+        // raw Tailwind hex does not invert. Anchored on danger / success /
+        // warning / info so the meaning matches the name.
+        red: {
+          50: 'rgb(var(--red-50) / <alpha-value>)',
+          100: 'rgb(var(--red-100) / <alpha-value>)',
+          200: 'rgb(var(--red-200) / <alpha-value>)',
+          300: 'rgb(var(--red-300) / <alpha-value>)',
+          400: 'rgb(var(--red-400) / <alpha-value>)',
+          500: 'rgb(var(--red-500) / <alpha-value>)',
+          600: 'rgb(var(--red-600) / <alpha-value>)',
+          700: 'rgb(var(--red-700) / <alpha-value>)',
+          800: 'rgb(var(--red-800) / <alpha-value>)',
+          900: 'rgb(var(--red-900) / <alpha-value>)',
+        },
+        green: {
+          50: 'rgb(var(--green-50) / <alpha-value>)',
+          100: 'rgb(var(--green-100) / <alpha-value>)',
+          200: 'rgb(var(--green-200) / <alpha-value>)',
+          300: 'rgb(var(--green-300) / <alpha-value>)',
+          400: 'rgb(var(--green-400) / <alpha-value>)',
+          500: 'rgb(var(--green-500) / <alpha-value>)',
+          600: 'rgb(var(--green-600) / <alpha-value>)',
+          700: 'rgb(var(--green-700) / <alpha-value>)',
+          800: 'rgb(var(--green-800) / <alpha-value>)',
+          900: 'rgb(var(--green-900) / <alpha-value>)',
+        },
+        amber: {
+          50: 'rgb(var(--amber-50) / <alpha-value>)',
+          100: 'rgb(var(--amber-100) / <alpha-value>)',
+          200: 'rgb(var(--amber-200) / <alpha-value>)',
+          300: 'rgb(var(--amber-300) / <alpha-value>)',
+          400: 'rgb(var(--amber-400) / <alpha-value>)',
+          500: 'rgb(var(--amber-500) / <alpha-value>)',
+          600: 'rgb(var(--amber-600) / <alpha-value>)',
+          700: 'rgb(var(--amber-700) / <alpha-value>)',
+          800: 'rgb(var(--amber-800) / <alpha-value>)',
+          900: 'rgb(var(--amber-900) / <alpha-value>)',
+        },
+        blue: {
+          50: 'rgb(var(--blue-50) / <alpha-value>)',
+          100: 'rgb(var(--blue-100) / <alpha-value>)',
+          200: 'rgb(var(--blue-200) / <alpha-value>)',
+          300: 'rgb(var(--blue-300) / <alpha-value>)',
+          400: 'rgb(var(--blue-400) / <alpha-value>)',
+          500: 'rgb(var(--blue-500) / <alpha-value>)',
+          600: 'rgb(var(--blue-600) / <alpha-value>)',
+          700: 'rgb(var(--blue-700) / <alpha-value>)',
+          800: 'rgb(var(--blue-800) / <alpha-value>)',
+          900: 'rgb(var(--blue-900) / <alpha-value>)',
+        },
+        // Aliases for the two names the console also reaches for.
+        emerald: {
+          50:  'rgb(var(--green-50) / <alpha-value>)',
+          600: 'rgb(var(--green-600) / <alpha-value>)',
+          700: 'rgb(var(--green-700) / <alpha-value>)',
+        },
         gray: {
           50:  'rgb(var(--gray-50) / <alpha-value>)',
           100: 'rgb(var(--gray-100) / <alpha-value>)',

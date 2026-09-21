@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api, type Readiness } from '@/lib/api'
-import { EmptyState, ErrorState, Icon, LoadingState, fmtMoney } from '@/components/ui'
+import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
 
@@ -302,9 +302,11 @@ export default function ListingsPage() {
                         Featured
                       </span>
                     )}
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[car.status] || 'bg-gray-100 text-gray-600'}`}>
-                      {car.status}
-                    </span>
+                    {/* Through Pill, not a hand-rolled span. This printed the
+                        raw column value — an operator read "under_review" with
+                        the underscore in it — and it carried its state in
+                        background colour alone, which Pill fixes with a dot. */}
+                    <Pill status={car.status} />
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">{car.mileage?.toLocaleString()} km · {car.location}</p>

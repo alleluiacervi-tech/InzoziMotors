@@ -43,7 +43,7 @@ export async function TopDeals({ placements }: { placements: FeaturedPlacement[]
           />
           <Link
             href="/cars"
-            className="inline-flex items-center gap-1.5 pb-1 text-body font-bold text-brand hover:underline"
+            className="-my-2 inline-flex items-center gap-1.5 py-2 text-body font-bold text-brand hover:underline"
           >
             {t('home.topDeals.viewAll')}
             <Icon name="arrow-right" size={16} />

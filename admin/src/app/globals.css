@@ -49,6 +49,36 @@
   --gray-300: 227 221 213;  --gray-400: 156 147 139;  --gray-500: 110 102 96;
   --gray-600: 88 80 75;     --gray-700: 61 55 51;     --gray-800: 36 31 29;
   --gray-900: 20 17 15;
+
+  /* The semantic ramps, remapped the same way gray is — and for the same
+     reason. About sixty class usages across this console are still written in
+     raw Tailwind palette names (bg-red-50, text-green-700, border-amber-200).
+     Those resolve to fixed hex and do NOT invert, so in dark mode a Reject
+     button kept a #FEF2F2 ground and a "verified" line kept #15803D ink on
+     near-black. Routing them through variables means the pages that were never
+     rewritten in semantic names still re-skin with everything else.
+
+     Each ramp is anchored on the token it belongs to: red on danger, green on
+     success, amber on warning, blue on info. */
+  --red-50: 251 236 239;    --red-100: 247 220 226;   --red-200: 240 198 207;
+  --red-300: 229 160 173;   --red-400: 205 92 113;    --red-500: 180 35 58;
+  --red-600: 185 28 28;     --red-700: 159 24 24;     --red-800: 134 22 22;
+  --red-900: 110 20 20;
+
+  --green-50: 234 246 238;  --green-100: 220 240 227;  --green-200: 190 226 203;
+  --green-300: 134 205 160; --green-400: 64 185 110;   --green-500: 22 163 74;
+  --green-600: 21 128 61;   --green-700: 22 101 52;    --green-800: 20 83 45;
+  --green-900: 16 66 37;
+
+  --amber-50: 254 243 199;  --amber-100: 253 236 176;  --amber-200: 252 220 138;
+  --amber-300: 250 198 86;  --amber-400: 234 158 20;   --amber-500: 217 119 6;
+  --amber-600: 202 108 5;   --amber-700: 180 83 9;     --amber-800: 146 64 14;
+  --amber-900: 120 53 15;
+
+  --blue-50: 239 246 255;   --blue-100: 224 238 255;   --blue-200: 191 219 254;
+  --blue-300: 147 197 253;  --blue-400: 78 138 245;    --blue-500: 37 99 235;
+  --blue-600: 29 78 216;    --blue-700: 30 64 175;     --blue-800: 30 58 138;
+  --blue-900: 23 46 110;
 }
 
 .dark {
@@ -96,6 +126,30 @@
   --gray-300: 84 74 68;     --gray-400: 138 129 122;  --gray-500: 158 148 140;
   --gray-600: 180 170 162;  --gray-700: 203 194 186;  --gray-800: 226 220 213;
   --gray-900: 245 241 236;
+
+  /* Reversed end for end, exactly like gray: the 50-200 tints were light
+     grounds and become dark ones, and 600-900 were ink and become the light
+     text that sits on them. A bg-red-50/text-red-700 pair therefore stays a
+     legible pairing in both themes instead of inverting into itself. */
+  --red-50: 56 22 28;       --red-100: 68 27 34;      --red-200: 88 36 44;
+  --red-300: 120 52 62;     --red-400: 214 96 114;    --red-500: 248 113 133;
+  --red-600: 252 165 165;   --red-700: 254 190 190;   --red-800: 254 210 210;
+  --red-900: 255 228 228;
+
+  --green-50: 20 45 31;     --green-100: 26 56 38;    --green-200: 34 72 49;
+  --green-300: 52 104 72;   --green-400: 60 190 110;  --green-500: 74 222 128;
+  --green-600: 110 231 152; --green-700: 134 239 172; --green-800: 167 243 196;
+  --green-900: 200 248 220;
+
+  --amber-50: 56 41 12;     --amber-100: 68 50 15;    --amber-200: 88 65 20;
+  --amber-300: 120 90 28;   --amber-400: 214 160 32;  --amber-500: 251 191 36;
+  --amber-600: 252 211 77;  --amber-700: 253 224 71;  --amber-800: 254 235 138;
+  --amber-900: 254 243 199;
+
+  --blue-50: 22 32 56;      --blue-100: 28 42 72;     --blue-200: 38 58 100;
+  --blue-300: 60 90 150;    --blue-400: 80 128 230;   --blue-500: 96 145 255;
+  --blue-600: 125 165 255;  --blue-700: 160 190 255;  --blue-800: 195 215 255;
+  --blue-900: 220 232 255;
 }
 
 /* Inter arrives via next/font in the root layout. */
@@ -140,3 +194,61 @@ body {
   font-weight: 700;
 }
 .skip-link:focus { transform: translateY(0); }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Console chrome.
+
+   The sidebar is the one dark surface in this tool and it was a flat #14110F
+   slab: 21 rows of white-ish type on an unlit ground, which is exactly the
+   shape an internal tool takes when nobody has looked at it in a while. These
+   three give it the same lighting rig the website's dark surfaces use, so the
+   two products read as one.
+
+   All of them are decorative, sit behind content, and never take a pointer.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* One warm lamp at the top of the rail, where the brand mark is. */
+.console-rail::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 34% at 0% 0%, rgb(204 5 15 / 0.16), transparent 66%),
+    radial-gradient(90% 26% at 100% 4%, rgb(120 150 210 / 0.08), transparent 70%);
+}
+
+/* The rail scrolls 21 destinations on a laptop. A 14px scrollbar in the middle
+   of the navigation is the loudest thing in it, so it gets the hairline
+   treatment and only shows up while the pointer is inside. */
+.rail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.rail-scroll:hover {
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+}
+.rail-scroll::-webkit-scrollbar { width: 6px; }
+.rail-scroll::-webkit-scrollbar-track { background: transparent; }
+.rail-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+}
+.rail-scroll:hover::-webkit-scrollbar-thumb { background: rgb(255 255 255 / 0.22); }
+
+/* Numbers in an operations console are read in columns — a queue count, a
+   score, a sum of francs. Proportional digits make those columns shimmer as
+   the values change. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* The rail holds 21 destinations and a laptop shows about 17 of them. Without
+   a fade the list just stops mid-row against the user footer, which reads as a
+   clipping bug rather than as "there is more below". The mask is only applied
+   at the bottom edge, so the first row is never dimmed. */
+.nav-fade {
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+}

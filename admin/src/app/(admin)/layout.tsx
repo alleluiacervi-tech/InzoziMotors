@@ -189,26 +189,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       : href === '/reports' ? openReports
       : 0
 
-  const current = ALL_ITEMS.find(
-    (n) => pathname === n.href || (n.href !== '/dashboard' && pathname.startsWith(n.href)),
-  )
+  const matches = (href: string) =>
+    pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+  const current = ALL_ITEMS.find((n) => matches(n.href))
+  // Twenty-one destinations across three groups: the page title alone does not
+  // say where you are. The group name does, and it costs one line.
+  const currentGroup = NAV_GROUPS.find((g) => g.items.some((n) => matches(n.href)))?.title
 
   return (
     <FeedbackProvider>
     <a href="#admin-main" className="skip-link">Skip to main content</a>
     <div className="flex h-screen overflow-hidden bg-surface-page">
-      {/* Sidebar */}
+      {/* Sidebar. `console-rail` lights the ink so 21 rows of navigation do not
+          sit on an unlit slab; `isolate` keeps that lamp behind the nav. */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col bg-ink-900
-          transition-transform duration-200
+          console-rail fixed inset-y-0 left-0 z-40 flex w-[264px] transform isolate flex-col
+          overflow-hidden bg-ink-900 transition-transform duration-200
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:relative lg:translate-x-0
         `}
       >
         {/* Brand */}
-        <div className="border-b border-white/10 px-5 py-5">
-          <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setSidebarOpen(false)}>
+        <div className="relative z-10 border-b border-white/10 px-5 py-5">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-3 rounded-xl"
+            onClick={() => setSidebarOpen(false)}
+          >
             <LogoMark size={34} />
             <div>
               <p className="text-body font-extrabold leading-none tracking-[-0.01em] text-white">
@@ -221,36 +229,54 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.title} className="mb-5">
+        {/* Nav. The active row is marked by a bar in the gutter rather than a
+            filled pill — the same treatment the website's dashboard uses, so
+            an operator moving between the two reads one product. A pill in a
+            21-row list fights the list's own rhythm; a bar sits outside it.
+            `aria-current` carries the same fact for a screen reader, which
+            colour alone never does. */}
+        {/* `nav-fade` dissolves the last few pixels of the scroll area into the
+            ink. Twenty-one destinations do not fit a laptop's rail, and without
+            it the list simply stopped mid-row against the user footer — which
+            reads as a clipping bug rather than as "there is more below". */}
+        <nav className="rail-scroll nav-fade relative z-10 min-h-0 flex-1 overflow-y-auto px-3 py-4">
+          {NAV_GROUPS.map((group, groupIndex) => (
+            <div key={group.title} className={groupIndex > 0 ? 'mt-6' : ''}>
               {/* text-white/30 measured 2.68:1 on ink-900 — below even the 3:1
                   floor for large text, on the labels that carry the whole
                   information architecture. /60 is 6.9:1. */}
-              <p className="mb-1.5 px-3 text-micro font-bold uppercase tracking-[0.16em] text-white/60">
+              <p className="mb-2 px-3 text-micro font-bold uppercase tracking-[0.16em] text-white/60">
                 {group.title}
               </p>
-              <div className="space-y-0.5">
+              <div className="space-y-px">
                 {group.items.map(({ href, icon, label }) => {
                   const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+                  const badge = badgeFor(href)
                   return (
                     <Link
                       key={href}
                       href={href}
+                      aria-current={active ? 'page' : undefined}
                       onClick={() => setSidebarOpen(false)}
                       className={`
-                        group flex items-center gap-3 rounded-lg px-3 py-2 text-label font-semibold transition-colors
-                        ${active ? 'bg-surface/10 text-white' : 'text-white/55 hover:bg-surface/5 hover:text-white'}
+                        group relative flex h-9 items-center gap-3 rounded-lg pl-4 pr-2.5 text-label font-semibold transition-colors
+                        ${active ? 'bg-white/[0.07] text-white' : 'text-white/60 hover:bg-white/[0.04] hover:text-white'}
                       `}
                     >
-                      <span className={active ? 'text-brand-bright' : 'text-white/60 group-hover:text-white/80'}>
+                      {active ? (
+                        <span
+                          aria-hidden
+                          className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-brand-bright"
+                        />
+                      ) : null}
+                      <span className={active ? 'text-brand-bright' : 'text-white/55 group-hover:text-white/80'}>
                         <Icon name={icon} size={17} />
                       </span>
-                      {label}
-                      {badgeFor(href) > 0 && (
-                        <span className="ml-auto min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-brand-on">
-                          {badgeFor(href)}
+                      <span className="min-w-0 flex-1 truncate">{label}</span>
+                      {badge > 0 && (
+                        <span className="tnum ml-auto min-w-5 shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-brand-on">
+                          {badge}
+                          <span className="sr-only"> waiting</span>
                         </span>
                       )}
                     </Link>
@@ -262,9 +288,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-white/10 px-4 py-4">
+        <div className="relative z-10 border-t border-white/10 px-4 py-4">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-label font-bold text-brand-on">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-label font-bold text-brand-on">
               {(user?.name || 'A')[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -299,27 +325,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-line-soft bg-surface px-4 lg:px-6">
+        {/* Top bar. Taller than it was, because it now carries WHERE you are as
+            well as what the page is: a 56px strip with one bold word in it was
+            using a full band of chrome to say less than the sidebar already
+            showed. Sticky, so the context survives a long queue scroll. */}
+        <header className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center gap-3 border-b border-line-soft bg-surface/90 px-4 backdrop-blur-xl lg:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-1 text-content-muted hover:text-content lg:hidden"
+            className="-ml-1 flex h-10 w-10 items-center justify-center rounded-lg text-content-muted transition-colors hover:bg-surface-alt hover:text-content lg:hidden"
             aria-label="Open menu"
           >
             <Icon name="menu" size={20} />
           </button>
-          <span className="text-section font-bold text-content">{current?.label ?? ''}</span>
+          <div className="min-w-0">
+            {currentGroup ? (
+              <p className="truncate text-micro font-bold uppercase tracking-[0.14em] text-content-muted">
+                {currentGroup}
+              </p>
+            ) : null}
+            <p className="truncate text-section font-bold leading-tight text-content">
+              {current?.label ?? ''}
+            </p>
+          </div>
           <div className="relative ml-auto hidden w-full max-w-md md:block">
             <label className="relative block">
               <span className="sr-only">Search users, listings, submissions and rentals</span>
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-content-muted"><Icon name="search" size={15} /></span>
               <input id="admin-global-search" value={globalQuery} onChange={(e) => setGlobalQuery(e.target.value)}
                 placeholder="Search the operation…"
-                className="h-9 w-full rounded-lg border border-line bg-surface-alt pl-9 pr-12 text-label text-content placeholder:text-content-muted focus:border-content-muted focus:outline-none" />
+                className="h-10 w-full rounded-xl border border-line bg-surface-alt pl-9 pr-12 text-label text-content placeholder:text-content-muted transition-colors focus:border-brand focus:bg-surface focus:outline-none" />
               <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border border-line bg-surface px-1.5 py-0.5 text-micro text-content-muted">⌘K</kbd>
             </label>
             {globalQuery.trim().length >= 2 ? (
-              <div className="absolute left-0 right-0 top-11 z-50 overflow-hidden rounded-xl border border-line bg-surface shadow-card-lg">
+              <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-xl border border-line bg-surface shadow-card-lg">
                 {searching ? <p className="p-4 text-label text-content-muted">Searching…</p>
                   : searchResults.length ? <ul className="max-h-80 overflow-y-auto py-1">{searchResults.map((result) => (
                     <li key={`${result.kind}-${result.id}`}>
@@ -338,8 +376,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page content */}
+        {/* max-w-7xl, not 6xl: this console renders dense queues and wide
+            tables, and 1152px on a 2560px monitor left a third of the screen
+            empty while rows truncated. */}
         <main id="admin-main" tabIndex={-1} className="flex-1 overflow-y-auto p-4 lg:p-8">
-          <div className="mx-auto max-w-6xl">{children}</div>
+          <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
     </div>
