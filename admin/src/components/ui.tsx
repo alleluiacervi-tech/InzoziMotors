@@ -590,17 +590,24 @@ export function BarChart({
       {/* The exact numbers, for a screen reader and for anyone who wants to
           read rather than estimate off a bar. Visually hidden, never absent. */}
       <figcaption className="sr-only">{summary}</figcaption>
-      <table className="sr-only">
-        <caption>{seriesLabel} by period</caption>
-        <thead>
-          <tr><th scope="col">Period</th><th scope="col">{seriesLabel}</th></tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.label}><th scope="row">{d.label}</th><td>{formatValue(d.value)}</td></tr>
-          ))}
-        </tbody>
-      </table>
+      {/* The div carries sr-only, not the table.
+          `sr-only` hides by forcing a 1x1 box — and CSS treats `height` on a
+          table box as a MINIMUM, so a table simply grows past it and stays a
+          real ~76px block in the layout. Wrapping it in a block element, which
+          does honour the height, is what actually collapses it. */}
+      <div className="sr-only">
+        <table>
+          <caption>{seriesLabel} by period</caption>
+          <thead>
+            <tr><th scope="col">Period</th><th scope="col">{seriesLabel}</th></tr>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.label}><th scope="row">{d.label}</th><td>{formatValue(d.value)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   )
 }

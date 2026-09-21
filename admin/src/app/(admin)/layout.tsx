@@ -199,15 +199,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <FeedbackProvider>
     <a href="#admin-main" className="skip-link">Skip to main content</a>
-    <div className="flex h-screen overflow-hidden bg-surface-page">
+    {/* ─────────────────────────────────────────────────────────────────────
+        TWO LAYOUTS, and the reason there have to be two.
+
+        From lg up this is an app shell: a fixed rail, a fixed header, and one
+        inner scroll region. That is right for an operations console on a
+        monitor — the navigation never leaves and a long queue scrolls under a
+        header that stays put.
+
+        Below lg the same shell was actively broken, and this is the bug that
+        produced "scroll past the bottom and the page is blank". `h-screen` is
+        `height: 100vh`, and on a phone 100vh is the viewport with the URL bar
+        HIDDEN — taller than what you can actually see while it is shown. So
+        the shell stood ~90px taller than the visible area, the document itself
+        gained that much scroll, and scrolling it slid the whole clipped shell
+        up to reveal the page background underneath: a blank screen with no
+        content in it, exactly as reported. The inner scroller made it worse by
+        stopping the browser collapsing its own chrome, since from its point of
+        view the document never scrolled at all.
+
+        So below lg there is no height cap, no clipping and no inner scroller:
+        the DOCUMENT scrolls, the way a phone expects. `sticky` on the header
+        then does its job against the document instead of being inert. On lg
+        the cap comes back as 100dvh — the dynamic viewport unit, which tracks
+        the browser chrome instead of pretending it is not there.
+        ───────────────────────────────────────────────────────────────────── */}
+    <div className="bg-surface-page lg:flex lg:h-[100dvh] lg:overflow-hidden">
       {/* Sidebar. `console-rail` lights the ink so 21 rows of navigation do not
           sit on an unlit slab; `isolate` keeps that lamp behind the nav. */}
       <aside
         className={`
-          console-rail fixed inset-y-0 left-0 z-40 flex w-[264px] transform isolate flex-col
+          console-rail fixed inset-y-0 left-0 z-40 flex h-[100dvh] w-[264px] transform isolate flex-col
           overflow-hidden bg-ink-900 transition-transform duration-200
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:relative lg:translate-x-0
+          lg:relative lg:h-auto lg:translate-x-0
         `}
       >
         {/* Brand */}
@@ -324,12 +349,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col lg:overflow-hidden">
         {/* Top bar. Taller than it was, because it now carries WHERE you are as
             well as what the page is: a 56px strip with one bold word in it was
             using a full band of chrome to say less than the sidebar already
             showed. Sticky, so the context survives a long queue scroll. */}
-        <header className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center gap-3 border-b border-line-soft bg-surface/90 px-4 backdrop-blur-xl lg:px-6">
+        {/* Opaque, not frosted. Below lg this bar is sticky over a scrolling
+            document, and at 90% with a blur the queue's text ghosted through
+            it — legible enough to notice, not legible enough to read, which is
+            the worst of both. A translucent bar is a marketing flourish; an
+            operations console wants its chrome to stay put and stay solid. */}
+        <header className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center gap-3 border-b border-line-soft bg-surface px-4 lg:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
             className="-ml-1 flex h-10 w-10 items-center justify-center rounded-lg text-content-muted transition-colors hover:bg-surface-alt hover:text-content lg:hidden"
@@ -379,7 +409,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* max-w-7xl, not 6xl: this console renders dense queues and wide
             tables, and 1152px on a 2560px monitor left a third of the screen
             empty while rows truncated. */}
-        <main id="admin-main" tabIndex={-1} className="flex-1 overflow-y-auto p-4 lg:p-8">
+        {/* `relative` is load-bearing, not decoration.
+            `overflow` does not create a containing block — only `position`
+            does — so an absolutely positioned descendant with no positioned
+            ancestor resolves against the INITIAL containing block and escapes
+            this scroller's clipping entirely. The chart's visually-hidden data
+            table did exactly that: it landed at y=1657 in document coordinates
+            and stretched the page 757px past a shell that is clipped at the
+            viewport, which is the blank screen you reach by scrolling down.
+            One word contains every such descendant, including any a future
+            page adds. */}
+        <main id="admin-main" tabIndex={-1} className="relative flex-1 p-4 lg:overflow-y-auto lg:p-8">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
