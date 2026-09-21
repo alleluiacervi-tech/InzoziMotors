@@ -293,6 +293,42 @@
     -webkit-mask-image: linear-gradient(to bottom, black, transparent 72%);
   }
 
+  /* ───────────────────────────────────────────────────────────────────────
+     The same lighting rig, on paper.
+
+     `ambient-ink` and `blueprint-grid` are tuned for a near-black ground and
+     paint in white; on the bone page they are invisible or, worse, milky.
+     These two are their daylight counterparts and are driven off `--content`
+     and the lamp tokens, so they follow the theme automatically instead of
+     hardcoding a grey that only works in one of them.
+     ─────────────────────────────────────────────────────────────────────── */
+
+  .ambient-paper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* Far weaker than the ink version: on a light ground the eye reads a 20%
+       wash as a printing fault, not as light. */
+    background:
+      radial-gradient(62% 52% at 90% -6%, rgb(var(--lamp-warm) / 0.07), transparent 64%),
+      radial-gradient(54% 46% at 2% 4%, rgb(var(--lamp-cool) / 0.09), transparent 62%);
+  }
+
+  .grid-paper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgb(var(--content) / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--content) / 0.05) 1px, transparent 1px);
+    background-size: 72px 72px;
+    /* Stops before the fold, so it is a texture rather than a table. */
+    mask-image: linear-gradient(to bottom, black, transparent 68%);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent 68%);
+  }
+
   /* Figures, prices and scores line up in columns only if their glyphs are the
      same width. Tailwind ships `tabular-nums`; this is the same thing named
      for the thing it protects, and it is applied to every number the site

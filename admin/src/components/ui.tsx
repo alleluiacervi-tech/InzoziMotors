@@ -72,20 +72,44 @@ export function fmtMoneyShort(n: number | null | undefined, currency: Currency |
 
 // ─── Layout ──────────────────────────────────────────────────────────────────
 
+/**
+ * The opening of every page in the console.
+ *
+ * It was a bare h1 and a grey line, which meant thirty pages started with no
+ * edge between the chrome above and the work below — on a dense queue the eye
+ * had nothing to anchor on. It now sits on a hairline with the title's measure
+ * capped, so a long description wraps into a readable column instead of running
+ * the full 1280px and hitting 160 characters a line.
+ *
+ * `eyebrow` is optional and carries the thing a title cannot: what kind of page
+ * this is, or how many records are behind it.
+ */
 export function PageHeader({
-  title, description, action,
+  title, description, eyebrow, action,
 }: {
   title: string
   description?: string
+  eyebrow?: string
   action?: ReactNode
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-page-title font-extrabold text-content">{title}</h1>
-        {description ? <p className="mt-1 text-label text-content-muted">{description}</p> : null}
+    <div className="mb-6 border-b border-line-soft pb-5 sm:mb-8">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0">
+          {eyebrow ? (
+            <p className="mb-1.5 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">
+              {eyebrow}
+            </p>
+          ) : null}
+          <h1 className="text-page-title font-extrabold tracking-[-0.02em] text-content">{title}</h1>
+          {description ? (
+            <p className="mt-1.5 max-w-2xl text-label leading-relaxed text-content-muted">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   )
 }
@@ -94,6 +118,35 @@ export function Card({ children, className = '', id }: { children: ReactNode; cl
   return (
     <div id={id} className={`rounded-2xl border border-line-soft bg-surface shadow-card ${className}`}>
       {children}
+    </div>
+  )
+}
+
+/**
+ * A titled band at the top of a Card.
+ *
+ * Pages were each hand-rolling this — a flex row, a bold span, sometimes a
+ * border, sometimes not — so no two panels in the console lined up. One
+ * component means the heading level, the rule and the padding are the same on
+ * every page, and `hint` gives a panel somewhere to put its count or its
+ * caveat without inventing another row.
+ */
+export function CardHeader({
+  title, hint, action, as: Tag = 'h2', id,
+}: {
+  title: string
+  hint?: string
+  action?: ReactNode
+  as?: 'h2' | 'h3'
+  id?: string
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-soft px-5 py-4">
+      <div className="min-w-0">
+        <Tag id={id} className="truncate text-label font-extrabold text-content">{title}</Tag>
+        {hint ? <p className="mt-0.5 truncate text-caption text-content-muted">{hint}</p> : null}
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   )
 }
@@ -224,35 +277,37 @@ export function StatCard({
   // With a trend the icon becomes a quiet corner mark rather than a tinted
   // block: four identical coloured squircles in a row were the loudest thing
   // on the dashboard and the least informative.
-  const body = trend ? (
-    <div className="flex flex-col gap-3 p-5">
+  //
+  // Both variants share one geometry now — label row, then the number, then
+  // the supporting line — so a row that mixes trended and untrended tiles has
+  // its numbers on one baseline instead of two. They did not before: the
+  // untrended tile put its icon in the reading path, which pushed its label
+  // and its value right by 56px and made a four-tile row look ragged.
+  const body = (
+    <div className="flex h-full flex-col gap-3 p-5">
       <div className="flex items-start justify-between gap-2">
         <p className="truncate text-label font-semibold text-content-muted">{label}</p>
-        <span className="shrink-0 text-gray-400"><Icon name={icon} size={15} /></span>
+        <span className={`shrink-0 ${trend ? 'text-gray-400' : `flex h-7 w-7 items-center justify-center rounded-lg ${tones[tone]}`}`}>
+          <Icon name={icon} size={trend ? 15 : 15} />
+        </span>
       </div>
+
       <div className="flex items-baseline gap-2">
-        <p className="text-stat font-extrabold tabular-nums text-content">{value}</p>
-        <Delta value={trend.delta} goodDirection={trend.goodDirection} />
+        {/* tnum, always: these tiles poll, and proportional digits make a row
+            of counts shimmer sideways every time one of them ticks over. */}
+        <p className="tnum text-stat font-extrabold leading-none text-content">{value}</p>
+        {trend ? <Delta value={trend.delta} goodDirection={trend.goodDirection} /> : null}
       </div>
-      <Sparkline series={trend.series} />
-      {sub ? <p className="text-caption text-content-muted">{sub}</p> : null}
-    </div>
-  ) : (
-    <div className="flex items-start gap-4 p-5">
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}>
-        <Icon name={icon} size={19} />
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-label font-semibold text-content-muted">{label}</p>
-        <p className="mt-1 text-stat font-extrabold text-content">
-          {value}
-        </p>
-        {sub ? <p className="mt-1.5 text-caption text-content-muted">{sub}</p> : null}
-      </div>
+
+      {trend ? <Sparkline series={trend.series} /> : null}
+
+      {/* mt-auto pins the supporting line to the bottom edge, so tiles with and
+          without a sparkline still end level in the same grid row. */}
+      {sub ? <p className="mt-auto text-caption leading-snug text-content-muted">{sub}</p> : null}
     </div>
   )
   const cls =
-    'block rounded-2xl border border-line-soft bg-surface shadow-card transition-all duration-200 ' +
+    'group block h-full rounded-2xl border border-line-soft bg-surface shadow-card transition-all duration-200 ' +
     (href ? 'hover:-translate-y-0.5 hover:border-line hover:shadow-card-lg' : '')
   return href ? <a href={href} className={cls}>{body}</a> : <div className={cls}>{body}</div>
 }
@@ -281,13 +336,25 @@ const PILL_TONES: Record<string, string> = {
   rejected: 'bg-danger-tint text-danger-strong',
 }
 
+/**
+ * Status, as a pill.
+ *
+ * The dot is not decoration. A tinted pill distinguishes eleven states by
+ * background colour alone, which fails for the ~8% of men with a colour vision
+ * deficiency and for anyone reading a printed queue — and this console runs
+ * eleven of them in one table. The dot repeats the state as a second, stronger
+ * channel (it is `currentColor`, so it always carries the pill's own semantic
+ * hue at full strength against the tint), and the text has always been the
+ * third. Colour is now the reinforcement, not the message.
+ */
 export function Pill({ status, label }: { status: string; label?: string }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-caption font-bold leading-none ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-bold leading-none ${
         PILL_TONES[status] ?? 'bg-surface-alt text-content-muted'
       }`}
     >
+      <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
       {label ?? status.replace(/_/g, ' ')}
     </span>
   )

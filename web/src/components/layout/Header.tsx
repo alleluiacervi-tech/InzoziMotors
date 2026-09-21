@@ -11,17 +11,16 @@ import { APP, CONTACT, NAV_LINKS, STORES_LIVE } from '@/lib/site'
 import type { User } from '@/lib/types'
 
 /**
- * Sticky site header, with two personalities and a seam-free change between
- * them:
+ * Sticky site header. ONE personality: the page surface, gaining a hairline
+ * and a whisper of shadow the moment the page scrolls.
  *
- *   OVERLAY — on the homepage, before any scroll: fully transparent, light
- *   type, sitting ON the hero photograph (the hero pulls itself up underneath
- *   with a negative margin). The page opens as one full-bleed image with the
- *   navigation floating in it — the flagship treatment.
- *
- *   SOLID — everywhere else, and the moment the user scrolls: frosted surface,
- *   hairline, a whisper of shadow. The 300ms transition between the two is the
- *   whole trick; there is no third state.
+ * It used to have two. An OVERLAY mode rendered the whole bar transparent with
+ * white type, for the homepage only, floating on the dark hero photograph that
+ * pulled itself up underneath with a negative margin. That hero is now printed
+ * on the site's own paper (see home/Hero.tsx), so white-on-transparent had
+ * nothing dark left to sit on — and the mode it required was costing every
+ * control in this file a second set of colours, a second Button variant, and a
+ * second reading of the active state. Nine ternaries went with it.
  *
  * The signed-in user is resolved on the SERVER (layout.tsx reads the httpOnly
  * cookie) and handed down as a prop. That keeps the JWT out of the browser
@@ -69,46 +68,33 @@ export function Header({ user }: { user: User | null }) {
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href))
 
-  // Only the homepage carries a full-bleed dark hero for the header to float
-  // on. The drawer forces solid: white panel under a transparent bar reads as
-  // a rendering bug.
-  const overlay = pathname === '/' && !scrolled && !open
-
-  // The desktop nav link, in both personalities. The active page gets an
-  // editorial underline bar rather than a pill — quieter, and it never
-  // competes with the buttons on the right.
+  // The desktop nav link. The active page gets an editorial underline bar
+  // rather than a pill — quieter, and it never competes with the buttons on
+  // the right.
   const navLink = (active: boolean) =>
     `relative rounded-lg px-3 py-2 text-caption font-semibold transition-colors ` +
     `after:absolute after:inset-x-3 after:-bottom-px after:h-[2px] after:rounded-full ` +
     `after:transition-all after:duration-300 after:content-[''] ` +
-    (overlay
-      ? active
-        ? 'text-white after:bg-white'
-        : 'text-white/75 after:bg-transparent hover:text-white'
-      : active
-        ? 'text-content after:bg-brand'
-        : 'text-content-secondary after:bg-transparent hover:text-content')
+    (active
+      ? 'text-content after:bg-brand'
+      : 'text-content-secondary after:bg-transparent hover:text-content')
 
-  // Quiet header furniture (WhatsApp, search, hamburger) in both tones.
-  const quiet = overlay
-    ? 'text-white/85 hover:bg-white/10 hover:text-white'
-    : 'text-content-secondary hover:bg-surface-alt hover:text-content'
+  // Quiet header furniture: WhatsApp, search, hamburger.
+  const quiet = 'text-content-secondary hover:bg-surface-alt hover:text-content'
 
   return (
     <header
       className={`sticky top-0 z-50 h-[var(--header-h)] border-b transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ${
-        overlay
-          ? 'border-transparent bg-transparent'
-          : scrolled
-            ? 'border-line-soft bg-surface/85 shadow-[0_8px_24px_-20px_rgba(20,20,20,0.35)] backdrop-blur-xl'
-            : 'border-transparent bg-surface-page'
+        scrolled
+          ? 'border-line-soft bg-surface/85 shadow-[0_8px_24px_-20px_rgba(20,20,20,0.35)] backdrop-blur-xl'
+          : 'border-transparent bg-surface-page'
       }`}
     >
       <div className="mx-auto flex h-full max-w-content items-center gap-4 px-5 sm:px-8 lg:px-12">
         {/* flex + h-11: the mark is 37px tall, so the link around it was a
             37px target sitting in a 68px bar with room to spare. */}
         <Link href="/" aria-label="Sawa Cars — home" className="flex h-11 shrink-0 items-center">
-          <Logo size={17} tone={overlay ? 'light' : 'dark'} />
+          <Logo size={17} tone="dark" />
         </Link>
 
         <nav aria-label="Primary" className="ml-4 hidden lg:block">
@@ -154,7 +140,7 @@ export function Header({ user }: { user: User | null }) {
             <Button
               href="/admin-portal"
               prefetch={false}
-              variant={overlay ? 'inverse' : 'ghost'}
+              variant="ghost"
               size="sm"
               className="hidden sm:inline-flex"
             >
@@ -165,7 +151,7 @@ export function Header({ user }: { user: User | null }) {
           {user ? (
             <Button
               href="/dashboard"
-              variant={overlay ? 'inverse' : 'secondary'}
+              variant="secondary"
               size="sm"
               className="hidden sm:inline-flex"
             >
@@ -175,7 +161,7 @@ export function Header({ user }: { user: User | null }) {
           ) : (
             <Button
               href="/signin"
-              variant={overlay ? 'inverse' : 'ghost'}
+              variant="ghost"
               size="sm"
               className="hidden sm:inline-flex"
             >
@@ -187,7 +173,7 @@ export function Header({ user }: { user: User | null }) {
             <>
               <Button
                 href="/cars"
-                variant={overlay ? 'inverse' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 className="hidden lg:inline-flex"
               >
@@ -204,7 +190,7 @@ export function Header({ user }: { user: User | null }) {
                   today with an app that is not. */}
               <Button
                 href="/download"
-                variant={overlay ? 'inverse' : 'outline'}
+                variant="outline"
                 size="sm"
                 className="hidden lg:inline-flex"
               >
@@ -217,14 +203,10 @@ export function Header({ user }: { user: User | null }) {
           )}
 
           <div className="hidden sm:block">
-            <LanguageSwitcher tone={overlay ? 'dark' : 'light'} />
+            <LanguageSwitcher tone="light" />
           </div>
 
-          {/* Over a hero photograph the header chrome is white-on-image, so the
-              toggle borrows the same treatment the menu button uses. */}
-          <ThemeToggle
-            className={overlay ? 'text-white hover:bg-white/10' : 'text-content'}
-          />
+          <ThemeToggle className="text-content" />
 
           <button
             type="button"
@@ -232,9 +214,7 @@ export function Header({ user }: { user: User | null }) {
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? 'Close menu' : 'Open menu'}
-            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors lg:hidden ${
-              overlay ? 'text-white hover:bg-white/10' : 'text-content hover:bg-surface-alt'
-            }`}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-content transition-colors hover:bg-surface-alt lg:hidden"
           >
             <Icon name={open ? 'close' : 'menu'} size={22} />
           </button>
