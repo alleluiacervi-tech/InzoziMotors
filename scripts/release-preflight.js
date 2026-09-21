@@ -159,30 +159,81 @@ if (process.env.RELEASE_REQUIRE_ENV === '1') {
   }
 }
 
-// Loading the bundle, not just parsing it. Kept as a child process so the
-// check has one implementation and can also run on its own in CI, and so a
-// module that throws cannot take this script down with it.
-const moduleScope = require('child_process').spawnSync(
-  process.execPath, [path.join(__dirname, 'check-module-scope.js')],
-  { cwd: root, encoding: 'utf8' },
+// ─────────────────────────────────────────────────────────────────────────────
+// The two checks that RUN the app's code instead of reading it.
+//
+// Both are child processes on purpose: each has one implementation, each also
+// runs on its own in CI (.github/workflows/ci.yml), and a module that throws
+// cannot take this script down with it.
+//
+// Both are invoked as FILES, never as npm scripts, and that is load-bearing:
+// mobile-update.yml treats ANY change to package.json as native-sensitive and
+// withholds the over-the-air publish for that commit. Adding a script entry
+// just to get a tidier command name would cost a release its OTA update. The
+// message below therefore names the file — it used to say
+// `npm run mobile:module-scope`, which has never existed in package.json, so
+// the one instruction a failing release gate gave you did not work.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Both checkers load Babel out of the repo root's node_modules and die at
+// require-time without it — MODULE_NOT_FOUND, exit 1, indistinguishable from a
+// real finding. So an uninstalled tree used to be reported as "the app crashes
+// on launch": a false alarm from the one gate that has to be trusted. A gate
+// that cries wolf is a gate people learn to skip, which is how 1.0.4 and 1.0.5
+// shipped dead on launch in the first place.
+const CHECKER_DEPS = ['@babel/core', '@babel/parser'];
+const missingCheckerDeps = CHECKER_DEPS.filter(
+  (dep) => !fs.existsSync(path.join(root, 'node_modules', dep)),
 );
-if (moduleScope.status !== 0) {
+
+/**
+ * Runs one checker and records what actually happened.
+ *
+ * On a real finding the checker's own output — file, line, the error, and what
+ * imported it — is printed here. It was previously discarded, and the reader
+ * was told to run the same script again to see what this process already knew.
+ */
+function runChecker(script, finding) {
+  if (missingCheckerDeps.length) {
+    failures.push(
+      `${script} could not run: ${missingCheckerDeps.join(' and ')} `
+      + `${missingCheckerDeps.length > 1 ? 'are' : 'is'} not installed in the repo root, `
+      + 'and the checker loads Babel from there. Run `npm install` in the repo root and '
+      + 'try again. This says nothing about the app — it is the checker failing to '
+      + 'start, not a finding.',
+    );
+    return;
+  }
+
+  const result = require('child_process').spawnSync(
+    process.execPath, [path.join(__dirname, script)],
+    { cwd: root, encoding: 'utf8' },
+  );
+
+  if (result.error) {
+    failures.push(`${script} could not be started: ${result.error.message}`);
+    return;
+  }
+  if (result.status === 0) return;
+
+  // Indented so the checker's report reads as a block under its bullet.
+  const report = `${result.stderr || ''}${result.stdout || ''}`.trim();
   failures.push(
-    'The app throws while its bundle loads, so a build from this tree would ' +
-    'crash on launch. Run `npm run mobile:module-scope` for the module and the error.',
+    report
+      ? `${finding} Its report:\n\n${report.split('\n').map((line) => `    ${line}`).join('\n')}`
+      : `${finding} Run \`node scripts/${script}\` for the module and the error.`,
   );
 }
 
-const undefinedRefs = require('child_process').spawnSync(
-  process.execPath, [path.join(__dirname, 'check-undefined-refs.js')],
-  { cwd: root, encoding: 'utf8' },
+runChecker(
+  'check-module-scope.js',
+  'The app throws while its bundle loads, so a build from this tree would crash on launch.',
 );
-if (undefinedRefs.status !== 0) {
-  failures.push(
-    'The app uses a name it never imports, so that code path throws the first '
-    + 'time it runs. Run `node scripts/check-undefined-refs.js` for the file and line.',
-  );
-}
+
+runChecker(
+  'check-undefined-refs.js',
+  'The app uses a name it never imports, so that code path throws the first time it runs.',
+);
 
 if (failures.length) {
   console.error('Release preflight failed:');
