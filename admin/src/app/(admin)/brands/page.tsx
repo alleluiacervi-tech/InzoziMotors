@@ -204,7 +204,11 @@ export default function BrandsPage() {
             {visible.map((make) => (
               <li
                 key={make.id}
-                className={`flex items-center gap-3 rounded-xl border border-line-soft p-3 ${
+                // flex-wrap plus a full-width action group below sm: a mark,
+                // a name and three buttons cannot share one line at 390px, and
+                // the row was pushing the whole page 113px wide — the only
+                // horizontal overflow left in the console.
+                className={`flex flex-wrap items-center gap-3 rounded-xl border border-line-soft p-3 ${
                   make.active ? '' : 'opacity-55'
                 }`}
               >
@@ -228,35 +232,43 @@ export default function BrandsPage() {
                     e.target.value = ''
                   }}
                 />
-                <button
-                  onClick={() => fileInputs.current[make.id]?.click()}
-                  disabled={busy === make.id}
-                  className="rounded-lg border border-line px-3 py-1.5 text-label font-bold text-content-secondary disabled:opacity-40"
-                >
-                  {busy === make.id ? '…' : make.logo_url ? 'Replace' : 'Logo'}
-                </button>
-                {make.logo_url ? (
+                {/* The actions take their own full-width line below sm and sit
+                    inline from there up. h-9 rather than py-1.5: these were
+                    ~30px targets on the one page you operate with a thumb. */}
+                <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
                   <button
-                    onClick={() => patch(make, { logo_url: null })}
+                    onClick={() => fileInputs.current[make.id]?.click()}
                     disabled={busy === make.id}
-                    title="Remove the logo — the brand falls back to its initials"
-                    className="rounded-lg border border-line px-2.5 py-1.5 text-label font-bold text-content-muted disabled:opacity-40"
+                    className="flex h-9 items-center rounded-lg border border-line px-3 text-label font-bold text-content-secondary disabled:opacity-40"
                   >
-                    ✕
+                    {busy === make.id ? '…' : make.logo_url ? 'Replace' : 'Logo'}
                   </button>
-                ) : null}
-                <button
-                  onClick={() => patch(make, { active: !make.active })}
-                  disabled={busy === make.id}
-                  title={make.active
-                    ? 'Stop offering this brand to new sellers. Existing listings are untouched.'
-                    : 'Offer this brand again'}
-                  className={`rounded-lg px-3 py-1.5 text-label font-bold disabled:opacity-40 ${
-                    make.active ? 'bg-surface-alt text-content-secondary' : 'bg-success text-white'
-                  }`}
-                >
-                  {make.active ? 'On' : 'Off'}
-                </button>
+                  {make.logo_url ? (
+                    <button
+                      onClick={() => patch(make, { logo_url: null })}
+                      disabled={busy === make.id}
+                      title="Remove the logo — the brand falls back to its initials"
+                      aria-label={`Remove the ${make.name} logo`}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-content-muted disabled:opacity-40"
+                    >
+                      {/* Icon, not a ✕ character: the glyph rendered at the
+                          font's whim and carried no accessible name. */}
+                      <Icon name="close" size={15} />
+                    </button>
+                  ) : null}
+                  <button
+                    onClick={() => patch(make, { active: !make.active })}
+                    disabled={busy === make.id}
+                    title={make.active
+                      ? 'Stop offering this brand to new sellers. Existing listings are untouched.'
+                      : 'Offer this brand again'}
+                    className={`flex h-9 items-center rounded-lg px-3 text-label font-bold disabled:opacity-40 ${
+                      make.active ? 'bg-surface-alt text-content-secondary' : 'bg-success text-white'
+                    }`}
+                  >
+                    {make.active ? 'On' : 'Off'}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
