@@ -10,6 +10,11 @@ const en = {
   },
   nav: {
     label: 'Dashboard',
+    group: {
+      buying: 'Buying',
+      selling: 'Selling & renting',
+      account: 'Account',
+    },
     overview: 'Overview',
     saved: 'Saved',
     rentals: 'Rental inquiries',
@@ -51,6 +56,8 @@ const en = {
     title: 'Hello, {{name}}',
     description:
       'Your shortlists, rental inquiries, seller submissions and platform updates in one place.',
+    viewAll: 'View all',
+    browseCars: 'Browse cars',
     statSavedLabel: 'Saved',
     statSavedHint: 'vehicle shortlist',
     statRentalsLabel: 'Rental inquiries',
@@ -484,6 +491,11 @@ const rw: typeof en = {
   },
   nav: {
     label: 'Imbonerahamwe',
+    group: {
+      buying: 'Kugura',
+      selling: 'Kugurisha no gukodesha',
+      account: 'Konti',
+    },
     overview: 'Incamake',
     saved: 'Ibyabitswe',
     rentals: 'Ibibazo by’ubukode',
@@ -525,6 +537,8 @@ const rw: typeof en = {
     title: 'Muraho, {{name}}',
     description:
       'Ibyo watoranyije, ibibazo by’ubukode, ibyo watanze byo kugurisha n’amakuru y’urubuga byose ahantu hamwe.',
+    viewAll: 'Reba byose',
+    browseCars: 'Shakisha imodoka',
     statSavedLabel: 'Ibyabitswe',
     statSavedHint: 'urutonde rw’imodoka',
     statRentalsLabel: 'Ibibazo by’ubukode',
@@ -958,6 +972,11 @@ const fr: typeof en = {
   },
   nav: {
     label: 'Tableau de bord',
+    group: {
+      buying: 'Achat',
+      selling: 'Vente et location',
+      account: 'Compte',
+    },
     overview: 'Aperçu',
     saved: 'Enregistrés',
     rentals: 'Demandes de location',
@@ -999,6 +1018,8 @@ const fr: typeof en = {
     title: 'Bonjour, {{name}}',
     description:
       'Vos sélections, demandes de location, soumissions de vendeur et actualités de la plateforme au même endroit.',
+    viewAll: 'Tout voir',
+    browseCars: 'Parcourir les voitures',
     statSavedLabel: 'Enregistrés',
     statSavedHint: 'sélection de véhicules',
     statRentalsLabel: 'Demandes de location',
@@ -1432,6 +1453,11 @@ const sw: typeof en = {
   },
   nav: {
     label: 'Dashibodi',
+    group: {
+      buying: 'Kununua',
+      selling: 'Kuuza na kukodisha',
+      account: 'Akaunti',
+    },
     overview: 'Muhtasari',
     saved: 'Yaliyohifadhiwa',
     rentals: 'Maombi ya kukodisha',
@@ -1473,6 +1499,8 @@ const sw: typeof en = {
     title: 'Habari, {{name}}',
     description:
       'Orodha zako fupi, maombi ya kukodisha, mawasilisho ya muuzaji na masasisho ya jukwaa mahali pamoja.',
+    viewAll: 'Ona zote',
+    browseCars: 'Vinjari magari',
     statSavedLabel: 'Yaliyohifadhiwa',
     statSavedHint: 'orodha ya magari',
     statRentalsLabel: 'Maombi ya kukodisha',
@@ -1906,6 +1934,11 @@ const ko: typeof en = {
   },
   nav: {
     label: '대시보드',
+    group: {
+      buying: '구매',
+      selling: '판매 · 렌트',
+      account: '계정',
+    },
     overview: '개요',
     saved: '저장됨',
     rentals: '렌트 문의',
@@ -1946,6 +1979,8 @@ const ko: typeof en = {
   overview: {
     title: '안녕하세요, {{name}}님',
     description: '관심 목록, 렌트 문의, 판매자 제출, 플랫폼 업데이트를 한곳에서 확인하세요.',
+    viewAll: '전체 보기',
+    browseCars: '차량 둘러보기',
     statSavedLabel: '저장됨',
     statSavedHint: '차량 관심 목록',
     statRentalsLabel: '렌트 문의',
@@ -2379,6 +2414,11 @@ const zh: typeof en = {
   },
   nav: {
     label: '控制台',
+    group: {
+      buying: '购车',
+      selling: '出售与租赁',
+      account: '账户',
+    },
     overview: '概览',
     saved: '收藏',
     rentals: '租车咨询',
@@ -2419,6 +2459,8 @@ const zh: typeof en = {
   overview: {
     title: '您好，{{name}}',
     description: '在一处查看您的收藏列表、租车咨询、卖家提交及平台更新。',
+    viewAll: '查看全部',
+    browseCars: '浏览车辆',
     statSavedLabel: '收藏',
     statSavedHint: '车辆收藏列表',
     statRentalsLabel: '租车咨询',

@@ -19,7 +19,7 @@ export type IconName =
   | 'menu' | 'grid' | 'chart' | 'gauge' | 'fuel' | 'settings' | 'logout'
   | 'sparkles' | 'trending-down' | 'trending-up' | 'lock' | 'apple' | 'play-store'
   | 'alert' | 'info' | 'plus' | 'minus' | 'external' | 'compass'
-  | 'sun' | 'moon'
+  | 'sun' | 'moon' | 'instagram'
 
 // React 19 removed the global JSX namespace — ReactElement is the supported type.
 const PATHS: Record<IconName, ReactElement> = {
@@ -148,6 +148,16 @@ const PATHS: Record<IconName, ReactElement> = {
       fill="currentColor"
       stroke="none"
     />
+  ),
+  // Drawn on the same 24px grid and left as strokes (not the filled brand
+  // glyph) so it sits in a row with phone/mail/whatsapp without one icon
+  // suddenly reading heavier than its neighbours.
+  instagram: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
+    </>
   ),
   user: (
     <>

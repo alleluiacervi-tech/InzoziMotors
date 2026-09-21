@@ -1,7 +1,5 @@
 import type { StaticImageData } from 'next/image'
 import heroSedanStudio from '@/assets/marketing/hero-sedan-studio.jpeg'
-import heroSuvCourtyard from '@/assets/marketing/hero-suv-courtyard.jpeg'
-import heroGtCoast from '@/assets/marketing/hero-gt-coast.jpeg'
 import suvSideStudio from '@/assets/marketing/suv-side-studio.jpeg'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -9,8 +7,7 @@ import suvSideStudio from '@/assets/marketing/suv-side-studio.jpeg'
 //
 // HONESTY STANCE — read before adding anything here. These are brand/marketing
 // images, used the way AVATR uses product photography as atmosphere. They are:
-//   - used ONLY on marketing surfaces (hero fallback slides, body-type
-//     showcase, process imagery),
+//   - used ONLY on marketing surfaces (today: the body-type browse showcase),
 //   - NEVER rendered as a listing, never given a price, never badged, and
 //   - ALWAYS second choice: wherever a real live listing exists, its real
 //     photograph replaces these.
@@ -26,56 +23,18 @@ import suvSideStudio from '@/assets/marketing/suv-side-studio.jpeg'
 // 404ing in production.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// REMOVED: HERO_SLIDES, a four-slide fallback carousel. Nothing imported it —
+// the homepage hero has led with a single photograph for several releases — so
+// it rendered nowhere while still counting as a usage of every image in it.
+// That is how /img/inspection-alignment.jpg came to look like it was used three
+// times when the site only ever painted it twice, and it is why two marketing
+// JPEGs looked referenced while no page could reach them. If a rotating hero
+// comes back it should be built against live listings, not against this.
+
 const unsplash = (id: string, w: number) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`
 
 export type MarketingImage = StaticImageData | string
-
-export interface MarketingSlide {
-  image: MarketingImage
-  /** Honest alt text — describes the photograph, never claims a listing. */
-  alt: string
-  headline: string
-  caption: string
-  href: string
-  cta: string
-}
-
-/** Hero fallback slides — shown only when no live listing exists to lead with. */
-export const HERO_SLIDES: MarketingSlide[] = [
-  {
-    image: heroSuvCourtyard,
-    alt: 'Modern luxury SUVs in an ultra-modern architectural courtyard',
-    headline: 'Every car inspected. Every seller verified.',
-    caption: '150 physical diagnostic points, published in full on every single listing.',
-    href: '/cars',
-    cta: 'Browse certified cars',
-  },
-  {
-    image: '/img/inspection-alignment.jpg',
-    alt: 'Vehicle undergoing computerized 150-point laser wheel alignment diagnostics',
-    headline: 'Physical 150-Point Inspection Diagnostics',
-    caption: 'Laser wheel alignment, powertrain diagnostics, and zero odometer rollbacks.',
-    href: '/how-it-works',
-    cta: 'See inspection standards',
-  },
-  {
-    image: '/img/lot.jpg',
-    alt: 'Inspected and certified vehicle inventory ready for immediate delivery in Kigali',
-    headline: 'Verified Title. 48-Hour RRA Registration.',
-    caption: 'Direct title transfer, clear customs status, and local test drives in Kigali.',
-    href: '/cars',
-    cta: 'Explore verified stock',
-  },
-  {
-    image: heroGtCoast,
-    alt: 'Sports sedan driving an open road',
-    headline: 'Rent the same certified standard.',
-    caption: 'Deposits back in full after the digital return check.',
-    href: '/rentals',
-    cta: 'See rental fleet',
-  },
-]
 
 /** Body-type families — the browse showcase. Real inventory photos replace
  *  these per-family the moment a live listing of that type exists.

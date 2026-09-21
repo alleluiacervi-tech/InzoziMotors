@@ -107,6 +107,11 @@ const config: Config = {
         brand: '0 4px 14px rgba(204, 5, 15, 0.28)',
         'brand-lg': '0 10px 34px rgba(204, 5, 15, 0.30)',
         inset: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+        // For panels that sit ON a photograph or on ink: a warm shadow is
+        // invisible there, so this one is near-black and deep, and carries a
+        // top inset highlight so the panel has an edge catching the light.
+        'lift-ink':
+          '0 24px 60px -18px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.10)',
       },
 
       // Display sizes for the marketing surfaces. Tight negative tracking is a
@@ -170,6 +175,18 @@ const config: Config = {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
+        // The hero photograph's arrival: it rises and settles rather than
+        // fading in place, which reads as a panel being set down.
+        rise: {
+          from: { opacity: '0', transform: 'translateY(28px) scale(0.985)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        // The live-inventory dot. Two rings, one animation — a halo that
+        // expands and dissolves, so "live" is legible without a label.
+        halo: {
+          '0%': { transform: 'scale(1)', opacity: '0.55' },
+          '70%, 100%': { transform: 'scale(2.6)', opacity: '0' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
@@ -177,6 +194,8 @@ const config: Config = {
         // enough that nobody can point at it; the page just feels alive.
         'kenburns': 'kenburns 22s cubic-bezier(0.25, 0.1, 0.25, 1) both',
         'fade-in': 'fade-in 0.5s ease both',
+        rise: 'rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both',
+        halo: 'halo 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
         shimmer: 'shimmer 1.6s infinite',
       },
     },
