@@ -74,6 +74,33 @@ export const CONTACT = {
   whatsappVerified: true,
 } as const
 
+/**
+ * Public social profiles.
+ *
+ * Same honesty gate as the phone line: an entry only appears here once the
+ * account exists and is actually posted to. An empty array renders no social
+ * row at all rather than a set of dead icons — the site says nothing before it
+ * says something untrue.
+ *
+ * URLs are stored CANONICAL: no utm_*, no `stkn` share token, no `igsh`. Those
+ * parameters come off the "share" button in the app, are scoped to whoever
+ * generated them, and expire — publishing one puts a personal share token in
+ * every page's HTML and in the structured data Google indexes. The bare
+ * profile URL resolves to the same account forever.
+ *
+ * `sameAs` in lib/seo.ts reads this array, so adding a profile here also tells
+ * Google the account belongs to the organization — the entity link that makes
+ * a knowledge panel possible.
+ */
+export const SOCIAL = [
+  {
+    id: 'instagram',
+    label: 'Instagram',
+    handle: '@sawacars_',
+    href: 'https://www.instagram.com/sawacars_',
+  },
+] as const
+
 /** Inspection centers — mirrors the inspection_centers table seeded in schema.sql. */
 export const CENTERS = [
   {

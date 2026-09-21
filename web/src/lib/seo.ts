@@ -1,4 +1,4 @@
-import { CENTERS, CONTACT, SITE } from './site'
+import { CENTERS, CONTACT, SITE, SOCIAL } from './site'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Structured data — one builder per entity, so the same facts are stated the
@@ -9,7 +9,9 @@ import { CENTERS, CONTACT, SITE } from './site'
 // Nothing here may assert something the site does not already show a human:
 //   · telephone only while CONTACT.whatsappVerified holds, · no aggregateRating
 //     until real reviews exist, · no priceValidUntil we cannot honour, · no
-//     sameAs for social profiles we have not created.
+//     sameAs for a social profile we have not created — the list is driven off
+//     SOCIAL in lib/site.ts, which is also what the footer renders, so the
+//     claim and the link are the same fact.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Schema.org wants absolute URLs. Relative ones are silently dropped. */
@@ -78,6 +80,12 @@ export function organizationNode() {
       areaServed: 'RW',
       availableLanguage: ['en', 'rw'],
     },
+    // The entity link. `sameAs` is how a search engine ties a social profile to
+    // the organization rather than treating it as an unrelated page, and it is
+    // a precondition for a knowledge panel. Driven off SOCIAL so a profile is
+    // claimed here the same moment it is published in the footer, and omitted
+    // entirely while there are none — an empty sameAs array is noise.
+    ...(SOCIAL.length ? { sameAs: SOCIAL.map((profile) => profile.href) } : {}),
   }
 }
 

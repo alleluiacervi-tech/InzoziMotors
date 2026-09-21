@@ -24,7 +24,7 @@ export async function FeaturedCars({ cars }: { cars: Car[] }) {
           />
           <Link
             href="/cars"
-            className="inline-flex items-center gap-1.5 pb-1 text-body font-bold text-brand hover:underline"
+            className="-my-2 inline-flex items-center gap-1.5 py-2 text-body font-bold text-brand hover:underline"
           >
             {t('home.featured.viewAll')}
             <Icon name="arrow-right" size={16} />

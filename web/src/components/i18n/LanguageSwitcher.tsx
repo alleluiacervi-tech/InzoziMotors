@@ -46,7 +46,7 @@ export function LanguageSwitcher({ tone = 'light' }: { tone?: 'light' | 'dark' }
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-caption font-semibold transition-colors ${triggerTone}`}
+        className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-caption font-semibold transition-colors ${triggerTone}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t('common.language')}

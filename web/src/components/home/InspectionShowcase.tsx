@@ -1,5 +1,11 @@
 import Link from 'next/link'
 import { Container, Icon, Section, SectionHeading } from '@/components/ui'
+import {
+  CATEGORIES,
+  CRITICAL_ITEMS,
+  PASS_THRESHOLD,
+  TOTAL_POINTS,
+} from '@/lib/inspection-policy'
 import { getServerT } from '@/lib/i18n/server'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,24 +34,20 @@ import { getServerT } from '@/lib/i18n/server'
 // needs no adjectives. That is the trade this whole pass is built on.
 //
 // KEEPING IT HONEST: if the checklist changes, these counts must change with
-// it. They are duplicated here rather than fetched because the homepage must
-// render during a backend outage — but backend/test/inspection-policy.test.js
-// pins the totals, so a change there fails CI and sends someone to this file.
+// it. They are transcribed rather than fetched because the homepage must render
+// during a backend outage — but backend/test/inspection-policy.test.js pins the
+// totals, so a change there fails CI and sends someone to the transcription.
+//
+// That transcription now lives in src/lib/inspection-policy.ts rather than in
+// this file. The hero quotes the same three numbers, and when they were local
+// to this component the only way to state them up there was to type them a
+// second time. The shared module also throws on import if its categories stop
+// adding up to 150, so a bad edit is a failed build rather than a wrong claim.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Transcribed from inspection-policy.js CATEGORIES. 150 points, 49 critical. */
-const CATEGORIES = [
-  { key: 'engine', points: 25, critical: 4 },
-  { key: 'brakes', points: 25, critical: 14 },
-  { key: 'body', points: 20, critical: 7 },
-  { key: 'interior', points: 20, critical: 0 },
-  { key: 'electronics', points: 20, critical: 8 },
-  { key: 'tyres', points: 15, critical: 8 },
-  { key: 'documentation', points: 25, critical: 8 },
-] as const
-
-const TOTAL = CATEGORIES.reduce((n, c) => n + c.points, 0)
-const CRITICAL = CATEGORIES.reduce((n, c) => n + c.critical, 0)
+/** The heaviest category, so every bar is drawn as a share of the real maximum
+ *  rather than of a hardcoded 25 that silently misreports if a category grows. */
+const HEAVIEST = Math.max(...CATEGORIES.map((category) => category.points))
 
 export async function InspectionShowcase() {
   const t = await getServerT()
@@ -84,7 +86,7 @@ export async function InspectionShowcase() {
                 <div className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-alt">
                   <div
                     className="h-full rounded-pill bg-ink-700"
-                    style={{ width: `${(cat.points / 25) * 100}%` }}
+                    style={{ width: `${(cat.points / HEAVIEST) * 100}%` }}
                   />
                 </div>
               </div>
@@ -107,17 +109,20 @@ export async function InspectionShowcase() {
         {/* The two rules that make the score mean something. Stated once. */}
         <div className="mt-8 grid gap-x-10 gap-y-4 border-t-2 border-ink-900 pt-6 sm:grid-cols-2">
           <p className="text-caption leading-relaxed text-content-secondary">
-            {t('home.inspection.ruleScore', { total: TOTAL, threshold: 105 })}
+            {t('home.inspection.ruleScore', {
+              total: TOTAL_POINTS,
+              threshold: PASS_THRESHOLD,
+            })}
           </p>
           <p className="text-caption leading-relaxed text-content-secondary">
-            {t('home.inspection.ruleCritical', { critical: CRITICAL })}
+            {t('home.inspection.ruleCritical', { critical: CRITICAL_ITEMS })}
           </p>
         </div>
 
         <p className="mt-8 text-body">
           <Link
             href="/how-it-works"
-            className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
+            className="-my-2 inline-flex items-center gap-1.5 py-2 font-bold text-brand hover:underline"
           >
             {t('home.inspection.link')}
             <Icon name="arrow-right" size={16} />

@@ -87,7 +87,10 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
 
 Single source of truth for the checklist: `backend/src/lib/inspection-policy.js`
 — 150 one-point items across 7 categories; it **throws at require-time** if the
-counts don't reconcile.
+counts don't reconcile. Its public-facing transcription is
+`web/src/lib/inspection-policy.ts` (hero metric strip + homepage ledger), which
+throws on import the same way, so a bad edit is a failed build rather than a
+wrong number on the homepage.
 
 ---
 
@@ -214,8 +217,11 @@ a lettermark until then.
 
 Honesty gates already in the code, keep them: `APP.storesLive: false` hides
 store badges until real store IDs exist; `CONTACT.whatsappVerified` gates the
-phone number; `web/src/lib/seo.ts` forbids `aggregateRating`/`priceValidUntil`
-until they are real. Listing galleries are **flexible** (`listing_min_photos=1`,
+phone number; `SOCIAL` (`web/src/lib/site.ts`) drives both the footer's social
+row and `sameAs` in the structured data, so a profile is claimed to Google only
+once it is shown to a human — store those URLs canonical, never with the
+`utm_*`/`stkn` parameters Instagram's share button appends; `web/src/lib/seo.ts`
+forbids `aggregateRating`/`priceValidUntil` until they are real. Listing galleries are **flexible** (`listing_min_photos=1`,
 6 recommended) — the old fixed 36-angle rule is gone.
 
 ---

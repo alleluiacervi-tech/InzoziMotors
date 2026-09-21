@@ -105,7 +105,9 @@ export function Header({ user }: { user: User | null }) {
       }`}
     >
       <div className="mx-auto flex h-full max-w-content items-center gap-4 px-5 sm:px-8 lg:px-12">
-        <Link href="/" aria-label="Sawa Cars — home" className="shrink-0">
+        {/* flex + h-11: the mark is 37px tall, so the link around it was a
+            37px target sitting in a 68px bar with room to spare. */}
+        <Link href="/" aria-label="Sawa Cars — home" className="flex h-11 shrink-0 items-center">
           <Logo size={17} tone={overlay ? 'light' : 'dark'} />
         </Link>
 

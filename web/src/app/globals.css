@@ -79,6 +79,13 @@
     /* Editorial vertical rhythm — section spacing tiers ------------------- */
     --space-section: clamp(4rem, 9vw, 8rem);
     --space-block: clamp(2rem, 4vw, 3.5rem);
+
+    /* Ambient light on ink surfaces. Two lamps, both almost invisible on their
+       own: a warm brand wash top-right and a cool one top-left. Declared as
+       tokens so the hero, the InkClose band and any future dark surface are
+       lit by the same rig instead of each inventing its own gradient. */
+    --lamp-warm: 204 5 15;
+    --lamp-cool: 120 150 210;
   }
 
   .dark {
@@ -236,3 +243,67 @@
     display: none;
   }
 }
+
+  /* ───────────────────────────────────────────────────────────────────────
+     Depth on ink.
+
+     A flat #0E0C0B panel behind a photograph reads as a missing background,
+     not as a decision. These three utilities are the whole lighting rig for
+     every dark surface on the site; they are decorative, sit behind content
+     at negative z, and never intercept a pointer.
+     ─────────────────────────────────────────────────────────────────────── */
+
+  /* Two soft lamps. Sized in % so the falloff scales with the band rather
+     than blowing out on a phone and disappearing on a 27" monitor. */
+  .ambient-ink::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(70% 58% at 82% 6%, rgb(var(--lamp-warm) / 0.22), transparent 62%),
+      radial-gradient(58% 48% at 8% 0%, rgb(var(--lamp-cool) / 0.14), transparent 60%);
+  }
+
+  /* Film grain. An inline SVG turbulence at 3.5% — enough to kill the banding
+     that large dark gradients show on 8-bit panels, not enough to notice. */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* The draughtsman's grid, at the threshold of visibility. Used once, under
+     the hero, so the ink reads as a drawing board rather than a void. */
+  .blueprint-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+    background-size: 72px 72px;
+    /* Fades out downward so it never fights the content at the foot of the
+       band — a grid that stops is a texture, a grid that doesn't is a table. */
+    mask-image: linear-gradient(to bottom, black, transparent 72%);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent 72%);
+  }
+
+  /* Figures, prices and scores line up in columns only if their glyphs are the
+     same width. Tailwind ships `tabular-nums`; this is the same thing named
+     for the thing it protects, and it is applied to every number the site
+     presents as data rather than as prose. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Long copy sets better with orphan control; headings already use
+     text-balance from the base layer. */
+  .text-pretty {
+    text-wrap: pretty;
+  }

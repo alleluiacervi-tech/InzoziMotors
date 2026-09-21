@@ -31,7 +31,7 @@ export async function HowItWorks() {
         <p className="mt-10 text-body text-content-secondary">
           <Link
             href="/how-it-works"
-            className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline"
+            className="-my-2 inline-flex items-center gap-1.5 py-2 font-bold text-brand hover:underline"
           >
             {t('home.howItWorks.link')}
             <Icon name="arrow-right" size={16} />

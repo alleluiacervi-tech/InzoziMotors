@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
 import { Eyebrow, Icon } from '@/components/ui'
 import { StoreButtons } from '@/components/app/StoreButtons'
-import { CONTACT, FOOTER_LINKS, SITE } from '@/lib/site'
+import { CONTACT, FOOTER_LINKS, SITE, SOCIAL } from '@/lib/site'
 import { getDisplayCenters } from '@/lib/centers'
 import { getServerT } from '@/lib/i18n/server'
 
@@ -26,7 +26,7 @@ export async function Footer() {
               <StoreButtons tone="dark" size="sm" />
             </div>
 
-            <div className="mt-8 space-y-2.5 text-body">
+            <div className="-my-2.5 mt-8 space-y-0 text-body">
               {/* Honesty gate: the line renders only while the real business
                   number is verified — never a placeholder. The number is shown
                   once, on the tel: row; WhatsApp gets its own labelled row
@@ -35,7 +35,7 @@ export async function Footer() {
                 <>
                   <a
                     href={`tel:+${CONTACT.phone}`}
-                    className="flex items-center gap-2.5 text-white/60 transition-colors hover:text-white"
+                    className="flex items-center gap-2.5 py-2.5 text-white/60 transition-colors hover:text-white"
                   >
                     <Icon name="phone" size={17} />
                     {CONTACT.phoneDisplay}
@@ -44,7 +44,7 @@ export async function Footer() {
                     href={`https://wa.me/${CONTACT.whatsapp}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 text-white/60 transition-colors hover:text-white"
+                    className="flex items-center gap-2.5 py-2.5 text-white/60 transition-colors hover:text-white"
                   >
                     <Icon name="whatsapp" size={17} />
                     {t('footer.messageWhatsApp')}
@@ -53,12 +53,36 @@ export async function Footer() {
               ) : null}
               <a
                 href={`mailto:${CONTACT.email}`}
-                className="flex items-center gap-2.5 text-white/60 transition-colors hover:text-white"
+                className="flex items-center gap-2.5 py-2.5 text-white/60 transition-colors hover:text-white"
               >
                 <Icon name="mail" size={17} />
                 {CONTACT.email}
               </a>
             </div>
+
+            {/* Social profiles. Rendered only when SOCIAL has entries, so the
+                row is never a set of dead icons. Each is a 44px target with a
+                visible label beside the glyph — an icon-only social row is the
+                single most common accessibility miss in a footer, and it costs
+                nothing to name the network here. */}
+            {SOCIAL.length ? (
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {SOCIAL.map((profile) => (
+                  <li key={profile.id}>
+                    <a
+                      href={profile.href}
+                      target="_blank"
+                      rel="me noopener noreferrer"
+                      className="flex h-11 items-center gap-2.5 rounded-xl border border-white/15 px-3.5 text-caption font-semibold text-white/70 transition-colors hover:border-white/35 hover:bg-white/5 hover:text-white"
+                    >
+                      <Icon name={profile.id} size={17} aria-hidden="true" />
+                      {profile.handle}
+                      <span className="sr-only"> on {profile.label}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">

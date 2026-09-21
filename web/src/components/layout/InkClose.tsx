@@ -37,7 +37,10 @@ export function InkClose({
   const portrait = Boolean(image && imagePresentation === 'portrait')
 
   return (
-    <section className={`relative overflow-hidden border-b border-white/[0.06] bg-ink-800 text-white ${portrait ? 'py-16 sm:py-24 lg:min-h-[580px] lg:py-28' : 'py-16 sm:py-24'}`}>
+    // `ambient-ink` and `grain` are the same two utilities the hero uses
+    // (globals.css). A closing band and an opening band lit by the same rig is
+    // what makes a page read as one room rather than two.
+    <section className={`ambient-ink grain relative isolate overflow-hidden border-b border-white/[0.06] bg-ink-800 text-white ${portrait ? 'py-16 sm:py-24 lg:min-h-[580px] lg:py-28' : 'py-20 sm:py-28'}`}>
       {image ? (
         portrait ? (
           <>
@@ -66,12 +69,15 @@ export function InkClose({
               alt={image.alt}
               fill
               sizes="100vw"
-              className="object-cover"
+              // object-[50%_35%] rather than centre: on a wide crop of a car
+              // park the interesting half is the roofline and the receding
+              // row, not the tarmac.
+              className="object-cover object-[50%_35%]"
             />
             {/* Ink flows from the text side: near-solid where the words live,
                 open where the photograph earns its keep. */}
-            <div className="absolute inset-0 bg-gradient-to-r from-ink-900/95 via-ink-900/75 to-ink-900/35" />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-ink-900/60 to-transparent" />
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-ink-900/95 via-ink-900/78 to-ink-900/35" />
+            <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-ink-900/65 to-transparent" />
           </>
         )
       ) : (
@@ -81,11 +87,18 @@ export function InkClose({
         </div>
       )}
 
-      <Container className="relative">
+      {/* z-10 lifts the copy above the grain layer, which is a ::after and
+          would otherwise paint on top of it. */}
+      <Container className="relative z-10">
         <div className={portrait ? 'max-w-2xl lg:max-w-[52%]' : 'max-w-2xl'}>
+          {/* A short brand rule above the headline. It is the same piece of
+              magazine furniture the Eyebrow component draws, borrowed here so
+              the closer opens the way every section on the site opens — and it
+              is the one red mark on an otherwise monochrome band. */}
+          <span aria-hidden="true" className="mb-6 block h-0.5 w-12 rounded-full bg-brand" />
           <h2 className="text-headline font-extrabold">{headline}</h2>
-          <p className="mt-4 text-title-sm leading-relaxed text-white/70">{children}</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">{actions}</div>
+          <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-pretty text-white/70">{children}</p>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">{actions}</div>
         </div>
       </Container>
     </section>
