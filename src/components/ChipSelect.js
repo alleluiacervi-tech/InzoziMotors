@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { colors, radius, fonts } from '../theme';
+import Touchable from './Touchable';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A chip picker that does not pretend the list is complete.
@@ -49,20 +50,24 @@ export default function ChipSelect({
         {options.map((opt) => {
           const active = !othering && selected === opt;
           return (
-            <Pressable
+            <Touchable
               key={String(opt)}
+              scaleTo={0.94}
+              haptic="selection"
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               style={[styles.chip, active && styles.chipActive]}
               onPress={() => { setOthering(false); onSelect(opt); }}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>{String(opt)}</Text>
-            </Pressable>
+            </Touchable>
           );
         })}
 
         {allowOther ? (
-          <Pressable
+          <Touchable
+            scaleTo={0.94}
+            haptic="selection"
             accessibilityRole="button"
             accessibilityState={{ selected: othering }}
             style={[styles.chip, othering && styles.chipActive]}
@@ -76,7 +81,7 @@ export default function ChipSelect({
             }}
           >
             <Text style={[styles.chipText, othering && styles.chipTextActive]}>{otherLabel}</Text>
-          </Pressable>
+          </Touchable>
         ) : null}
       </View>
 

@@ -9,7 +9,19 @@
 // car sits on a showroom wall rather than on a tinted screen. These values are
 // mirrored one-for-one by the light theme in web/src/app/globals.css; change
 // them here first, then there, or the two products stop looking alike.
-export const colors = {
+//
+// Dark mode pass: `darkColors` mirrors `web/src/app/globals.css`'s `.dark`
+// block the same way `lightColors` mirrors its `:root`. Every pair below was
+// measured on the web side (see that file's comment: "Dark is not an
+// inversion... every pair below was measured, not eyeballed") and carried
+// over here, not re-derived — a second measurement could quietly drift from
+// the first, and the whole point of a shared brand is that it does not.
+//
+// `colors` stays a plain export, pointing at `lightColors`, so every screen
+// that has not yet been migrated onto `useTheme()` keeps working exactly as
+// it always has — light-only, unaffected — while the migration happens
+// screen by screen rather than as one atomic, unverifiable app-wide change.
+export const lightColors = {
   // Dark surfaces (Welcome hero gradient — premium warm charcoal, red kept as accent)
   navyDeep: '#14110F',
   navyMid: '#241F1D',
@@ -96,12 +108,98 @@ export const colors = {
 
   // Photo scrims. Derived from navyDeep — these were three separate hand-typed
   // rgba(23,18,15,…) strings in CarCard, left pointing at the pre-Editorial
-  // ink after the palette moved.
+  // ink after the palette moved. Scrims sit on a PHOTOGRAPH, not the app's own
+  // surface, so unlike everything else on this page they stay identical in
+  // both themes — a picture's own darkness does not change with the theme.
   scrim: 'rgba(20,17,15,0.78)',
   scrimStrong: 'rgba(20,17,15,0.85)',
 
   white: '#FFFFFF',
   black: '#000000',
 };
+
+// The dark theme. Not an inversion — every semantic colour desaturates and
+// lightens rather than flipping, exactly as web/src/app/globals.css documents
+// for its own `.dark` block, because that is the same rule stated twice: a
+// literally-inverted brand red fails contrast on a dark ground (#CC050F on
+// near-black measures under 3:1), so the accent itself has to be a different,
+// lighter red — not the same value the light theme uses. Every value below is
+// that CSS file's `.dark` block, carried over key-for-key.
+export const darkColors = {
+  navyDeep: '#08070C',
+  navyMid: '#120F0E',
+  navyLight: '#1E1A18',
+
+  primary: '#FF5A61',       // 6.40:1 on the dark page — matches web's --brand dark
+  primaryBright: '#FF7A80',
+  primaryTint: '#2F1618',
+  blueLight: '#FFA8AC',
+  blueTint: '#162038',      // web's --info-tint dark
+
+  jeondan: '#FF5A61',
+  jeondanPlus: '#7DA5FF',   // web's --info dark
+  jeondanPlusPlus: '#FBBF24', // web's --warning dark
+  // A deeper, more desaturated red than the bright primary accent — "In
+  // Contract" is a status, not a call to action, and should not compete with
+  // the one thing on a dark screen that IS a call to action.
+  contract: '#D63A42',
+  alert: '#FBBF24',
+
+  green: '#4ADE80',
+  greenText: '#86EFAC',
+  greenLight: '#86EFAC',
+  greenTint: '#142D1F',
+  amber: '#FBBF24',
+  amberTint: '#38290C',
+  amberText: '#FDE047',
+
+  statusPending: '#FDE047',
+  statusPendingBg: '#38290C',
+  statusScheduled: '#93B5FF',
+  statusScheduledBg: '#162038',
+  statusLive: '#86EFAC',
+  statusLiveBg: '#142D1F',
+  statusReserved: '#C4A8FF',
+  statusReservedBg: '#261C3A',
+  statusSold: '#A6AFBC',
+  statusSoldBg: '#202226',
+  statusRejected: '#FCA5A5',
+  statusRejectedBg: '#381414',
+
+  alertRed: '#FCA5A5',      // web's --danger-strong dark
+
+  danger: '#F87185',        // web's --danger dark
+  dangerTint: '#38161C',
+
+  // The surface ladder — the one thing dark UI gets wrong most often. Ratios
+  // compress at the dark end (see web's own comment on this exact problem),
+  // which is why `border` below is a real step up from `surface`, not a
+  // near-invisible +0.03 nudge.
+  bg: '#0E0C0B',
+  surface: '#171413',
+  surfaceAlt: '#221D1B',
+  border: '#2E2825',
+  borderSoft: '#241F1D',
+
+  textPrimary: '#F5F1EC',   // 17.36:1 on the page
+  textSecondary: '#C9C0B8',
+  textMuted: '#948A82',     // 5.43:1 on a card
+  textDisabled: '#7A716A',
+  // On-dark text sits on a surface that is ALREADY unconditionally dark in
+  // either theme (the Welcome hero gradient, a photo scrim) — that surface's
+  // own darkness does not depend on the app theme, so this stays white in
+  // both.
+  textOnDark: '#FFFFFF',
+  slate700: '#F5F1EC',
+  slate600: '#C9C0B8',
+
+  scrim: 'rgba(20,17,15,0.78)',
+  scrimStrong: 'rgba(20,17,15,0.85)',
+
+  white: '#FFFFFF',
+  black: '#000000',
+};
+
+export const colors = lightColors;
 
 export default colors;

@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, Easing } from 'react-native-reanimated';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import CarZoneMap from '../components/CarZoneMap';
+import ScoreRing from '../components/ScoreRing';
 import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { MOCK_INSPECTION_RESULT, buildReportFromApi } from '../data/inspectionData';
 import inspectionsApi from '../api/inspections';
 import { useApp } from '../context/AppContext';
+import useReducedMotion from '../hooks/useReducedMotion';
 
 const CATEGORY_ICONS = {
   engine:        'cog-outline',
@@ -26,20 +29,36 @@ function ScoreCircle({ score, maxScore }) {
   const certified = pct >= 0.88;
   return (
     <View style={styles.scoreCircleWrap}>
-      <View style={[styles.scoreCircle, { borderColor: certified ? colors.green : colors.amber }]}>
-        <Text style={[styles.scoreValue, { color: certified ? colors.green : colors.amber }]}>{score}</Text>
-        <Text style={styles.scoreMax}>/ {maxScore}</Text>
-      </View>
+      <ScoreRing
+        score={score}
+        maxScore={maxScore}
+        color={certified ? colors.green : colors.amber}
+        trackColor="rgba(255,255,255,0.14)"
+      />
       <Text style={styles.scorePct}>{Math.round(pct * 100)}%</Text>
     </View>
   );
 }
 
-function CategoryRow({ cat, defaultExpanded, t }) {
+// Bars fill in on mount, each a beat behind the last — the same read-order a
+// person's eye takes down the list, rather than seven bars appearing at once.
+const CATEGORY_STAGGER_MS = 70;
+
+function CategoryRow({ cat, index, defaultExpanded, t }) {
   const [open, setOpen] = useState(defaultExpanded);
   const pct = cat.maxPts > 0 ? cat.earned / cat.maxPts : 0;
   const status = pct >= 1 ? 'pass' : pct >= 0.85 ? 'minor' : 'warn';
   const statusColor = status === 'pass' ? colors.green : status === 'minor' ? colors.amber : colors.statusRejected;
+  const reducedMotion = useReducedMotion();
+  const barProgress = useSharedValue(0);
+
+  useEffect(() => {
+    barProgress.value = reducedMotion
+      ? 1
+      : withDelay(index * CATEGORY_STAGGER_MS, withTiming(1, { duration: 480, easing: Easing.out(Easing.cubic) }));
+  }, [reducedMotion, barProgress, index]);
+
+  const barStyle = useAnimatedStyle(() => ({ width: `${barProgress.value * pct * 100}%` }));
 
   return (
     <Pressable style={styles.catRow} onPress={() => setOpen(!open)}>
@@ -50,7 +69,7 @@ function CategoryRow({ cat, defaultExpanded, t }) {
         <View style={{ flex: 1 }}>
           <Text style={styles.catName}>{cat.name}</Text>
           <View style={styles.barTrack}>
-            <View style={[styles.barFill, { width: `${pct * 100}%`, backgroundColor: statusColor }]} />
+            <Animated.View style={[styles.barFill, { backgroundColor: statusColor }, barStyle]} />
           </View>
           {cat.flags.length > 0 && !open && (
             <Text style={styles.flagHint} numberOfLines={1}>
@@ -278,8 +297,8 @@ export default function InspectionReportScreen({ navigation, route }) {
         {/* Category breakdown */}
         <Text style={styles.sectionTitle}>{t('inspection.categoryBreakdown')}</Text>
         <View style={styles.categories}>
-          {data.categories.map((cat) => (
-            <CategoryRow key={cat.id} cat={cat} t={t} defaultExpanded={cat.flags.length > 0} />
+          {data.categories.map((cat, index) => (
+            <CategoryRow key={cat.id} cat={cat} index={index} t={t} defaultExpanded={cat.flags.length > 0} />
           ))}
         </View>
 
@@ -323,14 +342,6 @@ const styles = StyleSheet.create({
   hero: { margin: 16, borderRadius: radius.xxl, padding: 20 },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
   scoreCircleWrap: { alignItems: 'center', gap: 4 },
-  scoreCircle: {
-    width: 88, height: 88, borderRadius: 44,
-    borderWidth: 5,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  scoreValue: { fontSize: 24, fontFamily: fonts.extraBold },
-  scoreMax: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: -3 },
   scorePct: { fontSize: 12, fontFamily: fonts.bold, color: 'rgba(255,255,255,0.7)' },
   heroTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
   heroCar: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 3 },

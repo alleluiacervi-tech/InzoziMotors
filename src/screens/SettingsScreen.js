@@ -14,6 +14,7 @@ import {
   getUpdateMode, setUpdateMode, UPDATE_MODE,
 } from '../utils/updates';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../theme/ThemeContext';
 import authApi from '../api/auth';
 import { getJSON } from '../storage';
 import {
@@ -63,7 +64,7 @@ async function openLink(url) {
 // All user-facing settings labels come through the same translation function as
 // the language picker. This keeps the selector useful even when the user cannot
 // read the default English screen.
-const buildGroups = (t, verificationValue, buildLabel, languageLabel) => [
+const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearanceLabel) => [
   {
     title: t('settings.account'),
     items: [
@@ -75,6 +76,7 @@ const buildGroups = (t, verificationValue, buildLabel, languageLabel) => [
     title: t('settings.preferences'),
     items: [
       { icon: 'language-outline', label: t('settings.language'), value: languageLabel, screen: 'Language' },
+      { icon: 'contrast-outline', label: t('settings.appearance'), value: appearanceLabel, screen: 'Appearance' },
       { icon: 'notifications-outline', label: t('settings.push'), toggle: 'push' },
     ],
   },
@@ -144,6 +146,7 @@ export default function SettingsScreen({ navigation }) {
     isLoggedIn, deleteAccount, setPushEnabled, idVerificationStatus,
     languageInfo, t,
   } = useApp();
+  const { mode: themeMode } = useTheme();
 
   // Persisted, and actually wired: off tells the server to forget this device.
   const [pushOn, setPushOn] = useState(true);
@@ -201,6 +204,7 @@ export default function SettingsScreen({ navigation }) {
     // screen is indistinguishable from a tap that missed.
     checkingUpdate ? t('common.loading') : `v${build.version}`,
     languageInfo.nativeLabel,
+    t(`appearance.${themeMode}`),
   );
 
   // Deletion state. A dedicated modal rather than showConfirm(), because this

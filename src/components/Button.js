@@ -1,7 +1,8 @@
 import React from 'react';
-import { Text, Pressable, StyleSheet, View, ActivityIndicator } from 'react-native';
+import { Text, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, fonts } from '../theme';
+import { colors, radius, fonts, iconSize } from '../theme';
+import Touchable from './Touchable';
 
 export default function Button({
   title,
@@ -42,9 +43,10 @@ export default function Button({
   const blocked = disabled || loading;
 
   return (
-    <Pressable
+    <Touchable
       onPress={blocked ? undefined : onPress}
       disabled={blocked}
+      haptic={isPrimary ? 'medium' : 'light'}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
@@ -57,7 +59,7 @@ export default function Button({
         <ActivityIndicator size="small" color={color} />
       ) : (
         <View style={styles.content}>
-          {icon ? <Ionicons name={icon} size={18} color={color} /> : null}
+          {icon ? <Ionicons name={icon} size={iconSize.sm} color={color} /> : null}
           <Text
             style={[styles.text, { color }, textStyle]}
             numberOfLines={1}
@@ -68,7 +70,7 @@ export default function Button({
           </Text>
         </View>
       )}
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -95,6 +97,7 @@ const styles = StyleSheet.create({
   },
   dark: { backgroundColor: colors.textPrimary },
   outline: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
-  pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
+  // Scale now comes from Touchable's spring; this stays opacity-only.
+  pressed: { opacity: 0.9 },
   disabled: { opacity: 0.46 },
 });

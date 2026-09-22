@@ -260,8 +260,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     paddingVertical: sp(13),
     marginTop: sp(12),
+    // Flat, not glowing: see the elevation-ladder comment in theme/index.js.
+    // A solid red button on a light sheet needs only the ordinary card-level
+    // lift, not a coloured halo pretending to be a light source.
     ...shadows.card,
-    shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 14, elevation: 4,
   },
   primaryText: { fontFamily: fonts.extraBold, fontSize: ft(16), color: '#FFFFFF', letterSpacing: -0.2 },
 

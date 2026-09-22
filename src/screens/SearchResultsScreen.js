@@ -10,6 +10,7 @@ import { colors, radius, fonts, shadows } from '../theme';
 import { showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 import { searchImportCatalog } from '../data/importCatalog';
+import StaggerEntrance from '../components/StaggerEntrance';
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
 const SORT_LABEL_KEYS = {
@@ -327,12 +328,17 @@ export default function SearchResultsScreen({ navigation, route }) {
             )}
           </View>
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const target = item.listingType === 'rental' ? 'RentalDetail' : 'VehicleDetail';
-          return isGrid ? (
+          const card = isGrid ? (
             <CarCard car={item} onPress={() => navigation.navigate(target, { car: item })} />
           ) : (
             <CarListCard car={item} onPress={() => navigation.navigate(target, { car: item })} />
+          );
+          return (
+            <StaggerEntrance index={index} flexGrid={isGrid}>
+              {card}
+            </StaggerEntrance>
           );
         }}
         ListFooterComponent={

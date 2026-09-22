@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import CarCard from '../components/CarCard';
+import StaggerEntrance from '../components/StaggerEntrance';
 import SkeletonCard from '../components/SkeletonCard';
 import SectionHeader from '../components/SectionHeader';
 import BrandMark from '../components/BrandMark';
@@ -415,12 +416,14 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.sectionContainer}>
               <SectionHeader title={rentFilter === 'Safari-Ready' ? t('home.safari4x4s') : t('home.availableKigali')} />
               <View style={styles.twoColumnGrid}>
-                {filteredRentals.map((item) => (
+                {filteredRentals.map((item, index) => (
                   <View key={item.id} style={styles.gridCardWrapper}>
-                    <CarCard
-                      car={item}
-                      onPress={() => navigation.navigate('RentalDetail', { car: item })}
-                    />
+                    <StaggerEntrance index={index}>
+                      <CarCard
+                        car={item}
+                        onPress={() => navigation.navigate('RentalDetail', { car: item })}
+                      />
+                    </StaggerEntrance>
                   </View>
                 ))}
               </View>
@@ -649,12 +652,14 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.sectionContainer}>
             <SectionHeader title={t('home.carsCount', { label: t(`home.${originTab === 'EV·Hybrid' ? 'evHybrid' : originTab.toLowerCase()}`), count: originCars.length })} />
             <View style={styles.twoColumnGrid}>
-              {originCars.map((item) => (
+              {originCars.map((item, index) => (
                 <View key={item.id} style={styles.gridCardWrapper}>
-                  <CarCard
-                    car={item}
-                    onPress={() => navigation.navigate('VehicleDetail', { car: item })}
-                  />
+                  <StaggerEntrance index={index}>
+                    <CarCard
+                      car={item}
+                      onPress={() => navigation.navigate('VehicleDetail', { car: item })}
+                    />
+                  </StaggerEntrance>
                 </View>
               ))}
             </View>
@@ -726,12 +731,14 @@ export default function HomeScreen({ navigation }) {
                     <SkeletonCard />
                   </View>
                 ))
-              : freshCars.map((item) => (
+              : freshCars.map((item, index) => (
                   <View key={item.id} style={styles.gridCardWrapper}>
-                    <CarCard
-                      car={item}
-                      onPress={() => navigation.navigate('VehicleDetail', { car: item })}
-                    />
+                    <StaggerEntrance index={index}>
+                      <CarCard
+                        car={item}
+                        onPress={() => navigation.navigate('VehicleDetail', { car: item })}
+                      />
+                    </StaggerEntrance>
                   </View>
                 ))}
           </View>

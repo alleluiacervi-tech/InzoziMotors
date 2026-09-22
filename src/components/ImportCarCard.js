@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, fonts } from '../theme';
@@ -7,6 +7,7 @@ import { RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
 import { transformCloudinaryUrl } from '../utils/photo';
 import BrandMark from './BrandMark';
 import { useApp } from '../context/AppContext';
+import Touchable from './Touchable';
 
 const COUNTRY_FLAGS = {
   'South Korea': '🇰🇷',
@@ -42,7 +43,8 @@ export default function ImportCarCard({ item, onPress }) {
   const optimizedImage = mainImage ? transformCloudinaryUrl(mainImage, { width: 640 }) : null;
 
   return (
-    <Pressable
+    <Touchable
+      scaleTo={0.985}
       style={styles.card}
       onPress={onPress}
       accessibilityRole="button"
@@ -141,7 +143,7 @@ export default function ImportCarCard({ item, onPress }) {
           <Ionicons name="chevron-forward" size={14} color={colors.primary} />
         </View>
       </View>
-    </Pressable>
+    </Touchable>
   );
 }
 

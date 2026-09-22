@@ -233,8 +233,9 @@ const styles = StyleSheet.create({
   tab: { flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center' },
   tabActive: {
     backgroundColor: colors.surface,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 }, elevation: 1,
+    // Was a hand-rolled near-duplicate of `shadows.header` (0.06 opacity,
+    // radius 4) — same lift, reached for a second time instead of reused.
+    ...shadows.header,
   },
   tabText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted },
   tabTextActive: { color: colors.textPrimary },

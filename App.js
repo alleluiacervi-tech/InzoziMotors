@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { useFonts } from 'expo-font';
 import { AppProvider } from './src/context/AppContext';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -14,6 +16,15 @@ import FeedbackHost from './src/components/Feedback';
 import UpdateBanner from './src/components/UpdateBanner';
 import StoreUpdateGate from './src/components/StoreUpdateGate';
 import { getJSON } from './src/storage';
+
+// Light icons on the dark theme, dark icons on the light theme — the
+// inverse of the background, which is what makes status-bar content
+// readable in both. Split out because App() renders ThemeProvider and
+// cannot itself read the context it renders.
+function ThemedStatusBar() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
 
 export default function App() {
   // Satoshi (Indian Type Foundry, Fontshare) — bundled rather than fetched, so
@@ -71,6 +82,15 @@ export default function App() {
     // context provider itself — lands here instead of a permanent white
     // screen. Reload remounts the whole tree.
     <ErrorBoundary>
+    {/* Outermost of the interactive tree, on purpose: gesture-handler only
+        recognizes gestures on views beneath a GestureHandlerRootView, and
+        putting it anywhere but the top silently breaks gestures started from
+        a modal or a screen mounted outside that subtree. flex: 1 is required —
+        without it the root view collapses to zero height on Android and every
+        gesture in the app stops responding, a failure mode with no error and
+        no stack trace. */}
+    <GestureHandlerRootView style={styles.root}>
+    <ThemeProvider>
     <AppProvider>
       <SafeAreaProvider>
         {initialRoute && (
@@ -83,7 +103,7 @@ export default function App() {
             linking={linking}
             onReady={flushPendingPushNavigation}
           >
-            <StatusBar style="dark" />
+            <ThemedStatusBar />
             <RootNavigator initialRoute={initialRoute} />
           </NavigationContainer>
         )}
@@ -103,10 +123,16 @@ export default function App() {
         {!initialRoute && <View style={styles.launchCover} />}
       </SafeAreaProvider>
     </AppProvider>
+    </ThemeProvider>
+    </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
+  // Deliberately NOT theme-aware — see the comment above where this is
+  // rendered. It must match the native splash screen's own fixed white,
+  // not the app's current theme.
   launchCover: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FFFFFF', zIndex: 99 },
 });
