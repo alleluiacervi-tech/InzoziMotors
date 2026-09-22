@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LogoMark } from './Logo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fonts, radius } from '../theme';
+import { colors, fonts, radius, shadows } from '../theme';
 import { useApp } from '../context/AppContext';
 import { useSellerGate } from '../hooks/useSellerGate';
 
@@ -265,11 +265,13 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     backgroundColor: colors.surface,
-    shadowColor: '#000',
+    // `overlay` is the deepest tier (theme/index.js) — a drawer covers
+    // content rather than sitting beside it. The offset is overridden
+    // because this one slides in from the left edge: its shadow has to point
+    // away from the hinge, not straight down, or it reads as floating
+    // slightly above the content instead of sliding over it.
+    ...shadows.overlay,
     shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 12,
   },
 
   // Header

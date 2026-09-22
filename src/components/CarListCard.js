@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, typography } from '../theme';
+import { radius, spacing, typography, iconSize } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
@@ -9,6 +10,8 @@ import { formatPrice } from '../data/cars';
 import Price from './Price';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
+import Touchable from './Touchable';
+import AppText from './AppText';
 
 // Encar-style horizontal list card: photo left, dense specs right.
 // Built for scanning many cars quickly in search results.
@@ -22,20 +25,22 @@ const getRegYear = (car) => {
 export default function CarListCard({ car, onPress }) {
   const tier = getCertTier(car);
   const { isCarSaved, toggleSaveCar, t } = useApp();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const saved = isCarSaved(car.id);
   const price = car.type === 'auction' ? car.currentBid : car.price;
   const marketDiff = getMarketDiff(car);
   const savedCount = getSavedCount(car);
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Touchable scaleTo={0.985} style={styles.card} onPress={onPress}>
       {/* Photo */}
       <View style={styles.imageWrap}>
         <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="contain" />
         {tier && (
           <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
             <Ionicons name="shield-checkmark" size={9} color="#fff" />
-            <Text style={styles.certBadgeText}>{tier.short}</Text>
+            <AppText style={styles.certBadgeText} maxFontSizeMultiplier={1.2}>{tier.short}</AppText>
           </View>
         )}
       </View>
@@ -44,7 +49,9 @@ export default function CarListCard({ car, onPress }) {
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>{car.title}</Text>
-          <Pressable
+          <Touchable
+            scaleTo={0.88}
+            haptic="selection"
             onPress={() => toggleSaveCar(car.id)}
             hitSlop={10}
             accessibilityRole="button"
@@ -53,10 +60,10 @@ export default function CarListCard({ car, onPress }) {
           >
             <Ionicons
               name={saved ? 'heart' : 'heart-outline'}
-              size={17}
+              size={iconSize.md}
               color={saved ? '#EF4444' : colors.textMuted}
             />
-          </Pressable>
+          </Touchable>
         </View>
 
         <Text style={styles.meta} numberOfLines={1}>
@@ -92,63 +99,66 @@ export default function CarListCard({ car, onPress }) {
           <Price amountRwf={price} />
         </View>
       </View>
-    </Pressable>
+    </Touchable>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-  },
-  imageWrap: {
-    // Fixed size — iOS lets an unconstrained image's natural dimensions
-    // inflate the row height, so never rely on stretch here.
-    width: 118,
-    height: 108,
-    backgroundColor: colors.surfaceAlt,
-    position: 'relative',
-  },
-  image: { width: '100%', height: '100%' },
-  certBadge: {
-    position: 'absolute', top: spacing.sm, left: spacing.sm,
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.scrim,
-    paddingHorizontal: 6, paddingVertical: 3,
-    borderRadius: radius.sm,
-  },
-  certBadgeText: { ...typography.badge, color: colors.white },
-  body: { flex: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: 2, justifyContent: 'center' },
-  titleRow: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', gap: spacing.sm, marginBottom: 2,
-  },
-  title: { flex: 1, ...typography.cardTitle, color: colors.textPrimary },
-  meta: { ...typography.cardMeta, color: colors.textMuted, lineHeight: 17 },
-  bottomRow: {
-    flexDirection: 'row', alignItems: 'flex-end',
-    justifyContent: 'space-between', gap: spacing.sm, marginTop: 6,
-  },
-  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, flex: 1 },
-  scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
-  tagGreen: {
-    backgroundColor: colors.greenTint,
-    paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
-  },
-  // Was colors.primary — brand red lettering on a green "pass" chip. It cleared
-  // contrast but said the wrong thing, and red is reserved for prices, primary
-  // actions, selected states and the Certified+ badge. None of those is a tag.
-  tagGreenText: { ...typography.badge, color: colors.greenText },
-  tagAmber: {
-    backgroundColor: colors.amberTint,
-    paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
-  },
-  tagAmberText: { ...typography.badge, color: colors.amberText },
-  price: { ...typography.cardPrice, color: colors.primary },
-});
+// A function of the live theme — see the same note in Price.js.
+function makeStyles(colors) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      marginBottom: spacing.md,
+    },
+    imageWrap: {
+      // Fixed size — iOS lets an unconstrained image's natural dimensions
+      // inflate the row height, so never rely on stretch here.
+      width: 118,
+      height: 108,
+      backgroundColor: colors.surfaceAlt,
+      position: 'relative',
+    },
+    image: { width: '100%', height: '100%' },
+    certBadge: {
+      position: 'absolute', top: spacing.sm, left: spacing.sm,
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      backgroundColor: colors.scrim,
+      paddingHorizontal: 6, paddingVertical: 3,
+      borderRadius: radius.sm,
+    },
+    certBadgeText: { ...typography.badge, color: colors.white },
+    body: { flex: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: 2, justifyContent: 'center' },
+    titleRow: {
+      flexDirection: 'row', alignItems: 'center',
+      justifyContent: 'space-between', gap: spacing.sm, marginBottom: 2,
+    },
+    title: { flex: 1, ...typography.cardTitle, color: colors.textPrimary },
+    meta: { ...typography.cardMeta, color: colors.textMuted, lineHeight: 17 },
+    bottomRow: {
+      flexDirection: 'row', alignItems: 'flex-end',
+      justifyContent: 'space-between', gap: spacing.sm, marginTop: 6,
+    },
+    tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, flex: 1 },
+    scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+    scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
+    tagGreen: {
+      backgroundColor: colors.greenTint,
+      paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
+    },
+    // Was colors.primary — brand red lettering on a green "pass" chip. It cleared
+    // contrast but said the wrong thing, and red is reserved for prices, primary
+    // actions, selected states and the Certified+ badge. None of those is a tag.
+    tagGreenText: { ...typography.badge, color: colors.greenText },
+    tagAmber: {
+      backgroundColor: colors.amberTint,
+      paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
+    },
+    tagAmberText: { ...typography.badge, color: colors.amberText },
+    price: { ...typography.cardPrice, color: colors.primary },
+  });
+}

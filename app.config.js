@@ -26,7 +26,14 @@ export default ({ config }) => ({
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
-  userInterfaceStyle: 'light',
+  // 'automatic': lets useColorScheme() actually report the OS setting.
+  // This was hard-locked to 'light', which is a stronger claim than it looks
+  // — RN's useColorScheme() reports whatever userInterfaceStyle allows, so
+  // the app could not have detected system dark mode even if every screen
+  // were theme-aware. ThemeContext.js still layers its own System/Light/Dark
+  // override on top and defaults to System, so this only changes what the
+  // platform reports as the starting signal, not the final decision.
+  userInterfaceStyle: 'automatic',
   newArchEnabled: true,
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,

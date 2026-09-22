@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows, spacing, typography } from '../theme';
+import { radius, shadows, spacing, typography, iconSize } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useApp } from '../context/AppContext';
 import Badge from './Badge';
 import { getCertTier } from '../data/certification';
@@ -9,6 +10,8 @@ import { formatPrice } from '../data/cars';
 import Price from './Price';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
+import Touchable from './Touchable';
+import AppText from './AppText';
 
 const getSawaYear = (car) => String(car.year);
 
@@ -28,6 +31,8 @@ const getSawaPrice = (car) => formatPrice(car.price ?? car.currentBid ?? 0);
 
 export default function CarCard({ car, onPress, hideOverlay = false, rank = null }) {
   const { isCarSaved, toggleSaveCar, t } = useApp();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const saved = isCarSaved(car.id);
   const isContract = car.type === 'auction';
   const isRental = car.listingType === 'rental';
@@ -42,7 +47,8 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
       : null;
 
   return (
-    <Pressable
+    <Touchable
+      scaleTo={0.985}
       style={({ pressed }) => [styles.card, shadows.card, pressed && styles.cardPressed]}
       onPress={onPress}
       accessibilityRole="button"
@@ -56,13 +62,15 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             {tier ? (
               <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
                 <Ionicons name="shield-checkmark" size={11} color={colors.white} />
-                <Text style={styles.certBadgeText}>{tier.short}</Text>
+                <AppText style={styles.certBadgeText} maxFontSizeMultiplier={1.2}>{tier.short}</AppText>
               </View>
             ) : isContract ? (
               <Badge variant="contract" label="In Contract" style={styles.topLeft} />
             ) : null}
 
-            <Pressable
+            <Touchable
+              scaleTo={0.88}
+              haptic="selection"
               style={({ pressed }) => [styles.heart, pressed && styles.heartPressed]}
               onPress={() => toggleSaveCar(car.id)}
               hitSlop={10}
@@ -74,25 +82,25 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
             >
               <Ionicons
                 name={saved ? 'heart' : 'heart-outline'}
-                size={18}
+                size={iconSize.md}
                 color={saved ? colors.primary : colors.textSecondary}
               />
-            </Pressable>
+            </Touchable>
           </>
         )}
 
         {rank !== null && (
           <View style={styles.rankBadge}>
-            <Text style={styles.rankText}>{rank}</Text>
+            <AppText style={styles.rankText} maxFontSizeMultiplier={1.2}>{rank}</AppText>
           </View>
         )}
 
         {unavailableUntil && (
           <View style={styles.unavailableBadge}>
             <Ionicons name="time-outline" size={11} color={colors.white} />
-            <Text style={styles.unavailableBadgeText} numberOfLines={1}>
+            <AppText style={styles.unavailableBadgeText} maxFontSizeMultiplier={1.2} numberOfLines={1}>
               {t('home.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
-            </Text>
+            </AppText>
           </View>
         )}
       </View>
@@ -132,77 +140,82 @@ export default function CarCard({ car, onPress, hideOverlay = false, rank = null
           </>
         )}
       </View>
-    </Pressable>
+    </Touchable>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flex: 1,
-    margin: spacing.xs + 2,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardPressed: { opacity: 0.94, transform: [{ scale: 0.992 }] },
-  imageWrap: {
-    aspectRatio: 4 / 3,
-    backgroundColor: colors.surfaceAlt,
-    position: 'relative',
-  },
-  image: { width: '100%', height: '100%' },
+// A function of the live theme — see the same note in Price.js.
+function makeStyles(colors) {
+    return StyleSheet.create({
+    card: {
+      flex: 1,
+      margin: spacing.xs + 2,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    // Scale now comes from Touchable's spring.
+    cardPressed: { opacity: 0.94 },
+    imageWrap: {
+      aspectRatio: 4 / 3,
+      backgroundColor: colors.surfaceAlt,
+      position: 'relative',
+    },
+    image: { width: '100%', height: '100%' },
 
-  // Every overlay sits on the same inset. These were 6, 7 and 6 — one pixel
-  // apart, which reads as misalignment rather than as a decision.
-  topLeft: { position: 'absolute', top: spacing.sm, left: spacing.sm, paddingHorizontal: 6, paddingVertical: 2 },
-  certBadge: {
-    position: 'absolute', top: spacing.sm, left: spacing.sm,
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.scrim,
-    paddingHorizontal: spacing.sm, paddingVertical: 3,
-    borderRadius: radius.sm,
-  },
-  certBadgeText: { ...typography.badge, color: colors.white },
-  heart: {
-    position: 'absolute', top: spacing.sm, right: spacing.sm,
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    alignItems: 'center', justifyContent: 'center',
-    zIndex: 10,
-  },
-  heartPressed: { opacity: 0.76, transform: [{ scale: 0.92 }] },
-  rankBadge: {
-    position: 'absolute', bottom: 0, left: 0,
-    backgroundColor: colors.scrimStrong,
-    width: 28, height: 28,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  rankText: { ...typography.badge, color: colors.white },
-  unavailableBadge: {
-    position: 'absolute', bottom: spacing.sm, right: spacing.sm, maxWidth: '70%',
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.scrim,
-    paddingHorizontal: spacing.sm, paddingVertical: 3,
-    borderRadius: radius.sm,
-  },
-  // Was 9.5px. Nothing in this product should render under 11.
-  unavailableBadgeText: { ...typography.badge, color: colors.white },
+    // Every overlay sits on the same inset. These were 6, 7 and 6 — one pixel
+    // apart, which reads as misalignment rather than as a decision.
+    topLeft: { position: 'absolute', top: spacing.sm, left: spacing.sm, paddingHorizontal: 6, paddingVertical: 2 },
+    certBadge: {
+      position: 'absolute', top: spacing.sm, left: spacing.sm,
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      backgroundColor: colors.scrim,
+      paddingHorizontal: spacing.sm, paddingVertical: 3,
+      borderRadius: radius.sm,
+    },
+    certBadgeText: { ...typography.badge, color: colors.white },
+    heart: {
+      position: 'absolute', top: spacing.sm, right: spacing.sm,
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: 'rgba(255,255,255,0.92)',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: 10,
+    },
+    // Scale now comes from Touchable's spring.
+    heartPressed: { opacity: 0.76 },
+    rankBadge: {
+      position: 'absolute', bottom: 0, left: 0,
+      backgroundColor: colors.scrimStrong,
+      width: 28, height: 28,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    rankText: { ...typography.badge, color: colors.white },
+    unavailableBadge: {
+      position: 'absolute', bottom: spacing.sm, right: spacing.sm, maxWidth: '70%',
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      backgroundColor: colors.scrim,
+      paddingHorizontal: spacing.sm, paddingVertical: 3,
+      borderRadius: radius.sm,
+    },
+    // Was 9.5px. Nothing in this product should render under 11.
+    unavailableBadgeText: { ...typography.badge, color: colors.white },
 
-  body: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flex: 1, gap: 2 },
-  title: { ...typography.cardTitle, color: colors.textPrimary },
-  meta: { ...typography.cardMeta, color: colors.textMuted },
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: spacing.xs,
-  },
-  // The inspection score is the one fact separating a Sawa car from a
-  // WhatsApp-group car, so it sits at meta weight but in the pass colour.
-  scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
-  price: { ...typography.cardPrice, color: colors.primary, marginTop: spacing.xs },
-  rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.xs },
-  perDay: { ...typography.cardMeta, color: colors.textMuted, marginLeft: 3 },
-});
+    body: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, flex: 1, gap: 2 },
+    title: { ...typography.cardTitle, color: colors.textPrimary },
+    meta: { ...typography.cardMeta, color: colors.textMuted },
+    scoreRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: spacing.xs,
+    },
+    // The inspection score is the one fact separating a Sawa car from a
+    // WhatsApp-group car, so it sits at meta weight but in the pass colour.
+    scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
+    price: { ...typography.cardPrice, color: colors.primary, marginTop: spacing.xs },
+    rentalPriceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.xs },
+    perDay: { ...typography.cardMeta, color: colors.textMuted, marginLeft: 3 },
+    });
+}

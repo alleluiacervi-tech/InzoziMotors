@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts } from '../theme';
+import { fonts } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useApp } from '../context/AppContext';
 import { formatPrice } from '../data/cars';
 import { formatUsdApprox, usdFromRwf } from '../data/marketData';
@@ -25,6 +26,8 @@ import { formatUsdApprox, usdFromRwf } from '../data/marketData';
 
 export default function Price({ amountRwf, size = 'card', align = 'left', style }) {
   const { fx, t } = useApp();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const usd = usdFromRwf(amountRwf, fx?.rate);
   const formattedUsd = usd != null ? formatUsdApprox(usd) : '';
   const approxLabel = t ? t('price.approxUsdLabel', { usd: formattedUsd }) : `approximately ${formattedUsd} at today's exchange rate`;
@@ -59,6 +62,8 @@ export default function Price({ amountRwf, size = 'card', align = 'left', style 
  */
 export function RateNote({ style }) {
   const { fx, t } = useApp();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   if (!fx?.rate) return null;
 
   const stamp = fx.fetched_at
@@ -81,40 +86,45 @@ export function RateNote({ style }) {
   );
 }
 
-const styles = StyleSheet.create({
-  right: { alignItems: 'flex-end' },
-  price: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-    color: colors.primary,
-    fontFamily: fonts?.bold,
-    fontVariant: ['tabular-nums'],
-  },
-  priceDetail: {
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-    color: colors.primary,
-    fontFamily: fonts?.bold,
-    fontVariant: ['tabular-nums'],
-  },
-  usd: {
-    marginTop: 2,
-    fontSize: 12,
-    color: colors.textMuted,
-    fontVariant: ['tabular-nums'],
-  },
-  usdDetail: {
-    marginTop: 4,
-    fontSize: 13,
-    color: colors.textMuted,
-    fontVariant: ['tabular-nums'],
-  },
-  staleMark: { color: colors.amberText },
-  note: {
-    fontSize: 12,
-    lineHeight: 17,
-    color: colors.textMuted,
-  },
-});
+// A function of the live theme, not a module-level constant: StyleSheet.create
+// would otherwise bake in whichever palette was active the first time this
+// module loaded, and every price in the app would stay that colour forever.
+function makeStyles(colors) {
+  return StyleSheet.create({
+    right: { alignItems: 'flex-end' },
+    price: {
+      fontSize: 18,
+      fontWeight: '800',
+      letterSpacing: -0.4,
+      color: colors.primary,
+      fontFamily: fonts?.bold,
+      fontVariant: ['tabular-nums'],
+    },
+    priceDetail: {
+      fontSize: 30,
+      fontWeight: '800',
+      letterSpacing: -0.8,
+      color: colors.primary,
+      fontFamily: fonts?.bold,
+      fontVariant: ['tabular-nums'],
+    },
+    usd: {
+      marginTop: 2,
+      fontSize: 12,
+      color: colors.textMuted,
+      fontVariant: ['tabular-nums'],
+    },
+    usdDetail: {
+      marginTop: 4,
+      fontSize: 13,
+      color: colors.textMuted,
+      fontVariant: ['tabular-nums'],
+    },
+    staleMark: { color: colors.amberText },
+    note: {
+      fontSize: 12,
+      lineHeight: 17,
+      color: colors.textMuted,
+    },
+  });
+}

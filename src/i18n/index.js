@@ -51,6 +51,15 @@ export const DEFAULT_LANGUAGE = 'en';
 
 export const TRANSLATIONS = {
   "en": {
+    "appearance": {
+      "applyHint": "Your choice is saved on this device and applies immediately.",
+      "dark": "Dark",
+      "light": "Light",
+      "subtitle": "Choose how Sawa Cars looks.",
+      "system": "System",
+      "systemHint": "Follows your phone's setting",
+      "title": "Appearance"
+    },
     "auth": {
       "accountClosed": "This account is closed",
       "accountClosedMessage": "You closed it, and nothing has been erased. Reopen it and your saved cars, messages and listings come back.",
@@ -1087,6 +1096,7 @@ export const TRANSLATIONS = {
       "account": "Account",
       "actionNeeded": "Action needed",
       "app": "App",
+      "appearance": "Appearance",
       "autoUpdate": "Install updates automatically",
       "autoUpdateOff": "You will be asked before a new version is installed.",
       "autoUpdateOn": "New versions will install the next time you open the app.",
@@ -1426,6 +1436,15 @@ export const TRANSLATIONS = {
     }
   },
   "rw": {
+    "appearance": {
+      "applyHint": "Ihitamo ryawe ribikwa kuri iki gikoresho kandi rihita rikora.",
+      "dark": "Umwijima",
+      "light": "Urumuri",
+      "subtitle": "Hitamo uko Sawa Cars igaragara.",
+      "system": "Sisitemu",
+      "systemHint": "Ikurikira igenamiterere rya telefoni yawe",
+      "title": "Imigaragarire"
+    },
     "auth": {
       "accountClosed": "Iyi konti yarafunzwe",
       "accountClosedMessage": "Wayifunze, ariko amakuru ntiyahanaguwe. Yongera kuyifungura kugira ngo imodoka wabitse, ubutumwa n’amatangazo bigaruke.",
@@ -2462,6 +2481,7 @@ export const TRANSLATIONS = {
       "account": "Konti",
       "actionNeeded": "Harakenewe igikorwa",
       "app": "Porogaramu",
+      "appearance": "Imigaragarire",
       "autoUpdate": "Shyiraho ivugurura ryikora",
       "autoUpdateOff": "Uzabazwa mbere y’uko verisiyo nshya ishyirwaho.",
       "autoUpdateOn": "Verisiyo nshya izashyirwaho igihe wongeye gufungura porogaramu.",
@@ -2801,6 +2821,15 @@ export const TRANSLATIONS = {
     }
   },
   "fr": {
+    "appearance": {
+      "applyHint": "Votre choix est enregistré sur cet appareil et s’applique immédiatement.",
+      "dark": "Sombre",
+      "light": "Clair",
+      "subtitle": "Choisissez l’apparence de Sawa Cars.",
+      "system": "Système",
+      "systemHint": "Suit le réglage de votre téléphone",
+      "title": "Apparence"
+    },
     "auth": {
       "accountClosed": "Ce compte est fermé",
       "accountClosedMessage": "Vous l’avez fermé, mais rien n’a été effacé. Rouvrez-le pour retrouver vos favoris, messages et annonces.",
@@ -3837,6 +3866,7 @@ export const TRANSLATIONS = {
       "account": "Compte",
       "actionNeeded": "Action requise",
       "app": "Application",
+      "appearance": "Apparence",
       "autoUpdate": "Installer automatiquement les mises à jour",
       "autoUpdateOff": "Une confirmation vous sera demandée avant l’installation.",
       "autoUpdateOn": "Les nouvelles versions s’installeront à votre prochaine ouverture.",
@@ -4176,6 +4206,15 @@ export const TRANSLATIONS = {
     }
   },
   "sw": {
+    "appearance": {
+      "applyHint": "Chaguo lako limehifadhiwa kwenye kifaa hiki na linaanza kutumika mara moja.",
+      "dark": "Giza",
+      "light": "Mwanga",
+      "subtitle": "Chagua jinsi Sawa Cars inavyoonekana.",
+      "system": "Mfumo",
+      "systemHint": "Inafuata mpangilio wa simu yako",
+      "title": "Muonekano"
+    },
     "auth": {
       "accountClosed": "Akaunti hii imefungwa",
       "accountClosedMessage": "Uliifunga, lakini hakuna kilichofutwa. Ifungue tena ili upate magari, ujumbe na matangazo uliyohifadhi.",
@@ -5212,6 +5251,7 @@ export const TRANSLATIONS = {
       "account": "Akaunti",
       "actionNeeded": "Hatua inahitajika",
       "app": "Programu",
+      "appearance": "Muonekano",
       "autoUpdate": "Sakinisha masasisho kiotomatiki",
       "autoUpdateOff": "Utaulizwa kabla ya toleo jipya kuwekwa.",
       "autoUpdateOn": "Matoleo mapya yatawekwa unapofungua programu tena.",
@@ -5551,6 +5591,15 @@ export const TRANSLATIONS = {
     }
   },
   "ko": {
+    "appearance": {
+      "applyHint": "선택한 화면 모드는 이 기기에 저장되며 즉시 적용됩니다.",
+      "dark": "다크",
+      "light": "라이트",
+      "subtitle": "Sawa Cars의 화면 모드를 선택하세요.",
+      "system": "시스템",
+      "systemHint": "휴대폰 설정을 따릅니다",
+      "title": "화면 모드"
+    },
     "auth": {
       "accountClosed": "이 계정은 닫혀 있습니다",
       "accountClosedMessage": "계정을 닫았지만 데이터는 삭제되지 않았습니다. 다시 열면 저장한 차량, 메시지와 매물이 복구됩니다.",
@@ -6587,6 +6636,7 @@ export const TRANSLATIONS = {
       "account": "계정",
       "actionNeeded": "조치 필요",
       "app": "앱",
+      "appearance": "화면 모드",
       "autoUpdate": "업데이트 자동 설치",
       "autoUpdateOff": "새 버전을 설치하기 전에 확인을 요청합니다.",
       "autoUpdateOn": "앱을 다음에 열 때 새 버전이 설치됩니다.",
@@ -6926,6 +6976,15 @@ export const TRANSLATIONS = {
     }
   },
   "zh": {
+    "appearance": {
+      "applyHint": "您的选择已保存在此设备上，并会立即生效。",
+      "dark": "深色",
+      "light": "浅色",
+      "subtitle": "选择 Sawa Cars 的外观。",
+      "system": "系统",
+      "systemHint": "跟随手机设置",
+      "title": "外观"
+    },
     "auth": {
       "accountClosed": "此账户已注销",
       "accountClosedMessage": "您已注销此账户，但数据尚未清除。重新开启后即可找回您的收藏、消息和车源。",
@@ -7962,6 +8021,7 @@ export const TRANSLATIONS = {
       "account": "账户",
       "actionNeeded": "需要处理",
       "app": "应用",
+      "appearance": "外观",
       "autoUpdate": "自动安装更新",
       "autoUpdateOff": "安装新版本前会先询问您。",
       "autoUpdateOn": "新版本将在您下次打开应用时安装。",

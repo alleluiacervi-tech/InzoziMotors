@@ -17,6 +17,7 @@ import ChatScreen from '../screens/ChatScreen';
 import InspectionReportScreen from '../screens/InspectionReportScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LanguageScreen from '../screens/LanguageScreen';
+import AppearanceScreen from '../screens/AppearanceScreen';
 import ContactSettingsScreen from '../screens/ContactSettingsScreen';
 // Phase 1 — New screens
 import IDVerificationScreen from '../screens/IDVerificationScreen';
@@ -80,6 +81,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="InspectionReport" component={InspectionReportScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Language" component={LanguageScreen} options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="Appearance" component={AppearanceScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="ContactSettings" component={ContactSettingsScreen} />
       {/* Phase 1 */}
       <Stack.Screen name="IDVerification" component={IDVerificationScreen} />
