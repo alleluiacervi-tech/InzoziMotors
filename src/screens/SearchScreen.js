@@ -180,7 +180,7 @@ export default function SearchScreen({ navigation }) {
             {/* If 0 local cars but we have import cars */}
             {showLocal && filteredLocalCars.length === 0 && filteredImportCars.length > 0 && (
               <View style={styles.noLocalNotice}>
-                <Ionicons name="information-circle-outline" size={20} color="#1D4ED8" />
+                <Ionicons name="information-circle-outline" size={20} color={colors.infoText} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.noLocalTitle}>0 in Rwanda stock · {filteredImportCars.length} available to import</Text>
                   <Text style={styles.noLocalSub}>
@@ -205,7 +205,7 @@ export default function SearchScreen({ navigation }) {
               <View style={styles.importSection}>
                 <View style={styles.importSectionHeader}>
                   <View style={styles.importHeaderLeft}>
-                    <Ionicons name="boat" size={18} color="#1D4ED8" />
+                    <Ionicons name="boat" size={18} color={colors.infoText} />
                     <View>
                       <Text style={styles.importSectionTitle}>
                         Import from Korea, Dubai & China ({filteredImportCars.length})
@@ -346,23 +346,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.blueTint,
     borderRadius: radius.lg,
     padding: 14,
     marginVertical: 12,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: colors.infoBorder,
   },
   noLocalTitle: {
     fontFamily: fonts.bold,
     fontSize: 13.5,
-    color: '#1D4ED8',
+    color: colors.infoText,
   },
   noLocalSub: {
     fontFamily: fonts.regular,
     fontSize: 11.5,
     lineHeight: 16,
-    color: '#1E40AF',
+    color: colors.infoText,
     marginTop: 2,
   },
   importSection: {

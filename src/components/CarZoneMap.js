@@ -42,7 +42,7 @@ export default function CarZoneMap({ categories, selected, onSelect }) {
         {/* Outer shell — Body & Exterior */}
         <Rect
           x={40} y={15} width={140} height={390} rx={48}
-          fill="#FBFDFB"
+          fill={colors.bg}
           stroke={colorOf('body')} strokeWidth={strokeW('body')}
           onPress={() => onSelect('body')}
         />

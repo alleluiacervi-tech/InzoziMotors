@@ -235,7 +235,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
               {item.trim ? <Text style={styles.carTrim}>{item.trim}</Text> : null}
             </View>
             <View style={styles.transitPill}>
-              <Ionicons name="boat-outline" size={14} color="#1D4ED8" />
+              <Ionicons name="boat-outline" size={14} color={colors.infoText} />
               <Text style={styles.transitPillText}>~{item.estimatedTransitDays || 35} Days</Text>
             </View>
           </View>
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     width: 18,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
   },
   originFloatingBadge: {
     position: 'absolute',
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.blueTint,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: radius.pill,
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   transitPillText: {
     fontFamily: fonts.bold,
     fontSize: 12,
-    color: '#1D4ED8',
+    color: colors.infoText,
   },
   routeRow: {
     flexDirection: 'row',
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#FFF1F2',
+    backgroundColor: colors.primaryTint,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: radius.pill,
@@ -973,7 +973,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.greenTint,
     padding: 10,
     borderRadius: radius.md,
     marginTop: 14,

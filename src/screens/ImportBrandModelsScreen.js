@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     width: '100%',
     // White, matching the render's own cut-out ground, so no rectangle appears
     // around the car. The warm surface tint is for empty boxes, not full ones.
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },

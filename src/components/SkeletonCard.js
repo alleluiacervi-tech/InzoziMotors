@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   price: {
     height: 14,
     width: '42%',
-    backgroundColor: '#C0CFC0',
+    backgroundColor: colors.border,
     borderRadius: 5,
     marginTop: 2,
   },

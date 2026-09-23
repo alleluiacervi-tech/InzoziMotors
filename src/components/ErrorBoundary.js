@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     width: 56, height: 56, borderRadius: 28, marginBottom: 4,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1EDED',
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg,
   },
   title: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, textAlign: 'center' },
   sub: {

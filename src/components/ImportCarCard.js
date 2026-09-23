@@ -74,7 +74,7 @@ export default function ImportCarCard({ item, onPress }) {
 
         {/* Brand new, which is the whole proposition — not a guarantee claim. */}
         <View style={styles.conditionBadge}>
-          <Ionicons name="sparkles-outline" size={11} color="#166534" />
+          <Ionicons name="sparkles-outline" size={11} color={colors.greenText} />
           <Text style={styles.conditionBadgeText}>Brand new · 0 km</Text>
         </View>
       </View>
@@ -132,7 +132,7 @@ export default function ImportCarCard({ item, onPress }) {
           </View>
 
           <View style={styles.transitBadge}>
-            <Ionicons name="boat-outline" size={13} color="#1D4ED8" />
+            <Ionicons name="boat-outline" size={13} color={colors.infoText} />
             <Text style={styles.transitText}>{item.estimatedTransitDays || 35}d transit</Text>
           </View>
         </View>
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    backgroundColor: '#DCFCE7',
+    backgroundColor: colors.greenTint,
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: radius.pill,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   conditionBadgeText: {
     fontFamily: fonts.bold,
     fontSize: 10.5,
-    color: '#166534',
+    color: colors.greenText,
   },
   content: {
     padding: 16,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.blueTint,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: radius.pill,
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   transitText: {
     fontFamily: fonts.bold,
     fontSize: 11,
-    color: '#1D4ED8',
+    color: colors.infoText,
   },
   actionRow: {
     marginTop: 14,

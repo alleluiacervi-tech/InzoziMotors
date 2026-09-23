@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
   directCard: { marginTop: 8, borderRadius: radius.xl, backgroundColor: colors.navyDeep, padding: 17 },
   directTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: '#fff' },
   directText: { marginTop: 6, fontSize: 13, lineHeight: 19, color: 'rgba(255,255,255,0.82)' },
-  noGuarantee: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12, borderRadius: radius.xl, backgroundColor: '#FFF8E8', padding: 15 },
+  noGuarantee: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 12, borderRadius: radius.xl, backgroundColor: colors.amberTint, padding: 15 },
   noGuaranteeText: { flex: 1, fontSize: 13, lineHeight: 19, color: colors.textSecondary },
 });

@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   circleBtn: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center',
   },
   heroBadges: { position: 'absolute', bottom: 40, left: 16, flexDirection: 'row', gap: 8 },

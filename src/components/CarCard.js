@@ -179,7 +179,7 @@ function makeStyles(colors) {
     heart: {
       position: 'absolute', top: spacing.sm, right: spacing.sm,
       width: 36, height: 36, borderRadius: 18,
-      backgroundColor: 'rgba(255,255,255,0.92)',
+      backgroundColor: colors.surface,
       alignItems: 'center', justifyContent: 'center',
       zIndex: 10,
     },

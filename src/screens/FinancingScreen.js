@@ -28,7 +28,7 @@ function BankCard({ bank, monthly, totalInterest, termMonths, isSelected, isBest
     >
       {isBestRate && (
         <View style={styles.bestChip}>
-          <Ionicons name="trophy" size={9} color="#92400E" />
+          <Ionicons name="trophy" size={9} color={colors.amberText} />
           <Text style={styles.bestChipText}>{t('financing.lowestRate')}</Text>
         </View>
       )}
@@ -274,18 +274,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.xl, padding: 14, ...shadows.card,
   },
-  bankCardActive: { borderColor: colors.primary, backgroundColor: '#FDFFFE' },
+  bankCardActive: { borderColor: colors.primary, backgroundColor: colors.surface },
   bestChip: {
     position: 'absolute', top: -9, right: 14, zIndex: 1,
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#FDE68A',
+    backgroundColor: colors.amberTint, borderWidth: 1, borderColor: colors.amber + '55',
     borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2.5,
   },
-  bestChipText: { fontSize: 11, fontFamily: fonts.extraBold, color: '#92400E', letterSpacing: 0.3, textTransform: 'uppercase' },
+  bestChipText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.amberText, letterSpacing: 0.3, textTransform: 'uppercase' },
   bankHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoTile: {
     width: 48, height: 48, borderRadius: radius.lg,
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.borderSoft,
+    // Bank logos are third-party marks drawn for a white ground, in either theme.
+    backgroundColor: colors.white, borderWidth: 1, borderColor: colors.borderSoft,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   logoImg: { width: 40, height: 34 },
@@ -322,7 +323,8 @@ const styles = StyleSheet.create({
   },
   summaryLogoTile: {
     width: 30, height: 30, borderRadius: radius.md,
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.borderSoft,
+    // Bank logos are third-party marks drawn for a white ground, in either theme.
+    backgroundColor: colors.white, borderWidth: 1, borderColor: colors.borderSoft,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   summaryLogo: { width: 24, height: 20 },

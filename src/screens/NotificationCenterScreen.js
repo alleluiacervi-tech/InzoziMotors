@@ -20,7 +20,7 @@ function NotificationRow({ notification, onPress, onMarkRead, t }) {
     message: {
       icon: 'chatbubble-outline',
       color: colors.statusScheduled,
-      bg: '#EFF6FF',
+      bg: colors.statusScheduledBg,
       label: t('notifications.filterMessages'),
     },
     listing_update: {
