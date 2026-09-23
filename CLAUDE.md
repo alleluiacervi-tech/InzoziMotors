@@ -125,11 +125,11 @@ commission.
 
 | | |
 |---|---|
-| Bundle id / package | iOS `com.sawacars.app` · Android `com.sawacars.android` (the Play listing is on the organization account; `com.sawacars.app` stays reserved on the old personal account forever) |
+| Bundle id / package | `com.sawacars.app` |
 | Slug / EAS project | `sawa-cars` / `9c7aebc4-04b3-4950-b4db-0021e7836e65` |
 | Version | `1.0.0`; build numbers are **remote** (`appVersionSource: remote`, auto-increment) |
 | Apple Team ID | `5Z2LA9U639` · ASC app id `6803097569` |
-| Android | `assetlinks.json` still carries the OLD app's signing key; replace it with the new listing's Play App Signing SHA-256 once the first upload exists; target/compile SDK 36 |
+| Android | Play App Signing SHA-256 registered in `assetlinks.json`; target/compile SDK 36 |
 | OTA | EAS Update, `runtimeVersion: appVersion`, channel `production` via `.github/workflows/mobile-update.yml` |
 
 **Push notifications: code is real, delivery is not live yet.** `expo-notifications`

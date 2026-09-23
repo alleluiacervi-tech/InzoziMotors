@@ -34,7 +34,7 @@ type Release = {
 
 const PLATFORMS: { key: 'ios' | 'android'; label: string; hint: string }[] = [
   { key: 'ios', label: 'iPhone', hint: 'https://apps.apple.com/app/id6803097569' },
-  { key: 'android', label: 'Android', hint: 'https://play.google.com/store/apps/details?id=com.sawacars.android' },
+  { key: 'android', label: 'Android', hint: 'https://play.google.com/store/apps/details?id=com.sawacars.app' },
 ]
 
 export default function AppReleasePage() {
