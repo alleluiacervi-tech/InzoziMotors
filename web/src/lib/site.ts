@@ -16,9 +16,9 @@ export const SITE = {
 /** App identifiers — must match app.config.js in the Expo project. */
 export const APP = {
   scheme: 'sawa',
-  androidPackage: 'com.sawacars.app',
+  androidPackage: 'com.sawacars.android',
   iosBundleId: 'com.sawacars.app',
-  playStoreUrl: 'https://play.google.com/store/apps/details?id=com.sawacars.app',
+  playStoreUrl: 'https://play.google.com/store/apps/details?id=com.sawacars.android',
   appStoreUrl: 'https://apps.apple.com/app/id6803097569',
   /**
    * HONESTY GATE, per platform. A badge or store link only renders for a store

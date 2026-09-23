@@ -104,7 +104,11 @@ export default ({ config }) => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#CC050F',
     },
-    package: 'com.sawacars.app',
+    // Deliberately NOT the iOS bundle id. `com.sawacars.app` was reserved on the
+    // original personal Play account, and Play never releases a package name,
+    // not even by deleting the app. The Play listing moved to the organization
+    // account under this name instead. Changing it again means a new Play app.
+    package: 'com.sawacars.android',
     permissions: [
       'CAMERA',
       'android.permission.POST_NOTIFICATIONS',
