@@ -276,12 +276,12 @@ const styles = StyleSheet.create({
   dutyUSDBold: { fontSize: 16, fontFamily: fonts.extraBold },
   resultDivider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
   effectiveRateCard: {
-    margin: 16, backgroundColor: '#FEF3C7',
+    margin: 16, backgroundColor: colors.amberTint,
     borderRadius: radius.xl, padding: 16, alignItems: 'center', gap: 4,
   },
   effectiveRateTitle: { fontSize: 12, fontFamily: fonts.bold, color: colors.amberText, textTransform: 'uppercase', letterSpacing: 0.4 },
   effectiveRateValue: { fontSize: 36, fontFamily: fonts.black, color: colors.amberText },
-  effectiveRateDesc: { fontSize: 12, color: '#92400E', textAlign: 'center', lineHeight: 18 },
+  effectiveRateDesc: { fontSize: 12, color: colors.amberText, textAlign: 'center', lineHeight: 18 },
   rwfCard: {
     flexDirection: 'row', gap: 12, alignItems: 'flex-start',
     marginHorizontal: 16, marginBottom: 16,

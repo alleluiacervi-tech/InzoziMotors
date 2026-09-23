@@ -4,10 +4,15 @@
 // feedback: an instant opacity/scale snap with no spring, no overshoot, no
 // haptic — the single most recognisable "this is an unfinished RN app" tell
 // there is. This component is the fix, and it is a DROP-IN for the
-// `Pressable` usages it replaces: the same `style`-as-function and
-// `children`-as-function contracts Pressable itself supports still work,
-// because this still renders a real Pressable underneath — it only adds a
-// Reanimated-driven scale on top of whatever style you already pass.
+// `Pressable` usages it replaces: `style` may be an object or a function of
+// `{ pressed }`, and `children` may be a function, exactly as with Pressable.
+//
+// A style FUNCTION must never reach the animated component itself. Reanimated
+// rewrites `style` into an array before Pressable sees it, and Pressable only
+// calls a style that is a bare function, so `[fn]` is silently dropped along
+// with every style in it. That shipped once: tab bar, buttons and cards all
+// rendered unstyled. The pressed state is tracked here and the style resolved
+// before it is handed over.
 //
 // The physics: a fast, slightly under-damped spring (damping 16 / stiffness
 // 380) so a press reads as a firm, immediate press — not a squishy bounce,
@@ -19,7 +24,7 @@
 // has to land with the moment of contact or it reads as delayed/laggy. A
 // press that gets cancelled (finger drags off before release) still restores
 // the scale on pressOut/pressCancel; RN calls one of the two.
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import useReducedMotion from '../hooks/useReducedMotion';
@@ -41,6 +46,8 @@ export default function Touchable({
 }) {
   const scale = useSharedValue(1);
   const reducedMotion = useReducedMotion();
+  const [pressed, setPressed] = useState(false);
+  const styleIsFunction = typeof style === 'function';
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -49,6 +56,7 @@ export default function Touchable({
   const handlePressIn = useCallback(
     (event) => {
       if (!disabled) {
+        if (styleIsFunction) setPressed(true);
         scale.value = reducedMotion ? 1 : withSpring(scaleTo, SPRING);
         if (haptic === 'light') haptics.tapLight();
         else if (haptic === 'medium') haptics.tapMedium();
@@ -56,23 +64,26 @@ export default function Touchable({
       }
       onPressIn?.(event);
     },
-    [disabled, reducedMotion, scaleTo, haptic, onPressIn, scale],
+    [disabled, styleIsFunction, reducedMotion, scaleTo, haptic, onPressIn, scale],
   );
 
   const handlePressOut = useCallback(
     (event) => {
+      if (styleIsFunction) setPressed(false);
       scale.value = reducedMotion ? 1 : withSpring(1, SPRING);
       onPressOut?.(event);
     },
-    [reducedMotion, onPressOut, scale],
+    [styleIsFunction, reducedMotion, onPressOut, scale],
   );
+
+  const resolvedStyle = styleIsFunction ? style({ pressed }) : style;
 
   return (
     <AnimatedPressable
       disabled={disabled}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={(state) => [typeof style === 'function' ? style(state) : style, animatedStyle]}
+      style={[resolvedStyle, animatedStyle]}
       {...rest}
     >
       {children}

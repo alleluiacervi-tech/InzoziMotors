@@ -1,4 +1,5 @@
-import { Image } from 'react-native';
+import { Image, Platform } from 'react-native';
+import { Asset } from 'expo-asset';
 
 // ─── Bundled studio photography ──────────────────────────────────────────────
 // The same 21 professional images the website's database is seeded with
@@ -8,7 +9,8 @@ import { Image } from 'react-native';
 // Everything is resolved to a plain URI string so the app's existing
 // `source={{ uri: car.image }}` call sites keep working untouched.
 
-const u = (mod) => Image.resolveAssetSource(mod).uri;
+// react-native-web has no Image.resolveAssetSource; the native path is unchanged.
+const u = (mod) => (Platform.OS === 'web' ? Asset.fromModule(mod).uri : Image.resolveAssetSource(mod).uri);
 
 export const STUDIO = {
   heroSedan: u(require('../../assets/cars/hero-sedan-studio.jpeg')),

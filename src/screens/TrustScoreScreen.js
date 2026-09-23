@@ -338,9 +338,9 @@ const styles = StyleSheet.create({
   compDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
   improveCard: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-    backgroundColor: '#FEF3C7', borderRadius: radius.lg, padding: 10,
+    backgroundColor: colors.amberTint, borderRadius: radius.lg, padding: 10,
   },
-  improveText: { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 17 },
+  improveText: { flex: 1, fontSize: 12, color: colors.amberText, lineHeight: 17 },
   howCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, margin: 16, padding: 16, ...shadows.card,

@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   backBtn: { position: 'absolute', left: 16 },
   backCircle: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
   heroBadges: { flexDirection: 'row', gap: 8 },
   verifiedBadge: {

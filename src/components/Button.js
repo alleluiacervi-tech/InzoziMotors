@@ -34,9 +34,10 @@ export default function Button({
     style,
   ];
 
-  const color = isPrimary || variant === 'dark'
-    ? colors.white
-    : onDark
+  // `dark` is an inverted button (textPrimary fill), so its label takes the page colour.
+  const color = variant === 'dark'
+    ? colors.bg
+    : isPrimary || onDark
     ? colors.white
     : colors.textPrimary;
 
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.22)',
   },
   dark: { backgroundColor: colors.textPrimary },
-  outline: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  outline: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   // Scale now comes from Touchable's spring; this stays opacity-only.
   pressed: { opacity: 0.9 },
   disabled: { opacity: 0.46 },

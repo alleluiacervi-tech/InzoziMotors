@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   certText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
   metaText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
-  highDemandChip: { backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  highDemandChip: { backgroundColor: colors.amberTint, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   highDemandText: { fontSize: 11, fontFamily: fonts.bold, color: colors.amberText },
   rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   rowPrice: { fontVariant: ['tabular-nums'], fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },

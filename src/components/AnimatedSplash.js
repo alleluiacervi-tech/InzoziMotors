@@ -4,7 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LogoMark } from './Logo';
 import Button from './Button';
-import { colors, fonts } from '../theme';
+import { fonts } from '../theme';
+import { lightColors } from '../theme/colors';
 
 // Branded landing — the Sawa identity holds on screen from launch until
 // the user taps through; no auto-dismiss.
@@ -88,7 +89,8 @@ export default function AnimatedSplash({ onFinish }) {
 const styles = StyleSheet.create({
   root: { backgroundColor: '#FFFFFF', zIndex: 100, elevation: 100 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  word: { marginTop: 26, fontSize: 24, fontFamily: fonts.black, color: colors.textPrimary, letterSpacing: -0.5 },
-  tag: { marginTop: 10, fontSize: 13, fontFamily: fonts.semiBold, color: colors.textMuted, letterSpacing: 0.4 },
+  // Always the light palette: this screen continues the white native splash in both themes.
+  word: { marginTop: 26, fontSize: 24, fontFamily: fonts.black, color: lightColors.textPrimary, letterSpacing: -0.5 },
+  tag: { marginTop: 10, fontSize: 13, fontFamily: fonts.semiBold, color: lightColors.textMuted, letterSpacing: 0.4 },
   footer: { paddingHorizontal: 24 },
 });

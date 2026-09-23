@@ -31,6 +31,8 @@ export default function CarListCard({ car, onPress }) {
   const price = car.type === 'auction' ? car.currentBid : car.price;
   const marketDiff = getMarketDiff(car);
   const savedCount = getSavedCount(car);
+  const belowMarket = typeof marketDiff === 'number' && marketDiff < 0;
+  const highDemand = savedCount >= 10;
 
   return (
     <Touchable scaleTo={0.985} style={styles.card} onPress={onPress}>
@@ -81,23 +83,25 @@ export default function CarListCard({ car, onPress }) {
           </View>
         ) : null}
 
-        <View style={styles.bottomRow}>
+        {/* Stacked, not side by side: in a 118px-photo row the price (and its
+            dollar line) needs the full width, or it overprints the tags. */}
+        {(belowMarket || highDemand) && (
           <View style={styles.tagsRow}>
             {/* Only when the server actually computed a market position from
                 real comparables. getMarketDiff returns null otherwise. */}
-            {typeof marketDiff === 'number' && marketDiff < 0 && (
+            {belowMarket && (
               <View style={styles.tagGreen}>
                 <Text style={styles.tagGreenText}>{t('home.belowMarket', { percent: Math.abs(marketDiff) })}</Text>
               </View>
             )}
-            {savedCount >= 10 && (
+            {highDemand && (
               <View style={styles.tagAmber}>
                 <Text style={styles.tagAmberText}>{t('home.highDemand')}</Text>
               </View>
             )}
           </View>
-          <Price amountRwf={price} />
-        </View>
+        )}
+        <Price amountRwf={price} style={styles.priceBlock} />
       </View>
     </Touchable>
   );
@@ -139,11 +143,8 @@ function makeStyles(colors) {
     },
     title: { flex: 1, ...typography.cardTitle, color: colors.textPrimary },
     meta: { ...typography.cardMeta, color: colors.textMuted, lineHeight: 17 },
-    bottomRow: {
-      flexDirection: 'row', alignItems: 'flex-end',
-      justifyContent: 'space-between', gap: spacing.sm, marginTop: 6,
-    },
-    tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, flex: 1 },
+    tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 },
+    priceBlock: { marginTop: 6 },
     scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
     scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
     tagGreen: {

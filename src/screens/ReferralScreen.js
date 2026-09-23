@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   code: { fontSize: 24, fontFamily: fonts.black, color: '#fff', letterSpacing: 2, marginTop: 4 },
   shareBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#fff', borderRadius: radius.xl,
+    backgroundColor: colors.surface, borderRadius: radius.xl,
     paddingHorizontal: 20, paddingVertical: 12, alignSelf: 'stretch', justifyContent: 'center',
   },
   shareBtnText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primary },
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textPrimary },
   stepDesc: { fontSize: 12, color: colors.textSecondary, lineHeight: 17, marginTop: 2 },
   rewardCard: {
-    backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: colors.amber + '55',
+    backgroundColor: colors.amberTint, borderWidth: 1, borderColor: colors.amber + '55',
     borderRadius: radius.xl, margin: 16, padding: 16,
   },
   rewardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  rewardTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: '#92400E' },
-  rewardValue: { fontSize: 20, fontFamily: fonts.black, color: '#92400E', marginBottom: 6 },
-  rewardSub: { fontSize: 13, color: '#92400E', lineHeight: 19 },
+  rewardTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.amberText },
+  rewardValue: { fontSize: 20, fontFamily: fonts.black, color: colors.amberText, marginBottom: 6 },
+  rewardSub: { fontSize: 13, color: colors.amberText, lineHeight: 19 },
   rewardNote: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', marginTop: 10 },
   rewardNoteText: { flex: 1, fontSize: 11, color: colors.textMuted, lineHeight: 15 },
 });

@@ -17,10 +17,8 @@
 // over here, not re-derived — a second measurement could quietly drift from
 // the first, and the whole point of a shared brand is that it does not.
 //
-// `colors` stays a plain export, pointing at `lightColors`, so every screen
-// that has not yet been migrated onto `useTheme()` keeps working exactly as
-// it always has — light-only, unaffected — while the migration happens
-// screen by screen rather than as one atomic, unverifiable app-wide change.
+// `colors` (bottom of this file) is the palette the app actually renders with:
+// filled from one of these two at launch, before any screen loads.
 export const lightColors = {
   // Dark surfaces (Welcome hero gradient — premium warm charcoal, red kept as accent)
   navyDeep: '#14110F',
@@ -41,6 +39,8 @@ export const lightColors = {
   // the same gray as greenTint, so "blue" and "green" surfaces rendered
   // identically and both read as disabled.
   blueTint: '#EFF6FF',
+  infoText: '#1D4ED8',
+  infoBorder: '#BFDBFE',
 
   // Badge Colors
   jeondan: '#CC050F',
@@ -114,6 +114,11 @@ export const lightColors = {
   scrim: 'rgba(20,17,15,0.78)',
   scrimStrong: 'rgba(20,17,15,0.85)',
 
+  // Inverse surface: toasts and banners that sit above the page in the opposite tone.
+  inverseSurface: '#14110F',
+  inverseText: '#FFFFFF',
+  inverseTextMuted: 'rgba(255,255,255,0.78)',
+
   white: '#FFFFFF',
   black: '#000000',
 };
@@ -130,11 +135,17 @@ export const darkColors = {
   navyMid: '#120F0E',
   navyLight: '#1E1A18',
 
-  primary: '#FF5A61',       // 6.40:1 on the dark page — matches web's --brand dark
+  // One red has to serve as a FILL under white labels (buttons, chips) and as
+  // TEXT on the page (prices). The web's #FF5A61 gave white labels 3.05:1,
+  // which fails AA. This one: white on it 4.79:1, it on the page 3.83:1
+  // (prices are large bold text, so 3:1 is the bar).
+  primary: '#DA2C32',
   primaryBright: '#FF7A80',
   primaryTint: '#2F1618',
   blueLight: '#FFA8AC',
   blueTint: '#162038',      // web's --info-tint dark
+  infoText: '#93C5FD',      // 8.9:1 on blueTint
+  infoBorder: '#1E3A8A',
 
   jeondan: '#FF5A61',
   jeondanPlus: '#7DA5FF',   // web's --info dark
@@ -196,10 +207,26 @@ export const darkColors = {
   scrim: 'rgba(20,17,15,0.78)',
   scrimStrong: 'rgba(20,17,15,0.85)',
 
+  inverseSurface: '#F5F1EC',
+  inverseText: '#14110F',
+  inverseTextMuted: 'rgba(20,17,15,0.72)',
+
   white: '#FFFFFF',
   black: '#000000',
 };
 
-export const colors = lightColors;
+// The palette every screen reads. Mutable on purpose: src/theme/boot.js fills it
+// with the light or dark values BEFORE any screen module loads, so each
+// module-level StyleSheet is built from the right theme with no per-file
+// wiring. Swapping it later would not repaint anything already built, which is
+// why a theme change restarts the app (ThemeContext.js).
+export const colors = { ...lightColors };
+
+export const themeState = { mode: 'system', scheme: 'light' };
+
+export function applyScheme(scheme) {
+  themeState.scheme = scheme === 'dark' ? 'dark' : 'light';
+  Object.assign(colors, themeState.scheme === 'dark' ? darkColors : lightColors);
+}
 
 export default colors;

@@ -69,7 +69,7 @@ const SCORE_COMPONENTS = [
     icon: 'star-outline',
     max: 20,
     color: colors.amberText,
-    bg: '#FFFBEB',
+    bg: colors.amberTint,
     calcPts: (p) => Math.round((p.avgRating / 5) * 20),
     desc: (p) => `${p.avgRating}★ avg from ${p.totalReviews} review${p.totalReviews !== 1 ? 's' : ''}`,
   },

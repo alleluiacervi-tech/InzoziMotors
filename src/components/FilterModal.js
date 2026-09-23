@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     height: '75%',
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   resetLink: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.textMuted,
   },
   tabBar: {
     flexDirection: 'row',
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   confirmBtn: {
     height: 48,
     borderRadius: 8,
-    backgroundColor: '#CCCCCC',
+    backgroundColor: colors.textDisabled,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
     width: '23%',
     height: 38,
     borderRadius: 6,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   yearGridText: {
     fontSize: 12,
-    color: '#666666',
+    color: colors.textMuted,
     fontFamily: fonts.bold,
   },
   yearGridTextActive: {

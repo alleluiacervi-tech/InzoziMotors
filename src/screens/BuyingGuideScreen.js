@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   stepHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stepTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   stepText: { marginTop: 6, fontSize: 13, lineHeight: 19, color: colors.textSecondary },
-  boundary: { marginTop: 5, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.amber + '45', backgroundColor: '#FFF8E8', padding: 16 },
+  boundary: { marginTop: 5, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.amber + '45', backgroundColor: colors.amberTint, padding: 16 },
   boundaryTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
   boundaryText: { marginTop: 6, fontSize: 13, lineHeight: 19, color: colors.textSecondary },
   sectionTitle: { marginTop: 24, marginBottom: 10, fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary },

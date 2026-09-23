@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   },
   circleBtn: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center',
   },
   circleBtnActive: { backgroundColor: colors.greenTint, borderWidth: 1.5, borderColor: colors.primary },
@@ -669,13 +669,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6, paddingVertical: 3, borderRadius: 5, marginTop: 4,
   },
   marketBadgeLow: { backgroundColor: colors.greenTint },
-  marketBadgeHigh: { backgroundColor: '#FEF2F2' },
+  marketBadgeHigh: { backgroundColor: colors.primaryTint },
   marketBadgeText: { fontSize: 11, fontFamily: fonts.bold },
   socialBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
   socialItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   socialText: { fontSize: 12, color: colors.textSecondary, fontFamily: fonts.semiBold },
   highDemandBadge: {
-    backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5,
+    backgroundColor: colors.amberTint, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5,
   },
   highDemandText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.amberText },
   sparklineCard: {
