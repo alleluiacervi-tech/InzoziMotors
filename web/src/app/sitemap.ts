@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { api } from '@/lib/api'
 import { SITE } from '@/lib/site'
 import type { Car, RentalCar } from '@/lib/types'
+import { buildBrowseHref, DEFAULT_SORT, type Filters } from '@/components/marketplace/query'
 
 // Every live listing belongs in here — a car nobody can find is a car nobody
 // buys, and the catalogue is the only part of Sawa that earns search traffic.
@@ -116,5 +117,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  return [...staticEntries, ...carEntries, ...rentalEntries]
+  // The single-facet browse pages browseIndexPolicy marks indexable — one
+  // make, one body type or one fuel — for every value actually in stock. The
+  // homepage stock band links them; the sitemap makes sure they are found
+  // even when nothing else does. Built with buildBrowseHref, the same function
+  // that writes each page's canonical, so the two URLs cannot disagree.
+  const facetEntries: MetadataRoute.Sitemap = []
+  const seen = new Set<string>()
+  for (const car of cars) {
+    const facets: Filters[] = [
+      car.make ? { make: car.make } : {},
+      car.body_type ? { body_type: car.body_type } : {},
+      car.fuel_type ? { fuel_type: car.fuel_type } : {},
+    ]
+    for (const filters of facets) {
+      if (!Object.keys(filters).length) continue
+      const path = buildBrowseHref(filters, { sort: DEFAULT_SORT })
+      if (seen.has(path.toLowerCase())) continue
+      seen.add(path.toLowerCase())
+      facetEntries.push({ url: `${SITE.url}${path}`, changeFrequency: 'daily', priority: 0.6 })
+    }
+  }
+
+  return [...staticEntries, ...facetEntries, ...carEntries, ...rentalEntries]
 }

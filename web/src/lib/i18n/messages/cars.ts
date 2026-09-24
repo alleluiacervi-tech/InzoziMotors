@@ -45,7 +45,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Cars matching “{{q}}” in Kigali',
       subjectCars: '{{phrase}} cars',
       certifiedCars: 'Certified cars',
-      metaTitleFiltered: '{{heading}} in Kigali, Rwanda',
+      metaTitleFiltered: '{{heading}}, Rwanda',
       metaTitleDefault: 'Cars for sale in Kigali, Rwanda',
       metaDescription:
         '{{description}} reviewed for publication on Sawa Cars in Kigali. View listing evidence and contact verified sellers directly.',
@@ -330,7 +330,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Imodoka zihuye na “{{q}}” i Kigali',
       subjectCars: 'imodoka {{phrase}}',
       certifiedCars: 'Imodoka zemewe',
-      metaTitleFiltered: '{{heading}} i Kigali, mu Rwanda',
+      metaTitleFiltered: '{{heading}}, mu Rwanda',
       metaTitleDefault: 'Imodoka zigurishwa i Kigali, mu Rwanda',
       metaDescription:
         '{{description}} zasuzumwe kugira ngo zitangazwe kuri Sawa Cars i Kigali. Reba ibimenyetso by’itangazo kandi uvugane n’abagurisha bemejwe ku buryo butaziguye.',
@@ -615,7 +615,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Voitures correspondant à « {{q}} » à Kigali',
       subjectCars: '{{phrase}}',
       certifiedCars: 'Voitures certifiées',
-      metaTitleFiltered: '{{heading}} à Kigali, Rwanda',
+      metaTitleFiltered: '{{heading}}, Rwanda',
       metaTitleDefault: 'Voitures à vendre à Kigali, Rwanda',
       metaDescription:
         '{{description}} examinées pour publication sur Sawa Cars à Kigali. Consultez les preuves de l’annonce et contactez directement des vendeurs vérifiés.',
@@ -900,7 +900,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Magari yanayolingana na “{{q}}” Kigali',
       subjectCars: 'magari {{phrase}}',
       certifiedCars: 'Magari yaliyothibitishwa',
-      metaTitleFiltered: '{{heading}} Kigali, Rwanda',
+      metaTitleFiltered: '{{heading}}, Rwanda',
       metaTitleDefault: 'Magari yanayouzwa Kigali, Rwanda',
       metaDescription:
         '{{description}} yaliyokaguliwa kwa uchapishaji kwenye Sawa Cars Kigali. Ona ushahidi wa tangazo na wasiliana na wauzaji waliothibitishwa moja kwa moja.',
@@ -1185,7 +1185,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: '키갈리에서 “{{q}}”에 해당하는 차량',
       subjectCars: '{{phrase}} 차량',
       certifiedCars: '인증 차량',
-      metaTitleFiltered: '{{heading}} — 르완다 키갈리',
+      metaTitleFiltered: '{{heading}} — 르완다',
       metaTitleDefault: '르완다 키갈리 판매 차량',
       metaDescription:
         '{{description}} — 키갈리 Sawa Cars에서 게시를 위해 검토되었습니다. 매물 증빙을 확인하고 인증된 판매자에게 직접 연락하세요.',
@@ -1470,7 +1470,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: '基加利符合“{{q}}”的车辆',
       subjectCars: '{{phrase}}车辆',
       certifiedCars: '认证车辆',
-      metaTitleFiltered: '{{heading}} — 卢旺达基加利',
+      metaTitleFiltered: '{{heading}} — 卢旺达',
       metaTitleDefault: '卢旺达基加利在售车辆',
       metaDescription:
         '{{description}} 已在 Sawa Cars 基加利完成发布审核。查看信息证据并直接联系已认证卖家。',
