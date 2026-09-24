@@ -49,7 +49,7 @@ It is weak at **the business view** and has **no automation**. Four gaps matter 
 | D2 | Urgency inflation: one red "Urgent" treatment for everything past 24 h, so 36 of 37 items are urgent | SLA tiers per queue: on track, due soon, breached. Red only for breached |
 | D3 | Users table: four buttons on every row, including red "Suspend"; "Verify identity" offered to people who never submitted an ID | Primary action only, the rest in a row menu; verification action only when documents exist |
 | D4 | Dates in US order (9/24/2026) while the product uses day-first | `en-GB` formatting everywhere |
-| D5 | Pipeline board: seven narrow columns, no filters, no age sort, "Live" column holds only a count | Filters (centre, age, waiting-on), compact cards, a live-listings link |
+| D5 | Pipeline board: seven narrow columns, no filters, no age sort, "Live" column holds only a count | Filters (center, age, waiting-on), compact cards, a live-listings link |
 | D6 | 21 destinations in three groups; configuration pages sit beside daily work | Five groups (below) |
 | D7 | No bulk actions, no saved filters, no column sorting, no CSV export on any table | A shared table component with all four |
 
@@ -118,7 +118,7 @@ Controls: 7 d / 30 d / 90 d / 12 m / custom, and "compare to previous period", i
 
 Each step shows its conversion and median time, so the slowest step is obvious.
 
-### 3. Inventory, quality and centres
+### 3. Inventory, quality and centers
 
 - **Inventory:** stock by make, body type, price band and age; stale listings (no contact in 14 days); price drops.
 - **Quality:** score distribution; the checklist items that fail most; rejection reasons; score spread by inspector.
