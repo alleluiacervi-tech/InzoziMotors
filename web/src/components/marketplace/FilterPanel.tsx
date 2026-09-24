@@ -93,24 +93,9 @@ export function FilterPanel({
       {/* Sort lives in the toolbar, but it has to survive a filter submit. */}
       <input type="hidden" name="sort" value={sort} />
 
-      <div>
-        <label htmlFor={fieldId('q')} className={LABEL}>
-          {t('cars.filter.keyword')}
-        </label>
-        <div className="relative">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-content-muted">
-            <Icon name="search" size={17} />
-          </span>
-          <Input
-            id={fieldId('q')}
-            name="q"
-            type="search"
-            defaultValue={filters.q ?? ''}
-            placeholder={t('cars.filter.keywordPlaceholder')}
-            className="pl-10"
-          />
-        </div>
-      </div>
+      {/* The keyword is typed in the search bar at the top of the page
+          (BrowseSearch); it rides along here so applying filters keeps it. */}
+      <input type="hidden" name="q" value={filters.q ?? ''} />
 
       <SelectField
         id={fieldId('make')}

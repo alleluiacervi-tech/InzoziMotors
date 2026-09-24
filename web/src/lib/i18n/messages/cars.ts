@@ -25,6 +25,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'The marketplace',
       introDescription: 'Every car inspected on the same 150 points. Buyers never pay a fee.',
+      searchLabel: 'Search cars for sale',
+      searchButton: 'Search',
       refineEyebrow: 'Find your fit',
       refineTitle: 'Refine the collection',
       resultsTitle: 'Search results',
@@ -301,6 +303,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'Isoko',
       introDescription: 'Buri modoka isuzumwa ku ngingo 150 zimwe. Abaguzi ntabwo bishyura.',
+      searchLabel: 'Shakisha imodoka zigurishwa',
+      searchButton: 'Shakisha',
       refineEyebrow: 'Shaka ikwiranye nawe',
       refineTitle: 'Nozereza urutonde',
       resultsTitle: 'Ibisubizo by’ishakisha',
@@ -577,6 +581,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'Le marché',
       introDescription: 'Chaque voiture inspectée sur les mêmes 150 points. Les acheteurs ne paient jamais de frais.',
+      searchLabel: 'Rechercher des voitures à vendre',
+      searchButton: 'Rechercher',
       refineEyebrow: 'Trouvez ce qu’il vous faut',
       refineTitle: 'Affiner la collection',
       resultsTitle: 'Résultats de recherche',
@@ -853,6 +859,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'Soko',
       introDescription: 'Kila gari hukaguliwa kwa pointi 150 zile zile. Wanunuzi hawalipi ada.',
+      searchLabel: 'Tafuta magari yanayouzwa',
+      searchButton: 'Tafuta',
       refineEyebrow: 'Pata inayokufaa',
       refineTitle: 'Boresha mkusanyiko',
       resultsTitle: 'Matokeo ya utafutaji',
@@ -1129,6 +1137,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: '마켓플레이스',
       introDescription: '모든 차량이 동일한 150개 항목으로 검사됩니다. 구매자는 수수료를 내지 않습니다.',
+      searchLabel: '판매 차량 검색',
+      searchButton: '검색',
       refineEyebrow: '나에게 맞는 차 찾기',
       refineTitle: '목록 좁히기',
       resultsTitle: '검색 결과',
@@ -1405,6 +1415,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: '市场',
       introDescription: '每辆车都经过相同的150项检测。买家永远无需付费。',
+      searchLabel: '搜索在售车辆',
+      searchButton: '搜索',
       refineEyebrow: '找到适合您的车',
       refineTitle: '细化筛选结果',
       resultsTitle: '搜索结果',
