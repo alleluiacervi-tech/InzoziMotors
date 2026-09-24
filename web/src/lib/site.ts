@@ -129,10 +129,13 @@ export const CENTERS = [
 // Three verbs and the trust page. Kept deliberately short — a marketplace nav
 // that grows becomes a portal nav, and portals read as classifieds. /promise
 // stays reachable from the footer and every trust surface.
+// The three businesses first, in the order people arrive with them, then the
+// tools and the explanation. Selling is not here because it is the header's
+// one primary button (Header.tsx) — listing it twice made it look optional.
 export const NAV_LINKS = [
   { href: '/cars', label: 'Buy' },
-  { href: '/rentals', label: 'Rentals' },
-  { href: '/sell', label: 'Sell' },
+  { href: '/rentals', label: 'Rent' },
+  { href: '/imports', label: 'Import' },
   { href: '/tools', label: 'Tools' },
   { href: '/how-it-works', label: 'How it works' },
 ] as const

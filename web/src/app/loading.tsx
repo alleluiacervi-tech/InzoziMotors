@@ -1,7 +1,7 @@
 import { LogoMark } from '@/components/brand/Logo'
 
-// The route-transition loading state — the same clockwise mark as the opening
-// splash, so "the site is working" always looks like Sawa and never like a
+// The route-transition loading state — the brand mark turning clockwise, so
+// "the site is working" always looks like Sawa and never like a
 // browser default. Next.js shows this only while a server component route is
 // actually streaming; it costs nothing when navigation is instant.
 export default function Loading() {

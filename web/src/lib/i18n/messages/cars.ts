@@ -216,6 +216,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Similar cars',
       similarTitle: 'More {{make}} on Sawa Cars',
       seeAllMake: 'See all {{make}}',
+      contactSeller: 'Contact seller',
+      connecting: 'Connecting…',
       requestThisCar: 'Request this car',
     },
     report: {
@@ -490,6 +492,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Imodoka zisa',
       similarTitle: 'Izindi {{make}} kuri Sawa Cars',
       seeAllMake: 'Reba {{make}} zose',
+      contactSeller: 'Vugana n’umugurisha',
+      connecting: 'Birimo guhuza…',
       requestThisCar: 'Saba iyi modoka',
     },
     report: {
@@ -764,6 +768,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Voitures similaires',
       similarTitle: 'Plus de {{make}} sur Sawa Cars',
       seeAllMake: 'Voir toutes les {{make}}',
+      contactSeller: 'Contacter le vendeur',
+      connecting: 'Connexion…',
       requestThisCar: 'Demander cette voiture',
     },
     report: {
@@ -1038,6 +1044,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Magari yanayofanana',
       similarTitle: 'Zaidi ya {{make}} kwenye Sawa Cars',
       seeAllMake: 'Ona {{make}} zote',
+      contactSeller: 'Wasiliana na muuzaji',
+      connecting: 'Inaunganisha…',
       requestThisCar: 'Omba gari hili',
     },
     report: {
@@ -1312,6 +1320,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: '유사 차량',
       similarTitle: 'Sawa Cars의 더 많은 {{make}}',
       seeAllMake: '{{make}} 전체 보기',
+      contactSeller: '판매자에게 연락',
+      connecting: '연결 중…',
       requestThisCar: '이 차량 문의',
     },
     report: {
@@ -1586,6 +1596,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: '相似车辆',
       similarTitle: 'Sawa Cars 上更多的{{make}}',
       seeAllMake: '查看全部{{make}}',
+      contactSeller: '联系卖家',
+      connecting: '正在连接…',
       requestThisCar: '咨询这辆车',
     },
     report: {

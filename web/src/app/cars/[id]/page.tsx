@@ -518,8 +518,14 @@ export default async function CarDetailPage({ params }: PageProps) {
               <p className="truncate text-micro font-semibold text-content-muted">{car.title}</p>
               <p className="text-title-sm font-extrabold text-brand" aria-label={ formatMoneyExact(car.price) }>{ formatMoney(car.price) }</p>
             </div>
-            <Button href="#purchase-panel" size="compact" trailingIcon={<Icon name="arrow-right" size={16} />}>
-              {t('cars.detail.requestThisCar')}
+            {/* Same verb as the panel it jumps to — "Contact seller" — so
+                the phone and the desktop never name one action twice. */}
+            <Button
+              href={user ? '#purchase-panel' : `/signin?next=${encodeURIComponent(`/cars/${car.id}`)}`}
+              size="compact"
+              trailingIcon={<Icon name="arrow-right" size={16} />}
+            >
+              {t('cars.detail.contactSeller')}
             </Button>
           </div>
         </div>
@@ -573,12 +579,15 @@ async function DecisionSummary({ car, report, history }: { car: Car; report: Awa
       </div>
       <dl className="grid sm:grid-cols-2">
         {signals.map((signal, index) => (
-          <div key={signal.label} className={`flex gap-3 border-b border-line-soft px-5 py-4 last:border-b-0 sm:px-7 ${index < 2 ? 'sm:border-b' : 'sm:border-b-0'} ${index % 2 === 0 ? 'sm:border-r sm:border-line-soft' : ''}`}>
-            <Icon name={signal.icon} size={19} className={`mt-0.5 shrink-0 ${signal.tone}`} />
-            <div>
-              <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">{signal.label}</dt>
-              <dd className="mt-1 text-caption font-bold text-content">{signal.value}</dd>
-            </div>
+          // A <dl> group may hold only <dt>/<dd>, so the icon rides inside
+          // the term and is placed against the group's padding instead of
+          // sitting in a wrapper <div> of its own.
+          <div key={signal.label} className={`relative border-b border-line-soft py-4 pl-[3.25rem] pr-5 last:border-b-0 sm:pl-[3.75rem] sm:pr-7 ${index < 2 ? 'sm:border-b' : 'sm:border-b-0'} ${index % 2 === 0 ? 'sm:border-r sm:border-line-soft' : ''}`}>
+            <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">
+              <Icon name={signal.icon} size={19} className={`absolute left-5 top-[1.1rem] sm:left-7 ${signal.tone}`} aria-hidden="true" />
+              {signal.label}
+            </dt>
+            <dd className="mt-1 text-caption font-bold text-content">{signal.value}</dd>
           </div>
         ))}
       </dl>
