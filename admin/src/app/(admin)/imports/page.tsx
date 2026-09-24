@@ -1,5 +1,6 @@
 'use client'
 
+import { ExportLink } from '@/components/ExportLink'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
@@ -63,7 +64,7 @@ export default function ImportsPage() {
   }
 
   return <div>
-    <PageHeader title="Vehicle imports" description="One auditable pipeline from customer enquiry and 50% order payment to Kigali inspection, final balance and handover." />
+    <PageHeader title="Vehicle imports" description="One auditable pipeline from customer enquiry and 50% order payment to Kigali inspection, final balance and handover." action={<ExportLink dataset="imports" />} />
     <Card className="mb-5 p-4">
       <label className="text-label font-semibold text-content">Pipeline stage
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="ml-3 h-10 rounded-xl border border-line bg-surface px-3 font-normal">
@@ -81,7 +82,7 @@ export default function ImportsPage() {
             <p className="mt-1 text-label text-content-muted">From {item.origin_country} · {item.buyer_name} · {item.buyer_email}</p>
           </div>
           <div className="text-left md:text-right"><p className="font-extrabold text-content">{item.quoted_total_rwf ? money(item.quoted_total_rwf) : 'Awaiting quotation'}</p><p className="text-caption text-content-muted">Verified paid: {money(item.paid_rwf)}</p>
-            {item.actual_cost_rwf != null && item.quoted_total_rwf ? (() => { const margin = Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf); return <p className={`text-caption font-bold ${margin >= 0 ? 'text-success' : 'text-danger-strong'}`}>Margin: {money(margin)}</p> })() : null}
+            {item.actual_cost_rwf != null && item.quoted_total_rwf ? (() => { const margin = Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf); return <p className={`text-caption font-bold ${margin >= 0 ? 'text-success-text' : 'text-danger-strong'}`}>Margin: {money(margin)}</p> })() : null}
           </div>
         </div>
         {item.status === 'enquiry' ? <div className="mt-4 border-t border-line-soft pt-4"><p className="mb-3 text-label font-bold text-content">Build an exact landed-price quotation</p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

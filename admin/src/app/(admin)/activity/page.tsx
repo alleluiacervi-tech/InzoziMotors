@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill } from '@/components/ui'
+import { fmtDateTime } from '@/lib/format'
 
 const PAGE = 50
 const TYPES = ['user', 'listing', 'fee', 'mail']
@@ -56,7 +57,7 @@ export default function ActivityPage() {
             <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-content">{item.summary}</p><Pill status={item.target_type} label={item.target_type} /></div>
               <p className="mt-1 text-caption text-content-muted">{item.actor_name || 'Former admin'}{item.actor_email ? ` · ${item.actor_email}` : ''}{item.target_id ? ` · ${item.target_id}` : ''}</p>
             </div>
-            <time dateTime={item.created_at} title={new Date(item.created_at).toLocaleString()} className="shrink-0 text-caption text-content-muted">{new Date(item.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</time>
+            <time dateTime={item.created_at} className="shrink-0 text-caption text-content-muted">{fmtDateTime(item.created_at)}</time>
           </div>
         </li>)}</ul>
         <div className="flex items-center justify-between border-t border-line-soft px-4 py-3">

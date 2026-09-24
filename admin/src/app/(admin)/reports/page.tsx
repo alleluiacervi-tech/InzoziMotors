@@ -10,6 +10,7 @@ import {
 import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
 import { useFocusRow } from '@/components/useFocusRow'
+import { fmtDateTime } from '@/lib/format'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reported messages.
@@ -335,7 +336,7 @@ export default function ReportsPage() {
                   <p className="text-label leading-relaxed text-content">{r.message_text}</p>
                   {r.message_sent_at ? (
                     <p className="mt-1.5 text-caption text-content-muted">
-                      sent {new Date(r.message_sent_at).toLocaleString()}
+                      sent {fmtDateTime(r.message_sent_at)}
                     </p>
                   ) : null}
                 </blockquote>
@@ -374,7 +375,7 @@ export default function ReportsPage() {
                           <p className="text-caption font-bold text-content-secondary">
                             {m.sender_name}
                             <span className="ml-2 font-normal text-content-muted">
-                              {new Date(m.created_at).toLocaleString()}
+                              {fmtDateTime(m.created_at)}
                             </span>
                             {m.is_reported ? (
                               <span className="ml-2 font-bold text-danger-strong">· reported</span>

@@ -7,6 +7,7 @@ import { ReportAccess } from '@/components/ReportAccess'
 import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
+import { fmtDateTime } from '@/lib/format'
 
 type Result = 'pass' | 'flag' | 'fail'
 type ChecklistItem = { id: string; label: string; critical: boolean }
@@ -384,7 +385,7 @@ export default function InspectionDetailPage() {
                   <h3 className="text-sm font-semibold text-gray-700">{category.name}</h3>
                   {attestation ? (
                     <p className="text-xs text-gray-400">
-                      Attested {attestation.count} item(s) pass · {attestation.by === meId ? 'you' : `admin ${String(attestation.by).slice(0, 8)}`} · {new Date(attestation.at).toLocaleString()}
+                      Attested {attestation.count} item(s) pass · {attestation.by === meId ? 'you' : `admin ${String(attestation.by).slice(0, 8)}`} · {fmtDateTime(attestation.at)}
                     </p>
                   ) : null}
                 </div>

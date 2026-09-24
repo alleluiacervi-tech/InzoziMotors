@@ -75,6 +75,23 @@
   --amber-600: 202 108 5;   --amber-700: 180 83 9;     --amber-800: 146 64 14;
   --amber-900: 120 53 15;
 
+  /* Data series. Charts never draw in Signal Red: red is the primary action,
+     the money headline and an SLA breach, so a red bar reads as an alarm.
+     Categorical hues are assigned in this fixed order and never cycled; a
+     sixth series folds into "Other". Validated with the dataviz skill's
+     checker on #FFFFFF: lightness band, chroma floor, colour-blind and
+     normal-vision separation all pass. Aqua, amber and magenta sit under 3:1
+     on white, so every chart carries direct labels and a table view. */
+  --data-1: 42 120 214;     /* #2A78D6 blue — the single-series colour */
+  --data-2: 27 175 122;     /* #1BAF7A aqua */
+  --data-3: 237 161 0;      /* #EDA100 amber */
+  --data-4: 74 58 167;      /* #4A3AA7 violet */
+  --data-5: 232 123 164;    /* #E87BA4 magenta */
+  --data-prev: 214 208 200; /* #D6D0C8 the previous period, behind the current */
+  /* One hue, light to dark, for ordered steps (funnels, bands). */
+  --ramp-1: 134 182 239;  --ramp-2: 85 152 231;  --ramp-3: 42 120 214;
+  --ramp-4: 28 92 173;    --ramp-5: 16 66 129;
+
   --blue-50: 239 246 255;   --blue-100: 224 238 255;   --blue-200: 191 219 254;
   --blue-300: 147 197 253;  --blue-400: 78 138 245;    --blue-500: 37 99 235;
   --blue-600: 29 78 216;    --blue-700: 30 64 175;     --blue-800: 30 58 138;
@@ -146,6 +163,17 @@
   --amber-600: 252 211 77;  --amber-700: 253 224 71;  --amber-800: 254 235 138;
   --amber-900: 254 243 199;
 
+  /* Selected for the dark surface (#1E1A18), not flipped: every hue clears
+     3:1 there and passes the same separation checks. */
+  --data-1: 57 135 229;     /* #3987E5 */
+  --data-2: 25 158 112;     /* #199E70 */
+  --data-3: 201 133 0;      /* #C98500 */
+  --data-4: 144 133 233;    /* #9085E9 */
+  --data-5: 213 81 129;     /* #D55181 */
+  --data-prev: 74 67 63;    /* #4A433F */
+  --ramp-1: 24 79 149;    --ramp-2: 37 106 191;  --ramp-3: 57 135 229;
+  --ramp-4: 109 167 236;  --ramp-5: 183 211 246;
+
   --blue-50: 22 32 56;      --blue-100: 28 42 72;     --blue-200: 38 58 100;
   --blue-300: 60 90 150;    --blue-400: 80 128 230;   --blue-500: 96 145 255;
   --blue-600: 125 165 255;  --blue-700: 160 190 255;  --blue-800: 195 215 255;
@@ -199,7 +227,7 @@ body {
    Console chrome.
 
    The sidebar is the one dark surface in this tool and it was a flat #14110F
-   slab: 21 rows of white-ish type on an unlit ground, which is exactly the
+   slab: 26 rows of white-ish type on an unlit ground, which is exactly the
    shape an internal tool takes when nobody has looked at it in a while. These
    three give it the same lighting rig the website's dark surfaces use, so the
    two products read as one.
@@ -218,7 +246,7 @@ body {
     radial-gradient(90% 26% at 100% 4%, rgb(120 150 210 / 0.08), transparent 70%);
 }
 
-/* The rail scrolls 21 destinations on a laptop. A 14px scrollbar in the middle
+/* The rail scrolls 26 destinations on a laptop. A 14px scrollbar in the middle
    of the navigation is the loudest thing in it, so it gets the hairline
    treatment and only shows up while the pointer is inside. */
 .rail-scroll {
@@ -244,7 +272,7 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
-/* The rail holds 21 destinations and a laptop shows about 17 of them. Without
+/* The rail holds 26 destinations and a laptop shows about 17 of them. Without
    a fade the list just stops mid-row against the user footer, which reads as a
    clipping bug rather than as "there is more below". The mask is only applied
    at the bottom edge, so the first row is never dimmed. */

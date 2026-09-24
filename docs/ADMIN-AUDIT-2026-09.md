@@ -1,5 +1,16 @@
 # Sawa admin console: audit and recommendations
 
+> **Status (24 Sep 2026): implemented except automation, digests, traffic and
+> roles**, which were set aside by decision (see *Decisions needed*). Shipped:
+> A1–A4, D1–D6, the accessibility items, the icon remap and five-group nav, the
+> data palette as tokens, the Insights pages (overview with window and
+> comparison, cohort funnels, inventory, quality, centers), CSV exports for
+> eight datasets, the monthly revenue statement and business report as
+> on-demand PDFs, and SLA due times on the Action Center. Of D7, CSV and
+> column sorting on Insights tables shipped; bulk actions and saved filters did
+> not. axe-core: no violations on 18 pages in both themes; no horizontal
+> scroll at 390px.
+
 > 24 Sep 2026 · `admin/` at `1cd1180` · audit only, no code changed.
 > Method: production build of the admin console against a local backend
 > seeded with six months of realistic activity (50 users, 51 submissions,

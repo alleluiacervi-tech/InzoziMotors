@@ -1,5 +1,6 @@
 'use client'
 
+import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui'
@@ -121,7 +122,8 @@ export default function RentalInquiriesPage() {
       <div className="mb-5 rounded-xl border border-info/20 bg-info-tint p-4 text-sm text-content-secondary">
         These are availability requests only. Rental companies contact renters directly and remain responsible for price, contract, payment, pickup and return terms.
       </div>
-      <div className="mb-5 flex flex-wrap gap-1">
+      <div className="mb-5 flex flex-wrap items-center gap-1">
+        <span className="order-last ml-auto"><ExportLink dataset="rental_inquiries" /></span>
         {TABS.map((status) => (
           <button key={status} onClick={() => setTab(status)}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${tab === status ? 'bg-brand text-brand-on' : 'border border-gray-200 bg-surface text-gray-600'}`}>

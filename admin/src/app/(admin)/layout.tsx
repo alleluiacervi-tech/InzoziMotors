@@ -9,49 +9,68 @@ import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
 import { FeedbackProvider } from '@/components/feedback'
 
-// Grouped navigation — the shape of the business, not a flat list.
+// Grouped navigation — the shape of the working day, not a flat list.
+//
+// Five groups, in the order an operator reaches for them: what needs doing
+// today, the vehicles moving through the pipeline, how the business is doing,
+// the people on the platform, and the settings that change rarely. The last
+// group sits at the bottom so configuration is never one misclick from the
+// queue.
 //
 // One glyph, one destination. An icon in a sidebar is an identifier, and it
-// stops identifying anything the moment two rows share it: `car` sat on
-// Vehicle imports, Listings and Brands at once, and `settings`, `calendar`
-// and `user` were each on two rows. Each is now the thing it actually names —
-// a shield-check for the 150-point inspection, a key for rental inventory,
-// a marque-shaped shield for brands.
+// stops identifying anything the moment two rows share it or it names the
+// wrong thing — an "external link" arrow on Vehicle imports, a gauge on a to-do
+// list. Each glyph is the object its page is about.
 const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label: string }[] }[] = [
   {
-    title: 'Operations',
+    title: 'Today',
     items: [
-      { href: '/dashboard', icon: 'gauge', label: 'Action Center' },
-      { href: '/pipeline', icon: 'grid', label: 'Pipeline' },
-      { href: '/inbox', icon: 'mail', label: 'Inbox' },
+      { href: '/dashboard', icon: 'list-checks', label: 'Action Center' },
+      { href: '/inbox', icon: 'inbox', label: 'Inbox' },
+      { href: '/activity', icon: 'history', label: 'Activity history' },
+    ],
+  },
+  {
+    title: 'Pipeline',
+    items: [
+      { href: '/pipeline', icon: 'kanban', label: 'Pipeline board' },
       { href: '/submissions', icon: 'document', label: 'Submissions' },
-      { href: '/imports', icon: 'external', label: 'Vehicle imports' },
-      { href: '/imports/photos', icon: 'camera', label: 'Catalogue photos' },
-      { href: '/inspections', icon: 'shield-check', label: 'Inspections' },
-      { href: '/rentals/inquiries', icon: 'calendar', label: 'Rental inquiries' },
-      { href: '/reports', icon: 'alert', label: 'Reported chats' },
-      { href: '/activity', icon: 'clock', label: 'Activity history' },
-    ],
-  },
-  {
-    title: 'Marketplace',
-    items: [
+      { href: '/inspections', icon: 'clipboard-check', label: 'Inspections' },
       { href: '/listings', icon: 'car', label: 'Listings' },
-      { href: '/banner', icon: 'star', label: 'Home banner' },
-      { href: '/brands', icon: 'shield', label: 'Brands' },
-      { href: '/account-closures', icon: 'close-circle', label: 'Closures' },
+      { href: '/imports', icon: 'ship', label: 'Vehicle imports' },
+      { href: '/rentals/inquiries', icon: 'calendar-clock', label: 'Rental inquiries' },
       { href: '/rentals/fleet', icon: 'key', label: 'Rental inventory' },
-      { href: '/settings', icon: 'settings', label: 'Platform settings' },
     ],
   },
   {
-    title: 'People & Oversight',
+    title: 'Insights',
     items: [
-      { href: '/users', icon: 'user', label: 'Users & ID checks' },
-      { href: '/vehicles', icon: 'eye', label: 'Vehicle history' },
-      { href: '/analytics', icon: 'chart', label: 'Analytics' },
-      { href: '/revenue', icon: 'cash', label: 'Revenue' },
-      { href: '/centers', icon: 'location', label: 'Centers' },
+      { href: '/insights', icon: 'layout-dashboard', label: 'Overview' },
+      { href: '/insights/funnels', icon: 'funnel', label: 'Funnels' },
+      { href: '/insights/inventory', icon: 'warehouse', label: 'Inventory' },
+      { href: '/insights/quality', icon: 'badge-check', label: 'Inspection quality' },
+      { href: '/insights/centers', icon: 'building', label: 'Center performance' },
+      { href: '/revenue', icon: 'receipt', label: 'Revenue' },
+      { href: '/insights/reports', icon: 'file-spreadsheet', label: 'Reports & exports' },
+    ],
+  },
+  {
+    title: 'People',
+    items: [
+      { href: '/users', icon: 'id-card', label: 'Users & ID checks' },
+      { href: '/reports', icon: 'flag', label: 'Reported chats' },
+      { href: '/account-closures', icon: 'user-x', label: 'Closures' },
+      { href: '/vehicles', icon: 'file-search', label: 'Vehicle history' },
+    ],
+  },
+  {
+    title: 'Configure',
+    items: [
+      { href: '/settings', icon: 'settings', label: 'Platform settings' },
+      { href: '/brands', icon: 'tag', label: 'Brands' },
+      { href: '/banner', icon: 'megaphone', label: 'Home banner' },
+      { href: '/imports/photos', icon: 'images', label: 'Catalogue photos' },
+      { href: '/centers', icon: 'location', label: 'Center setup' },
     ],
   },
 ]
@@ -189,12 +208,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       : href === '/reports' ? openReports
       : 0
 
+  // The LONGEST matching destination wins. Prefix matching alone lit two rows
+  // at once wherever one route nests inside another — /imports/photos is both
+  // "/imports" and "/imports/photos", /insights/funnels is both Overview and
+  // Funnels — and an operator could not tell which page they were on.
   const matches = (href: string) =>
-    pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
-  const current = ALL_ITEMS.find((n) => matches(n.href))
-  // Twenty-one destinations across three groups: the page title alone does not
+    pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
+  const current = ALL_ITEMS.filter((n) => matches(n.href)).sort((a, b) => b.href.length - a.href.length)[0]
+  const activeHref = current?.href
+  // Twenty-six destinations across five groups: the page title alone does not
   // say where you are. The group name does, and it costs one line.
-  const currentGroup = NAV_GROUPS.find((g) => g.items.some((n) => matches(n.href)))?.title
+  const currentGroup = NAV_GROUPS.find((g) => g.items.some((n) => n.href === activeHref))?.title
 
   return (
     <FeedbackProvider>
@@ -225,7 +249,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         the browser chrome instead of pretending it is not there.
         ───────────────────────────────────────────────────────────────────── */}
     <div className="bg-surface-page lg:flex lg:h-[100dvh] lg:overflow-hidden">
-      {/* Sidebar. `console-rail` lights the ink so 21 rows of navigation do not
+      {/* Sidebar. `console-rail` lights the ink so 26 rows of navigation do not
           sit on an unlit slab; `isolate` keeps that lamp behind the nav. */}
       <aside
         className={`
@@ -261,7 +285,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             `aria-current` carries the same fact for a screen reader, which
             colour alone never does. */}
         {/* `nav-fade` dissolves the last few pixels of the scroll area into the
-            ink. Twenty-one destinations do not fit a laptop's rail, and without
+            ink. Twenty-six destinations do not fit a laptop's rail, and without
             it the list simply stopped mid-row against the user footer — which
             reads as a clipping bug rather than as "there is more below". */}
         <nav className="rail-scroll nav-fade relative z-10 min-h-0 flex-1 overflow-y-auto px-3 py-4">
@@ -275,7 +299,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </p>
               <div className="space-y-px">
                 {group.items.map(({ href, icon, label }) => {
-                  const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+                  const active = href === activeHref
                   const badge = badgeFor(href)
                   return (
                     <Link

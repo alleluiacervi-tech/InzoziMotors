@@ -12,7 +12,7 @@
 // the six that need somebody today.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api, type Journey, type JourneyBoard } from '@/lib/api'
 import { Card, ErrorState, LoadingState, PageHeader, StatCard } from '@/components/ui'
@@ -66,10 +66,33 @@ function VehicleCard({ journey }: { journey: Journey }) {
   )
 }
 
+type WaitingOn = 'all' | 'us' | 'seller' | 'blocked'
+const WAITING: { key: WaitingOn; label: string }[] = [
+  { key: 'all', label: 'Everyone' }, { key: 'us', label: 'Us' }, { key: 'seller', label: 'Sellers' }, { key: 'blocked', label: 'Blocked' },
+]
+const AGES = [
+  { hours: 0, label: 'Any age' }, { hours: 24, label: 'Over a day' }, { hours: 72, label: 'Over 3 days' }, { hours: 168, label: 'Over a week' },
+]
+
 export default function PipelinePage() {
   const [board, setBoard] = useState<JourneyBoard | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [loading, setLoading] = useState(true)
+  // Filters. The board used to show every vehicle in seven narrow columns with
+  // no way to ask "what is ours and older than three days?" — the question an
+  // operator actually opens it with.
+  const [waitingOn, setWaitingOn] = useState<WaitingOn>('all')
+  const [minAge, setMinAge] = useState(0)
+  const [q, setQ] = useState('')
+  const visible = useMemo(() => {
+    if (!board) return []
+    const needle = q.trim().toLowerCase()
+    return board.vehicles.filter((j) =>
+      (waitingOn === 'all' || (waitingOn === 'blocked' ? j.blocked : j.actor === waitingOn && !j.blocked))
+      && (!minAge || (j.age_hours ?? 0) >= minAge)
+      && (!needle || `${j.vehicle.title} ${j.seller?.name ?? ''}`.toLowerCase().includes(needle)))
+  }, [board, waitingOn, minAge, q])
+  const filtered = waitingOn !== 'all' || minAge > 0 || q.trim() !== ''
 
   async function load() {
     setLoading(true); setError(null)
@@ -106,6 +129,36 @@ export default function PipelinePage() {
               </Card>
             ) : null}
 
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <div className="flex rounded-xl border border-line bg-surface p-1" role="group" aria-label="Waiting on">
+                {WAITING.map((w) => (
+                  <button key={w.key} type="button" aria-pressed={waitingOn === w.key} onClick={() => setWaitingOn(w.key)}
+                    className={`h-8 rounded-lg px-3 text-label font-bold transition-colors ${waitingOn === w.key ? 'bg-ink-900 text-white dark:bg-surface-alt dark:text-content' : 'text-content-secondary hover:bg-surface-alt'}`}>
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-label font-semibold text-content-secondary">
+                Waiting
+                <select value={minAge} onChange={(e) => setMinAge(Number(e.target.value))}
+                  className="h-10 rounded-xl border border-line bg-surface px-3 text-label text-content">
+                  {AGES.map((a) => <option key={a.hours} value={a.hours}>{a.label}</option>)}
+                </select>
+              </label>
+              <label className="relative min-w-[14rem] flex-1 sm:max-w-xs">
+                <span className="sr-only">Find a vehicle or seller</span>
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a vehicle or seller"
+                  className="h-10 w-full rounded-xl border border-line bg-surface px-3 text-label text-content placeholder:text-content-muted" />
+              </label>
+              <span className="text-caption text-content-muted" role="status">
+                {filtered ? `${visible.length} of ${board.vehicles.length} vehicles` : `${board.vehicles.length} vehicles in flight`}
+              </span>
+              {filtered ? (
+                <button type="button" onClick={() => { setWaitingOn('all'); setMinAge(0); setQ('') }}
+                  className="text-caption font-bold text-content-secondary underline-offset-2 hover:underline">Clear filters</button>
+              ) : null}
+            </div>
+
             {board.vehicles.length === 0 ? (
               <Card className="p-8 text-center">
                 <p className="font-bold text-content">Nothing in flight</p>
@@ -118,7 +171,7 @@ export default function PipelinePage() {
               <div className="overflow-x-auto pb-2">
                 <div className="flex min-w-[62rem] gap-3">
                   {board.stages.map((column) => {
-                    const cards = board.vehicles.filter((journey) => columnFor(journey) === column.key)
+                    const cards = visible.filter((journey) => columnFor(journey) === column.key)
                     const ours = cards.some((journey) => journey.actor === 'us' || journey.blocked)
                     return (
                       <section key={column.key} className="min-w-[9rem] flex-1">
@@ -133,9 +186,15 @@ export default function PipelinePage() {
                             ))}
                           </ul>
                         ) : (
-                          <p className="rounded border border-dashed border-line p-2.5 text-center text-caption text-content-muted">
-                            {column.key === 'live' ? `${board.summary.live} live` : 'Empty'}
-                          </p>
+                          column.key === 'live' ? (
+                            <Link href="/listings" className="block rounded border border-dashed border-line p-2.5 text-center text-caption font-semibold text-content-secondary hover:border-content-muted">
+                              {board.summary.live} live listings
+                            </Link>
+                          ) : (
+                            <p className="rounded border border-dashed border-line p-2.5 text-center text-caption text-content-muted">
+                              {filtered ? 'None match' : 'Empty'}
+                            </p>
+                          )
                         )}
                       </section>
                     )

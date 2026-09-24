@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { Card, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
 import { useToast } from '@/components/feedback'
+import { fmtDateTime } from '@/lib/format'
 
 const money = (v: unknown) => `${new Intl.NumberFormat('en-RW').format(Number(v || 0))} RWF`
 
@@ -55,7 +56,7 @@ export default function ImportOperationsPage({ params }: { params: Promise<{ id:
       <Card className="p-5 xl:col-span-2"><h2 className="font-extrabold text-content">Supporting documents</h2><form onSubmit={upload} className="mt-4 grid gap-3 md:grid-cols-4"><input name="label" required placeholder="Document label" className="h-11 rounded-xl border border-line px-3"/><select name="kind" required className="h-11 rounded-xl border border-line px-3"><option value="supplier_invoice">Supplier invoice</option><option value="inspection">Inspection report</option><option value="bill_of_lading">Bill of lading</option><option value="customs">Customs document</option><option value="arrival">Arrival report</option></select><input name="document" required type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="h-11 rounded-xl border border-line p-2"/><label className="flex items-center gap-2 text-label"><input name="customer_visible" value="true" type="checkbox"/>Customer can view</label><button disabled={busy==='document'} className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on md:col-span-4">Attach secure document</button></form>
         <div className="mt-4 divide-y divide-line-soft">{order.documents.map((d:any)=><div key={d.id} className="flex justify-between py-3 text-label"><span className="font-bold text-content">{d.label}</span><span className="text-content-muted">{d.customer_visible?'Customer visible':'Internal only'}</span></div>)}</div>
       </Card>
-      <Card className="p-5 xl:col-span-2"><h2 className="font-extrabold text-content">Audit timeline</h2><ol className="mt-4 space-y-3">{order.events.map((e:any)=><li key={e.id} className="border-l-2 border-brand/25 pl-4"><p className="font-bold text-content">{e.summary}</p><p className="text-caption text-content-muted">{new Date(e.created_at).toLocaleString()}</p></li>)}</ol></Card>
+      <Card className="p-5 xl:col-span-2"><h2 className="font-extrabold text-content">Audit timeline</h2><ol className="mt-4 space-y-3">{order.events.map((e:any)=><li key={e.id} className="border-l-2 border-brand/25 pl-4"><p className="font-bold text-content">{e.summary}</p><p className="text-caption text-content-muted">{fmtDateTime(e.created_at)}</p></li>)}</ol></Card>
     </div>
   </div>
 }

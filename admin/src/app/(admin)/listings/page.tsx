@@ -1,11 +1,13 @@
 'use client'
 
+import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api, type Readiness } from '@/lib/api'
 import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
+import { fmtInt } from '@/lib/format'
 
 // 'needs_action' is a server-side view over under_review + approved — every car
 // whose next step belongs to an administrator — and it is the default because
@@ -17,7 +19,7 @@ const NEEDS_ACTION = 'needs_action'
 const STATUSES = [NEEDS_ACTION, 'under_review', 'approved', 'live', 'paused', 'sold', 'rejected', 'scheduled', 'inspecting', 'archived']
 const STATUS_LABELS: Record<string, string> = { [NEEDS_ACTION]: 'Waiting on you' }
 const STATUS_COLORS: Record<string, string> = {
-  live:         'bg-success-tint text-success',
+  live:         'bg-success-tint text-success-text',
   approved:     'bg-info-tint text-info',
   paused:       'bg-gray-100 text-gray-700',
   rejected:     'bg-danger-tint text-danger-strong',
@@ -33,7 +35,7 @@ const STATUS_COLORS: Record<string, string> = {
 function ContentWarnings({ items }: { items?: string[] }) {
   if (!items?.length) return null
   return (
-    <div className="mt-3 rounded-lg border border-warning-tint bg-warning-tint/40 p-2.5">
+    <div className="mt-3 rounded-lg border border-warning-tint bg-warning-tint p-2.5">
       <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-warning-text">
         Worth fixing before a buyer reads it
       </p>
@@ -241,12 +243,15 @@ export default function ListingsPage() {
             <p className="mt-0.5 text-xs text-content-muted">Vehicles whose next step is an approval or a publication by you. Oldest first.</p>
           ) : null}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <ExportLink dataset="listings" />
         <Link
           href="/listings/new"
           className="px-4 py-2 text-sm font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light transition-colors"
         >
           Create Listing
         </Link>
+        </div>
       </div>
       <QueueSearch value={query} onChange={setQuery} resultCount={total} placeholder="Search vehicle, seller, location, VIN, or listing ID" />
       {total > visible.length ? (
@@ -298,7 +303,7 @@ export default function ListingsPage() {
                   <span className="font-semibold text-gray-900 text-sm truncate">{car.year} {car.make} {car.model}</span>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {isFeatured(car) && (
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-600">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-warning-tint text-warning-text">
                         Featured
                       </span>
                     )}
@@ -309,13 +314,13 @@ export default function ListingsPage() {
                     <Pill status={car.status} />
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">{car.mileage?.toLocaleString()} km · {car.location}</p>
+                <p className="text-xs text-gray-500">{fmtInt(car.mileage)} km · {car.location}</p>
                 <p className="text-sm font-bold text-brand mt-1">{fmtMoney(car.price, car.currency)}</p>
-                <p className="text-xs text-gray-400">{car.views || 0} views</p>
+                <p className="text-xs text-content-muted">{car.views || 0} views</p>
                 <div className="mt-3 grid grid-cols-3 gap-1 text-center text-[11px]">
-                  <span className={`rounded-md px-1 py-1 ${car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? 'bg-success-tint text-success' : 'bg-danger-tint text-danger-strong'}`}>Seller</span>
-                  <span className={`rounded-md px-1 py-1 ${car.has_completed_inspection ? 'bg-success-tint text-success' : 'bg-warning-tint text-warning-text'}`}>Inspection</span>
-                  <span className={`rounded-md px-1 py-1 ${Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 ? 'bg-success-tint text-success' : 'bg-warning-tint text-warning-text'}`}>Gallery</span>
+                  <span className={`rounded-md px-1 py-1 ${car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? 'bg-success-tint text-success-text' : 'bg-danger-tint text-danger-strong'}`}>Seller</span>
+                  <span className={`rounded-md px-1 py-1 ${car.has_completed_inspection ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>Inspection</span>
+                  <span className={`rounded-md px-1 py-1 ${Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>Gallery</span>
                 </div>
 
                 {/* Actions */}
