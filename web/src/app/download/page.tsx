@@ -150,7 +150,7 @@ export default async function DownloadPage({
                     <li key={m.label} className="flex items-center gap-5">
                       {i > 0 ? <span aria-hidden className="h-7 w-px bg-line" /> : null}
                       <span>
-                        <span className="block text-micro font-bold uppercase tracking-[0.08em] text-content-muted">
+                        <span className="block text-micro font-bold text-content-muted">
                           {m.label}
                         </span>
                         <span className="block text-label font-bold text-content">{m.value}</span>

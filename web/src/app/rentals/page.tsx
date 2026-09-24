@@ -186,7 +186,7 @@ export default async function RentalsPage({ searchParams }: PageProps) {
         <Container>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
             <div>
-              <p className="text-eyebrow font-bold uppercase text-brand">{t('rentals.providerFeaturesEyebrow')}</p>
+              <p className="text-caption font-bold text-brand">{t('rentals.providerFeaturesEyebrow')}</p>
               <h2 className="mt-2 text-headline font-extrabold text-content">
                  {t('rentals.providerFeaturesTitle')}
               </h2>

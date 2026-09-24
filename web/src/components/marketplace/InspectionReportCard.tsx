@@ -32,7 +32,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-line-soft p-5 sm:p-6">
-        <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.report.eyebrow')}</p>
+        <p className="text-caption font-bold text-brand">{t('cars.report.eyebrow')}</p>
         <h2 className="mt-2 text-title font-extrabold text-content">
           {t('cars.report.title')}
         </h2>
@@ -136,7 +136,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
 
       {report.notes ? (
         <div className="border-t border-line-soft bg-surface-alt px-5 py-4 sm:px-6">
-          <p className="text-micro font-bold uppercase tracking-wide text-content-muted">
+          <p className="text-micro font-bold text-content-muted">
             {t('cars.report.notesTitle')}
           </p>
           <p className="mt-1.5 whitespace-pre-line text-caption leading-relaxed text-content-secondary">

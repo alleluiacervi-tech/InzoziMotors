@@ -60,7 +60,7 @@ export function PipelineModules({ steps }: { steps: PipelineStep[] }) {
             aria-hidden="true"
           />
           <Reveal delay={i * 90}>
-            <p className="text-eyebrow font-bold text-content-muted">
+            <p className="text-caption font-bold text-content-muted">
               <span
                 className="hidden lg:mr-2 lg:inline-block lg:h-4 lg:w-4 lg:rounded-full lg:border-2 lg:border-line lg:bg-surface-page lg:align-[-2px]"
                 aria-hidden="true"

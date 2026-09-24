@@ -88,7 +88,7 @@ export async function Footer() {
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             {FOOTER_LINKS.map((group) => (
               <div key={t(`footer.headings.${group.heading}`)}>
-                <h2 className="mb-4 text-eyebrow font-bold uppercase text-white/60">
+                <h2 className="mb-4 text-caption font-bold text-white/60">
                   {t(`footer.headings.${group.heading}`)}
                 </h2>
                 {/* -my-2 cancels the added tap padding at the group edges so

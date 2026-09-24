@@ -65,15 +65,11 @@ export function Eyebrow({
     invert: 'text-white/50',
     muted: 'text-content-muted',
   }
-  // The short rule before the label is the one piece of magazine furniture the
-  // site uses everywhere. It is decorative, so it is drawn with a pseudo
-  // element and never lands in the accessibility tree.
+  // Sentence case, normal tracking. Tracked-out capitals above every heading
+  // are template chrome — the label reads as a word now, and the heading
+  // under it carries the weight.
   return (
-    <p
-      className={`mb-4 flex items-center gap-3 text-eyebrow font-bold uppercase
-                  before:h-px before:w-8 before:shrink-0 before:bg-current before:opacity-40
-                  before:content-[''] ${tones[tone]} ${className}`}
-    >
+    <p className={`mb-3 flex items-center gap-2 text-caption font-bold ${tones[tone]} ${className}`}>
       {children}
     </p>
   )
@@ -232,7 +228,7 @@ export function Field({
     <div className={className}>
       <label
         htmlFor={htmlFor}
-        className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted"
+        className="mb-2 block text-caption font-bold text-content-muted"
       >
         {label}
         {required ? <span className="ml-1 text-brand">*</span> : null}

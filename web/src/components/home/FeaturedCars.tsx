@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { Button, Card, Container, EmptyState, Icon, Section, SectionHeading } from '@/components/ui'
+import { Button, Card, Container, EmptyState, Icon, Section } from '@/components/ui'
 import { CarCard } from '@/components/marketplace/CarCard'
-import { Reveal } from '@/components/ui/Reveal'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 
@@ -15,13 +14,11 @@ export async function FeaturedCars({ cars }: { cars: Car[] }) {
   return (
     <Section tone="page">
       <Container>
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <SectionHeading
-            eyebrow={t('home.featured.eyebrow')}
-            title={t('home.featured.title')}
-            description={t('home.featured.description')}
-          layout="split"
-          />
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0 max-w-2xl">
+            <h2 className="text-headline font-extrabold text-content">{t('home.featured.title')}</h2>
+            <p className="mt-2 text-body text-content-secondary">{t('home.featured.description')}</p>
+          </div>
           <Link
             href="/cars"
             className="-my-2 inline-flex items-center gap-1.5 py-2 text-body font-bold text-brand hover:underline"
@@ -41,9 +38,9 @@ export async function FeaturedCars({ cars }: { cars: Car[] }) {
           <>
             <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {cars.map((car, i) => (
-                <Reveal key={car.id} delay={(i % 3) * 90} className="h-full min-w-0">
+                <div key={car.id} className="h-full min-w-0">
                   <CarCard car={car} priority={i < 3} />
-                </Reveal>
+                </div>
               ))}
             </div>
 

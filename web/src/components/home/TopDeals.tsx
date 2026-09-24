@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { Container, Icon, Section, SectionHeading } from '@/components/ui'
+import { Container, Icon, Section } from '@/components/ui'
 import { CarCard } from '@/components/marketplace/CarCard'
-import { Reveal } from '@/components/ui/Reveal'
 import type { FeaturedPlacement } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 
@@ -34,13 +33,11 @@ export async function TopDeals({ placements }: { placements: FeaturedPlacement[]
   return (
     <Section tone="page">
       <Container>
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <SectionHeading
-            eyebrow={t('home.topDeals.eyebrow')}
-            title={t('home.topDeals.title')}
-            description={t('home.topDeals.description')}
-          layout="split"
-          />
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0 max-w-2xl">
+            <h2 className="text-headline font-extrabold text-content">{t('home.topDeals.title')}</h2>
+            <p className="mt-2 text-body text-content-secondary">{t('home.topDeals.description')}</p>
+          </div>
           <Link
             href="/cars"
             className="-my-2 inline-flex items-center gap-1.5 py-2 text-body font-bold text-brand hover:underline"
@@ -50,25 +47,26 @@ export async function TopDeals({ placements }: { placements: FeaturedPlacement[]
           </Link>
         </div>
 
-        <div className="mt-12 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {placements.map((placement, i) => (
-            <Reveal key={placement.placement_id} delay={(i % 3) * 90} className="h-full min-w-0">
-              <div className="relative flex h-full min-w-0 flex-col">
-                <span
-                  className={`absolute left-4 top-4 z-10 rounded-lg px-2.5 py-1 text-caption font-bold shadow-card ${
-                    placement.sponsored
-                      ? 'bg-warning-tint text-warning-text'
-                      : 'bg-surface text-content-secondary'
-                  }`}
-                >
-                  {placement.label}
-                </span>
+            <div key={placement.placement_id} className="flex h-full min-w-0 flex-col">
+              {/* The placement's label sits above the card, not on its photo:
+                  the photo's top-left corner belongs to the score. A paid
+                  placement keeps its tint so it can never read as editorial. */}
+              <p
+                className={`mb-2 inline-flex self-start rounded-lg px-2.5 py-1 text-caption font-bold ${
+                  placement.sponsored ? 'bg-warning-tint text-warning-text' : 'bg-surface-alt text-content-secondary'
+                }`}
+              >
+                {placement.label}
+              </p>
+              <div className="min-w-0 flex-1">
                 <CarCard car={placement} priority={i < 3} />
               </div>
               {placement.headline ? (
                 <p className="mt-2 px-1 text-caption text-content-muted">{placement.headline}</p>
               ) : null}
-            </Reveal>
+            </div>
           ))}
         </div>
       </Container>

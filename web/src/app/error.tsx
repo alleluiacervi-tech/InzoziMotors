@@ -29,7 +29,7 @@ export default function Error({
     <Section>
       <Container>
         <div className="max-w-2xl">
-          <p className="text-eyebrow font-bold uppercase text-brand">Something went wrong</p>
+          <p className="text-caption font-bold text-brand">Something went wrong</p>
           <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
             This page didn’t load.
           </h1>

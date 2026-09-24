@@ -87,7 +87,7 @@ export async function VehicleHistoryCard({ history }: { history: VehicleHistory 
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-line-soft p-5 sm:p-6">
-        <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.history.eyebrow')}</p>
+        <p className="text-caption font-bold text-brand">{t('cars.history.eyebrow')}</p>
         <h2 className="mt-2 text-title font-extrabold text-content">{t('cars.history.title')}</h2>
         <p className="mt-2 text-caption leading-relaxed text-content-secondary">
           {t('cars.history.intro')}
@@ -102,7 +102,7 @@ export async function VehicleHistoryCard({ history }: { history: VehicleHistory 
               key={row.label}
               className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 px-5 py-3.5 sm:px-6"
             >
-              <dt className="text-caption font-bold uppercase tracking-wide text-content-muted">
+              <dt className="text-caption font-bold text-content-muted">
                 {row.label}
               </dt>
               <dd className={`flex min-w-0 items-center gap-2 text-caption font-semibold ${tone.className}`}>

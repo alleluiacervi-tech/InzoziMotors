@@ -183,6 +183,13 @@ const config: Config = {
         },
         // The live-inventory dot. Two rings, one animation — a halo that
         // expands and dissolves, so "live" is legible without a label.
+        // The certificate's category bars filling once, left to right: the
+        // homepage's single orchestrated motion. Transform-only, so it never
+        // shifts layout.
+        grow: {
+          from: { transform: 'scaleX(0)' },
+          to: { transform: 'scaleX(1)' },
+        },
         halo: {
           '0%': { transform: 'scale(1)', opacity: '0.55' },
           '70%, 100%': { transform: 'scale(2.6)', opacity: '0' },
@@ -196,6 +203,7 @@ const config: Config = {
         'fade-in': 'fade-in 0.5s ease both',
         rise: 'rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both',
         halo: 'halo 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
+        grow: 'grow 1.1s cubic-bezier(0.16, 1, 0.3, 1) both',
         shimmer: 'shimmer 1.6s infinite',
       },
     },

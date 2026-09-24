@@ -88,7 +88,7 @@ export default async function NotificationsPage() {
             <section key={group.key} aria-labelledby={`day-${group.key}`}>
               <h2
                 id={`day-${group.key}`}
-                className="mb-3 text-caption font-bold uppercase tracking-wide text-content-muted"
+                className="mb-3 text-caption font-bold text-content-muted"
               >
                 {group.label}
               </h2>

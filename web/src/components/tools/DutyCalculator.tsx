@@ -74,7 +74,7 @@ export function DutyCalculator() {
     <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
       {/* ─── Inputs ───────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 lg:col-span-2">
-        <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
+        <h3 className="text-caption font-bold text-content-muted">
           {t('tools.dutyCalc.theVehicle')}
         </h3>
 

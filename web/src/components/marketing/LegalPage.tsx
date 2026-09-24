@@ -63,7 +63,7 @@ export async function LegalPage({
               aria-label={t('ui.onThisPage')}
               className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+24px)] lg:self-start"
             >
-              <h2 className="mb-4 text-eyebrow font-bold uppercase text-content-muted">
+              <h2 className="mb-4 text-caption font-bold text-content-muted">
                 {t('ui.onThisPage')}
               </h2>
 

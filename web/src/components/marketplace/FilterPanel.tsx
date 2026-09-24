@@ -264,7 +264,7 @@ export function FilterPanel({
   )
 }
 
-const LABEL = 'mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted'
+const LABEL = 'mb-2 block text-caption font-bold text-content-muted'
 
 /** A select is only offered when the catalogue has something to put in it —
  *  an empty dropdown is a dead end dressed up as a control. */

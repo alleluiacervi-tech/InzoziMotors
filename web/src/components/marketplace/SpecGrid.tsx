@@ -22,7 +22,7 @@ export function SpecGrid({ specs, className = '' }: { specs: Spec[]; className?:
     <dl className={`grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line-soft bg-line-soft sm:grid-cols-3 ${className}`}>
       {present.map((spec) => (
         <div key={spec.label} className="bg-surface p-4">
-          <dt className="flex items-center gap-1.5 text-micro font-bold uppercase tracking-wide text-content-muted">
+          <dt className="flex items-center gap-1.5 text-micro font-bold text-content-muted">
             {spec.icon ? <Icon name={spec.icon} size={13} /> : null}
             {spec.label}
           </dt>

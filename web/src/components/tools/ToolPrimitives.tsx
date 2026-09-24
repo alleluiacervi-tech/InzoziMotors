@@ -116,7 +116,7 @@ export function ChipGroup<T extends string | number>({
 }) {
   return (
     <fieldset>
-      <legend className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted">
+      <legend className="mb-2 block text-caption font-bold text-content-muted">
         {legend}
       </legend>
       <div className={columns === 2 ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'}>
@@ -165,7 +165,7 @@ export function ResultPanel({
     <div
       className={`rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 ${className}`}
     >
-      <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">{title}</h3>
+      <h3 className="text-caption font-bold text-content-muted">{title}</h3>
       <div className="mt-4">{children}</div>
     </div>
   )

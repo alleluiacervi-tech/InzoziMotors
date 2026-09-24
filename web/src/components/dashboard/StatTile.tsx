@@ -59,7 +59,7 @@ export function StatTile({
         >
           <Icon name={icon} size={16} />
         </span>
-        <span className="mt-1.5 min-w-0 text-caption font-bold uppercase tracking-wide text-content-muted">
+        <span className="mt-1.5 min-w-0 text-caption font-bold text-content-muted">
           {label}
         </span>
         {/* The chevron lives in the corner and only leans on hover — an arrow
