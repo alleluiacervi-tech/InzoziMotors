@@ -283,6 +283,13 @@ app.use('/devices',         require('./src/routes/devices'));
 // Mounted ahead of /admin so the pipeline reads keep their own module rather
 // than growing the admin router further. Both are admin-gated identically.
 app.use('/admin/journey',   require('./src/routes/journey'));
+// The business view: windowed KPIs with a previous-period comparison, cohort
+// funnels, inventory, inspection quality and centers. Read-only.
+app.use('/admin/insights',  require('./src/routes/insights'));
+// CSV downloads and on-demand PDF statements. Each download is audit-logged;
+// exports never carry phone numbers, emails or ID documents.
+app.use('/admin/exports',   require('./src/routes/exports'));
+app.use('/admin/statements', require('./src/routes/statements'));
 // Everything recorded about one vehicle, joined on the normalised VIN key.
 // Admin-only: a buyer-facing history carries real privacy weight and must be a
 // deliberate decision, not something that arrives through this route.
