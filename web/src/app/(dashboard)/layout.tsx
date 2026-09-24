@@ -1,3 +1,4 @@
+import { I18nScope } from '@/components/i18n/I18nScope'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { signOutAction } from '@/app/actions/auth'
@@ -77,6 +78,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }[user.id_verified] ?? { tone: 'neutral' as const, icon: 'shield' as const }
 
   return (
+    <I18nScope ns={['dashboard']}>
     <div className="bg-surface-page">
       <Container className="py-5 sm:py-8 lg:py-10">
         <div className="lg:grid lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-10">
@@ -136,5 +138,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </Container>
     </div>
+    </I18nScope>
   )
 }

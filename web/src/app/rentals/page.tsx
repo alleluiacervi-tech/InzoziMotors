@@ -15,7 +15,7 @@ import { getServerT } from '@/lib/i18n/server'
 // ─────────────────────────────────────────────────────────────────────────────
 // The rental fleet — the same product wearing the same clothes.
 //
-// Same inspection standard as the cars we sell; that is the whole pitch. The h1
+// Same inspection standard as every car listed for sale; that is the whole pitch. The h1
 // renders outside the data boundary so the page has a headline even when the
 // API is down. Filtering happens on the returned fleet because GET /rentals
 // takes no query parameters and the fleet is small enough that a page is all
@@ -48,7 +48,13 @@ async function FleetResults({
   safariOnly: boolean
   category: string
 }) {
-  const fleet = await rentalsApi.list().catch(() => [])
+  // Reachability is kept apart from emptiness: an empty fleet and an API
+  // that did not answer are different facts and get different words.
+  let reachable = true
+  const fleet = await rentalsApi.list().catch(() => {
+    reachable = false
+    return [] as Awaited<ReturnType<typeof rentalsApi.list>>
+  })
   const t = await getServerT()
 
   const categories = [
@@ -109,7 +115,9 @@ async function FleetResults({
               serviceNode({
                 id: 'car-rental-kigali',
                 name: 'Car rental in Kigali, Rwanda',
-                description: 'Inspected rental cars in Kigali with insurance, roadside assistance and unlimited kilometres included.',
+                // Provider-stated terms (insurance, mileage) are not Sawa's to
+                // promise, so the structured data says only what Sawa controls.
+                description: 'Inspected rental cars in Kigali from verified providers. Dates, deposit and terms are agreed with each provider directly.',
                 path: '/rentals',
                 serviceType: 'Car rental',
               }),
@@ -122,7 +130,7 @@ async function FleetResults({
           {/* Same heading gap as /cars: every card is an h3 and the page's
               first h2 sits further down, in the "how it works" band. */}
           <h2 className="sr-only">{t('rentals.list.resultsTitle')}</h2>
-          <ul className="stagger mt-8 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <ul className="mt-8 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {visible.map((car, index) => (
               <li key={car.id} className="min-w-0">
                 <RentalCard car={car} priority={index < 3} />
@@ -134,12 +142,30 @@ async function FleetResults({
         <EmptyState
           headingLevel={2}
           icon="key"
-          title={fleet.length ? t('rentals.emptyMatchTitle') : t('rentals.emptyUnreachableTitle')}
-          description={fleet.length ? t('rentals.emptyMatchDesc') : t('rentals.emptyUnreachableDesc')}
+          title={
+            fleet.length
+              ? t('rentals.emptyMatchTitle')
+              : reachable
+              ? t('rentals.emptyNoneTitle')
+              : t('rentals.emptyUnreachableTitle')
+          }
+          description={
+            fleet.length
+              ? t('rentals.emptyMatchDesc')
+              : reachable
+              ? t('rentals.emptyNoneDesc')
+              : t('rentals.emptyUnreachableDesc')
+          }
           action={
-            <Button href="/rentals" variant="outline">
-              {t('rentals.seeWholeFleet')}
-            </Button>
+            fleet.length || !reachable ? (
+              <Button href="/rentals" variant="outline">
+                {t('rentals.seeWholeFleet')}
+              </Button>
+            ) : (
+              <Button href="/cars" variant="outline">
+                {t('rentals.browseSale')}
+              </Button>
+            )
           }
           className="mt-8 rounded-2xl border border-line-soft bg-surface"
         />
@@ -186,7 +212,7 @@ export default async function RentalsPage({ searchParams }: PageProps) {
         <Container>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
             <div>
-              <p className="text-eyebrow font-bold uppercase text-brand">{t('rentals.providerFeaturesEyebrow')}</p>
+              <p className="text-caption font-bold text-brand">{t('rentals.providerFeaturesEyebrow')}</p>
               <h2 className="mt-2 text-headline font-extrabold text-content">
                  {t('rentals.providerFeaturesTitle')}
               </h2>

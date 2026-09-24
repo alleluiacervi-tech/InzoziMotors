@@ -58,7 +58,7 @@ export function SortSelect({ filters, sort }: { filters: Filters; sort: SortValu
         name="sort"
         defaultValue={sort}
         disabled={pending}
-        className="h-11 w-full min-w-[11rem] sm:w-auto"
+        className="h-11 w-auto min-w-[10rem]"
         onChange={(event) => {
           const value = event.currentTarget.value as SortValue
           startTransition(() => router.push(buildBrowseHref(filters, { sort: value })))

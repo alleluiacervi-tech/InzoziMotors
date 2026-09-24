@@ -9,6 +9,7 @@
 
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from './config'
 import { SECTIONS } from './messages'
+import { fill, lookup, mergeMessages, type TFunction } from './translate'
 
 type Messages = Record<string, unknown>
 
@@ -27,6 +28,9 @@ const en = {
     close: 'Close',
     language: 'Language',
     chooseLanguage: 'Choose your language',
+    sellYourCar: 'Sell your car',
+    appearance: 'Appearance',
+    search: 'Search cars',
     admin: 'Admin', adminDashboard: 'Admin dashboard', callUs: 'Call us',
   },
   nav: {
@@ -34,6 +38,8 @@ const en = {
     rentals: 'Rentals',
     sell: 'Sell',
     tools: 'Tools',
+    rent: 'Rent',
+    imports: 'Import',
     howItWorks: 'How it works',
     browseCertified: 'Browse certified cars',
   },
@@ -57,6 +63,7 @@ const en = {
       '/rentals': 'Rent a car',
       '/sell': 'Sell your car',
       '/tools/valuation': 'Free valuation',
+      '/imports': 'Import a car',
       '/tools/import-duty': 'Import duty calculator',
       '/about': 'About Sawa Cars',
       '/promise': 'Marketplace safety',
@@ -89,6 +96,9 @@ const rw = {
     close: 'Funga',
     language: 'Ururimi',
     chooseLanguage: 'Hitamo ururimi',
+    sellYourCar: 'Gurisha imodoka yawe',
+    appearance: 'Imigaragarire',
+    search: 'Shakisha imodoka',
     admin: 'Ubuyobozi', adminDashboard: 'Imbonerahamwe y’ubuyobozi', callUs: 'Duhamagare',
   },
   nav: {
@@ -96,6 +106,8 @@ const rw = {
     rentals: 'Izikodeshwa',
     sell: 'Gurisha',
     tools: 'Ibikoresho',
+    rent: 'Kodesha',
+    imports: 'Gutumiza',
     howItWorks: 'Uko bikorwa',
     browseCertified: 'Reba imodoka zemewe',
   },
@@ -119,6 +131,7 @@ const rw = {
       '/rentals': 'Kodesha imodoka',
       '/sell': 'Gurisha imodoka yawe',
       '/tools/valuation': 'Isuzuma ry’agaciro ku buntu',
+      '/imports': 'Tumiza imodoka',
       '/tools/import-duty': 'Kubara umusoro wo gutumiza',
       '/about': 'Ibyerekeye Sawa Cars',
       '/promise': 'Umutekano w’isoko',
@@ -151,6 +164,9 @@ const fr = {
     close: 'Fermer',
     language: 'Langue',
     chooseLanguage: 'Choisissez votre langue',
+    sellYourCar: 'Vendre votre voiture',
+    appearance: 'Apparence',
+    search: 'Rechercher',
     admin: 'Admin', adminDashboard: 'Tableau de bord admin', callUs: 'Nous appeler',
   },
   nav: {
@@ -158,6 +174,8 @@ const fr = {
     rentals: 'Locations',
     sell: 'Vendre',
     tools: 'Outils',
+    rent: 'Louer',
+    imports: 'Importer',
     howItWorks: 'Comment ça marche',
     browseCertified: 'Voir les voitures certifiées',
   },
@@ -181,6 +199,7 @@ const fr = {
       '/rentals': 'Louer une voiture',
       '/sell': 'Vendre votre voiture',
       '/tools/valuation': 'Estimation gratuite',
+      '/imports': 'Importer une voiture',
       '/tools/import-duty': "Calculateur de droits d'importation",
       '/about': 'À propos de Sawa Cars',
       '/promise': 'Sécurité du marché',
@@ -213,6 +232,9 @@ const sw = {
     close: 'Funga',
     language: 'Lugha',
     chooseLanguage: 'Chagua lugha yako',
+    sellYourCar: 'Uza gari lako',
+    appearance: 'Mwonekano',
+    search: 'Tafuta magari',
     admin: 'Msimamizi', adminDashboard: 'Dashibodi ya msimamizi', callUs: 'Tupigie simu',
   },
   nav: {
@@ -220,6 +242,8 @@ const sw = {
     rentals: 'Za kukodisha',
     sell: 'Uza',
     tools: 'Zana',
+    rent: 'Kodi',
+    imports: 'Agiza',
     howItWorks: 'Jinsi inavyofanya kazi',
     browseCertified: 'Angalia magari yaliyothibitishwa',
   },
@@ -243,6 +267,7 @@ const sw = {
       '/rentals': 'Kodisha gari',
       '/sell': 'Uza gari lako',
       '/tools/valuation': 'Ukadiriaji bila malipo',
+      '/imports': 'Agiza gari',
       '/tools/import-duty': 'Kikokotoo cha ushuru wa kuagiza',
       '/about': 'Kuhusu Sawa Cars',
       '/promise': 'Usalama wa soko',
@@ -275,6 +300,9 @@ const ko = {
     close: '닫기',
     language: '언어',
     chooseLanguage: '언어를 선택하세요',
+    sellYourCar: '내 차 팔기',
+    appearance: '화면 모드',
+    search: '차량 검색',
     admin: '관리자', adminDashboard: '관리자 대시보드', callUs: '전화하기',
   },
   nav: {
@@ -282,6 +310,8 @@ const ko = {
     rentals: '렌트',
     sell: '판매',
     tools: '도구',
+    rent: '렌트',
+    imports: '수입',
     howItWorks: '이용 방법',
     browseCertified: '인증 차량 둘러보기',
   },
@@ -305,6 +335,7 @@ const ko = {
       '/rentals': '차량 렌트',
       '/sell': '내 차량 판매',
       '/tools/valuation': '무료 시세 평가',
+      '/imports': '차량 수입',
       '/tools/import-duty': '수입 관세 계산기',
       '/about': 'Sawa Cars 소개',
       '/promise': '마켓플레이스 안전',
@@ -337,6 +368,9 @@ const zh = {
     close: '关闭',
     language: '语言',
     chooseLanguage: '选择您的语言',
+    sellYourCar: '出售您的车',
+    appearance: '外观',
+    search: '搜索车辆',
     admin: '管理员', adminDashboard: '管理员控制台', callUs: '致电我们',
   },
   nav: {
@@ -344,6 +378,8 @@ const zh = {
     rentals: '租车',
     sell: '出售',
     tools: '工具',
+    rent: '租车',
+    imports: '进口',
     howItWorks: '使用说明',
     browseCertified: '浏览已认证车辆',
   },
@@ -367,6 +403,7 @@ const zh = {
       '/rentals': '租车',
       '/sell': '出售我的车辆',
       '/tools/valuation': '免费估值',
+      '/imports': '进口汽车',
       '/tools/import-duty': '进口关税计算器',
       '/about': '关于 Sawa Cars',
       '/promise': '市场安全',
@@ -406,23 +443,7 @@ export const DICTIONARY: Record<Locale, Messages> = {
   zh: withSections('zh'),
 }
 
-function lookup(source: Messages | undefined, key: string): string | undefined {
-  if (!source) return undefined
-  const value = key.split('.').reduce<unknown>(
-    (acc, part) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[part] : undefined),
-    source,
-  )
-  return typeof value === 'string' ? value : undefined
-}
-
-function fill(template: string, vars?: Record<string, string | number>): string {
-  if (!vars) return template
-  return template.replace(/\{\{(\w+)\}\}/g, (_m, name) =>
-    vars[name] == null ? `{{${name}}}` : String(vars[name]),
-  )
-}
-
-export type TFunction = (key: string, vars?: Record<string, string | number>) => string
+export type { TFunction }
 
 /** Build a translator bound to one locale. Works in server and client code. */
 export function getT(locale: unknown): TFunction {
@@ -431,4 +452,18 @@ export function getT(locale: unknown): TFunction {
     const value = lookup(DICTIONARY[code], key) ?? lookup(DICTIONARY[DEFAULT_LOCALE], key) ?? key
     return fill(value, vars)
   }
+}
+
+/**
+ * The slice of the catalogue a client subtree needs: the named top-level
+ * namespaces, each already merged over English so the browser never has to
+ * know a fallback exists. Server-only by construction — it reads DICTIONARY.
+ */
+export function messagesFor(locale: unknown, namespaces: readonly string[]): Messages {
+  const code = normalizeLocale(locale)
+  const out: Messages = {}
+  for (const ns of namespaces) {
+    out[ns] = mergeMessages(DICTIONARY[DEFAULT_LOCALE][ns], DICTIONARY[code][ns])
+  }
+  return out
 }

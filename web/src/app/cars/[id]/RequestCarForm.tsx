@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Alert, Button, Icon } from '@/components/ui'
+import { useT } from '@/lib/i18n/context'
 import { contactSellerAction, type ContactState } from './actions'
 
 type Availability = { phone: boolean; whatsapp: boolean; in_app: boolean }
@@ -59,8 +60,9 @@ export function RequestCarForm({ carId, available }: { carId: string; available?
 
 function SubmitButton() {
   const { pending } = useFormStatus()
+  const t = useT()
   return <Button type="submit" size="lg" fullWidth disabled={pending} trailingIcon={pending ? undefined : <Icon name="arrow-right" size={18} />}>
-    {pending ? 'Connecting…' : 'Continue to seller'}
+    {pending ? t('cars.detail.connecting') : t('cars.detail.contactSeller')}
   </Button>
 }
 

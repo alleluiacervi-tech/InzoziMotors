@@ -70,7 +70,7 @@ export default async function ContactPage() {
         <Container>
           <div className="flex flex-col items-center gap-8 lg:flex-row lg:justify-between">
             <div className="text-center lg:text-left">
-              <p className="text-micro font-bold uppercase tracking-[0.16em] text-white/60">
+              <p className="text-micro font-bold text-white/60">
                 {t('marketing.contact.band.label')}
               </p>
               <a
@@ -126,11 +126,11 @@ export default async function ContactPage() {
                       </span>
                       <span className="min-w-0">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">
+                          <span className="text-micro font-bold text-content-muted">
                             {channel.label}
                           </span>
                           {channel.badge ? (
-                            <span className="rounded-pill bg-success-tint px-2 py-0.5 text-micro font-bold uppercase tracking-[0.08em] text-success-text">
+                            <span className="rounded-pill bg-success-tint px-2 py-0.5 text-micro font-bold text-success-text">
                               {channel.badge}
                             </span>
                           ) : null}

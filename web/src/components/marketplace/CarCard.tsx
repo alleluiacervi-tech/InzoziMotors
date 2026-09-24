@@ -4,6 +4,7 @@ import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
 import { formatKm, formatMoney, getCertTier, isDemoListing, listedAgo, marketPosition, priceDrop } from '@/lib/business'
 import { Price } from '@/components/Price'
+import { ScoreRing } from '@/components/brand/ScoreRing'
 import type { Car } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 
@@ -43,8 +44,8 @@ export async function CarCard({
     <Link
       href={`/cars/${car.id}`}
       className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card
-                  transition-all duration-500 ease-brand
-                  hover:-translate-y-1.5 hover:border-line hover:shadow-float
+                  transition-[border-color,box-shadow] duration-300 ease-brand
+                  hover:border-line hover:shadow-card-lg
                   ${isRow ? 'sm:flex-row' : ''}`}
     >
       <div
@@ -94,9 +95,14 @@ export async function CarCard({
               {t('cars.card.previewListing')}
             </Badge>
           ) : car.inspection_score ? (
-            <span className="inline-flex max-w-full items-center gap-1.5 truncate rounded-pill bg-ink-900/85 px-2.5 py-1 text-micro font-bold tabular-nums text-white backdrop-blur-sm">
-              <Icon name="shield-check" size={12} />
-              {car.inspection_score}/150
+            // The score ring on a paper chip: the same mark the hero
+            // certificate and the listing page use, so a buyer reads it once
+            // and recognises it everywhere.
+            <span className="inline-flex items-center gap-2 rounded-pill bg-surface/95 py-1 pl-1 pr-3 shadow-card backdrop-blur-sm">
+              <ScoreRing score={car.inspection_score} size={36} />
+              <span className="text-micro font-bold leading-tight text-content">
+                {t('cars.card.scoreOf')}
+              </span>
             </span>
           ) : tier ? (
             <Badge tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'} icon="shield-check" className="max-w-full truncate">
@@ -121,41 +127,39 @@ export async function CarCard({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3 p-5">
-        {/* Title and price share a line. People scan a grid for price down its
-            right edge, so putting the price under the spec strip made them
-            travel the card twice; here one eye path answers both questions,
-            and tabular figures line the prices up across adjacent cards. */}
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="min-w-0 truncate text-title-sm font-extrabold tracking-[-0.01em] text-content transition-colors group-hover:text-brand">
-            {car.title}
-          </h3>
-          {/* One component, one conversion. The franc figure is the price;
-              the dollar line under it is an approximation that follows the
-              live rate without this card knowing anything about currency. */}
-          <Price amountRwf={car.price} className="shrink-0 text-right" />
-        </div>
+      <div className="flex min-w-0 flex-1 flex-col p-5">
+        {/* The name gets the full width and up to two lines. It used to share
+            a row with the price, which never shrinks, so at three columns the
+            grid read "2021 Le…" — the one fact a buyer needs to tell two
+            cards apart was the one the layout gave up. */}
+        <h3 className="line-clamp-2 text-title-sm font-extrabold tracking-[-0.01em] text-content transition-colors group-hover:text-brand">
+          {car.title}
+        </h3>
 
-        {/* Three specs, not five. Year, distance and town decide whether to
-            open a listing; fuel and transmission decide whether to buy it, and
-            that decision is made on the detail page. */}
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-content-secondary">
+        {/* Year, distance and town decide whether to open a listing; fuel and
+            transmission decide whether to buy it, and that is the detail
+            page's job. */}
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-content-secondary">
           <span>{car.year}</span>
-          <span aria-hidden className="text-line">·</span>
+          <span aria-hidden className="text-line">/</span>
           <span>{formatKm(car.mileage)}</span>
           {car.location ? (
             <>
-              <span aria-hidden className="text-line">·</span>
-              <span className="inline-flex items-center gap-1">
-                <Icon name="location" size={12} />
-                {car.location}
+              <span aria-hidden className="text-line">/</span>
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <Icon name="location" size={12} className="shrink-0" />
+                <span className="truncate">{car.location}</span>
               </span>
             </>
           ) : null}
         </p>
 
+        {/* One component, one conversion: francs are the price, the dollar
+            figure beside them is an approximation at the live rate. */}
+        <Price amountRwf={car.price} inline className="mt-4" />
+
         {isRow && car.description ? (
-          <p className="line-clamp-2 text-body leading-relaxed text-content-secondary">
+          <p className="mt-3 line-clamp-2 text-body leading-relaxed text-content-secondary">
             {car.description}
           </p>
         ) : null}
@@ -165,7 +169,8 @@ export async function CarCard({
             the one number that earns its place on a card, so it takes the
             footer the "View car" arrow used to occupy: the whole card is the
             link, and the arrow only ever restated that. */}
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-line-soft pt-3">
+        <div className="mt-auto pt-4">
+        <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-3">
           {market && car.market_avg ? (
             <p
               className={`min-w-0 truncate text-micro font-semibold ${
@@ -186,6 +191,7 @@ export async function CarCard({
           <p className="shrink-0 text-micro text-content-muted">
             {listedAgo(car) || t('cars.card.availableNow')}
           </p>
+        </div>
         </div>
       </div>
     </Link>

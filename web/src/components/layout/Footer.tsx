@@ -88,7 +88,7 @@ export async function Footer() {
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             {FOOTER_LINKS.map((group) => (
               <div key={t(`footer.headings.${group.heading}`)}>
-                <h2 className="mb-4 text-eyebrow font-bold uppercase text-white/40">
+                <h2 className="mb-4 text-caption font-bold text-white/60">
                   {t(`footer.headings.${group.heading}`)}
                 </h2>
                 {/* -my-2 cancels the added tap padding at the group edges so
@@ -128,10 +128,10 @@ export async function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-micro text-white/45">
+          <p className="text-micro text-white/60">
             © {year} {SITE.name}. Kigali, Rwanda. {t('footer.rights')}
           </p>
-          <p className="text-micro text-white/45">
+          <p className="text-micro text-white/60">
             {t('footer.noCheckout')}
           </p>
         </div>

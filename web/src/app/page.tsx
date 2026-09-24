@@ -1,19 +1,19 @@
 import type { Metadata } from 'next'
 import { Container, Section, SectionHeading } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
+import { StockBand } from '@/components/home/StockBand'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { TopDeals } from '@/components/home/TopDeals'
-import { BrowseEntry } from '@/components/home/BrowseEntry'
-import { TrustGuarantees } from '@/components/home/TrustGuarantees'
-import { InspectionShowcase } from '@/components/home/InspectionShowcase'
-import { HowItWorks } from '@/components/home/HowItWorks'
+import { ThreeWays } from '@/components/home/ThreeWays'
+import { InspectionStory } from '@/components/home/InspectionStory'
 import { FinalCta } from '@/components/home/FinalCta'
 import { FaqAccordion } from '@/components/marketing/FaqAccordion'
-import { cars } from '@/lib/api'
+import { cars, rentals } from '@/lib/api'
 import { FAQS } from '@/lib/site'
 import { graph, organizationNode, websiteNode } from '@/lib/seo'
 import { getServerT } from '@/lib/i18n/server'
-import type { Car, FeaturedPlacement } from '@/lib/types'
+import { summarizeInventory } from '@/lib/inventory'
+import type { Car, FeaturedPlacement, InspectionReport, RentalCar } from '@/lib/types'
 
 // The homepage is a Server Component so the live inventory below the fold is in
 // the HTML a crawler receives, not fetched afterwards by the browser.
@@ -25,11 +25,14 @@ export const metadata: Metadata = {
 }
 
 /**
- * Newest live listings.
+ * One page of live stock, newest first. The API clamps at 100 rows, which at
+ * Sawa's inventory size is the whole yard: the hero's search options, the
+ * stock band's counts, the certificate's car and the newest-six grid are all
+ * cut from this one list, so they cannot disagree.
  */
-async function getFeatured(): Promise<Car[]> {
+async function getStock(): Promise<Car[]> {
   try {
-    return await cars.list({ limit: 6, sort: 'listed_at', order: 'desc' })
+    return await cars.list({ limit: 100, sort: 'listed_at', order: 'desc' })
   } catch (err) {
     console.error('homepage inventory unavailable:', (err as Error).message)
     return []
@@ -48,45 +51,56 @@ async function getPlacements(): Promise<FeaturedPlacement[]> {
   }
 }
 
+async function getRentals(): Promise<RentalCar[]> {
+  try {
+    return await rentals.list()
+  } catch {
+    return []
+  }
+}
+
+/** The certificate's evidence. A missing or invalid report is not an error:
+ *  the card falls back to the listing's own score. */
+async function getReport(carId: string | undefined): Promise<InspectionReport | null> {
+  if (!carId) return null
+  try {
+    return await cars.inspectionReport(carId)
+  } catch {
+    return null
+  }
+}
+
 export default async function HomePage() {
-  const [featured, placements] = await Promise.all([getFeatured(), getPlacements()])
+  const [stock, placements, rentalFleet] = await Promise.all([getStock(), getPlacements(), getRentals()])
+  const inventory = summarizeInventory(stock)
+  const report = await getReport(inventory.best?.id)
   const t = await getServerT()
   const organizationLd = graph(organizationNode(), websiteNode())
 
   return (
     <>
-      {/* One statement, one search, and a photograph of an inspection. The
-          hero is deliberately shorter than the viewport so the first scroll
-          lands on stock rather than on more argument. */}
-      <Hero />
+      {/* One claim, one search across the three businesses, and the
+          inspection photograph with the live stock count. */}
+      <Hero inventory={inventory} rentalCount={rentalFleet.length} />
 
-      {/* Operator placements first, then the newest inspected cars. Inventory
-          is the whole point of the page and it starts in the second section. */}
+      {/* The yard's shape — makes, budgets, body types — each with its count. */}
+      <StockBand inventory={inventory} />
+
+      {/* Operator placements, then the newest inspected cars. */}
       <TopDeals placements={placements} />
-      <FeaturedCars cars={featured} />
+      <FeaturedCars cars={stock.slice(0, 6)} />
 
-      {/* Then, and only then, the case for the inspection: four claims that
-          are each enforced in code, and the checklist's real shape. These two
-          used to be four sections — a pillar grid, a VIN banner, a showcase
-          and a stat band — arguing the same point over three and a half phone
-          screens. */}
-      <TrustGuarantees />
-      <InspectionShowcase />
+      <ThreeWays saleCount={inventory.total} rentalCount={rentalFleet.length} />
 
-      {/* Photographic entry by body type. Its budget chips moved out: the
-          hero's search box and /cars' own filter panel already cover that, and
-          three sets of price bands on one page disagreed with each other. */}
-      <BrowseEntry cars={featured} />
+      {/* The case for the inspection, made once — with one real report from
+          the best-scoring car in stock. */}
+      <InspectionStory car={inventory.best} report={report} />
 
-      <HowItWorks />
-
-      {/* Five of the eight; the full set lives on /how-it-works. These two
-          strings were hardcoded English while the rest of the page translated,
-          and the keys already existed in all six locales. */}
+      {/* Five of the eight; the full set lives on /how-it-works. */}
       <Section tone="page">
         <Container>
-          <SectionHeading eyebrow={t('home.faq.eyebrow')} title={t('home.faq.title')} />
-          <div className="mt-12">
+          <SectionHeading title={t('home.faq.title')} />
+          <div className="mt-10">
             <FaqAccordion items={FAQS.slice(0, 5)} structuredData />
           </div>
         </Container>

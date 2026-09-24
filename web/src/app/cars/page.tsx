@@ -10,6 +10,7 @@ import { ActiveFilters } from '@/components/marketplace/ActiveFilters'
 import { FilterPanel } from '@/components/marketplace/FilterPanel'
 import { FilterSheet } from '@/components/marketplace/FilterSheet'
 import { PageIntro } from '@/components/marketplace/PageIntro'
+import { BrowseSearch } from '@/components/marketplace/BrowseSearch'
 import { Pagination } from '@/components/marketplace/Pagination'
 import { SortSelect } from '@/components/marketplace/SortSelect'
 import { buildFacets, EMPTY_FACETS } from '@/components/marketplace/facets'
@@ -118,7 +119,7 @@ async function BrowseResults({
       <div className="min-w-0">
         {/* The control row loses its card too: a hairline under it is enough
             separation, and one less floating surface above the grid. */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line-soft pb-4">
+        <div className="flex items-center justify-between gap-3 border-b border-line-soft pb-4">
           <div className="flex items-center gap-3">
             <FilterSheet facets={facets} filters={filters} sort={sort} />
             {/* "on this page" whenever more may exist — the API returns a
@@ -126,7 +127,7 @@ async function BrowseResults({
                 cannot back. When the API is down we claim nothing: "0 cars"
                 would be a statement about inventory we cannot see. */}
             {!apiDown ? (
-              <p className="text-caption text-content-secondary">
+              <p className="hidden text-caption text-content-secondary sm:block">
                 <span className="font-bold text-content">{results.length}</span>
                 {' '}{results.length === 1 ? t('cars.browse.carOne') : t('cars.browse.carMany')}
                 {offset > 0 || results.length === PAGE_SIZE ? ` ${t('cars.browse.onThisPage')}` : ''}
@@ -135,6 +136,16 @@ async function BrowseResults({
           </div>
           <SortSelect filters={filters} sort={sort} />
         </div>
+
+        {/* On a phone the count drops under the controls so Filters and
+            Sort share one row. */}
+        {!apiDown ? (
+          <p className="mt-3 text-caption text-content-secondary sm:hidden">
+            <span className="font-bold text-content">{results.length}</span>
+            {' '}{results.length === 1 ? t('cars.browse.carOne') : t('cars.browse.carMany')}
+            {offset > 0 || results.length === PAGE_SIZE ? ` ${t('cars.browse.onThisPage')}` : ''}
+          </p>
+        ) : null}
 
         <div className="mt-4">
           <ActiveFilters filters={filters} sort={sort} />
@@ -175,7 +186,7 @@ async function BrowseResults({
                 hidden below lg — so on a phone the document jumped straight
                 from the page h1 to the h3 on each card. */}
             <h2 className="sr-only">{t('cars.browse.resultsTitle')}</h2>
-            <ul className="stagger mt-6 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="mt-6 grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {results.map((car, index) => (
                 <li key={car.id} className="min-w-0">
                   {/* Only the first row is eager — the rest would fight the
@@ -250,12 +261,12 @@ export default async function CarsPage({ searchParams }: PageProps) {
 
       {/* Outside the data boundary — the headline never waits on the API. */}
       <PageIntro
-        eyebrow={t('cars.browse.eyebrow')}
         title={browseHeading(t, filters)}
         description={t('cars.browse.introDescription')}
+        search={<BrowseSearch filters={filters} sort={sort} />}
       />
 
-      <Container className="py-8 sm:py-12">
+      <Container className="py-6 sm:py-10">
         <Suspense fallback={<BrowseSkeleton />}>
           <BrowseResults filters={filters} sort={sort} offset={offset} />
         </Suspense>

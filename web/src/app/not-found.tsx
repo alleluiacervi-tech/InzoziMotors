@@ -49,7 +49,7 @@ export default function NotFound() {
     <Section>
       <Container>
         <div className="max-w-2xl">
-          <p className="text-eyebrow font-bold uppercase text-brand">404</p>
+          <p className="text-caption font-bold text-brand">404</p>
           <h1 className="mt-3 text-display font-extrabold tracking-[-0.03em] text-content">
             This page isn’t here.
           </h1>
@@ -70,7 +70,7 @@ export default function NotFound() {
         </div>
 
         <div className="mt-14 border-t border-line-soft pt-10">
-          <h2 className="text-caption font-bold uppercase tracking-wide text-content-muted">
+          <h2 className="text-caption font-bold text-content-muted">
             Try one of these
           </h2>
 

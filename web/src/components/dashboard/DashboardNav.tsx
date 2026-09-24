@@ -141,7 +141,7 @@ export function DashboardNav({
       <div className="hidden lg:block">
         {groups.map((group, groupIndex) => (
           <div key={group.titleKey} className={groupIndex > 0 ? 'mt-7' : ''}>
-            <h2 className="mb-2 px-3 text-eyebrow font-bold uppercase text-content-muted">
+            <h2 className="mb-2 px-3 text-caption font-bold text-content-muted">
               {t(group.titleKey)}
             </h2>
             <ul className="space-y-0.5">

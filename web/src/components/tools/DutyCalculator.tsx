@@ -36,7 +36,15 @@ function share(part: number, whole: number): string {
   return `${Math.round((part / whole) * 1000) / 10}%`
 }
 
-export function DutyCalculator() {
+export function DutyCalculator({
+  initialValueRwf,
+  initialAgeYears,
+}: {
+  /** Prefill, e.g. from /imports?price_usd= converted at the live rate. */
+  initialValueRwf?: number
+  /** Prefill; snapped to the nearest age option below. */
+  initialAgeYears?: number
+} = {}) {
   const t = useT()
   const rates = getDutyRates()
 
@@ -59,9 +67,14 @@ export function DutyCalculator() {
     [rates, t]
   )
 
-  const [value, setValue] = useState('')
+  const [value, setValue] = useState(initialValueRwf ? String(Math.round(initialValueRwf)) : '')
   const [cc, setCc] = useState<number>(() => rates.excise_brackets[0]?.max_cc ?? 1500)
-  const [ageYears, setAgeYears] = useState<number>(0)
+  const [ageYears, setAgeYears] = useState<number>(() => {
+    if (initialAgeYears == null) return 0
+    // The option whose band holds this age: 0 (<2), 3 (2-4), 5, 7, 9, 11 (10+).
+    const options = AGE_OPTIONS.map((o) => o.value)
+    return options.reduce((best, v) => (Math.abs(v - initialAgeYears) < Math.abs(best - initialAgeYears) ? v : best), 0)
+  })
 
   const vehicleValue = Number(value) || 0
   const duty = useMemo(
@@ -74,7 +87,7 @@ export function DutyCalculator() {
     <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
       {/* ─── Inputs ───────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 lg:col-span-2">
-        <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
+        <h3 className="text-caption font-bold text-content-muted">
           {t('tools.dutyCalc.theVehicle')}
         </h3>
 

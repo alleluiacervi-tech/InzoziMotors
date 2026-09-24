@@ -13,6 +13,7 @@ import { Price, RateNote } from '@/components/Price'
 import { CarCard } from '@/components/marketplace/CarCard'
 import { Gallery } from '@/components/marketplace/Gallery'
 import { InspectionReportCard } from '@/components/marketplace/InspectionReportCard'
+import { ScoreRing } from '@/components/brand/ScoreRing'
 import { OpenInAppButton } from '@/components/marketplace/OpenInAppButton'
 import { Sparkline } from '@/components/marketplace/Sparkline'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
@@ -261,6 +262,25 @@ export default async function CarDetailPage({ params }: PageProps) {
                   </>
                 ) : null}
               </p>
+
+              {/* The score, on the first screen, as the same ring the cards
+                  use — and a way straight down to the report behind it. */}
+              {car.inspection_score ? (
+                <a
+                  href="#inspection"
+                  className="group mt-5 inline-flex items-center gap-3 rounded-2xl border border-line-soft bg-surface py-2 pl-2 pr-4 shadow-card transition-colors hover:border-line"
+                >
+                  <ScoreRing score={car.inspection_score} size={48} />
+                  <span className="min-w-0">
+                    <span className="block text-caption font-bold text-content">
+                      {t('cars.detail.scoreChip')} {car.inspection_score}/150
+                    </span>
+                    <span className="block text-micro font-semibold text-brand group-hover:underline">
+                      {t('cars.detail.seeReport')}
+                    </span>
+                  </span>
+                </a>
+              ) : null}
             </header>
           </div>
 
@@ -268,7 +288,7 @@ export default async function CarDetailPage({ params }: PageProps) {
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="relative overflow-hidden rounded-3xl border-line bg-surface p-6 shadow-float sm:p-7">
                 <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">{t('cars.detail.purchaseOverview')}</p>
+                <p className="mb-3 text-micro font-bold text-content-muted">{t('cars.detail.purchaseOverview')}</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
                 <Price amountRwf={car.price} size="detail" />
@@ -284,7 +304,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                   <p
                     className={`mt-3 text-caption font-semibold ${
                       market.tone === 'good'
-                        ? 'text-success'
+                        ? 'text-success-text'
                         : market.tone === 'high'
                         ? 'text-warning-text'
                         : 'text-content-muted'
@@ -364,7 +384,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                   <div className="pt-4">
                     {priceHistory.length >= 2 ? (
                       <div className="mb-4">
-                        <p className="mb-2 text-micro font-bold uppercase tracking-wide text-content-muted">
+                        <p className="mb-2 text-micro font-bold text-content-muted">
                           {t('cars.detail.askingPriceSince')}
                         </p>
                         <Sparkline points={priceHistory} />
@@ -434,7 +454,9 @@ export default async function CarDetailPage({ params }: PageProps) {
               ))}
             </div>
 
-            <InspectionReportCard report={report} />
+            <div id="inspection" className="scroll-mt-28">
+              <InspectionReportCard report={report} />
+            </div>
 
             {!report && car.inspected ? (
               <Alert tone="info" title={t('cars.detail.reportPendingTitle')}>
@@ -490,7 +512,7 @@ export default async function CarDetailPage({ params }: PageProps) {
           <Container>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.detail.similarEyebrow')}</p>
+                <p className="text-caption font-bold text-brand">{t('cars.detail.similarEyebrow')}</p>
                 <h2 className="mt-2 text-headline font-extrabold text-content">
                   {t('cars.detail.similarTitle', { make: car.make })}
                 </h2>
@@ -518,8 +540,14 @@ export default async function CarDetailPage({ params }: PageProps) {
               <p className="truncate text-micro font-semibold text-content-muted">{car.title}</p>
               <p className="text-title-sm font-extrabold text-brand" aria-label={ formatMoneyExact(car.price) }>{ formatMoney(car.price) }</p>
             </div>
-            <Button href="#purchase-panel" size="compact" trailingIcon={<Icon name="arrow-right" size={16} />}>
-              {t('cars.detail.requestThisCar')}
+            {/* Same verb as the panel it jumps to — "Contact seller" — so
+                the phone and the desktop never name one action twice. */}
+            <Button
+              href={user ? '#purchase-panel' : `/signin?next=${encodeURIComponent(`/cars/${car.id}`)}`}
+              size="compact"
+              trailingIcon={<Icon name="arrow-right" size={16} />}
+            >
+              {t('cars.detail.contactSeller')}
             </Button>
           </div>
         </div>
@@ -567,18 +595,21 @@ async function DecisionSummary({ car, report, history }: { car: Car; report: Awa
   return (
     <section aria-labelledby="decision-heading" className="overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">
       <div className="border-b border-line-soft px-5 py-4 sm:px-7">
-        <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.detail.decisionEyebrow')}</p>
+        <p className="text-caption font-bold text-brand">{t('cars.detail.decisionEyebrow')}</p>
         <h2 id="decision-heading" className="mt-2 text-title font-extrabold text-content">{t('cars.detail.decisionTitle')}</h2>
         <p className="mt-1 text-caption text-content-muted">{t('cars.detail.decisionNote')}</p>
       </div>
       <dl className="grid sm:grid-cols-2">
         {signals.map((signal, index) => (
-          <div key={signal.label} className={`flex gap-3 border-b border-line-soft px-5 py-4 last:border-b-0 sm:px-7 ${index < 2 ? 'sm:border-b' : 'sm:border-b-0'} ${index % 2 === 0 ? 'sm:border-r sm:border-line-soft' : ''}`}>
-            <Icon name={signal.icon} size={19} className={`mt-0.5 shrink-0 ${signal.tone}`} />
-            <div>
-              <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">{signal.label}</dt>
-              <dd className="mt-1 text-caption font-bold text-content">{signal.value}</dd>
-            </div>
+          // A <dl> group may hold only <dt>/<dd>, so the icon rides inside
+          // the term and is placed against the group's padding instead of
+          // sitting in a wrapper <div> of its own.
+          <div key={signal.label} className={`relative border-b border-line-soft py-4 pl-[3.25rem] pr-5 last:border-b-0 sm:pl-[3.75rem] sm:pr-7 ${index < 2 ? 'sm:border-b' : 'sm:border-b-0'} ${index % 2 === 0 ? 'sm:border-r sm:border-line-soft' : ''}`}>
+            <dt className="text-micro font-bold text-content-muted">
+              <Icon name={signal.icon} size={19} className={`absolute left-5 top-[1.1rem] sm:left-7 ${signal.tone}`} aria-hidden="true" />
+              {signal.label}
+            </dt>
+            <dd className="mt-1 text-caption font-bold text-content">{signal.value}</dd>
           </div>
         ))}
       </dl>

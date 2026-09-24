@@ -70,7 +70,7 @@ export default async function ToolsPage() {
       <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_12%,rgba(204,5,15,0.28),transparent_32%),radial-gradient(circle_at_10%_90%,rgba(255,255,255,0.08),transparent_28%)]" />
       <Container>
         <div className="max-w-3xl">
-          <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">{t('tools.hub.eyebrow')}</p>
+          <p className="mb-4 text-caption font-bold text-white/55">{t('tools.hub.eyebrow')}</p>
           <h1 className="text-display-xl font-extrabold text-white">
             {t('tools.hub.title')}
           </h1>
@@ -91,7 +91,7 @@ export default async function ToolsPage() {
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                 <Icon name={tool.icon} size={22} />
               </span>
-              <p className="mt-4 text-micro font-bold uppercase tracking-wide text-content-muted">
+              <p className="mt-4 text-micro font-bold text-content-muted">
                 {t(tool.metaKey)}
               </p>
               <h2 className="mt-1.5 text-title-sm font-extrabold text-content">{t(tool.titleKey)}</h2>

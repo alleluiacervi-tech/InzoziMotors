@@ -7,7 +7,7 @@ import { Logo } from '@/components/brand/Logo'
 import { Button, Icon, ThemeToggle } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
 import { useT } from '@/lib/i18n/context'
-import { APP, CONTACT, NAV_LINKS, STORES_LIVE } from '@/lib/site'
+import { CONTACT, NAV_LINKS } from '@/lib/site'
 import type { User } from '@/lib/types'
 
 /**
@@ -28,7 +28,7 @@ import type { User } from '@/lib/types'
  */
 // Nav labels come from NAV_LINKS (hrefs) but are translated by key.
 const NAV_KEY: Record<string, string> = {
-  '/cars': 'nav.buy', '/rentals': 'nav.rentals', '/sell': 'nav.sell',
+  '/cars': 'nav.buy', '/rentals': 'nav.rent', '/imports': 'nav.imports',
   '/tools': 'nav.tools', '/how-it-works': 'nav.howItWorks',
 }
 
@@ -121,7 +121,7 @@ export function Header({ user }: { user: User | null }) {
             <a
               href={`https://wa.me/${CONTACT.whatsapp}`}
               rel="noopener noreferrer"
-              className={`hidden items-center gap-2 rounded-lg px-3 py-2 text-caption font-semibold transition-colors lg:flex ${quiet}`}
+              className={`hidden items-center gap-2 rounded-lg px-3 py-2 text-caption font-semibold transition-colors xl:flex ${quiet}`}
             >
               <Icon name="whatsapp" size={17} />
               {CONTACT.whatsappDisplay}
@@ -129,9 +129,9 @@ export function Header({ user }: { user: User | null }) {
           ) : null}
 
           <Link
-            href="/cars"
-            aria-label="Search cars"
-            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors lg:hidden ${quiet}`}
+            href="/cars#search"
+            aria-label={t('common.search')}
+            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${quiet}`}
           >
             <Icon name="search" size={20} />
           </Link>
@@ -169,38 +169,13 @@ export function Header({ user }: { user: User | null }) {
             </Button>
           )}
 
-          {STORES_LIVE ? (
-            <>
-              <Button
-                href="/cars"
-                variant="ghost"
-                size="sm"
-                className="hidden lg:inline-flex"
-              >
-                {t('common.browseCars')}
-              </Button>
-              <Button href="/download" size="sm" className="hidden sm:inline-flex">
-                {t('common.getApp')}
-              </Button>
-            </>
-          ) : (
-            <>
-              {/* One primary action, and it is the product. The app link stays
-                  reachable but stops outshouting a marketplace that is live
-                  today with an app that is not. */}
-              <Button
-                href="/download"
-                variant="outline"
-                size="sm"
-                className="hidden lg:inline-flex"
-              >
-                {t('common.getApp')}
-              </Button>
-              <Button href="/cars" size="sm" className="hidden sm:inline-flex">
-                {t('common.browseCars')}
-              </Button>
-            </>
-          )}
+          {/* ONE primary action. Buying is the nav's first word, so the
+              button is the other side of the market: getting a car listed.
+              The app link lives in the menu and footer until the stores are
+              live (APP.storesLive in lib/site.ts). */}
+          <Button href="/sell" size="sm" className="hidden sm:inline-flex">
+            {t('common.sellYourCar')}
+          </Button>
 
           <div className="hidden sm:block">
             <LanguageSwitcher tone="light" />
@@ -303,14 +278,8 @@ export function Header({ user }: { user: User | null }) {
                   <Button href="/signup" variant="secondary" fullWidth>{t('common.createAccount')}</Button>
                 </>
               )}
-              {STORES_LIVE ? (
-                <Button href="/download" fullWidth>{t('common.getApp')}</Button>
-              ) : (
-                <>
-                  <Button href="/cars" fullWidth>{t('common.browseCertified')}</Button>
-                  <Button href="/download" variant="ghost" fullWidth>{t('common.getApp')}</Button>
-                </>
-              )}
+              <Button href="/sell" fullWidth>{t('common.sellYourCar')}</Button>
+              <Button href="/download" variant="ghost" fullWidth>{t('common.getApp')}</Button>
 
               <div className="flex items-center justify-between pt-1">
                 <span className="text-caption font-semibold text-content-secondary">{t('common.language')}</span>
@@ -318,7 +287,7 @@ export function Header({ user }: { user: User | null }) {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-caption font-semibold text-content-secondary">Appearance</span>
+                <span className="text-caption font-semibold text-content-secondary">{t('common.appearance')}</span>
                 <ThemeToggle className="text-content" />
               </div>
             </div>

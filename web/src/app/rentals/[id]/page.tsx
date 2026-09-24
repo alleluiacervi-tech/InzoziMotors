@@ -203,7 +203,7 @@ export default async function RentalDetailPage({ params }: PageProps) {
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="relative overflow-hidden rounded-3xl border-line p-6 shadow-float sm:p-7">
                 <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-                <p className="mb-3 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">{t('rentals.detail.overview')}</p>
+                <p className="mb-3 text-micro font-bold text-content-muted">{t('rentals.detail.overview')}</p>
                 <p className="text-price-lg font-extrabold leading-none tracking-[-0.03em] text-brand">
                   { formatMoney(car.daily_rate) }
                   <span className="text-base font-bold text-content-muted"> {t('rentals.card.perDay')}</span>

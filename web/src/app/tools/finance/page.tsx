@@ -35,7 +35,7 @@ export default async function FinancePage() {
       <Section tone="surface" className="pb-10 pt-12 sm:pb-14 sm:pt-20">
         <Container>
           <div className="max-w-3xl">
-            <p className="mb-4 text-eyebrow font-bold uppercase text-brand">{t('tools.financePage.heroEyebrow')}</p>
+            <p className="mb-4 text-caption font-bold text-brand">{t('tools.financePage.heroEyebrow')}</p>
             <h1 className="text-display font-extrabold text-content">{t('tools.financePage.heroTitle')}</h1>
             <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
               {t('tools.financePage.heroLede')}

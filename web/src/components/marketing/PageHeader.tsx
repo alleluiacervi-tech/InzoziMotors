@@ -24,7 +24,7 @@ export function PageHeader({
     <header className={`border-b border-line-soft bg-surface ${className}`}>
       <Container className="py-14 sm:py-20 lg:py-24">
         {eyebrow ? (
-          <p className="mb-4 text-eyebrow font-bold uppercase text-brand">{eyebrow}</p>
+          <p className="mb-4 text-caption font-bold text-brand">{eyebrow}</p>
         ) : null}
 
         <h1 className="max-w-4xl text-display font-extrabold text-content">{title}</h1>

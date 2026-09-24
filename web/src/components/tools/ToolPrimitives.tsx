@@ -70,7 +70,9 @@ export function NumberField({
           error={Boolean(error)}
           aria-describedby={hint && !error ? `${id}-hint` : undefined}
           onChange={(event) => onChange(event.target.value.replace(/[^\d]/g, ''))}
-          className={`tabular-nums ${prefix ? 'pl-8' : ''} ${suffix ? 'pr-14' : ''}`}
+          // Padding sized to the prefix: "$" fits in 2rem, "RWF" needs ~3.75rem
+          // or a long figure runs underneath it.
+          className={`tabular-nums ${prefix ? (prefix.length > 1 ? 'pl-[3.75rem]' : 'pl-8') : ''} ${suffix ? 'pr-14' : ''}`}
         />
         {suffix ? (
           <span
@@ -116,7 +118,7 @@ export function ChipGroup<T extends string | number>({
 }) {
   return (
     <fieldset>
-      <legend className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted">
+      <legend className="mb-2 block text-caption font-bold text-content-muted">
         {legend}
       </legend>
       <div className={columns === 2 ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-2'}>
@@ -140,7 +142,7 @@ export function ChipGroup<T extends string | number>({
             >
               {option.label}
               {option.hint ? (
-                <span className="mt-0.5 text-micro font-semibold opacity-70">{option.hint}</span>
+                <span className="mt-0.5 text-micro font-semibold opacity-90">{option.hint}</span>
               ) : null}
             </span>
           </label>
@@ -165,7 +167,7 @@ export function ResultPanel({
     <div
       className={`rounded-2xl border border-line-soft bg-surface p-5 shadow-card sm:p-6 ${className}`}
     >
-      <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">{title}</h3>
+      <h3 className="text-caption font-bold text-content-muted">{title}</h3>
       <div className="mt-4">{children}</div>
     </div>
   )

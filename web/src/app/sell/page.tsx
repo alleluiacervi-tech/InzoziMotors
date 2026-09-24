@@ -103,7 +103,7 @@ export default async function SellPage() {
         <Container>
           <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
-              <p className="mb-4 text-eyebrow font-bold uppercase text-white/55">{t('sell.hero.eyebrow')}</p>
+              <p className="mb-4 text-caption font-bold text-white/55">{t('sell.hero.eyebrow')}</p>
               <h1 className="text-display-xl font-extrabold text-white">
                 {t('sell.hero.title')}
               </h1>
@@ -134,7 +134,7 @@ export default async function SellPage() {
 
             <Card className="relative overflow-hidden rounded-3xl border-white/10 p-6 shadow-float sm:p-8">
               <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-              <h2 className="text-caption font-bold uppercase tracking-wide text-content-muted">
+              <h2 className="text-caption font-bold text-content-muted">
                 {t('sell.hero.freeValuation')}
               </h2>
               <div className="mt-4">
@@ -232,7 +232,7 @@ export default async function SellPage() {
         <Container>
           <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-16">
             <div>
-              <p className="mb-4 text-eyebrow font-bold uppercase text-brand">{t('sell.app.eyebrow')}</p>
+              <p className="mb-4 text-caption font-bold text-brand">{t('sell.app.eyebrow')}</p>
               <h2 className="text-headline font-extrabold text-content">
                 {t('sell.app.title')}
               </h2>
@@ -245,7 +245,7 @@ export default async function SellPage() {
             </div>
 
             <Card className="p-6 sm:p-8">
-              <h3 className="text-caption font-bold uppercase tracking-wide text-content-muted">
+              <h3 className="text-caption font-bold text-content-muted">
                 {t('sell.app.whereTitle')}
               </h3>
               <ul className="mt-5 space-y-3.5">
@@ -258,7 +258,7 @@ export default async function SellPage() {
                   { where: t('sell.app.whereDirect'), what: t('sell.app.step6') },
                 ].map((row) => (
                   <li key={row.what} className="flex items-start gap-3">
-                    <span className="mt-0.5 w-[52px] shrink-0 rounded-pill bg-surface-alt px-2 py-1 text-center text-micro font-bold uppercase tracking-wide text-content-muted">
+                    <span className="mt-0.5 w-[52px] shrink-0 rounded-pill bg-surface-alt px-2 py-1 text-center text-micro font-bold text-content-muted">
                       {row.where}
                     </span>
                     <span className="text-body leading-relaxed text-content-secondary">

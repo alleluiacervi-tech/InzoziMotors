@@ -1,3 +1,4 @@
+import { I18nScope } from '@/components/i18n/I18nScope'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { LogoMark } from '@/components/brand/Logo'
@@ -61,13 +62,13 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
           the bottom edge of the panel while the form stays optically centred. */}
       <Container className="grid gap-12 py-12 lg:grid-cols-2 lg:gap-16 lg:py-20">
         <div className="flex items-center justify-center">
-          <div className="w-full max-w-[440px]">{children}</div>
+          <div className="w-full max-w-[440px]"><I18nScope ns={['auth']}>{children}</I18nScope></div>
         </div>
 
         <aside className="hidden rounded-3xl bg-ink-900 p-10 text-white shadow-float lg:flex lg:flex-col xl:p-12">
           <LogoMark size={48} />
 
-          <p className="mt-8 text-eyebrow font-bold uppercase text-brand-light">
+          <p className="mt-8 text-caption font-bold text-brand-light">
             {t('auth.layout.eyebrow')}
           </p>
           <h2 className="mt-3 max-w-sm text-headline font-extrabold">
@@ -100,7 +101,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
           </p>
 
           <div className="mt-auto border-t border-white/10 pt-7">
-            <p className="text-eyebrow font-bold uppercase text-white/50">
+            <p className="text-caption font-bold text-white/50">
               {t('auth.layout.centersLabel')}
             </p>
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-caption text-white/70">

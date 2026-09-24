@@ -158,7 +158,7 @@ export function SignUpForm({ next }: { next: string }) {
       />
 
       <fieldset>
-        <legend className="mb-2 block text-caption font-bold uppercase tracking-wide text-content-muted">
+        <legend className="mb-2 block text-caption font-bold text-content-muted">
           {t('auth.signup.legend')}
         </legend>
         <div className="grid gap-3 sm:grid-cols-2">

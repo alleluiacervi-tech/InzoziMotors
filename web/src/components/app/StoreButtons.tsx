@@ -94,7 +94,7 @@ export function StoreButtons({
   // it inert; the opacity is what makes that obvious at a glance.
   const pending =
     tone === 'dark'
-      ? 'border-white/10 bg-white/[0.03] text-white/45 cursor-default'
+      ? 'border-white/10 bg-white/[0.03] text-white/60 cursor-default'
       : 'border-line-soft bg-surface-alt text-content-muted cursor-default'
 
   return (

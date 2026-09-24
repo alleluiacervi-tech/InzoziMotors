@@ -20,11 +20,13 @@ import { useCurrency } from './CurrencyProvider'
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function Price({
-  amountRwf, size = 'card', className = '',
+  amountRwf, size = 'card', inline = false, className = '',
 }: {
   amountRwf?: number | null
   /** `card` for a grid tile, `detail` for the one big price on a listing. */
   size?: 'card' | 'detail'
+  /** Set the dollar approximation beside the franc figure instead of under it. */
+  inline?: boolean
   className?: string
 }) {
   const t = useT()
@@ -40,13 +42,13 @@ export function Price({
   const staleLabel = t('ui.rateMayBeOutOfDate')
 
   return (
-    <span className={`block ${className}`}>
+    <span className={`${inline ? 'flex flex-wrap items-baseline gap-x-2' : 'block'} ${className}`}>
       <span className={priceClass} title={formatMoneyExact(amountRwf)}>
         {formatMoney(amountRwf)}
       </span>
       {usd == null ? null : (
         <span
-          className={`mt-1 block tabular-nums text-content-muted ${size === 'detail' ? 'text-caption' : 'text-micro'}`}
+          className={`${inline ? '' : 'mt-1 block'} tabular-nums text-content-muted ${size === 'detail' ? 'text-caption' : 'text-micro'}`}
           // The accessible name says the quiet part out loud: this is an
           // approximation at today's rate, not a second price.
           aria-label={approxLabel}

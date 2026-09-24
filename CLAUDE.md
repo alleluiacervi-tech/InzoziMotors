@@ -88,7 +88,8 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
 Single source of truth for the checklist: `backend/src/lib/inspection-policy.js`
 — 150 one-point items across 7 categories; it **throws at require-time** if the
 counts don't reconcile. Its public-facing transcription is
-`web/src/lib/inspection-policy.ts` (hero metric strip + homepage ledger), which
+`web/src/lib/inspection-policy.ts` (the ScoreRing, the homepage report card and
+category ledger), which
 throws on import the same way, so a bad edit is a failed build rather than a
 wrong number on the homepage.
 
@@ -169,7 +170,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0036`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0047`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -200,6 +201,18 @@ npm run mobile:imports        # mobile import resolution check
 Brand: **Signal Red `#CC050F`** (`src/theme/colors.js`, `web/tailwind.config.ts`).
 Red is reserved for prices, primary actions, active states and the certified
 badge — informational icons stay neutral.
+
+**Web translations are scoped.** The browser never receives the whole
+catalogue (`web/src/lib/i18n/dictionary.ts`, six languages): the root layout
+hands the client the chrome's namespaces (`common`, `nav`, `store`, `ui`) for
+the active language only, and route layouts add theirs with `<I18nScope
+ns={[...]}>` (`cars`, `tools`, `auth`, `dashboard`, `home`, `imports`). A new
+client component that calls `useT()` under a route whose scope lacks its
+namespace renders the raw key and warns in development — add the namespace to
+that route's layout. Server components use `getServerT()` and see everything.
+
+**Price bands** live in one place, `web/src/lib/inventory.ts`
+(`BUDGET_EDGES`); the homepage search and stock band both read it.
 
 **Account closure** (`src/lib/account-closure.js`) is immediate and needs no
 approval — Apple 5.1.1(v) requires deletion to *complete* in-app, so an operator

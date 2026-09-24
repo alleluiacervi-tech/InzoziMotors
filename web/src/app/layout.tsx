@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
-import { BrandSplash } from '@/components/layout/BrandSplash'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { getCurrentUser } from '@/lib/session'
@@ -12,6 +11,8 @@ import { CurrencyProvider } from '@/components/CurrencyProvider'
 import { SITE } from '@/lib/site'
 import { getLocale } from '@/lib/i18n/server'
 import { LanguageProvider } from '@/lib/i18n/context'
+import { messagesFor } from '@/lib/i18n/dictionary'
+import { CHROME_NAMESPACES } from '@/components/i18n/I18nScope'
 import './globals.css'
 
 // Satoshi (Indian Type Foundry), self-hosted by next/font — the same four files
@@ -120,19 +121,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale()
 
   return (
-    // The inline splash script below may add `splash-done` before React
-    // hydrates. That difference is intentional (it prevents a repeat-visit
-    // flash), so suppress only this root attribute warning.
+    // The inline theme script below may add `dark` before React hydrates.
+    // That difference is intentional (it prevents a white flash for a
+    // dark-mode visitor), so suppress only this root attribute warning.
     <html lang={locale} className={satoshi.variable} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
-        {/* Runs before first paint: a repeat visit this session gets the
-            splash-done class on <html>, and CSS hides the splash overlay with
-            zero flash. The splash itself is server-rendered so it covers the
-            very first frame of a fresh visit. */}
+        {/* Runs before first paint.
+
+            There is no web splash any more. A spinning mark for 0.9-2.2s on
+            the first visit of every session sat between search traffic and
+            the listing it came for; the page's first paint IS the brand now.
+            The app keeps its native splash, where one belongs. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{if(sessionStorage.getItem('sawa-splash'))document.documentElement.classList.add('splash-done')}catch(e){}" +
               // Theme, resolved before the first pixel is painted. A stored
               // choice wins; otherwise the OS preference decides. Doing this
               // in <body> rather than a component is the only way to avoid a
@@ -142,7 +144,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               "document.documentElement.classList.toggle('dark',d);}catch(e){}",
           }}
         />
-        <BrandSplash />
         <a href="#main" className="skip-link">
           Skip to main content
         </a>
@@ -154,7 +155,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             which is what makes a rate change reach the screen without a
             reload. */}
         <CurrencyProvider initial={rate}>
-          <LanguageProvider initialLocale={locale}>
+          <LanguageProvider initialLocale={locale} messages={messagesFor(locale, CHROME_NAMESPACES)}>
             <Header user={user} />
             <main id="main" className="flex-1">
               {children}

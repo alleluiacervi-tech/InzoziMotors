@@ -6,6 +6,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   en: {
     card: {
       previewListing: 'Preview listing',
+      scoreOf: 'of 150 points',
       priceDrop: 'Price drop',
       new: 'New',
       highDemand: 'High demand',
@@ -24,6 +25,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'The marketplace',
       introDescription: 'Every car inspected on the same 150 points. Buyers never pay a fee.',
+      searchLabel: 'Search cars for sale',
+      searchButton: 'Search',
       refineEyebrow: 'Find your fit',
       refineTitle: 'Refine the collection',
       resultsTitle: 'Search results',
@@ -42,7 +45,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Cars matching “{{q}}” in Kigali',
       subjectCars: '{{phrase}} cars',
       certifiedCars: 'Certified cars',
-      metaTitleFiltered: '{{heading}} in Kigali, Rwanda',
+      metaTitleFiltered: '{{heading}}, Rwanda',
       metaTitleDefault: 'Cars for sale in Kigali, Rwanda',
       metaDescription:
         '{{description}} reviewed for publication on Sawa Cars in Kigali. View listing evidence and contact verified sellers directly.',
@@ -153,6 +156,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       breadcrumbCars: 'Cars',
       priceReduced: 'Price reduced',
       newListing: 'New listing',
+      scoreChip: 'Inspection score',
+      seeReport: 'See the full report',
       purchaseOverview: 'Purchase overview',
       monthlyFinance: '~{{amount}}/mo estimated finance',
       reducedBy: 'Reduced by {{amount}} since it was listed',
@@ -215,6 +220,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Similar cars',
       similarTitle: 'More {{make}} on Sawa Cars',
       seeAllMake: 'See all {{make}}',
+      contactSeller: 'Contact seller',
+      connecting: 'Connecting…',
       requestThisCar: 'Request this car',
     },
     report: {
@@ -265,6 +272,11 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       previous: 'Previous photo',
       next: 'Next photo',
       choosePhoto: 'Choose a photo',
+      viewAll: 'All {{count}} photos',
+      viewerLabel: '{{title}} photos, full screen',
+      close: 'Close photos',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
       showPhoto: 'Show photo {{index}} of {{count}}',
     },
     sparkline: {
@@ -279,6 +291,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   rw: {
     card: {
       previewListing: 'Itangazo ry’igerageza',
+      scoreOf: 'ku manota 150',
       priceDrop: 'Igabanuka ry’igiciro',
       new: 'Nshya',
       highDemand: 'Ikenewe cyane',
@@ -297,6 +310,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'Isoko',
       introDescription: 'Buri modoka isuzumwa ku ngingo 150 zimwe. Abaguzi ntabwo bishyura.',
+      searchLabel: 'Shakisha imodoka zigurishwa',
+      searchButton: 'Shakisha',
       refineEyebrow: 'Shaka ikwiranye nawe',
       refineTitle: 'Nozereza urutonde',
       resultsTitle: 'Ibisubizo by’ishakisha',
@@ -315,7 +330,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Imodoka zihuye na “{{q}}” i Kigali',
       subjectCars: 'imodoka {{phrase}}',
       certifiedCars: 'Imodoka zemewe',
-      metaTitleFiltered: '{{heading}} i Kigali, mu Rwanda',
+      metaTitleFiltered: '{{heading}}, mu Rwanda',
       metaTitleDefault: 'Imodoka zigurishwa i Kigali, mu Rwanda',
       metaDescription:
         '{{description}} zasuzumwe kugira ngo zitangazwe kuri Sawa Cars i Kigali. Reba ibimenyetso by’itangazo kandi uvugane n’abagurisha bemejwe ku buryo butaziguye.',
@@ -426,6 +441,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       breadcrumbCars: 'Imodoka',
       priceReduced: 'Igiciro cyagabanijwe',
       newListing: 'Itangazo rishya',
+      scoreChip: 'Amanota y’isuzuma',
+      seeReport: 'Reba raporo yose',
       purchaseOverview: 'Incamake y’ikigura',
       monthlyFinance: '~{{amount}}/ukwezi ku nguzanyo (mugereka)',
       reducedBy: 'Cyagabanijwe {{amount}} kuva ryatangazwa',
@@ -488,6 +505,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Imodoka zisa',
       similarTitle: 'Izindi {{make}} kuri Sawa Cars',
       seeAllMake: 'Reba {{make}} zose',
+      contactSeller: 'Vugana n’umugurisha',
+      connecting: 'Birimo guhuza…',
       requestThisCar: 'Saba iyi modoka',
     },
     report: {
@@ -538,6 +557,11 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       previous: 'Ifoto ibanza',
       next: 'Ifoto ikurikira',
       choosePhoto: 'Hitamo ifoto',
+      viewAll: 'Amafoto yose {{count}}',
+      viewerLabel: 'Amafoto ya {{title}}, ecran yose',
+      close: 'Funga amafoto',
+      zoomIn: 'Egereza',
+      zoomOut: 'Gabanya',
       showPhoto: 'Erekana ifoto {{index}} kuri {{count}}',
     },
     sparkline: {
@@ -552,6 +576,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   fr: {
     card: {
       previewListing: 'Aperçu de l’annonce',
+      scoreOf: 'sur 150 points',
       priceDrop: 'Baisse de prix',
       new: 'Nouveau',
       highDemand: 'Forte demande',
@@ -570,6 +595,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'Le marché',
       introDescription: 'Chaque voiture inspectée sur les mêmes 150 points. Les acheteurs ne paient jamais de frais.',
+      searchLabel: 'Rechercher des voitures à vendre',
+      searchButton: 'Rechercher',
       refineEyebrow: 'Trouvez ce qu’il vous faut',
       refineTitle: 'Affiner la collection',
       resultsTitle: 'Résultats de recherche',
@@ -588,7 +615,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Voitures correspondant à « {{q}} » à Kigali',
       subjectCars: '{{phrase}}',
       certifiedCars: 'Voitures certifiées',
-      metaTitleFiltered: '{{heading}} à Kigali, Rwanda',
+      metaTitleFiltered: '{{heading}}, Rwanda',
       metaTitleDefault: 'Voitures à vendre à Kigali, Rwanda',
       metaDescription:
         '{{description}} examinées pour publication sur Sawa Cars à Kigali. Consultez les preuves de l’annonce et contactez directement des vendeurs vérifiés.',
@@ -699,6 +726,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       breadcrumbCars: 'Voitures',
       priceReduced: 'Prix réduit',
       newListing: 'Nouvelle annonce',
+      scoreChip: 'Score d’inspection',
+      seeReport: 'Voir le rapport complet',
       purchaseOverview: 'Aperçu de l’achat',
       monthlyFinance: '~{{amount}}/mois de financement estimé',
       reducedBy: 'Réduit de {{amount}} depuis la mise en ligne',
@@ -761,6 +790,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Voitures similaires',
       similarTitle: 'Plus de {{make}} sur Sawa Cars',
       seeAllMake: 'Voir toutes les {{make}}',
+      contactSeller: 'Contacter le vendeur',
+      connecting: 'Connexion…',
       requestThisCar: 'Demander cette voiture',
     },
     report: {
@@ -811,6 +842,11 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       previous: 'Photo précédente',
       next: 'Photo suivante',
       choosePhoto: 'Choisir une photo',
+      viewAll: 'Les {{count}} photos',
+      viewerLabel: 'Photos de {{title}}, plein écran',
+      close: 'Fermer les photos',
+      zoomIn: 'Agrandir',
+      zoomOut: 'Réduire',
       showPhoto: 'Afficher la photo {{index}} sur {{count}}',
     },
     sparkline: {
@@ -825,6 +861,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   sw: {
     card: {
       previewListing: 'Onyesho la tangazo',
+      scoreOf: 'kati ya alama 150',
       priceDrop: 'Bei imeshuka',
       new: 'Mpya',
       highDemand: 'Yahitajika sana',
@@ -843,6 +880,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: 'Soko',
       introDescription: 'Kila gari hukaguliwa kwa pointi 150 zile zile. Wanunuzi hawalipi ada.',
+      searchLabel: 'Tafuta magari yanayouzwa',
+      searchButton: 'Tafuta',
       refineEyebrow: 'Pata inayokufaa',
       refineTitle: 'Boresha mkusanyiko',
       resultsTitle: 'Matokeo ya utafutaji',
@@ -861,7 +900,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: 'Magari yanayolingana na “{{q}}” Kigali',
       subjectCars: 'magari {{phrase}}',
       certifiedCars: 'Magari yaliyothibitishwa',
-      metaTitleFiltered: '{{heading}} Kigali, Rwanda',
+      metaTitleFiltered: '{{heading}}, Rwanda',
       metaTitleDefault: 'Magari yanayouzwa Kigali, Rwanda',
       metaDescription:
         '{{description}} yaliyokaguliwa kwa uchapishaji kwenye Sawa Cars Kigali. Ona ushahidi wa tangazo na wasiliana na wauzaji waliothibitishwa moja kwa moja.',
@@ -972,6 +1011,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       breadcrumbCars: 'Magari',
       priceReduced: 'Bei imepunguzwa',
       newListing: 'Tangazo jipya',
+      scoreChip: 'Alama ya ukaguzi',
+      seeReport: 'Tazama ripoti kamili',
       purchaseOverview: 'Muhtasari wa ununuzi',
       monthlyFinance: '~{{amount}}/mwezi ufadhili kadirio',
       reducedBy: 'Imepunguzwa {{amount}} tangu ilipotangazwa',
@@ -1034,6 +1075,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: 'Magari yanayofanana',
       similarTitle: 'Zaidi ya {{make}} kwenye Sawa Cars',
       seeAllMake: 'Ona {{make}} zote',
+      contactSeller: 'Wasiliana na muuzaji',
+      connecting: 'Inaunganisha…',
       requestThisCar: 'Omba gari hili',
     },
     report: {
@@ -1084,6 +1127,11 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       previous: 'Picha iliyotangulia',
       next: 'Picha ifuatayo',
       choosePhoto: 'Chagua picha',
+      viewAll: 'Picha zote {{count}}',
+      viewerLabel: 'Picha za {{title}}, skrini nzima',
+      close: 'Funga picha',
+      zoomIn: 'Kuza',
+      zoomOut: 'Punguza',
       showPhoto: 'Onyesha picha {{index}} kati ya {{count}}',
     },
     sparkline: {
@@ -1098,6 +1146,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   ko: {
     card: {
       previewListing: '미리보기 매물',
+      scoreOf: '/ 150점',
       priceDrop: '가격 인하',
       new: '신규',
       highDemand: '높은 관심',
@@ -1116,6 +1165,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: '마켓플레이스',
       introDescription: '모든 차량이 동일한 150개 항목으로 검사됩니다. 구매자는 수수료를 내지 않습니다.',
+      searchLabel: '판매 차량 검색',
+      searchButton: '검색',
       refineEyebrow: '나에게 맞는 차 찾기',
       refineTitle: '목록 좁히기',
       resultsTitle: '검색 결과',
@@ -1134,7 +1185,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: '키갈리에서 “{{q}}”에 해당하는 차량',
       subjectCars: '{{phrase}} 차량',
       certifiedCars: '인증 차량',
-      metaTitleFiltered: '{{heading}} — 르완다 키갈리',
+      metaTitleFiltered: '{{heading}} — 르완다',
       metaTitleDefault: '르완다 키갈리 판매 차량',
       metaDescription:
         '{{description}} — 키갈리 Sawa Cars에서 게시를 위해 검토되었습니다. 매물 증빙을 확인하고 인증된 판매자에게 직접 연락하세요.',
@@ -1245,6 +1296,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       breadcrumbCars: '차량',
       priceReduced: '가격 인하',
       newListing: '신규 매물',
+      scoreChip: '검사 점수',
+      seeReport: '전체 보고서 보기',
       purchaseOverview: '구매 개요',
       monthlyFinance: '월 ~{{amount}} 예상 할부',
       reducedBy: '등록 이후 {{amount}} 인하',
@@ -1307,6 +1360,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: '유사 차량',
       similarTitle: 'Sawa Cars의 더 많은 {{make}}',
       seeAllMake: '{{make}} 전체 보기',
+      contactSeller: '판매자에게 연락',
+      connecting: '연결 중…',
       requestThisCar: '이 차량 문의',
     },
     report: {
@@ -1357,6 +1412,11 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       previous: '이전 사진',
       next: '다음 사진',
       choosePhoto: '사진 선택',
+      viewAll: '사진 {{count}}장 모두 보기',
+      viewerLabel: '{{title}} 사진, 전체 화면',
+      close: '사진 닫기',
+      zoomIn: '확대',
+      zoomOut: '축소',
       showPhoto: '{{count}}장 중 {{index}}번째 사진 보기',
     },
     sparkline: {
@@ -1371,6 +1431,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   zh: {
     card: {
       previewListing: '预览信息',
+      scoreOf: '/ 150 分',
       priceDrop: '降价',
       new: '新上架',
       highDemand: '热门车型',
@@ -1389,6 +1450,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
     browse: {
       eyebrow: '市场',
       introDescription: '每辆车都经过相同的150项检测。买家永远无需付费。',
+      searchLabel: '搜索在售车辆',
+      searchButton: '搜索',
       refineEyebrow: '找到适合您的车',
       refineTitle: '细化筛选结果',
       resultsTitle: '搜索结果',
@@ -1407,7 +1470,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       headingKeyword: '基加利符合“{{q}}”的车辆',
       subjectCars: '{{phrase}}车辆',
       certifiedCars: '认证车辆',
-      metaTitleFiltered: '{{heading}} — 卢旺达基加利',
+      metaTitleFiltered: '{{heading}} — 卢旺达',
       metaTitleDefault: '卢旺达基加利在售车辆',
       metaDescription:
         '{{description}} 已在 Sawa Cars 基加利完成发布审核。查看信息证据并直接联系已认证卖家。',
@@ -1518,6 +1581,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       breadcrumbCars: '车辆',
       priceReduced: '已降价',
       newListing: '新上架',
+      scoreChip: '检测得分',
+      seeReport: '查看完整报告',
       purchaseOverview: '购车概览',
       monthlyFinance: '预计月供约{{amount}}',
       reducedBy: '自上架以来降价{{amount}}',
@@ -1580,6 +1645,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       similarEyebrow: '相似车辆',
       similarTitle: 'Sawa Cars 上更多的{{make}}',
       seeAllMake: '查看全部{{make}}',
+      contactSeller: '联系卖家',
+      connecting: '正在连接…',
       requestThisCar: '咨询这辆车',
     },
     report: {
@@ -1630,6 +1697,11 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       previous: '上一张照片',
       next: '下一张照片',
       choosePhoto: '选择照片',
+      viewAll: '全部 {{count}} 张照片',
+      viewerLabel: '{{title}} 照片，全屏',
+      close: '关闭照片',
+      zoomIn: '放大',
+      zoomOut: '缩小',
       showPhoto: '显示第{{index}}张，共{{count}}张',
     },
     sparkline: {

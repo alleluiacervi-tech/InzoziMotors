@@ -14,8 +14,8 @@ import { SCORE_MAX, summariseReport } from './inspection'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GRADE_TONE = {
-  A: { bar: 'bg-success', text: 'text-success' },
-  B: { bar: 'bg-success', text: 'text-success' },
+  A: { bar: 'bg-success', text: 'text-success-text' },
+  B: { bar: 'bg-success', text: 'text-success-text' },
   C: { bar: 'bg-warning', text: 'text-warning-text' },
   D: { bar: 'bg-danger', text: 'text-danger' },
 } as const
@@ -32,7 +32,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-line-soft p-5 sm:p-6">
-        <p className="text-eyebrow font-bold uppercase text-brand">{t('cars.report.eyebrow')}</p>
+        <p className="text-caption font-bold text-brand">{t('cars.report.eyebrow')}</p>
         <h2 className="mt-2 text-title font-extrabold text-content">
           {t('cars.report.title')}
         </h2>
@@ -62,7 +62,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
         </div>
 
         <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-caption font-semibold">
-          <span className="inline-flex items-center gap-1.5 text-success">
+          <span className="inline-flex items-center gap-1.5 text-success-text">
             <Icon name="check-circle" size={14} />
             {t('cars.report.passed', { count: summary.pass })}
           </span>
@@ -100,7 +100,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
               </div>
 
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro font-semibold">
-                <span className="text-success">{t('cars.report.passed', { count: category.pass })}</span>
+                <span className="text-success-text">{t('cars.report.passed', { count: category.pass })}</span>
                 {category.flag ? (
                   <span className="text-warning-text">{t('cars.report.flagged', { count: category.flag })}</span>
                 ) : null}
@@ -136,7 +136,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
 
       {report.notes ? (
         <div className="border-t border-line-soft bg-surface-alt px-5 py-4 sm:px-6">
-          <p className="text-micro font-bold uppercase tracking-wide text-content-muted">
+          <p className="text-micro font-bold text-content-muted">
             {t('cars.report.notesTitle')}
           </p>
           <p className="mt-1.5 whitespace-pre-line text-caption leading-relaxed text-content-secondary">

@@ -41,7 +41,7 @@ export default async function ImportOrderPage({ params }: { params: Promise<{ id
         <Card className="p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-caption font-extrabold uppercase tracking-widest text-brand">{t('dashboard.imports.currentMilestone')}</p>
+              <p className="text-caption font-extraboldst text-brand">{t('dashboard.imports.currentMilestone')}</p>
               <h2 className="mt-2 text-2xl font-black text-content">{statusLabel(order.status)}</h2>
             </div>
             <Badge tone="info">{order.order_ref}</Badge>
@@ -78,7 +78,7 @@ export default async function ImportOrderPage({ params }: { params: Promise<{ id
                   docs/IMPORTS-AUDIT.md, P0. */}
               {awaitingProof && p.payment_instructions ? (
                 <div className="mt-3 rounded-xl border border-brand/25 bg-brand-tint p-4">
-                  <p className="text-caption font-extrabold uppercase tracking-wide text-brand">{t('dashboard.imports.payNow')}</p>
+                  <p className="text-caption font-extrabold text-brand">{t('dashboard.imports.payNow')}</p>
                   <dl className="mt-2 space-y-1.5 text-label">
                     <div className="flex justify-between gap-3"><dt className="text-content-muted">{t('dashboard.imports.bankName')}</dt><dd className="font-bold text-content">{p.payment_instructions.name}</dd></div>
                     {p.payment_instructions.account_name && p.payment_instructions.account_number ? <>

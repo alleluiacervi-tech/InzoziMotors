@@ -11,7 +11,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     eyebrow: 'Rentals',
     title: 'Rent a certified car in Kigali',
     introDescription:
-      'The same 150-point standard as the cars we sell. Deposits back in full after the return check.',
+      'The same 150-point standard as every car listed for sale. Dates, deposit, pickup and return are agreed with the provider directly.',
     list: { resultsTitle: 'Available rentals' },
     filter: {
       ariaLabel: 'Filter the fleet',
@@ -21,6 +21,9 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     safariExplainer:
       'Safari-ready means four-wheel drive with the ground clearance and tyres for park roads — Akagera, Nyungwe and Volcanoes.',
     emptyMatchTitle: 'Nothing in the fleet matches that',
+    emptyNoneTitle: 'No rental cars are listed right now',
+    emptyNoneDesc: 'Rental cars appear here once a verified provider’s car passes inspection. Browse cars for sale in the meantime.',
+    browseSale: 'Browse cars for sale',
     emptyUnreachableTitle: 'The fleet is briefly unreachable',
     emptyMatchDesc: 'Try the full fleet — availability changes as cars come back from trips.',
     emptyUnreachableDesc: 'The cars are still there. Check back in a moment, or ask us at a center.',
@@ -128,7 +131,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     eyebrow: 'Izikodeshwa',
     title: 'Kodesha imodoka yemewe i Kigali',
     introDescription:
-      'Ipimo rimwe ry’ingingo 150 nk’iry’imodoka tugurisha. Ingwate igarurwa yose nyuma y’isuzuma ryo kugarura.',
+      'Ipimo rimwe ry’ingingo 150 nk’iry’imodoka zose zigurishwa. Amatariki, ingwate, kuyifata no kuyigarura mubyumvikanaho n’umukodesha ubwanyu.',
     list: { resultsTitle: 'Imodoka zikodeshwa ziboneka' },
     filter: {
       ariaLabel: 'Yungurura ububiko',
@@ -138,6 +141,9 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     safariExplainer:
       'Kubereye safari bivuga imodoka ya 4x4 ifite ubugari bwo hasi na pine bikwiye imihanda ya parike — Akagera, Nyungwe na Birunga.',
     emptyMatchTitle: 'Nta na kimwe mu bubiko kihuye n’ibyo',
+    emptyNoneTitle: 'Nta modoka zikodeshwa ziri ku rutonde ubu',
+    emptyNoneDesc: 'Imodoka zikodeshwa zigaragara hano iyo imodoka y’umukodesha wemewe itsinze isuzuma. Hagati aho reba imodoka zigurishwa.',
+    browseSale: 'Reba imodoka zigurishwa',
     emptyUnreachableTitle: 'Ububiko ntibugerwaho by’agateganyo',
     emptyMatchDesc: 'Gerageza ububiko bwose — ukuboneka guhinduka uko imodoka zigaruka mu ngendo.',
     emptyUnreachableDesc: 'Imodoka ziracyahari. Ongera ugaruke nyuma y’akanya, cyangwa utubaze mu kigo.',
@@ -245,7 +251,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     eyebrow: 'Locations',
     title: 'Louez une voiture certifiée à Kigali',
     introDescription:
-      'Le même standard en 150 points que les voitures que nous vendons. Cautions intégralement restituées après le contrôle de retour.',
+      'Le même standard en 150 points que chaque voiture mise en vente. Dates, caution, prise en charge et retour se conviennent directement avec le loueur.',
     list: { resultsTitle: 'Locations disponibles' },
     filter: {
       ariaLabel: 'Filtrer la flotte',
@@ -255,6 +261,9 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     safariExplainer:
       'Prête pour safari signifie une transmission intégrale avec la garde au sol et les pneus adaptés aux routes des parcs — Akagera, Nyungwe et Volcans.',
     emptyMatchTitle: 'Rien dans la flotte ne correspond',
+    emptyNoneTitle: 'Aucune voiture de location n’est publiée pour l’instant',
+    emptyNoneDesc: 'Les voitures de location apparaissent ici dès qu’une voiture d’un loueur vérifié réussit l’inspection. En attendant, voyez les voitures à vendre.',
+    browseSale: 'Voir les voitures à vendre',
     emptyUnreachableTitle: 'La flotte est momentanément inaccessible',
     emptyMatchDesc: 'Essayez la flotte complète — la disponibilité change à mesure que les voitures reviennent de voyage.',
     emptyUnreachableDesc: 'Les voitures sont toujours là. Revenez dans un instant, ou demandez-nous dans un centre.',
@@ -362,7 +371,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     eyebrow: 'Za kukodisha',
     title: 'Kodisha gari lililothibitishwa Kigali',
     introDescription:
-      'Kiwango kile kile cha pointi 150 kama magari tunayouza. Amana hurudishwa kikamilifu baada ya ukaguzi wa kurudisha.',
+      'Kiwango kile kile cha pointi 150 kama kila gari linalouzwa. Tarehe, amana, kuchukua na kurudisha mnakubaliana na mkodishaji moja kwa moja.',
     list: { resultsTitle: 'Magari ya kukodisha yanayopatikana' },
     filter: {
       ariaLabel: 'Chuja kundi la magari',
@@ -372,6 +381,9 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     safariExplainer:
       'Tayari kwa safari maana yake ni gari la magurudumu manne yenye mwinuko wa chini na matairi yanayofaa barabara za mbuga — Akagera, Nyungwe na Volcanoes.',
     emptyMatchTitle: 'Hakuna kwenye kundi kinacholingana na hicho',
+    emptyNoneTitle: 'Hakuna magari ya kukodi yaliyoorodheshwa sasa hivi',
+    emptyNoneDesc: 'Magari ya kukodi huonekana hapa gari la mkodishaji aliyethibitishwa likipita ukaguzi. Kwa sasa angalia magari yanayouzwa.',
+    browseSale: 'Angalia magari yanayouzwa',
     emptyUnreachableTitle: 'Kundi la magari halifikiki kwa muda mfupi',
     emptyMatchDesc: 'Jaribu kundi kamili — upatikanaji hubadilika magari yanaporudi kutoka safari.',
     emptyUnreachableDesc: 'Magari bado yapo. Rudi baada ya muda, au tuulize katika kituo.',
@@ -479,7 +491,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     eyebrow: '렌트',
     title: '키갈리에서 인증 차량을 렌트하세요',
     introDescription:
-      '판매 차량과 동일한 150개 항목 기준입니다. 반납 점검 후 보증금은 전액 환불됩니다.',
+      '판매 매물과 동일한 150개 항목 기준입니다. 날짜, 보증금, 인수와 반납은 업체와 직접 합의합니다.',
     list: { resultsTitle: '이용 가능한 렌트' },
     filter: {
       ariaLabel: '차량 목록 필터',
@@ -489,6 +501,9 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     safariExplainer:
       '사파리 대응이란 공원 도로 — 아카게라, 뉴웅궤, 볼케이노 — 에 맞는 지상고와 타이어를 갖춘 사륜구동을 뜻합니다.',
     emptyMatchTitle: '해당하는 차량이 목록에 없습니다',
+    emptyNoneTitle: '현재 등록된 렌터카가 없습니다',
+    emptyNoneDesc: '검증된 업체의 차량이 검사를 통과하면 여기에 표시됩니다. 그동안 판매 차량을 둘러보세요.',
+    browseSale: '판매 차량 보기',
     emptyUnreachableTitle: '차량 목록에 잠시 연결할 수 없습니다',
     emptyMatchDesc: '전체 목록을 확인해 보세요 — 차량이 여행에서 돌아오면서 가용 상황이 바뀝니다.',
     emptyUnreachableDesc: '차량은 그대로 있습니다. 잠시 후 다시 확인하거나 센터로 문의하세요.',
@@ -596,7 +611,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     eyebrow: '租赁',
     title: '在基加利租一辆认证车辆',
     introDescription:
-      '与我们出售的车辆采用同样的150项标准。归还检查后押金全额退还。',
+      '与所有在售车辆采用同样的150项标准。日期、押金、取车和还车均与租赁商直接商定。',
     list: { resultsTitle: '可租车辆' },
     filter: {
       ariaLabel: '筛选车队',
@@ -606,6 +621,9 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     safariExplainer:
       '“适合越野”是指配备适合公园道路——阿卡盖拉、纽恩威及火山国家公园——离地间隙及轮胎的四驱车。',
     emptyMatchTitle: '车队中没有符合条件的车辆',
+    emptyNoneTitle: '目前没有上架的租赁车辆',
+    emptyNoneDesc: '认证租赁商的车辆通过检测后将显示在这里。您可以先浏览在售车辆。',
+    browseSale: '浏览在售车辆',
     emptyUnreachableTitle: '车队信息暂时无法访问',
     emptyMatchDesc: '试试浏览整个车队——车辆返回后可用情况会随之变化。',
     emptyUnreachableDesc: '车辆仍然都在。请稍后再来查看，或到中心咨询我们。',

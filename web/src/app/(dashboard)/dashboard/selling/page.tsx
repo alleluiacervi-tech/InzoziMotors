@@ -241,13 +241,13 @@ export default async function SellingPage() {
 
                       <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-line-soft pt-4">
                         <div>
-                          <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">
+                          <dt className="text-micro font-bold text-content-muted">
                             Views
                           </dt>
                           <dd className="text-title-sm font-extrabold text-content">{car.views}</dd>
                         </div>
                         <div>
-                          <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">
+                          <dt className="text-micro font-bold text-content-muted">
                             Saves
                           </dt>
                           <dd className="text-title-sm font-extrabold text-content">
@@ -256,7 +256,7 @@ export default async function SellingPage() {
                         </div>
                         {car.listed_at ? (
                           <div>
-                            <dt className="text-micro font-bold uppercase tracking-wide text-content-muted">
+                            <dt className="text-micro font-bold text-content-muted">
                               Listed
                             </dt>
                             <dd className="text-title-sm font-extrabold text-content">

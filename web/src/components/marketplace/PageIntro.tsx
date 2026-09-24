@@ -1,47 +1,69 @@
 import type { ReactNode } from 'react'
-import { Container, Eyebrow, Icon } from '@/components/ui'
+import { Container, Icon } from '@/components/ui'
 import { getServerT } from '@/lib/i18n/server'
 
 /**
- * The workspace opening — one of exactly two sanctioned page openings on the
- * site (the other is marketing/PageHeader's white display band). Used by
- * /cars, /rentals and the dashboard: page-tone, compact, with an optional
- * right-aligned slot for a count or sort control.
+ * The workspace opening for /cars and /rentals: the site's own paper, compact,
+ * with an optional search row under the title and an optional aside.
+ *
+ * It used to be a dark ink band with a red glow, ~330px tall on a phone, so a
+ * buyer scrolled past a banner before seeing a car — and it contradicted the
+ * homepage, whose hero was moved off ink precisely because a dark slab "reads
+ * as a different website" (home/Hero.tsx). Now it is one surface with the
+ * header and the grid, and on a phone the title, one line of context and the
+ * search field fit in about 200px.
  *
  * Rendered SERVER-SIDE and outside any Suspense boundary on the marketplace
  * pages, so crawlers and no-JS visitors always get the h1 even when the data
  * behind the grid is unreachable.
  */
 export async function PageIntro({
-  eyebrow,
   title,
   description,
+  search,
   aside,
 }: {
+  /** Kept for call-site compatibility; the opening no longer prints one. */
   eyebrow?: string
   title: string
   description?: string
+  /** A search form, set full-width under the title (see BrowseSearch). */
+  search?: ReactNode
   aside?: ReactNode
 }) {
   const t = await getServerT()
   return (
-    <div className="relative isolate overflow-hidden bg-ink-900 py-10 text-white sm:py-14">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_12%,rgba(204,5,15,0.24),transparent_34%),radial-gradient(circle_at_8%_92%,rgba(255,255,255,0.08),transparent_27%)]" />
-      <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-      <Container className="flex flex-wrap items-end justify-between gap-8">
-        <div className="max-w-3xl">
-          {eyebrow ? <Eyebrow tone="invert">{eyebrow}</Eyebrow> : null}
-          <h1 className="text-display font-extrabold text-white">{title}</h1>
-          {description ? (
-            <p className="mt-4 max-w-2xl text-title-sm leading-relaxed text-white/70">{description}</p>
-          ) : null}
-          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-caption font-semibold text-white/70">
-            <span className="inline-flex items-center gap-1.5"><Icon name="shield-check" size={15} className="text-white" />{t('cars.pageIntro.inspection')}</span>
-            <span className="inline-flex items-center gap-1.5"><Icon name="check-circle" size={15} className="text-white" />{t('cars.pageIntro.approved')}</span>
-            <span className="inline-flex items-center gap-1.5"><Icon name="user" size={15} className="text-white" />{t('cars.pageIntro.contact')}</span>
+    <div className="border-b border-line-soft bg-surface-page">
+      <Container className="pb-6 pt-6 sm:pb-8 sm:pt-10">
+        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+          <div className="min-w-0 max-w-3xl">
+            <h1 className="text-headline font-extrabold text-content sm:text-display">{title}</h1>
+            {description ? (
+              <p className="mt-2 max-w-2xl text-body leading-relaxed text-content-secondary sm:mt-3 sm:text-title-sm">
+                {description}
+              </p>
+            ) : null}
+            {/* The marketplace's terms in three phrases. Hidden on a phone,
+                where each card and the listing page carry them and the space
+                belongs to the cars. */}
+            <ul className="mt-4 hidden flex-wrap gap-x-6 gap-y-2 text-caption font-semibold text-content-secondary sm:flex">
+              <li className="inline-flex items-center gap-1.5">
+                <Icon name="shield-check" size={15} className="text-content-muted" aria-hidden="true" />
+                {t('cars.pageIntro.inspection')}
+              </li>
+              <li className="inline-flex items-center gap-1.5">
+                <Icon name="check-circle" size={15} className="text-content-muted" aria-hidden="true" />
+                {t('cars.pageIntro.approved')}
+              </li>
+              <li className="inline-flex items-center gap-1.5">
+                <Icon name="user" size={15} className="text-content-muted" aria-hidden="true" />
+                {t('cars.pageIntro.contact')}
+              </li>
+            </ul>
           </div>
+          {aside ? <div className="shrink-0">{aside}</div> : null}
         </div>
-        {aside ? <div className="shrink-0">{aside}</div> : null}
+        {search ? <div className="mt-5 sm:mt-6">{search}</div> : null}
       </Container>
     </div>
   )

@@ -163,6 +163,9 @@ export interface InspectionReport {
   notes?: string | null
   completed_at?: string | null
   center?: string
+  /** Critical items that failed. The report endpoint only answers for a
+   *  passed inspection, so this is empty whenever it is present. */
+  critical_failures?: Array<{ id: string; label: string; category?: string }>
 }
 
 export interface InspectionCenter {
