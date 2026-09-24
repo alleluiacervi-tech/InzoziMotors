@@ -1,12 +1,15 @@
 'use client'
 
+import { ExportLink } from '@/components/ExportLink'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill } from '@/components/ui'
 import ListingCap from '@/components/ListingCap'
 import { useConfirm, useToast } from '@/components/feedback'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useFocusRow } from '@/components/useFocusRow'
+import { fmtDate } from '@/lib/format'
+import { RowMenu } from '@/components/RowMenu'
 
 type UserRow = {
   id: string
@@ -76,6 +79,7 @@ export default function UsersPage() {
   // The Action Center links straight to the identity queue with the person it
   // named, so the tab is part of the destination, not a thing to find again.
   const { focusProps } = useFocusRow()
+  const router = useRouter()
   const requestedTab = useSearchParams().get('tab')
   const [tab, setTab] = useState<'directory' | 'verification'>(
     requestedTab === 'verification' ? 'verification' : 'directory'
@@ -310,6 +314,7 @@ export default function UsersPage() {
       <PageHeader
         title="Users & identity"
         description="Find accounts, understand trust at a glance, and review seller identity documents."
+        action={<ExportLink dataset="users" />}
       />
 
       <div className="mb-5 flex justify-end">
@@ -567,8 +572,36 @@ export default function UsersPage() {
                   <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>
                   <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2"><Pill status={u.account_status === 'suspended' ? 'rejected' : 'approved'} label={u.account_status === 'suspended' ? 'suspended' : 'active'} />
-                    {u.role !== 'admin' ? <div className="flex flex-wrap gap-2"><button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button><button type="button" onClick={() => resetPassword(u)} disabled={actionId === `reset-${u.id}`} className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `reset-${u.id}` ? 'Sending…' : 'Reset password'}</button>{u.id_verified === 'approved' ? <button type="button" onClick={() => revokeIdentity(u)} disabled={actionId === `revoke-${u.id}`} className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">{actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID'}</button> : <button type="button" onClick={() => setVerifying({ user: u, method: OFFLINE_METHODS[0].value, note: '', reference: '' })} className="rounded-lg border border-success px-2.5 py-1.5 text-caption font-bold text-success-text hover:bg-success-tint">Verify identity</button>}<button type="button" onClick={() => changeAccess(u)} disabled={actionId === `access-${u.id}`} className={`rounded-lg px-2.5 py-1.5 text-caption font-bold disabled:opacity-50 ${u.account_status === 'suspended' ? 'bg-brand text-brand-on hover:bg-brand-bright' : 'border border-danger-border bg-danger-tint text-danger-strong hover:opacity-80'}`}>{actionId === `access-${u.id}` ? 'Updating…' : u.account_status === 'suspended' ? 'Restore' : 'Suspend'}</button></div> : <span className="text-caption text-content-muted">Protected</span>}</div></td>
-                  <td className="px-5 py-4 text-label text-content-muted">{new Date(u.created_at).toLocaleDateString()}</td>
+                    {u.role !== 'admin' ? (
+                      <div className="flex items-center gap-2">
+                        {/* One primary action on the row; the rest, and the
+                            destructive one last, behind the menu. */}
+                        {u.id_verified === 'pending' ? (
+                          <button type="button" onClick={() => { setTab('verification'); router.replace(`/users?tab=verification&focus=${u.id}`) }}
+                            className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt">Review ID documents</button>
+                        ) : (
+                          <button type="button" onClick={() => editUser(u)} disabled={actionId === `edit-${u.id}`}
+                            className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">{actionId === `edit-${u.id}` ? 'Saving…' : 'Edit'}</button>
+                        )}
+                        <RowMenu label={`More actions for ${u.business_name || u.name}`} items={[
+                          ...(u.id_verified === 'pending' ? [{ label: 'Edit account', onSelect: () => editUser(u) }] : []),
+                          { label: actionId === `reset-${u.id}` ? 'Sending…' : 'Send a password reset', onSelect: () => resetPassword(u), disabled: actionId === `reset-${u.id}` },
+                          // Verifying in person is for sellers who came to an office without
+                          // uploading documents; a buyer never needs it, and someone with
+                          // documents waiting is reviewed from the queue instead.
+                          ...(u.role === 'seller' && u.id_verified !== 'approved' && u.id_verified !== 'pending'
+                            ? [{ label: 'Record an in-person ID check', hint: 'Documents seen at an office', onSelect: () => setVerifying({ user: u, method: OFFLINE_METHODS[0].value, note: '', reference: '' }) }]
+                            : []),
+                          ...(u.id_verified === 'approved'
+                            ? [{ label: actionId === `revoke-${u.id}` ? 'Revoking…' : 'Revoke ID verification', hint: 'Unpublishes their listings', destructive: true, onSelect: () => revokeIdentity(u), disabled: actionId === `revoke-${u.id}` }]
+                            : []),
+                          u.account_status === 'suspended'
+                            ? { label: actionId === `access-${u.id}` ? 'Updating…' : 'Restore access', onSelect: () => changeAccess(u), disabled: actionId === `access-${u.id}` }
+                            : { label: actionId === `access-${u.id}` ? 'Updating…' : 'Suspend account', hint: 'Signs them out on their next request', destructive: true, onSelect: () => changeAccess(u), disabled: actionId === `access-${u.id}` },
+                        ]} />
+                      </div>
+                    ) : <span className="text-caption text-content-muted">Protected</span>}</div></td>
+                  <td className="px-5 py-4 text-label text-content-muted">{fmtDate(u.created_at)}</td>
                 </tr>)}
               </tbody>
             </table>
@@ -584,7 +617,7 @@ export default function UsersPage() {
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2"><span className="font-semibold text-content">{u.name}</span><Pill status="pending" label="Pending verification" /></div>
                   <p className="text-label text-content-muted">{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>
-                  <p className="mt-1 text-caption text-content-muted">Submitted {new Date(u.id_submitted_at || u.created_at).toLocaleDateString()}</p>
+                  <p className="mt-1 text-caption text-content-muted">Submitted {fmtDate(u.id_submitted_at || u.created_at)}</p>
                   <div className="mt-3 flex flex-wrap gap-3">
                     {[['ID front', u.id_front_url], ['ID back', u.id_back_url], ['Selfie', u.selfie_url]].map(([label, url]) => url ?
                       <a key={label} href={url} target="_blank" rel="noreferrer" className="text-caption font-bold text-brand underline hover:text-brand-bright">{label}</a> : null)}

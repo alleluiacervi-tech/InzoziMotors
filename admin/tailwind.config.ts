@@ -127,6 +127,22 @@ const config: Config = {
           800: 'rgb(var(--blue-800) / <alpha-value>)',
           900: 'rgb(var(--blue-900) / <alpha-value>)',
         },
+        // Chart series (see globals.css). Never red; assigned in order.
+        data: {
+          1: 'rgb(var(--data-1) / <alpha-value>)',
+          2: 'rgb(var(--data-2) / <alpha-value>)',
+          3: 'rgb(var(--data-3) / <alpha-value>)',
+          4: 'rgb(var(--data-4) / <alpha-value>)',
+          5: 'rgb(var(--data-5) / <alpha-value>)',
+          prev: 'rgb(var(--data-prev) / <alpha-value>)',
+        },
+        ramp: {
+          1: 'rgb(var(--ramp-1) / <alpha-value>)',
+          2: 'rgb(var(--ramp-2) / <alpha-value>)',
+          3: 'rgb(var(--ramp-3) / <alpha-value>)',
+          4: 'rgb(var(--ramp-4) / <alpha-value>)',
+          5: 'rgb(var(--ramp-5) / <alpha-value>)',
+        },
         // Aliases for the two names the console also reaches for.
         emerald: {
           50:  'rgb(var(--green-50) / <alpha-value>)',

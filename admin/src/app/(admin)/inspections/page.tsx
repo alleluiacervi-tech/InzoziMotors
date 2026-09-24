@@ -1,5 +1,6 @@
 'use client'
 
+import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api, type CenterRow } from '@/lib/api'
@@ -153,10 +154,13 @@ export default function InspectionsPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-gray-900">Inspections</h1>
+        <div className="flex flex-wrap items-center gap-2">
+        <ExportLink dataset="inspections" />
         <button type="button" onClick={() => setWalkInOpen((open) => !open)}
           className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on hover:bg-brand-bright">
           {walkInOpen ? 'Close form' : 'Book a walk-in inspection'}
         </button>
+        </div>
       </div>
 
       {walkInOpen ? (
@@ -227,8 +231,9 @@ export default function InspectionsPage() {
       {/* Filters */}
       <div className="bg-surface rounded-xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap gap-4 items-end">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Center</label>
+          <label htmlFor="inspections-filter-center" className="block text-xs font-medium text-gray-600 mb-1">Center</label>
           <select
+            id="inspections-filter-center"
             value={center}
             onChange={(e) => setCenter(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
@@ -238,8 +243,9 @@ export default function InspectionsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+          <label htmlFor="inspections-filter-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
           <input
+            id="inspections-filter-date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
@@ -247,8 +253,9 @@ export default function InspectionsPage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+          <label htmlFor="inspections-filter-status" className="block text-xs font-medium text-gray-600 mb-1">Status</label>
           <select
+            id="inspections-filter-status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"

@@ -108,7 +108,9 @@ export function PageHeader({
             </p>
           ) : null}
         </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+        {/* max-w-full lets a row of actions wrap on a phone instead of
+            pushing the page sideways; shrink-0 keeps it whole on a desktop. */}
+        {action ? <div className="max-w-full shrink-0">{action}</div> : null}
       </div>
     </div>
   )
@@ -257,7 +259,7 @@ export function Sparkline({ series, className = '' }: { series: number[]; classN
 // ─── Stat tile ───────────────────────────────────────────────────────────────
 
 export function StatCard({
-  label, value, sub, icon, tone = 'neutral', href, trend,
+  label, value, sub, icon, tone = 'neutral', href, trend, trendLabel,
 }: {
   label: string
   value: string | number
@@ -266,6 +268,9 @@ export function StatCard({
   tone?: 'neutral' | 'brand' | 'success' | 'warning' | 'info'
   href?: string
   trend?: Trend
+  /** What the delta is measured against ("vs a week ago"). A movement with no
+   *  period beside it reads as a contradiction of the number next to it. */
+  trendLabel?: string
 }) {
   const tones = {
     neutral: 'bg-surface-alt text-content-secondary',
@@ -297,6 +302,7 @@ export function StatCard({
             of counts shimmer sideways every time one of them ticks over. */}
         <p className="tnum text-stat font-extrabold leading-none text-content">{value}</p>
         {trend ? <Delta value={trend.delta} goodDirection={trend.goodDirection} /> : null}
+        {trend && trendLabel ? <span className="text-caption text-content-muted">{trendLabel}</span> : null}
       </div>
 
       {trend ? <Sparkline series={trend.series} /> : null}
@@ -521,11 +527,11 @@ export function BarChart({
       {compare ? (
         <div className="mb-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
           <span className="flex items-center gap-1.5 text-micro font-semibold text-content-muted">
-            <span className="h-2.5 w-2.5 rounded-sm bg-content-muted" aria-hidden />
+            <span className="h-2.5 w-2.5 rounded-sm bg-data-1" aria-hidden />
             {seriesLabel}
           </span>
           <span className="flex items-center gap-1.5 text-micro font-semibold text-content-muted">
-            <span className="h-2.5 w-2.5 rounded-sm bg-line-soft ring-1 ring-inset ring-line" aria-hidden />
+            <span className="h-2.5 w-2.5 rounded-sm bg-data-prev" aria-hidden />
             {compareLabel}
           </span>
         </div>
@@ -569,14 +575,13 @@ export function BarChart({
                 <span className="text-micro font-bold tabular-nums text-content-secondary">{formatValue(d.value)}</span>
                 <div className="flex w-full items-end justify-center gap-[3px]">
                   {previous == null ? null : (
-                    <div className="w-2 shrink-0 rounded-t-sm bg-line-soft ring-1 ring-inset ring-line" style={{ height: ghost }} aria-hidden />
+                    <div className="w-2 shrink-0 rounded-t-sm bg-data-prev" style={{ height: ghost }} aria-hidden />
                   )}
                   <div
                     // A bar is a graphic, so 3:1 against the surface is the floor.
-                    // gray-300 measured 1.27:1 — present in the DOM, absent to the
-                    // eye. Solid content-muted is 4.90:1 and still reads as clearly
-                    // secondary next to the ink-800 maximum at 15.5:1.
-                    className={`w-full max-w-[36px] rounded-t-md ${d.value === max ? 'bg-ink-800' : 'bg-content-muted'}`}
+                    // The single-series data colour (--data-1) clears it in both
+                    // themes; never Signal Red, which means "act" in this console.
+                    className="w-full max-w-[36px] rounded-t-[4px] bg-data-1"
                     style={{ height: h }}
                   />
                 </div>

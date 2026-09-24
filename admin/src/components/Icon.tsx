@@ -2,6 +2,10 @@ import type { ReactElement, SVGProps } from 'react'
 
 // A small hand-rolled icon set rather than a dependency.
 //
+// Glyphs after 'moon' in IconName are Lucide paths (ISC licence, © Lucide
+// Contributors; Feather portions © Cole Bemis, MIT —
+// https://lucide.dev), transcribed at the same 24px grid and 1.75 stroke.
+//
 // The app uses Ionicons; these are the ~30 glyphs the website actually needs,
 // drawn on the same 24px grid with the same 1.75 stroke weight so the two
 // products feel drawn by the same hand. Shipping ~4KB of inline SVG beats
@@ -20,6 +24,14 @@ export type IconName =
   | 'sparkles' | 'trending-down' | 'trending-up' | 'lock' | 'apple' | 'play-store'
   | 'alert' | 'info' | 'plus' | 'minus' | 'external'
   | 'sun' | 'moon'
+  // Console objects and actions, drawn from Lucide (ISC licence) on the same
+  // grid and stroke, so every nav row names the page it opens.
+  | 'list-checks' | 'kanban' | 'ship' | 'images' | 'clipboard-check'
+  | 'calendar-clock' | 'flag' | 'history' | 'megaphone' | 'tag' | 'user-x'
+  | 'id-card' | 'file-search' | 'chart-line' | 'receipt' | 'building' | 'users'
+  | 'download' | 'upload' | 'sliders' | 'timer' | 'layout-dashboard'
+  | 'file-spreadsheet' | 'warehouse' | 'badge-check' | 'more' | 'arrow-up-down'
+  | 'arrow-up' | 'arrow-down' | 'table' | 'funnel' | 'inbox' | 'link'
 
 // React 19 removed the global JSX namespace — ReactElement is the supported type.
 const PATHS: Record<IconName, ReactElement> = {
@@ -217,6 +229,153 @@ const PATHS: Record<IconName, ReactElement> = {
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   external: <path d="M14 4h6v6M20 4l-8 8M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4" />,
+  'list-checks': <path d="M3 17l2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8" />,
+  kanban: <path d="M6 5v11M12 5v6M18 5v14" />,
+  ship: (
+    <>
+      <path d="M12 10.2V14M12 2v3M19 13V7a2 2 0 00-2-2H7a2 2 0 00-2 2v6" />
+      <path d="M19.38 20A11.6 11.6 0 0021 14l-8.19-3.64a2 2 0 00-1.62 0L3 14a11.6 11.6 0 002.81 7.76" />
+      <path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+    </>
+  ),
+  images: (
+    <>
+      <path d="M18 22H4a2 2 0 01-2-2V6" />
+      <path d="M22 13l-1.3-1.3a2.41 2.41 0 00-3.4 0L11 18" />
+      <circle cx="12" cy="8" r="2" />
+      <rect width="16" height="16" x="6" y="2" rx="2" />
+    </>
+  ),
+  'clipboard-check': (
+    <>
+      <rect width="8" height="4" x="8" y="2" rx="1" />
+      <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+      <path d="M9 14l2 2 4-4" />
+    </>
+  ),
+  'calendar-clock': (
+    <>
+      <path d="M21 7.5V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h3.5M16 2v4M8 2v4M3 10h5" />
+      <path d="M17.5 17.5L16 16.3V14" />
+      <circle cx="16" cy="16" r="6" />
+    </>
+  ),
+  flag: <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7" />,
+  history: (
+    <>
+      <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
+      <path d="M3 3v5h5M12 7v5l4 2" />
+    </>
+  ),
+  megaphone: <path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 11-5.8-1.6" />,
+  tag: (
+    <>
+      <path d="M12.59 2.59A2 2 0 0011.17 2H4a2 2 0 00-2 2v7.17a2 2 0 00.59 1.42l8.7 8.7a2.43 2.43 0 003.42 0l6.58-6.58a2.43 2.43 0 000-3.42z" />
+      <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+    </>
+  ),
+  'user-x': (
+    <>
+      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M17 8l5 5M22 8l-5 5" />
+    </>
+  ),
+  'id-card': (
+    <>
+      <path d="M16 10h2M16 14h2M6.17 15a3 3 0 015.66 0" />
+      <circle cx="9" cy="11" r="2" />
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+    </>
+  ),
+  'file-search': (
+    <>
+      <path d="M14 2v4a2 2 0 002 2h4" />
+      <path d="M4.27 21a2 2 0 001.73 1H18a2 2 0 002-2V7l-5-5H6a2 2 0 00-2 2v3" />
+      <path d="M9 18l-1.5-1.5" />
+      <circle cx="5" cy="14" r="3" />
+    </>
+  ),
+  'chart-line': <path d="M3 3v16a2 2 0 002 2h16M19 9l-5 5-4-4-3 3" />,
+  receipt: (
+    <>
+      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z" />
+      <path d="M16 8h-6a2 2 0 100 4h4a2 2 0 110 4H8M12 17.5v-11" />
+    </>
+  ),
+  building: (
+    <>
+      <rect width="16" height="20" x="4" y="2" rx="2" />
+      <path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01" />
+    </>
+  ),
+  users: (
+    <>
+      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+    </>
+  ),
+  download: <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />,
+  upload: <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />,
+  sliders: <path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4" />,
+  timer: (
+    <>
+      <path d="M10 2h4M12 14l3-3" />
+      <circle cx="12" cy="14" r="8" />
+    </>
+  ),
+  'layout-dashboard': (
+    <>
+      <rect width="7" height="9" x="3" y="3" rx="1" />
+      <rect width="7" height="5" x="14" y="3" rx="1" />
+      <rect width="7" height="9" x="14" y="12" rx="1" />
+      <rect width="7" height="5" x="3" y="16" rx="1" />
+    </>
+  ),
+  'file-spreadsheet': (
+    <>
+      <path d="M15 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7z" />
+      <path d="M14 2v4a2 2 0 002 2h4M8 13h2M14 13h2M8 17h2M14 17h2" />
+    </>
+  ),
+  warehouse: (
+    <>
+      <path d="M22 8.35V20a2 2 0 01-2 2H4a2 2 0 01-2-2V8.35A2 2 0 013.26 6.5l8-3.2a2 2 0 011.48 0l8 3.2A2 2 0 0122 8.35z" />
+      <path d="M6 18h12M6 14h12" />
+      <rect width="12" height="12" x="6" y="10" />
+    </>
+  ),
+  'badge-check': (
+    <>
+      <path d="M3.85 8.62a4 4 0 014.78-4.77 4 4 0 016.74 0 4 4 0 014.78 4.78 4 4 0 010 6.74 4 4 0 01-4.77 4.78 4 4 0 01-6.75 0 4 4 0 01-4.78-4.77 4 4 0 010-6.76z" />
+      <path d="M9 12l2 2 4-4" />
+    </>
+  ),
+  more: (
+    <>
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+      <circle cx="19" cy="12" r="1" fill="currentColor" />
+      <circle cx="5" cy="12" r="1" fill="currentColor" />
+    </>
+  ),
+  'arrow-up-down': <path d="M21 16l-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16" />,
+  'arrow-up': <path d="M5 12l7-7 7 7M12 19V5" />,
+  'arrow-down': <path d="M12 5v14M19 12l-7 7-7-7" />,
+  table: (
+    <>
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M12 3v18M3 9h18M3 15h18" />
+    </>
+  ),
+  funnel: <path d="M10 20a1 1 0 00.55.9l2 1A1 1 0 0014 21v-7a2 2 0 01.52-1.34L21.74 4.67A1 1 0 0021 3H3a1 1 0 00-.74 1.67l7.22 7.99A2 2 0 0110 14z" />,
+  link: <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />,
+  inbox: (
+    <>
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />
+    </>
+  ),
 }
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

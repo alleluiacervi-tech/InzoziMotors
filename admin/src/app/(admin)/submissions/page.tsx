@@ -1,10 +1,12 @@
 'use client'
 
+import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useMemo, useState } from 'react'
 import { api, type CenterRow } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 import { useFocusRow } from '@/components/useFocusRow'
+import { fmtDate, fmtInt } from '@/lib/format'
 
 const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
@@ -195,7 +197,7 @@ export default function SubmissionsPage() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." />
+        <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." action={<ExportLink dataset="submissions" />} />
         <button type="button" onClick={() => { setIntake(intake ? null : { ...EMPTY_INTAKE }); setSellerQuery(''); setSellerHits([]) }}
           className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on hover:bg-brand-light">
           {intake ? 'Cancel intake' : 'Take in a vehicle'}
@@ -342,8 +344,8 @@ export default function SubmissionsPage() {
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${waiting.overdue ? 'bg-danger-tint text-danger-strong' : 'bg-surface-alt text-content-muted'}`}>{waiting.overdue ? 'Overdue · ' : ''}{waiting.label}</span>
                   </div>
-                  <p className="text-sm text-gray-500">{sub.mileage?.toLocaleString()} km · {sub.condition} · {sub.transmission}</p>
-                  <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {new Date(sub.submitted_at).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500">{fmtInt(sub.mileage)} km · {sub.condition} · {sub.transmission}</p>
+                  <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {fmtDate(sub.submitted_at)}</p>
                   {sub.asking_price && (
                     <p className="text-sm font-medium text-brand mt-1">
                       {fmtMoney(sub.asking_price, sub.currency)}

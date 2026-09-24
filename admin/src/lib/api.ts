@@ -28,12 +28,90 @@ export type ActionCenterItem = {
   href: string
   occurred_at: string | null
   age_hours: number
+  /** The queue's service level in hours, where it has one. */
+  target_hours?: number | null
+  /** occurred_at + target_hours. Null for queues not measured by waiting time. */
+  due_at?: string | null
 }
 
 export type ActionCenterResponse = {
   generated_at: string
   summary: { total: number; urgent: number; attention: number; routine: number }
   items: ActionCenterItem[]
+}
+
+// ─── Insights (GET /admin/insights/*) ────────────────────────────────────────
+// Kigali calendar days; every windowed endpoint echoes the window it used and
+// the previous period of equal length beside it.
+
+export type InsightsRange = { from: string; to: string; days: number; previous: { from: string; to: string } }
+export type RangeQuery = { days?: number; from?: string; to?: string }
+
+export type InsightsKpis = {
+  submissions: number; reviewed: number; review_sla_rate: number | null
+  inspections_completed: number; pass_rate: number | null
+  published: number; marked_sold: number; median_days_to_live: number | null
+  new_buyers: number; new_sellers: number; saves: number; contacts: number
+  rental_inquiries: number; import_enquiries: number; revenue_rwf: number
+}
+export type InsightsDay = {
+  date: string; submissions: number; published: number; contacts: number
+  saves: number; new_users: number; revenue_rwf: number
+}
+export type InsightsOverview = {
+  range: InsightsRange
+  timezone: string
+  kpis: { current: InsightsKpis; previous: InsightsKpis }
+  snapshot: { live_inventory: number; awaiting_review: number; reviews_breached: number; identity_queue: number; open_reports: number }
+  series: { current: InsightsDay[]; previous: InsightsDay[] }
+  contacts_by_channel: { channel: 'whatsapp' | 'phone' | 'in_app'; current: number; previous: number }[]
+  money: { by_line: { key: string; total: number }[]; by_method: { key: string; total: number }[]; by_center: { key: string; total: number }[] }
+}
+export type FunnelStep = {
+  key: string; label: string; count: number
+  of_start: number | null; from_previous: number | null; median_days: number | null
+}
+export type InsightsFunnels = {
+  range: InsightsRange
+  seller: { steps: FunnelStep[]; rejected: number }
+  imports: { steps: FunnelStep[] }
+  buyers: { steps: FunnelStep[] }
+}
+export type Keyed = { key: string; count: number }
+export type InsightsInventory = {
+  range: InsightsRange
+  live_total: number
+  by_make: Keyed[]; by_body: Keyed[]; by_age: Keyed[]
+  by_price: { min: number | null; max: number | null; count: number }[]
+  stale: { id: string; title: string; price: number; views: number; listed_at: string; days_live: number }[]
+  price_drops: number
+  median_days_on_market: number | null
+  sold_asking_value_rwf: number
+}
+export type InsightsQuality = {
+  range: InsightsRange
+  completed: number; pass_rate: number | null; with_critical: number; avg_score: number | null
+  score_max: number; publish_threshold: number
+  distribution: { key: string; label: string; count: number }[]
+  top_issues: { item_id: string; label: string; category: string | null; critical: boolean; fails: number; flags: number }[]
+  inspectors: { inspector_id: string | null; name: string; completed: number; avg_score: number | null; score_spread: number | null; passed: number; pass_rate: number | null }[]
+  submissions_rejected: number
+}
+export type CenterPerformance = {
+  center: string; area: string | null; active: boolean | null
+  completed: number; pass_rate: number | null; avg_score: number | null
+  no_shows: number; upcoming: number; revenue_rwf: number
+  capacity: number | null; utilisation: number | null
+}
+export type InsightsCenters = { range: InsightsRange; working_days: number; centers: CenterPerformance[] }
+
+export type ExportDataset = { key: string; label: string; description: string; windowed_by: string; columns: string[] }
+
+/** ?days=30 or ?from=&to= — the one shape every insights route accepts. */
+export function rangeQuery(r: RangeQuery): string {
+  const q = new URLSearchParams()
+  if (r.from && r.to) { q.set('from', r.from); q.set('to', r.to) } else q.set('days', String(r.days ?? 30))
+  return q.toString()
 }
 
 let apiStatus: ApiStatus = 'unknown'
@@ -408,6 +486,12 @@ export const api = {
     }
   }>('/admin/revenue'),
   actionCenter: () => request<ActionCenterResponse>('/admin/action-center'),
+  insightsOverview: (r: RangeQuery) => request<InsightsOverview>(`/admin/insights?${rangeQuery(r)}`),
+  insightsFunnels: (r: RangeQuery) => request<InsightsFunnels>(`/admin/insights/funnels?${rangeQuery(r)}`),
+  insightsInventory: (r: RangeQuery) => request<InsightsInventory>(`/admin/insights/inventory?${rangeQuery(r)}`),
+  insightsQuality: (r: RangeQuery) => request<InsightsQuality>(`/admin/insights/quality?${rangeQuery(r)}`),
+  insightsCenters: (r: RangeQuery) => request<InsightsCenters>(`/admin/insights/centers?${rangeQuery(r)}`),
+  exportDatasets: () => request<{ datasets: ExportDataset[]; max_rows: number }>('/admin/exports'),
   search: (q: string) => request<{ results: { kind: string; id: string; title: string; detail: string; href: string }[] }>(`/admin/search?q=${encodeURIComponent(q)}`),
   activity: () => request<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>('/admin/activity'),
   auditLog: (params?: { q?: string; type?: string; limit?: number; offset?: number }) => {
@@ -1064,4 +1148,15 @@ export const api = {
     request<any>(`/rentals/inquiries/${id}/status`, {
       method: 'PATCH', body: JSON.stringify({ status }),
     }),
+}
+
+
+// ─── Downloads ───────────────────────────────────────────────────────────────
+// Plain links through the same-origin proxy: the browser streams the file with
+// the backend's Content-Disposition, and the session cookie never leaves the
+// server. Every download is audit-logged by the backend.
+export const downloadUrl = {
+  csv: (dataset: string, r: RangeQuery) => `${BASE}/admin/exports/${encodeURIComponent(dataset)}?${rangeQuery(r)}`,
+  revenueStatement: (month: string) => `${BASE}/admin/statements/revenue?month=${encodeURIComponent(month)}`,
+  businessReport: (r: RangeQuery) => `${BASE}/admin/statements/business?${rangeQuery(r)}`,
 }

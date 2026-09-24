@@ -51,6 +51,23 @@ need `business_verified`, and may hold rental inventory.
 rental inquiries, listings, users/ID checks, imports, reported content, the
 `contact@` mailbox, centers, settings, and an append-only activity log.
 
+**Insights** (`/insights/*` in the admin; `GET /admin/insights`, `/admin/exports`,
+`/admin/statements` in the backend) is the read-only business view. Rules that
+keep every screen agreeing:
+- Windows are **Kigali calendar days** (`backend/src/lib/insights-range.js`),
+  compared with the previous period of equal length. `/admin/revenue` groups
+  by Kigali month for the same reason.
+- **Revenue** = `platform_fees` `status='paid'` by `COALESCE(collected_at,
+  created_at)` + `rental_subscriptions` not voided. Never a vehicle's price.
+- **Funnels are cohorts** (what started in the window, followed to today) and
+  are monotone, so a step can never exceed 100%.
+- **CSV exports never carry** phone numbers, emails, ID documents or messages,
+  and every export or PDF download writes `admin_audit_log`.
+- PDFs (monthly revenue statement, business report) render **on demand**; there
+  is no scheduler, digest or emailed report.
+- Charts never use Signal Red: data series are `--data-1…5` (validated palette
+  in `admin/src/app/globals.css`); red means action or an SLA breach.
+
 **Imports** (`/imports`) is the one money-adjacent flow: Japan/UAE import
 orders with quote → agreement → 50/50 milestones evidenced by **uploaded bank
 transfer proof**. No gateway; an admin reviews the proof.

@@ -279,7 +279,7 @@ export default function EditListingPage() {
           }`}>
             <p className="font-bold mb-0.5">
               {priceChanged
-                ? `Price adjustment: ${car.currency || 'RWF'} ${Number(car.price).toLocaleString()} → ${currency} ${Number(price || 0).toLocaleString()}`
+                ? `Price adjustment: ${car.currency || 'RWF'} ${Number(car.price).toLocaleString('en-GB')} → ${currency} ${Number(price || 0).toLocaleString('en-GB')}`
                 : 'Permanent Public Price History'}
             </p>
             <p className="text-[11px] leading-relaxed">

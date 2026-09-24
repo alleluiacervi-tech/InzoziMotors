@@ -235,28 +235,39 @@ router.get('/action-center', requireAdmin, async (req, res) => {
       .filter((entry) => entry.flags.some((flag) => flag.id !== 'no_exceptions'))
       .slice(0, 20);
 
-    const item = (row, data) => ({
-      id: data.id,
-      kind: data.kind,
-      priority: data.priority,
-      title: data.title,
-      detail: data.detail,
-      href: data.href,
-      occurred_at: row.occurred_at,
-      age_hours: Math.max(0, Math.round(Number(row.age_hours) || 0)),
-    });
+    // `target` is the queue's service level in hours from occurred_at, where
+    // the queue has one. It gives the console a due time to print ("due in
+    // 5 h", "overdue by 2 d") instead of one red word for everything older
+    // than a day. Queues whose priority is not about waiting time (a lapsed
+    // subscription, a suspect record) carry no target and no due time.
+    const item = (row, data) => {
+      const target = data.target ?? null;
+      const occurred = row.occurred_at ? new Date(row.occurred_at).getTime() : NaN;
+      return {
+        id: data.id,
+        kind: data.kind,
+        priority: data.priority,
+        title: data.title,
+        detail: data.detail,
+        href: data.href,
+        occurred_at: row.occurred_at,
+        age_hours: Math.max(0, Math.round(Number(row.age_hours) || 0)),
+        target_hours: target,
+        due_at: target == null || Number.isNaN(occurred) ? null : new Date(occurred + target * 3_600_000).toISOString(),
+      };
+    };
     const agedPriority = (row, urgentHours, attentionHours = 0) =>
       Number(row.age_hours) >= urgentHours ? 'urgent'
         : Number(row.age_hours) >= attentionHours ? 'attention' : 'routine';
 
     const items = [
-      ...submissions.rows.map((r) => item(r, { id: `submission:${r.id}`, kind: 'Submission', priority: agedPriority(r, 24, 8), title: `Review ${r.make} ${r.model}`, detail: 'Seller submission is awaiting a decision', href: `/submissions?focus=${r.id}` })),
-      ...ids.rows.map((r) => item(r, { id: `identity:${r.id}`, kind: 'Identity', priority: agedPriority(r, 24, 8), title: `Verify ${r.name}`, detail: 'Identity documents are waiting for review', href: `/users?tab=verification&focus=${r.id}` })),
-      ...inspections.rows.map((r) => item(r, { id: `inspection:${r.id}`, kind: 'Inspection', priority: Number(r.age_hours) > 0 ? 'urgent' : 'attention', title: Number(r.age_hours) > 0 ? 'Inspection is due' : 'Inspection within 24 hours', detail: r.car_title || 'Scheduled vehicle inspection', href: `/inspections?focus=${r.id}` })),
-      ...reports.rows.map((r) => item(r, { id: `report:${r.id}`, kind: 'Safety', priority: agedPriority(r, 12, 0), title: 'Review reported conversation', detail: r.reason, href: `/reports?focus=${r.id}` })),
+      ...submissions.rows.map((r) => item(r, { id: `submission:${r.id}`, kind: 'Submission', priority: agedPriority(r, 24, 8), target: 24, title: `Review ${r.make} ${r.model}`, detail: 'Seller submission is awaiting a decision', href: `/submissions?focus=${r.id}` })),
+      ...ids.rows.map((r) => item(r, { id: `identity:${r.id}`, kind: 'Identity', priority: agedPriority(r, 24, 8), target: 24, title: `Verify ${r.name}`, detail: 'Identity documents are waiting for review', href: `/users?tab=verification&focus=${r.id}` })),
+      ...inspections.rows.map((r) => item(r, { id: `inspection:${r.id}`, kind: 'Inspection', priority: Number(r.age_hours) > 0 ? 'urgent' : 'attention', target: 0, title: Number(r.age_hours) > 0 ? 'Inspection is due' : 'Inspection within 24 hours', detail: r.car_title || 'Scheduled vehicle inspection', href: `/inspections?focus=${r.id}` })),
+      ...reports.rows.map((r) => item(r, { id: `report:${r.id}`, kind: 'Safety', priority: agedPriority(r, 12, 0), target: 12, title: 'Review reported conversation', detail: r.reason, href: `/reports?focus=${r.id}` })),
       ...imports.rows.map((r) => item(r, { id: `import:${r.id}`, kind: 'Import', priority: Number(r.age_hours) >= 72 ? 'urgent' : agedPriority(r, 24, 0), title: `${r.order_ref} needs attention`, detail: r.status === 'enquiry' ? 'New import enquiry needs a quotation' : r.status.replaceAll('_', ' '), href: `/imports/${r.id}` })),
-      ...importPayments.rows.map((r) => item(r, { id: `import-payment:${r.id}`, kind: 'Import', priority: agedPriority(r, 8, 0), title: `Review offline record for ${r.order_ref}`, detail: `${r.milestone.replaceAll('_', ' ')} evidence submitted`, href: `/imports/${r.import_order_id}` })),
-      ...rentalInquiries.rows.map((r) => item(r, { id: `rental-inquiry:${r.id}`, kind: 'Rental inquiry', priority: agedPriority(r, 24, 4), title: `Follow up ${r.inquiry_ref}`, detail: r.car_title, href: `/rentals/inquiries?focus=${r.id}` })),
+      ...importPayments.rows.map((r) => item(r, { id: `import-payment:${r.id}`, kind: 'Import', priority: agedPriority(r, 8, 0), target: 8, title: `Review offline record for ${r.order_ref}`, detail: `${r.milestone.replaceAll('_', ' ')} evidence submitted`, href: `/imports/${r.import_order_id}` })),
+      ...rentalInquiries.rows.map((r) => item(r, { id: `rental-inquiry:${r.id}`, kind: 'Rental inquiry', priority: agedPriority(r, 24, 4), target: 24, title: `Follow up ${r.inquiry_ref}`, detail: r.car_title, href: `/rentals/inquiries?focus=${r.id}` })),
       ...suspect.map(({ row, flags }) => item(row, {
         id: `inspection-integrity:${row.id}`, kind: 'Inspection',
         priority: integrityPriority(flags),
@@ -1153,31 +1164,47 @@ router.get('/search', requireAdmin, async (req, res) => {
 // GET /admin/activity — a factual cross-workflow timeline assembled from the
 // records themselves. This gives operators context without introducing an
 // eventually-consistent event store for actions the database already records.
+// Every row names the thing it is about — a vehicle, a center, an inquiry —
+// and links to it. Ids never reach the screen: "Listing 4996bcb8-…" told an
+// operator nothing. A contact event names the listing, never the buyer.
 router.get('/activity', requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT * FROM (
         SELECT 'Admin action' AS kind, a.summary AS title,
-               CONCAT(COALESCE(u.name, 'Former admin'), ' · ', REPLACE(a.action, '.', ' ')) AS detail,
+               CONCAT(COALESCE(u.name, 'Former admin'), ' · ', REPLACE(REPLACE(a.action, '.', ' '), '_', ' ')) AS detail,
                a.created_at AS happened_at, '/activity' AS href
         FROM admin_audit_log a LEFT JOIN users u ON u.id = a.actor_id
         UNION ALL
-        SELECT 'Submission' AS kind, CONCAT(make, ' ', model) AS title,
-               status AS detail, submitted_at AS happened_at, '/submissions' AS href
-        FROM submissions
+        SELECT 'Submission', TRIM(CONCAT_WS(' ', s.year::text, s.make, s.model)),
+               CONCAT('Submission ', REPLACE(s.status, '_', ' ')), s.submitted_at,
+               CONCAT('/submissions?focus=', s.id)
+        FROM submissions s
         UNION ALL
-        SELECT 'Inspection', CONCAT('Inspection · ', center), status,
-               scheduled_at, '/inspections'
-        FROM inspections
+        SELECT 'Inspection',
+               COALESCE(c.title, TRIM(CONCAT_WS(' ', s.year::text, s.make, s.model)),
+                        TRIM(CONCAT_WS(' ', i.vehicle_year::text, i.vehicle_make, i.vehicle_model)), 'Inspection'),
+               CONCAT(COALESCE(i.center, 'Inspection'), ' · ', REPLACE(i.status, '_', ' '),
+                      CASE WHEN i.status = 'complete' AND i.score IS NOT NULL THEN CONCAT(' · ', i.score, '/150') ELSE '' END),
+               COALESCE(i.completed_at, i.started_at, i.scheduled_at), CONCAT('/inspections/', i.id)
+        FROM inspections i
+        LEFT JOIN cars c ON c.id = i.car_id
+        LEFT JOIN submissions s ON s.id = i.submission_id
         UNION ALL
-        SELECT 'Rental inquiry', inquiry_ref, status, created_at, '/rentals/inquiries'
-        FROM rental_inquiries
+        SELECT 'Rental inquiry', COALESCE(rc.title, q.inquiry_ref),
+               CONCAT(q.inquiry_ref, ' · ', REPLACE(q.status, '_', ' ')), q.created_at,
+               CONCAT('/rentals/inquiries?focus=', q.id)
+        FROM rental_inquiries q LEFT JOIN rental_cars rc ON rc.id = q.rental_car_id
         UNION ALL
-        SELECT 'Buyer contact', CONCAT('Contact · ', channel),
-               CONCAT('Listing ', car_id::text), created_at, '/activity'
-        FROM listing_contact_events
+        SELECT 'Buyer contact', COALESCE(c.title, 'A removed listing'),
+               CONCAT('Seller contact shared by ', CASE e.channel WHEN 'whatsapp' THEN 'WhatsApp'
+                                                                  WHEN 'phone' THEN 'phone'
+                                                                  ELSE 'in-app message' END),
+               e.created_at, CASE WHEN c.id IS NULL THEN '/activity' ELSE CONCAT('/listings/', c.id, '/edit') END
+        FROM listing_contact_events e LEFT JOIN cars c ON c.id = e.car_id
       ) activity
-      WHERE happened_at IS NOT NULL
+      -- A scheduled inspection is dated in the future; it is not activity yet.
+      WHERE happened_at IS NOT NULL AND happened_at <= NOW()
       ORDER BY happened_at DESC LIMIT 20
     `);
     res.json(rows);
@@ -1475,12 +1502,15 @@ router.patch('/fees/:id', requireAdmin, requireUuid('id'), (_req, res) => {
 // voided subscription was never actually collected. This is fee revenue,
 // distinct from the GMV disclaimer on GET /admin/analytics: a walk-in
 // inspection fee is money Sawa itself received, not a vehicle's sale price.
+// Months are Kigali calendar months, the boundary GET /admin/insights and the
+// monthly statement (routes/statements.js) use, so a fee collected at 01:00
+// on the 1st lands in the same month on all three.
 router.get('/revenue', requireAdmin, async (_req, res) => {
   try {
     const [fees, subscriptions, unrecordedInspections] = await Promise.all([
       pool.query(
         `SELECT fee_type,
-                TO_CHAR(DATE_TRUNC('month', COALESCE(collected_at, created_at)), 'YYYY-MM') AS month,
+                TO_CHAR(DATE_TRUNC('month', COALESCE(collected_at, created_at) AT TIME ZONE 'Africa/Kigali'), 'YYYY-MM') AS month,
                 currency, SUM(amount)::bigint AS total, COUNT(*)::int AS count
          FROM platform_fees
          WHERE status = 'paid'
@@ -1488,7 +1518,7 @@ router.get('/revenue', requireAdmin, async (_req, res) => {
          ORDER BY month DESC, fee_type`
       ),
       pool.query(
-        `SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS month,
+        `SELECT TO_CHAR(DATE_TRUNC('month', created_at AT TIME ZONE 'Africa/Kigali'), 'YYYY-MM') AS month,
                 SUM(amount_rwf)::bigint AS total, COUNT(*)::int AS count
          FROM rental_subscriptions
          WHERE voided_at IS NULL

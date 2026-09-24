@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { api, type ActionCenterResponse } from '@/lib/api'
+import { api, type ActionCenterItem, type ActionCenterResponse, type InsightsFunnels } from '@/lib/api'
 import {
   Card, StatCard, PageHeader, EmptyState, BarChart, Icon, Delta, Sparkline,
   LoadingState, Skeleton, fmtMoneyShort, type IconName, type Trend,
 } from '@/components/ui'
+import { fmtDateTime, fmtDayMonth, fmtDuration } from '@/lib/format'
 
 interface Stats {
   liveListings: number
@@ -82,6 +83,32 @@ const QUICK_ACTIONS: { href: string; label: string; sub: string; icon: IconName 
   { href: '/users', label: 'Verify an identity', sub: 'Sellers cannot publish until you do', icon: 'user' },
 ]
 
+// ─── Service levels ──────────────────────────────────────────────────────────
+// Each queue has a target (24 h to review a submission, 12 h for a reported
+// chat, 8 h for an import payment record…) set in GET /admin/action-center.
+// An item is on track, due soon or overdue against it, and says so in words
+// with its due time. Only overdue is red: the old single "Urgent" badge was on
+// 36 of 37 items, which is the same as having no badge at all.
+type SlaState = 'overdue' | 'due' | 'ok'
+const slaState = (item: ActionCenterItem): SlaState =>
+  item.priority === 'urgent' ? 'overdue' : item.priority === 'attention' ? 'due' : 'ok'
+
+function slaText(item: ActionCenterItem, now: number): string {
+  const state = slaState(item)
+  if (item.due_at) {
+    const hours = (new Date(item.due_at).getTime() - now) / 3_600_000
+    if (hours <= 0) return `Overdue by ${fmtDuration(-hours)}`
+    return state === 'ok' ? `On track · due in ${fmtDuration(hours)}` : `Due in ${fmtDuration(hours)}`
+  }
+  return state === 'overdue' ? 'Act now' : state === 'due' ? 'Needs a decision' : 'When convenient'
+}
+
+const SLA_STYLE: Record<SlaState, { badge: string; rule: string; icon: IconName }> = {
+  overdue: { badge: 'bg-danger-tint text-danger-strong', rule: 'bg-danger-strong', icon: 'timer' },
+  due: { badge: 'bg-warning-tint text-warning-text', rule: 'bg-warning', icon: 'clock' },
+  ok: { badge: 'bg-surface-alt text-content-secondary', rule: 'bg-line', icon: 'check-circle' },
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [stats, setStats] = useState<Stats | null>(null)
@@ -89,12 +116,21 @@ export default function DashboardPage() {
   const [activity, setActivity] = useState<{ kind: string; title: string; detail: string; happened_at: string; href: string }[]>([])
   const [actions, setActions] = useState<ActionCenterResponse | null>(null)
   const [actionFilter, setActionFilter] = useState<'all' | 'urgent' | 'attention'>('all')
+  const [cohort, setCohort] = useState<InsightsFunnels | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([api.stats(), api.analytics().catch(() => null), api.activity().catch(() => []), api.actionCenter().catch(() => null)])
-      .then(([s, a, recent, actionCenter]) => { setStats(s); setAnalytics(a); setActivity(recent); setActions(actionCenter) })
+    Promise.all([
+      api.stats(), api.analytics().catch(() => null), api.activity().catch(() => []),
+      api.actionCenter().catch(() => null), api.insightsFunnels({ days: 30 }).catch(() => null),
+    ])
+      .then(([s, a, recent, actionCenter, funnels]) => { setStats(s); setAnalytics(a); setActivity(recent); setActions(actionCenter); setCohort(funnels) })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -205,7 +241,6 @@ export default function DashboardPage() {
   const toRow = (st: string) => ({ label: FUNNEL_LABELS[st] ?? st, value: funnelRaw.get(st)! })
   const funnel = WORKFLOW_STAGES.filter((st) => funnelRaw.has(st)).map(toRow)
   const outcomes = OUTCOME_STAGES.filter((st) => funnelRaw.has(st) && funnelRaw.get(st)! > 0).map(toRow)
-  const funnelMax = Math.max(...funnel.map((f) => f.value), 1)
   // The gap between two stages is the thing worth acting on; the counts on
   // their own only say how busy the pipeline is. The widest gap is named so an
   // operator is not left to eyeball which bar shrank most.
@@ -214,16 +249,9 @@ export default function DashboardPage() {
   // clearing, or a batch arriving — so a negative "drop" is real and must not
   // be reported as one. Those read as growth and are excluded from the widest-
   // gap comparison, which is about where work is getting stuck.
-  const drops = funnel.slice(1).map((stage, index) => {
-    const previous = funnel[index].value
-    return previous > 0 ? Math.round(((previous - stage.value) / previous) * 100) : 0
-  })
-  const widestDrop = drops.length ? Math.max(...drops, 0) : 0
-  // Reaching approval is the pipeline's job. Measuring to the last row of a
-  // list that ended in "rejected" measured the opposite.
-  const throughput = funnel.length > 1 && funnel[0].value > 0
-    ? Math.round((funnel[funnel.length - 1].value / funnel[0].value) * 100)
-    : null
+  const cohortStep = (key: string) => cohort?.seller.steps.find((st) => st.key === key)
+  const cohortStart = cohort?.seller.steps[0]?.count ?? 0
+  const cohortLive = cohortStep('published')
 
   const pace = s.pace
   const trends = s.trends
@@ -242,17 +270,7 @@ export default function DashboardPage() {
   const paceValue = paceIn(pace?.medianDaysToPublish, paceAsHours)
   const pacePrevious = paceIn(pace?.medianDaysToPublishPrevious, paceAsHours)
   const paceUnit = paceValue == null ? '' : paceAsHours ? (paceValue === 1 ? 'hour' : 'hours') : (paceValue === 1 ? 'day' : 'days')
-  const ageRule = (hours: number) =>
-    hours >= 48 ? 'bg-danger-strong' : hours >= 24 ? 'bg-warning' : 'bg-line'
-  const ageText = (hours: number) =>
-    hours >= 48 ? 'font-bold text-danger-strong' : hours >= 24 ? 'font-bold text-warning-text' : 'text-content-muted'
-  const ageLabel = (hours: number) => hours < 1 ? 'Just now' : hours < 24 ? `${hours}h waiting` : `${Math.floor(hours / 24)}d waiting`
-  const priorityLabel = { urgent: 'Urgent', attention: 'Attention', routine: 'Routine' } as const
-  const priorityBadge = {
-    urgent: 'bg-danger-tint text-danger-strong',
-    attention: 'bg-warning-tint text-warning-text',
-    routine: 'bg-surface-alt text-content-secondary',
-  } as const
+  const waited = (hours: number) => (hours < 1 ? 'Just in' : `Waiting ${fmtDuration(hours)}`)
 
   return (
     <div>
@@ -281,12 +299,21 @@ export default function DashboardPage() {
             <div className="flex items-end justify-between gap-4">
               <div className="flex items-baseline gap-2.5">
                 <span className="text-stat-lg font-extrabold tabular-nums text-content">{s.liveListings}</span>
-                {trends ? <Delta value={trends.liveListings.delta} goodDirection="up" /> : null}
               </div>
               {trends ? <div className="w-20 shrink-0"><Sparkline series={trends.liveListings.series} /></div> : null}
             </div>
+            {/* The movement belongs to the publications, not to the live count:
+                "10 ↑15" read as a contradiction. It now says what moved and
+                against what. */}
+            {trends ? (
+              <span className="flex flex-wrap items-center gap-x-1.5 text-caption text-content-muted">
+                <span>{trends.liveListings.recent ?? 0} published this week</span>
+                <Delta value={trends.liveListings.delta} goodDirection="up" />
+                <span>vs the week before</span>
+              </span>
+            ) : null}
             <span className="text-caption text-content-muted">
-              {trends ? `${trends.liveListings.recent ?? 0} published in the last seven days` : 'vehicles a buyer can see today'}
+              vehicles a buyer can see today
               {pace && pace.marketplaceValue > 0
                 ? ` · ${fmtMoneyShort(pace.marketplaceValue, pace.marketplaceValueCurrency)} asked, not transacted`
                 : ''}
@@ -374,8 +401,8 @@ export default function DashboardPage() {
             <div className="flex gap-1.5 overflow-x-auto px-6 pb-3.5" role="tablist" aria-label="Filter actions">
               {([
                 ['all', 'All', actions.summary.total],
-                ['urgent', 'Urgent', actions.summary.urgent],
-                ['attention', 'Attention', actions.summary.attention],
+                ['urgent', 'Overdue', actions.summary.urgent],
+                ['attention', 'Due soon', actions.summary.attention],
               ] as const).map(([key, label, count]) => (
                 <button
                   key={key}
@@ -412,22 +439,28 @@ export default function DashboardPage() {
                       {/* Waiting time, made pre-attentive. The old priority dot
                           repeated what the badge beside it already said; this
                           carries the one thing nothing else showed. */}
-                      <span className={`w-[3px] shrink-0 rounded-full ${ageRule(action.age_hours)}`} aria-hidden />
+                      <span className={`w-[3px] shrink-0 rounded-full ${SLA_STYLE[slaState(action)].rule}`} aria-hidden />
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
                           <span className="truncate text-label font-bold text-content">{action.title}</span>
-                          <span className={`rounded-full px-2 py-0.5 text-micro font-bold ${priorityBadge[action.priority]}`}>{priorityLabel[action.priority]}</span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-bold ${SLA_STYLE[slaState(action)].badge}`}
+                            title={action.due_at ? `Due ${fmtDateTime(action.due_at)} · target ${action.target_hours} h` : undefined}
+                          >
+                            <Icon name={SLA_STYLE[slaState(action)].icon} size={11} />
+                            {slaText(action, now)}
+                          </span>
                         </span>
                         <span className="mt-0.5 block truncate text-caption text-content-muted">{action.kind} · {action.detail}</span>
                       </span>
-                      <span className={`hidden shrink-0 self-center text-caption tabular-nums sm:block ${ageText(action.age_hours)}`}>{ageLabel(action.age_hours)}</span>
+                      <span className="hidden shrink-0 self-center text-caption tabular-nums text-content-muted sm:block">{waited(action.age_hours)}</span>
                       <span className="self-center text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={16} /></span>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div className="border-t border-line-soft px-6 py-8 text-center text-caption text-content-muted">No {actionFilter} actions right now.</div>
+              <div className="border-t border-line-soft px-6 py-8 text-center text-caption text-content-muted">Nothing {actionFilter === 'urgent' ? 'overdue' : 'due soon'} right now.</div>
             )}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft bg-surface-alt px-6 py-3">
               <span className="text-caption font-semibold text-content-muted">
@@ -448,25 +481,28 @@ export default function DashboardPage() {
       </div>
 
       {/* Operational counts — each one is a doorway, and now says which way it is moving */}
-      <div className="mb-7 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Live listings" value={s.liveListings} icon="car" href="/listings" trend={trends?.liveListings} sub={trends ? 'published per day, 14 days' : undefined} />
-        <StatCard label="Pending submissions" value={s.pendingSubmissions} icon="document" href="/submissions" trend={trends?.pendingSubmissions} sub="awaiting review" />
-        <StatCard label="Rental inquiries" value={s.pendingInquiries} icon="calendar" href="/rentals/inquiries" trend={trends?.pendingInquiries} sub="awaiting a response" />
-        <StatCard label="Identity queue" value={s.pendingIdVerifications} icon="user" href="/users" trend={trends?.pendingIdVerifications} sub="sellers waiting" />
+      {/* Backlogs. Live listings is not repeated here — it heads the page. Each
+          movement names its period, so "↓2" can only mean one thing. */}
+      <div className="mb-7 grid gap-4 sm:grid-cols-3">
+        <StatCard label="Submissions awaiting review" value={s.pendingSubmissions} icon="document" href="/submissions" trend={trends?.pendingSubmissions} trendLabel="vs a week ago" sub="14 days of backlog, target 24 h each" />
+        <StatCard label="Rental inquiries to answer" value={s.pendingInquiries} icon="calendar-clock" href="/rentals/inquiries" trend={trends?.pendingInquiries} trendLabel="vs a week ago" sub="14 days of backlog" />
+        <StatCard label="Identity checks waiting" value={s.pendingIdVerifications} icon="id-card" href="/users?tab=verification" trend={trends?.pendingIdVerifications} trendLabel="vs a week ago" sub="Sellers cannot publish until checked" />
       </div>
 
       {/* Reporting tier — quiet material, but each chart now carries a comparison */}
       <div className="mb-7 grid items-start gap-4 lg:grid-cols-2">
         <Card className="border-line-soft p-5 shadow-none">
           <div className="mb-1 flex items-baseline justify-between gap-3">
-            <h2 className="text-label font-bold text-content">Seller-stated listing value</h2>
-            <span className="text-caption text-content-muted">six months, {salesCurrency}</span>
+            <h2 className="text-label font-bold text-content">Asking value of listings marked sold</h2>
+            <span className="text-caption text-content-muted">last six months, {salesCurrency}</span>
           </div>
           <p className="mb-4 text-caption text-content-muted">Each month against the one before it.</p>
           <BarChart
             data={monthly}
             height={170}
             compare
+            seriesLabel="Asking value"
+            compareLabel="Month before"
             formatValue={(v) => fmtMoneyShort(v, salesCurrency)}
             emptyLabel="No listings have been marked sold yet"
           />
@@ -481,71 +517,69 @@ export default function DashboardPage() {
         <Card className="border-line-soft p-5 shadow-none">
           <div className="mb-1 flex items-baseline justify-between gap-3">
             <h2 className="text-label font-bold text-content">Submission pipeline</h2>
-            <span className="text-caption text-content-muted">all time</span>
+            <Link href="/insights/funnels?days=30" className="text-caption font-bold text-content-secondary hover:text-content">Open funnels</Link>
           </div>
-          {funnel.length === 0 ? (
-            <EmptyState icon="document" title="No submissions yet" description="Seller submissions appear here as they enter the pipeline." />
-          ) : (
+          {/* A cohort, not two snapshots divided. "164% of drafts reach
+              approval" came from dividing today's approved count by today's
+              draft count — different cars. This follows the submissions
+              received in the last 30 days to where each one is now. */}
+          {cohort && cohortStart > 0 ? (
             <>
-              <div className="mb-4 flex items-baseline gap-2.5">
-                <span className="text-stat font-extrabold tabular-nums text-content">{throughput == null ? '—' : `${throughput}%`}</span>
-                <span className="text-caption font-semibold text-content-muted">of drafts reach approval</span>
+              <div className="mb-4 mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                <span className="text-stat font-extrabold tabular-nums text-content">{cohortLive?.of_start ?? 0}%</span>
+                <span className="text-caption font-semibold text-content-muted">
+                  of the {cohortStart} submission{cohortStart === 1 ? '' : 's'} received in the last 30 days are live
+                </span>
               </div>
-              <div className="flex flex-col gap-1">
-                {funnel.map((f, index) => (
-                  <div key={f.label} className="flex flex-col gap-1.5">
-                    {index > 0 ? (
-                      <div className="flex justify-end">
-                        {drops[index - 1] > 0 ? (
-                          <span className={`text-micro font-bold tabular-nums ${drops[index - 1] === widestDrop ? 'text-warning-text' : 'text-content-muted'}`}>
-                            {drops[index - 1]}% drop{drops[index - 1] === widestDrop ? ' · the widest gap' : ''}
-                          </span>
-                        ) : (
-                          // More work sitting here than in the stage above it.
-                          // That is a backlog forming, not a drop, and saying
-                          // "-574% drop" is how the old version put it.
-                          <span className="text-micro font-bold tabular-nums text-content-muted">
-                            +{Math.abs(drops[index - 1])}% more waiting here
-                          </span>
-                        )}
-                      </div>
-                    ) : null}
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-caption font-semibold text-content-secondary">{f.label}</span>
-                      <span className="text-caption font-bold tabular-nums text-content">{f.value}</span>
+              <ol className="flex flex-col gap-2.5">
+                {cohort.seller.steps.slice(1, 6).map((st, index) => (
+                  <li key={st.key}>
+                    <div className="mb-1 flex items-baseline justify-between gap-3">
+                      <span className="text-caption font-semibold text-content-secondary">{st.label}</span>
+                      <span className="text-caption tabular-nums text-content-muted"><strong className="text-content">{st.count}</strong> · {st.of_start ?? 0}%</span>
                     </div>
-                    <div
-                      className={`h-2.5 rounded-full ${index === 0 ? 'bg-ink-900' : index < 3 ? 'bg-ink-700' : 'bg-content-muted'}`}
-                      style={{ width: `${Math.max(4, Math.round((f.value / funnelMax) * 100))}%` }}
-                    />
+                    <div className="h-2 rounded-full bg-surface-alt">
+                      <div className="h-full rounded-full" style={{ width: `${st.of_start ?? 0}%`, background: `rgb(var(--ramp-${5 - Math.min(3, index)}))` }} />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : (
+            <p className="mt-3 text-caption text-content-muted">No submissions received in the last 30 days.</p>
+          )}
+
+          {funnel.length ? (
+            <div className="mt-5 border-t border-line-soft pt-4">
+              <p className="mb-2.5 text-caption font-bold text-content-secondary">Where work sits right now</p>
+              <dl className="flex flex-wrap gap-x-6 gap-y-2">
+                {funnel.map((o) => (
+                  <div key={o.label} className="flex items-baseline gap-1.5">
+                    <dt className="text-caption text-content-muted">{o.label}</dt>
+                    <dd className="text-caption font-bold tabular-nums text-content">{o.value}</dd>
                   </div>
                 ))}
-              </div>
-
-              {outcomes.length ? (
-                <div className="mt-5 border-t border-line-soft pt-4">
-                  <p className="mb-2.5 text-micro font-bold uppercase tracking-[0.1em] text-content-muted">
-                    Where submissions ended up
-                  </p>
-                  <dl className="flex flex-wrap gap-x-6 gap-y-2">
-                    {outcomes.map((o) => (
-                      <div key={o.label} className="flex items-baseline gap-1.5">
-                        <dt className="text-caption text-content-muted">{o.label}</dt>
-                        <dd className="text-caption font-bold tabular-nums text-content">{o.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <p className="mt-2 text-micro text-content-muted">
-                    Standing totals across the whole marketplace, not a next step in the queue above.
-                  </p>
-                </div>
-              ) : null}
-            </>
-          )}
+              </dl>
+            </div>
+          ) : null}
+          {outcomes.length ? (
+            <div className="mt-4">
+              <p className="mb-2.5 text-caption font-bold text-content-secondary">Where every submission ended up</p>
+              <dl className="flex flex-wrap gap-x-6 gap-y-2">
+                {outcomes.map((o) => (
+                  <div key={o.label} className="flex items-baseline gap-1.5">
+                    <dt className="text-caption text-content-muted">{o.label}</dt>
+                    <dd className="text-caption font-bold tabular-nums text-content">{o.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-2 text-micro text-content-muted">All-time standing totals, not steps in the pipeline.</p>
+            </div>
+          ) : null}
         </Card>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
         {/* Quick actions — a list, not four more tinted squircles */}
         <Card className="border-line-soft p-5 shadow-none">
           <h2 className="mb-3 text-label font-bold text-content">Start something</h2>
@@ -589,7 +623,7 @@ export default function DashboardPage() {
                       <span className="block truncate text-caption text-content-muted">{item.kind} · {item.detail.replaceAll('_', ' ')}</span>
                     </span>
                     <time className="shrink-0 text-caption text-content-muted" dateTime={item.happened_at}>
-                      {new Date(item.happened_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      {fmtDayMonth(item.happened_at)}
                     </time>
                   </Link>
                 </li>

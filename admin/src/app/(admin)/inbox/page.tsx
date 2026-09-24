@@ -9,6 +9,7 @@ import {
 } from '@/components/ui'
 import { MessageBody } from './MessageBody'
 import { useConfirm, useToast } from '@/components/feedback'
+import { fmtDate, fmtDateTime, fmtDayMonth, fmtTime } from '@/lib/format'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The contact@sawacars.com inbox.
@@ -66,10 +67,8 @@ function when(date: string | null): string {
   if (Number.isNaN(d.getTime())) return ''
   const now = new Date()
   const sameDay = d.toDateString() === now.toDateString()
-  if (sameDay) return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-  const sameYear = d.getFullYear() === now.getFullYear()
-  return d.toLocaleDateString(undefined,
-    sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: '2-digit' })
+  if (sameDay) return fmtTime(d)
+  return d.getFullYear() === now.getFullYear() ? fmtDayMonth(d) : fmtDate(d)
 }
 
 export default function InboxPage() {
@@ -565,7 +564,7 @@ export default function InboxPage() {
                   ) : null}
                 </p>
                 <p className="mt-0.5 text-caption text-content-muted">
-                  {message.date ? new Date(message.date).toLocaleString() : 'No date'}
+                  {message.date ? fmtDateTime(message.date) : 'No date'}
                   {message.to.length ? ` · to ${message.to.map((t) => t.address).join(', ')}` : ''}
                 </p>
 

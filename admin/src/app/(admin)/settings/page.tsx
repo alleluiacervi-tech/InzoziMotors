@@ -62,14 +62,14 @@ export default function PlatformSettingsPage() {
         <div className="grid gap-4 md:grid-cols-2">{rows.map((row) => (
           <Card key={row.key} className="p-5">
             <div className="flex items-start justify-between gap-4">
-              <div><h2 className="text-sm font-bold capitalize text-content">{row.key.replaceAll('_', ' ')}</h2><p className="mt-1 text-xs leading-5 text-content-muted">{row.description}</p></div>
-              <span className={`rounded-full px-2 py-1 text-micro font-bold ${row.editable ? 'bg-success-tint text-success' : 'bg-gray-100 text-gray-600'}`}>{row.editable ? 'Editable' : 'Locked'}</span>
+              <div><h2 id={`setting-${row.key}`} className="text-sm font-bold capitalize text-content">{row.key.replaceAll('_', ' ')}</h2><p className="mt-1 text-xs leading-5 text-content-muted">{row.description}</p></div>
+              <span className={`rounded-full px-2 py-1 text-micro font-bold ${row.editable ? 'bg-success-tint text-success-text' : 'bg-gray-100 text-gray-600'}`}>{row.editable ? 'Editable' : 'Locked'}</span>
             </div>
             <div className="mt-5">
               {typeof row.value === 'boolean' ? (
-                <button disabled={!row.editable || working === row.key} onClick={() => update(row.key, !row.value)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${row.value ? 'bg-success text-white' : 'bg-gray-200 text-gray-700'} disabled:cursor-not-allowed disabled:opacity-60`}>{row.value ? 'Enabled' : 'Disabled'}</button>
+                <button aria-describedby={`setting-${row.key}`} aria-pressed={row.value} disabled={!row.editable || working === row.key} onClick={() => update(row.key, !row.value)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${row.value ? 'bg-success text-white' : 'bg-gray-200 text-gray-700'} disabled:cursor-not-allowed disabled:opacity-60`}>{row.value ? 'Enabled' : 'Disabled'}</button>
               ) : typeof row.value === 'number' ? (
-                <input type="number" min="1" max={row.key === 'listing_min_photos' ? 10 : 20} defaultValue={row.value} disabled={!row.editable || working === row.key} onBlur={(event) => { const value = Number(event.target.value); if (value !== row.value) update(row.key, value) }} className="w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:bg-gray-100" />
+                <input type="number" aria-labelledby={`setting-${row.key}`} min="1" max={row.key === 'listing_min_photos' ? 10 : 20} defaultValue={row.value} disabled={!row.editable || working === row.key} onBlur={(event) => { const value = Number(event.target.value); if (value !== row.value) update(row.key, value) }} className="w-32 rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:bg-gray-100" />
               ) : row.key === 'app_release' ? (
                 <Link href="/settings/app-release" className="rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
                   Edit app release
