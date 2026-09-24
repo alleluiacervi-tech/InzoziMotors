@@ -12,6 +12,8 @@ import { CurrencyProvider } from '@/components/CurrencyProvider'
 import { SITE } from '@/lib/site'
 import { getLocale } from '@/lib/i18n/server'
 import { LanguageProvider } from '@/lib/i18n/context'
+import { messagesFor } from '@/lib/i18n/dictionary'
+import { CHROME_NAMESPACES } from '@/components/i18n/I18nScope'
 import './globals.css'
 
 // Satoshi (Indian Type Foundry), self-hosted by next/font — the same four files
@@ -154,7 +156,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             which is what makes a rate change reach the screen without a
             reload. */}
         <CurrencyProvider initial={rate}>
-          <LanguageProvider initialLocale={locale}>
+          <LanguageProvider initialLocale={locale} messages={messagesFor(locale, CHROME_NAMESPACES)}>
             <Header user={user} />
             <main id="main" className="flex-1">
               {children}

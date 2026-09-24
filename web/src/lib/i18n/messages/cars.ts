@@ -6,6 +6,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   en: {
     card: {
       previewListing: 'Preview listing',
+      scoreOf: 'of 150 points',
       priceDrop: 'Price drop',
       new: 'New',
       highDemand: 'High demand',
@@ -279,6 +280,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   rw: {
     card: {
       previewListing: 'Itangazo ry’igerageza',
+      scoreOf: 'ku manota 150',
       priceDrop: 'Igabanuka ry’igiciro',
       new: 'Nshya',
       highDemand: 'Ikenewe cyane',
@@ -552,6 +554,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   fr: {
     card: {
       previewListing: 'Aperçu de l’annonce',
+      scoreOf: 'sur 150 points',
       priceDrop: 'Baisse de prix',
       new: 'Nouveau',
       highDemand: 'Forte demande',
@@ -825,6 +828,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   sw: {
     card: {
       previewListing: 'Onyesho la tangazo',
+      scoreOf: 'kati ya alama 150',
       priceDrop: 'Bei imeshuka',
       new: 'Mpya',
       highDemand: 'Yahitajika sana',
@@ -1098,6 +1102,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   ko: {
     card: {
       previewListing: '미리보기 매물',
+      scoreOf: '/ 150점',
       priceDrop: '가격 인하',
       new: '신규',
       highDemand: '높은 관심',
@@ -1371,6 +1376,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
   zh: {
     card: {
       previewListing: '预览信息',
+      scoreOf: '/ 150 分',
       priceDrop: '降价',
       new: '新上架',
       highDemand: '热门车型',

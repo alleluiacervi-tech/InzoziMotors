@@ -9,6 +9,7 @@
 
 import { DEFAULT_LOCALE, normalizeLocale, type Locale } from './config'
 import { SECTIONS } from './messages'
+import { fill, lookup, mergeMessages, type TFunction } from './translate'
 
 type Messages = Record<string, unknown>
 
@@ -406,23 +407,7 @@ export const DICTIONARY: Record<Locale, Messages> = {
   zh: withSections('zh'),
 }
 
-function lookup(source: Messages | undefined, key: string): string | undefined {
-  if (!source) return undefined
-  const value = key.split('.').reduce<unknown>(
-    (acc, part) => (acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[part] : undefined),
-    source,
-  )
-  return typeof value === 'string' ? value : undefined
-}
-
-function fill(template: string, vars?: Record<string, string | number>): string {
-  if (!vars) return template
-  return template.replace(/\{\{(\w+)\}\}/g, (_m, name) =>
-    vars[name] == null ? `{{${name}}}` : String(vars[name]),
-  )
-}
-
-export type TFunction = (key: string, vars?: Record<string, string | number>) => string
+export type { TFunction }
 
 /** Build a translator bound to one locale. Works in server and client code. */
 export function getT(locale: unknown): TFunction {
@@ -431,4 +416,18 @@ export function getT(locale: unknown): TFunction {
     const value = lookup(DICTIONARY[code], key) ?? lookup(DICTIONARY[DEFAULT_LOCALE], key) ?? key
     return fill(value, vars)
   }
+}
+
+/**
+ * The slice of the catalogue a client subtree needs: the named top-level
+ * namespaces, each already merged over English so the browser never has to
+ * know a fallback exists. Server-only by construction — it reads DICTIONARY.
+ */
+export function messagesFor(locale: unknown, namespaces: readonly string[]): Messages {
+  const code = normalizeLocale(locale)
+  const out: Messages = {}
+  for (const ns of namespaces) {
+    out[ns] = mergeMessages(DICTIONARY[DEFAULT_LOCALE][ns], DICTIONARY[code][ns])
+  }
+  return out
 }
