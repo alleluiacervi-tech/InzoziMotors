@@ -13,6 +13,7 @@ import { Price, RateNote } from '@/components/Price'
 import { CarCard } from '@/components/marketplace/CarCard'
 import { Gallery } from '@/components/marketplace/Gallery'
 import { InspectionReportCard } from '@/components/marketplace/InspectionReportCard'
+import { ScoreRing } from '@/components/brand/ScoreRing'
 import { OpenInAppButton } from '@/components/marketplace/OpenInAppButton'
 import { Sparkline } from '@/components/marketplace/Sparkline'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
@@ -261,6 +262,25 @@ export default async function CarDetailPage({ params }: PageProps) {
                   </>
                 ) : null}
               </p>
+
+              {/* The score, on the first screen, as the same ring the cards
+                  use — and a way straight down to the report behind it. */}
+              {car.inspection_score ? (
+                <a
+                  href="#inspection"
+                  className="group mt-5 inline-flex items-center gap-3 rounded-2xl border border-line-soft bg-surface py-2 pl-2 pr-4 shadow-card transition-colors hover:border-line"
+                >
+                  <ScoreRing score={car.inspection_score} size={48} />
+                  <span className="min-w-0">
+                    <span className="block text-caption font-bold text-content">
+                      {t('cars.detail.scoreChip')} {car.inspection_score}/150
+                    </span>
+                    <span className="block text-micro font-semibold text-brand group-hover:underline">
+                      {t('cars.detail.seeReport')}
+                    </span>
+                  </span>
+                </a>
+              ) : null}
             </header>
           </div>
 
@@ -434,7 +454,9 @@ export default async function CarDetailPage({ params }: PageProps) {
               ))}
             </div>
 
-            <InspectionReportCard report={report} />
+            <div id="inspection" className="scroll-mt-28">
+              <InspectionReportCard report={report} />
+            </div>
 
             {!report && car.inspected ? (
               <Alert tone="info" title={t('cars.detail.reportPendingTitle')}>
