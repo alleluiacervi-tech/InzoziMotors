@@ -356,6 +356,41 @@ export const account = {
     ),
 }
 
+/** A model in the public import catalogue (GET /imports/catalog). */
+export interface ImportCatalogModel {
+  id: string
+  make: string
+  model: string
+  body_type: string | null
+  fuel_types: string[] | null
+  condition: string | null
+  trim: string | null
+  engine_cc: number | null
+  transmission: string | null
+  drive_side: string | null
+  origin_country: string
+  origin_port: string | null
+  typical_fob_usd: number | null
+  estimated_transit_days: number | null
+}
+
+export interface ImportCatalogMake {
+  make: string
+  origin_country: string
+  model_count: number
+}
+
+/** The public import catalogue: what can be sourced, by make and origin. */
+export const importCatalog = {
+  makes: () =>
+    request<{ items: ImportCatalogMake[] }>('/imports/catalog/makes', { revalidate: 3600, tags: ['import-catalog'] }),
+  list: (query: { make?: string; origin?: string; limit?: number } = {}) =>
+    request<{ items: ImportCatalogModel[] }>(`/imports/catalog${qs(query as Record<string, unknown>)}`, {
+      revalidate: 3600,
+      tags: ['import-catalog'],
+    }),
+}
+
 export const importOrders = {
   mine: (token: string) => request<any[]>('/imports/mine', { token }),
   get: (token: string, id: string) => request<any>(`/imports/${id}`, { token }),

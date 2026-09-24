@@ -22,7 +22,7 @@ export async function ThreeWays({ saleCount, rentalCount }: { saleCount: number;
   }[] = [
     { key: 'buy', icon: 'car', figure: saleCount ? String(saleCount) : '', href: '/cars' },
     { key: 'rent', icon: 'key', figure: rentalCount ? String(rentalCount) : '', href: '/rentals' },
-    { key: 'import', icon: 'compass', figure: 'JP / AE', href: '/imports' },
+    { key: 'import', icon: 'compass', figure: 'JP / KR / CN', href: '/imports' },
   ]
 
   return (

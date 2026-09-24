@@ -70,7 +70,9 @@ export function NumberField({
           error={Boolean(error)}
           aria-describedby={hint && !error ? `${id}-hint` : undefined}
           onChange={(event) => onChange(event.target.value.replace(/[^\d]/g, ''))}
-          className={`tabular-nums ${prefix ? 'pl-8' : ''} ${suffix ? 'pr-14' : ''}`}
+          // Padding sized to the prefix: "$" fits in 2rem, "RWF" needs ~3.75rem
+          // or a long figure runs underneath it.
+          className={`tabular-nums ${prefix ? (prefix.length > 1 ? 'pl-[3.75rem]' : 'pl-8') : ''} ${suffix ? 'pr-14' : ''}`}
         />
         {suffix ? (
           <span
