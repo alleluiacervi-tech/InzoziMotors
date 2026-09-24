@@ -4,11 +4,9 @@ import { Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { I18nScope } from '@/components/i18n/I18nScope'
 import { HeroSearch } from './HeroSearch'
-import { InspectionCertificate } from './InspectionCertificate'
 import { formatMoney } from '@/lib/business'
 import { budgetHref, type InventorySummary } from '@/lib/inventory'
 import { getServerT } from '@/lib/i18n/server'
-import type { InspectionReport } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The front door: one sentence, one search, and one piece of evidence.
@@ -18,10 +16,11 @@ import type { InspectionReport } from '@/lib/types'
 // Buy is three structured fields rather than a single free-text box, and the
 // shortcuts under it are the makes and bands actually in stock.
 //
-// RIGHT: a live inspection certificate — the best-scoring car in stock and its
-// own report (InspectionCertificate). That card replaced a stock photograph
-// and a strip that printed "150" three times over; one real report says more
-// than three repetitions of the policy.
+// RIGHT: the inspection photograph, with one live number set on its edge —
+// how many inspected cars are in stock. A real car's report is on the page
+// too, but lower down beside the rulebook it proves (InspectionStory): a
+// listing photo is only as good as the seller's framing, and the hero is the
+// one frame Sawa controls end to end.
 //
 // Printed on the site's paper, not an ink slab: the header, the page and the
 // hero are one surface, and the certificate is the object set on it.
@@ -35,14 +34,11 @@ const TRUST: { icon: IconName; key: string; href?: string }[] = [
 export async function Hero({
   inventory,
   rentalCount,
-  report,
 }: {
   inventory: InventorySummary
   rentalCount: number
-  report: InspectionReport | null
 }) {
   const t = await getServerT()
-  const best = inventory.best
 
   // Shortcuts: the three makes with most stock, the cheapest band that has
   // cars in it, and the most common body type. Each is a /cars URL the filter
@@ -124,31 +120,47 @@ export async function Hero({
           </ul>
         </div>
 
-        <div className="min-w-0 animate-rise lg:animate-none">
-          {best ? (
-            <InspectionCertificate car={best} report={report} />
-          ) : (
-            // Nothing in stock (or the API is down): the inspection photograph
-            // stands in, captioned with where it was taken.
-            <figure className="relative m-0 overflow-hidden rounded-3xl bg-surface-alt shadow-float ring-1 ring-line">
-              <div className="relative aspect-[4/5] w-full">
-                <Image
-                  src="/img/inspection-alignment.jpg"
-                  alt={t('home.hero.photoAlt')}
-                  fill
-                  priority
-                  sizes="(min-width: 1024px) 500px, 100vw"
-                  className="object-cover"
-                />
-                <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-ink-900/85 via-ink-900/30 to-transparent" />
-              </div>
-              <figcaption className="absolute inset-x-5 bottom-5 flex items-start gap-2 text-micro font-semibold leading-snug text-white/80">
-                <Icon name="camera" size={13} className="mt-0.5 shrink-0 text-white/50" aria-hidden="true" />
-                <span className="min-w-0">{t('home.hero.photoCaption')}</span>
-              </figcaption>
-            </figure>
-          )}
-        </div>
+        {/* The photograph: a real vehicle on a real alignment rack at a Sawa
+            centre. Every marketplace here opens on a clean car; this one
+            opens on the inspection, because that is what it sells. Landscape
+            on a phone so it costs one glance, the full portrait frame from lg. */}
+        <figure className="relative m-0 min-w-0 animate-rise lg:animate-none">
+          <div className="relative overflow-hidden rounded-3xl bg-surface-alt shadow-float ring-1 ring-line">
+            <div className="relative aspect-[16/10] w-full sm:aspect-[2/1] lg:aspect-[4/5]">
+              <Image
+                src="/img/inspection-alignment.jpg"
+                alt={t('home.hero.photoAlt')}
+                fill
+                priority
+                sizes="(min-width: 1024px) 500px, 100vw"
+                className="animate-kenburns object-cover object-[58%_42%] motion-reduce:animate-none lg:object-center"
+              />
+              <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-ink-900/85 via-ink-900/30 to-transparent" />
+            </div>
+            <figcaption className="absolute inset-x-5 bottom-5 flex items-start gap-2 text-micro font-semibold leading-snug text-white/80">
+              <Icon name="camera" size={13} className="mt-0.5 shrink-0 text-white/50" aria-hidden="true" />
+              <span className="min-w-0">{t('home.hero.photoCaption')}</span>
+            </figcaption>
+          </div>
+
+          {/* The one piece of ink on the page, and it is live: how many
+              inspected cars are in the yard right now. The headline already
+              says "150", so this card says something the page does not. */}
+          {inventory.total > 0 ? (
+            <Link
+              href="/cars"
+              className="group mt-4 flex items-center gap-4 rounded-2xl bg-ink-900 p-4 shadow-lift-ink transition-transform duration-300 ease-brand hover:-translate-y-0.5 sm:p-5 lg:absolute lg:-left-12 lg:bottom-16 lg:mt-0 lg:max-w-[17rem]"
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full bg-brand-light" aria-hidden="true" />
+              <span className="tnum text-display font-extrabold leading-none tracking-[-0.03em] text-white">
+                {inventory.total}
+              </span>
+              <span className="min-w-0 text-caption leading-snug text-white/75 group-hover:text-white">
+                {inventory.total === 1 ? t('home.frontExtra.stockCardOne') : t('home.frontExtra.stockCard')}
+              </span>
+            </Link>
+          ) : null}
+        </figure>
       </div>
     </section>
   )

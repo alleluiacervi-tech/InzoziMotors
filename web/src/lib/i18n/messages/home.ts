@@ -194,6 +194,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         importCta: 'How importing works',
       },
     },
+    frontExtra: {
+      stockCard: 'inspected cars in stock right now',
+      stockCardOne: 'inspected car in stock right now',
+      reportTitle: 'A real report, from a car in stock',
+      reportLede: 'Every listing publishes its report like this one: each category’s points, and whether anything critical failed.',
+    },
     faq: { eyebrow: 'Questions', title: 'Before you commit' },
   },
 
@@ -389,6 +395,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         rentCta: 'Reba izikodeshwa',
         importCta: 'Uko gutumiza bikorwa',
       },
+    },
+    frontExtra: {
+      stockCard: 'imodoka zasuzumwe ziri ku isoko ubu',
+      stockCardOne: 'imodoka yasuzumwe iri ku isoko ubu',
+      reportTitle: 'Raporo nyayo y’imodoka iri ku isoko',
+      reportLede: 'Buri modoka itangaza raporo yayo nk’iyi: amanota ya buri cyiciro, n’uko hari ikintu gikomeye cyananiranye.',
     },
     faq: { eyebrow: 'Ibibazo', title: 'Mbere yo kwiyemeza' },
   },
@@ -586,6 +598,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         importCta: 'Comment importer',
       },
     },
+    frontExtra: {
+      stockCard: 'voitures inspectées en stock en ce moment',
+      stockCardOne: 'voiture inspectée en stock en ce moment',
+      reportTitle: 'Un vrai rapport, d’une voiture en stock',
+      reportLede: 'Chaque annonce publie son rapport comme celui-ci : les points de chaque catégorie, et si un point critique a échoué.',
+    },
     faq: { eyebrow: 'Questions', title: 'Avant de vous engager' },
   },
 
@@ -782,6 +800,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         importCta: 'Jinsi kuagiza kunavyofanya kazi',
       },
     },
+    frontExtra: {
+      stockCard: 'magari yaliyokaguliwa yapo sasa hivi',
+      stockCardOne: 'gari lililokaguliwa lipo sasa hivi',
+      reportTitle: 'Ripoti halisi ya gari lililopo',
+      reportLede: 'Kila tangazo huchapisha ripoti yake kama hii: alama za kila kundi, na kama kuna kitu muhimu kilishindwa.',
+    },
     faq: { eyebrow: 'Maswali', title: 'Kabla ya kujitolea' },
   },
 
@@ -977,6 +1001,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         importCta: '수입 절차 보기',
       },
     },
+    frontExtra: {
+      stockCard: '대의 검사 완료 차량 판매 중',
+      stockCardOne: '대의 검사 완료 차량 판매 중',
+      reportTitle: '판매 중인 차량의 실제 보고서',
+      reportLede: '모든 매물은 이와 같이 보고서를 공개합니다: 항목별 점수와 치명적 결함 여부.',
+    },
     faq: { eyebrow: '질문', title: '결정하기 전에' },
   },
 
@@ -1171,6 +1201,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         rentCta: '查看租车',
         importCta: '进口流程',
       },
+    },
+    frontExtra: {
+      stockCard: '辆已检测车辆正在出售',
+      stockCardOne: '辆已检测车辆正在出售',
+      reportTitle: '一份真实报告，来自在售车辆',
+      reportLede: '每个车源都会像这样公开报告：各类别得分，以及是否有严重项目未通过。',
     },
     faq: { eyebrow: '常见问题', title: '在您决定之前' },
   },

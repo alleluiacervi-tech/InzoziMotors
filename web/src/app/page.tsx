@@ -79,9 +79,9 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* One claim, one search across the three businesses, and one real
-          inspection report. */}
-      <Hero inventory={inventory} rentalCount={rentalFleet.length} report={report} />
+      {/* One claim, one search across the three businesses, and the
+          inspection photograph with the live stock count. */}
+      <Hero inventory={inventory} rentalCount={rentalFleet.length} />
 
       {/* The yard's shape — makes, budgets, body types — each with its count. */}
       <StockBand inventory={inventory} />
@@ -92,8 +92,9 @@ export default async function HomePage() {
 
       <ThreeWays saleCount={inventory.total} rentalCount={rentalFleet.length} />
 
-      {/* The case for the inspection, made once. */}
-      <InspectionStory />
+      {/* The case for the inspection, made once — with one real report from
+          the best-scoring car in stock. */}
+      <InspectionStory car={inventory.best} report={report} />
 
       {/* Five of the eight; the full set lives on /how-it-works. */}
       <Section tone="page">

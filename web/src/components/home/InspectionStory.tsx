@@ -3,9 +3,12 @@ import { Container, Icon, Section } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { CATEGORIES, CRITICAL_ITEMS, PASS_THRESHOLD, TOTAL_POINTS } from '@/lib/inspection-policy'
 import { getServerT } from '@/lib/i18n/server'
+import { InspectionCertificate } from './InspectionCertificate'
+import type { Car, InspectionReport } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// The case for the inspection, made once.
+// The case for the inspection, made once: the controls, one real car's report,
+// and the rulebook that report was scored against.
 //
 // This used to be three sections arguing one point over three and a half phone
 // screens: "Evidence before contact" (four controls), "What the score is made
@@ -28,8 +31,49 @@ const CONTROLS: { icon: IconName; key: string }[] = [
 
 const HEAVIEST = Math.max(...CATEGORIES.map((c) => c.points))
 
-export async function InspectionStory() {
+export async function InspectionStory({ car, report }: { car: Car | null; report: InspectionReport | null }) {
   const t = await getServerT()
+
+  const ledger = (
+    <>
+      <h3 className="text-title font-extrabold text-content">{t('home.inspection.title')}</h3>
+      <p className="mt-2 text-body text-content-secondary">{t('home.inspection.description')}</p>
+
+      <ul className="mt-6">
+        {CATEGORIES.map((cat) => (
+          <li
+            key={cat.key}
+            className="grid grid-cols-[1fr_auto] items-center gap-x-5 gap-y-2 border-t border-line-soft py-3.5 sm:grid-cols-[minmax(0,13rem)_1fr_auto]"
+          >
+            <span className="min-w-0 text-body font-bold text-content">
+              {t(`home.inspection.category.${cat.key}`)}
+            </span>
+            <span className="order-3 col-span-2 h-1.5 overflow-hidden rounded-pill bg-surface-alt sm:order-none sm:col-span-1" aria-hidden="true">
+              <span className="block h-full rounded-pill bg-content-secondary" style={{ width: `${(cat.points / HEAVIEST) * 100}%` }} />
+            </span>
+            <span className="whitespace-nowrap text-right text-caption tabular-nums text-content-secondary">
+              <span className="font-bold text-content">{cat.points}</span>
+              {cat.critical > 0 ? (
+                <span className="text-warning-text">
+                  {', '}
+                  {t('home.inspection.criticalCount', { count: cat.critical })}
+                </span>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-6 grid gap-x-10 gap-y-3 border-t-2 border-content pt-5 sm:grid-cols-2">
+        <p className="text-caption leading-relaxed text-content-secondary">
+          {t('home.inspection.ruleScore', { total: TOTAL_POINTS, threshold: PASS_THRESHOLD })}
+        </p>
+        <p className="text-caption leading-relaxed text-content-secondary">
+          {t('home.inspection.ruleCritical', { critical: CRITICAL_ITEMS })}
+        </p>
+      </div>
+    </>
+  )
 
   return (
     <Section tone="surface">
@@ -71,44 +115,23 @@ export async function InspectionStory() {
           </div>
 
           <div className="min-w-0 lg:col-span-7">
-            <h3 className="text-title font-extrabold text-content">{t('home.inspection.title')}</h3>
-            <p className="mt-2 text-body text-content-secondary">{t('home.inspection.description')}</p>
-
-            <ul className="mt-6">
-              {CATEGORIES.map((cat) => (
-                <li
-                  key={cat.key}
-                  className="grid grid-cols-[1fr_auto] items-center gap-x-5 gap-y-2 border-t border-line-soft py-3.5 sm:grid-cols-[minmax(0,13rem)_1fr_auto]"
-                >
-                  <span className="min-w-0 text-body font-bold text-content">
-                    {t(`home.inspection.category.${cat.key}`)}
-                  </span>
-                  <span className="order-3 col-span-2 h-1.5 overflow-hidden rounded-pill bg-surface-alt sm:order-none sm:col-span-1" aria-hidden="true">
-                    <span className="block h-full rounded-pill bg-content-secondary" style={{ width: `${(cat.points / HEAVIEST) * 100}%` }} />
-                  </span>
-                  <span className="whitespace-nowrap text-right text-caption tabular-nums text-content-secondary">
-                    <span className="font-bold text-content">{cat.points}</span>
-                    {cat.critical > 0 ? (
-                      <span className="text-warning-text">
-                        {', '}
-                        {t('home.inspection.criticalCount', { count: cat.critical })}
-                      </span>
-                    ) : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-6 grid gap-x-10 gap-y-3 border-t-2 border-content pt-5 sm:grid-cols-2">
-              <p className="text-caption leading-relaxed text-content-secondary">
-                {t('home.inspection.ruleScore', { total: TOTAL_POINTS, threshold: PASS_THRESHOLD })}
-              </p>
-              <p className="text-caption leading-relaxed text-content-secondary">
-                {t('home.inspection.ruleCritical', { critical: CRITICAL_ITEMS })}
-              </p>
-            </div>
+            {car ? (
+              // The instance before the rulebook: one car's published report,
+              // then (below) the weights every report is scored against.
+              <>
+                <h3 className="text-title font-extrabold text-content">{t('home.frontExtra.reportTitle')}</h3>
+                <p className="mt-2 max-w-prose text-body text-content-secondary">{t('home.frontExtra.reportLede')}</p>
+                <div className="mt-6">
+                  <InspectionCertificate car={car} report={report} />
+                </div>
+              </>
+            ) : (
+              ledger
+            )}
           </div>
         </div>
+
+        {car ? <div className="mt-16 max-w-4xl lg:mt-20">{ledger}</div> : null}
       </Container>
     </Section>
   )
