@@ -1,5 +1,13 @@
 # Sawa Cars web: audit and recommendations
 
+> **Status (24 Sep 2026): Phases 1 and 2 implemented**, plus the public
+> `/imports` page and facet URLs in the sitemap, on branch
+> `claude/serene-gauss-s7zo5f`. Measured on a production build: first-load JS
+> `/` 343 → 122 KB, `/cars` 347 → 124 KB; axe-core (WCAG 2.1 AA + best
+> practice) reports no violations on 13 pages in both themes. Still open from
+> Phase 3: the photography standard for inspection centres (F13, an
+> operational change) and `/compare`.
+
 > 24 Sep 2026 · `web/` at `9c5ea32` · audited before any redesign work starts.
 > Method: production build (`next build` + `next start`) against a local
 > backend with the demo seed, captured with Playwright at 1440×900 and

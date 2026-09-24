@@ -128,10 +128,10 @@ export async function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-micro text-white/45">
+          <p className="text-micro text-white/60">
             © {year} {SITE.name}. Kigali, Rwanda. {t('footer.rights')}
           </p>
-          <p className="text-micro text-white/45">
+          <p className="text-micro text-white/60">
             {t('footer.noCheckout')}
           </p>
         </div>

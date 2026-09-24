@@ -304,7 +304,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                   <p
                     className={`mt-3 text-caption font-semibold ${
                       market.tone === 'good'
-                        ? 'text-success'
+                        ? 'text-success-text'
                         : market.tone === 'high'
                         ? 'text-warning-text'
                         : 'text-content-muted'

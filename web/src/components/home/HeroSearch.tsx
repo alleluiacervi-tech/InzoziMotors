@@ -79,57 +79,62 @@ export function HeroSearch({
       </div>
 
       {/* BUY */}
-      <form
-        action="/cars"
-        method="get"
+      {/* role="tabpanel" is not allowed on <form>, so each panel is a div
+          holding its form. */}
+      <div
         role="tabpanel"
         id={`${id}-panel-buy`}
         aria-labelledby={`${id}-tab-buy`}
         hidden={mode !== 'buy'}
-        // The `hidden` attribute alone loses to a display utility, so the
-        // visibility class is toggled with it.
-        className={`${mode === 'buy' ? 'grid' : 'hidden'} grid-cols-2 gap-3 p-3 pt-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end`}
       >
-        <div className="min-w-0">
-          <label htmlFor={`${id}-make`} className={label}>{t('home.front.make')}</label>
-          <select id={`${id}-make`} name="make" value={make} onChange={(e) => setMake(e.target.value)} className={field}>
-            <option value="">{t('home.front.anyMake')}</option>
-            {makes.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.value} ({m.count})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="min-w-0">
-          <label htmlFor={`${id}-model`} className={label}>{t('home.front.model')}</label>
-          <input
-            id={`${id}-model`}
-            name="model"
-            list={`${id}-models`}
-            autoComplete="off"
-            placeholder={t('home.front.anyModel')}
-            className={field}
-          />
-          <datalist id={`${id}-models`}>
-            {models.map((m) => <option key={m} value={m} />)}
-          </datalist>
-        </div>
-        <div className="col-span-2 min-w-0 sm:col-span-1">
-          <label htmlFor={`${id}-budget`} className={label}>{t('home.front.budget')}</label>
-          <select id={`${id}-budget`} name="max_price" defaultValue="" className={field}>
-            <option value="">{t('home.front.anyBudget')}</option>
-            {BUDGET_EDGES.map((edge) => (
-              <option key={edge} value={edge}>
-                {t('home.front.upTo', { amount: formatMoney(edge) })}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button type="submit" size="lg" className="col-span-2 h-12 sm:col-span-1 sm:px-6" leadingIcon={<Icon name="search" size={18} />}>
-          {t('home.front.showCars')}
-        </Button>
-      </form>
+        <form
+          action="/cars"
+          method="get"
+          // The `hidden` attribute alone loses to a display utility, so the
+          // visibility class is toggled with it.
+          className={`${mode === 'buy' ? 'grid' : 'hidden'} grid-cols-2 gap-3 p-3 pt-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end`}
+        >
+          <div className="min-w-0">
+            <label htmlFor={`${id}-make`} className={label}>{t('home.front.make')}</label>
+            <select id={`${id}-make`} name="make" value={make} onChange={(e) => setMake(e.target.value)} className={field}>
+              <option value="">{t('home.front.anyMake')}</option>
+              {makes.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.value} ({m.count})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-0">
+            <label htmlFor={`${id}-model`} className={label}>{t('home.front.model')}</label>
+            <input
+              id={`${id}-model`}
+              name="model"
+              list={`${id}-models`}
+              autoComplete="off"
+              placeholder={t('home.front.anyModel')}
+              className={field}
+            />
+            <datalist id={`${id}-models`}>
+              {models.map((m) => <option key={m} value={m} />)}
+            </datalist>
+          </div>
+          <div className="col-span-2 min-w-0 sm:col-span-1">
+            <label htmlFor={`${id}-budget`} className={label}>{t('home.front.budget')}</label>
+            <select id={`${id}-budget`} name="max_price" defaultValue="" className={field}>
+              <option value="">{t('home.front.anyBudget')}</option>
+              {BUDGET_EDGES.map((edge) => (
+                <option key={edge} value={edge}>
+                  {t('home.front.upTo', { amount: formatMoney(edge) })}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button type="submit" size="lg" className="col-span-2 h-12 sm:col-span-1 sm:px-6" leadingIcon={<Icon name="search" size={18} />}>
+            {t('home.front.showCars')}
+          </Button>
+        </form>
+      </div>
 
       {/* RENT */}
       <div
@@ -153,48 +158,51 @@ export function HeroSearch({
       </div>
 
       {/* IMPORT */}
-      <form
-        action="/imports"
-        method="get"
+      <div
         role="tabpanel"
         id={`${id}-panel-import`}
         aria-labelledby={`${id}-tab-import`}
         hidden={mode !== 'import'}
-        className={`${mode === 'import' ? 'block' : 'hidden'} p-3 pt-4`}
       >
-        <p className="text-caption leading-relaxed text-content-secondary">{t('home.front.importLede')}</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-          <div className="min-w-0">
-            <label htmlFor={`${id}-year`} className={label}>{t('home.front.importYear')}</label>
-            <input
-              id={`${id}-year`}
-              name="year"
-              type="number"
-              inputMode="numeric"
-              min={1990}
-              max={new Date().getFullYear() + 1}
-              placeholder={String(new Date().getFullYear() - 5)}
-              className={field}
-            />
+        <form
+          action="/imports"
+          method="get"
+          className={`${mode === 'import' ? 'block' : 'hidden'} p-3 pt-4`}
+        >
+          <p className="text-caption leading-relaxed text-content-secondary">{t('home.front.importLede')}</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <div className="min-w-0">
+              <label htmlFor={`${id}-year`} className={label}>{t('home.front.importYear')}</label>
+              <input
+                id={`${id}-year`}
+                name="year"
+                type="number"
+                inputMode="numeric"
+                min={1990}
+                max={new Date().getFullYear() + 1}
+                placeholder={String(new Date().getFullYear() - 5)}
+                className={field}
+              />
+            </div>
+            <div className="min-w-0">
+              <label htmlFor={`${id}-fob`} className={label}>{t('home.front.importPrice')}</label>
+              <input
+                id={`${id}-fob`}
+                name="price_usd"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={100}
+                placeholder="12000"
+                className={field}
+              />
+            </div>
+            <Button type="submit" size="lg" className="h-12" trailingIcon={<Icon name="arrow-right" size={18} />}>
+              {t('home.front.importCta')}
+            </Button>
           </div>
-          <div className="min-w-0">
-            <label htmlFor={`${id}-fob`} className={label}>{t('home.front.importPrice')}</label>
-            <input
-              id={`${id}-fob`}
-              name="price_usd"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={100}
-              placeholder="12000"
-              className={field}
-            />
-          </div>
-          <Button type="submit" size="lg" className="h-12" trailingIcon={<Icon name="arrow-right" size={18} />}>
-            {t('home.front.importCta')}
-          </Button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }

@@ -14,8 +14,8 @@ import { SCORE_MAX, summariseReport } from './inspection'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GRADE_TONE = {
-  A: { bar: 'bg-success', text: 'text-success' },
-  B: { bar: 'bg-success', text: 'text-success' },
+  A: { bar: 'bg-success', text: 'text-success-text' },
+  B: { bar: 'bg-success', text: 'text-success-text' },
   C: { bar: 'bg-warning', text: 'text-warning-text' },
   D: { bar: 'bg-danger', text: 'text-danger' },
 } as const
@@ -62,7 +62,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
         </div>
 
         <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-caption font-semibold">
-          <span className="inline-flex items-center gap-1.5 text-success">
+          <span className="inline-flex items-center gap-1.5 text-success-text">
             <Icon name="check-circle" size={14} />
             {t('cars.report.passed', { count: summary.pass })}
           </span>
@@ -100,7 +100,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
               </div>
 
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro font-semibold">
-                <span className="text-success">{t('cars.report.passed', { count: category.pass })}</span>
+                <span className="text-success-text">{t('cars.report.passed', { count: category.pass })}</span>
                 {category.flag ? (
                   <span className="text-warning-text">{t('cars.report.flagged', { count: category.flag })}</span>
                 ) : null}

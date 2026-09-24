@@ -16,7 +16,7 @@ import type { TFunction } from '@/lib/i18n/dictionary'
 type Tone = 'pass' | 'flag' | 'fail' | 'unknown'
 
 const TONES: Record<Tone, { icon: IconName; className: string; fallbackKey: string }> = {
-  pass: { icon: 'check-circle', className: 'text-success', fallbackKey: 'cars.history.verified' },
+  pass: { icon: 'check-circle', className: 'text-success-text', fallbackKey: 'cars.history.verified' },
   flag: { icon: 'alert', className: 'text-warning-text', fallbackKey: 'cars.history.needsAttention' },
   fail: { icon: 'close-circle', className: 'text-danger', fallbackKey: 'cars.history.failedCheck' },
   unknown: { icon: 'minus', className: 'text-content-muted', fallbackKey: 'cars.history.notVerified' },

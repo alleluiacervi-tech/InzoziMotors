@@ -142,7 +142,7 @@ export function ChipGroup<T extends string | number>({
             >
               {option.label}
               {option.hint ? (
-                <span className="mt-0.5 text-micro font-semibold opacity-70">{option.hint}</span>
+                <span className="mt-0.5 text-micro font-semibold opacity-90">{option.hint}</span>
               ) : null}
             </span>
           </label>
