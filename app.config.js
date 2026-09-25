@@ -105,7 +105,9 @@ export default ({ config }) => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#CC050F',
     },
-    package: 'com.sawacars.app',
+    // Differs from the iOS bundle id on purpose: com.sawacars.app is held by a
+    // personal Play account, so the company account publishes under this name.
+    package: 'com.sawacars.android',
     permissions: [
       'CAMERA',
       'android.permission.POST_NOTIFICATIONS',

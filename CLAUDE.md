@@ -143,7 +143,7 @@ commission.
 
 | | |
 |---|---|
-| Bundle id / package | `com.sawacars.app` |
+| Bundle id / package | iOS `com.sawacars.app` · Android `com.sawacars.android` (company Play account; `com.sawacars.app` is stuck on a personal Play account that never got production access) |
 | Slug / EAS project | `sawa-cars` / `f2c5d3f8-8777-4b97-96ec-1482d374a42a` (account `alleluiacervi`; moved from `alleluia_cervi` 25 Sep 2026 after the free build quota ran out) |
 | Version | `1.0.0`; build numbers are **remote** (`appVersionSource: remote`, auto-increment) |
 | Apple Team ID | `5Z2LA9U639` · ASC app id `6803097569` |
