@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "release:check": "node scripts/release-preflight.js",
-    "mobile:imports": "node scripts/check-mobile-imports.js"
+    "mobile:imports": "node scripts/check-mobile-imports.js",
+    "sync": "sh scripts/sync.sh"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
