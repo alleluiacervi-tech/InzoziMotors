@@ -3,16 +3,6 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.sawacars.android",
-      "sha256_cert_fingerprints": [
-        "REPLACE_WITH_PLAY_APP_SIGNING_SHA256_FINGERPRINT"
-      ]
-    }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
       "package_name": "com.sawacars.app",
       "sha256_cert_fingerprints": [
         "D2:9F:B0:6F:3A:C3:BD:82:C4:F5:AB:CC:CE:AC:64:66:E8:DE:EC:B4:BA:D2:80:F9:3D:6F:26:D0:39:74:20:EC"
