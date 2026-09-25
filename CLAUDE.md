@@ -144,7 +144,7 @@ commission.
 | | |
 |---|---|
 | Bundle id / package | `com.sawacars.app` |
-| Slug / EAS project | `sawa-cars` / `9c7aebc4-04b3-4950-b4db-0021e7836e65` |
+| Slug / EAS project | `sawa-cars` / `f2c5d3f8-8777-4b97-96ec-1482d374a42a` (account `alleluiacervi`; moved from `alleluia_cervi` 25 Sep 2026 after the free build quota ran out) |
 | Version | `1.0.0`; build numbers are **remote** (`appVersionSource: remote`, auto-increment) |
 | Apple Team ID | `5Z2LA9U639` · ASC app id `6803097569` |
 | Android | Play App Signing SHA-256 registered in `assetlinks.json`; target/compile SDK 36 |

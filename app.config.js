@@ -7,12 +7,13 @@
 // about that server has to travel through here.
 
 const DEV_FALLBACK = null; // resolved on-device in src/api/client.js
-const EAS_PROJECT_ID = '9c7aebc4-04b3-4950-b4db-0021e7836e65';
+const EAS_PROJECT_ID = 'f2c5d3f8-8777-4b97-96ec-1482d374a42a';
 
 export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
   slug: 'sawa-cars',
+  owner: 'alleluiacervi',
   // A literal, deliberately. This briefly read
   // `process.env.APP_VERSION || '1.0.4'`, which existed only so the publish
   // workflow could force a runtime version and fan one bundle out to every
