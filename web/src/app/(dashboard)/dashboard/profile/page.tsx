@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { signOutAction } from '@/app/actions/auth'
 import { DeleteAccountForm } from '@/components/dashboard/DeleteAccountForm'
+import { NotificationSettingsForm } from '@/components/dashboard/NotificationSettingsForm'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { PasswordForm } from '@/components/dashboard/PasswordForm'
 import { ProfileForm } from '@/components/dashboard/ProfileForm'
@@ -91,13 +92,20 @@ export default async function ProfilePage() {
               <p className="mt-3 text-caption leading-relaxed text-content-secondary">
                 {t(verification.bodyKey)}
               </p>
-              {user.id_verified !== 'approved' ? (
+              {user.id_verified === 'none' || user.id_verified === 'rejected' ? (
                 <div className="mt-5">
-                  <Button href="/download" variant="outline" size="sm">
-                    {t('dashboard.common.getApp')}
+                  <Button href="/dashboard/verify" variant="outline" size="sm">
+                    {t('onboarding.notice.cta')}
                   </Button>
                 </div>
               ) : null}
+            </Card>
+          </section>
+
+          <section aria-labelledby="notifications">
+            <PanelHeading id="notifications" title={t('dashboard.profile.notificationsHeading')} />
+            <Card className="p-5 sm:p-6">
+              <NotificationSettingsForm messageEmails={user.message_email_notifications !== false} />
             </Card>
           </section>
 

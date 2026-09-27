@@ -314,6 +314,8 @@ app.use('/fx',              require('./src/routes/fx'));
 // so nothing becomes public by being added to the table. See routes/settings.js.
 app.use('/settings',        require('./src/routes/settings'));
 app.use('/makes',           require('./src/routes/makes'));
+// Public seller and showroom profiles — same eligibility as a public listing.
+app.use('/sellers',         require('./src/routes/sellers'));
 // The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
 // see src/lib/mail/ for why it is a live read rather than a synced copy.
 app.use('/mail',            require('./src/routes/mail'));

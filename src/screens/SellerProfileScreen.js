@@ -12,6 +12,8 @@ import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { SELLER_PROFILES, DEFAULT_SELLER_PROFILE } from '../data/inspectionData';
 import reviewsApi from '../api/reviews';
+import carsApi from '../api/cars';
+import { formatPrice } from '../data/cars';
 import { showToast, showActionSheet } from '../components/Feedback';
 
 // Same vocabulary as the chat's report sheet — one reporting language app-wide.
@@ -151,9 +153,14 @@ export default function SellerProfileScreen({ navigation, route }) {
     Promise.all([
       reviewsApi.getTrustScore(sellerId).catch(() => null),
       reviewsApi.getSellerReviews(sellerId).catch(() => null),
-    ]).then(([trust, revData]) => {
+      // GET /sellers/:id answers only for a seller whose listings are public
+      // (G9 in docs/WEB-PARITY-PLAN.md); a 404 means this profile isn't public.
+      carsApi.getSellerProfile(sellerId).catch((err) => (err?.status === 404 ? 'gone' : null)),
+      carsApi.getSellerListings(sellerId).catch(() => []),
+    ]).then(([trust, revData, publicProfile, listings]) => {
       if (cancelled) return;
-      if (!trust && !revData) { setFailed(true); return; }
+      if (publicProfile === 'gone' || (!trust && !revData)) { setFailed(true); return; }
+      const pub = publicProfile && typeof publicProfile === 'object' ? publicProfile : null;
       const b = trust?.breakdown || {};
       const reviews = Array.isArray(revData?.reviews)
         ? revData.reviews.map((r) => ({
@@ -167,10 +174,13 @@ export default function SellerProfileScreen({ navigation, route }) {
       const avg = revData?.average_rating != null
         ? Number(revData.average_rating)
         : Number(b.reviews?.avg || 0);
+      const name = (pub?.is_showroom && pub?.business_name) || pub?.name || sellerName || 'Seller';
       setApiProfile({
-        name: sellerName || 'Seller',
-        initials: (sellerName || 'S').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase(),
-        memberSince: null, // not exposed by the API yet — hidden, not invented
+        name,
+        initials: name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase(),
+        memberSince: pub?.member_since
+          ? new Date(pub.member_since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : null,
         location: null,
         bio: null,
         idVerified: (b.id_verified?.points || 0) > 0,
@@ -178,7 +188,13 @@ export default function SellerProfileScreen({ navigation, route }) {
         responseRate: b.response_rate?.rate ?? 0,
         avgRating: Number.isFinite(avg) ? avg : 0,
         totalReviews: revData?.total != null ? Number(revData.total) : Number(b.reviews?.count || 0),
-        activeListings: [],
+        // Only the seller's public, live cars — GET /cars narrowed to them.
+        activeListings: (Array.isArray(listings) ? listings : []).map((c) => ({
+          id: c.id,
+          title: c.title,
+          image: c.images?.[0] || null,
+          price: formatPrice(c.price),
+        })),
         reviews,
       });
     });
@@ -304,9 +320,7 @@ export default function SellerProfileScreen({ navigation, route }) {
                   <Pressable
                     key={listing.id}
                     style={styles.listingCard}
-                    onPress={() => {
-                      /* navigate to car detail */
-                    }}
+                    onPress={() => navigation.navigate('VehicleDetail', { carId: listing.id })}
                   >
                     <Photo uri={listing.image} width={PHOTO.CARD} style={styles.listingImage} resizeMode="contain" />
                     <Text style={styles.listingTitle} numberOfLines={2}>{listing.title}</Text>

@@ -10,7 +10,11 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 // Subfolder resolution:
 //   /inspections/cars/:carId/photos      -> cars/<carId>
 //   /rentals/bookings/:bookingId/photos  -> rentals/<bookingId>
+//   /submissions/:id/reference-photos    -> submissions/<id>
 //   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)
+//
+// id-docs is the fallback, so every new upload route needs its own rule above
+// it — otherwise its files land in the private ID folder and can never be shown.
 const resolveSubdir = (req) => {
   if (req.params.carId) return `cars/${req.params.carId}`;
   // Brand marks. A flat folder rather than one per brand: there is exactly one
@@ -19,6 +23,7 @@ const resolveSubdir = (req) => {
   if (req.params.makeId) return 'brands';
   if (req.params.bookingId) return `rentals/${req.params.bookingId}`;
   if (req.params.id && req.baseUrl === '/imports') return `imports/${req.params.id}`;
+  if (req.params.id && req.baseUrl === '/submissions') return `submissions/${req.params.id}`;
   return 'id-docs';
 };
 

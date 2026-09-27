@@ -28,6 +28,9 @@ type UserRow = {
   id_front_url?: string
   id_back_url?: string
   selfie_url?: string
+  /** 'live' = every ID photo came straight from a camera; 'file' = at least one
+   *  was chosen from the device; null = sent by an older client. */
+  id_capture_source?: 'live' | 'file' | null
   seller_type?: string | null
   max_active_listings?: number | null
   listing_cap_note?: string | null
@@ -615,7 +618,7 @@ export default function UsersPage() {
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-tint text-lg font-bold text-brand">{(u.name || 'U')[0].toUpperCase()}</div>
                 <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex flex-wrap items-center gap-2"><span className="font-semibold text-content">{u.name}</span><Pill status="pending" label="Pending verification" /></div>
+                  <div className="mb-1 flex flex-wrap items-center gap-2"><span className="font-semibold text-content">{u.name}</span><Pill status="pending" label="Pending verification" />{u.id_capture_source === 'live' ? <Pill status="approved" label="Live camera capture" /> : u.id_capture_source === 'file' ? <Pill status="draft" label="Chosen from files — check closely" /> : null}</div>
                   <p className="text-label text-content-muted">{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>
                   <p className="mt-1 text-caption text-content-muted">Submitted {fmtDate(u.id_submitted_at || u.created_at)}</p>
                   <div className="mt-3 flex flex-wrap gap-3">

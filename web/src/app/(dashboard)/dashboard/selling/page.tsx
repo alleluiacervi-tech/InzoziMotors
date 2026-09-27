@@ -5,6 +5,7 @@ import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { NextStep } from '@/components/dashboard/NextStep'
 import { Pipeline, stageIndex } from '@/components/dashboard/Pipeline'
 import { PriceEditor } from '@/components/dashboard/PriceEditor'
+import { ListingStatusControls } from '@/components/market/ListingStatusControls'
 import { settled } from '@/components/dashboard/data'
 import { Alert, Button, Card, EmptyState, Icon, StatusPill } from '@/components/ui'
 import { sellerListings, submissions } from '@/lib/api'
@@ -30,10 +31,15 @@ export async function generateMetadata(): Promise<Metadata> {
 // engagement numbers and the price control.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default async function SellingPage() {
+// Submissions the seller may still book or rebook a slot for — the statuses
+// PATCH /submissions/:id/schedule accepts.
+const BOOKABLE = new Set(['under_review', 'approved', 'scheduled'])
+
+export default async function SellingPage({ searchParams }: { searchParams: Promise<{ booked?: string }> }) {
   const t = await getServerT()
   const user = await getCurrentUser()
   const token = await getToken()
+  const { booked } = await searchParams
   if (!user || !token) return null
 
   const verified = user.id_verified === 'approved'
@@ -49,7 +55,9 @@ export default async function SellingPage() {
   const progress = settled(progressResult, {})
   const failed = submissionResult.status === 'rejected' || listingResult.status === 'rejected'
 
-  const live = myListings.filter((car) => car.status === 'live')
+  // Live and paused are both the seller's to manage; paused cars used to be
+  // on no list at all (F15 in docs/WEB-PARITY-PLAN.md).
+  const active = myListings.filter((car) => car.status === 'live' || car.status === 'paused')
   const closed = myListings.filter((car) => car.status === 'sold' || car.status === 'archived')
 
   return (
@@ -57,8 +65,14 @@ export default async function SellingPage() {
       <PageHeader
         title={t('dashboard.selling.title')}
         description={t('dashboard.selling.description')}
-        action={<Button href="/download" size="sm">{t('dashboard.selling.submitInApp')}</Button>}
+        action={<Button href="/sell/submit" size="sm">{t('onboarding.selling.submitCar')}</Button>}
       />
+
+      {booked ? (
+        <Alert tone="success" title={t('onboarding.selling.bookedTitle')} className="mb-6">
+          {t('onboarding.selling.bookedBody')}
+        </Alert>
+      ) : null}
 
       {failed ? (
         <Alert tone="warning" title={t('dashboard.common.someFailedTitle')} className="mb-6">
@@ -95,7 +109,9 @@ export default async function SellingPage() {
           </ol>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button href="/download">{t('dashboard.selling.openSellerApp')}</Button>
+            <Button href="/dashboard/verify">
+              {t(user.id_verified === 'pending' ? 'onboarding.selling.checkVerification' : 'onboarding.selling.verifyNow')}
+            </Button>
             <Button href="/sell" variant="outline">
               {t('dashboard.selling.howSellingWorks')}
             </Button>
@@ -168,6 +184,18 @@ export default async function SellingPage() {
                       </p>
                     ) : null}
 
+                    {BOOKABLE.has(submission.status) ? (
+                      <p className="mt-4">
+                        <Link
+                          href={`/dashboard/selling/${submission.id}/schedule`}
+                          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
+                        >
+                          <Icon name="calendar" size={15} />
+                          {t(submission.inspection_date ? 'onboarding.selling.changeSlot' : 'onboarding.selling.bookInspection')}
+                        </Link>
+                      </p>
+                    ) : null}
+
                     {submission.status === 'live' && submission.car_id ? (
                       <p className="mt-4">
                         <Link
@@ -191,106 +219,103 @@ export default async function SellingPage() {
             icon="car"
             title={t('dashboard.selling.pipelineEmptyTitle')}
             description={t('dashboard.selling.pipelineEmptyBody')}
-            action={<Button href="/sell">{t('dashboard.selling.submitCar')}</Button>}
+            action={<Button href="/sell/submit">{t('dashboard.selling.submitCar')}</Button>}
           />
         </Card>
       ) : null}
 
-      {live.length > 0 ? (
+      {active.length > 0 ? (
         <section className="mt-10" aria-labelledby="live-listings">
           <PanelHeading
             id="live-listings"
-            title="Live listings"
-            hint="Views and saves are counted in real time"
+            title={t('market.listing.heading')}
+            hint={t('market.listing.hint')}
           />
           <ul className="space-y-4">
-            {live.map((car) => (
-              <li key={car.id}>
-                <Card className="overflow-hidden">
-                  <div className="sm:flex">
-                    <div className="relative aspect-[4/3] bg-surface-alt sm:aspect-auto sm:w-48 sm:shrink-0">
-                      {car.images?.[0] ? (
-                        <Image
-                          src={car.images[0]}
-                          alt=""
-                          fill
-                          sizes="(max-width: 640px) 100vw, 192px"
-                          className="object-cover"
-                        />
-                      ) : null}
-                    </div>
-
-                    <div className="min-w-0 flex-1 p-5">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <h3 className="text-title-sm font-extrabold text-content">
-                          <Link href={`/cars/${car.id}`} className="hover:text-brand">
-                            {car.title}
-                          </Link>
-                        </h3>
-                        <StatusPill
-                          status={car.status}
-                          label={CAR_STATUS_LABEL[car.status] ?? car.status}
-                        />
-                      </div>
-
-                      <p className="mt-2">
-                        <span className="text-price font-extrabold tracking-[-0.02em] text-brand">
-                          { formatMoney(car.price) }
-                        </span>
-                      </p>
-
-                      <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-line-soft pt-4">
-                        <div>
-                          <dt className="text-micro font-bold text-content-muted">
-                            Views
-                          </dt>
-                          <dd className="text-title-sm font-extrabold text-content">{car.views}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-micro font-bold text-content-muted">
-                            Saves
-                          </dt>
-                          <dd className="text-title-sm font-extrabold text-content">
-                            {car.saves_count ?? car.saves ?? 0}
-                          </dd>
-                        </div>
-                        {car.listed_at ? (
-                          <div>
-                            <dt className="text-micro font-bold text-content-muted">
-                              Listed
-                            </dt>
-                            <dd className="text-title-sm font-extrabold text-content">
-                              {formatDate(car.listed_at)}
-                            </dd>
-                          </div>
-                        ) : null}
-                      </dl>
-
-                      <div className="mt-4">
-                        {car.status === 'live' ? (
-                          <PriceEditor
-                            carId={car.id}
-                            currentPrice={car.price}
-                            title={car.title}
+            {active.map((car) => {
+              const daysLive = car.listed_at
+                ? Math.max(0, Math.floor((Date.now() - new Date(car.listed_at).getTime()) / 86_400_000))
+                : null
+              const metrics = [
+                { label: t('market.listing.views'), value: car.views ?? 0 },
+                { label: t('market.listing.saves'), value: car.saves_count ?? car.saves ?? 0 },
+                { label: t('market.listing.enquiries'), value: car.inquiries_count ?? 0 },
+                { label: t('market.listing.contacts'), value: car.contacts_count ?? 0 },
+                ...(daysLive !== null ? [{ label: t('market.listing.daysLive'), value: daysLive }] : []),
+              ]
+              return (
+                <li key={car.id}>
+                  <Card className="overflow-hidden">
+                    <div className="sm:flex">
+                      <div className="relative aspect-[4/3] bg-surface-alt sm:aspect-auto sm:w-48 sm:shrink-0">
+                        {car.images?.[0] ? (
+                          <Image
+                            src={car.images[0]}
+                            alt=""
+                            fill
+                            sizes="(max-width: 640px) 100vw, 192px"
+                            className="object-cover"
                           />
-                        ) : (
-                          <p className="text-caption leading-relaxed text-content-secondary">
-                            Price editing is available while a listing is live. Keep the status and price accurate whenever availability changes.
-                          </p>
-                        )}
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-0 flex-1 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <h3 className="text-title-sm font-extrabold text-content">
+                            {car.status === 'live' ? (
+                              <Link href={`/cars/${car.id}`} className="hover:text-brand">
+                                {car.title}
+                              </Link>
+                            ) : (
+                              car.title
+                            )}
+                          </h3>
+                          <StatusPill
+                            status={car.status}
+                            label={CAR_STATUS_LABEL[car.status] ?? car.status}
+                          />
+                        </div>
+
+                        <p className="mt-2">
+                          <span className="text-price font-extrabold tracking-[-0.02em] text-brand">
+                            {formatMoney(car.price)}
+                          </span>
+                        </p>
+
+                        <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-line-soft pt-4">
+                          {metrics.map((metric) => (
+                            <div key={metric.label}>
+                              <dt className="text-micro font-bold text-content-muted">{metric.label}</dt>
+                              <dd className="tnum text-title-sm font-extrabold text-content">{metric.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                        <p className="mt-2 text-micro text-content-muted">{t('market.listing.allTime')}</p>
+
+                        <div className="mt-4">
+                          {car.status === 'live' ? (
+                            <PriceEditor carId={car.id} currentPrice={car.price} title={car.title} />
+                          ) : (
+                            <p className="text-caption leading-relaxed text-content-secondary">
+                              {t('market.listing.pausedNote')}
+                            </p>
+                          )}
+                        </div>
+
+                        <ListingStatusControls carId={car.id} status={car.status === 'live' ? 'live' : 'paused'} />
                       </div>
                     </div>
-                  </div>
-                </Card>
-              </li>
-            ))}
+                  </Card>
+                </li>
+              )
+            })}
           </ul>
         </section>
       ) : null}
 
       {closed.length > 0 ? (
         <section className="mt-10" aria-labelledby="closed-listings">
-          <PanelHeading id="closed-listings" title="Closed listings" />
+          <PanelHeading id="closed-listings" title={t('market.listing.closedHeading')} />
           <Card className="p-2">
             <ul>
               {closed.map((car) => (
@@ -299,8 +324,8 @@ export default async function SellingPage() {
                     <div className="min-w-0">
                       <p className="truncate text-caption font-bold text-content">{car.title}</p>
                       <p className="text-caption text-content-muted">
-                        { formatMoney(car.price) }
-                        {car.sold_at ? ` · sold ${formatDate(car.sold_at)}` : ''}
+                        {formatMoney(car.price)}
+                        {car.sold_at ? ` · ${t('market.listing.soldOn', { date: formatDate(car.sold_at) })}` : ''}
                       </p>
                     </div>
                     <StatusPill

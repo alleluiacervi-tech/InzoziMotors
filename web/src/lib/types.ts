@@ -26,6 +26,10 @@ export interface User {
   response_rate?: number
   completed_sales?: number
   avatar_url?: string | null
+  /** On by default server-side (D3/O4 in docs/WEB-PARITY-PLAN.md) — the
+   *  "while you were away" email nudge, opt-out. */
+  message_email_notifications?: boolean
+  seller_type?: string | null
   created_at: string
 }
 
@@ -106,6 +110,10 @@ export interface Car {
   seller_id_verified?: IdVerificationStatus
   seller_sales?: number
   saves_count?: number
+  /** GET /cars/seller/mine only: conversations about this car. */
+  inquiries_count?: number
+  /** GET /cars/seller/mine only: phone/WhatsApp disclosures to buyers. */
+  contacts_count?: number
 
   // Server-computed market intelligence (backend/src/routes/cars.js).
   // market_avg is null when there were fewer than 3 real comparables — in that
@@ -363,15 +371,15 @@ export interface Message {
   sender_name?: string
 }
 
+/** GET /reviews/trust-score/:id — the server's own 100-point score. */
 export interface TrustScore {
-  total: number
+  total_score: number
   breakdown: {
-    id_verified: number
-    completed_sales: number
-    response_rate: number
-    reviews: number
+    id_verified: { points: number; max: number }
+    completed_sales: { points: number; max: number; count: number }
+    response_rate: { points: number; max: number; rate: number }
+    reviews: { points: number; max: number; avg: string | null; count: string | number }
   }
-  profile?: Record<string, unknown>
 }
 
 export interface Review {
@@ -383,6 +391,29 @@ export interface Review {
   comment?: string | null
   created_at: string
   reviewer_name?: string
+  car_title?: string
+}
+
+/** GET /reviews/seller/:id */
+export interface SellerReviews {
+  reviews: Review[]
+  average_rating: string | null
+  total: number
+}
+
+/** GET /sellers/:id — only ever an eligible seller; never contact details. */
+export interface SellerProfile {
+  id: string
+  name: string
+  avatar_url: string | null
+  member_since: string
+  seller_type: string
+  is_showroom: boolean
+  business_name: string | null
+  id_verified: true
+  business_verified: boolean
+  completed_sales: number
+  response_rate: number
 }
 
 export interface Valuation {

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
-import { signInAction, type AuthState } from '@/app/actions/auth'
+import { reopenAccountAction, signInAction, type AuthState } from '@/app/actions/auth'
 import { Alert, Field, Input } from '@/components/ui'
 import { useT } from '@/lib/i18n/context'
 import { PasswordField } from '../_components/PasswordField'
@@ -15,6 +15,19 @@ export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail:
   // Held in state only so "Forgot your password?" can carry the address across —
   // retyping an email you just typed is the small insult that makes people leave.
   const [email, setEmail] = useState(defaultEmail)
+
+  // Hidden again by "Not now", until the next sign-in attempt brings it back.
+  const [dismissedFor, setDismissedFor] = useState<AuthState>(null)
+  if (state?.closed && dismissedFor !== state) {
+    return (
+      <ReopenPanel
+        email={state.closed.email}
+        until={state.closed.until}
+        next={next}
+        onDismiss={() => setDismissedFor(state)}
+      />
+    )
+  }
 
   const fieldErrors = state?.fieldErrors ?? {}
   const forgotHref = email.trim()
@@ -69,6 +82,61 @@ export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail:
       </div>
 
       <SubmitButton pendingLabel={t('auth.signin.submitting')}>{t('auth.signin.submit')}</SubmitButton>
+    </form>
+  )
+}
+
+// G7 in docs/WEB-PARITY-PLAN.md — the app's closed-account prompt, same copy.
+// The password is asked for again: React clears an uncontrolled field once a
+// form action finishes, so the first one is already gone.
+function ReopenPanel({
+  email,
+  until,
+  next,
+  onDismiss,
+}: {
+  email: string
+  until: string | null
+  next: string
+  onDismiss: () => void
+}) {
+  const t = useT()
+  const [state, formAction] = useActionState<AuthState, FormData>(reopenAccountAction, null)
+
+  return (
+    <form action={formAction} noValidate className="space-y-5">
+      <input type="hidden" name="email" value={email} />
+      <input type="hidden" name="next" value={next} />
+
+      <div className="rounded-2xl border border-line-soft bg-surface-alt p-5">
+        <h2 className="text-title-sm font-extrabold text-content">{t('auth.signin.closed.title')}</h2>
+        <p className="mt-2 text-caption leading-relaxed text-content-secondary">{t('auth.signin.closed.body')}</p>
+        {until ? (
+          <p className="mt-2 text-caption font-bold text-content">
+            {t('auth.signin.closed.until', { date: until.slice(0, 10) })}
+          </p>
+        ) : null}
+      </div>
+
+      {state?.error ? <Alert tone="danger">{state.error}</Alert> : null}
+
+      <PasswordField
+        id="reopen-password"
+        name="password"
+        label={t('auth.signin.password')}
+        autoComplete="current-password"
+        required
+        hint={t('auth.signin.closed.passwordAgain')}
+      />
+
+      <SubmitButton pendingLabel={t('auth.signin.closed.reopening')}>{t('auth.signin.closed.reopen')}</SubmitButton>
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="w-full rounded-xl py-2 text-caption font-bold text-content-secondary hover:text-content"
+      >
+        {t('auth.signin.closed.notNow')}
+      </button>
     </form>
   )
 }

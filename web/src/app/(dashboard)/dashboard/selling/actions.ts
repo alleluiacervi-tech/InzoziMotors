@@ -41,3 +41,29 @@ export async function updatePriceAction(
   revalidatePath('/dashboard/selling')
   return { ok: true, message: `Price updated to ${ formatMoney(Math.round(price)) }.` }
 }
+
+export type ListingStatusResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * B1 in docs/WEB-PARITY-PLAN.md — the seller's own listing controls, the
+ * endpoint neither client used to call. The backend owns the transitions
+ * (live ↔ paused, either → sold, sold is final) and re-runs the publication
+ * checks before a paused listing goes live again; its refusal is shown as is.
+ */
+export async function setListingStatusAction(
+  carId: string,
+  status: 'live' | 'paused' | 'sold'
+): Promise<ListingStatusResult> {
+  if (!['live', 'paused', 'sold'].includes(status)) return { ok: false, error: 'Unknown status.' }
+  const token = await getToken()
+  if (!token) return { ok: false, error: 'Your session has expired. Sign in again.' }
+  try {
+    await sellerListings.setStatus(token, carId, status)
+  } catch (err) {
+    return { ok: false, error: describeError(err, 'That change could not be saved.') }
+  }
+  revalidatePath('/dashboard/selling')
+  revalidatePath('/cars')
+  revalidatePath(`/cars/${carId}`)
+  return { ok: true }
+}

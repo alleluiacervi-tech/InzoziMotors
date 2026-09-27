@@ -139,5 +139,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return [...staticEntries, ...facetEntries, ...carEntries, ...rentalEntries]
+  // Every seller with a live car has a public profile (G9). Taken from the live
+  // listings, which already passed the seller-eligibility checks, so no
+  // profile that would 404 is ever listed.
+  const sellerEntries: MetadataRoute.Sitemap = [...new Set(cars.map((car) => car.seller_id).filter(Boolean))].map(
+    (sellerId) => ({ url: `${SITE.url}/sellers/${sellerId}`, changeFrequency: 'weekly', priority: 0.5 })
+  )
+
+  return [...staticEntries, ...facetEntries, ...carEntries, ...sellerEntries, ...rentalEntries]
 }

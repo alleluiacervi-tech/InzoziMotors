@@ -44,6 +44,24 @@ a booking.
 **Sellers** submit a vehicle, book an inspection slot, and control which
 contact channels may be disclosed. They cannot publish; only an admin can.
 
+**Web ↔ app parity is a requirement.** More people use sawacars.com than the
+apps, so a signed-in user must be able to do on the website everything they can
+do in the app, calling the same endpoint with the same rules. "Use the app" is
+allowed only for the exceptions listed in `docs/WEB-PARITY-PLAN.md` §7. Any other
+case is a bug.
+- A new user-facing feature ships on **both** clients, or the PR says why not.
+- Shipped 27 Sep 2026: messaging (read, reply, live updates, report/block),
+  seller onboarding (`/dashboard/verify`, `/sell/submit`,
+  `/dashboard/selling/[id]/schedule`), seller profiles (`/sellers/[id]`),
+  compare (`/compare`, up to 3) and reopening a closed account at sign-in.
+  What is left (Web Push, PWA, the copy sweep) is Phase 4 of the plan.
+- The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
+  `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
+- Browser rules:
+  - the JWT stays in the httpOnly cookie
+  - uploads go through a Next route handler, never a Server Action (1 MB limit)
+  - realtime uses a short-lived socket ticket
+
 **Showrooms** are admin-invited (one-use 48h activation link → `/activate-showroom`),
 need `business_verified`, and may hold rental inventory.
 
@@ -187,7 +205,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0047`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0049`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -254,6 +272,23 @@ once it is shown to a human — store those URLs canonical, never with the
 forbids `aggregateRating`/`priceValidUntil` until they are real. Listing galleries are **flexible** (`listing_min_photos=1`,
 6 recommended) — the old fixed 36-angle rule is gone.
 
+**Gaps from the 27 Sep 2026 parity audit** (`docs/WEB-PARITY-PLAN.md` §3.3),
+fixed the same day (§10, §11):
+- Sellers can pause, relist and mark sold on both clients, through
+  `PATCH /cars/:id/seller-status`. (The app's `/cars/:id/status` is the admin
+  route; the old "relist" that only changed local state is gone.)
+- The socket re-checks the session on every handshake (`verifyLiveSession`, for
+  both the app's token and the website's short-lived ticket).
+- Uploaded photos lose their metadata (GPS, device, time) without being
+  re-encoded: `middleware/strip-metadata.js`, on ID documents and reference
+  photos. Identity documents are still never recompressed.
+- Reference photos reach the backend from both clients, through
+  `POST /submissions/:id/reference-photos`, which stores them under `submissions/<id>`.
+- The app's seller notes are sent as `notes`, the one field the backend stores.
+
+Every new upload route needs its own rule in `resolveSubdir`
+(`middleware/upload.js`). The fallback is the private `id-docs` folder.
+
 ---
 
 ## 8. Guardrails
@@ -279,4 +314,4 @@ records, and providing every secret value.
 Store answers are drafted in `docs/STORE-SUBMISSION.md`. Other live docs:
 `PRODUCTION-READINESS.md`, `LAUNCH-TODO.md`, `DEPLOY-PHASE-2.md`,
 `SEO-LAUNCH-CHECKLIST.md`, `IMPORT-ORDERS-CHECKLIST.md`, `ADMIN-INBOX.md`,
-`IMPORTS-AUDIT.md`.
+`IMPORTS-AUDIT.md`, `WEB-PARITY-PLAN.md` + `WEB-PARITY-TODO.md`.

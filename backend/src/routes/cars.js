@@ -3,7 +3,7 @@ const { log } = require('../lib/log');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 const { requireAuth, requireAdmin, verifyLiveSession } = require('../middleware/auth');
-const { requireUuid, paginate } = require('../middleware/validate');
+const { requireUuid, paginate, isUuid } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
 const { recordAdminAction } = require('../lib/admin-audit');
@@ -144,6 +144,7 @@ const MARKET_COLUMNS = `
 router.get('/', async (req, res) => {
   const { q, make, model, min_price, max_price, min_year, max_year,
           fuel_type, transmission, body_type, drive_side, location, status,
+          seller_id,
           sort = 'listed_at', order = 'desc', limit = 20, offset = 0 } = req.query;
 
   // Public browse is live listings only. No caller — admin included — can
@@ -151,6 +152,16 @@ router.get('/', async (req, res) => {
   // that), so the status param is deliberately ignored rather than whitelisted.
   const conditions = [`status = 'live'`];
   const params = [];
+
+  // One seller's live listings, for their public profile (G9). It narrows this
+  // same query, so a profile can only ever show what the catalogue shows. A
+  // malformed id is refused rather than ignored — ignoring it would return
+  // everyone's cars under one person's name.
+  if (seller_id !== undefined) {
+    if (!isUuid(String(seller_id))) return res.status(400).json({ error: 'seller_id must be a valid id' });
+    params.push(String(seller_id));
+    conditions.push(`c.seller_id = $${params.length}`);
+  }
 
   if (make)          { params.push(make);          conditions.push(`make ILIKE $${params.length}`); }
   if (model)         { params.push(`%${model}%`);  conditions.push(`model ILIKE $${params.length}`); }
@@ -768,7 +779,12 @@ router.get('/seller/mine', requireAuth, paginate(), async (req, res) => {
     const { rows } = await pool.query(
       `SELECT c.*,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
-              (SELECT COUNT(*)::int FROM conversations cv WHERE cv.car_id = c.id) AS inquiries_count
+              (SELECT COUNT(*)::int FROM conversations cv WHERE cv.car_id = c.id) AS inquiries_count,
+              -- Phone/WhatsApp disclosures to acknowledged buyers (invariant 3),
+              -- from the event log, which never stores the number. In-app
+              -- enquiries are already inquiries_count, so they aren't counted twice.
+              (SELECT COUNT(*)::int FROM listing_contact_events ce
+                WHERE ce.car_id = c.id AND ce.channel IN ('phone', 'whatsapp')) AS contacts_count
        FROM cars c
        WHERE c.seller_id = $1
        ORDER BY c.listed_at DESC NULLS LAST

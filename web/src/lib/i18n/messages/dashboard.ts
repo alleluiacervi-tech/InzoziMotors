@@ -19,6 +19,7 @@ const en = {
     saved: 'Saved',
     rentals: 'Rental inquiries',
     imports: 'Imports',
+    messages: 'Messages',
     reports: 'My reports',
     notifications: 'Notifications',
     selling: 'Selling',
@@ -30,6 +31,7 @@ const en = {
   meta: {
     dashboard: 'Dashboard',
     notifications: 'Notifications',
+    messages: 'Messages',
     profile: 'Profile',
     saved: 'Saved',
     selling: 'Selling',
@@ -38,6 +40,7 @@ const en = {
   loading: {
     dashboard: 'Loading your dashboard',
     notifications: 'Loading your notifications',
+    messages: 'Loading your messages',
     profile: 'Loading your profile',
     saved: 'Loading your saved cars',
     selling: 'Loading your cars',
@@ -46,7 +49,6 @@ const en = {
   common: {
     new: 'New',
     signOut: 'Sign out',
-    getApp: 'Get the app',
     partFailedTitle: 'Part of your dashboard did not load',
     partFailedBody: 'Refresh to try again. No account data was changed.',
     someFailedTitle: 'Some of this page did not load',
@@ -101,6 +103,7 @@ const en = {
     viewAccount: 'View account',
     viewCar: 'View car',
     viewSubmission: 'View submission',
+    viewConversation: 'View message',
   },
   reports: {
     title: 'My inspection reports',
@@ -126,6 +129,7 @@ const en = {
     detailsHeading: 'Your details',
     verificationHeading: 'Identity verification',
     accountCreated: 'Account created {{date}}',
+    notificationsHeading: 'Notifications',
     passwordHeading: 'Password',
     deviceHeading: 'This device',
     deviceBody:
@@ -140,10 +144,10 @@ const en = {
         'Your documents are with our team. Reviews finish within 24 hours and you will get a notification the moment it is done.',
       rejectedLabel: 'Needs another attempt',
       rejectedBody:
-        'The photos we received were not clear enough to confirm. Open the Sawa Cars app and resubmit — there is no limit on attempts.',
+        'The photos we received were not clear enough to confirm. Resubmit them from Verify your identity, on the website or in the app — there is no limit on attempts.',
       noneLabel: 'Not started',
       noneBody:
-        'Buying, saving and requests all work without this, and you may submit a car for inspection. Verification is required before publication or public contact activation and happens in the Sawa Cars app: a photo of your national ID and a selfie.',
+        'Buying, saving and requests all work without this, and you may submit a car for inspection. Verification is required before publication or public contact activation and takes a photo of your national ID and a selfie, on the website or in the Sawa Cars app.',
     },
     form: {
       fullName: 'Full name',
@@ -158,6 +162,9 @@ const en = {
         'Enabled details are never placed in the public catalogue. They are disclosed only to a signed-in buyer who acknowledges the direct-deal notice, and the disclosure is recorded.',
       allowPhone: 'Allow buyers to request my phone number',
       allowWhatsapp: 'Allow buyers to request my WhatsApp number',
+      messageEmails: 'Email me when I get a new message',
+      messageEmailsHint:
+        'Only when you have no session open anywhere — at most one email per conversation per hour, and it never includes what was said.',
       email: 'Email',
       emailHint:
         'Your email is your sign-in and cannot be changed here. Contact support if you need it moved.',
@@ -371,11 +378,9 @@ const en = {
     title: 'Selling',
     description:
       'Where each of your cars has reached. Only the Sawa team publishes listings, and only after the 150-point inspection and the photo shoot — that is what makes every car on the marketplace real.',
-    submitInApp: 'Submit in the app',
     verifyTitle: 'Complete identity verification before publication',
     verifyBody:
       'You may submit a car and book its inspection now. Before an administrator can publish it or enable your contact details, complete the one-time check in the app. It needs a photo of your national ID and a selfie. Nothing else on your account is affected.',
-    openSellerApp: 'Open the seller app',
     howSellingWorks: 'How selling works',
     pipelineHeading: 'In the pipeline',
     carCountOne: '{{count}} car',
@@ -428,18 +433,6 @@ const en = {
     saving: 'Saving…',
     saveNewPrice: 'Save new price',
     cancel: 'Cancel',
-  },
-  verificationNotice: {
-    noneTitle: 'Complete your identity check before publication',
-    noneBody:
-      'Buying, saving cars and making requests all work without it, and you may submit a car for inspection now. Before a listing or direct contact details become public, send a photo of your national ID and a selfie in the Sawa Cars app. Our team reviews them within 24 hours.',
-    pendingTitle: 'Your identity check is with our team',
-    pendingBody:
-      'Reviews are completed within 24 hours. You may continue tracking an existing submission while we review it; publication and direct contact stay locked until approval.',
-    rejectedTitle: 'Your identity check needs another attempt',
-    rejectedBody:
-      'Usually this means a photo was blurred or the ID was partly out of frame. Open the Sawa Cars app and resubmit — there is no limit on attempts, and nothing else on your account is affected.',
-    getApp: 'Get the Sawa Cars app',
   },
   errors: {
     sessionExpired: 'Your session has expired. Sign in again.',
@@ -500,6 +493,7 @@ const rw: typeof en = {
     saved: 'Ibyabitswe',
     rentals: 'Ibibazo by’ubukode',
     imports: 'Ibitumizwa',
+    messages: 'Ubutumwa',
     reports: 'Raporo zanjye',
     notifications: 'Amatangazo',
     selling: 'Kugurisha',
@@ -511,6 +505,7 @@ const rw: typeof en = {
   meta: {
     dashboard: 'Imbonerahamwe',
     notifications: 'Amatangazo',
+    messages: 'Ubutumwa',
     profile: 'Umwirondoro',
     saved: 'Ibyabitswe',
     selling: 'Kugurisha',
@@ -519,6 +514,7 @@ const rw: typeof en = {
   loading: {
     dashboard: 'Gutegura imbonerahamwe yawe',
     notifications: 'Gutegura amatangazo yawe',
+    messages: 'Gutegura ubutumwa bwawe',
     profile: 'Gutegura umwirondoro wawe',
     saved: 'Gutegura imodoka wabitse',
     selling: 'Gutegura imodoka zawe',
@@ -527,7 +523,6 @@ const rw: typeof en = {
   common: {
     new: 'Gishya',
     signOut: 'Sohoka',
-    getApp: 'Kura porogaramu',
     partFailedTitle: 'Igice cy’imbonerahamwe yawe ntikyaboneka',
     partFailedBody: 'Ongera ugerageze. Nta makuru ya konti yahinduwe.',
     someFailedTitle: 'Igice cy’uru rupapuro ntikyaboneka',
@@ -582,6 +577,7 @@ const rw: typeof en = {
     viewAccount: 'Reba konti',
     viewCar: 'Reba imodoka',
     viewSubmission: 'Reba icyatanzwe',
+    viewConversation: 'Reba ubutumwa',
   },
   reports: {
     title: 'Raporo zanjye z’isuzuma',
@@ -607,6 +603,7 @@ const rw: typeof en = {
     detailsHeading: 'Amakuru yawe',
     verificationHeading: 'Kwemeza umwirondoro',
     accountCreated: 'Konti yashyizweho {{date}}',
+    notificationsHeading: 'Amatangazo',
     passwordHeading: 'Ijambo ry’ibanga',
     deviceHeading: 'Iki gikoresho',
     deviceBody:
@@ -621,10 +618,10 @@ const rw: typeof en = {
         'Inyandiko zawe ziri ku kipe yacu. Isuzuma rirangira mu masaha 24 kandi uzabona itangazo ako kanya rirangiye.',
       rejectedLabel: 'Bikeneye kongera kugerageza',
       rejectedBody:
-        'Amafoto twakiriye ntiyari asobanutse bihagije kugira ngo byemezwe. Fungura porogaramu ya Sawa Cars maze wongere utange — nta mubare ntarengwa w’ibigerageza.',
+        'Amafoto twakiriye ntiyari asobanutse bihagije kugira ngo byemezwe. Ongera uzohereze uhereye kuri Emeza umwirondoro wawe, ku rubuga cyangwa muri porogaramu — nta mubare ntarengwa w’ibigerageza.',
       noneLabel: 'Bitaratangira',
       noneBody:
-        'Kugura, kubika n’ibyifuzo byose bikora nta kabuza, kandi ushobora gutanga imodoka isuzumwe. Kwemeza birakenerwa mbere yo gutangaza cyangwa gushyiraho aho bakuvugana rusange kandi bikorerwa muri porogaramu ya Sawa Cars: ifoto y’indangamuntu yawe na selfie.',
+        'Kugura, kubika n’ibyifuzo byose bikora nta kabuza, kandi ushobora gutanga imodoka isuzumwe. Kwemeza birakenerwa mbere yo gutangaza cyangwa gushyiraho aho bakuvugana rusange kandi bisaba ifoto y’indangamuntu yawe na selfie, ku rubuga cyangwa muri porogaramu ya Sawa Cars.',
     },
     form: {
       fullName: 'Amazina yuzuye',
@@ -639,6 +636,9 @@ const rw: typeof en = {
         'Amakuru yemewe ntashyirwa mu gitabo rusange. Atangazwa gusa ku muguzi winjiye wemeye itangazo ry’ubucuruzi butaziguye, kandi itangaza ryandikwa.',
       allowPhone: 'Emerera abaguzi gusaba nimero yanjye ya telefoni',
       allowWhatsapp: 'Emerera abaguzi gusaba nimero yanjye ya WhatsApp',
+      messageEmails: 'Nyoherereza imeri igihe mbonye ubutumwa bushya',
+      messageEmailsHint:
+        'Gusa igihe nta gihe cy’ikoreshwa cyafunguye ahandi — nta rushya rurenze rumwe ku kiganiro mu isaha, kandi ntirwerekana icyavuzwe.',
       email: 'Imeri',
       emailHint:
         'Imeri yawe ni yo winjiraho kandi ntishobora guhindurirwa hano. Vugana n’ubufasha niba ukeneye kuyimura.',
@@ -852,11 +852,9 @@ const rw: typeof en = {
     title: 'Kugurisha',
     description:
       'Aho buri modoka yawe igeze. Ni ikipe ya Sawa gusa itangaza amatangazo, kandi gusa nyuma y’isuzuma ry’ingingo 150 no gufata amafoto — ni cyo gituma buri modoka ku isoko iba nyayo.',
-    submitInApp: 'Tanga muri porogaramu',
     verifyTitle: 'Uzuza kwemeza umwirondoro mbere yo gutangaza',
     verifyBody:
       'Ushobora gutanga imodoka no kubuka isuzuma ryayo nonaha. Mbere yuko umuyobozi ashobora kuyitangaza cyangwa gushyiraho amakuru yawe yo kuvugana butaziguye, uzuza isuzuma rikorwa rimwe muri porogaramu ya Sawa Cars: ifoto y’indangamuntu yawe na selfie. Nta kindi kuri konti yawe kigira ingaruka.',
-    openSellerApp: 'Fungura porogaramu y’umucuruzi',
     howSellingWorks: 'Uko kugurisha bikorwa',
     pipelineHeading: 'Mu nzira',
     carCountOne: 'imodoka {{count}}',
@@ -909,18 +907,6 @@ const rw: typeof en = {
     saving: 'Birimo kubikwa…',
     saveNewPrice: 'Bika igiciro gishya',
     cancel: 'Kureka',
-  },
-  verificationNotice: {
-    noneTitle: 'Uzuza isuzuma ry’umwirondoro wawe mbere yo gutangaza',
-    noneBody:
-      'Kugura, kubika imodoka no gukora ibyifuzo byose bikora nta kabuza, kandi ushobora gutanga imodoka isuzumwe nonaha. Mbere yuko itangazo cyangwa amakuru yo kuvugana butaziguye biba rusange, ohereza ifoto y’indangamuntu yawe na selfie muri porogaramu ya Sawa Cars. Ikipe yacu ibisuzuma mu masaha 24.',
-    pendingTitle: 'Isuzuma ry’umwirondoro wawe riri ku kipe yacu',
-    pendingBody:
-      'Isuzuma rirangira mu masaha 24. Ushobora gukomeza gukurikirana icyatanzwe kiriho mu gihe tukirimo tugisuzuma; gutangaza n’ivugana butaziguye bikomeza gufunze kugeza byemejwe.',
-    rejectedTitle: 'Isuzuma ry’umwirondoro wawe rikeneye kongera kugerageza',
-    rejectedBody:
-      'Akenshi ibi bisobanura ko ifoto yari itaboneka neza cyangwa indangamuntu yari ntavuye yose mu ifoto. Fungura porogaramu ya Sawa Cars maze wongere utange — nta mubare ntarengwa w’ibigerageza, kandi nta kindi kuri konti yawe kigira ingaruka.',
-    getApp: 'Kura porogaramu ya Sawa Cars',
   },
   errors: {
     sessionExpired: 'Igihe cyawe cyarangiye. Ongera winjire.',
@@ -981,6 +967,7 @@ const fr: typeof en = {
     saved: 'Enregistrés',
     rentals: 'Demandes de location',
     imports: 'Importations',
+    messages: 'Messages',
     reports: 'Mes rapports',
     notifications: 'Notifications',
     selling: 'Ventes',
@@ -992,6 +979,7 @@ const fr: typeof en = {
   meta: {
     dashboard: 'Tableau de bord',
     notifications: 'Notifications',
+    messages: 'Messages',
     profile: 'Profil',
     saved: 'Enregistrés',
     selling: 'Ventes',
@@ -1000,6 +988,7 @@ const fr: typeof en = {
   loading: {
     dashboard: 'Chargement de votre tableau de bord',
     notifications: 'Chargement de vos notifications',
+    messages: 'Chargement de vos messages',
     profile: 'Chargement de votre profil',
     saved: 'Chargement de vos voitures enregistrées',
     selling: 'Chargement de vos voitures',
@@ -1008,7 +997,6 @@ const fr: typeof en = {
   common: {
     new: 'Nouveau',
     signOut: 'Se déconnecter',
-    getApp: "Obtenir l'application",
     partFailedTitle: "Une partie de votre tableau de bord ne s'est pas chargée",
     partFailedBody: 'Actualisez pour réessayer. Aucune donnée de compte n’a été modifiée.',
     someFailedTitle: "Une partie de cette page ne s'est pas chargée",
@@ -1063,6 +1051,7 @@ const fr: typeof en = {
     viewAccount: 'Voir le compte',
     viewCar: 'Voir la voiture',
     viewSubmission: 'Voir la soumission',
+    viewConversation: 'Voir le message',
   },
   reports: {
     title: 'Mes rapports d’inspection',
@@ -1088,6 +1077,7 @@ const fr: typeof en = {
     detailsHeading: 'Vos coordonnées',
     verificationHeading: 'Vérification d’identité',
     accountCreated: 'Compte créé le {{date}}',
+    notificationsHeading: 'Notifications',
     passwordHeading: 'Mot de passe',
     deviceHeading: 'Cet appareil',
     deviceBody:
@@ -1102,10 +1092,10 @@ const fr: typeof en = {
         'Vos documents sont chez notre équipe. Les examens se terminent en 24 heures et vous recevrez une notification dès que ce sera fait.',
       rejectedLabel: 'Une nouvelle tentative est nécessaire',
       rejectedBody:
-        'Les photos que nous avons reçues n’étaient pas assez nettes pour confirmer. Ouvrez l’application Sawa Cars et renvoyez-les — il n’y a aucune limite de tentatives.',
+        'Les photos que nous avons reçues n’étaient pas assez nettes pour confirmer. Renvoyez-les depuis Vérifier votre identité, sur le site ou dans l’application — il n’y a aucune limite de tentatives.',
       noneLabel: 'Non commencé',
       noneBody:
-        'Acheter, enregistrer et faire des demandes fonctionnent tous sans cela, et vous pouvez soumettre une voiture pour inspection. La vérification est requise avant la publication ou l’activation du contact public et se fait dans l’application Sawa Cars : une photo de votre carte d’identité nationale et un selfie.',
+        'Acheter, enregistrer et faire des demandes fonctionnent tous sans cela, et vous pouvez soumettre une voiture pour inspection. La vérification est requise avant la publication ou l’activation du contact public et demande une photo de votre carte d’identité nationale et un selfie, sur le site ou dans l’application Sawa Cars.',
     },
     form: {
       fullName: 'Nom complet',
@@ -1120,6 +1110,9 @@ const fr: typeof en = {
         'Les coordonnées activées ne sont jamais placées dans le catalogue public. Elles ne sont divulguées qu’à un acheteur connecté qui accepte l’avis de transaction directe, et la divulgation est enregistrée.',
       allowPhone: 'Autoriser les acheteurs à demander mon numéro de téléphone',
       allowWhatsapp: 'Autoriser les acheteurs à demander mon numéro WhatsApp',
+      messageEmails: 'M’envoyer un e-mail quand je reçois un nouveau message',
+      messageEmailsHint:
+        'Uniquement si vous n’avez aucune session ouverte — un e-mail par conversation au maximum toutes les heures, et jamais le contenu du message.',
       email: 'E-mail',
       emailHint:
         'Votre e-mail est votre identifiant de connexion et ne peut pas être modifié ici. Contactez l’assistance si vous devez le déplacer.',
@@ -1333,11 +1326,9 @@ const fr: typeof en = {
     title: 'Ventes',
     description:
       'Où en est chacune de vos voitures. Seule l’équipe Sawa publie les annonces, et seulement après l’inspection en 150 points et la séance photo — c’est ce qui rend chaque voiture du marché réelle.',
-    submitInApp: 'Soumettre dans l’application',
     verifyTitle: 'Terminez la vérification d’identité avant publication',
     verifyBody:
       'Vous pouvez soumettre une voiture et réserver son inspection dès maintenant. Avant qu’un administrateur puisse la publier ou activer vos coordonnées de contact directes, terminez la vérification unique dans l’application Sawa Cars : une photo de votre carte d’identité nationale et un selfie. Rien d’autre sur votre compte n’est affecté.',
-    openSellerApp: 'Ouvrir l’application vendeur',
     howSellingWorks: 'Comment fonctionne la vente',
     pipelineHeading: 'En cours de traitement',
     carCountOne: '{{count}} voiture',
@@ -1390,18 +1381,6 @@ const fr: typeof en = {
     saving: 'Enregistrement…',
     saveNewPrice: 'Enregistrer le nouveau prix',
     cancel: 'Annuler',
-  },
-  verificationNotice: {
-    noneTitle: 'Terminez votre vérification d’identité avant publication',
-    noneBody:
-      'Acheter, enregistrer des voitures et faire des demandes fonctionnent tous sans elle, et vous pouvez soumettre une voiture pour inspection dès maintenant. Avant qu’une annonce ou des coordonnées de contact directes deviennent publiques, envoyez une photo de votre carte d’identité nationale et un selfie dans l’application Sawa Cars. Notre équipe les examine sous 24 heures.',
-    pendingTitle: 'Votre vérification d’identité est chez notre équipe',
-    pendingBody:
-      'Les examens sont effectués sous 24 heures. Vous pouvez continuer à suivre une soumission existante pendant que nous l’examinons ; la publication et le contact direct restent verrouillés jusqu’à l’approbation.',
-    rejectedTitle: 'Votre vérification d’identité nécessite une nouvelle tentative',
-    rejectedBody:
-      'Cela signifie généralement qu’une photo était floue ou que la pièce d’identité était partiellement hors cadre. Ouvrez l’application Sawa Cars et renvoyez-les — il n’y a aucune limite de tentatives, et rien d’autre sur votre compte n’est affecté.',
-    getApp: 'Obtenir l’application Sawa Cars',
   },
   errors: {
     sessionExpired: 'Votre session a expiré. Reconnectez-vous.',
@@ -1462,6 +1441,7 @@ const sw: typeof en = {
     saved: 'Yaliyohifadhiwa',
     rentals: 'Maombi ya kukodisha',
     imports: 'Uagizaji',
+    messages: 'Ujumbe',
     reports: 'Ripoti zangu',
     notifications: 'Arifa',
     selling: 'Kuuza',
@@ -1473,6 +1453,7 @@ const sw: typeof en = {
   meta: {
     dashboard: 'Dashibodi',
     notifications: 'Arifa',
+    messages: 'Ujumbe',
     profile: 'Wasifu',
     saved: 'Yaliyohifadhiwa',
     selling: 'Kuuza',
@@ -1481,6 +1462,7 @@ const sw: typeof en = {
   loading: {
     dashboard: 'Inapakia dashibodi yako',
     notifications: 'Inapakia arifa zako',
+    messages: 'Inapakia ujumbe wako',
     profile: 'Inapakia wasifu wako',
     saved: 'Inapakia magari uliyohifadhi',
     selling: 'Inapakia magari yako',
@@ -1489,7 +1471,6 @@ const sw: typeof en = {
   common: {
     new: 'Mpya',
     signOut: 'Ondoka',
-    getApp: 'Pata programu',
     partFailedTitle: 'Sehemu ya dashibodi yako haikupakia',
     partFailedBody: 'Onyesha upya ujaribu tena. Hakuna data ya akaunti iliyobadilishwa.',
     someFailedTitle: 'Sehemu ya ukurasa huu haikupakia',
@@ -1544,6 +1525,7 @@ const sw: typeof en = {
     viewAccount: 'Angalia akaunti',
     viewCar: 'Angalia gari',
     viewSubmission: 'Angalia wasilisho',
+    viewConversation: 'Angalia ujumbe',
   },
   reports: {
     title: 'Ripoti zangu za ukaguzi',
@@ -1569,6 +1551,7 @@ const sw: typeof en = {
     detailsHeading: 'Maelezo yako',
     verificationHeading: 'Uthibitisho wa utambulisho',
     accountCreated: 'Akaunti iliundwa {{date}}',
+    notificationsHeading: 'Arifa',
     passwordHeading: 'Nenosiri',
     deviceHeading: 'Kifaa hiki',
     deviceBody:
@@ -1583,10 +1566,10 @@ const sw: typeof en = {
         'Hati zako zipo na timu yetu. Ukaguzi unakamilika ndani ya saa 24 na utapata arifa mara tu utakapokamilika.',
       rejectedLabel: 'Inahitaji jaribio jingine',
       rejectedBody:
-        'Picha tulizopokea hazikuwa wazi vya kutosha kuthibitisha. Fungua programu ya Sawa Cars na uwasilishe tena — hakuna kikomo cha majaribio.',
+        'Picha tulizopokea hazikuwa wazi vya kutosha kuthibitisha. Ziwasilishe tena kupitia Thibitisha utambulisho wako, kwenye tovuti au katika programu — hakuna kikomo cha majaribio.',
       noneLabel: 'Haijaanza',
       noneBody:
-        'Kununua, kuhifadhi na maombi vyote hufanya kazi bila hii, na unaweza kuwasilisha gari kwa ukaguzi. Uthibitisho unahitajika kabla ya kuchapishwa au kuwezesha mawasiliano ya umma na hufanyika katika programu ya Sawa Cars: picha ya kitambulisho chako cha taifa na selfie.',
+        'Kununua, kuhifadhi na maombi vyote hufanya kazi bila hii, na unaweza kuwasilisha gari kwa ukaguzi. Uthibitisho unahitajika kabla ya kuchapishwa au kuwezesha mawasiliano ya umma na unahitaji picha ya kitambulisho chako cha taifa na selfie, kwenye tovuti au katika programu ya Sawa Cars.',
     },
     form: {
       fullName: 'Jina kamili',
@@ -1601,6 +1584,9 @@ const sw: typeof en = {
         'Maelezo yaliyowezeshwa hayawekwi kamwe kwenye katalogi ya umma. Yanafichuliwa tu kwa mnunuzi aliyeingia ambaye anakubali ilani ya biashara ya moja kwa moja, na ufichuzi hurekodiwa.',
       allowPhone: 'Ruhusu wanunuzi kuomba nambari yangu ya simu',
       allowWhatsapp: 'Ruhusu wanunuzi kuomba nambari yangu ya WhatsApp',
+      messageEmails: 'Nitumie barua pepe ninapopokea ujumbe mpya',
+      messageEmailsHint:
+        'Tu wakati sina kipindi wazi popote — barua pepe moja kwa kila mazungumzo kwa saa, na haionyeshi kilichosemwa.',
       email: 'Barua pepe',
       emailHint:
         'Barua pepe yako ndiyo uingiaji wako na haiwezi kubadilishwa hapa. Wasiliana na usaidizi ikiwa unahitaji kuihamisha.',
@@ -1814,11 +1800,9 @@ const sw: typeof en = {
     title: 'Kuuza',
     description:
       'Mahali kila gari lako lilipofikia. Ni timu ya Sawa pekee inayochapisha matangazo, na tu baada ya ukaguzi wa vipengele 150 na kupiga picha — ndiyo kinachofanya kila gari sokoni kuwa halisi.',
-    submitInApp: 'Wasilisha kwenye programu',
     verifyTitle: 'Kamilisha uthibitisho wa utambulisho kabla ya kuchapisha',
     verifyBody:
       'Unaweza kuwasilisha gari na kuhifadhi ukaguzi wake sasa. Kabla msimamizi hajaweza kulichapisha au kuwezesha maelezo yako ya mawasiliano ya moja kwa moja, kamilisha ukaguzi wa mara moja katika programu ya Sawa Cars: picha ya kitambulisho chako cha taifa na selfie. Hakuna kingine kwenye akaunti yako kinachoathiriwa.',
-    openSellerApp: 'Fungua programu ya muuzaji',
     howSellingWorks: 'Jinsi kuuza kunavyofanya kazi',
     pipelineHeading: 'Katika mtiririko',
     carCountOne: 'gari {{count}}',
@@ -1871,18 +1855,6 @@ const sw: typeof en = {
     saving: 'Inahifadhi…',
     saveNewPrice: 'Hifadhi bei mpya',
     cancel: 'Ghairi',
-  },
-  verificationNotice: {
-    noneTitle: 'Kamilisha ukaguzi wa utambulisho wako kabla ya kuchapisha',
-    noneBody:
-      'Kununua, kuhifadhi magari na kufanya maombi vyote hufanya kazi bila huo, na unaweza kuwasilisha gari kwa ukaguzi sasa. Kabla tangazo au maelezo ya mawasiliano ya moja kwa moja hayajawa ya umma, tuma picha ya kitambulisho chako cha taifa na selfie katika programu ya Sawa Cars. Timu yetu inaikagua ndani ya saa 24.',
-    pendingTitle: 'Ukaguzi wa utambulisho wako uko na timu yetu',
-    pendingBody:
-      'Ukaguzi unakamilishwa ndani ya saa 24. Unaweza kuendelea kufuatilia wasilisho lililopo tunapolikagua; kuchapisha na mawasiliano ya moja kwa moja vinabaki vimefungwa hadi kuidhinishwa.',
-    rejectedTitle: 'Ukaguzi wa utambulisho wako unahitaji jaribio jingine',
-    rejectedBody:
-      'Kawaida hii inamaanisha picha ilikuwa na ukungu au kitambulisho kilikuwa sehemu nje ya fremu. Fungua programu ya Sawa Cars na uwasilishe tena — hakuna kikomo cha majaribio, na hakuna kingine kwenye akaunti yako kinachoathiriwa.',
-    getApp: 'Pata programu ya Sawa Cars',
   },
   errors: {
     sessionExpired: 'Kipindi chako kimeisha. Ingia tena.',
@@ -1943,6 +1915,7 @@ const ko: typeof en = {
     saved: '저장됨',
     rentals: '렌트 문의',
     imports: '수입',
+    messages: '메시지',
     reports: '내 보고서',
     notifications: '알림',
     selling: '판매',
@@ -1954,6 +1927,7 @@ const ko: typeof en = {
   meta: {
     dashboard: '대시보드',
     notifications: '알림',
+    messages: '메시지',
     profile: '프로필',
     saved: '저장됨',
     selling: '판매',
@@ -1962,6 +1936,7 @@ const ko: typeof en = {
   loading: {
     dashboard: '대시보드를 불러오는 중',
     notifications: '알림을 불러오는 중',
+    messages: '메시지를 불러오는 중',
     profile: '프로필을 불러오는 중',
     saved: '저장한 차량을 불러오는 중',
     selling: '내 차량을 불러오는 중',
@@ -1970,7 +1945,6 @@ const ko: typeof en = {
   common: {
     new: '새로움',
     signOut: '로그아웃',
-    getApp: '앱 다운로드',
     partFailedTitle: '대시보드의 일부를 불러오지 못했습니다',
     partFailedBody: '새로고침하여 다시 시도하세요. 계정 데이터는 변경되지 않았습니다.',
     someFailedTitle: '이 페이지의 일부를 불러오지 못했습니다',
@@ -2024,6 +1998,7 @@ const ko: typeof en = {
     viewAccount: '계정 보기',
     viewCar: '차량 보기',
     viewSubmission: '제출 보기',
+    viewConversation: '메시지 보기',
   },
   reports: {
     title: '내 검사 보고서',
@@ -2049,6 +2024,7 @@ const ko: typeof en = {
     detailsHeading: '내 정보',
     verificationHeading: '신원 확인',
     accountCreated: '계정 생성일 {{date}}',
+    notificationsHeading: '알림',
     passwordHeading: '비밀번호',
     deviceHeading: '이 기기',
     deviceBody:
@@ -2063,10 +2039,10 @@ const ko: typeof en = {
         '서류가 저희 팀에 접수되었습니다. 검토는 24시간 이내에 완료되며 완료되는 즉시 알림을 받게 됩니다.',
       rejectedLabel: '다시 시도 필요',
       rejectedBody:
-        '받은 사진이 확인하기에 충분히 선명하지 않았습니다. Sawa Cars 앱을 열어 다시 제출하세요 — 시도 횟수 제한은 없습니다.',
+        '받은 사진이 확인하기에 충분히 선명하지 않았습니다. 웹사이트나 앱의 본인 인증하기에서 다시 제출하세요 — 시도 횟수 제한은 없습니다.',
       noneLabel: '시작 안 함',
       noneBody:
-        '구매, 저장, 요청은 모두 이 단계 없이도 가능하며 차량을 검사에 제출할 수 있습니다. 인증은 게시 또는 공개 연락처 활성화 전에 필요하며 Sawa Cars 앱에서 진행됩니다: 국가 신분증 사진과 셀피가 필요합니다.',
+        '구매, 저장, 요청은 모두 이 단계 없이도 가능하며 차량을 검사에 제출할 수 있습니다. 인증은 게시 또는 공개 연락처 활성화 전에 필요하며, 웹사이트나 Sawa Cars 앱에서 국가 신분증 사진과 셀피로 진행합니다.',
     },
     form: {
       fullName: '전체 이름',
@@ -2081,6 +2057,9 @@ const ko: typeof en = {
         '활성화된 정보는 공개 카탈로그에 절대 표시되지 않습니다. 직접 거래 안내에 동의한 로그인 구매자에게만 공개되며, 공개 내역이 기록됩니다.',
       allowPhone: '구매자가 내 전화번호를 요청하도록 허용',
       allowWhatsapp: '구매자가 내 WhatsApp 번호를 요청하도록 허용',
+      messageEmails: '새 메시지가 오면 이메일로 알려주기',
+      messageEmailsHint:
+        '어디에서도 접속 중이 아닐 때만 보내며, 대화당 최대 1시간에 한 번이고 메시지 내용은 포함되지 않습니다.',
       email: '이메일',
       emailHint:
         '이메일은 로그인 수단이며 여기에서 변경할 수 없습니다. 변경이 필요하면 고객지원에 문의하세요.',
@@ -2294,11 +2273,9 @@ const ko: typeof en = {
     title: '판매',
     description:
       '각 차량의 진행 상황입니다. 매물은 Sawa 팀만 게시하며, 150개 항목 검사와 사진 촬영을 마친 후에만 게시합니다 — 이것이 마켓플레이스의 모든 차량을 실제로 만드는 요소입니다.',
-    submitInApp: '앱에서 제출',
     verifyTitle: '게시 전에 신원 확인을 완료하세요',
     verifyBody:
       '지금 차량을 제출하고 검사를 예약할 수 있습니다. 관리자가 게시하거나 직접 연락처를 활성화하려면, Sawa Cars 앱에서 일회성 확인을 완료하세요: 국가 신분증 사진과 셀피가 필요합니다. 계정의 다른 부분은 영향을 받지 않습니다.',
-    openSellerApp: '판매자 앱 열기',
     howSellingWorks: '판매 방법',
     pipelineHeading: '진행 중',
     carCountOne: '{{count}}대',
@@ -2351,18 +2328,6 @@ const ko: typeof en = {
     saving: '저장 중…',
     saveNewPrice: '새 가격 저장',
     cancel: '취소',
-  },
-  verificationNotice: {
-    noneTitle: '게시 전에 신원 확인을 완료하세요',
-    noneBody:
-      '구매, 차량 저장, 요청은 모두 이 단계 없이도 가능하며 지금 차량을 검사에 제출할 수 있습니다. 매물이나 직접 연락처가 공개되기 전에 Sawa Cars 앱에서 국가 신분증 사진과 셀피를 보내세요. 저희 팀이 24시간 이내에 검토합니다.',
-    pendingTitle: '신원 확인이 저희 팀에 접수되었습니다',
-    pendingBody:
-      '검토는 24시간 이내에 완료됩니다. 검토하는 동안 기존 제출을 계속 추적할 수 있으며, 게시와 직접 연락은 승인 전까지 잠겨 있습니다.',
-    rejectedTitle: '신원 확인에 다시 시도가 필요합니다',
-    rejectedBody:
-      '보통 사진이 흐릿하거나 신분증이 프레임에서 일부 벗어난 경우입니다. Sawa Cars 앱을 열어 다시 제출하세요 — 시도 횟수 제한은 없으며 계정의 다른 부분은 영향을 받지 않습니다.',
-    getApp: 'Sawa Cars 앱 다운로드',
   },
   errors: {
     sessionExpired: '세션이 만료되었습니다. 다시 로그인하세요.',
@@ -2423,6 +2388,7 @@ const zh: typeof en = {
     saved: '收藏',
     rentals: '租车咨询',
     imports: '进口',
+    messages: '消息',
     reports: '我的报告',
     notifications: '通知',
     selling: '出售',
@@ -2434,6 +2400,7 @@ const zh: typeof en = {
   meta: {
     dashboard: '控制台',
     notifications: '通知',
+    messages: '消息',
     profile: '个人资料',
     saved: '收藏',
     selling: '出售',
@@ -2442,6 +2409,7 @@ const zh: typeof en = {
   loading: {
     dashboard: '正在加载控制台',
     notifications: '正在加载通知',
+    messages: '正在加载消息',
     profile: '正在加载个人资料',
     saved: '正在加载收藏车辆',
     selling: '正在加载我的车辆',
@@ -2450,7 +2418,6 @@ const zh: typeof en = {
   common: {
     new: '新',
     signOut: '退出登录',
-    getApp: '下载应用',
     partFailedTitle: '控制台部分内容加载失败',
     partFailedBody: '请刷新重试。您的账户数据未发生任何变化。',
     someFailedTitle: '本页部分内容加载失败',
@@ -2504,6 +2471,7 @@ const zh: typeof en = {
     viewAccount: '查看账户',
     viewCar: '查看车辆',
     viewSubmission: '查看提交内容',
+    viewConversation: '查看消息',
   },
   reports: {
     title: '我的检测报告',
@@ -2529,6 +2497,7 @@ const zh: typeof en = {
     detailsHeading: '我的信息',
     verificationHeading: '身份验证',
     accountCreated: '账户创建于{{date}}',
+    notificationsHeading: '通知',
     passwordHeading: '密码',
     deviceHeading: '本设备',
     deviceBody:
@@ -2543,10 +2512,10 @@ const zh: typeof en = {
         '证件已提交给我们的团队。审核将在24小时内完成，完成后会通知您。',
       rejectedLabel: '需要重新提交',
       rejectedBody:
-        '收到的照片不够清晰，无法完成核实。请打开 Sawa Cars 应用重新提交——重试次数没有限制。',
+        '收到的照片不够清晰，无法完成核实。请在网站或应用的“验证您的身份”中重新提交——重试次数没有限制。',
       noneLabel: '尚未开始',
       noneBody:
-        '购买、收藏和提出请求都无需完成此步骤，您也可以直接提交车辆进行检测。发布信息或启用公开联系方式之前需要完成验证，该步骤在 Sawa Cars 应用中进行：需要国民身份证照片和自拍照。',
+        '购买、收藏和提出请求都无需完成此步骤，您也可以直接提交车辆进行检测。发布信息或启用公开联系方式之前需要完成验证，可在网站或 Sawa Cars 应用中完成：需要国民身份证照片和自拍照。',
     },
     form: {
       fullName: '姓名',
@@ -2561,6 +2530,8 @@ const zh: typeof en = {
         '已启用的信息绝不会显示在公开目录中。仅会向已确认直接交易须知的已登录买家公开，且每次公开都会被记录。',
       allowPhone: '允许买家请求我的电话号码',
       allowWhatsapp: '允许买家请求我的 WhatsApp 号码',
+      messageEmails: '收到新消息时通过邮箱通知我',
+      messageEmailsHint: '仅在您未在任何地方保持登录状态时发送——每个对话每小时最多一封，且绝不包含消息内容。',
       email: '邮箱',
       emailHint:
         '邮箱是您的登录凭证，无法在此处修改。如需变更，请联系客服。',
@@ -2774,11 +2745,9 @@ const zh: typeof en = {
     title: '出售',
     description:
       '每辆车的处理进度。信息仅由 Sawa 团队发布，且必须在完成150项检测和拍照之后——这正是让市场上每辆车都真实可信的关键。',
-    submitInApp: '在应用中提交',
     verifyTitle: '发布前请先完成身份验证',
     verifyBody:
       '您现在就可以提交车辆并预约检测。若要让管理员发布信息或启用直接联系方式，请在 Sawa Cars 应用中完成一次性验证：需要国民身份证照片和自拍照。账户的其他部分不受影响。',
-    openSellerApp: '打开卖家应用',
     howSellingWorks: '了解出售流程',
     pipelineHeading: '进行中',
     carCountOne: '{{count}}辆',
@@ -2831,18 +2800,6 @@ const zh: typeof en = {
     saving: '正在保存…',
     saveNewPrice: '保存新价格',
     cancel: '取消',
-  },
-  verificationNotice: {
-    noneTitle: '发布前请先完成身份验证',
-    noneBody:
-      '购买、收藏车辆和提出请求都无需完成此步骤，您现在就可以提交车辆进行检测。信息发布或直接联系方式公开之前，请在 Sawa Cars 应用中提交国民身份证照片和自拍照。我们的团队会在24小时内审核。',
-    pendingTitle: '身份验证已提交给我们的团队',
-    pendingBody:
-      '审核将在24小时内完成。审核期间，您仍可继续追踪已有提交内容，发布及直接联系方式在批准前将保持锁定。',
-    rejectedTitle: '身份验证需要重新提交',
-    rejectedBody:
-      '通常是因为照片模糊或证件在画面中不完整。请打开 Sawa Cars 应用重新提交——重试次数没有限制，且不影响账户其他部分。',
-    getApp: '下载 Sawa Cars 应用',
   },
   errors: {
     sessionExpired: '登录已过期，请重新登录。',

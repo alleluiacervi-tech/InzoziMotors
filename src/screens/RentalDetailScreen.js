@@ -30,6 +30,24 @@ export default function RentalDetailScreen({ navigation, route }) {
     null;
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
 
+  const imageList = React.useMemo(
+    () => (car?.images && car.images.length > 0 ? car.images : (car?.image ? [car.image] : [])),
+    [car]
+  );
+
+  // Gallery prefetch. Must stay above the early return below — it sat under
+  // it, so a rental opened by id rendered one hook fewer while loading than
+  // once loaded, and React threw (scripts/check-hook-order.js now guards this).
+  React.useEffect(() => {
+    if (!Array.isArray(imageList) || imageList.length <= 1) return;
+    const urls = imageList
+      .map((img) => photoUrl(img, PHOTO.WIDE))
+      .filter((u) => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://')));
+    if (urls.length > 0) {
+      ExpoImage.prefetch(urls, 'memory-disk').catch(() => {});
+    }
+  }, [imageList]);
+
   const SPEC_ITEMS = [
     { icon: 'people-outline', label: t('rentalDetail.seats'), key: 'seats' },
     { icon: 'cog-outline', label: t('rentalDetail.gearbox'), key: 'transmission' },
@@ -57,20 +75,6 @@ export default function RentalDetailScreen({ navigation, route }) {
       </View>
     );
   }
-
-  const imageList = car?.images && car.images.length > 0 ? car.images : (car?.image ? [car.image] : []);
-
-  // Preload and prefetch gallery images into memory-disk cache immediately on mount
-  // so when the user swipes/scrolls right, all photos appear with 0ms latency.
-  React.useEffect(() => {
-    if (!Array.isArray(imageList) || imageList.length <= 1) return;
-    const urls = imageList
-      .map((img) => photoUrl(img, PHOTO.WIDE))
-      .filter((u) => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://')));
-    if (urls.length > 0) {
-      ExpoImage.prefetch(urls, 'memory-disk').catch(() => {});
-    }
-  }, [imageList]);
 
   // Future-dated and unparsed-safe: a bad or past value must never render.
   // Informational only — the provider set this, it never hides the car or

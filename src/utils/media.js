@@ -78,7 +78,10 @@ export async function captureImage({ preset = 'listing', title = 'Add photo', me
     const result = useCamera
       ? await ImagePicker.launchCameraAsync(options)
       : await ImagePicker.launchImageLibraryAsync(options);
-    return normalise(result);
+    const asset = normalise(result);
+    // Tells ID reviewers whether the photo was taken just now or picked from
+    // the library (P2-D2 in docs/WEB-PARITY-PLAN.md). Not proof, a hint.
+    return asset ? { ...asset, source: useCamera ? 'live' : 'file' } : null;
   } catch (err) {
     console.warn('image capture failed:', err.message);
     showToast('Could not open the camera. Please try again.', 'error');

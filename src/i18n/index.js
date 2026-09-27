@@ -490,7 +490,11 @@ export const TRANSLATIONS = {
       "hotDeals": "Hot Deals & Featured Cars",
       "hotDealsSub": "Hand-picked deals & verified negotiable offers",
       "premiumBadge": "PREMIUM",
-      "hotDealBadge": "HOT DEAL"
+      "hotDealBadge": "HOT DEAL",
+      "featuredTitle": "Featured",
+      "featuredSub": "Placed by our team · sponsored cars are labelled",
+      "sponsoredLabel": "Sponsored",
+      "hotDealLabel": "Hot deal"
     },
     "idVerification": {
       "add3Photos": "Add all 3 photos to continue",
@@ -1875,7 +1879,11 @@ export const TRANSLATIONS = {
       "hotDeals": "Ibyiza bidasanzwe n'imodoka zatoranyijwe",
       "hotDealsSub": "Imodoka zatoranyijwe zifite ibiciro byiza kandi byumvikanwaho",
       "premiumBadge": "PREMIUM",
-      "hotDealBadge": "IGICIRO CYIZA"
+      "hotDealBadge": "IGICIRO CYIZA",
+      "featuredTitle": "Zatoranyijwe",
+      "featuredSub": "Zashyizwe n’ikipe yacu · izishyuriwe zigaragazwa",
+      "sponsoredLabel": "Yishyuriwe",
+      "hotDealLabel": "Igiciro cyiza"
     },
     "idVerification": {
       "add3Photos": "Shyiraho amafoto yose 3 ngo ukomeze",
@@ -3260,7 +3268,11 @@ export const TRANSLATIONS = {
       "hotDeals": "Offres Vedettes & Voitures en Promotion",
       "hotDealsSub": "Offres sélectionnées et prix négociables avec contrôle transparent",
       "premiumBadge": "PREMIUM",
-      "hotDealBadge": "BONNE AFFAIRE"
+      "hotDealBadge": "BONNE AFFAIRE",
+      "featuredTitle": "À la une",
+      "featuredSub": "Choisies par notre équipe · les annonces sponsorisées sont signalées",
+      "sponsoredLabel": "Sponsorisé",
+      "hotDealLabel": "Bonne affaire"
     },
     "idVerification": {
       "add3Photos": "Ajoutez les 3 photos requises pour continuer",
@@ -4645,7 +4657,11 @@ export const TRANSLATIONS = {
       "hotDeals": "Ofa Kabambe & Magari Yanayovuma",
       "hotDealsSub": "Magari yaliyoteuliwa yenye bei nzuri na maelewano ya moja kwa moja",
       "premiumBadge": "PREMIUM",
-      "hotDealBadge": "OFA MAALUM"
+      "hotDealBadge": "OFA MAALUM",
+      "featuredTitle": "Yaliyoangaziwa",
+      "featuredSub": "Yamechaguliwa na timu yetu · yaliyofadhiliwa yanaonyeshwa",
+      "sponsoredLabel": "Imefadhiliwa",
+      "hotDealLabel": "Ofa maalum"
     },
     "idVerification": {
       "add3Photos": "Ongeza picha zote 3 ili kuendelea",
@@ -6030,7 +6046,11 @@ export const TRANSLATIONS = {
       "hotDeals": "특가 차량 및 프리미엄 추천",
       "hotDealsSub": "엄선된 특가 매물 및 투명한 진단 기반 협의 가능 매물",
       "premiumBadge": "프리미엄",
-      "hotDealBadge": "초특가"
+      "hotDealBadge": "초특가",
+      "featuredTitle": "추천 차량",
+      "featuredSub": "저희 팀이 선정 · 광고 차량은 표시됩니다",
+      "sponsoredLabel": "광고",
+      "hotDealLabel": "특가"
     },
     "idVerification": {
       "add3Photos": "계속 진행하려면 3장의 사진을 모두 첨부해 주세요",
@@ -7415,7 +7435,11 @@ export const TRANSLATIONS = {
       "hotDeals": "超值特价与精选推荐",
       "hotDealsSub": "精选超值好车及附带透明报告的可议价车辆",
       "premiumBadge": "精选臻品",
-      "hotDealBadge": "超值好价"
+      "hotDealBadge": "超值好价",
+      "featuredTitle": "精选车辆",
+      "featuredSub": "由我们团队推荐 · 付费推广车辆均有标注",
+      "sponsoredLabel": "推广",
+      "hotDealLabel": "特惠"
     },
     "idVerification": {
       "add3Photos": "请完整上传 3 张认证照片后继续",

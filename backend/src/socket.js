@@ -1,17 +1,30 @@
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
+const { verifyLiveSession } = require('./middleware/auth');
 
 module.exports = function attachSocket(io) {
-  // Authenticate every socket connection via JWT in handshake
+  // Authenticate every socket connection via JWT in handshake — either the
+  // app's long-lived session token, or the website's 60-second ticket minted
+  // by POST /auth/socket-ticket (docs/WEB-PARITY-PLAN.md D2). Both paths run
+  // verifyLiveSession so a suspended, deleted or closed account can't hold a
+  // live socket past its next handshake — this used to only be true of REST
+  // requests (see B3 in the plan).
   io.use((socket, next) => {
-    const token = socket.handshake.auth?.token;
-    if (!token) return next(new Error('Authentication required'));
+    const raw = socket.handshake.auth?.token || socket.handshake.auth?.ticket;
+    if (!raw) return next(new Error('Authentication required'));
+    let payload;
     try {
-      socket.user = jwt.verify(token, process.env.JWT_SECRET);
-      next();
+      payload = jwt.verify(raw, process.env.JWT_SECRET);
     } catch {
-      next(new Error('Invalid token'));
+      return next(new Error('Invalid token'));
     }
+    verifyLiveSession(payload)
+      .then((result) => {
+        if (!result.ok) return next(new Error(result.error));
+        socket.user = payload;
+        next();
+      })
+      .catch(() => next(new Error('Server error')));
   });
 
   io.on('connection', (socket) => {

@@ -16,7 +16,10 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
   const hasSession = request.cookies.has(SESSION_COOKIE)
 
-  if (pathname.startsWith('/dashboard') && !hasSession) {
+  // /sell/submit too: the page redirects on its own, but only after the
+  // layout has started streaming, so the visitor got a 200 carrying a meta
+  // refresh instead of a clean 307.
+  if ((pathname.startsWith('/dashboard') || pathname === '/sell/submit') && !hasSession) {
     const signIn = new URL('/signin', request.url)
     // Bring them back to what they were reaching for after sign-in
     signIn.searchParams.set('next', pathname + search)
@@ -32,5 +35,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/signin', '/signup'],
+  matcher: ['/dashboard/:path*', '/sell/submit', '/signin', '/signup'],
 }
