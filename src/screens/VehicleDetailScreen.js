@@ -93,6 +93,26 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const { cars, recordCarView } = useApp();
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id, recordCarView]);
 
+  const imageList = React.useMemo(() => {
+    if (!car) return [];
+    return car.images && car.images.length > 0 ? car.images : [car.image];
+  }, [car]);
+
+  // Prefetch the gallery into the memory-disk cache so swiping shows every
+  // photo without a wait. This effect sat below the early return, so a car
+  // opened by id (featured slide, deep link, push tap) rendered one hook fewer
+  // while loading than once loaded, and React threw — the app's error screen.
+  // scripts/check-hook-order.js now fails CI on this shape.
+  React.useEffect(() => {
+    if (!Array.isArray(imageList) || imageList.length <= 1) return;
+    const urls = imageList
+      .map((img) => photoUrl(img, PHOTO.WIDE))
+      .filter((u) => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://')));
+    if (urls.length > 0) {
+      ExpoImage.prefetch(urls, 'memory-disk').catch(() => {});
+    }
+  }, [imageList]);
+
   // Arriving by link: nothing to draw until the fetch resolves. Reading car.id
   // before this point would crash on a link-opened screen.
   if (!car) {
@@ -154,20 +174,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
     if (isLoggedIn) { action(); }
     else { setPendingAction(() => action); setLoginVisible(true); }
   };
-
-  const imageList = car.images && car.images.length > 0 ? car.images : [car.image];
-
-  // Preload and prefetch gallery images into memory-disk cache immediately on mount
-  // so when the user swipes/scrolls right, all photos appear with 0ms latency.
-  React.useEffect(() => {
-    if (!Array.isArray(imageList) || imageList.length <= 1) return;
-    const urls = imageList
-      .map((img) => photoUrl(img, PHOTO.WIDE))
-      .filter((u) => typeof u === 'string' && (u.startsWith('http://') || u.startsWith('https://')));
-    if (urls.length > 0) {
-      ExpoImage.prefetch(urls, 'memory-disk').catch(() => {});
-    }
-  }, [imageList]);
 
   const infoRows = [
     { label: t('vehicleDetail.make'), value: car.make },

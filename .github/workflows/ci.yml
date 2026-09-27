@@ -151,6 +151,13 @@ jobs:
       - name: Every identifier resolves
         run: node scripts/check-undefined-refs.js
 
+      # A hook below an early return passes every check above and crashes the
+      # moment a screen renders past that return. Featured slides opened cars
+      # by id, hit exactly that in VehicleDetail (and RentalDetail), and landed
+      # on ErrorBoundary. This is React's rules-of-hooks for that shape.
+      - name: No hook after an early return
+        run: node scripts/check-hook-order.js
+
       # The release preflight was only ever run by hand, which is the same as
       # not having it: it guards against leaked provider keys in committed
       # templates, retired transaction APIs coming back, and — since the OTA
