@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { signOutAction } from '@/app/actions/auth'
 import { DashboardNav } from '@/components/dashboard/DashboardNav'
 import { VerificationNotice } from '@/components/dashboard/VerificationNotice'
-import { getUnreadCount } from '@/components/dashboard/data'
+import { getUnreadCount, getUnreadMessageCount } from '@/components/dashboard/data'
 import { Badge, Button, Container, Icon } from '@/components/ui'
 import { getCurrentUser } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
@@ -58,7 +58,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // first. See web/src/app/session/expired/route.ts.
   if (!user) redirect('/session/expired?next=/dashboard')
 
-  const unread = await getUnreadCount()
+  const [unread, messagesUnread] = await Promise.all([getUnreadCount(), getUnreadMessageCount()])
   const initial = user.name.trim().charAt(0).toUpperCase() || '?'
   // Mirrors verifiedRentalProvider() in backend/src/routes/rentals.js — the
   // same three conditions that let POST /rentals/propose actually succeed.
@@ -78,7 +78,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }[user.id_verified] ?? { tone: 'neutral' as const, icon: 'shield' as const }
 
   return (
-    <I18nScope ns={['dashboard']}>
+    <I18nScope ns={['dashboard', 'messages']}>
     <div className="bg-surface-page">
       <Container className="py-5 sm:py-8 lg:py-10">
         <div className="lg:grid lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-10">
@@ -106,7 +106,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
             </div>
 
-            <DashboardNav unread={unread} isRentalProvider={isRentalProvider} />
+            <DashboardNav unread={unread} messagesUnread={messagesUnread} isRentalProvider={isRentalProvider} />
 
             {/* Destructive action, separated from the nav by a rule and a full
                 block of space — never adjacent to a navigation item. */}

@@ -60,6 +60,24 @@ async function revokeSessions(client, userId) {
   return rows[0]?.token_version ?? 0;
 }
 
+// A socket ticket is a 60-second, single-purpose credential the browser uses
+// to open the realtime connection (docs/WEB-PARITY-PLAN.md D2). The long-lived
+// session JWT never reaches browser JavaScript; this does, but it expires
+// before it could be replayed anywhere useful. `tv` is copied from the
+// already-verified request token so socket.js's verifyLiveSession check (the
+// same one requireAuth just ran) compares against the right version.
+const SOCKET_TICKET_TTL = '60s';
+
+// POST /auth/socket-ticket
+router.post('/socket-ticket', requireAuth, (req, res) => {
+  const ticket = jwt.sign(
+    { id: req.user.id, name: req.user.name, role: req.user.role, tv: req.user.tv, purpose: 'socket' },
+    process.env.JWT_SECRET,
+    { expiresIn: SOCKET_TICKET_TTL }
+  );
+  res.json({ ticket });
+});
+
 // POST /auth/register
 router.post('/register', async (req, res) => {
   const { name, email, password, role = 'buyer', phone } = req.body;
@@ -337,7 +355,7 @@ router.get('/me', requireAuth, async (req, res) => {
       `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
               whatsapp_visible, contact_consent_at, role, id_verified, account_status,
               seller_type, business_name, business_verified, trust_score,
-              response_rate, completed_sales, avatar_url,
+              response_rate, completed_sales, avatar_url, message_email_notifications,
               marketplace_terms_accepted_at, marketplace_terms_version, created_at
        FROM users WHERE id = $1`,
       [req.user.id]
@@ -351,7 +369,7 @@ router.get('/me', requireAuth, async (req, res) => {
 
 // PATCH /auth/me — update own profile
 router.patch('/me', requireAuth, async (req, res) => {
-  const EDITABLE = ['name', 'phone', 'whatsapp_phone', 'phone_visible', 'whatsapp_visible', 'avatar_url'];
+  const EDITABLE = ['name', 'phone', 'whatsapp_phone', 'phone_visible', 'whatsapp_visible', 'avatar_url', 'message_email_notifications'];
   const fields = EDITABLE.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable profile fields provided' });
   if (req.body.name !== undefined && !String(req.body.name).trim()) {
@@ -363,13 +381,13 @@ router.patch('/me', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `${field} is not a valid phone number` });
     }
   }
-  for (const field of ['phone_visible', 'whatsapp_visible']) {
+  for (const field of ['phone_visible', 'whatsapp_visible', 'message_email_notifications']) {
     if (req.body[field] !== undefined && typeof req.body[field] !== 'boolean') {
       return res.status(400).json({ error: `${field} must be true or false` });
     }
   }
   const values = Object.fromEntries(fields.map((field) => {
-    if (['phone_visible', 'whatsapp_visible'].includes(field)) return [field, req.body[field]];
+    if (['phone_visible', 'whatsapp_visible', 'message_email_notifications'].includes(field)) return [field, req.body[field]];
     const value = req.body[field];
     return [field, value == null || value === '' ? null : String(value).trim()];
   }));

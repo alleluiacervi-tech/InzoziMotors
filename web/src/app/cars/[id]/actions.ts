@@ -6,7 +6,15 @@ import { getToken } from '@/lib/session'
 export type ContactState =
   | { status: 'idle' }
   | { status: 'error'; message: string }
-  | { status: 'done'; channel: 'phone' | 'whatsapp' | 'in_app'; contact: string | null; notice: string }
+  | {
+      status: 'done'
+      channel: 'phone' | 'whatsapp' | 'in_app'
+      contact: string | null
+      notice: string
+      /** Set when channel is 'in_app' — G1 in docs/WEB-PARITY-PLAN.md: the
+       *  website now has somewhere to send this to. */
+      conversationId?: string
+    }
 
 export async function contactSellerAction(
   _previous: ContactState,
@@ -32,10 +40,12 @@ export async function contactSellerAction(
 
   try {
     const disclosure = await cars.contact(token, carId, channel, true)
+    let conversationId: string | undefined
     if (channel === 'in_app') {
-      await messages.start(token, carId, message)
+      const started = await messages.start(token, carId, message)
+      conversationId = started.conversation.id
     }
-    return { status: 'done', channel, contact: disclosure.contact, notice: disclosure.notice }
+    return { status: 'done', channel, contact: disclosure.contact, notice: disclosure.notice, conversationId }
   } catch (error) {
     if (error instanceof ApiError) {
       if (error.status === 401) return { status: 'error', message: 'Your session expired. Sign in again to continue.' }

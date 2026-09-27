@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { signOutAction } from '@/app/actions/auth'
 import { DeleteAccountForm } from '@/components/dashboard/DeleteAccountForm'
+import { NotificationSettingsForm } from '@/components/dashboard/NotificationSettingsForm'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { PasswordForm } from '@/components/dashboard/PasswordForm'
 import { ProfileForm } from '@/components/dashboard/ProfileForm'
@@ -98,6 +99,13 @@ export default async function ProfilePage() {
                   </Button>
                 </div>
               ) : null}
+            </Card>
+          </section>
+
+          <section aria-labelledby="notifications">
+            <PanelHeading id="notifications" title={t('dashboard.profile.notificationsHeading')} />
+            <Card className="p-5 sm:p-6">
+              <NotificationSettingsForm messageEmails={user.message_email_notifications !== false} />
             </Card>
           </section>
 

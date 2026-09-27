@@ -1,8 +1,8 @@
 import 'server-only'
 import { cache } from 'react'
-import { ApiError, inspections, notifications } from '@/lib/api'
+import { ApiError, inspections, messages, notifications } from '@/lib/api'
 import { getToken } from '@/lib/session'
-import type { AppNotification, ReportEntitlement } from '@/lib/types'
+import type { AppNotification, Conversation, ReportEntitlement } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Server-side data helpers for the dashboard.
@@ -31,6 +31,41 @@ export const getUnreadCount = cache(async (): Promise<number> => {
   const list = await getNotifications()
   return list.filter((n) => !n.read).length
 })
+
+/** Conversations for the signed-in user (G1 in docs/WEB-PARITY-PLAN.md). Never
+ *  throws, same rule as notifications above. */
+export const getConversations = cache(async (): Promise<Conversation[]> => {
+  const token = await getToken()
+  if (!token) return []
+  try {
+    return await messages.conversations(token)
+  } catch (err) {
+    console.error('dashboard conversations failed:', (err as Error).message)
+    return []
+  }
+})
+
+export const getUnreadMessageCount = cache(async (): Promise<number> => {
+  const list = await getConversations()
+  return list.reduce((sum, c) => sum + Number(c.unread_count || 0), 0)
+})
+
+/** The thread page's header (other party's name, pinned car) needs its one
+ *  conversation's metadata, which only the list endpoint carries. The default
+ *  page size (20) is right for the inbox but would silently miss a deep link
+ *  to an older thread, so this asks for the backend's max instead — a targeted
+ *  fix rather than raising the inbox's own default. Never throws. */
+export async function getConversationMeta(id: string): Promise<Conversation | null> {
+  const token = await getToken()
+  if (!token) return null
+  try {
+    const list = await messages.conversations(token, 100)
+    return list.find((c) => c.id === id) ?? null
+  } catch (err) {
+    console.error('conversation meta failed:', (err as Error).message)
+    return null
+  }
+}
 
 /** Inspection reports this account may read — commissioned, resold, or
  *  granted. Never throws: the dashboard must render even when the API is

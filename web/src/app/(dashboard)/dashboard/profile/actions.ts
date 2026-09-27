@@ -52,6 +52,28 @@ export async function updateProfileAction(
   return { ok: true, message: t('dashboard.messages.detailsSaved') }
 }
 
+// O4 in docs/WEB-PARITY-PLAN.md — the "while you were away" message email is
+// on by default; this is its opt-out, one boolean, no confirmation needed.
+export async function updateNotificationSettingsAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const t = await getServerT()
+  const messageEmails = formData.get('message_email_notifications') === 'on'
+
+  const token = await getToken()
+  if (!token) return { error: t('dashboard.errors.sessionExpired') }
+
+  try {
+    await account.updateProfile(token, { message_email_notifications: messageEmails })
+  } catch (err) {
+    return { error: describeError(err, t('dashboard.errors.profileSaveFailed')) }
+  }
+
+  revalidatePath('/dashboard/profile')
+  return { ok: true, message: t('dashboard.messages.detailsSaved') }
+}
+
 export async function changePasswordAction(
   _prev: ActionState,
   formData: FormData
