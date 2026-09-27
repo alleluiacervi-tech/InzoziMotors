@@ -43,11 +43,14 @@ test('a new seller verifies, submits a car with a photo and books an inspection 
   await page.getByRole('button', { name: 'Submit for verification' }).click()
   // The upload, the backend's metadata pass and the page refresh all sit in
   // this one step. Wait for whichever outcome arrives, and if it's the form's
-  // error, fail with its text rather than a bare "heading not found".
+  // error, fail with its text rather than a bare "heading not found". Scoped
+  // to <main>: Next's route announcer is also role="alert", and reads out the
+  // page title.
   const underReview = page.getByRole('heading', { name: 'Under review' })
-  await expect(underReview.or(page.getByRole('alert'))).toBeVisible({ timeout: 20_000 })
+  const formError = page.locator('main').getByRole('alert')
+  await expect(underReview.or(formError)).toBeVisible({ timeout: 20_000 })
   if (!(await underReview.isVisible())) {
-    throw new Error(`ID upload failed: ${await page.getByRole('alert').first().textContent()}`)
+    throw new Error(`ID upload failed: ${await formError.first().textContent()}`)
   }
 
   // 2. The car, in the app's two steps.
