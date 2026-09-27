@@ -40,12 +40,15 @@ test('a new seller verifies, submits a car with a photo and books an inspection 
   await inputs.nth(0).setInputFiles(photo('front.jpg'))
   await inputs.nth(1).setInputFiles(photo('back.jpg'))
   await inputs.nth(2).setInputFiles(photo('selfie.jpg'))
+  // The upload itself is checked first, so a failure says which half broke:
+  // the request (status and body), or the page not moving on after it.
+  const upload = page.waitForResponse((r) => r.url().includes('/api/upload/id'), { timeout: 20_000 })
   await page.getByRole('button', { name: 'Submit for verification' }).click()
-  // The upload, the backend's metadata pass and the page refresh all sit in
-  // this one step. Wait for whichever outcome arrives, and if it's the form's
-  // error, fail with its text rather than a bare "heading not found". Scoped
-  // to <main>: Next's route announcer is also role="alert", and reads out the
-  // page title.
+  const uploadResponse = await upload
+  expect(uploadResponse.status(), `upload answered: ${await uploadResponse.text()}`).toBe(200)
+  // Then wait for whichever outcome the page shows, failing with the form's
+  // own error text if that's what appears. Scoped to <main>: Next's route
+  // announcer is also role="alert", and reads out the page title.
   const underReview = page.getByRole('heading', { name: 'Under review' })
   const formError = page.locator('main').getByRole('alert')
   await expect(underReview.or(formError)).toBeVisible({ timeout: 20_000 })

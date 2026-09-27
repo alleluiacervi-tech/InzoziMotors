@@ -254,11 +254,13 @@ jobs:
           WEB_BASE_URL: http://localhost:3002
         run: npm run test:e2e
         working-directory: web
+      # The `github` reporter writes no HTML report, so the useful evidence is
+      # test-results/: a trace and screenshot for every failed attempt.
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
-          path: web/playwright-report/
+          name: playwright-results
+          path: web/test-results/
           retention-days: 7
 
   admin:

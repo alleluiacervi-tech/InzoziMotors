@@ -19,6 +19,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.WEB_BASE_URL || 'http://localhost:3002',
     trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 })
