@@ -6,6 +6,7 @@ import { Alert } from '@/components/ui'
 import { postUpload, prepareForUpload } from '@/lib/image-prep'
 import { useT } from '@/lib/i18n/context'
 import { PhotoSlot, type SlotValue } from './PhotoSlot'
+import { VerificationStatus } from './VerificationStatus'
 
 // G4 in docs/WEB-PARITY-PLAN.md — the same three photos, field names and
 // limits as the app's IDVerificationScreen, sent through the website's upload
@@ -26,6 +27,7 @@ export function IdVerificationForm() {
   const router = useRouter()
   const [photos, setPhotos] = useState<Record<Field, SlotValue | null>>({ id_front: null, id_back: null, selfie: null })
   const [sending, setSending] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const complete = SLOTS.every((slot) => photos[slot.field])
@@ -44,11 +46,26 @@ export function IdVerificationForm() {
       const allLive = SLOTS.every((slot) => photos[slot.field]?.source === 'live')
       body.append('capture_source', allLive ? 'live' : 'file')
       await postUpload('/api/upload/id', body)
+      // Shown straight away: the upload has succeeded, and waiting on the page
+      // refresh to say so left "Sending…" on screen whenever that refresh was
+      // slow or dropped. The refresh still runs so the rest of the dashboard
+      // (the banner, the profile) catches up.
+      setSubmitted(true)
       router.refresh()
     } catch (err) {
       setError((err as Error).message || t('onboarding.verify.failed'))
       setSending(false)
     }
+  }
+
+  if (submitted) {
+    return (
+      <VerificationStatus
+        approved={false}
+        title={t('onboarding.verify.pendingTitle')}
+        body={t('onboarding.verify.pendingBody')}
+      />
+    )
   }
 
   return (

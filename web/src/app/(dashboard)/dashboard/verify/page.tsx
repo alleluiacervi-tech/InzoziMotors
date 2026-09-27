@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { IdVerificationForm } from '@/components/onboarding/IdVerificationForm'
-import { Alert, Button, Card, Icon } from '@/components/ui'
+import { VerificationStatus } from '@/components/onboarding/VerificationStatus'
+import { Alert } from '@/components/ui'
 import { getCurrentUser } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
 
@@ -24,26 +25,12 @@ export default async function VerifyPage() {
     return (
       <>
         <PageHeader title={t('onboarding.verify.title')} />
-        <Card className="p-8 text-center">
-          <div
-            className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${
-              approved ? 'bg-success-tint text-success-text' : 'bg-surface-alt text-content-muted'
-            }`}
-          >
-            <Icon name={approved ? 'shield-check' : 'clock'} size={30} />
-          </div>
-          <h2 className="mt-5 text-title-sm font-extrabold text-content">
-            {t(approved ? 'onboarding.verify.approvedTitle' : 'onboarding.verify.pendingTitle')}
-          </h2>
-          <p className="mx-auto mt-2 max-w-md text-caption leading-relaxed text-content-secondary">
-            {t(approved ? 'onboarding.verify.approvedBody' : 'onboarding.verify.pendingBody')}
-          </p>
-          {approved && user.role === 'seller' ? (
-            <div className="mt-6">
-              <Button href="/sell/submit">{t('onboarding.verify.submitCar')}</Button>
-            </div>
-          ) : null}
-        </Card>
+        <VerificationStatus
+          approved={approved}
+          title={t(approved ? 'onboarding.verify.approvedTitle' : 'onboarding.verify.pendingTitle')}
+          body={t(approved ? 'onboarding.verify.approvedBody' : 'onboarding.verify.pendingBody')}
+          action={approved && user.role === 'seller' ? { href: '/sell/submit', label: t('onboarding.verify.submitCar') } : undefined}
+        />
       </>
     )
   }
