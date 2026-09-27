@@ -354,6 +354,12 @@ export const account = {
       '/auth/closure-reasons',
       { revalidate: 3600 }
     ),
+
+  /** A 60-second, single-purpose credential for the realtime socket (D2 in
+   *  docs/WEB-PARITY-PLAN.md) — never the session JWT itself. Minted fresh for
+   *  every connect and reconnect via useSocket(). */
+  socketTicket: (token: string) =>
+    request<{ ticket: string }>('/auth/socket-ticket', { token, method: 'POST' }),
 }
 
 /** A model in the public import catalogue (GET /imports/catalog). */
@@ -445,7 +451,9 @@ export const submissions = {
    *  must render without it. */
   progress: (token: string) => request<Record<string, SellerProgress>>('/submissions/progress', { token }),
 
-  /** Gated by requireVerified server-side — a 403 carries ID_VERIFICATION_REQUIRED. */
+  /** Gated server-side by role='seller' + an active account, not ID approval —
+   *  a seller may submit before their identity check clears (the backend only
+   *  refuses to *publish* an unverified seller's listing). */
   create: (token: string, body: Record<string, unknown>) =>
     request<Submission>('/submissions', { token, method: 'POST', body: JSON.stringify(body) }),
 

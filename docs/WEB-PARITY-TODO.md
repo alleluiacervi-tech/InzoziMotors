@@ -4,21 +4,21 @@ Plan and reasoning: [`WEB-PARITY-PLAN.md`](WEB-PARITY-PLAN.md). IDs (G#, B#, W#,
 D#, O#) refer to that document. Tick items in the PR that ships them.
 
 ## Before starting
-- [ ] O1 — confirm phase order (recommended: messaging first)
-- [ ] O2 — desktop ID upload allowed? (recommended: yes, flagged for reviewers)
-- [ ] O3 — referrals: restore on web or retire in app
-- [ ] O4 — offline message email default (recommended: on, with opt-out)
+- [x] O1 — confirm phase order → **messaging first** (recommended default, accepted 2026-09-27)
+- [x] O2 — desktop ID upload allowed? → **yes, flagged for reviewers** (recommended default, accepted 2026-09-27)
+- [ ] O3 — referrals: restore on web or retire in app — **still open**, no safe default; needs an actual product call, not just a "go ahead"
+- [x] O4 — offline message email default → **on, with opt-out** (recommended default, accepted 2026-09-27)
 
 ## Phase 0 — Foundations
-- [ ] **W5** Add Playwright to `web/` with one smoke test (home → car → sign-in page); run in CI against backend + Postgres service
-- [ ] **D1** `web/src/app/api/upload/[kind]/route.ts` — cookie → Bearer streaming proxy, per-kind size/count limits, no body logging
-- [ ] **D1** Confirm/raise `client_max_body_size` (≥ 25 MB) on the `sawacars.com` nginx vhost *(production change — ask first)*
-- [ ] **W1** Route-scoped `Permissions-Policy: camera=(self)` for verification + submission routes only
-- [ ] **D2** Backend `POST /auth/socket-ticket` (60 s, `purpose: 'socket'`) + tests
-- [ ] **D2/B3** `socket.js`: accept token or ticket; run `verifyLiveSession` on both; tests for suspended/deleted/expired
-- [ ] **D2** Web `useSocket()` client hook: fetch ticket via Server Action, reconnect with a fresh ticket, disconnect on sign-out
-- [ ] **W4** Fix stale `requireVerified` comment in `web/src/lib/api.ts`
-- [ ] Parity matrix: add a "last verified" line to plan §3
+- [x] **W5** Add Playwright to `web/` with one smoke test (home → car → sign-in page); run in CI against backend + Postgres service
+- [x] **D1** `web/src/app/api/upload/[kind]/route.ts` — cookie → Bearer streaming proxy, per-kind size/count limits, no body logging (`id` kind wired to `POST /id-verification`; more kinds land with the feature that needs them)
+- [ ] **D1** Confirm/raise `client_max_body_size` (≥ 25 MB) on the `sawacars.com` nginx vhost *(production change — ask first; not done)*
+- [x] **W1** Route-scoped `Permissions-Policy: camera=(self)` for verification + submission routes only
+- [x] **D2** Backend `POST /auth/socket-ticket` (60 s, `purpose: 'socket'`) + tests
+- [x] **D2/B3** `socket.js`: accept token or ticket; run `verifyLiveSession` on both; tests for suspended/deleted/expired
+- [x] **D2** Web `useSocket()` client hook: fetch ticket via Server Action, reconnect with a fresh ticket, disconnect on sign-out
+- [x] **W4** Fix stale `requireVerified` comment in `web/src/lib/api.ts`
+- [x] Parity matrix: add a "last verified" line to plan §3
 
 ## Phase 1 — Messaging (G1–G3)
 - [ ] `/dashboard/messages` inbox — conversations, unread counts, car thumbnail, last message, empty state

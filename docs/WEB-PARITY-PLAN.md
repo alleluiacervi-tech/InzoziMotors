@@ -1,7 +1,7 @@
 # Web parity plan: sawacars.com can do everything the app can
 
-Status: **planned, not started** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
-Owner decisions still open: see [§8](#8-open-decisions).
+Status: **Phase 0 shipped 27 Sep 2026; Phase 1 (messaging) next** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
+O1, O2 and O4 were accepted as their recommended defaults on 27 Sep 2026 — O3 (referrals) is still open; see [§8](#8-open-decisions).
 
 ## 1. Goal
 
@@ -33,7 +33,7 @@ not listed there is a bug.
 5. **Each phase ships to `main` on its own**, behind nothing. A half-built flow
    stays unlinked until it's complete, so users never find a dead end.
 
-## 3. Current state (audited 27 Sep 2026)
+## 3. Current state (audited 27 Sep 2026; Phase 0 shipped 27 Sep 2026 — see §5)
 
 Method: every screen in `src/screens/` and every API call in `src/api/` was
 compared with the routes in `web/src/app/` and the calls in `web/src/lib/api.ts`.
@@ -137,7 +137,7 @@ Each phase is one PR to `main`, and each is independently useful.
 
 | Phase | Scope | Why this order |
 |---|---|---|
-| **0 — Foundations** | W1, W2 (D1), W4, W5 (Playwright set-up), the socket ticket (D2) and B3 | Unblocks everything after it; B3 is a security fix |
+| **0 — Foundations** ✅ *shipped 27 Sep 2026* | W1, W2 (D1), W4, W5 (Playwright set-up), the socket ticket (D2) and B3 | Unblocks everything after it; B3 is a security fix |
 | **1 — Messaging** | G1, G2, G3 and the D3 email | The biggest gap: web users can't read replies today |
 | **2 — Seller onboarding** | G4, G5, G6 and B2 | Turns web visitors into sellers without the app |
 | **3 — Account and trust** | G7, G9, G10, G11, B1 and G8 | Completes the seller and buyer loops |
@@ -169,12 +169,12 @@ Rough size: phase 0 is 2–3 days; phases 1 and 2 are 4–5 days each; phase 3 i
 
 ## 8. Open decisions
 
-| # | Question | Recommendation |
-|---|---|---|
-| O1 | Phase order: messaging first, or seller onboarding first? | Messaging first. It's a broken loop today, not a missing feature. |
-| O2 | May desktop users *upload* ID photos, or only take live webcam or phone-camera shots? | Allow upload, and flag uploaded (non-live) captures to reviewers so staff can apply extra care |
-| O3 | Referrals were deliberately retired on the web. Bring them back, or retire them in the app too? | Decide on product grounds; don't restore by default |
-| O4 | Offline message email: on by default with opt-out, or opt-in? | On by default, with opt-out; it's transactional, not marketing |
+| # | Question | Recommendation | Status |
+|---|---|---|---|
+| O1 | Phase order: messaging first, or seller onboarding first? | Messaging first. It's a broken loop today, not a missing feature. | **Accepted 27 Sep 2026** (default) |
+| O2 | May desktop users *upload* ID photos, or only take live webcam or phone-camera shots? | Allow upload, and flag uploaded (non-live) captures to reviewers so staff can apply extra care | **Accepted 27 Sep 2026** (default) |
+| O3 | Referrals were deliberately retired on the web. Bring them back, or retire them in the app too? | Decide on product grounds; don't restore by default | **Still open** — no safe default; Phase 4 will not touch referrals until this is answered |
+| O4 | Offline message email: on by default with opt-out, or opt-in? | On by default, with opt-out; it's transactional, not marketing | **Accepted 27 Sep 2026** (default) |
 
 ## 9. Tracking
 

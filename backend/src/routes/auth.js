@@ -60,6 +60,24 @@ async function revokeSessions(client, userId) {
   return rows[0]?.token_version ?? 0;
 }
 
+// A socket ticket is a 60-second, single-purpose credential the browser uses
+// to open the realtime connection (docs/WEB-PARITY-PLAN.md D2). The long-lived
+// session JWT never reaches browser JavaScript; this does, but it expires
+// before it could be replayed anywhere useful. `tv` is copied from the
+// already-verified request token so socket.js's verifyLiveSession check (the
+// same one requireAuth just ran) compares against the right version.
+const SOCKET_TICKET_TTL = '60s';
+
+// POST /auth/socket-ticket
+router.post('/socket-ticket', requireAuth, (req, res) => {
+  const ticket = jwt.sign(
+    { id: req.user.id, name: req.user.name, role: req.user.role, tv: req.user.tv, purpose: 'socket' },
+    process.env.JWT_SECRET,
+    { expiresIn: SOCKET_TICKET_TTL }
+  );
+  res.json({ ticket });
+});
+
 // POST /auth/register
 router.post('/register', async (req, res) => {
   const { name, email, password, role = 'buyer', phone } = req.body;
