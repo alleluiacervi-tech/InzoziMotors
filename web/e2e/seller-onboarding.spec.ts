@@ -41,7 +41,14 @@ test('a new seller verifies, submits a car with a photo and books an inspection 
   await inputs.nth(1).setInputFiles(photo('back.jpg'))
   await inputs.nth(2).setInputFiles(photo('selfie.jpg'))
   await page.getByRole('button', { name: 'Submit for verification' }).click()
-  await expect(page.getByRole('heading', { name: 'Under review' })).toBeVisible()
+  // The upload, the backend's metadata pass and the page refresh all sit in
+  // this one step. Wait for whichever outcome arrives, and if it's the form's
+  // error, fail with its text rather than a bare "heading not found".
+  const underReview = page.getByRole('heading', { name: 'Under review' })
+  await expect(underReview.or(page.getByRole('alert'))).toBeVisible({ timeout: 20_000 })
+  if (!(await underReview.isVisible())) {
+    throw new Error(`ID upload failed: ${await page.getByRole('alert').first().textContent()}`)
+  }
 
   // 2. The car, in the app's two steps.
   await page.goto('/sell/submit')
@@ -66,7 +73,9 @@ test('a new seller verifies, submits a car with a photo and books an inspection 
   await page.getByText('10:00 AM', { exact: true }).click()
   await page.getByRole('button', { name: 'Confirm booking' }).click()
   await page.waitForURL(/\/dashboard\/selling\?booked=/)
-  await expect(page.getByText('Inspection booked')).toBeVisible()
+  // "Inspection booked" is also the scheduled submission's status pill, so
+  // check the confirmation's own sentence instead.
+  await expect(page.getByText('We have sent you the details.', { exact: false })).toBeVisible()
 
   // 4. What the backend actually holds.
   const me = await (await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })).json()

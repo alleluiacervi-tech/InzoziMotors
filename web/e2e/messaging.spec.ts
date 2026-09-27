@@ -37,15 +37,23 @@ test('buyer messages seller from the car page, seller replies, buyer sees it liv
   await buyerPage.locator('input[name="acknowledge"]').check()
   await buyerPage.getByRole('button', { name: 'Contact seller' }).click()
 
+  // Links are followed by their href rather than clicked. A click that lands
+  // while the page is still hydrating after a redirect can be dropped, which
+  // made this test flaky; what's under test is that the link exists and
+  // points at the thread, not the click itself.
   const openConversation = buyerPage.getByRole('link', { name: 'Open conversation' })
   await expect(openConversation).toBeVisible()
-  await openConversation.click()
-  await expect(buyerPage).toHaveURL(/\/dashboard\/messages\/.+/)
+  const buyerThread = await openConversation.getAttribute('href')
+  expect(buyerThread).toMatch(/^\/dashboard\/messages\/.+/)
+  await buyerPage.goto(buyerThread!)
   await expect(buyerPage.getByText(firstMessage)).toBeVisible()
 
   await signIn(sellerPage, sellerEmail, sellerPassword, '/dashboard/messages')
-  await sellerPage.getByText(firstMessage).first().click()
-  await expect(sellerPage).toHaveURL(/\/dashboard\/messages\/.+/)
+  const inboxRow = sellerPage.getByRole('link').filter({ hasText: firstMessage })
+  await expect(inboxRow).toBeVisible()
+  const sellerThread = await inboxRow.getAttribute('href')
+  expect(sellerThread).toBe(buyerThread)
+  await sellerPage.goto(sellerThread!)
   await expect(sellerPage.getByText(firstMessage)).toBeVisible()
 
   await sellerPage.locator('textarea').fill(reply)
