@@ -279,3 +279,80 @@ in all six languages. It is scoped on the dashboard and `/sell` layouts.
 - A stored ID rejection reason (F1).
 - Letting a buyer switch to a seller account.
 - Per-document capture flags. One flag per submission is enough for reviewers.
+
+## 11. Phase 3 in detail: account and trust
+
+Planned 27 Sep 2026, after reading the code the phase touches. Covers G7 to G11
+and B1: reopening a closed account, public seller profiles, reporting a review,
+comparing cars, seller analytics, and letting a seller pause a listing or mark it
+sold.
+
+### 11.1 What the code showed
+
+| # | Finding | Consequence |
+|---|---|---|
+| F9 | **No public profile endpoint exists.** The app's `SellerProfile` calls `/reviews/trust-score/:id` and `/reviews/seller/:id`. Neither checks eligibility: a suspended or unverified seller still answers. `memberSince` and active listings are hidden with "not exposed by the API yet". | New `GET /sellers/:id`, which uses the same five eligibility conditions as `GET /cars` and returns 404 otherwise. `GET /cars` gains a `seller_id` filter, so a profile's listings pass the same gates as the catalogue. Both clients use them. |
+| F10 | **"Showroom" in the app is not a seller profile.** `ShowroomScreen` is a by-brand car gallery, and `DealerProfileScreen` is demo-only. | One route, `/sellers/[id]`, for individuals and showrooms. A showroom shows its business name and a verified-business badge. `/showrooms/[id]` (plan D6) is dropped. |
+| F11 | **Trust grades disagree in the app.** `SellerProfile` uses 80/65/50 and `TrustScore` uses 85/70/55. | The web shows the server's `total_score` out of 100 and its breakdown, with no letter grade. Aligning the app's two screens is noted, not fixed here. |
+| F12 | **The app's compare table has a "Return Policy" row** ("{n}-day returns"). | It contradicts the rule against guarantees (CLAUDE.md §4). The row is removed from the app (**B6**), and the web never has it. |
+| F13 | **The app's seller dashboard invents its view count** (`47 × (live + sold)`). The analytics hero says "this month" over all-time totals. | Honesty fixes (**B7**). The dashboard uses the real sum from `/cars/seller/mine`, and the label says "all time". |
+| F14 | **The app's "Relist at new price" is fake.** It only changes local state and adds a local notification promising a review "within 24 hours". The backend can't move a sold car back to live. | Removed (**B8**). Real controls replace it: pause, make live again, and mark sold (B1). |
+| F15 | **The web's selling page never shows paused listings.** It lists `live`, then `sold`/`archived`. | A paused group is added, with its controls. |
+| F16 | **Contact requests aren't counted anywhere a seller can see them.** Each disclosure writes a `listing_contact_events` row. | `/cars/seller/mine` gains `contacts_count`, and both clients show it. |
+| F17 | **The web's `sellers.reviews` wrapper is typed `Review[]`.** The backend returns `{reviews, average_rating, total}`. | The type is fixed before first use. |
+
+### 11.2 Decisions
+
+**P3-D1: Reopening an account on the web.** When sign-in returns 403
+`ACCOUNT_CLOSED`, the form shows the app's prompt: "This account is closed" and
+"After {date} it is deleted for good". It asks for the password again, because
+React clears the field after the first submit. "Reopen my account" calls
+`POST /auth/reopen`, then signs in and continues to `next`. The server's 410
+`ACCOUNT_PURGED` message is shown as it comes.
+
+**P3-D2: Profiles show only what the eligibility check already makes public.**
+- Name, or the business name for a showroom.
+- Verified badges.
+- Member since.
+- Sales and response rate.
+- The trust breakdown.
+- Reviews.
+- Live listings.
+
+Never a phone number or an email. A profile is indexable, with no
+`aggregateRating` (the `seo.ts` rule), and the sitemap lists every seller who has
+a live listing. The car page's seller card links to the profile.
+
+**P3-D3: Reporting a review.** The flag, the four reasons and the copy match the
+app ("Report this review", and "The author is not told."). A signed-out visitor
+is sent to sign in first.
+
+**P3-D4: Comparing cars.** "Compare" sits on the car page, as in the app, not on
+the card: the card is one big link and can't hold a second control. Up to three
+cars are compared; adding a fourth drops the oldest. The selection is stored in
+`localStorage` (try/catch), and a "Compare (n)" tray appears on car pages.
+
+`/compare?ids=a,b,c` is rendered on the server from the public car endpoint. It
+uses the app's rows, minus Return Policy. The best value is highlighted only when
+exactly one car has it. It is `noindex`, because arbitrary id combinations are
+thin, duplicate pages; this changes plan D5.
+
+**P3-D5: Listing controls.** These go on the selling dashboard in both clients,
+each with a confirm step:
+
+| Listing is | Actions offered |
+|---|---|
+| Live | Pause, Mark as sold |
+| Paused | Make live again, Mark as sold |
+
+"Mark as sold" says it is final. The server's `LISTING_NOT_READY` reason is shown
+as it comes when a restore is refused.
+
+**P3-D6: Translations.** The new strings go in one new namespace, `market`, in
+all six languages.
+
+### 11.3 Not in this phase
+
+- A per-day views breakdown, which the backend doesn't record.
+- Aligning the app's two trust-grade scales (F11).
+- Review writing, which is retired (`POST /reviews` returns 410).

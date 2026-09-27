@@ -24,7 +24,6 @@ const SPEC_ROWS = [
   { key: 'inspectionScore', label: 'Inspection score', getValue: (car) => car.inspectionScore ?? 0, format: (v) => v ? `${v}/150` : '— Not inspected', winner: 'highest' },
   { key: 'inspected', label: 'Inspection', getValue: (car) => car.inspected ? 1 : 0, format: (v) => v ? '✓ 150-pt Certified' : '— Not inspected', winner: 'highest' },
   { key: 'sellerIdVerified', label: 'Seller identity', getValue: (car) => car.sellerIdVerified ? 1 : 0, format: (v) => v ? '✓ ID verified' : '— Not verified', winner: 'highest' },
-  { key: 'returnDays', label: 'Return Policy', getValue: (car) => car.returnDays || 0, format: (v) => v ? `${v}-day returns` : 'No return policy', winner: 'none' },
 ];
 
 function getWinnerIndex(row, cars) {

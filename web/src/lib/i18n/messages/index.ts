@@ -16,6 +16,7 @@ import { ui } from './ui'
 import { imports } from './imports'
 import { messages } from './messages'
 import { onboarding } from './onboarding'
+import { market } from './market'
 
 export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> = {
   home,
@@ -32,4 +33,5 @@ export const SECTIONS: Record<string, Record<Locale, Record<string, unknown>>> =
   imports,
   messages,
   onboarding,
+  market,
 }

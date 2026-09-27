@@ -119,6 +119,8 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
             viewsThisWeek: null,
             saves: car.saves_count ?? car.saves ?? 0,
             inquiries: car.inquiries_count || 0,
+            // Phone/WhatsApp disclosures to acknowledged buyers (F16).
+            contacts: car.contacts_count || 0,
             daysLive: daysSince(car.listed_at),
             categoryAvgDays: 14,
             trend: 'flat',
@@ -159,7 +161,7 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
 
         {/* Hero stats */}
         <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.hero}>
-          <Text style={styles.heroLabel}>All listings · this month</Text>
+          <Text style={styles.heroLabel}>All listings · all time</Text>
           <View style={styles.heroStats}>
             <View style={styles.heroStatItem}>
               <Text style={styles.heroStatValue}>{totalViews}</Text>
@@ -245,6 +247,7 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
               <StatCard icon="eye-outline" label="Total Views" value={analytics.views} color={colors.statusScheduled} />
               <StatCard icon="heart-outline" label="Saves" value={analytics.saves} color="#EF4444" />
               <StatCard icon="chatbubble-outline" label="Inquiries" value={analytics.inquiries} color={colors.amber} />
+              <StatCard icon="call-outline" label="Contact requests" value={analytics.contacts || 0} color={colors.statusLive} />
               <StatCard
                 icon="time-outline"
                 label="Days Live"

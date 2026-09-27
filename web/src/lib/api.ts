@@ -2,7 +2,7 @@ import type { DutyRates } from '@/lib/business'
 import type {
   AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement,
   InspectionCenter, InspectionReport,
-  Message, RentalCar, RentalInquiry, ReportEntitlement, Review, SavedSearch, Submission, TrustScore, User,
+  Message, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Submission, TrustScore, User,
   Valuation, VehicleHistory,
 } from './types'
 
@@ -31,11 +31,15 @@ export const API_URL =
 export class ApiError extends Error {
   status: number
   code?: string
-  constructor(message: string, status: number, code?: string) {
+  /** The error response's JSON body, for fields beyond `error` and `code`
+   *  (e.g. `reopen_until` on a closed account). */
+  data?: Record<string, unknown>
+  constructor(message: string, status: number, code?: string, data?: Record<string, unknown>) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.data = data
   }
   /** True when the backend could not be reached at all (vs. answered with 4xx). */
   get isNetworkError() {
@@ -95,7 +99,8 @@ async function request<T>(
       throw new ApiError(
         (data as { error?: string }).error || `Request failed (${res.status})`,
         res.status,
-        (data as { code?: string }).code
+        (data as { code?: string }).code,
+        data as Record<string, unknown>
       )
     }
     return data as T
@@ -271,10 +276,28 @@ export const inspectionCenters = {
 }
 
 export const sellers = {
+  /** Public profile (GET /sellers/:id). 404 for anyone whose listings
+   *  wouldn't be public either — callers treat that as notFound(). */
+  profile: (userId: string) =>
+    request<SellerProfile>(`/sellers/${userId}`, { revalidate: 300, tags: [`seller:${userId}`] }),
   reviews: (userId: string) =>
-    request<Review[]>(`/reviews/seller/${userId}`, { revalidate: 300 }),
+    request<SellerReviews>(`/reviews/seller/${userId}`, { revalidate: 300, tags: [`seller:${userId}`] }),
   trustScore: (userId: string) =>
-    request<TrustScore>(`/reviews/trust-score/${userId}`, { revalidate: 300 }),
+    request<TrustScore>(`/reviews/trust-score/${userId}`, { revalidate: 300, tags: [`seller:${userId}`] }),
+  /** One seller's live listings — the catalogue query, narrowed. */
+  listings: (userId: string) =>
+    request<Car[]>(`/cars?seller_id=${encodeURIComponent(userId)}&limit=100`, {
+      revalidate: CATALOGUE_REVALIDATE,
+      tags: ['cars', `seller:${userId}`],
+    }),
+}
+
+export const reviews = {
+  /** Always 201, whether or not this person already reported it. */
+  report: (token: string, reviewId: string, reason: string) =>
+    request<{ success: true }>(`/reviews/${reviewId}/report`, {
+      token, method: 'POST', body: JSON.stringify({ reason }),
+    }),
 }
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
@@ -312,6 +335,13 @@ export const auth = {
   acceptShowroomInvite: (token: string, password: string) =>
     request<{ user: User; token: string }>('/auth/accept-showroom-invite', {
       method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store',
+    }),
+
+  /** Reopen a closed account within its 30 days, with the same credentials.
+   *  401 for anything it won't confirm; 410 ACCOUNT_PURGED once erased. */
+  reopen: (email: string, password: string) =>
+    request<{ user: User; token: string }>('/auth/reopen', {
+      method: 'POST', body: JSON.stringify({ email, password }), cache: 'no-store',
     }),
 
   /** Activate any admin-created account from its one-use invite link. */
@@ -519,6 +549,10 @@ export const messages = {
 
 export const sellerListings = {
   mine: (token: string) => request<Car[]>('/cars/seller/mine', { token }),
+  /** live ↔ paused, and either → sold (final). Restoring to live re-runs the
+   *  publication checks and may answer 409 LISTING_NOT_READY. */
+  setStatus: (token: string, id: string, status: 'live' | 'paused' | 'sold') =>
+    request<Car>(`/cars/${id}/seller-status`, { token, method: 'PATCH', body: JSON.stringify({ status }) }),
   updatePrice: (token: string, id: string, price: number) =>
     request<Car>(`/cars/${id}/price`, { token, method: 'PATCH', body: JSON.stringify({ price }) }),
 }

@@ -17,7 +17,13 @@ import { clearSession, setSession } from '@/lib/session'
 // serves the mobile app.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type AuthState = { error?: string; fieldErrors?: Record<string, string> } | null
+export type AuthState = {
+  error?: string
+  fieldErrors?: Record<string, string>
+  /** Set when the credentials were right but the account is closed and still
+   *  inside its 30 days (403 ACCOUNT_CLOSED) — the form offers to reopen it. */
+  closed?: { email: string; until: string | null }
+} | null
 
 /** Only allow same-origin paths, so `?next=` can't be used as an open redirect. */
 function safeNext(value: FormDataEntryValue | null): string {
@@ -43,10 +49,41 @@ export async function signInAction(_prev: AuthState, formData: FormData): Promis
     if (err instanceof ApiError) {
       // 401 is deliberately vague — never confirm which half was wrong.
       if (err.status === 401) return { error: 'That email and password do not match.' }
+      // Only reached after the password matched, so saying the account is
+      // closed tells nobody anything about someone else's account.
+      if (err.code === 'ACCOUNT_CLOSED') {
+        const until = typeof err.data?.reopen_until === 'string' ? err.data.reopen_until : null
+        return { closed: { email, until } }
+      }
       if (err.isNetworkError) return { error: 'We could not reach Sawa Cars. Please try again.' }
       return { error: err.message }
     }
     return { error: 'Something went wrong. Please try again.' }
+  }
+
+  revalidatePath('/', 'layout')
+  redirect(next)
+}
+
+/** G7 in docs/WEB-PARITY-PLAN.md — the app's "Reopen my account", on the web.
+ *  Same endpoint, same credentials; the backend refuses anything it won't
+ *  confirm with one generic 401, and says plainly (410) once it's erased. */
+export async function reopenAccountAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const email = String(formData.get('email') || '').trim().toLowerCase()
+  const password = String(formData.get('password') || '')
+  const next = safeNext(formData.get('next'))
+  if (!email || !password) return { error: 'Enter your password to reopen your account.' }
+
+  try {
+    const { token } = await authApi.reopen(email, password)
+    await setSession(token)
+  } catch (err) {
+    if (err instanceof ApiError) {
+      if (err.status === 401) return { error: 'That password is not correct.' }
+      if (err.isNetworkError) return { error: 'We could not reach Sawa Cars. Please try again.' }
+      return { error: err.message }
+    }
+    return { error: 'Could not reopen this account.' }
   }
 
   revalidatePath('/', 'layout')

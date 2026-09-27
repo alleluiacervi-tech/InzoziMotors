@@ -71,15 +71,35 @@ Detailed plan: [`WEB-PARITY-PLAN.md` §10](WEB-PARITY-PLAN.md#10-phase-2-in-deta
 **Tests**
 - [x] Playwright: sign up as a seller, verify (upload three files), submit a car with a reference photo, book a slot, and see it on the selling dashboard
 
-## Phase 3 — Account & trust (G7–G11, B1)
-- [ ] **G7** Reopen flow: sign-in on a closed account (within 30 days) offers reopen → `/auth/reopen`
-- [ ] **B1** Seller "Mark sold / Withdraw" on own listings → `PATCH /cars/:id/seller-status` — **app too**
-- [ ] **G11** Seller analytics per listing (views, saves, contacts) on `dashboard/selling`
-- [ ] **G9** `/sellers/[id]` and `/showrooms/[id]` — verified badge, trust score, reviews, live listings; 404 when ineligible; no phone numbers; structured data without `aggregateRating` until real (seo.ts rule)
-- [ ] **G10** Report a review
-- [ ] **G8** `/compare?ids=` page + "Compare" toggle on `CarCard`, selection in `localStorage` (try/catch)
-- [ ] Sitemap entries for public profiles
-- [ ] Playwright: mark sold removes listing from `/cars`; compare page renders 3 cars
+## Phase 3 — Account & trust (G7–G11, B1, B6–B8)
+Detailed plan: [`WEB-PARITY-PLAN.md` §11](WEB-PARITY-PLAN.md#11-phase-3-in-detail-account-and-trust).
+
+**Backend**
+- [x] **F9** `GET /sellers/:id`: public profile, same eligibility as `GET /cars`, 404 otherwise, never contact details
+- [x] **F9** `GET /cars?seller_id=<uuid>` filter, on the same eligibility-gated query
+- [x] **F16** `contacts_count` on `/cars/seller/mine`
+- [x] Tests: profile 404s for suspended, unverified or unverified-showroom sellers and never carries a phone number; the `seller_id` filter; `contacts_count`; seller-status transitions
+
+**Website**
+- [x] **G7 / P3-D1** Reopen a closed account from sign-in (403 `ACCOUNT_CLOSED` → prompt → `POST /auth/reopen`)
+- [x] **G9 / P3-D2** `/sellers/[id]`: profile, trust breakdown, reviews, live listings, JSON-LD without `aggregateRating`, sitemap entries; the car page's seller card links to it
+- [x] **G10 / P3-D3** Report a review
+- [x] **G8 / P3-D4** Compare toggle on the car page, tray, and `/compare?ids=`
+- [x] **B1 / P3-D5** Pause, make live again, and mark sold on the selling dashboard; a paused group (F15)
+- [x] **G11** Per-listing analytics: views, saves, enquiries, contact requests, days live
+- [x] **F17** Fix the `sellers.reviews` type
+- [x] `/sell/submit` sends signed-out visitors straight to sign-in (a real 307 in middleware, not a streamed redirect)
+- [x] `market` namespace in all six languages
+
+**App** (JavaScript only)
+- [x] **B1** Pause, make live again, and mark sold on `SellerDashboard` (`PATCH /cars/:id/seller-status`)
+- [x] **B8** Remove the fake local "Relist at new price" and its invented notification
+- [x] **B7** A real views total on the dashboard; "all time" on the analytics hero; contact requests metric
+- [x] **B6** Remove the "Return Policy" row from Compare
+- [x] **F9** `SellerProfile` gets member-since and live listings from the new endpoints
+
+**Tests**
+- [x] Playwright: mark sold removes the car from `/cars`; a profile lists live cars; compare renders chosen cars; reopen a closed account from sign-in
 
 ## Phase 4 — Reach & polish (G12–G14, W3)
 - [ ] **O3** Referrals: implement web page or remove from app, per decision

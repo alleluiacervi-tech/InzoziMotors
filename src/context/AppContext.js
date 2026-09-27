@@ -1424,23 +1424,6 @@ export function AppProvider({ children }) {
     }, ...prev]);
   }, []);
 
-  const relistSubmission = useCallback(async (id, newPrice) => {
-    // Local relist update since backend does not support seller edit routes
-    setSubmissions((prev) =>
-      prev.map((s) => s.id === id
-        ? { ...s, status: 'under_review', askingPrice: newPrice, isRelisted: true, statusDetail: 'Relisted — our team is reviewing your updated submission' }
-        : s)
-    );
-    setNotifications((prev) => [{
-      id: 'relist_' + Date.now(),
-      type: 'listing_update',
-      title: 'Car relisted for review',
-      body: `Your car has been relisted at the new price. Our team will review within 24 hours.`,
-      time: 'Just now',
-      date: 'Today',
-      read: false,
-    }, ...prev]);
-  }, []);
 
   // --- Admin ID verification overrides ---
 
@@ -1778,7 +1761,7 @@ export function AppProvider({ children }) {
     // Notifications
     notifications, markNotificationRead, markAllNotificationsRead,
     inspectionForms, submitInspectionForm,
-    relistSubmission, updateSubmissionPrice,
+    updateSubmissionPrice,
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals

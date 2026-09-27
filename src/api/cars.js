@@ -38,6 +38,22 @@ export const cars = {
   },
 
   // Seller's own listings with the counters the analytics screen needs
+  // B1 in docs/WEB-PARITY-PLAN.md: the seller's own listing controls.
+  // live <-> paused, either -> sold (final). Restoring to live re-runs the
+  // publication checks and may answer 409 with the missing requirement.
+  setSellerStatus: async (id, status) => {
+    return await api.patch(`/cars/${id}/seller-status`, { status });
+  },
+
+  // Public profile and one seller's live cars (G9). The profile answers 404
+  // for anyone whose listings wouldn't be public either.
+  getSellerProfile: async (userId) => {
+    return await api.get(`/sellers/${userId}`);
+  },
+  getSellerListings: async (userId) => {
+    return await api.get(`/cars?seller_id=${encodeURIComponent(userId)}&limit=100`);
+  },
+
   getMyListings: async () => {
     return await api.get('/cars/seller/mine');
   },
