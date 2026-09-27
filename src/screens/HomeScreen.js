@@ -1,5 +1,4 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { STUDIO } from '../data/carImageAssets';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
   FlatList, Dimensions, Image, RefreshControl,
@@ -19,37 +18,16 @@ import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketDat
 import { importCatalogMakes } from '../data/importCatalog';
 import { photoSource, PHOTO } from '../utils/photo';
 import { cars as carsApi } from '../api/cars';
-import { formatPrice } from '../data/cars';
+import { formatPrice, formatMiles } from '../data/cars';
 import Photo from '../components/Photo';
 // expo-image's ImageBackground, for the same disk cache the cards now use.
 import { ImageBackground } from 'expo-image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const BANNER_SLIDES = [
-  {
-    id: 1,
-    brandKey: 'bannerCertifiedBrand',
-    taglineKey: 'bannerCertifiedTagline',
-    tagKey: 'bannerCertifiedTag',
-    image: STUDIO.heroSedan,
-  },
-  {
-    id: 2,
-    brandKey: 'bannerInspectionBrand',
-    taglineKey: 'bannerInspectionTagline',
-    tagKey: 'bannerInspectionTag',
-    image: STUDIO.heroSuv,
-  },
-  {
-    id: 3,
-    brandKey: 'bannerSellBrand',
-    taglineKey: 'bannerSellTagline',
-    tagKey: 'bannerSellTag',
-    image: STUDIO.heroGt,
-  },
-];
-
+// Featured rail: each card leaves the next one peeking at the edge, which is
+// what says "there is more" — no dots needed.
+const FEATURED_CARD_W = SCREEN_WIDTH - 48;
+const FEATURED_GAP = 12;
 
 const TOOLS = [
   { labelKey: 'certifyCar', icon: 'car-outline', screen: 'CarSubmission' },
@@ -86,14 +64,8 @@ export default function HomeScreen({ navigation }) {
 
   const carouselRef = useRef(null);
 
-  // ── The banner ────────────────────────────────────────────────────────────
-  // These three slides used to be a hardcoded constant over stock studio
-  // photography: the most valuable space in the app, showing no car anybody
-  // could buy. It now renders whatever an admin placed, in slot order.
-  //
-  // BANNER_SLIDES survives as the fallback for a first launch on a bad
-  // connection and for the days when nothing is placed — an empty hero is a
-  // worse answer than a true statement about the service.
+  // ── Featured ──────────────────────────────────────────────────────────────
+  // Whatever an operator placed (GET /cars/featured), in slot order.
   const [featured, setFeatured] = useState([]);
   React.useEffect(() => {
     let alive = true;
@@ -103,21 +75,11 @@ export default function HomeScreen({ navigation }) {
     return () => { alive = false; };
   }, []);
 
-  // Hot deals and promoted cars: real vehicles only, never static generic website hero slides
-  const slides = useMemo(() => {
-    if (featured.length) return featured;
-    if (cars && cars.length) {
-      return cars.slice(0, 5).map((car, idx) => ({
-        ...car,
-        placement_id: `deal-${car.id}`,
-        headline: `${car.year} ${car.make} ${car.model}`,
-        title: `${car.year} ${car.make} ${car.model}`,
-        sponsored: idx === 0,
-        label: idx === 0 ? (t('home.premiumBadge') || 'PREMIUM') : (t('home.hotDealBadge') || 'HOT DEAL'),
-      }));
-    }
-    return [];
-  }, [featured, cars, t]);
+  // Only cars an operator actually placed. The fallback used to take the first
+  // five ordinary listings and label one "PREMIUM" and the rest "HOT DEAL" —
+  // a paid label on a car nobody paid for. With nothing placed, the section
+  // simply isn't there.
+  const slides = featured;
 
   React.useEffect(() => {
     const t = setTimeout(() => setLoading(false), 700);
@@ -138,7 +100,7 @@ export default function HomeScreen({ navigation }) {
 
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offset / SCREEN_WIDTH) + 1;
+    const index = Math.round(offset / (FEATURED_CARD_W + FEATURED_GAP)) + 1;
     if (index !== carouselIndex) setCarouselIndex(index);
   };
 
@@ -431,86 +393,85 @@ export default function HomeScreen({ navigation }) {
           </>
         ) : (
         <>
-        {/* ── TOP DEALS ── */}
-        {/* Titled only when these are cars an operator actually placed. The
-            fallback slides are true statements about the service, not deals,
-            and calling them one would be the first dishonest label in the app. */}
-        {/* ── HOT DEALS & PROMOTED CARS ── */}
+        {/* ── FEATURED ── */}
+        {/* Cars an operator placed, in slot order. Calm on purpose: one label,
+            and only where it means something — Sponsored is always shown on a
+            paid placement (it's a disclosure), Hot deal when an operator chose
+            it, nothing on an editorial pick. */}
         {slides.length ? (
-          <View style={styles.topDealsHead}>
-            <Text style={styles.topDealsTitle}>{t('home.hotDeals') || t('home.topDeals')}</Text>
-            <Text style={styles.topDealsSub}>{t('home.hotDealsSub') || t('home.topDealsSub')}</Text>
-          </View>
-        ) : null}
-        {slides.length ? (
-          <View style={styles.carouselContainer}>
+          <View style={styles.featured}>
+            <View style={styles.featuredHead}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.featuredTitle}>{t('home.featuredTitle')}</Text>
+                <Text style={styles.featuredSub}>{t('home.featuredSub')}</Text>
+              </View>
+              {slides.length > 1 ? (
+                <Text style={styles.featuredCount} accessibilityLabel={`${carouselIndex} of ${slides.length}`}>
+                  {carouselIndex} / {slides.length}
+                </Text>
+              ) : null}
+            </View>
+
             <ScrollView
               ref={carouselRef}
               horizontal
-              pagingEnabled
               showsHorizontalScrollIndicator={false}
+              snapToInterval={FEATURED_CARD_W + FEATURED_GAP}
+              decelerationRate="fast"
+              contentContainerStyle={styles.featuredRail}
               onScroll={handleCarouselScroll}
               scrollEventThrottle={16}
             >
               {slides.map((slide) => {
                 const image = slide.images?.[0] || slide.image;
                 const heading = slide.headline || slide.title;
-                const sub = `${formatPrice(slide.price)}${slide.location ? ` · ${slide.location}` : ''}`;
-                const tag = slide.label || (slide.sponsored ? 'PREMIUM' : 'HOT DEAL');
+                const label = slide.sponsored || slide.kind === 'sponsored'
+                  ? t('home.sponsoredLabel')
+                  : slide.kind === 'hot_deal' ? t('home.hotDealLabel') : null;
+                const facts = [
+                  slide.year ? String(slide.year) : null,
+                  slide.mileage != null ? formatMiles(slide.mileage) : null,
+                  slide.inspection_score ? t('home.inspected', { score: slide.inspection_score }) : null,
+                ].filter(Boolean).join('  ·  ');
 
                 return (
                   <Pressable
                     key={slide.placement_id || slide.id}
+                    style={styles.featuredCard}
                     accessibilityRole="button"
-                    accessibilityLabel={`${heading}. ${slide.sponsored ? 'Sponsored listing.' : ''}`}
+                    accessibilityLabel={`${heading}. ${formatPrice(slide.price)}.${label ? ` ${label}.` : ''}`}
                     onPress={() => navigation.navigate('VehicleDetail', { carId: slide.id })}
                   >
                     <ImageBackground
                       source={photoSource(image, PHOTO.WIDE)}
-                      style={styles.carouselSlide}
+                      style={StyleSheet.absoluteFill}
                       contentFit="cover"
                       cachePolicy="memory-disk"
-                    >
-                      <LinearGradient
-                        colors={['transparent', 'rgba(0,0,0,0.75)']}
-                        style={styles.slideScrim}
-                      />
-
-                      <View style={[styles.slideTag, slide.sponsored && styles.slideTagSponsored]}>
-                        <Text style={[styles.slideTagText, slide.sponsored && styles.slideTagTextSponsored]}>
-                          {tag}
+                    />
+                    <LinearGradient
+                      colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.72)']}
+                      style={styles.featuredScrim}
+                    />
+                    {label ? (
+                      <View style={[styles.featuredLabel, slide.kind === 'hot_deal' && styles.featuredLabelDark]}>
+                        <Text style={[styles.featuredLabelText, slide.kind === 'hot_deal' && styles.featuredLabelTextDark]}>
+                          {label}
                         </Text>
                       </View>
-
-                      <View style={styles.slideText}>
-                        <Text style={styles.slideBrand} numberOfLines={1}>{heading}</Text>
-                        <Text style={styles.slideTagline} numberOfLines={1}>{sub}</Text>
-                        {slide.inspection_score ? (
-                          <View style={styles.slideScore}>
-                            <Ionicons name="shield-checkmark" size={11} color="#fff" />
-                            <Text style={styles.slideScoreText}>
-                              {t('home.inspected', { score: slide.inspection_score })}
-                            </Text>
-                          </View>
-                        ) : null}
+                    ) : null}
+                    <View style={styles.featuredText}>
+                      <Text style={styles.featuredName} numberOfLines={1}>{heading}</Text>
+                      <View style={styles.featuredLine}>
+                        <Text style={styles.featuredPrice}>{formatPrice(slide.price)}</Text>
+                        {facts ? <Text style={styles.featuredFacts} numberOfLines={1}>{facts}</Text> : null}
                       </View>
-                    </ImageBackground>
+                    </View>
                   </Pressable>
                 );
               })}
             </ScrollView>
-
-          {/* Dot pagination */}
-          <View style={styles.dotsRow}>
-            {slides.map((_, i) => (
-              <View
-                key={i}
-                style={[styles.dot, carouselIndex === i + 1 && styles.dotActive]}
-              />
-            ))}
           </View>
-        </View>
-      ) : null}
+        ) : null}
 
         {/* ── TOOLS ROW ── */}
         <View style={styles.toolsRow}>
@@ -999,93 +960,38 @@ const styles = StyleSheet.create({
   searchPlaceholder: { fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted },
 
   // ── Carousel ──
-  topDealsHead: { paddingHorizontal: 16, marginBottom: 10 },
-  topDealsTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.4 },
-  topDealsSub: { marginTop: 2, fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted },
-  carouselContainer: { height: 210, position: 'relative' },
-  carouselSlide: { width: SCREEN_WIDTH, height: 210 },
-  slideScrim: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+  // ── Featured rail ──
+  featured: { marginBottom: 8 },
+  featuredHead: {
+    flexDirection: 'row', alignItems: 'flex-end',
+    paddingHorizontal: 20, marginBottom: 12,
   },
-  slideTag: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
+  featuredTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.3 },
+  featuredSub: { marginTop: 2, fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted },
+  featuredCount: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textMuted, marginLeft: 12 },
+  featuredRail: { paddingHorizontal: 20, gap: FEATURED_GAP },
+  featuredCard: {
+    width: FEATURED_CARD_W, height: 196,
+    borderRadius: 16, overflow: 'hidden',
+    backgroundColor: colors.surfaceAlt,
   },
-  slideTagText: {
-    color: colors.white,
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    letterSpacing: 0.5,
+  featuredScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%' },
+  featuredLabel: {
+    position: 'absolute', top: 12, left: 12,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
   },
-  // A paid placement is marked differently from an editorial pick, not just
-  // worded differently — the two must not be mistakable at a glance, and the
-  // glance is all a banner gets.
-  slideTagSponsored: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderColor: 'rgba(255,255,255,0.55)',
+  featuredLabelDark: { backgroundColor: 'rgba(17,17,17,0.72)' },
+  featuredLabelText: {
+    fontSize: 10.5, fontFamily: fonts.semiBold, color: '#111',
+    letterSpacing: 0.4, textTransform: 'uppercase',
   },
-  slideTagTextSponsored: {
-    letterSpacing: 0.8,
-  },
-  slideScore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.42)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-  },
-  slideScoreText: {
-    color: colors.white,
-    fontFamily: fonts.bold,
-    fontSize: 10.5,
-  },
-  slideText: {
-    position: 'absolute',
-    bottom: 36,
-    left: 18,
-    right: 18,
-  },
-  slideBrand: {
-    color: colors.white,
-    fontFamily: fonts.extraBold,
-    fontSize: 22,
-    letterSpacing: -0.4,
-  },
-  slideTagline: {
-    color: 'rgba(255,255,255,0.88)',
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    marginTop: 3,
-  },
-  // Dot pagination
-  dotsRow: {
-    position: 'absolute',
-    bottom: 12,
-    left: 0, right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 5,
-  },
-  dot: {
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.45)',
-  },
-  dotActive: {
-    width: 18, height: 6, borderRadius: 3,
-    backgroundColor: colors.white,
-  },
+  featuredLabelTextDark: { color: colors.white },
+  featuredText: { position: 'absolute', left: 16, right: 16, bottom: 14 },
+  featuredName: { color: colors.white, fontFamily: fonts.bold, fontSize: 17, letterSpacing: -0.2 },
+  featuredLine: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4, gap: 10 },
+  featuredPrice: { color: colors.white, fontFamily: fonts.extraBold, fontSize: 15 },
+  featuredFacts: { flex: 1, color: 'rgba(255,255,255,0.78)', fontFamily: fonts.regular, fontSize: 12 },
 
   // ── Tools Row ──
   toolsRow: {
