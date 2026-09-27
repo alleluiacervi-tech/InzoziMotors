@@ -93,8 +93,9 @@ languages · light/dark theme.
 streams the multipart body to the backend with the Bearer header. It enforces
 the same per-kind limits as the backend (ID: 3 files × 5 MB; import proof: as
 `uploadImportDocs`). This avoids the 1 MB Server Action limit (W2) and keeps the
-token out of the browser. `client_max_body_size` on the `sawacars.com` nginx
-vhost must be at least 25 MB, matching `api.`.
+token out of the browser. The edge is Caddy (`ops/caddy/sawacars.Caddyfile`),
+whose `sawacars.com` block sets no `request_body` limit, so large uploads pass
+through; an earlier draft wrongly assumed nginx and a 1 MB default.
 
 **D2: Realtime uses a short-lived socket ticket.**
 A new `POST /auth/socket-ticket` (requireAuth plus live-session check) returns a

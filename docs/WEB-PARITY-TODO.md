@@ -12,7 +12,7 @@ D#, O#) refer to that document. Tick items in the PR that ships them.
 ## Phase 0 — Foundations
 - [x] **W5** Add Playwright to `web/` with one smoke test (home → car → sign-in page); run in CI against backend + Postgres service
 - [x] **D1** `web/src/app/api/upload/[kind]/route.ts` — cookie → Bearer streaming proxy, per-kind size/count limits, no body logging (`id` kind wired to `POST /id-verification`; more kinds land with the feature that needs them)
-- [ ] **D1** Confirm/raise `client_max_body_size` (≥ 25 MB) on the `sawacars.com` nginx vhost *(production change — ask first; not done)*
+- [x] **D1** Upload size at the edge: **nothing to change.** Production is fronted by Caddy, not nginx (`ops/caddy/sawacars.Caddyfile`), and the `sawacars.com` block sets no `request_body` limit, so Caddy imposes none. The upload proxy enforces its own per-file limits.
 - [x] **W1** Route-scoped `Permissions-Policy: camera=(self)` for verification + submission routes only
 - [x] **D2** Backend `POST /auth/socket-ticket` (60 s, `purpose: 'socket'`) + tests
 - [x] **D2/B3** `socket.js`: accept token or ticket; run `verifyLiveSession` on both; tests for suspended/deleted/expired
