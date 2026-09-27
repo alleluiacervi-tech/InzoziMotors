@@ -44,6 +44,26 @@ a booking.
 **Sellers** submit a vehicle, book an inspection slot, and control which
 contact channels may be disclosed. They cannot publish; only an admin can.
 
+**Web ↔ app parity is a requirement.** More people use sawacars.com than the
+apps, so a signed-in user must be able to do on the website everything they can
+do in the app, calling the same endpoint with the same rules. "Use the app" is
+allowed only for the exceptions listed in `docs/WEB-PARITY-PLAN.md` §7. Any other
+case is a bug.
+- A new user-facing feature ships on **both** clients, or the PR says why not.
+- As of 27 Sep 2026, the website can't yet:
+  - read or reply to messages
+  - verify a seller's ID
+  - submit a vehicle or book an inspection
+  - reopen a closed account
+  - compare vehicles
+  - show seller or showroom profiles
+- The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
+  `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
+- Browser rules:
+  - the JWT stays in the httpOnly cookie
+  - uploads go through a Next route handler, never a Server Action (1 MB limit)
+  - realtime uses a short-lived socket ticket
+
 **Showrooms** are admin-invited (one-use 48h activation link → `/activate-showroom`),
 need `business_verified`, and may hold rental inventory.
 
@@ -254,6 +274,18 @@ once it is shown to a human — store those URLs canonical, never with the
 forbids `aggregateRating`/`priceValidUntil` until they are real. Listing galleries are **flexible** (`listing_min_photos=1`,
 6 recommended) — the old fixed 36-angle rule is gone.
 
+**Known gaps both clients share** (from the 27 Sep 2026 parity audit; see
+`docs/WEB-PARITY-PLAN.md` §3.3):
+- **No seller "mark sold" button.** Neither client calls
+  `PATCH /cars/:id/seller-status`. The app's `/cars/:id/status` is the admin route.
+- **The app drops "reference photos".** `CarSubmissionScreen` collects them, but
+  `AppContext.addSubmission` never sends `reference_images`.
+- **The socket doesn't re-check the session.** `backend/src/socket.js` checks the
+  JWT at handshake but never calls `verifyLiveSession`, which breaks invariant 5
+  for realtime.
+- **ID uploads keep their EXIF metadata.** Stored uncompressed on purpose, so
+  location data can survive.
+
 ---
 
 ## 8. Guardrails
@@ -279,4 +311,4 @@ records, and providing every secret value.
 Store answers are drafted in `docs/STORE-SUBMISSION.md`. Other live docs:
 `PRODUCTION-READINESS.md`, `LAUNCH-TODO.md`, `DEPLOY-PHASE-2.md`,
 `SEO-LAUNCH-CHECKLIST.md`, `IMPORT-ORDERS-CHECKLIST.md`, `ADMIN-INBOX.md`,
-`IMPORTS-AUDIT.md`.
+`IMPORTS-AUDIT.md`, `WEB-PARITY-PLAN.md` + `WEB-PARITY-TODO.md`.
