@@ -47,7 +47,7 @@ logistics, not engineering (engineering is ~2 weeks).
 | Backend API | Feature-complete, 15 route modules, smoke-tested (38/38 + 35 audit checks), Dockerized. Health endpoint exists. No tests in CI, no helmet/rate-limit. |
 | Public website | Next.js 15.1.3 — browse, sell, rentals, tools, auth, dashboard, **legal/privacy pages exist**, full SEO scaffolding (sitemap, robots, OG images, manifest). |
 | Admin dashboard | All 10 pages built, runs in Docker — **never click-tested end-to-end against the API**. |
-| Mobile app | All Phase 1–5 screens wired with offline demo fallback; real photo capture; push token registration. `com.sawacars.app`, v1.0.0, Android API 36 pinned ✅, permission strings written ✅. |
+| Mobile app | All Phase 1–5 screens wired with offline demo fallback; real photo capture; push token registration. iOS `com.sawacars.app`, Android `com.sawacars.android`, v1.0.0, Android API 36 pinned ✅, permission strings written ✅. |
 | EAS config | Profiles ready, but **`eas init` not run** (no projectId) and `ascAppId` is a placeholder. |
 | Assets | Icon + adaptive icon 1024×1024 ✅. Splash is only 1024×1024 (upscales badly on tall phones). No Play feature graphic, no screenshots. |
 | CI | Syntax/typecheck/build on all four surfaces. No tests, no deploy, no `npm audit`. |

@@ -7,12 +7,13 @@
 // about that server has to travel through here.
 
 const DEV_FALLBACK = null; // resolved on-device in src/api/client.js
-const EAS_PROJECT_ID = '9c7aebc4-04b3-4950-b4db-0021e7836e65';
+const EAS_PROJECT_ID = 'f2c5d3f8-8777-4b97-96ec-1482d374a42a';
 
 export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
   slug: 'sawa-cars',
+  owner: 'alleluiacervi',
   // A literal, deliberately. This briefly read
   // `process.env.APP_VERSION || '1.0.4'`, which existed only so the publish
   // workflow could force a runtime version and fan one bundle out to every
@@ -22,7 +23,7 @@ export default ({ config }) => ({
   // forged value rather than the binary's real one, so the app misreports its
   // own version. The build and the publish must agree on this number, and the
   // only way to guarantee that is for it not to be configurable.
-  version: '1.0.6',
+  version: '1.0.7',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
@@ -104,7 +105,9 @@ export default ({ config }) => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#CC050F',
     },
-    package: 'com.sawacars.app',
+    // Differs from the iOS bundle id on purpose: com.sawacars.app is held by a
+    // personal Play account, so the company account publishes under this name.
+    package: 'com.sawacars.android',
     permissions: [
       'CAMERA',
       'android.permission.POST_NOTIFICATIONS',

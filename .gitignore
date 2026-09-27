@@ -18,6 +18,8 @@ yarn-error.*
 
 # Store signing credentials & private keys — never commit these
 play-service-account.json
+credentials.json
+credentials/
 *-service-account.json
 *.p8
 *.p12
