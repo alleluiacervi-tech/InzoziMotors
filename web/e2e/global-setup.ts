@@ -58,7 +58,12 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
   try {
     const seller = await register({ role: 'seller', name: 'E2E Seller' })
-    await client.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id])
+    // A distinctive, VISIBLE phone number: public pages must never show it,
+    // and a leak would be caught because it's actually there to leak.
+    await client.query(
+      "UPDATE users SET id_verified='approved', phone='+250 780 000 999', phone_visible=TRUE, contact_consent_at=NOW() WHERE id=$1",
+      [seller.id]
+    )
     const buyer = await register({ name: 'E2E Buyer' })
 
     const adminUser = await register({ name: 'E2E Admin' })

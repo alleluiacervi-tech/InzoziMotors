@@ -18,7 +18,9 @@ test('a seller profile lists their live cars and never shows contact details', a
   await expect(page.getByText('Identity verified')).toBeVisible()
   await expect(page.locator(`a[href="/cars/${process.env.E2E_CAR_ID}"]`).first()).toBeVisible()
   await expect(page.locator(`a[href="/cars/${process.env.E2E_SECOND_CAR_ID}"]`).first()).toBeVisible()
-  expect(await page.content()).not.toContain('+250')
+  // The seeded seller's own visible number. (Sawa's company line in the
+  // footer is +250 too, so the country code alone proves nothing.)
+  expect(await page.content()).not.toMatch(/780\s?000\s?999/)
 })
 
 test('compare puts two cars side by side', async ({ page }) => {
