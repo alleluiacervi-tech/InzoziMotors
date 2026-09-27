@@ -30,10 +30,15 @@ export async function generateMetadata(): Promise<Metadata> {
 // engagement numbers and the price control.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default async function SellingPage() {
+// Submissions the seller may still book or rebook a slot for — the statuses
+// PATCH /submissions/:id/schedule accepts.
+const BOOKABLE = new Set(['under_review', 'approved', 'scheduled'])
+
+export default async function SellingPage({ searchParams }: { searchParams: Promise<{ booked?: string }> }) {
   const t = await getServerT()
   const user = await getCurrentUser()
   const token = await getToken()
+  const { booked } = await searchParams
   if (!user || !token) return null
 
   const verified = user.id_verified === 'approved'
@@ -57,8 +62,14 @@ export default async function SellingPage() {
       <PageHeader
         title={t('dashboard.selling.title')}
         description={t('dashboard.selling.description')}
-        action={<Button href="/download" size="sm">{t('dashboard.selling.submitInApp')}</Button>}
+        action={<Button href="/sell/submit" size="sm">{t('onboarding.selling.submitCar')}</Button>}
       />
+
+      {booked ? (
+        <Alert tone="success" title={t('onboarding.selling.bookedTitle')} className="mb-6">
+          {t('onboarding.selling.bookedBody')}
+        </Alert>
+      ) : null}
 
       {failed ? (
         <Alert tone="warning" title={t('dashboard.common.someFailedTitle')} className="mb-6">
@@ -95,7 +106,9 @@ export default async function SellingPage() {
           </ol>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button href="/download">{t('dashboard.selling.openSellerApp')}</Button>
+            <Button href="/dashboard/verify">
+              {t(user.id_verified === 'pending' ? 'onboarding.selling.checkVerification' : 'onboarding.selling.verifyNow')}
+            </Button>
             <Button href="/sell" variant="outline">
               {t('dashboard.selling.howSellingWorks')}
             </Button>
@@ -168,6 +181,18 @@ export default async function SellingPage() {
                       </p>
                     ) : null}
 
+                    {BOOKABLE.has(submission.status) ? (
+                      <p className="mt-4">
+                        <Link
+                          href={`/dashboard/selling/${submission.id}/schedule`}
+                          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
+                        >
+                          <Icon name="calendar" size={15} />
+                          {t(submission.inspection_date ? 'onboarding.selling.changeSlot' : 'onboarding.selling.bookInspection')}
+                        </Link>
+                      </p>
+                    ) : null}
+
                     {submission.status === 'live' && submission.car_id ? (
                       <p className="mt-4">
                         <Link
@@ -191,7 +216,7 @@ export default async function SellingPage() {
             icon="car"
             title={t('dashboard.selling.pipelineEmptyTitle')}
             description={t('dashboard.selling.pipelineEmptyBody')}
-            action={<Button href="/sell">{t('dashboard.selling.submitCar')}</Button>}
+            action={<Button href="/sell/submit">{t('dashboard.selling.submitCar')}</Button>}
           />
         </Card>
       ) : null}

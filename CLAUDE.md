@@ -51,13 +51,12 @@ allowed only for the exceptions listed in `docs/WEB-PARITY-PLAN.md` §7. Any oth
 case is a bug.
 - A new user-facing feature ships on **both** clients, or the PR says why not.
 - As of 27 Sep 2026, the website can't yet:
-  - verify a seller's ID
-  - submit a vehicle or book an inspection
   - reopen a closed account
   - compare vehicles
   - show seller or showroom profiles
-- Messaging (read, reply, live updates, report/block) shipped 27 Sep 2026 —
-  first user-facing capability closed under this rule.
+- Shipped 27 Sep 2026: messaging (read, reply, live updates, report/block) and
+  seller onboarding (`/dashboard/verify`, `/sell/submit`,
+  `/dashboard/selling/[id]/schedule`).
 - The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
   `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
 - Browser rules:
@@ -208,7 +207,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0047`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0049`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -279,14 +278,18 @@ forbids `aggregateRating`/`priceValidUntil` until they are real. Listing galleri
 `docs/WEB-PARITY-PLAN.md` §3.3):
 - **No seller "mark sold" button.** Neither client calls
   `PATCH /cars/:id/seller-status`. The app's `/cars/:id/status` is the admin route.
-- **The app drops "reference photos".** `CarSubmissionScreen` collects them, but
-  `AppContext.addSubmission` never sends `reference_images`.
-- **ID uploads keep their EXIF metadata.** Stored uncompressed on purpose, so
-  location data can survive.
+Fixed 27 Sep 2026 (see `docs/WEB-PARITY-PLAN.md` §3.3 and §10):
+- The socket re-checks the session on every handshake (`verifyLiveSession`, for
+  both the app's token and the website's short-lived ticket).
+- Uploaded photos lose their metadata (GPS, device, time) without being
+  re-encoded: `middleware/strip-metadata.js`, on ID documents and reference
+  photos. Identity documents are still never recompressed.
+- Reference photos reach the backend from both clients, through
+  `POST /submissions/:id/reference-photos`, which stores them under `submissions/<id>`.
+- The app's seller notes are sent as `notes`, the one field the backend stores.
 
-Fixed 27 Sep 2026: the socket now re-checks the session on every handshake
-(`verifyLiveSession`, both the app's token and the website's short-lived
-ticket) — see D2/B3 in `docs/WEB-PARITY-PLAN.md`.
+Every new upload route needs its own rule in `resolveSubdir`
+(`middleware/upload.js`). The fallback is the private `id-docs` folder.
 
 ---
 

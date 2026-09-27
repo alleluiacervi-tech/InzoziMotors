@@ -29,6 +29,7 @@ export interface User {
   /** On by default server-side (D3/O4 in docs/WEB-PARITY-PLAN.md) — the
    *  "while you were away" email nudge, opt-out. */
   message_email_notifications?: boolean
+  seller_type?: string | null
   created_at: string
 }
 

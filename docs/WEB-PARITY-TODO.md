@@ -31,20 +31,45 @@ D#, O#) refer to that document. Tick items in the PR that ships them.
 - [x] **D3** Backend: offline-recipient email, ≤ 1 per conversation per hour, no message body, opt-out setting + tests (migration `0048`, `mailer.sendNewMessageEmail`, `routes/messages.js`)
 - [x] **O4** Opt-out toggle in `/dashboard/profile` notification settings
 - [x] i18n namespace `messages` in all six languages; `I18nScope` on the dashboard layout (and on `cars/layout.tsx`, for the car-page CTA copy)
-- [x] Playwright: buyer messages seller → seller replies → buyer sees it live (`e2e/messaging.spec.ts`) — **written, not yet run**: this sandbox has no local Postgres, so it hasn't executed anywhere but will on the next CI run of `web-e2e`
+- [x] Playwright: buyer messages seller → seller replies → buyer sees it live (`e2e/messaging.spec.ts`) — passed in CI on #128 and #129
 
-## Phase 2 — Seller onboarding (G4–G6, B2)
-- [ ] **B4** Backend: strip EXIF (keep orientation) on ID uploads for both clients + test
-- [ ] `/dashboard/verify` — ID front, ID back, selfie; mobile `capture`, desktop webcam (**D4**), upload fallback per **O2**
-- [ ] Client downscale only when > 5 MB (long edge 3000 px, q 0.92); never recompress otherwise
-- [ ] Status states: none / pending / rejected (with reason) / approved; resubmit path
-- [ ] If O2 = yes: send `capture_source` so reviewers see upload vs live; show it in admin ID queue
-- [ ] `/sell/submit` — vehicle form (same fields + validation as `CarSubmissionScreen`), `POST /submissions`
-- [ ] **B2** Reference photos: upload via D1, send `reference_images` — **fix in the app too** (`AppContext.addSubmission`)
-- [ ] Inspection slot booking — centers from `/centers/active`, `PATCH /submissions/:id/schedule`
-- [ ] Replace "Submit in app" on `dashboard/selling` with the web flow
-- [ ] i18n namespaces `verify`, `sell`
-- [ ] Playwright: sign up as seller → verify → submit → book slot
+## Phase 2 — Seller onboarding (G4–G6, B2, B4, B5)
+Detailed plan: [`WEB-PARITY-PLAN.md` §10](WEB-PARITY-PLAN.md#10-phase-2-in-detail-seller-onboarding).
+
+**Backend**
+- [x] **B4 / P2-D1** `middleware/strip-metadata.js`: remove metadata without re-encoding (JPEG APPn/COM, PNG text/eXIf/tIME, WebP EXIF/XMP and VP8X flags); rotate at q95 only when orientation ≠ 1; fail open. Unit tests that run without Postgres, checking the pixels are identical and the metadata is gone.
+- [x] Wire it into `POST /id-verification`
+- [x] **P2-D2** Migration `0049`: `users.id_capture_source` (`live` | `file` | NULL). `POST /id-verification` accepts `capture_source`, and `GET /id-verification/queue` returns it.
+- [x] **F4** `resolveSubdir`: `/submissions/:id` goes to `submissions/<id>`, not `id-docs`
+- [x] **B2 / P2-D3** `POST /submissions/:id/reference-photos`: owner only; status `under_review`, `approved` or `scheduled`; at most 12 in total; compressed and metadata removed; URLs appended to `reference_images`
+- [x] Tests: the route stores photos, refuses a stranger and refuses a 13th photo; `capture_source` is stored and validated; the queue returns it
+
+**Website**
+- [x] Upload proxy: `reference` kind (`?submission=<uuid>`, 2 photos, 10 MB each); pass `capture_source` through
+- [x] **F6** Fix `submissions.schedule` to send `scheduled_date`/`scheduled_time`
+- [x] `/dashboard/verify`:
+  - three slots (front, back, selfie), with the app's copy
+  - a file input **without** `capture`, so a phone offers camera or library like the app's sheet; plus an in-page webcam view on desktop (the only capture reported as `live`)
+  - downscale only over 5 MB (P2-D5)
+  - status screens for `pending` and `approved`; the upload form for `none` and `rejected`, with a generic message for `rejected` (F1)
+- [x] `/sell/submit`:
+  - two steps, matching the app: first make, model, year (this year back 16, as in the app), mileage, fuel, transmission, body type and colour; then asking price, two optional reference photos and notes
+  - sign-in and seller-account checks (P2-D6)
+- [x] `/dashboard/selling/[id]/schedule`: centres, the next 10 days, 8 AM to 4 PM, a summary, then confirm. Show the "fully booked" message as the server sends it.
+- [x] Remove "use the app" from the selling dashboard ("Submit in app", "Open seller app"), `VerificationNotice` and the profile page's "Get the app"
+- [x] "Book inspection" link on each submission card that has no slot yet
+- [x] `onboarding` namespace in all six languages, scoped on the dashboard and `/sell` layouts
+
+**App** (JavaScript only, so it can ship by OTA)
+- [x] `captureImage` records whether the photo came from the camera or the library; `submitIdVerification` sends `capture_source`
+- [x] **B2** Upload reference photos after `createSubmission`
+- [x] **B5** Map the "Anything we should know?" notes to `notes`
+
+**Admin**
+- [x] ID queue: "Live camera capture" or "Chosen from files — check closely" badge next to the pending pill
+
+**Tests**
+- [x] Playwright: sign up as a seller, verify (upload three files), submit a car with a reference photo, book a slot, and see it on the selling dashboard
 
 ## Phase 3 — Account & trust (G7–G11, B1)
 - [ ] **G7** Reopen flow: sign-in on a closed account (within 30 days) offers reopen → `/auth/reopen`

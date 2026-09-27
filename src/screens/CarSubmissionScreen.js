@@ -12,8 +12,11 @@ import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
 import { captureImage } from '../utils/media';
 import { useApp } from '../context/AppContext';
+import submissionsApi from '../api/submissions';
 import { estimateValuation } from '../data/finance';
 import ChipSelect from '../components/ChipSelect';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // The common answers, not the only permitted ones. Every one of these lists is
 // a shortcut past typing, and each has an "Other" chip beside it — a hardcoded
@@ -192,6 +195,15 @@ export default function CarSubmissionScreen({ navigation, route }) {
         photos,
         image: STUDIO.paintWhite,
       });
+      // Attached after the submission exists, so a failed upload never costs
+      // the seller the submission. A demo-mode local id isn't a server row.
+      if (UUID.test(String(submissionId)) && Object.values(photos).some(Boolean)) {
+        try {
+          await submissionsApi.uploadReferencePhotos(submissionId, photos);
+        } catch {
+          showToast('Your car was submitted, but the reference photos did not upload.', 'error');
+        }
+      }
       showConfirm({
         title: 'Submission received',
         message: `Your ${carTitle} is in. Pick an inspection slot now — it takes 30 seconds.`,

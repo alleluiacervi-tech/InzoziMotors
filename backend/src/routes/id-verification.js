@@ -8,6 +8,11 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
 const { uploadIdDocs, verifyImageContent } = require('../middleware/upload');
+const { stripUploadMetadata } = require('../middleware/strip-metadata');
+
+// P2-D2 in docs/WEB-PARITY-PLAN.md: 'live' only when every photo came straight
+// from a camera, 'file' when any was chosen from the device.
+const CAPTURE_SOURCES = ['live', 'file'];
 const { recomputeTrustScore } = require('../lib/trust');
 const { notifyUser } = require('../lib/notify');
 const { recordAdminAction } = require('../lib/admin-audit');
@@ -108,11 +113,16 @@ router.post('/', requireAuth, uploadIdDocs.fields([
 // lose 92% of their bytes without a buyer noticing; an identity document is
 // evidence, and the thing being read off it is a line of small print. The
 // 5 MB per-file cap already bounds these, and there are three per person, once.
-]), verifyImageContent, async (req, res) => {
+// Metadata IS removed (GPS on a photo taken at home is a home address), and
+// that is done without re-encoding — see middleware/strip-metadata.js.
+]), verifyImageContent, stripUploadMetadata, async (req, res) => {
   const files = req.files;
   if (!files?.id_front || !files?.id_back || !files?.selfie) {
     return res.status(400).json({ error: 'id_front, id_back, and selfie are required' });
   }
+  // A hint for reviewers, never a gate: an unknown or missing value is stored
+  // as NULL rather than refusing someone's verification over it.
+  const captureSource = CAPTURE_SOURCES.includes(req.body?.capture_source) ? req.body.capture_source : null;
   try {
     const baseUrl = publicApiOrigin(req);
     // Point at the admin-gated file route, never the public static path
@@ -133,9 +143,10 @@ router.post('/', requireAuth, uploadIdDocs.fields([
       `UPDATE users
        SET id_verified = 'pending',
            id_front_url = $2, id_back_url = $3, selfie_url = $4,
+           id_capture_source = $5,
            id_submitted_at = NOW()
        WHERE id = $1`,
-      [req.user.id, url(files.id_front), url(files.id_back), url(files.selfie)]
+      [req.user.id, url(files.id_front), url(files.id_back), url(files.selfie), captureSource]
     );
 
     // Only after the row points at the new files, so a failure above can never
@@ -162,7 +173,7 @@ router.get('/queue', requireAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, name, email, phone, id_verified,
-              id_front_url, id_back_url, selfie_url,
+              id_front_url, id_back_url, selfie_url, id_capture_source,
               id_submitted_at, created_at
        FROM users
        WHERE id_verified = 'pending'
