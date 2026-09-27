@@ -432,7 +432,8 @@ router.patch('/me', requireAuth, async (req, res) => {
          WHERE id = $${params.length}
          RETURNING id, name, email, phone, whatsapp_phone, phone_visible,
                    whatsapp_visible, contact_consent_at, role, id_verified, account_status,
-                   seller_type, business_name, business_verified, trust_score, avatar_url`,
+                   seller_type, business_name, business_verified, trust_score, avatar_url,
+                   message_email_notifications`,
         params
       );
       return { status: 200, body: rows[0] };
