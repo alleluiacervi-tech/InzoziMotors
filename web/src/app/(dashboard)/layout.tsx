@@ -78,7 +78,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }[user.id_verified] ?? { tone: 'neutral' as const, icon: 'shield' as const }
 
   return (
-    <I18nScope ns={['dashboard', 'messages', 'onboarding']}>
+    <I18nScope ns={['dashboard', 'messages', 'onboarding', 'market']}>
     <div className="bg-surface-page">
       <Container className="py-5 sm:py-8 lg:py-10">
         <div className="lg:grid lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-10">

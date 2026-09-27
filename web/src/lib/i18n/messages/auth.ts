@@ -34,6 +34,16 @@ const en = {
     appLink: 'Sawa Cars app',
   },
   signin: {
+    closed: {
+      title: 'This account is closed',
+      body: 'You closed it, and nothing has been erased. Reopen it and your saved cars, messages and listings come back.',
+      until: 'After {{date}} it is deleted for good.',
+      passwordAgain: 'Enter your password again to reopen it.',
+      reopen: 'Reopen my account',
+      reopening: 'Reopening…',
+      notNow: 'Not now',
+      failed: 'Could not reopen this account.',
+    },
     metaTitle: 'Sign in',
     metaDescription:
       'Sign in to Sawa Cars to see your saved cars, saved searches, vehicle enquiries and submissions.',
@@ -270,6 +280,16 @@ const rw = {
     appLink: 'porogaramu ya Sawa Cars',
   },
   signin: {
+    closed: {
+      title: 'Iyi konti yarafunzwe',
+      body: 'Wayifunze, ariko amakuru ntiyahanaguwe. Yongera kuyifungura kugira ngo imodoka wabitse, ubutumwa n’amatangazo bigaruke.',
+      until: 'Nyuma ya {{date}} izahanagurwa burundu.',
+      passwordAgain: 'Ongera wandike ijambo ry’ibanga kugira ngo uyifungure.',
+      reopen: 'Ongera ufungure konti',
+      reopening: 'Birimo gufungura…',
+      notNow: 'Si ubu',
+      failed: 'Konti ntiyafunguwe.',
+    },
     metaTitle: 'Injira',
     metaDescription:
       'Injira kuri Sawa Cars kugira ngo urebe imodoka wabikiye, ishakisha wabitse, ibibazo ku modoka n’ibyo watanze.',
@@ -506,6 +526,16 @@ const fr = {
     appLink: "l'application Sawa Cars",
   },
   signin: {
+    closed: {
+      title: 'Ce compte est fermé',
+      body: 'Vous l’avez fermé, mais rien n’a été effacé. Rouvrez-le pour retrouver vos favoris, messages et annonces.',
+      until: 'Après le {{date}}, il sera définitivement supprimé.',
+      passwordAgain: 'Saisissez à nouveau votre mot de passe pour le rouvrir.',
+      reopen: 'Rouvrir mon compte',
+      reopening: 'Réouverture…',
+      notNow: 'Pas maintenant',
+      failed: 'Impossible de rouvrir ce compte.',
+    },
     metaTitle: 'Se connecter',
     metaDescription:
       'Connectez-vous à Sawa Cars pour voir vos voitures enregistrées, vos recherches sauvegardées, vos demandes de véhicules et vos soumissions.',
@@ -745,6 +775,16 @@ const sw = {
     appLink: 'programu ya Sawa Cars',
   },
   signin: {
+    closed: {
+      title: 'Akaunti hii imefungwa',
+      body: 'Uliifunga, lakini hakuna kilichofutwa. Ifungue tena ili upate magari, ujumbe na matangazo uliyohifadhi.',
+      until: 'Baada ya {{date}} itafutwa kabisa.',
+      passwordAgain: 'Andika nenosiri lako tena ili kuifungua.',
+      reopen: 'Fungua akaunti yangu tena',
+      reopening: 'Inafungua…',
+      notNow: 'Si sasa',
+      failed: 'Akaunti haikuweza kufunguliwa.',
+    },
     metaTitle: 'Ingia',
     metaDescription:
       'Ingia kwenye Sawa Cars kuona magari uliyohifadhi, utafutaji uliohifadhi, maulizo ya magari na maombi yako.',
@@ -981,6 +1021,16 @@ const ko = {
     appLink: 'Sawa Cars 앱',
   },
   signin: {
+    closed: {
+      title: '이 계정은 닫혀 있습니다',
+      body: '계정을 닫았지만 데이터는 삭제되지 않았습니다. 다시 열면 저장한 차량, 메시지와 매물이 복구됩니다.',
+      until: '{{date}} 후에는 영구 삭제됩니다.',
+      passwordAgain: '다시 열려면 비밀번호를 한 번 더 입력하세요.',
+      reopen: '계정 다시 열기',
+      reopening: '여는 중…',
+      notNow: '나중에',
+      failed: '계정을 다시 열 수 없습니다.',
+    },
     metaTitle: '로그인',
     metaDescription:
       '저장한 차량, 저장한 검색, 차량 문의, 제출 내역을 확인하려면 Sawa Cars에 로그인하세요.',
@@ -1217,6 +1267,16 @@ const zh = {
     appLink: 'Sawa Cars 应用',
   },
   signin: {
+    closed: {
+      title: '此账户已注销',
+      body: '您已注销此账户，但数据尚未清除。重新开启后即可找回您的收藏、消息和车源。',
+      until: '{{date}} 之后将被永久删除。',
+      passwordAgain: '请再次输入密码以重新开启。',
+      reopen: '重新开启账户',
+      reopening: '正在开启…',
+      notNow: '暂不',
+      failed: '无法重新开启此账户。',
+    },
     metaTitle: '登录',
     metaDescription:
       '登录 Sawa Cars，查看您收藏的车辆、保存的搜索、车辆咨询和提交记录。',

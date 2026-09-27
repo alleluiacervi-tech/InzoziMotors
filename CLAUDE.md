@@ -50,13 +50,11 @@ do in the app, calling the same endpoint with the same rules. "Use the app" is
 allowed only for the exceptions listed in `docs/WEB-PARITY-PLAN.md` §7. Any other
 case is a bug.
 - A new user-facing feature ships on **both** clients, or the PR says why not.
-- As of 27 Sep 2026, the website can't yet:
-  - reopen a closed account
-  - compare vehicles
-  - show seller or showroom profiles
-- Shipped 27 Sep 2026: messaging (read, reply, live updates, report/block) and
+- Shipped 27 Sep 2026: messaging (read, reply, live updates, report/block),
   seller onboarding (`/dashboard/verify`, `/sell/submit`,
-  `/dashboard/selling/[id]/schedule`).
+  `/dashboard/selling/[id]/schedule`), seller profiles (`/sellers/[id]`),
+  compare (`/compare`, up to 3) and reopening a closed account at sign-in.
+  What is left (Web Push, PWA, the copy sweep) is Phase 4 of the plan.
 - The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
   `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
 - Browser rules:
@@ -274,11 +272,11 @@ once it is shown to a human — store those URLs canonical, never with the
 forbids `aggregateRating`/`priceValidUntil` until they are real. Listing galleries are **flexible** (`listing_min_photos=1`,
 6 recommended) — the old fixed 36-angle rule is gone.
 
-**Known gaps both clients share** (from the 27 Sep 2026 parity audit; see
-`docs/WEB-PARITY-PLAN.md` §3.3):
-- **No seller "mark sold" button.** Neither client calls
-  `PATCH /cars/:id/seller-status`. The app's `/cars/:id/status` is the admin route.
-Fixed 27 Sep 2026 (see `docs/WEB-PARITY-PLAN.md` §3.3 and §10):
+**Gaps from the 27 Sep 2026 parity audit** (`docs/WEB-PARITY-PLAN.md` §3.3),
+fixed the same day (§10, §11):
+- Sellers can pause, relist and mark sold on both clients, through
+  `PATCH /cars/:id/seller-status`. (The app's `/cars/:id/status` is the admin
+  route; the old "relist" that only changed local state is gone.)
 - The socket re-checks the session on every handshake (`verifyLiveSession`, for
   both the app's token and the website's short-lived ticket).
 - Uploaded photos lose their metadata (GPS, device, time) without being

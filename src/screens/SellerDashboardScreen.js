@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import { useApp } from '../context/AppContext';
+import carsApi from '../api/cars';
 import { useSellerGate } from '../hooks/useSellerGate';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
@@ -25,6 +26,7 @@ const STATUS_CONFIG = {
   scheduled: { label: 'Inspection Booked', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
   inspected: { label: 'Inspection Done', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'scan-outline' },
   live: { label: 'Live', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'radio-outline' },
+  paused: { label: 'Paused', color: colors.statusPending, bg: colors.statusPendingBg, icon: 'pause-circle-outline' },
   sold: { label: 'Sold', color: colors.statusSold, bg: colors.statusSoldBg, icon: 'checkmark-done-circle-outline' },
   rejected: { label: 'Changes Needed', color: colors.statusRejected, bg: colors.statusRejectedBg, icon: 'alert-circle-outline' },
 };
@@ -40,8 +42,9 @@ function StatusBadge({ status }) {
 }
 
 function PipelineDiagram({ currentStatus }) {
-  // 'approved' sits between review (done) and scheduled (next up)
-  const normalized = currentStatus === 'approved' ? 'scheduled' : currentStatus;
+  // 'approved' sits between review (done) and scheduled (next up); a paused
+  // listing has reached Live and is simply hidden for now.
+  const normalized = currentStatus === 'approved' ? 'scheduled' : currentStatus === 'paused' ? 'live' : currentStatus;
   const currentIdx = PIPELINE_STAGES.findIndex((s) => s.key === normalized);
   return (
     <View style={styles.pipeline}>
@@ -84,15 +87,54 @@ function PipelineDiagram({ currentStatus }) {
 }
 
 export default function SellerDashboardScreen({ navigation }) {
-  const { submissions, relistSubmission, updateSubmissionPrice, cars } = useApp();
+  const { submissions, updateSubmissionPrice, cars } = useApp();
   const [relistId, setRelistId] = useState(null);
   const [relistPrice, setRelistPrice] = useState('');
+  // listing id -> { status, views } from GET /cars/seller/mine. A submission
+  // stays 'live' after the listing is paused or sold, so the listing's own
+  // status is what the card shows and what the controls act on.
+  const [listings, setListings] = useState({});
   const gate = useSellerGate(navigation);
 
-  const liveCount = submissions.filter((s) => s.status === 'live').length;
-  const soldCount = submissions.filter((s) => s.status === 'sold').length;
-  // Views only make sense once something is (or was) live
-  const totalViews = (liveCount + soldCount) > 0 ? 47 * (liveCount + soldCount) : 0;
+  const loadListings = useCallback(async () => {
+    try {
+      const rows = await carsApi.getMyListings();
+      setListings(Object.fromEntries((rows || []).map((c) => [c.id, { status: c.status, views: c.views || 0 }])));
+    } catch {
+      // Without it the counts show zero and the controls stay hidden — never invented.
+    }
+  }, []);
+  useEffect(() => { loadListings(); }, [loadListings, submissions]);
+
+  const statusOf = (sub) => {
+    const listing = sub.listingId && listings[sub.listingId];
+    return listing && ['paused', 'sold'].includes(listing.status) ? listing.status : sub.status;
+  };
+
+  const liveCount = submissions.filter((s) => statusOf(s) === 'live').length;
+  const soldCount = submissions.filter((s) => statusOf(s) === 'sold').length;
+  // The real total from the seller's own listings (B7). This used to be
+  // 47 × (live + sold), a number that looked like data and wasn't.
+  const totalViews = Object.values(listings).reduce((sum, l) => sum + l.views, 0);
+
+  const LISTING_ACTIONS = {
+    paused: { title: 'Pause this listing?', message: 'Buyers won’t see it until you make it live again.', confirmLabel: 'Pause', done: 'Listing paused.' },
+    live: { title: 'Make it live again?', message: 'We check it still meets every publication requirement first.', confirmLabel: 'Make live', done: 'Your listing is live again.' },
+    sold: { title: 'Mark as sold?', message: 'It leaves the marketplace for good — this can’t be undone.', confirmLabel: 'Mark as sold', destructive: true, done: 'Marked as sold.' },
+  };
+
+  const changeListingStatus = async (sub, target) => {
+    const { done, ...copy } = LISTING_ACTIONS[target];
+    const ok = await showConfirm({ ...copy, cancelLabel: 'Cancel' });
+    if (!ok) return;
+    try {
+      await carsApi.setSellerStatus(sub.listingId, target);
+      showToast(done, 'success');
+      loadListings();
+    } catch (err) {
+      showToast(err.message || 'That change could not be saved.', 'error');
+    }
+  };
 
   const handleSubmissionAction = (sub) => {
     if (sub.status === 'live' && sub.listingId) {
@@ -109,6 +151,8 @@ export default function SellerDashboardScreen({ navigation }) {
     }
   };
 
+  // Live listings only. The old sold-car "Relist" only changed local state and
+  // promised a review that never happened (B8); a sold listing is final.
   const handleRelist = (sub) => {
     if (relistId === sub.id) {
       const price = parseFloat(relistPrice);
@@ -116,13 +160,8 @@ export default function SellerDashboardScreen({ navigation }) {
         showToast('Please enter a valid asking price.', 'error');
         return;
       }
-      if (sub.status === 'live') {
-        updateSubmissionPrice(sub.id, price);
-        showToast('Price updated — your listing stays live.', 'success');
-      } else {
-        relistSubmission(sub.id, price);
-        showToast('Relisted — our team will review within 24 hours.', 'success');
-      }
+      updateSubmissionPrice(sub.id, price);
+      showToast('Price updated — your listing stays live.', 'success');
       setRelistId(null);
       setRelistPrice('');
     } else {
@@ -191,7 +230,8 @@ export default function SellerDashboardScreen({ navigation }) {
 
         {/* Submission cards */}
         {submissions.map((sub) => {
-          const actionLabel = getActionLabel(sub.status);
+          const status = statusOf(sub);
+          const actionLabel = getActionLabel(status);
           return (
             <View key={sub.id} style={styles.subCard}>
               {/* Card Header */}
@@ -200,7 +240,7 @@ export default function SellerDashboardScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.subTitle}>{sub.carTitle}</Text>
                   <Text style={styles.subDate}>Submitted {sub.submittedDate}</Text>
-                  <StatusBadge status={sub.status} />
+                  <StatusBadge status={status} />
                 </View>
                 {sub.askingPrice > 0 && (
                   <Text style={styles.subPrice}>RWF {sub.askingPrice.toLocaleString()}</Text>
@@ -209,7 +249,7 @@ export default function SellerDashboardScreen({ navigation }) {
 
               {/* Pipeline diagram */}
               <View style={styles.pipelineWrap}>
-                <PipelineDiagram currentStatus={sub.status} />
+                <PipelineDiagram currentStatus={status} />
               </View>
 
               {/* Status detail */}
@@ -228,7 +268,7 @@ export default function SellerDashboardScreen({ navigation }) {
                     <Ionicons name="arrow-forward" size={14} color={colors.primary} />
                   </Pressable>
                 )}
-                {sub.status === 'live' && (
+                {status === 'live' && (
                   <Pressable style={styles.analyticsBtn} onPress={() => navigation.navigate('SellerAnalytics', { subId: sub.id })}>
                     <Ionicons name="bar-chart-outline" size={13} color={colors.primary} />
                     <Text style={styles.analyticsBtnText}>Analytics</Text>
@@ -236,8 +276,28 @@ export default function SellerDashboardScreen({ navigation }) {
                 )}
               </View>
 
-              {/* Relist flow (live or sold) */}
-              {(sub.status === 'live' || sub.status === 'sold') && (
+              {/* Pause / make live again / mark sold (B1) */}
+              {sub.listingId && (status === 'live' || status === 'paused') ? (
+                <View style={styles.listingControls}>
+                  <Pressable
+                    style={styles.controlBtn}
+                    onPress={() => changeListingStatus(sub, status === 'live' ? 'paused' : 'live')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.controlText}>{status === 'live' ? 'Pause listing' : 'Make live again'}</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.controlBtn, styles.controlBtnDanger]}
+                    onPress={() => changeListingStatus(sub, 'sold')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.controlText, styles.controlTextDanger]}>Mark as sold</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {/* Change price (live listings only) */}
+              {status === 'live' && (
                 <View style={styles.relistSection}>
                   {relistId === sub.id ? (
                     <View style={styles.relistExpanded}>
@@ -260,10 +320,8 @@ export default function SellerDashboardScreen({ navigation }) {
                     </View>
                   ) : (
                     <Pressable style={styles.relistBtn} onPress={() => handleRelist(sub)}>
-                      <Ionicons name={sub.status === 'live' ? 'pricetag-outline' : 'refresh-outline'} size={13} color={colors.amber} />
-                      <Text style={styles.relistBtnText}>
-                        {sub.status === 'live' ? 'Change price' : sub.isRelisted ? 'Relist again at new price' : 'Relist at new price'}
-                      </Text>
+                      <Ionicons name="pricetag-outline" size={13} color={colors.amber} />
+                      <Text style={styles.relistBtnText}>Change price</Text>
                     </Pressable>
                   )}
                 </View>
@@ -302,6 +360,14 @@ export default function SellerDashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  listingControls: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  controlBtn: {
+    paddingVertical: 8, paddingHorizontal: 12, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+  },
+  controlBtnDanger: { borderColor: colors.statusRejected },
+  controlText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.slate700 },
+  controlTextDanger: { color: colors.statusRejected },
   scroll: { paddingBottom: 40 },
   addBtn: {
     width: 44, height: 44, borderRadius: radius.md,

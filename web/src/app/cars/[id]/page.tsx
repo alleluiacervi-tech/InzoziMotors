@@ -19,6 +19,7 @@ import { Sparkline } from '@/components/marketplace/Sparkline'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { VehicleHistoryCard } from '@/components/marketplace/VehicleHistoryCard'
 import { RequestCarForm } from './RequestCarForm'
+import { CompareToggle } from '@/components/market/CompareControls'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Car detail — the page the whole business runs through.
@@ -235,6 +236,11 @@ export default async function CarDetailPage({ params }: PageProps) {
               </div>
 
               <h1 className="mt-4 max-w-4xl text-display font-extrabold text-content">{car.title}</h1>
+              {isAvailable ? (
+                <div className="mt-3">
+                  <CompareToggle carId={car.id} />
+                </div>
+              ) : null}
 
               <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-content-secondary">
                 <span>{car.year}</span>
@@ -652,6 +658,16 @@ async function SellerCard({ car }: { car: Car }) {
 
       <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-muted">
         {t('cars.detail.sellerNote')}
+      </p>
+      {/* A car is only public when its seller is, so this profile always exists. */}
+      <p className="mt-3">
+        <Link
+          href={`/sellers/${car.seller_id}`}
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
+        >
+          {t('market.profile.viewProfile')}
+          <Icon name="arrow-right" size={15} />
+        </Link>
       </p>
     </Card>
   )
