@@ -24,11 +24,16 @@ import { getToken } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 interface UploadKind {
-  /** Backend path this kind forwards to, verbatim. */
-  path: string
-  /** Field names the backend route accepts; anything else is dropped. */
+  /** Backend path this kind forwards to. Returns null when the query string
+   *  doesn't identify a valid target, so nothing is forwarded. */
+  path: (search: URLSearchParams) => string | null
+  /** File field names the backend route accepts; anything else is dropped. */
   fields: readonly string[]
+  /** Text fields passed through, each limited to its allowed values. */
+  textFields?: Readonly<Record<string, readonly string[]>>
   maxFiles: number
   maxBytesPerFile: number
 }
@@ -36,12 +41,26 @@ interface UploadKind {
 const KINDS: Record<string, UploadKind> = {
   // POST /id-verification (backend/src/routes/id-verification.js) — ID front,
   // ID back, selfie. Deliberately not recompressed on either side (D4): an
-  // identity document is evidence, not a thumbnail.
+  // identity document is evidence, not a thumbnail. capture_source tells
+  // reviewers whether the photos came straight from a camera (P2-D2).
   id: {
-    path: '/id-verification',
+    path: () => '/id-verification',
     fields: ['id_front', 'id_back', 'selfie'],
+    textFields: { capture_source: ['live', 'file'] },
     maxFiles: 3,
     maxBytesPerFile: 5 * 1024 * 1024,
+  },
+  // POST /submissions/:id/reference-photos (B2 / P2-D3). The backend checks
+  // the submission belongs to the caller; this only refuses an id that isn't
+  // even shaped like one, so it never builds a path from arbitrary input.
+  reference: {
+    path: (search) => {
+      const id = search.get('submission') ?? ''
+      return UUID.test(id) ? `/submissions/${id}/reference-photos` : null
+    },
+    fields: ['photos'],
+    maxFiles: 2,
+    maxBytesPerFile: 10 * 1024 * 1024,
   },
 }
 
@@ -52,6 +71,10 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
   const config = KINDS[kind]
   if (!config) {
     return NextResponse.json({ error: 'Unknown upload kind.' }, { status: 404 })
+  }
+  const upstreamPath = config.path(new URL(request.url).searchParams)
+  if (!upstreamPath) {
+    return NextResponse.json({ error: 'Unknown upload target.' }, { status: 400 })
   }
 
   const token = await getToken()
@@ -69,6 +92,11 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
   const outgoing = new FormData()
   let fileCount = 0
   for (const [field, value] of incoming.entries()) {
+    const allowedText = config.textFields?.[field]
+    if (allowedText && typeof value === 'string') {
+      if (allowedText.includes(value)) outgoing.append(field, value)
+      continue
+    }
     if (!config.fields.includes(field) || !(value instanceof File)) continue
     fileCount += 1
     if (fileCount > config.maxFiles) {
@@ -88,7 +116,7 @@ export async function POST(request: Request, ctx: Ctx): Promise<Response> {
 
   let upstream: Response
   try {
-    upstream = await fetch(`${API_URL}${config.path}`, {
+    upstream = await fetch(`${API_URL}${upstreamPath}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: outgoing,

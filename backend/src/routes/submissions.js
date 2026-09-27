@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
@@ -10,10 +11,17 @@ const { recordAdminAction } = require('../lib/admin-audit');
 const { withTransaction } = require('../lib/tx');
 const { createInvitedAccount } = require('../lib/accounts');
 const { sendAccountInvite } = require('../lib/mailer');
+const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const { compressUploads } = require('../middleware/image-compress');
+const { stripUploadMetadata } = require('../middleware/strip-metadata');
 
 const router = express.Router();
 
 const MAX_REFERENCE_IMAGES = 12;
+// Per request. Both clients offer two slots (front, side); a little headroom
+// lets a retry send them together without the cap being the thing that fails.
+const REFERENCE_PHOTOS_PER_REQUEST = 4;
+const REFERENCE_PHOTO_STATUSES = ['under_review', 'approved', 'scheduled'];
 
 const PURPOSES = ['sale', 'rental', 'both'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -491,6 +499,77 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 
 // PATCH /submissions/:id/schedule — seller books their own inspection slot
 // (the app offers this right after submit; approval is implicit in confirming)
+// ─── Reference photos (B2 / P2-D3 in docs/WEB-PARITY-PLAN.md) ────────────────
+// Both clients collected "a quick reference shot" of the car and neither could
+// send it anywhere: reference_images only took HTTPS URLs hosted elsewhere and
+// the one photo upload route is admin-only. The photos are attached AFTER the
+// submission exists, so a failed upload can never cost the seller the
+// submission itself.
+
+// Runs before multer, so a stranger's or a closed submission's files are never
+// written to disk in the first place.
+async function referencePhotoTarget(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT status, COALESCE(array_length(reference_images, 1), 0) AS stored
+         FROM submissions WHERE id = $1 AND seller_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Submission not found' });
+    if (!REFERENCE_PHOTO_STATUSES.includes(rows[0].status)) {
+      return res.status(409).json({ error: 'Reference photos can only be added before the inspection' });
+    }
+    if (Number(rows[0].stored) >= MAX_REFERENCE_IMAGES) {
+      return res.status(409).json({ error: `A submission holds at most ${MAX_REFERENCE_IMAGES} reference photos` });
+    }
+    next();
+  } catch (err) {
+    log.error('reference photo lookup error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// POST /submissions/:id/reference-photos — multipart, field `photos`.
+router.post(
+  '/:id/reference-photos',
+  requireAuth,
+  requireUuid('id'),
+  referencePhotoTarget,
+  uploadPhotos.array('photos', REFERENCE_PHOTOS_PER_REQUEST),
+  verifyImageContent,
+  compressUploads,
+  // compressUploads leaves photos under 600 KB as they arrived, GPS included.
+  stripUploadMetadata,
+  async (req, res) => {
+    const files = req.files || [];
+    if (!files.length) return res.status(400).json({ error: 'Add at least one photo' });
+    try {
+      const urls = [];
+      for (const file of files) urls.push(await resolveUploadUrl(req, file));
+      // The cap is enforced in the same statement that appends, so two uploads
+      // racing each other cannot both pass the check above and overshoot it.
+      const { rows } = await pool.query(
+        `UPDATE submissions
+            SET reference_images = COALESCE(reference_images, '{}') || $3::text[]
+          WHERE id = $1 AND seller_id = $2
+            AND status = ANY($5::text[])
+            AND COALESCE(array_length(reference_images, 1), 0) + cardinality($3::text[]) <= $4
+          RETURNING *`,
+        [req.params.id, req.user.id, urls, MAX_REFERENCE_IMAGES, REFERENCE_PHOTO_STATUSES]
+      );
+      if (!rows.length) {
+        files.forEach((file) => { if (file.path) fs.unlink(file.path, () => {}); });
+        return res.status(409).json({ error: `A submission holds at most ${MAX_REFERENCE_IMAGES} reference photos` });
+      }
+      res.status(201).json(rows[0]);
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+      log.error('reference photo upload error', { error: err.message });
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
 router.patch('/:id/schedule', requireAuth, requireUuid('id'), async (req, res) => {
   const { center, scheduled_date, scheduled_time } = req.body;
   if (!center || !scheduled_date || !scheduled_time) {

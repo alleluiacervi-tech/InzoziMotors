@@ -257,6 +257,12 @@ export const rentals = {
     request<RentalInquiry>(`/rentals/inquiries/${id}/status`, { token, method: 'PATCH', body: JSON.stringify({ status }) }),
 }
 
+/** The brand list the app's submission form offers (GET /makes). Public,
+ *  cached for ten minutes server-side too. */
+export const vehicleMakes = {
+  list: () => request<{ name: string; slug: string }[]>('/makes', { revalidate: 600, tags: ['makes'] }),
+}
+
 export const inspectionCenters = {
   active: () => request<InspectionCenter[]>('/centers/active', {
     revalidate: 60,
@@ -457,9 +463,13 @@ export const submissions = {
   create: (token: string, body: Record<string, unknown>) =>
     request<Submission>('/submissions', { token, method: 'POST', body: JSON.stringify(body) }),
 
+  /** `center` is the centre's name or id; `date` is ISO (2026-10-02); `time`
+   *  looks like "10:00 AM" — the backend's readSlot() rejects anything else. */
   schedule: (token: string, id: string, body: { center: string; date: string; time: string }) =>
     request<Submission>(`/submissions/${id}/schedule`, {
-      token, method: 'PATCH', body: JSON.stringify(body),
+      token,
+      method: 'PATCH',
+      body: JSON.stringify({ center: body.center, scheduled_date: body.date, scheduled_time: body.time }),
     }),
 }
 

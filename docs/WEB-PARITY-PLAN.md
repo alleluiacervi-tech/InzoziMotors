@@ -1,6 +1,6 @@
 # Web parity plan: sawacars.com can do everything the app can
 
-Status: **Phases 0–1 implemented 27 Sep 2026 (messaging); Phase 2 (seller onboarding) next** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
+Status: **Phases 0–2 implemented 27 Sep 2026 (messaging, seller onboarding); Phase 3 (account & trust) next** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
 O1, O2 and O4 were accepted as their recommended defaults on 27 Sep 2026 — O3 (referrals) is still open; see [§8](#8-open-decisions).
 
 ## 1. Goal
@@ -54,9 +54,9 @@ languages · light/dark theme.
 | G1 | ✅ *closed 27 Sep 2026* **Read and reply to messages** (inbox and thread) | `Messages`, `Chat` | `/dashboard/messages` + `/dashboard/messages/[id]` | Ready (`routes/messages.js`) |
 | G2 | ✅ *closed 27 Sep 2026* **Live chat updates** (new message, typing) | socket.io | `useSocket()` + the ticket (D2) | Ready (`src/socket.js`) |
 | G3 | ✅ *closed 27 Sep 2026* **Report a conversation / block a user** | Yes | Inline in the thread's options menu | Ready (`/messages/…/report`, `/messages/users/:id/block`) |
-| G4 | **Seller ID verification** (ID front, back, selfie) | `IDVerification` | Tells users to use the app (`VerificationNotice.tsx`) | Ready (`POST /id-verification`, 5 MB per file, deliberately uncompressed) |
-| G5 | **Submit a vehicle for inspection** | `CarSubmission` | "Submit in app" button (`dashboard/selling`) | Ready (`POST /submissions`, JSON). `submissions.create` already exists in `web/src/lib/api.ts`, unused. |
-| G6 | **Book an inspection slot** | `InspectionScheduling` | None | Ready (`PATCH /submissions/:id/schedule`). `submissions.schedule` exists, unused. |
+| G4 | ✅ *closed 27 Sep 2026* **Seller ID verification** (ID front, back, selfie) | `IDVerification` | `/dashboard/verify` | Ready (`POST /id-verification`, 5 MB per file, deliberately uncompressed) |
+| G5 | ✅ *closed 27 Sep 2026* **Submit a vehicle for inspection** | `CarSubmission` | `/sell/submit` | Ready (`POST /submissions`, JSON). `submissions.create` already exists in `web/src/lib/api.ts`, unused. |
+| G6 | ✅ *closed 27 Sep 2026* **Book an inspection slot** | `InspectionScheduling` | `/dashboard/selling/[id]/schedule` | Ready (`PATCH /submissions/:id/schedule`). `submissions.schedule` exists, unused. |
 | G7 | **Reopen a closed account** (30-day window) | Yes (`/auth/reopen`) | None | Ready |
 | G8 | **Compare vehicles** | `Comparison` | None | Client-side only |
 | G9 | **Public seller / showroom profile** with trust score and reviews | `SellerProfile`, `DealerProfile`, `Showroom`, `TrustScore` | None | Ready (`/reviews/seller/:id`, `/reviews/trust-score/:id`) |
@@ -71,9 +71,10 @@ languages · light/dark theme.
 | # | Finding | Where |
 |---|---|---|
 | B1 | **Seller can't mark a listing sold or withdrawn** from either client. The endpoint exists and neither calls it. The app's `/cars/:id/status` is the *admin* route. | `PATCH /cars/:id/seller-status` (`routes/cars.js:1380`) |
-| B2 | **The app's "reference photos" on submission are silently dropped.** They're collected on screen and never sent. `addSubmission` omits them, but the backend accepts `reference_images`. | `src/context/AppContext.js:1295`, `CarSubmissionScreen.js:330` |
-| B3 | **The socket doesn't re-check the session.** A suspended or deleted user keeps a live socket until it drops, which breaks invariant 5 for realtime. | `backend/src/socket.js:7` |
-| B4 | **ID documents keep their EXIF data**, which can include GPS location, because they're stored uncompressed on purpose. | `routes/id-verification.js`, `middleware/upload.js` |
+| B2 | ✅ *fixed 27 Sep 2026* **The app's "reference photos" on submission are silently dropped.** They're collected on screen and never sent. `addSubmission` omits them, but the backend accepts `reference_images`. | `src/context/AppContext.js:1295`, `CarSubmissionScreen.js:330` |
+| B3 | ✅ *fixed 27 Sep 2026* **The socket doesn't re-check the session.** A suspended or deleted user keeps a live socket until it drops, which breaks invariant 5 for realtime. | `backend/src/socket.js:7` |
+| B4 | ✅ *fixed 27 Sep 2026* **ID documents keep their EXIF data**, which can include GPS location, because they're stored uncompressed on purpose. | `routes/id-verification.js`, `middleware/upload.js` |
+| B5 | ✅ *fixed 27 Sep 2026* **The app's seller notes are dropped.** It sent `seller_notes`; the backend only stores `notes`. Found while planning Phase 2 (§10.1 F7). | `src/context/AppContext.js` `addSubmission` |
 
 ### 3.4 Blockers and stale content on the web
 
@@ -92,8 +93,9 @@ languages · light/dark theme.
 streams the multipart body to the backend with the Bearer header. It enforces
 the same per-kind limits as the backend (ID: 3 files × 5 MB; import proof: as
 `uploadImportDocs`). This avoids the 1 MB Server Action limit (W2) and keeps the
-token out of the browser. `client_max_body_size` on the `sawacars.com` nginx
-vhost must be at least 25 MB, matching `api.`.
+token out of the browser. The edge is Caddy (`ops/caddy/sawacars.Caddyfile`),
+whose `sawacars.com` block sets no `request_body` limit, so large uploads pass
+through; an earlier draft wrongly assumed nginx and a 1 MB default.
 
 **D2: Realtime uses a short-lived socket ticket.**
 A new `POST /auth/socket-ticket` (requireAuth plus live-session check) returns a
@@ -139,7 +141,7 @@ Each phase is one PR to `main`, and each is independently useful.
 |---|---|---|
 | **0 — Foundations** ✅ *shipped 27 Sep 2026* | W1, W2 (D1), W4, W5 (Playwright set-up), the socket ticket (D2) and B3 | Unblocks everything after it; B3 is a security fix |
 | **1 — Messaging** ✅ *implemented 27 Sep 2026, pending CI verification* | G1, G2, G3 and the D3 email | The biggest gap: web users can't read replies today |
-| **2 — Seller onboarding** | G4, G5, G6 and B2 | Turns web visitors into sellers without the app |
+| **2 — Seller onboarding** ✅ *implemented 27 Sep 2026* | G4, G5, G6, B2, B4 and B5 (see §10) | Turns web visitors into sellers without the app |
 | **3 — Account and trust** | G7, G9, G10, G11, B1 and G8 | Completes the seller and buyer loops |
 | **4 — Reach** | G12 (after O3), G13 Web Push, PWA install prompt, W3 copy sweep, G14 content check | Polish and re-engagement |
 
@@ -180,3 +182,100 @@ Rough size: phase 0 is 2–3 days; phases 1 and 2 are 4–5 days each; phase 3 i
 
 The task list is [`docs/WEB-PARITY-TODO.md`](WEB-PARITY-TODO.md). Tick items there
 in the same PR that ships them.
+
+## 10. Phase 2 in detail: seller onboarding
+
+Planned 27 Sep 2026, after reading the code the phase touches. Covers G4, G5, G6,
+B2 and B4. The goal is that someone can become a seller on sawacars.com, prove
+who they are, submit a car and book its inspection without ever installing the
+app.
+
+### 10.1 What the code showed (this changes the earlier plan)
+
+| # | Finding | Consequence |
+|---|---|---|
+| F1 | **No ID rejection reason exists.** `PATCH /id-verification/:userId` takes only `{decision}`, and the app shows the same upload form for `none` and `rejected`. | The web shows a generic "try again with clearer photos" message, like the app. §4's "rejected (with reason)" is dropped; a stored reason would be a separate backend and admin change. |
+| F2 | **The app lets sellers pick ID photos from their library** (`captureImage` offers "Take a photo" / "Choose from library"). Nothing records which one was used. | The live-or-file flag (O2) must be sent by **both** clients, or the admin badge would only describe website users. |
+| F3 | **No route lets a seller upload a photo.** `reference_images` only accepts HTTPS URLs from somewhere else, and the only photo upload (`POST /inspections/cars/:carId/photos`) is admin-only. | A new route is needed; B2 can't be fixed in the clients alone. |
+| F4 | **`resolveSubdir` in `middleware/upload.js` would put a submission upload in `id-docs`**, the private ID folder, because it has no rule for `/submissions`. | Add a `submissions/<id>` rule before the new route goes live. |
+| F5 | **Photos under 600 KB skip `compressUploads`**, so they keep their EXIF data, including GPS. | Location data survives on small reference photos too, not just IDs. The B4 fix covers both. |
+| F6 | **The web's unused `submissions.schedule` sends `{center, date, time}`**, but the backend reads `scheduled_date` and `scheduled_time`. | It would have failed with a 400 on first use. Fix the wrapper. |
+| F7 | **The app's seller notes are dropped.** It sends `seller_notes`; the backend stores only `notes`. | New gap **B5**: the app maps its notes to `notes`, and the web sends `notes` from the start. |
+| F8 | The app has no `condition` or `purpose` fields; `purpose` defaults to `sale`. | The web form matches the app: no `condition`, no `purpose`. |
+
+### 10.2 Decisions
+
+**P2-D1: Remove metadata without re-encoding.**
+- JPEG: drop the APP1–APP15 and COM segments.
+- PNG: drop the `eXIf`, `tEXt`, `iTXt`, `zTXt` and `tIME` chunks.
+- WebP: drop the `EXIF` and `XMP ` chunks, and clear their flags in `VP8X`.
+
+The pixel data is copied byte for byte. The one exception is a photo whose
+orientation tag isn't 1: it's rotated with sharp and re-encoded at quality 95,
+because a sideways ID is worse than a re-encode. This applies to ID documents and
+reference photos, from both clients. Like `compressUploads`, it fails open: on
+an error the original is kept and logged, so an upload never fails because of it.
+
+**P2-D2: Record how the ID photos were captured.** `capture_source` is `live` or `file`:
+
+| Client | `live` | `file` |
+|---|---|---|
+| Website | Frames came from the page's webcam view (`getUserMedia`) | Anything from a file input, including a phone's camera button, because the browser can't prove where it came from |
+| App | "Take a photo" | "Choose from library" |
+
+One value is stored per submission: `live` only if all three photos were live.
+It goes in `users.id_capture_source` (migration 0049); `NULL` means an older
+build that didn't send it. The admin ID queue shows a badge, and a `file` badge
+asks reviewers to take extra care.
+
+**P2-D3: Reference photos are attached after the submission is created.**
+1. The form creates the submission (JSON, through a Server Action).
+2. Photos then go through `/api/upload/reference?submission=<id>` to the new
+   `POST /submissions/:id/reference-photos`. It is owner-only, stores at most 12
+   photos, compresses them and removes their metadata.
+
+If a photo upload fails, the submission is kept and the seller can retry. The
+app uses the same route (B2).
+
+**P2-D4: One booking page for both entry points.** `/dashboard/selling/[id]/schedule`
+is reached straight after submitting and from the selling dashboard. It matches
+the app:
+- Centres from `/centers/active`, sent by name.
+- The next 10 days starting tomorrow.
+- Times from 8:00 AM to 4:00 PM, hourly.
+- The server's "fully booked" 409 is shown as it comes.
+
+**P2-D5: Downscale only when a file is over 5 MB.** The long edge goes to
+3000 px and it's saved as JPEG at 0.92. The browser applies the orientation
+(`createImageBitmap(..., {imageOrientation: 'from-image'})`), so the output is
+upright and has no metadata. Smaller files are sent untouched.
+
+**P2-D6: Who may submit.** `/sell/submit` requires sign-in (otherwise
+`/signin?next=/sell/submit`) and a seller account, the same check the backend
+makes. A buyer account sees why they can't, and a link to create a seller
+account. There is no endpoint to switch roles, and the web doesn't invent one.
+
+**P2-D7: Translations.** The new strings go in one new namespace, `onboarding`,
+in all six languages. It is scoped on the dashboard and `/sell` layouts.
+
+### 10.3 Order of work
+
+1. Backend: metadata removal, the `capture_source` column and field, the
+   reference-photo route with its folder rule, and tests.
+2. Website: the upload proxy gets the `reference` kind and passes text fields
+   through; the `submissions.schedule` wrapper is fixed.
+3. Website: `/dashboard/verify`.
+4. Website: `/sell/submit`, then `/dashboard/selling/[id]/schedule`.
+5. Website: remove the "use the app" links from the selling dashboard, the
+   verification notice and the profile page.
+6. App: send `capture_source`, upload reference photos after creating a
+   submission, map notes to `notes`. These are JavaScript-only changes, so an
+   OTA update can ship them.
+7. Admin: the capture badge in the ID queue.
+8. Playwright: sign up as a seller, verify, submit, book a slot.
+
+### 10.4 Not in this phase
+
+- A stored ID rejection reason (F1).
+- Letting a buyer switch to a seller account.
+- Per-document capture flags. One flag per submission is enough for reviewers.

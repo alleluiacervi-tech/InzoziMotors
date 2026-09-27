@@ -36,6 +36,10 @@ export const auth = {
     appendImage(formData, 'id_front', front, 'id-front');
     appendImage(formData, 'id_back', back, 'id-back');
     appendImage(formData, 'selfie', selfie, 'selfie');
+    // 'live' only when all three came straight from the camera. Assets from an
+    // older captureImage have no `source`, and count as 'file'.
+    const allLive = [front, back, selfie].every((asset) => asset.source === 'live');
+    formData.append('capture_source', allLive ? 'live' : 'file');
     return await api.upload('/id-verification', formData);
   },
 

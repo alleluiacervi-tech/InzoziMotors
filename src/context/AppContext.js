@@ -1303,10 +1303,12 @@ export function AppProvider({ children }) {
         body_type: data.bodyType || data.body_type,
         color: data.color,
         asking_price: parseInt(data.askingPrice || data.asking_price),
-        notes: data.notes,
+        // The backend stores `notes` only — `seller_notes` was silently
+        // dropped, so the seller's "Anything we should know?" never reached
+        // the team (B5 in docs/WEB-PARITY-PLAN.md).
+        notes: data.notes || data.sellerNotes,
         accident_notes: data.accidentNotes,
         service_history: data.serviceHistory,
-        seller_notes: data.sellerNotes,
       };
       const res = await submissionsApi.createSubmission(mapped);
 

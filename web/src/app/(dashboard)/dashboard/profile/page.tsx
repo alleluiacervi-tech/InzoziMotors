@@ -92,10 +92,10 @@ export default async function ProfilePage() {
               <p className="mt-3 text-caption leading-relaxed text-content-secondary">
                 {t(verification.bodyKey)}
               </p>
-              {user.id_verified !== 'approved' ? (
+              {user.id_verified === 'none' || user.id_verified === 'rejected' ? (
                 <div className="mt-5">
-                  <Button href="/download" variant="outline" size="sm">
-                    {t('dashboard.common.getApp')}
+                  <Button href="/dashboard/verify" variant="outline" size="sm">
+                    {t('onboarding.notice.cta')}
                   </Button>
                 </div>
               ) : null}

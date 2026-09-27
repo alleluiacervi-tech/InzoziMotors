@@ -3,5 +3,5 @@ import { I18nScope } from '@/components/i18n/I18nScope'
 // Client components under /sell translate from these namespaces; the root
 // layout only ships the chrome's. See lib/i18n/context.tsx.
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <I18nScope ns={['tools']}>{children}</I18nScope>
+  return <I18nScope ns={['tools', 'onboarding']}>{children}</I18nScope>
 }

@@ -13,9 +13,13 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   globalSetup: './e2e/global-setup.ts',
+  // CI runs Postgres, the API, the Next server and two browsers on one small
+  // runner; a server round trip plus a re-render can exceed the 5 s default.
+  expect: { timeout: process.env.CI ? 10_000 : 5_000 },
   use: {
     baseURL: process.env.WEB_BASE_URL || 'http://localhost:3002',
     trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 })
