@@ -20,7 +20,12 @@ const { log } = require('./log');
 //     delivery status, because the route's behaviour depends on it.
 //   • This module emails ACCOUNT and BUSINESS events only. Chat messages and
 //     price drops are push/in-app territory — emailing those is how a domain
-//     trains recipients (and filters) to ignore it.
+//     trains recipients (and filters) to ignore it. sendNewMessageEmail below
+//     is a narrow, deliberate exception: it fires only for a recipient with
+//     no live socket connection at all (not "didn't open this thread"), never
+//     carries the message text, and is capped at one per conversation per
+//     hour by its one caller (routes/messages.js) — the thing the rule above
+//     is actually guarding against is an email per message, which this isn't.
 
 let transport = null;
 
@@ -463,8 +468,23 @@ function sendDisputeUpdate(email, name, opened, resolution) {
   );
 }
 
+/** "While you were away" (D3 in docs/WEB-PARITY-PLAN.md) — see the exception
+ *  noted at the top of this file. No message text, ever: this is a nudge to
+ *  go read it, not a copy of what was said. */
+function sendNewMessageEmail(email, name, carTitle) {
+  return sendTemplate(email, 'You have a new message on Sawa Cars', {
+    title: 'New message',
+    lines: [
+      `Hi ${name || 'there'} — someone sent you a message${carTitle ? ` about the ${carTitle}` : ''} on Sawa Cars.`,
+      'Sign in to the app or sawacars.com to read and reply.',
+      'Turn these off any time in Settings → Notifications.',
+    ],
+  });
+}
+
 module.exports = {
   mailEnabled,
+  sendNewMessageEmail,
   sendMail,
   sendResetCode,
   sendWelcome,

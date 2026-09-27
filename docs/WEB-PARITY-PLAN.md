@@ -1,6 +1,6 @@
 # Web parity plan: sawacars.com can do everything the app can
 
-Status: **Phase 0 shipped 27 Sep 2026; Phase 1 (messaging) next** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
+Status: **Phases 0–1 implemented 27 Sep 2026 (messaging); Phase 2 (seller onboarding) next** · Drafted 27 Sep 2026 against `main` @ `c7d64b2`
 O1, O2 and O4 were accepted as their recommended defaults on 27 Sep 2026 — O3 (referrals) is still open; see [§8](#8-open-decisions).
 
 ## 1. Goal
@@ -51,9 +51,9 @@ languages · light/dark theme.
 
 | # | Capability | App | Web today | Backend |
 |---|---|---|---|---|
-| G1 | **Read and reply to messages** (inbox and thread) | `Messages`, `Chat` | Can only *start* a conversation (`cars/[id]/actions.ts`). No inbox, so replies are never seen. | Ready (`routes/messages.js`) |
-| G2 | **Live chat updates** (new message, typing) | socket.io | None | Ready (`src/socket.js`), needs a web-safe auth path |
-| G3 | **Report a conversation / block a user** | Yes | None | Ready (`/messages/…/report`, `/messages/users/:id/block`) |
+| G1 | ✅ *closed 27 Sep 2026* **Read and reply to messages** (inbox and thread) | `Messages`, `Chat` | `/dashboard/messages` + `/dashboard/messages/[id]` | Ready (`routes/messages.js`) |
+| G2 | ✅ *closed 27 Sep 2026* **Live chat updates** (new message, typing) | socket.io | `useSocket()` + the ticket (D2) | Ready (`src/socket.js`) |
+| G3 | ✅ *closed 27 Sep 2026* **Report a conversation / block a user** | Yes | Inline in the thread's options menu | Ready (`/messages/…/report`, `/messages/users/:id/block`) |
 | G4 | **Seller ID verification** (ID front, back, selfie) | `IDVerification` | Tells users to use the app (`VerificationNotice.tsx`) | Ready (`POST /id-verification`, 5 MB per file, deliberately uncompressed) |
 | G5 | **Submit a vehicle for inspection** | `CarSubmission` | "Submit in app" button (`dashboard/selling`) | Ready (`POST /submissions`, JSON). `submissions.create` already exists in `web/src/lib/api.ts`, unused. |
 | G6 | **Book an inspection slot** | `InspectionScheduling` | None | Ready (`PATCH /submissions/:id/schedule`). `submissions.schedule` exists, unused. |
@@ -138,7 +138,7 @@ Each phase is one PR to `main`, and each is independently useful.
 | Phase | Scope | Why this order |
 |---|---|---|
 | **0 — Foundations** ✅ *shipped 27 Sep 2026* | W1, W2 (D1), W4, W5 (Playwright set-up), the socket ticket (D2) and B3 | Unblocks everything after it; B3 is a security fix |
-| **1 — Messaging** | G1, G2, G3 and the D3 email | The biggest gap: web users can't read replies today |
+| **1 — Messaging** ✅ *implemented 27 Sep 2026, pending CI verification* | G1, G2, G3 and the D3 email | The biggest gap: web users can't read replies today |
 | **2 — Seller onboarding** | G4, G5, G6 and B2 | Turns web visitors into sellers without the app |
 | **3 — Account and trust** | G7, G9, G10, G11, B1 and G8 | Completes the seller and buyer loops |
 | **4 — Reach** | G12 (after O3), G13 Web Push, PWA install prompt, W3 copy sweep, G14 content check | Polish and re-engagement |

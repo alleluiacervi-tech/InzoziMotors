@@ -166,3 +166,50 @@ test('a seller cannot open a thread about their own listing', async () => {
   await api().post('/messages/conversations').set('Authorization', `Bearer ${seller.token}`)
     .send({ car_id: car.id, message: 'talking to myself' }).expect(400);
 });
+
+// D3 in docs/WEB-PARITY-PLAN.md — "while you were away" email. No test
+// environment has a real mail provider (RESEND_API_KEY/SMTP_HOST are unset in
+// CI), so sendMail always resolves false here — these tests pin the behaviour
+// around that call, not delivery itself: the opt-out is a real field on the
+// profile, sending to an offline recipient never breaks the request, and the
+// per-conversation rate limit is respected regardless of opt-out state.
+test('message_email_notifications is on by default and can be turned off from the profile', async () => {
+  const buyer = await register({ name: 'Buyer Notify' });
+  const me = await api().get('/auth/me').set('Authorization', `Bearer ${buyer.token}`).expect(200);
+  assert.equal(me.body.message_email_notifications, true);
+
+  const off = await api().patch('/auth/me').set('Authorization', `Bearer ${buyer.token}`)
+    .send({ message_email_notifications: false }).expect(200);
+  assert.equal(off.body.message_email_notifications, false);
+
+  const bad = await api().patch('/auth/me').set('Authorization', `Bearer ${buyer.token}`)
+    .send({ message_email_notifications: 'nope' }).expect(400);
+  assert.match(bad.body.error, /must be true or false/);
+});
+
+test('messaging an offline, opted-out recipient still succeeds and never emails within the hour', async () => {
+  const seller = await register({ role: 'seller', name: 'Seller Offline' });
+  await pool.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id]);
+  await pool.query('UPDATE users SET message_email_notifications = FALSE WHERE id=$1', [seller.id]);
+  const admin = await makeAdmin(await register());
+  const buyer = await register({ name: 'Buyer Quiet' });
+  const car = await liveCar({ seller, admin, make: 'Kia', model: 'Sportage', year: 2019 });
+
+  const start = await api().post('/messages/conversations').set('Authorization', `Bearer ${buyer.token}`)
+    .send({ car_id: car.id, message: 'Still available?' }).expect(201);
+  const convId = start.body.conversation.id;
+
+  // No socket for the seller is connected in this test, so this exercises the
+  // "recipient offline" branch. It must not affect the response either way.
+  const before = await pool.query('SELECT last_offline_email_at FROM conversations WHERE id=$1', [convId]);
+  assert.equal(before.rows[0].last_offline_email_at, null, 'opted-out recipient must never be emailed');
+
+  // Simulate an email having just gone out, then send a second message inside
+  // the hour — the rate limit must hold even though nothing was actually sent
+  // this time (opted-out), because the limit is checked before the opt-out.
+  await pool.query('UPDATE conversations SET last_offline_email_at = NOW() WHERE id=$1', [convId]);
+  await api().post(`/messages/conversations/${convId}`).set('Authorization', `Bearer ${buyer.token}`)
+    .send({ text: 'Anyone home?' }).expect(201);
+  const after = await pool.query('SELECT last_offline_email_at FROM conversations WHERE id=$1', [convId]);
+  assert.ok(after.rows[0].last_offline_email_at, 'the rate-limit anchor must not be cleared by a skipped send');
+});

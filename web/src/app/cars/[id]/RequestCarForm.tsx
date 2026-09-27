@@ -9,6 +9,7 @@ import { contactSellerAction, type ContactState } from './actions'
 type Availability = { phone: boolean; whatsapp: boolean; in_app: boolean }
 
 export function RequestCarForm({ carId, available }: { carId: string; available?: Availability }) {
+  const t = useT()
   const [state, action] = useActionState<ContactState, FormData>(contactSellerAction, { status: 'idle' })
   const channels = [
     { id: 'in_app', label: 'Message seller', icon: 'mail' as const, enabled: available?.in_app !== false },
@@ -21,14 +22,18 @@ export function RequestCarForm({ carId, available }: { carId: string; available?
       ? `https://wa.me/${state.contact.replace(/\D/g, '')}`
       : state.channel === 'phone' && state.contact ? `tel:${state.contact}` : null
     return <div className="space-y-4">
-      <Alert tone="success" title={state.channel === 'in_app' ? 'Message sent' : 'Contact unlocked'}>
+      <Alert tone="success" title={state.channel === 'in_app' ? t('messages.contact.sentTitle') : 'Contact unlocked'}>
         {state.channel === 'in_app'
-          ? 'Your message was sent to the verified seller. Continue the conversation in the Sawa Cars app.'
+          ? t('messages.contact.sentBody')
           : 'The seller chose to make this contact channel available. You can now contact them directly.'}
       </Alert>
-      {href ? <Button href={href} target={state.channel === 'whatsapp' ? '_blank' : undefined} size="lg" fullWidth leadingIcon={<Icon name={state.channel === 'whatsapp' ? 'whatsapp' : 'phone'} size={18} />}>
+      {state.channel === 'in_app' && state.conversationId ? (
+        <Button href={`/dashboard/messages/${state.conversationId}`} size="lg" fullWidth leadingIcon={<Icon name="mail" size={18} />}>
+          {t('messages.contact.viewThread')}
+        </Button>
+      ) : href ? <Button href={href} target={state.channel === 'whatsapp' ? '_blank' : undefined} size="lg" fullWidth leadingIcon={<Icon name={state.channel === 'whatsapp' ? 'whatsapp' : 'phone'} size={18} />}>
         {state.channel === 'whatsapp' ? `Open WhatsApp${state.contact ? ` · ${state.contact}` : ''}` : `Call ${state.contact}`}
-      </Button> : <Button href="/download" variant="outline" fullWidth>Open the Sawa Cars app</Button>}
+      </Button> : null}
       <p className="text-micro leading-relaxed text-content-muted">{state.notice}</p>
     </div>
   }

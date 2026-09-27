@@ -323,7 +323,7 @@ export const auth = {
 export const account = {
   me: (token: string) => request<User>('/auth/me', { token }),
 
-  updateProfile: (token: string, fields: { name?: string; phone?: string; whatsapp_phone?: string; phone_visible?: boolean; whatsapp_visible?: boolean; avatar_url?: string }) =>
+  updateProfile: (token: string, fields: { name?: string; phone?: string; whatsapp_phone?: string; phone_visible?: boolean; whatsapp_visible?: boolean; avatar_url?: string; message_email_notifications?: boolean }) =>
     request<User>('/auth/me', { token, method: 'PATCH', body: JSON.stringify(fields) }),
 
   /** Returns a replacement token: the backend ends every other session on a
@@ -480,17 +480,30 @@ export const notifications = {
 }
 
 export const messages = {
-  conversations: (token: string) =>
-    request<Conversation[]>('/messages/conversations', { token }),
+  conversations: (token: string, limit?: number) =>
+    request<Conversation[]>(`/messages/conversations${limit ? `?limit=${limit}` : ''}`, { token }),
   thread: (token: string, id: string) =>
     request<Message[]>(`/messages/conversations/${id}`, { token }),
   start: (token: string, car_id: string, message: string) =>
-    request<{ conversation: Conversation }>('/messages/conversations', {
+    request<{ conversation: Conversation; message: Message }>('/messages/conversations', {
       token, method: 'POST', body: JSON.stringify({ car_id, message }),
     }),
   send: (token: string, id: string, text: string) =>
     request<Message>(`/messages/conversations/${id}`, {
       token, method: 'POST', body: JSON.stringify({ text }),
+    }),
+
+  /** Ends messaging in both directions and drops the thread from the list —
+   *  same effect as the app's block (G3 in docs/WEB-PARITY-PLAN.md). */
+  block: (token: string, userId: string) =>
+    request<{ success: true }>(`/messages/users/${userId}/block`, { token, method: 'POST' }),
+  unblock: (token: string, userId: string) =>
+    request<{ success: true }>(`/messages/users/${userId}/block`, { token, method: 'DELETE' }),
+
+  /** `messageId` is optional — omit to report the whole conversation. */
+  report: (token: string, conversationId: string, reason: string, messageId?: string) =>
+    request<{ success: true }>(`/messages/conversations/${conversationId}/report`, {
+      token, method: 'POST', body: JSON.stringify({ reason, message_id: messageId }),
     }),
 }
 

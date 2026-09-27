@@ -21,17 +21,17 @@ D#, O#) refer to that document. Tick items in the PR that ships them.
 - [x] Parity matrix: add a "last verified" line to plan §3
 
 ## Phase 1 — Messaging (G1–G3)
-- [ ] `/dashboard/messages` inbox — conversations, unread counts, car thumbnail, last message, empty state
-- [ ] `/dashboard/messages/[id]` thread — history (paginated), send, optimistic append, failure retry
-- [ ] Live updates: new message, typing indicator, unread badge in header + dashboard nav
-- [ ] Report conversation (reason picker) and block / unblock user, matching app wording
-- [ ] Blocked-state UI on both sides (can't send; explains why)
-- [ ] "Message seller" on car page opens/creates the thread instead of a one-shot form
-- [ ] Notification tap-through (`notificationRouting` parity) lands on the thread
-- [ ] **D3** Backend: offline-recipient email, ≤ 1 per conversation per hour, no message body, opt-out setting + tests
-- [ ] **O4** Opt-out toggle in `/dashboard/profile` notification settings
-- [ ] i18n namespace `messages` in all six languages; `I18nScope` on the dashboard layout
-- [ ] Playwright: buyer messages seller → seller replies → buyer sees it live
+- [x] `/dashboard/messages` inbox — conversations, unread counts, car thumbnail, last message, empty state
+- [x] `/dashboard/messages/[id]` thread — send, optimistic append, failure retry. **Not paginated**: `GET /messages/conversations/:id` has no limit/offset today (pre-existing on the backend, not something this pass added) — fine at current volumes, a backend change if it ever isn't
+- [x] Live updates: new message, typing indicator, unread badge in header + dashboard nav (nav badge freshens via `router.refresh()` on thread mount rather than a live socket-driven counter — see `ThreadView.tsx`)
+- [x] Report conversation (reason picker) and block / unblock user, matching app wording
+- [x] Blocked-state UI on both sides — a block hides the thread for BOTH parties at the backend (`isBlockedBetween` is symmetric), so there's no "still viewing a thread someone else blocked" case to design for; the blocker's own session shows a banner until they navigate away
+- [x] "Message seller" on car page opens/creates the thread instead of a one-shot form — links straight into `/dashboard/messages/[id]`
+- [x] Notification tap-through (`notificationRouting` parity) lands on the thread — `dashboard/meta.ts`'s `conversationId` branch, highest priority, matching the app
+- [x] **D3** Backend: offline-recipient email, ≤ 1 per conversation per hour, no message body, opt-out setting + tests (migration `0048`, `mailer.sendNewMessageEmail`, `routes/messages.js`)
+- [x] **O4** Opt-out toggle in `/dashboard/profile` notification settings
+- [x] i18n namespace `messages` in all six languages; `I18nScope` on the dashboard layout (and on `cars/layout.tsx`, for the car-page CTA copy)
+- [x] Playwright: buyer messages seller → seller replies → buyer sees it live (`e2e/messaging.spec.ts`) — **written, not yet run**: this sandbox has no local Postgres, so it hasn't executed anywhere but will on the next CI run of `web-e2e`
 
 ## Phase 2 — Seller onboarding (G4–G6, B2)
 - [ ] **B4** Backend: strip EXIF (keep orientation) on ID uploads for both clients + test

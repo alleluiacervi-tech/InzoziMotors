@@ -18,6 +18,15 @@ export function notificationTarget(
   notification: AppNotification
 ): { href: string; labelKey: string } | null {
   const meta = notification.meta
+
+  // Highest priority, matching the app's resolveNotificationRoute — a message
+  // notification always carries a conversationId, and the thread (not the
+  // inbox, not the car it mentions) is the useful destination.
+  const conversationId = readId(meta, 'conversationId')
+  if (conversationId) {
+    return { href: `/dashboard/messages/${conversationId}`, labelKey: 'dashboard.notificationTarget.viewConversation' }
+  }
+
   const disputeId = readId(meta, 'disputeId')
   if (disputeId) return { href: '/dashboard', labelKey: 'dashboard.notificationTarget.viewAccount' }
 

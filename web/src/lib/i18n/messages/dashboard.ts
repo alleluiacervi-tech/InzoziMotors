@@ -19,6 +19,7 @@ const en = {
     saved: 'Saved',
     rentals: 'Rental inquiries',
     imports: 'Imports',
+    messages: 'Messages',
     reports: 'My reports',
     notifications: 'Notifications',
     selling: 'Selling',
@@ -30,6 +31,7 @@ const en = {
   meta: {
     dashboard: 'Dashboard',
     notifications: 'Notifications',
+    messages: 'Messages',
     profile: 'Profile',
     saved: 'Saved',
     selling: 'Selling',
@@ -38,6 +40,7 @@ const en = {
   loading: {
     dashboard: 'Loading your dashboard',
     notifications: 'Loading your notifications',
+    messages: 'Loading your messages',
     profile: 'Loading your profile',
     saved: 'Loading your saved cars',
     selling: 'Loading your cars',
@@ -101,6 +104,7 @@ const en = {
     viewAccount: 'View account',
     viewCar: 'View car',
     viewSubmission: 'View submission',
+    viewConversation: 'View message',
   },
   reports: {
     title: 'My inspection reports',
@@ -126,6 +130,7 @@ const en = {
     detailsHeading: 'Your details',
     verificationHeading: 'Identity verification',
     accountCreated: 'Account created {{date}}',
+    notificationsHeading: 'Notifications',
     passwordHeading: 'Password',
     deviceHeading: 'This device',
     deviceBody:
@@ -158,6 +163,9 @@ const en = {
         'Enabled details are never placed in the public catalogue. They are disclosed only to a signed-in buyer who acknowledges the direct-deal notice, and the disclosure is recorded.',
       allowPhone: 'Allow buyers to request my phone number',
       allowWhatsapp: 'Allow buyers to request my WhatsApp number',
+      messageEmails: 'Email me when I get a new message',
+      messageEmailsHint:
+        'Only when you have no session open anywhere — at most one email per conversation per hour, and it never includes what was said.',
       email: 'Email',
       emailHint:
         'Your email is your sign-in and cannot be changed here. Contact support if you need it moved.',
@@ -500,6 +508,7 @@ const rw: typeof en = {
     saved: 'Ibyabitswe',
     rentals: 'Ibibazo by’ubukode',
     imports: 'Ibitumizwa',
+    messages: 'Ubutumwa',
     reports: 'Raporo zanjye',
     notifications: 'Amatangazo',
     selling: 'Kugurisha',
@@ -511,6 +520,7 @@ const rw: typeof en = {
   meta: {
     dashboard: 'Imbonerahamwe',
     notifications: 'Amatangazo',
+    messages: 'Ubutumwa',
     profile: 'Umwirondoro',
     saved: 'Ibyabitswe',
     selling: 'Kugurisha',
@@ -519,6 +529,7 @@ const rw: typeof en = {
   loading: {
     dashboard: 'Gutegura imbonerahamwe yawe',
     notifications: 'Gutegura amatangazo yawe',
+    messages: 'Gutegura ubutumwa bwawe',
     profile: 'Gutegura umwirondoro wawe',
     saved: 'Gutegura imodoka wabitse',
     selling: 'Gutegura imodoka zawe',
@@ -582,6 +593,7 @@ const rw: typeof en = {
     viewAccount: 'Reba konti',
     viewCar: 'Reba imodoka',
     viewSubmission: 'Reba icyatanzwe',
+    viewConversation: 'Reba ubutumwa',
   },
   reports: {
     title: 'Raporo zanjye z’isuzuma',
@@ -607,6 +619,7 @@ const rw: typeof en = {
     detailsHeading: 'Amakuru yawe',
     verificationHeading: 'Kwemeza umwirondoro',
     accountCreated: 'Konti yashyizweho {{date}}',
+    notificationsHeading: 'Amatangazo',
     passwordHeading: 'Ijambo ry’ibanga',
     deviceHeading: 'Iki gikoresho',
     deviceBody:
@@ -639,6 +652,9 @@ const rw: typeof en = {
         'Amakuru yemewe ntashyirwa mu gitabo rusange. Atangazwa gusa ku muguzi winjiye wemeye itangazo ry’ubucuruzi butaziguye, kandi itangaza ryandikwa.',
       allowPhone: 'Emerera abaguzi gusaba nimero yanjye ya telefoni',
       allowWhatsapp: 'Emerera abaguzi gusaba nimero yanjye ya WhatsApp',
+      messageEmails: 'Nyoherereza imeri igihe mbonye ubutumwa bushya',
+      messageEmailsHint:
+        'Gusa igihe nta gihe cy’ikoreshwa cyafunguye ahandi — nta rushya rurenze rumwe ku kiganiro mu isaha, kandi ntirwerekana icyavuzwe.',
       email: 'Imeri',
       emailHint:
         'Imeri yawe ni yo winjiraho kandi ntishobora guhindurirwa hano. Vugana n’ubufasha niba ukeneye kuyimura.',
@@ -981,6 +997,7 @@ const fr: typeof en = {
     saved: 'Enregistrés',
     rentals: 'Demandes de location',
     imports: 'Importations',
+    messages: 'Messages',
     reports: 'Mes rapports',
     notifications: 'Notifications',
     selling: 'Ventes',
@@ -992,6 +1009,7 @@ const fr: typeof en = {
   meta: {
     dashboard: 'Tableau de bord',
     notifications: 'Notifications',
+    messages: 'Messages',
     profile: 'Profil',
     saved: 'Enregistrés',
     selling: 'Ventes',
@@ -1000,6 +1018,7 @@ const fr: typeof en = {
   loading: {
     dashboard: 'Chargement de votre tableau de bord',
     notifications: 'Chargement de vos notifications',
+    messages: 'Chargement de vos messages',
     profile: 'Chargement de votre profil',
     saved: 'Chargement de vos voitures enregistrées',
     selling: 'Chargement de vos voitures',
@@ -1063,6 +1082,7 @@ const fr: typeof en = {
     viewAccount: 'Voir le compte',
     viewCar: 'Voir la voiture',
     viewSubmission: 'Voir la soumission',
+    viewConversation: 'Voir le message',
   },
   reports: {
     title: 'Mes rapports d’inspection',
@@ -1088,6 +1108,7 @@ const fr: typeof en = {
     detailsHeading: 'Vos coordonnées',
     verificationHeading: 'Vérification d’identité',
     accountCreated: 'Compte créé le {{date}}',
+    notificationsHeading: 'Notifications',
     passwordHeading: 'Mot de passe',
     deviceHeading: 'Cet appareil',
     deviceBody:
@@ -1120,6 +1141,9 @@ const fr: typeof en = {
         'Les coordonnées activées ne sont jamais placées dans le catalogue public. Elles ne sont divulguées qu’à un acheteur connecté qui accepte l’avis de transaction directe, et la divulgation est enregistrée.',
       allowPhone: 'Autoriser les acheteurs à demander mon numéro de téléphone',
       allowWhatsapp: 'Autoriser les acheteurs à demander mon numéro WhatsApp',
+      messageEmails: 'M’envoyer un e-mail quand je reçois un nouveau message',
+      messageEmailsHint:
+        'Uniquement si vous n’avez aucune session ouverte — un e-mail par conversation au maximum toutes les heures, et jamais le contenu du message.',
       email: 'E-mail',
       emailHint:
         'Votre e-mail est votre identifiant de connexion et ne peut pas être modifié ici. Contactez l’assistance si vous devez le déplacer.',
@@ -1462,6 +1486,7 @@ const sw: typeof en = {
     saved: 'Yaliyohifadhiwa',
     rentals: 'Maombi ya kukodisha',
     imports: 'Uagizaji',
+    messages: 'Ujumbe',
     reports: 'Ripoti zangu',
     notifications: 'Arifa',
     selling: 'Kuuza',
@@ -1473,6 +1498,7 @@ const sw: typeof en = {
   meta: {
     dashboard: 'Dashibodi',
     notifications: 'Arifa',
+    messages: 'Ujumbe',
     profile: 'Wasifu',
     saved: 'Yaliyohifadhiwa',
     selling: 'Kuuza',
@@ -1481,6 +1507,7 @@ const sw: typeof en = {
   loading: {
     dashboard: 'Inapakia dashibodi yako',
     notifications: 'Inapakia arifa zako',
+    messages: 'Inapakia ujumbe wako',
     profile: 'Inapakia wasifu wako',
     saved: 'Inapakia magari uliyohifadhi',
     selling: 'Inapakia magari yako',
@@ -1544,6 +1571,7 @@ const sw: typeof en = {
     viewAccount: 'Angalia akaunti',
     viewCar: 'Angalia gari',
     viewSubmission: 'Angalia wasilisho',
+    viewConversation: 'Angalia ujumbe',
   },
   reports: {
     title: 'Ripoti zangu za ukaguzi',
@@ -1569,6 +1597,7 @@ const sw: typeof en = {
     detailsHeading: 'Maelezo yako',
     verificationHeading: 'Uthibitisho wa utambulisho',
     accountCreated: 'Akaunti iliundwa {{date}}',
+    notificationsHeading: 'Arifa',
     passwordHeading: 'Nenosiri',
     deviceHeading: 'Kifaa hiki',
     deviceBody:
@@ -1601,6 +1630,9 @@ const sw: typeof en = {
         'Maelezo yaliyowezeshwa hayawekwi kamwe kwenye katalogi ya umma. Yanafichuliwa tu kwa mnunuzi aliyeingia ambaye anakubali ilani ya biashara ya moja kwa moja, na ufichuzi hurekodiwa.',
       allowPhone: 'Ruhusu wanunuzi kuomba nambari yangu ya simu',
       allowWhatsapp: 'Ruhusu wanunuzi kuomba nambari yangu ya WhatsApp',
+      messageEmails: 'Nitumie barua pepe ninapopokea ujumbe mpya',
+      messageEmailsHint:
+        'Tu wakati sina kipindi wazi popote — barua pepe moja kwa kila mazungumzo kwa saa, na haionyeshi kilichosemwa.',
       email: 'Barua pepe',
       emailHint:
         'Barua pepe yako ndiyo uingiaji wako na haiwezi kubadilishwa hapa. Wasiliana na usaidizi ikiwa unahitaji kuihamisha.',
@@ -1943,6 +1975,7 @@ const ko: typeof en = {
     saved: '저장됨',
     rentals: '렌트 문의',
     imports: '수입',
+    messages: '메시지',
     reports: '내 보고서',
     notifications: '알림',
     selling: '판매',
@@ -1954,6 +1987,7 @@ const ko: typeof en = {
   meta: {
     dashboard: '대시보드',
     notifications: '알림',
+    messages: '메시지',
     profile: '프로필',
     saved: '저장됨',
     selling: '판매',
@@ -1962,6 +1996,7 @@ const ko: typeof en = {
   loading: {
     dashboard: '대시보드를 불러오는 중',
     notifications: '알림을 불러오는 중',
+    messages: '메시지를 불러오는 중',
     profile: '프로필을 불러오는 중',
     saved: '저장한 차량을 불러오는 중',
     selling: '내 차량을 불러오는 중',
@@ -2024,6 +2059,7 @@ const ko: typeof en = {
     viewAccount: '계정 보기',
     viewCar: '차량 보기',
     viewSubmission: '제출 보기',
+    viewConversation: '메시지 보기',
   },
   reports: {
     title: '내 검사 보고서',
@@ -2049,6 +2085,7 @@ const ko: typeof en = {
     detailsHeading: '내 정보',
     verificationHeading: '신원 확인',
     accountCreated: '계정 생성일 {{date}}',
+    notificationsHeading: '알림',
     passwordHeading: '비밀번호',
     deviceHeading: '이 기기',
     deviceBody:
@@ -2081,6 +2118,9 @@ const ko: typeof en = {
         '활성화된 정보는 공개 카탈로그에 절대 표시되지 않습니다. 직접 거래 안내에 동의한 로그인 구매자에게만 공개되며, 공개 내역이 기록됩니다.',
       allowPhone: '구매자가 내 전화번호를 요청하도록 허용',
       allowWhatsapp: '구매자가 내 WhatsApp 번호를 요청하도록 허용',
+      messageEmails: '새 메시지가 오면 이메일로 알려주기',
+      messageEmailsHint:
+        '어디에서도 접속 중이 아닐 때만 보내며, 대화당 최대 1시간에 한 번이고 메시지 내용은 포함되지 않습니다.',
       email: '이메일',
       emailHint:
         '이메일은 로그인 수단이며 여기에서 변경할 수 없습니다. 변경이 필요하면 고객지원에 문의하세요.',
@@ -2423,6 +2463,7 @@ const zh: typeof en = {
     saved: '收藏',
     rentals: '租车咨询',
     imports: '进口',
+    messages: '消息',
     reports: '我的报告',
     notifications: '通知',
     selling: '出售',
@@ -2434,6 +2475,7 @@ const zh: typeof en = {
   meta: {
     dashboard: '控制台',
     notifications: '通知',
+    messages: '消息',
     profile: '个人资料',
     saved: '收藏',
     selling: '出售',
@@ -2442,6 +2484,7 @@ const zh: typeof en = {
   loading: {
     dashboard: '正在加载控制台',
     notifications: '正在加载通知',
+    messages: '正在加载消息',
     profile: '正在加载个人资料',
     saved: '正在加载收藏车辆',
     selling: '正在加载我的车辆',
@@ -2504,6 +2547,7 @@ const zh: typeof en = {
     viewAccount: '查看账户',
     viewCar: '查看车辆',
     viewSubmission: '查看提交内容',
+    viewConversation: '查看消息',
   },
   reports: {
     title: '我的检测报告',
@@ -2529,6 +2573,7 @@ const zh: typeof en = {
     detailsHeading: '我的信息',
     verificationHeading: '身份验证',
     accountCreated: '账户创建于{{date}}',
+    notificationsHeading: '通知',
     passwordHeading: '密码',
     deviceHeading: '本设备',
     deviceBody:
@@ -2561,6 +2606,8 @@ const zh: typeof en = {
         '已启用的信息绝不会显示在公开目录中。仅会向已确认直接交易须知的已登录买家公开，且每次公开都会被记录。',
       allowPhone: '允许买家请求我的电话号码',
       allowWhatsapp: '允许买家请求我的 WhatsApp 号码',
+      messageEmails: '收到新消息时通过邮箱通知我',
+      messageEmailsHint: '仅在您未在任何地方保持登录状态时发送——每个对话每小时最多一封，且绝不包含消息内容。',
       email: '邮箱',
       emailHint:
         '邮箱是您的登录凭证，无法在此处修改。如需变更，请联系客服。',

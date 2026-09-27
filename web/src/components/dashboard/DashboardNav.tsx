@@ -61,10 +61,15 @@ const PROVIDER_ITEMS: NavItem[] = [
 ]
 
 const ACCOUNT: NavItem[] = [
+  { href: '/dashboard/messages', labelKey: 'dashboard.nav.messages', icon: 'mail' },
   { href: '/dashboard/notifications', labelKey: 'dashboard.nav.notifications', icon: 'bell' },
   { href: '/dashboard/reports', labelKey: 'dashboard.nav.reports', icon: 'document' },
   { href: '/dashboard/profile', labelKey: 'dashboard.nav.profile', icon: 'user' },
 ]
+
+/** Hrefs that show an unread badge, each with its own count (G1/G2 in
+ *  docs/WEB-PARITY-PLAN.md). */
+const BADGE_HREFS = new Set(['/dashboard/notifications', '/dashboard/messages'])
 
 // Overview must match exactly, or every child route would light it up too.
 // /dashboard/rentals must match exactly too, or it would light up alongside
@@ -77,9 +82,11 @@ const isActive = (href: string, pathname: string) =>
 
 export function DashboardNav({
   unread = 0,
+  messagesUnread = 0,
   isRentalProvider = false,
 }: {
   unread?: number
+  messagesUnread?: number
   isRentalProvider?: boolean
 }) {
   const t = useT()
@@ -96,18 +103,28 @@ export function DashboardNav({
   const flat = groups.flatMap((group) => group.items)
 
   // The unread count is a number AND a word, so it never depends on colour or
-  // position alone to be understood.
-  const badge = (item: NavItem, active: boolean) =>
-    item.href === '/dashboard/notifications' && unread > 0 ? (
+  // position alone to be understood. Notifications and messages keep separate
+  // counts — a new message must not read as "3 notifications" or vice versa.
+  const countFor = (item: NavItem): number => {
+    if (item.href === '/dashboard/notifications') return unread
+    if (item.href === '/dashboard/messages') return messagesUnread
+    return 0
+  }
+  const badge = (item: NavItem, active: boolean) => {
+    if (!BADGE_HREFS.has(item.href)) return null
+    const count = countFor(item)
+    if (count <= 0) return null
+    return (
       <span
         className={`tnum rounded-pill px-2 py-0.5 text-micro font-bold leading-none ${
           active ? 'bg-brand text-brand-on' : 'bg-info-tint text-info'
         }`}
       >
-        {unread}
+        {count}
         <span className="sr-only"> {t('dashboard.nav.unread')}</span>
       </span>
-    ) : null
+    )
+  }
 
   return (
     <nav aria-label={t('dashboard.nav.label')}>

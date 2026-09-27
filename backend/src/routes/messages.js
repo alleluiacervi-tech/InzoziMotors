@@ -4,6 +4,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { requireUuid, paginate } = require('../middleware/validate');
 const { notifyUser } = require('../lib/notify');
+const { sendNewMessageEmail } = require('../lib/mailer');
 const { screenUserText } = require('../lib/moderation');
 const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
 
@@ -39,6 +40,35 @@ async function emitNewMessage(io, conv, msg, sender, recipientId) {
     return socks.length > 0;
   } catch {
     return false;
+  }
+}
+
+// D3 in docs/WEB-PARITY-PLAN.md — "while you were away". Only for a recipient
+// with NO live socket at all (both routes below already compute this for the
+// push-skip decision, so it's free here), never carries the message text, and
+// is capped at one per conversation per hour via `conversations.last_offline_email_at`
+// (migration 0048) so a fast back-and-forth cannot spam an inbox. Never allowed
+// to fail the request it's attached to — mailer.sendTemplate already never throws.
+async function maybeSendOfflineEmail(conv, recipientId, recipientOnline) {
+  if (recipientOnline) return;
+  if (conv.last_offline_email_at && Date.now() - new Date(conv.last_offline_email_at).getTime() < 60 * 60 * 1000) {
+    return;
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.email, u.name, u.message_email_notifications, c.title AS car_title
+       FROM users u LEFT JOIN cars c ON c.id = $2
+       WHERE u.id = $1`,
+      [recipientId, conv.car_id]
+    );
+    const recipient = rows[0];
+    if (!recipient || recipient.message_email_notifications === false) return;
+    const sent = await sendNewMessageEmail(recipient.email, recipient.name, recipient.car_title);
+    if (sent) {
+      await pool.query('UPDATE conversations SET last_offline_email_at = NOW() WHERE id = $1', [conv.id]);
+    }
+  } catch (err) {
+    log.error('offline message email failed', { error: err.message });
   }
 }
 
@@ -195,6 +225,7 @@ router.post('/conversations', requireAuth, async (req, res) => {
       body: `Someone sent you a message about your ${car.title}.`,
       meta: JSON.stringify({ conversationId: conv.id, carId: car_id }),
     }, { skipPush: recipientOnline });
+    await maybeSendOfflineEmail(conv, car.seller_id, recipientOnline);
 
     res.status(201).json({ conversation: conv, message: msgRes.rows[0] });
   } catch (err) {
@@ -247,6 +278,7 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
       body: screened.text.slice(0, 80),
       meta: JSON.stringify({ conversationId: conv.id }),
     }, { skipPush: recipientOnline });
+    await maybeSendOfflineEmail(conv, otherId, recipientOnline);
 
     res.status(201).json(rows[0]);
   } catch (err) {

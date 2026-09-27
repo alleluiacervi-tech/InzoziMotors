@@ -59,6 +59,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   try {
     const seller = await register({ role: 'seller', name: 'E2E Seller' })
     await client.query("UPDATE users SET id_verified='approved' WHERE id=$1", [seller.id])
+    const buyer = await register({ name: 'E2E Buyer' })
 
     const adminUser = await register({ name: 'E2E Admin' })
     await client.query("UPDATE users SET role='admin' WHERE id=$1", [adminUser.id])
@@ -118,6 +119,12 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
     process.env.E2E_CAR_ID = car.id as string
     process.env.E2E_CAR_TITLE = title
+    // Messaging spec (G1 in docs/WEB-PARITY-PLAN.md) signs in as each of these
+    // in a real browser, so it needs real credentials, not just a token.
+    process.env.E2E_SELLER_EMAIL = seller.email
+    process.env.E2E_SELLER_PASSWORD = seller.password
+    process.env.E2E_BUYER_EMAIL = buyer.email
+    process.env.E2E_BUYER_PASSWORD = buyer.password
   } finally {
     await client.end()
   }

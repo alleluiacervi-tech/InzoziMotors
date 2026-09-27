@@ -51,12 +51,13 @@ allowed only for the exceptions listed in `docs/WEB-PARITY-PLAN.md` §7. Any oth
 case is a bug.
 - A new user-facing feature ships on **both** clients, or the PR says why not.
 - As of 27 Sep 2026, the website can't yet:
-  - read or reply to messages
   - verify a seller's ID
   - submit a vehicle or book an inspection
   - reopen a closed account
   - compare vehicles
   - show seller or showroom profiles
+- Messaging (read, reply, live updates, report/block) shipped 27 Sep 2026 —
+  first user-facing capability closed under this rule.
 - The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
   `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
 - Browser rules:
@@ -280,11 +281,12 @@ forbids `aggregateRating`/`priceValidUntil` until they are real. Listing galleri
   `PATCH /cars/:id/seller-status`. The app's `/cars/:id/status` is the admin route.
 - **The app drops "reference photos".** `CarSubmissionScreen` collects them, but
   `AppContext.addSubmission` never sends `reference_images`.
-- **The socket doesn't re-check the session.** `backend/src/socket.js` checks the
-  JWT at handshake but never calls `verifyLiveSession`, which breaks invariant 5
-  for realtime.
 - **ID uploads keep their EXIF metadata.** Stored uncompressed on purpose, so
   location data can survive.
+
+Fixed 27 Sep 2026: the socket now re-checks the session on every handshake
+(`verifyLiveSession`, both the app's token and the website's short-lived
+ticket) — see D2/B3 in `docs/WEB-PARITY-PLAN.md`.
 
 ---
 
