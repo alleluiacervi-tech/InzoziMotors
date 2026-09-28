@@ -401,7 +401,8 @@ test('a price cut on a USD car is recorded in dollars, and the alert says so', a
     'SELECT currency FROM price_history WHERE car_id=$1 ORDER BY changed_at DESC LIMIT 1', [car.id]);
   assert.equal(history[0].currency, 'USD', 'the history row carries the car\'s currency, not the column default');
 
-  await feature(a, car.id, { kind: 'hot_deal', days: 3 }).expect(201);
+  // Slot 1: earlier tests leave placements behind, and the feed stops at 12.
+  await feature(a, car.id, { kind: 'hot_deal', days: 3, slot: 1 }).expect(201);
   const row = (await banner()).body.find((r) => r.id === car.id);
   assert.equal(row.label, 'Hot deal', 'a real drop in the car\'s own currency counts');
 
