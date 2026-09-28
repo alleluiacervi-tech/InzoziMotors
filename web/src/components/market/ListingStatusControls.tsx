@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { setListingStatusAction } from '@/app/(dashboard)/dashboard/selling/actions'
 import { useT } from '@/lib/i18n/context'
@@ -14,7 +13,6 @@ type Target = 'live' | 'paused' | 'sold'
 // "Mark as sold" says plainly that it is final — the backend can't undo it.
 export function ListingStatusControls({ carId, status }: { carId: string; status: 'live' | 'paused' }) {
   const t = useT()
-  const router = useRouter()
   const [confirming, setConfirming] = useState<Target | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,8 +37,11 @@ export function ListingStatusControls({ carId, status }: { carId: string; status
       setError(result.error)
       return
     }
+    // No router.refresh() here. The action calls revalidatePath, so its own
+    // response already carries the updated page. A second refresh racing it
+    // could leave the old tree on screen, showing a sold car as "Available"
+    // (and failing the e2e "mark as sold" test intermittently).
     setConfirming(null)
-    router.refresh()
   }
 
   const pending = actions.find((a) => a.target === confirming)
