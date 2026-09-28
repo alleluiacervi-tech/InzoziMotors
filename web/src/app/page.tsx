@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 /**
  * One page of live stock, newest first. The API clamps at 100 rows, which at
  * Sawa's inventory size is the whole yard: the hero's search options, the
- * stock band's counts, the certificate's car and the newest-six grid are all
+ * stock band's counts, the certificate's car and the newest-eight grid are all
  * cut from this one list, so they cannot disagree.
  */
 async function getStock(): Promise<Car[]> {
@@ -88,7 +88,7 @@ export default async function HomePage() {
 
       {/* Operator placements, then the newest inspected cars. */}
       <TopDeals placements={placements} />
-      <FeaturedCars cars={stock.slice(0, 6)} />
+      <FeaturedCars cars={stock.slice(0, 8)} />
 
       <ThreeWays saleCount={inventory.total} rentalCount={rentalFleet.length} />
 

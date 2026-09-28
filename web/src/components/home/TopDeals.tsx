@@ -64,7 +64,7 @@ export async function PlacementGrid({ placements }: { placements: FeaturedPlacem
   const locale = await getLocale()
 
   return (
-    <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {placements.map((placement, i) => {
         // Editorial picks carry no badge; the section title already says a
         // person chose them. A paid slot always says so, quietly.
