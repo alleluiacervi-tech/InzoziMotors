@@ -31,11 +31,11 @@ const KINDS: { value: Kind; label: string; shown: string; blurb: string }[] = [
   },
   {
     value: 'hot_deal', label: 'Hot deal', shown: 'Hot deal',
-    blurb: 'We think the price is notable. Still our judgement, not the seller’s money.',
+    blurb: 'The seller cut the price by 1% or more in the last 30 days. Without a drop like that, buyers see it as Featured.',
   },
   {
     value: 'sponsored', label: 'Paid placement', shown: 'Sponsored',
-    blurb: 'The seller paid for this slot. The app labels it Sponsored to every buyer.',
+    blurb: 'The seller paid for this slot. The app and website label it Sponsored to every buyer. Paid slots take turns at the front, one day at a time.',
   },
 ]
 

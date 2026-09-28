@@ -494,7 +494,10 @@ export const TRANSLATIONS = {
       "featuredTitle": "Featured",
       "featuredSub": "Placed by our team · sponsored cars are labelled",
       "sponsoredLabel": "Sponsored",
-      "hotDealLabel": "Hot deal"
+      "hotDealLabel": "Hot deal",
+      "featuredPosition": "{{index}} of {{total}}",
+      "wasPrice": "Was {{price}}",
+      "featuredAllSub": "Every car our team has placed right now. Sponsored cars are labelled."
     },
     "idVerification": {
       "add3Photos": "Add all 3 photos to continue",
@@ -1883,7 +1886,10 @@ export const TRANSLATIONS = {
       "featuredTitle": "Zatoranyijwe",
       "featuredSub": "Zashyizwe n’ikipe yacu · izishyuriwe zigaragazwa",
       "sponsoredLabel": "Yishyuriwe",
-      "hotDealLabel": "Igiciro cyiza"
+      "hotDealLabel": "Igiciro cyiza",
+      "featuredPosition": "{{index}} kuri {{total}}",
+      "wasPrice": "Cyari {{price}}",
+      "featuredAllSub": "Imodoka zose ikipe yacu yashyize imbere ubu. Izishyuriwe zigaragazwa."
     },
     "idVerification": {
       "add3Photos": "Shyiraho amafoto yose 3 ngo ukomeze",
@@ -3272,7 +3278,10 @@ export const TRANSLATIONS = {
       "featuredTitle": "À la une",
       "featuredSub": "Choisies par notre équipe · les annonces sponsorisées sont signalées",
       "sponsoredLabel": "Sponsorisé",
-      "hotDealLabel": "Bonne affaire"
+      "hotDealLabel": "Bonne affaire",
+      "featuredPosition": "{{index}} sur {{total}}",
+      "wasPrice": "Avant {{price}}",
+      "featuredAllSub": "Toutes les voitures mises en avant par notre équipe en ce moment. Les annonces sponsorisées sont signalées."
     },
     "idVerification": {
       "add3Photos": "Ajoutez les 3 photos requises pour continuer",
@@ -4661,7 +4670,10 @@ export const TRANSLATIONS = {
       "featuredTitle": "Yaliyoangaziwa",
       "featuredSub": "Yamechaguliwa na timu yetu · yaliyofadhiliwa yanaonyeshwa",
       "sponsoredLabel": "Imefadhiliwa",
-      "hotDealLabel": "Ofa maalum"
+      "hotDealLabel": "Ofa maalum",
+      "featuredPosition": "{{index}} kati ya {{total}}",
+      "wasPrice": "Awali {{price}}",
+      "featuredAllSub": "Magari yote yaliyoangaziwa na timu yetu sasa hivi. Yaliyofadhiliwa yanaonyeshwa."
     },
     "idVerification": {
       "add3Photos": "Ongeza picha zote 3 ili kuendelea",
@@ -6050,7 +6062,10 @@ export const TRANSLATIONS = {
       "featuredTitle": "추천 차량",
       "featuredSub": "저희 팀이 선정 · 광고 차량은 표시됩니다",
       "sponsoredLabel": "광고",
-      "hotDealLabel": "특가"
+      "hotDealLabel": "특가",
+      "featuredPosition": "{{total}}대 중 {{index}}번째",
+      "wasPrice": "이전 {{price}}",
+      "featuredAllSub": "현재 저희 팀이 선정한 모든 차량입니다. 광고 차량은 표시됩니다."
     },
     "idVerification": {
       "add3Photos": "계속 진행하려면 3장의 사진을 모두 첨부해 주세요",
@@ -7439,7 +7454,10 @@ export const TRANSLATIONS = {
       "featuredTitle": "精选车辆",
       "featuredSub": "由我们团队推荐 · 付费推广车辆均有标注",
       "sponsoredLabel": "推广",
-      "hotDealLabel": "特惠"
+      "hotDealLabel": "特惠",
+      "featuredPosition": "第 {{index}} / {{total}} 辆",
+      "wasPrice": "原价 {{price}}",
+      "featuredAllSub": "我们团队当前推荐的全部车辆。付费推广车辆均有标注。"
     },
     "idVerification": {
       "add3Photos": "请完整上传 3 张认证照片后继续",
