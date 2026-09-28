@@ -9,6 +9,7 @@ import SignInScreen from '../screens/SignInScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import VehicleDetailScreen from '../screens/VehicleDetailScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
+import FeaturedScreen from '../screens/FeaturedScreen';
 import FiltersScreen from '../screens/FiltersScreen';
 import SellerDashboardScreen from '../screens/SellerDashboardScreen';
 import SellerContactScreen from '../screens/SellerContactScreen';
@@ -73,6 +74,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="Main" component={TabNavigator} />
       <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
       <Stack.Screen name="SearchResults" component={SearchResultsScreen} />
+      <Stack.Screen name="Featured" component={FeaturedScreen} />
       <Stack.Screen name="Filters" component={FiltersScreen} options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="SellerDashboard" component={SellerDashboardScreen} />
       <Stack.Screen name="SellerContact" component={SellerContactScreen} options={{ animation: 'slide_from_bottom' }} />

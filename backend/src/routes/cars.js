@@ -6,6 +6,7 @@ const { requireAuth, requireAdmin, verifyLiveSession } = require('../middleware/
 const { requireUuid, paginate, isUuid } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
+const { featuredLabel, rotateSponsored } = require('../lib/featured');
 const { recordAdminAction } = require('../lib/admin-audit');
 const {
   MARKETPLACE_TERMS_VERSION,
@@ -239,6 +240,15 @@ ${MARKET_LATERALS}
   }
 });
 
+const PRICE_DROP_IS_REAL = `(
+  last_change.price = c.price
+  AND last_change.currency = c.currency
+  AND last_change.prior_currency = c.currency
+  AND last_change.prior_price > c.price
+  AND (last_change.prior_price - c.price) * 100 >= last_change.prior_price
+  AND last_change.changed_at > NOW() - INTERVAL '30 days'
+)`;
+
 // GET /cars/featured — the home-screen banner.
 //
 // Public, unauthenticated, and deliberately narrow: id, photo, price, the
@@ -247,16 +257,33 @@ ${MARKET_LATERALS}
 // demoted by a failed re-inspection, or whose seller's identity was revoked
 // leaves the banner the moment it leaves the marketplace — by falling out of a
 // WHERE clause, with no job to run and nothing to remember.
+//
+// previous_price / price_dropped_at are set only when the price really fell:
+// the car's latest price_history row is its current price, the row before it
+// was at least 1% higher in the same currency, and the change is under 30 days
+// old. That is what lets a card strike through an old price, and what
+// "Hot deal" now requires (lib/featured.js).
 router.get('/featured', async (req, res) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit) || 6, 1), 12);
   try {
     const { rows } = await pool.query(
       `SELECT f.id AS placement_id, f.kind, f.slot, f.headline, f.ends_at,
               ${publicCarSelect('c')},
-              u.name AS seller_name
+              u.name AS seller_name,
+              CASE WHEN ${PRICE_DROP_IS_REAL} THEN last_change.prior_price END AS previous_price,
+              CASE WHEN ${PRICE_DROP_IS_REAL} THEN last_change.changed_at END AS price_dropped_at
          FROM featured_placements f
          JOIN cars c ON c.id = f.car_id
          JOIN users u ON u.id = c.seller_id
+         LEFT JOIN LATERAL (
+           SELECT h.price, h.currency, h.changed_at,
+                  LEAD(h.price) OVER (ORDER BY h.changed_at DESC) AS prior_price,
+                  LEAD(h.currency) OVER (ORDER BY h.changed_at DESC) AS prior_currency
+             FROM price_history h
+            WHERE h.car_id = c.id
+            ORDER BY h.changed_at DESC
+            LIMIT 1
+         ) last_change ON TRUE
         WHERE f.cancelled_at IS NULL
           AND f.starts_at <= NOW() AND f.ends_at > NOW()
           AND c.status = 'live'
@@ -268,15 +295,13 @@ router.get('/featured', async (req, res) => {
         LIMIT $1`,
       [limit]
     );
-    res.json(rows.map((row) => ({
+    res.json(rotateSponsored(rows).map((row) => ({
       ...row,
       // Computed here rather than left to three clients to each decide. A paid
       // placement is disclosed as paid, in the payload, so no surface can
       // render it as an editorial pick by forgetting to check the kind.
       sponsored: row.kind === 'sponsored',
-      label: row.kind === 'sponsored' ? 'Sponsored'
-           : row.kind === 'hot_deal' ? 'Hot deal'
-           : 'Featured',
+      label: featuredLabel(row),
     })));
   } catch (err) {
     log.error('featured feed error', { error: err.message });

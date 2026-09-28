@@ -16,18 +16,21 @@ import { colors, radius, fonts, typography } from '../theme';
 import { useApp } from '../context/AppContext';
 import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
 import { importCatalogMakes } from '../data/importCatalog';
-import { photoSource, PHOTO } from '../utils/photo';
+import { PHOTO } from '../utils/photo';
 import { cars as carsApi } from '../api/cars';
-import { formatPrice, formatMiles } from '../data/cars';
 import Photo from '../components/Photo';
-// expo-image's ImageBackground, for the same disk cache the cards now use.
-import { ImageBackground } from 'expo-image';
+import FeaturedCard from '../components/FeaturedCard';
+import useReducedMotion from '../hooks/useReducedMotion';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // Featured rail: each card leaves the next one peeking at the edge, which is
-// what says "there is more" — no dots needed.
+// what says "there is more".
 const FEATURED_CARD_W = SCREEN_WIDTH - 48;
 const FEATURED_GAP = 12;
+// The rail slides this far and back once per app session, the first time it
+// is on screen, then never moves on its own again.
+const FEATURED_NUDGE = 28;
+let featuredNudgedThisSession = false;
 
 const TOOLS = [
   { labelKey: 'certifyCar', icon: 'car-outline', screen: 'CarSubmission' },
@@ -65,11 +68,13 @@ export default function HomeScreen({ navigation }) {
   const carouselRef = useRef(null);
 
   // ── Featured ──────────────────────────────────────────────────────────────
-  // Whatever an operator placed (GET /cars/featured), in slot order.
+  // Whatever an operator placed (GET /cars/featured), in slot order. The server
+  // takes paid slots in turns day by day, so nothing here reorders them.
+  const reducedMotion = useReducedMotion();
   const [featured, setFeatured] = useState([]);
   React.useEffect(() => {
     let alive = true;
-    carsApi.getFeatured(6)
+    carsApi.getFeatured(12)
       .then((rows) => { if (alive && Array.isArray(rows)) setFeatured(rows); })
       .catch(() => {});
     return () => { alive = false; };
@@ -95,8 +100,30 @@ export default function HomeScreen({ navigation }) {
   // nobody chose to look at. A rail that only moves when a person moves it is
   // both more usable and more honest about what a placement is worth.
   //
-  // The dots stay: they are what says "there is more here", which is the one
-  // job the timer was doing that was worth keeping.
+  // What says "there is more here" instead: the next card peeking at the edge,
+  // the segmented line under the rail, and one small nudge — the rail slides a
+  // few points and back, once per session, the first time it appears. Never
+  // with Reduce Motion on, and never once a finger is on it.
+  const nudgeTimers = useRef([]);
+  const railTouched = useRef(false);
+  const stopNudge = () => {
+    railTouched.current = true;
+    nudgeTimers.current.forEach(clearTimeout);
+    nudgeTimers.current = [];
+  };
+  React.useEffect(() => {
+    if (featuredNudgedThisSession || reducedMotion || homeMode === 'rent' || slides.length < 2) return undefined;
+    featuredNudgedThisSession = true;
+    nudgeTimers.current = [
+      setTimeout(() => {
+        if (!railTouched.current) carouselRef.current?.scrollTo({ x: FEATURED_NUDGE, animated: true });
+      }, 900),
+      setTimeout(() => {
+        if (!railTouched.current) carouselRef.current?.scrollTo({ x: 0, animated: true });
+      }, 1300),
+    ];
+    return () => nudgeTimers.current.forEach(clearTimeout);
+  }, [slides.length, reducedMotion, homeMode]);
 
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
@@ -394,10 +421,10 @@ export default function HomeScreen({ navigation }) {
         ) : (
         <>
         {/* ── FEATURED ── */}
-        {/* Cars an operator placed, in slot order. Calm on purpose: one label,
-            and only where it means something — Sponsored is always shown on a
-            paid placement (it's a disclosure), Hot deal when an operator chose
-            it, nothing on an editorial pick. */}
+        {/* Cars an operator placed. Calm on purpose: the photo, the price, the
+            inspection score, and a label only where it means something —
+            Sponsored always (it's a disclosure), Hot deal only when the price
+            really fell. See FeaturedCard. */}
         {slides.length ? (
           <View style={styles.featured}>
             <View style={styles.featuredHead}>
@@ -406,9 +433,13 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.featuredSub}>{t('home.featuredSub')}</Text>
               </View>
               {slides.length > 1 ? (
-                <Text style={styles.featuredCount} accessibilityLabel={`${carouselIndex} of ${slides.length}`}>
-                  {carouselIndex} / {slides.length}
-                </Text>
+                <Pressable
+                  onPress={() => navigation.navigate('Featured')}
+                  hitSlop={10}
+                  accessibilityRole="link"
+                >
+                  <Text style={styles.featuredSeeAll}>{t('common.viewAll')}</Text>
+                </Pressable>
               ) : null}
             </View>
 
@@ -420,56 +451,36 @@ export default function HomeScreen({ navigation }) {
               decelerationRate="fast"
               contentContainerStyle={styles.featuredRail}
               onScroll={handleCarouselScroll}
+              onScrollBeginDrag={stopNudge}
+              onTouchStart={stopNudge}
               scrollEventThrottle={16}
             >
-              {slides.map((slide) => {
-                const image = slide.images?.[0] || slide.image;
-                const heading = slide.headline || slide.title;
-                const label = slide.sponsored || slide.kind === 'sponsored'
-                  ? t('home.sponsoredLabel')
-                  : slide.kind === 'hot_deal' ? t('home.hotDealLabel') : null;
-                const facts = [
-                  slide.year ? String(slide.year) : null,
-                  slide.mileage != null ? formatMiles(slide.mileage) : null,
-                  slide.inspection_score ? t('home.inspected', { score: slide.inspection_score }) : null,
-                ].filter(Boolean).join('  ·  ');
-
-                return (
-                  <Pressable
-                    key={slide.placement_id || slide.id}
-                    style={styles.featuredCard}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${heading}. ${formatPrice(slide.price)}.${label ? ` ${label}.` : ''}`}
-                    onPress={() => navigation.navigate('VehicleDetail', { carId: slide.id })}
-                  >
-                    <ImageBackground
-                      source={photoSource(image, PHOTO.WIDE)}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                    <LinearGradient
-                      colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.72)']}
-                      style={styles.featuredScrim}
-                    />
-                    {label ? (
-                      <View style={[styles.featuredLabel, slide.kind === 'hot_deal' && styles.featuredLabelDark]}>
-                        <Text style={[styles.featuredLabelText, slide.kind === 'hot_deal' && styles.featuredLabelTextDark]}>
-                          {label}
-                        </Text>
-                      </View>
-                    ) : null}
-                    <View style={styles.featuredText}>
-                      <Text style={styles.featuredName} numberOfLines={1}>{heading}</Text>
-                      <View style={styles.featuredLine}>
-                        <Text style={styles.featuredPrice}>{formatPrice(slide.price)}</Text>
-                        {facts ? <Text style={styles.featuredFacts} numberOfLines={1}>{facts}</Text> : null}
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {slides.map((slide) => (
+                <FeaturedCard
+                  key={slide.placement_id || slide.id}
+                  slide={slide}
+                  width={FEATURED_CARD_W}
+                  reducedMotion={reducedMotion}
+                  t={t}
+                  onPress={() => navigation.navigate('VehicleDetail', { carId: slide.id })}
+                />
+              ))}
             </ScrollView>
+
+            {slides.length > 1 ? (
+              <View
+                style={styles.featuredProgress}
+                accessible
+                accessibilityLabel={t('home.featuredPosition', { index: carouselIndex, total: slides.length })}
+              >
+                {slides.map((slide, i) => (
+                  <View
+                    key={slide.placement_id || slide.id}
+                    style={[styles.featuredSegment, i + 1 === carouselIndex && styles.featuredSegmentOn]}
+                  />
+                ))}
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -968,30 +979,11 @@ const styles = StyleSheet.create({
   },
   featuredTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.3 },
   featuredSub: { marginTop: 2, fontSize: 12, fontFamily: fonts.regular, color: colors.textMuted },
-  featuredCount: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textMuted, marginLeft: 12 },
+  featuredSeeAll: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.textPrimary, marginLeft: 12 },
   featuredRail: { paddingHorizontal: 20, gap: FEATURED_GAP },
-  featuredCard: {
-    width: FEATURED_CARD_W, height: 196,
-    borderRadius: 16, overflow: 'hidden',
-    backgroundColor: colors.surfaceAlt,
-  },
-  featuredScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%' },
-  featuredLabel: {
-    position: 'absolute', top: 12, left: 12,
-    backgroundColor: 'rgba(255,255,255,0.94)',
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
-  },
-  featuredLabelDark: { backgroundColor: 'rgba(17,17,17,0.72)' },
-  featuredLabelText: {
-    fontSize: 10.5, fontFamily: fonts.semiBold, color: '#111',
-    letterSpacing: 0.4, textTransform: 'uppercase',
-  },
-  featuredLabelTextDark: { color: colors.white },
-  featuredText: { position: 'absolute', left: 16, right: 16, bottom: 14 },
-  featuredName: { color: colors.white, fontFamily: fonts.bold, fontSize: 17, letterSpacing: -0.2 },
-  featuredLine: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4, gap: 10 },
-  featuredPrice: { color: colors.white, fontFamily: fonts.extraBold, fontSize: 15 },
-  featuredFacts: { flex: 1, color: 'rgba(255,255,255,0.78)', fontFamily: fonts.regular, fontSize: 12 },
+  featuredProgress: { flexDirection: 'row', gap: 4, paddingHorizontal: 20, marginTop: 12 },
+  featuredSegment: { flex: 1, maxWidth: 40, height: 3, borderRadius: 2, backgroundColor: colors.border },
+  featuredSegmentOn: { backgroundColor: colors.textPrimary },
 
   // ── Tools Row ──
   toolsRow: {

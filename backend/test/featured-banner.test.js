@@ -134,7 +134,89 @@ test('slots order the banner, lowest first', async () => {
   const mine = feed.body.filter((r) => [first.id, second.id, third.id].includes(r.id));
   assert.deepEqual(mine.map((r) => r.id), [first.id, second.id, third.id],
     'slot 1 then 5 then 9 — a banner is an ordered thing');
-  assert.equal(mine[1].label, 'Hot deal');
+  // Chosen as a hot deal, but its price never moved — so the rail says
+  // "Featured". "Hot deal" is a claim about a price, and it needs a real drop.
+  assert.equal(mine[1].label, 'Featured');
+  assert.equal(mine[1].previous_price, null);
+});
+
+/** Record a price history the way the price-edit routes do: oldest first. */
+async function priceHistory(carId, steps) {
+  for (const [price, daysAgo] of steps) {
+    await pool.query(
+      `INSERT INTO price_history (car_id, price, changed_at)
+       VALUES ($1, $2, NOW() - make_interval(days => $3))`,
+      [carId, price, daysAgo]);
+  }
+}
+
+test('"Hot deal" is only said when the price really fell, and the card gets the old price', async () => {
+  const a = await admin();
+  const s = await seller();
+  const dropped = await liveCar(s.id, 'Dropped');       // listed 20M, now 18M
+  const stale = await liveCar(s.id, 'Stale');           // dropped, but 40 days ago
+  const raised = await liveCar(s.id, 'Raised');         // 17M then up to 18M
+  const crumb = await liveCar(s.id, 'Crumb');           // 18,050,000 → 18M, under 1%
+
+  await priceHistory(dropped.id, [[20000000, 6], [18000000, 2]]);
+  await priceHistory(stale.id, [[20000000, 60], [18000000, 40]]);
+  await priceHistory(raised.id, [[17000000, 6], [18000000, 2]]);
+  await priceHistory(crumb.id, [[18050000, 6], [18000000, 2]]);
+  for (const car of [dropped, stale, raised, crumb]) {
+    await feature(a, car.id, { kind: 'hot_deal', days: 3, slot: 2 }).expect(201);
+  }
+
+  const feed = (await banner().expect(200)).body;
+  const row = (car) => feed.find((r) => r.id === car.id);
+
+  assert.equal(row(dropped).label, 'Hot deal');
+  assert.equal(Number(row(dropped).previous_price), 20000000);
+  assert.ok(row(dropped).price_dropped_at, 'the card can say when');
+
+  for (const car of [stale, raised, crumb]) {
+    assert.equal(row(car).label, 'Featured', `${car.title}: no real, recent drop`);
+    assert.equal(row(car).previous_price, null);
+  }
+});
+
+test('a sponsored car with a real drop shows the old price and still says Sponsored', async () => {
+  const a = await admin();
+  const car = await liveCar((await seller()).id);
+  await priceHistory(car.id, [[19500000, 4], [18000000, 1]]);
+  await feature(a, car.id, { kind: 'sponsored', days: 3, slot: 1, amount_rwf: 100000 }).expect(201);
+
+  const row = (await banner().expect(200)).body.find((r) => r.id === car.id);
+  assert.equal(row.label, 'Sponsored', 'the disclosure is never traded for a nicer word');
+  assert.equal(Number(row.previous_price), 19500000);
+});
+
+test('sponsored slots take turns at the front, one day at a time', () => {
+  const { rotateSponsored, kigaliDay } = require('../src/lib/featured');
+  const rows = [
+    { id: 'e1', kind: 'editorial' },
+    { id: 's1', kind: 'sponsored' },
+    { id: 'h1', kind: 'hot_deal' },
+    { id: 's2', kind: 'sponsored' },
+    { id: 's3', kind: 'sponsored' },
+  ];
+  const firstSponsor = new Map();
+  for (let day = 0; day < 30; day += 1) {
+    const out = rotateSponsored(rows, day);
+    assert.deepEqual(out.map((r) => r.id).filter((id) => !id.startsWith('s')), ['e1', 'h1'],
+      'editorial and hot-deal picks keep the slot the operator chose');
+    assert.equal(out[0].id, 'e1');
+    assert.equal(out[2].id, 'h1');
+    assert.equal(new Set(out.map((r) => r.id)).size, 5, 'nothing lost, nothing doubled');
+    firstSponsor.set(out[1].id, (firstSponsor.get(out[1].id) || 0) + 1);
+  }
+  assert.deepEqual([...firstSponsor.values()], [10, 10, 10],
+    'over 30 days each sponsor leads the paid positions 10 times');
+
+  const ids = (day) => rotateSponsored(rows, day).map((r) => r.id);
+  assert.deepEqual(ids(7), ids(7), 'the same day gives the same order on every client');
+  assert.notDeepEqual(ids(7), ids(8), 'and the next day moves it on');
+  // Kigali is UTC+2: 22:30 UTC is already the next day there.
+  assert.equal(kigaliDay(Date.UTC(2026, 8, 28, 22, 30)), kigaliDay(Date.UTC(2026, 8, 29, 12, 0)));
 });
 
 test('a scheduled placement does not appear before it starts', async () => {

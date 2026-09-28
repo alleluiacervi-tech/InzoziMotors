@@ -66,7 +66,11 @@ export interface FeaturedPlacement extends Car {
   ends_at: string
   seller_name: string
   sponsored: boolean
-  label: string
+  /** "Hot deal" is only sent when the price really fell (previous_price set). */
+  label: 'Sponsored' | 'Hot deal' | 'Featured'
+  /** Set only for a real drop of 1%+ in the last 30 days; null otherwise. */
+  previous_price: number | null
+  price_dropped_at: string | null
 }
 
 export interface Car {
