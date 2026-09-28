@@ -36,9 +36,11 @@ export async function FeaturedCars({ cars }: { cars: Car[] }) {
 
         {cars.length ? (
           <>
-            <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {cars.map((car, i) => (
-                <div key={car.id} className="h-full min-w-0">
+                // Eight cars fill two rows of four; below xl the last two
+                // are hidden so three- and two-column grids stay even at six.
+                <div key={car.id} className={`h-full min-w-0 ${i >= 6 ? 'hidden xl:block' : ''}`}>
                   <CarCard car={car} priority={i < 3} />
                 </div>
               ))}

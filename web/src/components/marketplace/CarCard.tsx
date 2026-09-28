@@ -19,6 +19,11 @@ const FALLBACK_IMAGE =
     `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#F2EFEA"/></svg>`
   )
 
+// Grids go 1 → 2 → 3 → 4 columns (sm, lg, xl). Four across at desktop width
+// keeps a card near 310px, which is what a buyer scanning a yard wants: a
+// 420px card showed one row per screen on a laptop.
+const GRID_SIZES = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw'
+
 export async function CarCard({
   car, priority = false, layout = 'grid',
 }: {
@@ -63,7 +68,7 @@ export async function CarCard({
           <CardPhotoFlick
             images={car.images!}
             alt={photoAlt}
-            sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
+            sizes={isRow ? '(max-width: 640px) 100vw, 288px' : GRID_SIZES}
             priority={priority}
             fit={demo ? 'contain' : 'cover'}
           />
@@ -72,7 +77,7 @@ export async function CarCard({
             src={image}
             alt={photoAlt}
             fill
-            sizes={isRow ? '(max-width: 640px) 100vw, 288px' : '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'}
+            sizes={isRow ? '(max-width: 640px) 100vw, 288px' : GRID_SIZES}
             className={`${
               demo ? 'object-contain p-2' : 'object-cover'
             } transition-transform duration-500 ease-brand group-hover:scale-[1.03]`}
@@ -98,8 +103,8 @@ export async function CarCard({
             // The score ring on a paper chip: the same mark the hero
             // certificate and the listing page use, so a buyer reads it once
             // and recognises it everywhere.
-            <span className="inline-flex items-center gap-2 rounded-pill bg-surface/95 py-1 pl-1 pr-3 shadow-card backdrop-blur-sm">
-              <ScoreRing score={car.inspection_score} size={36} />
+            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface/95 py-0.5 pl-0.5 pr-2.5 shadow-card backdrop-blur-sm">
+              <ScoreRing score={car.inspection_score} size={30} />
               <span className="text-micro font-bold leading-tight text-content">
                 {t('cars.card.scoreOf')}
               </span>
@@ -127,7 +132,7 @@ export async function CarCard({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-5">
+      <div className="flex min-w-0 flex-1 flex-col p-4">
         {/* The name gets the full width and up to two lines. It used to share
             a row with the price, which never shrinks, so at three columns the
             grid read "2021 Le…" — the one fact a buyer needs to tell two
@@ -156,7 +161,7 @@ export async function CarCard({
 
         {/* One component, one conversion: francs are the price, the dollar
             figure beside them is an approximation at the live rate. */}
-        <Price amountRwf={car.price} inline className="mt-4" />
+        <Price amountRwf={car.price} inline className="mt-3" />
 
         {isRow && car.description ? (
           <p className="mt-3 line-clamp-2 text-body leading-relaxed text-content-secondary">
@@ -169,7 +174,7 @@ export async function CarCard({
             the one number that earns its place on a card, so it takes the
             footer the "View car" arrow used to occupy: the whole card is the
             link, and the arrow only ever restated that. */}
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-3">
         <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-3">
           {market && car.market_avg ? (
             <p
@@ -206,7 +211,7 @@ export function CarCardSkeleton({ layout = 'grid' }: { layout?: 'grid' | 'row' }
       }`}
     >
       <div className={`skeleton shrink-0 ${layout === 'row' ? 'aspect-[16/10] sm:w-72' : 'aspect-[16/10]'}`} />
-      <div className="flex min-w-0 flex-1 flex-col space-y-3 p-5">
+      <div className="flex min-w-0 flex-1 flex-col space-y-3 p-4">
         <div className="skeleton h-4 w-3/4 rounded" />
         <div className="skeleton h-3 w-1/2 rounded" />
         <div className="skeleton h-6 w-28 rounded" />

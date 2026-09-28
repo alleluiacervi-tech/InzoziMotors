@@ -176,7 +176,7 @@ export default async function SellerProfilePage({ params }: Props) {
       <section aria-labelledby="listings" className="mt-10">
         <h2 id="listings" className="text-title-sm font-extrabold text-content">{t('market.profile.listingsTitle')}</h2>
         {listings.length ? (
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {listings.map((car) => <CarCard key={car.id} car={car} />)}
           </div>
         ) : (
