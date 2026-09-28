@@ -263,8 +263,20 @@ const PRICE_DROP_IS_REAL = `(
 // was at least 1% higher in the same currency, and the change is under 30 days
 // old. That is what lets a card strike through an old price, and what
 // "Hot deal" now requires (lib/featured.js).
+//
+// The query always reads the full FEATURED_MAX and trims AFTER the sponsored
+// rotation. Trimming first made the order depend on `limit`: the website's
+// homepage asks for 6 and the app for 12, so on a day when a sponsor below
+// position 6 was due at the front, the two showed different first cards, and
+// that sponsor never reached the homepage at all.
+const FEATURED_MAX = 12;
+const SELLER_IS_ELIGIBLE = `(
+  u.role = 'seller' AND u.id_verified = 'approved'
+  AND u.account_status = 'active' AND u.deleted_at IS NULL
+  AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
+)`;
 router.get('/featured', async (req, res) => {
-  const limit = Math.min(Math.max(parseInt(req.query.limit) || 6, 1), 12);
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 6, 1), FEATURED_MAX);
   try {
     const { rows } = await pool.query(
       `SELECT f.id AS placement_id, f.kind, f.slot, f.headline, f.ends_at,
@@ -287,15 +299,13 @@ router.get('/featured', async (req, res) => {
         WHERE f.cancelled_at IS NULL
           AND f.starts_at <= NOW() AND f.ends_at > NOW()
           AND c.status = 'live'
-          AND u.role = 'seller' AND u.id_verified = 'approved'
-          AND u.account_status = 'active' AND u.deleted_at IS NULL
-          AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
+          AND ${SELLER_IS_ELIGIBLE}
           AND ${validInspectionExists('c')}
         ORDER BY f.slot ASC, f.created_at DESC
         LIMIT $1`,
-      [limit]
+      [FEATURED_MAX]
     );
-    res.json(rotateSponsored(rows).map((row) => ({
+    res.json(rotateSponsored(rows).slice(0, limit).map((row) => ({
       ...row,
       // Computed here rather than left to three clients to each decide. A paid
       // placement is disclosed as paid, in the payload, so no surface can
@@ -305,6 +315,41 @@ router.get('/featured', async (req, res) => {
     })));
   } catch (err) {
     log.error('featured feed error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /cars/feature/placements — admin: every placement that has not ended,
+// including the ones buyers cannot see.
+//
+// The banner page used to read the public feed, which is exactly right for
+// "what is showing" and silent about everything else. A paid placement whose
+// car was paused, or whose seller's ID lapsed, simply vanished from the page
+// while its dates kept running, and booking that car again answered 409
+// "already has a placement" about a row the operator had no way to find or
+// end. This lists them all, with the reason a hidden one is hidden.
+router.get('/feature/placements', requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT f.id AS placement_id, f.kind, f.slot, f.headline, f.starts_at, f.ends_at,
+              f.amount_rwf, (f.kind = 'sponsored') AS sponsored,
+              c.id, c.title, c.status, c.inspection_score,
+              u.name AS seller_name,
+              CASE
+                WHEN f.starts_at > NOW() THEN 'scheduled'
+                WHEN c.status <> 'live' THEN 'listing_not_live'
+                WHEN NOT COALESCE(${SELLER_IS_ELIGIBLE}, FALSE) THEN 'seller_not_eligible'
+                WHEN NOT ${validInspectionExists('c')} THEN 'no_valid_inspection'
+              END AS hidden_reason
+         FROM featured_placements f
+         JOIN cars c ON c.id = f.car_id
+         JOIN users u ON u.id = c.seller_id
+        WHERE f.cancelled_at IS NULL AND f.ends_at > NOW()
+        ORDER BY f.slot ASC, f.created_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    log.error('placements list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -763,8 +808,8 @@ router.post('/', requireAdmin, async (req, res) => {
       );
       const created = rows[0];
       await client.query(
-        'INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)',
-        [created.id, created.price, req.user.id]
+        'INSERT INTO price_history (car_id, price, changed_by, currency) VALUES ($1, $2, $3, $4)',
+        [created.id, created.price, req.user.id, created.currency]
       );
       if (submission_id) {
         await client.query(
@@ -1033,10 +1078,14 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
           error.status = 409; error.code = 'LISTING_NOT_READY'; error.readiness = readiness; throw error;
         }
       }
-      if (req.body.price !== undefined && Number(req.body.price) !== Number(before.rows[0].price)) {
+      // A history row records the price AND its currency. Rows used to take the
+      // column default (RWF) whatever the car was priced in, so a USD car's
+      // history was mislabelled, and a currency switch left no trace at all.
+      if (Number(rows[0].price) !== Number(before.rows[0].price)
+          || rows[0].currency !== before.rows[0].currency) {
         await client.query(
-          'INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)',
-          [req.params.id, Number(req.body.price), req.user.id]
+          'INSERT INTO price_history (car_id, price, changed_by, currency) VALUES ($1, $2, $3, $4)',
+          [req.params.id, Number(rows[0].price), req.user.id, rows[0].currency]
         );
       }
       await recordAdminAction(client, {
@@ -1044,10 +1093,11 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
         summary: `${rows[0].title} listing details updated`,
         metadata: { changed_fields: updates.map((u) => u.split(' = ')[0]), readiness },
       });
-      return { car: rows[0], oldPrice: Number(before.rows[0].price) };
+      return { car: rows[0], oldPrice: Number(before.rows[0].price), oldCurrency: before.rows[0].currency };
     });
-    if (req.body.price !== undefined && Number(req.body.price) !== result.oldPrice) {
-      notifyPriceDrop(req.params.id, result.oldPrice, Number(req.body.price), result.car.title);
+    // A currency switch is not a price drop, whatever the two numbers say.
+    if (result.car.currency === result.oldCurrency && Number(result.car.price) !== result.oldPrice) {
+      notifyPriceDrop(req.params.id, result.oldPrice, Number(result.car.price), result.car.title, result.car.currency);
     }
     res.json(result.car);
   } catch (err) {
@@ -1119,8 +1169,10 @@ router.post('/:id/reassign-seller', requireAdmin, requireUuid('id'), async (req,
 // No status regression; price history + price-drop alerts fire like admin edits.
 router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
   const price = Number(req.body.price);
-  if (!Number.isFinite(price) || price <= 0) {
-    return res.status(400).json({ error: 'price must be a positive number' });
+  // Whole units: cars.price is an INT, so 18000000.5 used to get as far as
+  // Postgres and come back as a 500.
+  if (!Number.isInteger(price) || price <= 0) {
+    return res.status(400).json({ error: 'price must be a positive whole number' });
   }
   try {
     const before = await pool.query(
@@ -1138,10 +1190,10 @@ router.patch('/:id/price', requireAuth, requireUuid('id'), async (req, res) => {
     );
     if (price !== oldPrice) {
       await pool.query(
-        'INSERT INTO price_history (car_id, price, changed_by) VALUES ($1, $2, $3)',
-        [req.params.id, price, req.user.id]
+        'INSERT INTO price_history (car_id, price, changed_by, currency) VALUES ($1, $2, $3, $4)',
+        [req.params.id, price, req.user.id, rows[0].currency]
       );
-      notifyPriceDrop(req.params.id, oldPrice, price, rows[0].title);
+      notifyPriceDrop(req.params.id, oldPrice, price, rows[0].title, rows[0].currency);
     }
     res.json(rows[0]);
   } catch (err) {

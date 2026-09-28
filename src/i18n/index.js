@@ -497,7 +497,8 @@ export const TRANSLATIONS = {
       "hotDealLabel": "Hot deal",
       "featuredPosition": "{{index}} of {{total}}",
       "wasPrice": "Was {{price}}",
-      "featuredAllSub": "Every car our team has placed right now. Sponsored cars are labelled."
+      "featuredAllSub": "Every car our team has placed right now. Sponsored cars are labelled.",
+      "featuredAllEmpty": "Nothing is placed right now. Every inspected car is still in the marketplace."
     },
     "idVerification": {
       "add3Photos": "Add all 3 photos to continue",
@@ -1889,7 +1890,8 @@ export const TRANSLATIONS = {
       "hotDealLabel": "Igiciro cyiza",
       "featuredPosition": "{{index}} kuri {{total}}",
       "wasPrice": "Cyari {{price}}",
-      "featuredAllSub": "Imodoka zose ikipe yacu yashyize imbere ubu. Izishyuriwe zigaragazwa."
+      "featuredAllSub": "Imodoka zose ikipe yacu yashyize imbere ubu. Izishyuriwe zigaragazwa.",
+      "featuredAllEmpty": "Nta modoka ishyizwe imbere ubu. Imodoka zose zagenzuwe ziri ku isoko."
     },
     "idVerification": {
       "add3Photos": "Shyiraho amafoto yose 3 ngo ukomeze",
@@ -3281,7 +3283,8 @@ export const TRANSLATIONS = {
       "hotDealLabel": "Bonne affaire",
       "featuredPosition": "{{index}} sur {{total}}",
       "wasPrice": "Avant {{price}}",
-      "featuredAllSub": "Toutes les voitures mises en avant par notre équipe en ce moment. Les annonces sponsorisées sont signalées."
+      "featuredAllSub": "Toutes les voitures mises en avant par notre équipe en ce moment. Les annonces sponsorisées sont signalées.",
+      "featuredAllEmpty": "Aucune voiture mise en avant pour le moment. Toutes les voitures inspectées restent dans les annonces."
     },
     "idVerification": {
       "add3Photos": "Ajoutez les 3 photos requises pour continuer",
@@ -4673,7 +4676,8 @@ export const TRANSLATIONS = {
       "hotDealLabel": "Ofa maalum",
       "featuredPosition": "{{index}} kati ya {{total}}",
       "wasPrice": "Awali {{price}}",
-      "featuredAllSub": "Magari yote yaliyoangaziwa na timu yetu sasa hivi. Yaliyofadhiliwa yanaonyeshwa."
+      "featuredAllSub": "Magari yote yaliyoangaziwa na timu yetu sasa hivi. Yaliyofadhiliwa yanaonyeshwa.",
+      "featuredAllEmpty": "Hakuna gari lililoangaziwa kwa sasa. Magari yote yaliyokaguliwa bado yapo sokoni."
     },
     "idVerification": {
       "add3Photos": "Ongeza picha zote 3 ili kuendelea",
@@ -6065,7 +6069,8 @@ export const TRANSLATIONS = {
       "hotDealLabel": "특가",
       "featuredPosition": "{{total}}대 중 {{index}}번째",
       "wasPrice": "이전 {{price}}",
-      "featuredAllSub": "현재 저희 팀이 선정한 모든 차량입니다. 광고 차량은 표시됩니다."
+      "featuredAllSub": "현재 저희 팀이 선정한 모든 차량입니다. 광고 차량은 표시됩니다.",
+      "featuredAllEmpty": "지금은 선정된 차량이 없습니다. 검사를 마친 모든 차량은 매물 목록에서 볼 수 있습니다."
     },
     "idVerification": {
       "add3Photos": "계속 진행하려면 3장의 사진을 모두 첨부해 주세요",
@@ -7457,7 +7462,8 @@ export const TRANSLATIONS = {
       "hotDealLabel": "特惠",
       "featuredPosition": "第 {{index}} / {{total}} 辆",
       "wasPrice": "原价 {{price}}",
-      "featuredAllSub": "我们团队当前推荐的全部车辆。付费推广车辆均有标注。"
+      "featuredAllSub": "我们团队当前推荐的全部车辆。付费推广车辆均有标注。",
+      "featuredAllEmpty": "目前没有推荐车辆。所有已检测车辆仍在车源列表中。"
     },
     "idVerification": {
       "add3Photos": "请完整上传 3 张认证照片后继续",

@@ -153,14 +153,20 @@ export default function SellerDashboardScreen({ navigation }) {
 
   // Live listings only. The old sold-car "Relist" only changed local state and
   // promised a review that never happened (B8); a sold listing is final.
-  const handleRelist = (sub) => {
+  const handleRelist = async (sub) => {
     if (relistId === sub.id) {
-      const price = parseFloat(relistPrice);
+      // Whole francs: the server stores an integer and refuses anything else.
+      const price = Math.round(parseFloat(relistPrice));
       if (!price || price <= 0) {
         showToast('Please enter a valid asking price.', 'error');
         return;
       }
-      updateSubmissionPrice(sub.id, price);
+      try {
+        await updateSubmissionPrice(sub.id, price);
+      } catch (err) {
+        showToast(err?.message || 'Could not update the price. Try again.', 'error');
+        return;
+      }
       showToast('Price updated — your listing stays live.', 'success');
       setRelistId(null);
       setRelistPrice('');

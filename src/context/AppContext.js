@@ -3,7 +3,7 @@ import { DEFAULT_CAR_IMAGE, DEFAULT_CAR_IMAGES, STUDIO } from '../data/carImageA
 import { categories, formatPrice, formatMiles, cars as mockCars, conversations as initialConversations, sellerListings as initialSellerListings } from '../data/cars';
 import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
 import { RENTAL_CARS } from '../data/rentals';
-import { setRwfRate, setDutyRates } from '../data/marketData';
+import { setRwfRate, setDutyRates, formatRWF } from '../data/marketData';
 import authApi from '../api/auth';
 import carsApi from '../api/cars';
 import submissionsApi from '../api/submissions';
@@ -1398,31 +1398,36 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  // Price change on a live listing — no status regression, listing stays live
-  const updateSubmissionPrice = useCallback((id, newPrice) => {
-    let carId;
-    setSubmissions((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s;
-        carId = s.listingId;
-        return { ...s, askingPrice: newPrice, statusDetail: 'Price updated — listing stays live' };
-      })
-    );
-    // Sync to the seller price-edit route for real listings (records price
-    // history + fires price-drop alerts server-side)
+  // Price change on a live listing — no status regression, listing stays live.
+  //
+  // Waits for the server. It used to update the screen, post a "price updated"
+  // notification and let the seller-price call fail silently, so a refused
+  // edit (listing no longer live, a fractional amount) still read as done.
+  // Resolves true when the price really changed; throws with the server's
+  // message otherwise, for the caller to show.
+  const updateSubmissionPrice = useCallback(async (id, newPrice) => {
+    const price = Math.round(Number(newPrice));
+    const carId = submissions.find((s) => s.id === id)?.listingId;
+    // Real listings go through the seller price-edit route, which records the
+    // price history and fires price-drop alerts server-side. Demo rows have no
+    // listing on the server and stay local.
     if (carId && String(carId).includes('-')) {
-      carsApi.updateCarPrice(carId, newPrice).catch(() => {});
+      await carsApi.updateCarPrice(carId, price);
     }
+    setSubmissions((prev) => prev.map((s) => (
+      s.id === id ? { ...s, askingPrice: price, statusDetail: 'Price updated — listing stays live' } : s
+    )));
     setNotifications((prev) => [{
       id: 'price_' + Date.now(),
       type: 'listing_update',
       title: 'Listing price updated',
-      body: `Your listing price was changed to $${Number(newPrice).toLocaleString()}. The listing remains live.`,
+      body: `Your listing price was changed to ${formatRWF(price)}. The listing remains live.`,
       time: 'Just now',
       date: 'Today',
       read: false,
     }, ...prev]);
-  }, []);
+    return true;
+  }, [submissions]);
 
 
   // --- Admin ID verification overrides ---
