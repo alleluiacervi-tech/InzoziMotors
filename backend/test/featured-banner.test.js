@@ -337,4 +337,91 @@ test('only an admin can place or cancel, and only a live car can be placed', asy
   assert.equal(notLive.status, 404, 'a car nobody can open cannot be in the banner');
 });
 
+test('the order does not depend on how many cards the caller asked for', async () => {
+  const a = await admin();
+  const s = await seller('Order Motors');
+  // Sponsors inside and beyond the first six, so a rotation that ran after the
+  // LIMIT would put a different car first for limit=6 than for limit=12.
+  for (const slot of [1, 3, 5, 8, 10]) {
+    const car = await liveCar(s.id, `Order ${slot}`);
+    await feature(a, car.id, { kind: 'sponsored', days: 3, slot, amount_rwf: 50000 }).expect(201);
+  }
+  const ids = async (limit) => (await api().get(`/cars/featured?limit=${limit}`).expect(200))
+    .body.map((r) => r.placement_id);
+  const twelve = await ids(12);
+  assert.deepEqual(await ids(6), twelve.slice(0, 6),
+    'the homepage (6) and the app (12) show the same first cards on the same day');
+});
+
+test('an operator sees every running placement, including the ones buyers cannot', async () => {
+  const a = await admin();
+  const s = await seller('Hidden Motors');
+  const showing = await liveCar(s.id, 'Showing');
+  const paused = await liveCar(s.id, 'Paused');
+  const later = await liveCar(s.id, 'Later');
+
+  const shown = await feature(a, showing.id, { kind: 'editorial', days: 3 }).expect(201);
+  const hidden = await feature(a, paused.id, { kind: 'sponsored', days: 10, amount_rwf: 120000 }).expect(201);
+  const tomorrow = new Date(Date.now() + 36 * 3600 * 1000).toISOString();
+  const scheduled = await feature(a, later.id, { kind: 'editorial', days: 3, starts_at: tomorrow }).expect(201);
+  await pool.query("UPDATE cars SET status='paused' WHERE id=$1", [paused.id]);
+
+  assert.equal((await banner()).body.some((r) => r.id === paused.id), false, 'buyers do not see it');
+
+  const list = await api().get('/cars/feature/placements').set(a.auth).expect(200);
+  const row = (placement) => list.body.find((r) => r.placement_id === placement.body.id);
+  assert.equal(row(shown).hidden_reason, null);
+  assert.equal(row(hidden).hidden_reason, 'listing_not_live', 'the paid slot is still running and says why it is dark');
+  assert.equal(row(hidden).sponsored, true);
+  assert.equal(row(scheduled).hidden_reason, 'scheduled');
+
+  const buyer = await register('Curious Buyer');
+  await api().get('/cars/feature/placements')
+    .set('Authorization', `Bearer ${buyer.token}`).expect(403);
+  await api().get('/cars/feature/placements').expect(401);
+});
+
+test('a price cut on a USD car is recorded in dollars, and the alert says so', async () => {
+  const a = await admin();
+  const s = await seller('Dollar Motors');
+  const car = await liveCar(s.id, 'Dollar');
+  await pool.query("UPDATE cars SET currency='USD', price=20000 WHERE id=$1", [car.id]);
+  await pool.query(
+    `INSERT INTO price_history (car_id, price, currency, changed_at)
+     VALUES ($1, 20000, 'USD', NOW() - INTERVAL '5 days')`, [car.id]);
+  const saver = await register('Dollar Saver');
+  await pool.query('INSERT INTO saved_cars (user_id, car_id) VALUES ($1, $2)', [saver.id, car.id]);
+
+  const sellerAuth = { Authorization: `Bearer ${s.token}` };
+  const fractional = await api().patch(`/cars/${car.id}/price`).set(sellerAuth).send({ price: 19000.5 });
+  assert.equal(fractional.status, 400, 'a fractional price is refused, not a 500 from Postgres');
+
+  await api().patch(`/cars/${car.id}/price`).set(sellerAuth).send({ price: 19000 }).expect(200);
+  const { rows: history } = await pool.query(
+    'SELECT currency FROM price_history WHERE car_id=$1 ORDER BY changed_at DESC LIMIT 1', [car.id]);
+  assert.equal(history[0].currency, 'USD', 'the history row carries the car\'s currency, not the column default');
+
+  await feature(a, car.id, { kind: 'hot_deal', days: 3 }).expect(201);
+  const row = (await banner()).body.find((r) => r.id === car.id);
+  assert.equal(row.label, 'Hot deal', 'a real drop in the car\'s own currency counts');
+
+  // The alert is fire-and-forget; give it a moment.
+  let body = null;
+  for (let i = 0; i < 20 && !body; i += 1) {
+    const { rows } = await pool.query(
+      "SELECT body FROM notifications WHERE user_id=$1 AND type='price_drop'", [saver.id]);
+    body = rows[0]?.body || null;
+    if (!body) await new Promise((r) => setTimeout(r, 100));
+  }
+  assert.ok(body, 'the saver was told');
+  assert.match(body, /USD 20,000 to USD 19,000/);
+  assert.equal(body.includes('$'), false);
+});
+
+test('a price alert on a franc car says RWF, never "$"', () => {
+  const { formatCarPrice } = require('../src/lib/alerts');
+  assert.equal(formatCarPrice(18000000, 'RWF'), 'RWF 18,000,000');
+  assert.equal(formatCarPrice(18000000), 'RWF 18,000,000', 'francs when the currency is unknown');
+});
+
 test.after(() => pool.end());

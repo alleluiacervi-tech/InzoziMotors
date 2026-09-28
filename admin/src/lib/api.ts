@@ -924,6 +924,10 @@ export const api = {
   /** What is in the banner right now, in slot order. */
   featuredBanner: (limit = 12) => request<any[]>(`/cars/featured?limit=${limit}`),
 
+  /** Every placement that has not ended, including the ones buyers cannot see
+   *  (scheduled, or the car/seller is currently ineligible), with the reason. */
+  featurePlacements: () => request<any[]>('/cars/feature/placements'),
+
   // ── Account closures ───────────────────────────────────────────────────────
   // There is no approve or deny here on purpose. Guideline 5.1.1(v) requires
   // deletion to complete inside the app, so a closure has already happened by

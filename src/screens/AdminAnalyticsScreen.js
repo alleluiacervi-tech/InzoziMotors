@@ -8,6 +8,7 @@ import BackHeader from '../components/BackHeader';
 import adminApi from '../api/admin';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
+import { formatRWF } from '../data/marketData';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -118,8 +119,9 @@ function FunnelStep({ step, total, next, isLast }) {
   );
 }
 
-const money = (n) =>
-  n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${Number(n || 0).toLocaleString()}`;
+// Revenue is RWF whole francs, like every amount the server stores. This used
+// to print it with a "$".
+const money = (n) => formatRWF(n || 0);
 
 export default function AdminAnalyticsScreen({ navigation }) {
   const { demoMode } = useApp();

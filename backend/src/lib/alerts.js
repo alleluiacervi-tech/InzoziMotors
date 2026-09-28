@@ -7,10 +7,20 @@ const { pushToUsers, deliverRealtime } = require('./notify');
 // The bulk INSERT..SELECT stays a single statement; RETURNING user_id only
 // tells us who to push to, it does not change what matches.
 
+// A car's price is whole units of the car's own currency — francs, almost
+// always. Both alerts used to print "$" in front of it, so a saved-car alert
+// read "dropped from $20,000,000 to $18,000,000" for a car priced in RWF.
+function formatCarPrice(amount, currency) {
+  return `${currency || 'RWF'} ${Math.round(Number(amount)).toLocaleString('en-US')}`;
+}
+
 // Notify owners of matching saved searches when a car goes live.
 // filters shape (JSONB): { make, model, category, maxPrice, maxMileage }
 // Single INSERT..SELECT — one statement regardless of how many searches match.
+// maxPrice is a franc budget, so it is only compared with a franc price: a USD
+// car's 13,000 is under every budget anyone set, and matched them all.
 async function matchSavedSearches(car) {
+  const label = `${car.title} (${formatCarPrice(car.price, car.currency)})`;
   try {
     const { rows, rowCount } = await pool.query(
       `INSERT INTO notifications (user_id, type, title, body, meta)
@@ -24,13 +34,13 @@ async function matchSavedSearches(car) {
          AND (ss.filters->>'make'  IS NULL OR ss.filters->>'make'  ILIKE $1)
          AND (ss.filters->>'model' IS NULL OR $2 ILIKE '%' || (ss.filters->>'model') || '%')
          AND (ss.filters->>'category' IS NULL OR ss.filters->>'category' ILIKE $3)
-         AND (ss.filters->>'maxPrice'   IS NULL OR (ss.filters->>'maxPrice')::int   >= $4)
+         AND (ss.filters->>'maxPrice'   IS NULL
+              OR ($9 = 'RWF' AND (ss.filters->>'maxPrice')::int >= $4))
          AND (ss.filters->>'maxMileage' IS NULL OR (ss.filters->>'maxMileage')::int >= $5)
          AND ss.user_id <> $6
        RETURNING *`,
       [car.make || '', car.model || '', car.body_type || '', car.price || 0,
-       car.mileage || 0, car.seller_id,
-       `${car.title} ($${Number(car.price).toLocaleString('en-US')})`, car.id]
+       car.mileage || 0, car.seller_id, label, car.id, car.currency || 'RWF']
     );
     // Live in-app delivery to every matched device (bell updates instantly).
     for (const row of rows) deliverRealtime(row);
@@ -38,7 +48,7 @@ async function matchSavedSearches(car) {
     // saved search; the push can't (one payload, many searches), so it stays generic.
     pushToUsers(rows.map((r) => r.user_id), {
       title: 'New match for your search',
-      body: `${car.title} ($${Number(car.price).toLocaleString('en-US')}) matches a search you saved.`,
+      body: `${label} matches a search you saved.`,
       data: { type: 'search_match', carId: car.id },
     });
     return rowCount;
@@ -50,14 +60,14 @@ async function matchSavedSearches(car) {
 
 // Notify everyone who saved a car when its price drops.
 // Single INSERT..SELECT; `title` may be passed by callers that already have it.
-async function notifyPriceDrop(carId, oldPrice, newPrice, title = null) {
+async function notifyPriceDrop(carId, oldPrice, newPrice, title = null, currency = 'RWF') {
   if (!(newPrice < oldPrice)) return 0;
   try {
     if (!title) {
       const carRes = await pool.query('SELECT title FROM cars WHERE id = $1', [carId]);
       title = carRes.rows[0]?.title || 'A car you saved';
     }
-    const body = `${title} dropped from $${Number(oldPrice).toLocaleString('en-US')} to $${Number(newPrice).toLocaleString('en-US')}.`;
+    const body = `${title} dropped from ${formatCarPrice(oldPrice, currency)} to ${formatCarPrice(newPrice, currency)}.`;
     const { rows, rowCount } = await pool.query(
       `INSERT INTO notifications (user_id, type, title, body, meta)
        SELECT sc.user_id, 'price_drop', 'Price drop on a saved car', $2,
@@ -80,4 +90,4 @@ async function notifyPriceDrop(carId, oldPrice, newPrice, title = null) {
   }
 }
 
-module.exports = { matchSavedSearches, notifyPriceDrop };
+module.exports = { matchSavedSearches, notifyPriceDrop, formatCarPrice };

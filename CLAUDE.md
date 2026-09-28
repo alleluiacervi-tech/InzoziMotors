@@ -100,12 +100,17 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
 
 1. **A listing is only public with valid inspection evidence.**
    `validInspectionExists()` (`backend/src/routes/cars.js`) requires an
-   inspection that is `complete`, `checklist_version='sawa-150-v1'`, `passed`,
-   `score >= 105`, zero critical failures — **and** whose submission matches the
-   car on seller, make, model and year. Failing it returns **404, not 403**.
-2. **Inspection is evidence, not publication.** Passing sets `inspected`; it
-   never publishes. Failing actively demotes `live`/`approved` → `under_review`.
-   A critical failure blocks publication at any score.
+   inspection that is `complete` on `checklist_version='sawa-150-v1'` **and**
+   whose submission matches the car on seller, make, model and year. Failing it
+   returns **404, not 403**. Since PR #106 (the *transparency model*) a score
+   under 105 or a critical defect **does not block publication**:
+   `publicationReadiness` still requires a complete, consistent checklist, and
+   turns a low score or critical defect into a warning that the listing
+   discloses so buyer and seller can negotiate on it.
+2. **Inspection is evidence, not publication.** Completing it sets `inspected`;
+   it never publishes. Failing a re-inspection still demotes `live`/`approved`
+   → `under_review`, for an admin to review and republish with the defects
+   disclosed.
 3. **Contact disclosure is triple-gated**: authenticated buyer + seller's
    per-channel consent (`phone_visible`/`whatsapp_visible`) + acknowledgement
    of the current terms version (else **428 `MARKETPLACE_TERMS_REQUIRED`**).
@@ -163,9 +168,9 @@ commission.
 |---|---|
 | Bundle id / package | iOS `com.sawacars.app` · Android `com.sawacars.android` (company Play account; `com.sawacars.app` is stuck on a personal Play account that never got production access) |
 | Slug / EAS project | `sawa-cars` / `f2c5d3f8-8777-4b97-96ec-1482d374a42a` (account `alleluiacervi`; moved from `alleluia_cervi` 25 Sep 2026 after the free build quota ran out) |
-| Version | `1.0.0`; build numbers are **remote** (`appVersionSource: remote`, auto-increment) |
+| Version | `1.0.7` (`app.config.js`); build numbers are **remote** (`appVersionSource: remote`, auto-increment). `runtimeVersion` follows the app version, so bump it **only** for native changes: a bump strands every installed build from OTA updates |
 | Apple Team ID | `5Z2LA9U639` · ASC app id `6803097569` |
-| Android | Play App Signing SHA-256 registered in `assetlinks.json`; target/compile SDK 36 |
+| Android | target/compile SDK 36. `web/public/.well-known/assetlinks.json` still lists only the old `com.sawacars.app`; add `com.sawacars.android` with its Play App Signing SHA-256 once the first .aab is in the company Play Console (a real value only — `release:check` must stay green) |
 | OTA | EAS Update, `runtimeVersion: appVersion`, channel `production` via `.github/workflows/mobile-update.yml` |
 
 **Push notifications: code is real, delivery is not live yet.** `expo-notifications`

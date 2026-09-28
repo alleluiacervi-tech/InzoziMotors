@@ -24,6 +24,16 @@ import { useConfirm, useToast } from '@/components/feedback'
 
 type Kind = 'editorial' | 'hot_deal' | 'sponsored'
 
+// Why a placement is running but not on screen. Keys match the backend's
+// GET /cars/feature/placements `hidden_reason`.
+const HIDDEN: Record<string, string> = {
+  scheduled: 'Scheduled — starts later',
+  listing_not_live: 'Listing is not live',
+  seller_not_eligible: 'Seller is not eligible',
+  no_valid_inspection: 'No valid inspection on record',
+  beyond_feed: 'Queued — only the first 12 are shown',
+}
+
 const KINDS: { value: Kind; label: string; shown: string; blurb: string }[] = [
   {
     value: 'editorial', label: 'Editorial pick', shown: 'Featured',
@@ -43,6 +53,8 @@ export default function BannerPage() {
   const toast = useToast()
   const confirm = useConfirm()
   const [placements, setPlacements] = useState<any[]>([])
+  const [dark, setDark] = useState<any[]>([])
+  const [booked, setBooked] = useState<Set<string>>(new Set())
   const [candidates, setCandidates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
@@ -55,11 +67,20 @@ export default function BannerPage() {
   const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const [banner, live] = await Promise.all([
+      const [banner, all, live] = await Promise.all([
         api.featuredBanner(12),
+        api.featurePlacements(),
         api.carsPage({ status: 'live', limit: '100' }),
       ])
+      // The public feed is what buyers see, in the order they see it. Anything
+      // else still running is listed separately, so a paid slot whose car was
+      // paused is never out of sight — or impossible to end.
+      const showing = new Set(banner.map((p: any) => p.placement_id))
       setPlacements(banner)
+      setDark(all
+        .filter((p: any) => !showing.has(p.placement_id))
+        .map((p: any) => ({ ...p, hidden_reason: p.hidden_reason || 'beyond_feed' })))
+      setBooked(new Set(all.map((p: any) => p.id)))
       setCandidates(live.items || [])
     } catch (e) { setError(e) } finally { setLoading(false) }
   }, [])
@@ -104,7 +125,9 @@ export default function BannerPage() {
   }
 
   const chosen = KINDS.find((k) => k.value === draft.kind)!
-  const alreadyPlaced = new Set(placements.map((p) => p.id))
+  // Every car with a running or scheduled placement, not just the visible
+  // ones: booking a second one would be refused with a 409.
+  const alreadyPlaced = booked
 
   if (loading) return <LoadingState rows={6} />
   if (error) return <ErrorState error={error} title="Couldn’t load the banner" onRetry={load} />
@@ -113,7 +136,7 @@ export default function BannerPage() {
     <div>
       <PageHeader
         title="Home banner"
-        description="What the app shows at the top of the home screen, in slot order. A car leaves the banner the moment it leaves the marketplace — sold, paused, or its seller’s identity revoked — with nothing to remember to clean up."
+        description="What the app’s home screen and the website’s Top deals show, in slot order. A car leaves the banner the moment it leaves the marketplace — sold, paused, or its seller’s identity revoked — with nothing to remember to clean up."
       />
 
       {/* ── What is running now ───────────────────────────────────────────── */}
@@ -123,7 +146,7 @@ export default function BannerPage() {
           <EmptyState
             icon="car"
             title="Nothing is placed"
-            description="The app falls back to its three service slides — true statements about Sawa, but not a car anybody can buy."
+            description="The app and website simply leave the section out until something is placed."
           />
         ) : (
           <ul className="mt-4 space-y-2">
@@ -163,6 +186,46 @@ export default function BannerPage() {
         )}
       </Card>
 
+      {/* ── Running but not on screen ─────────────────────────────────────── */}
+      {dark.length > 0 && (
+        <Card className="mt-5 p-5">
+          <h2 className="font-extrabold text-content">Booked, not showing</h2>
+          <p className="mt-1 text-caption text-content-muted">
+            These placements are still running but buyers can’t see them right now. The dates keep
+            running either way, which matters most for a paid slot.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {dark.map((row) => (
+              <li key={row.placement_id}
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-line-soft p-3">
+                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-surface-alt text-label font-extrabold text-content-secondary">
+                  {row.slot}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-content">{row.headline || row.title}</p>
+                  <p className="text-caption text-content-muted">
+                    {row.seller_name} · {String(row.starts_at).slice(0, 10)} to {String(row.ends_at).slice(0, 10)}
+                  </p>
+                </div>
+                <span className="rounded-md bg-surface-alt px-2 py-1 text-caption font-bold text-content-secondary">
+                  {row.sponsored ? 'Sponsored · ' : ''}{HIDDEN[row.hidden_reason] || row.hidden_reason}
+                </span>
+                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-brand">
+                  Open
+                </Link>
+                <button
+                  onClick={() => end(row)}
+                  disabled={busy === row.placement_id}
+                  className="rounded-lg border border-line px-3 py-1.5 text-label font-bold text-content-secondary disabled:opacity-40"
+                >
+                  {busy === row.placement_id ? 'Ending…' : 'End'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {/* ── Place a car ───────────────────────────────────────────────────── */}
       <Card className="mt-5 p-5">
         <h2 className="font-extrabold text-content">Place a car</h2>
@@ -182,7 +245,7 @@ export default function BannerPage() {
               <option value="">Choose a live listing…</option>
               {candidates.map((c) => (
                 <option key={c.id} value={c.id} disabled={alreadyPlaced.has(c.id)}>
-                  {c.title}{alreadyPlaced.has(c.id) ? ' — already in the banner' : ''}
+                  {c.title}{alreadyPlaced.has(c.id) ? ' — already has a placement' : ''}
                 </option>
               ))}
             </select>
@@ -211,7 +274,9 @@ export default function BannerPage() {
             </div>
             <p className="mt-2 flex items-center gap-2 text-caption text-content-secondary">
               <Icon name="eye" size={14} />
-              Buyers will see this labelled <strong className="font-bold">{chosen.shown}</strong>.
+              {draft.kind === 'hot_deal'
+                ? <>Buyers will see <strong className="font-bold">Hot deal</strong> only while the price is down 1% or more in the last 30 days, and <strong className="font-bold">Featured</strong> otherwise.</>
+                : <>Buyers will see this labelled <strong className="font-bold">{chosen.shown}</strong>.</>}
             </p>
           </fieldset>
 
