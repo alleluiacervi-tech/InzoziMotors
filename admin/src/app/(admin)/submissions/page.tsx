@@ -2,13 +2,14 @@
 
 import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { api, type CenterRow } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 import { useFocusRow } from '@/components/useFocusRow'
 import { fmtDate, fmtInt } from '@/lib/format'
 
-const STATUS_TABS = ['all', 'under_review', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
+const STATUS_TABS = ['all', 'under_review', 'approved', 'scheduled', 'inspecting', 'inspected', 'live', 'rejected']
 
 // What a vehicle is being taken in FOR. The rental fleet had no intake of its
 // own: POST /submissions is the seller's own "sell my car" route, so an operator
@@ -35,6 +36,15 @@ const STATUS_COLORS: Record<string, string> = {
   scheduled:    'bg-info-tint text-info',
   inspecting:   'bg-info-tint text-info',
   rejected:     'bg-danger-tint text-danger-strong',
+  inspected:    'bg-success-tint text-success-text',
+  live:         'bg-success-tint text-success-text',
+}
+
+// Shown on the tab and the pill. "rejected" is what the database calls a
+// closed submission; to an operator it is simply closed.
+const STATUS_LABEL: Record<string, string> = {
+  all: 'All', under_review: 'Under review', approved: 'Approved', scheduled: 'Booked',
+  inspecting: 'Being inspected', inspected: 'Inspected', live: 'Live', rejected: 'Closed',
 }
 
 export default function SubmissionsPage() {
@@ -109,6 +119,23 @@ export default function SubmissionsPage() {
     if (hours < 24) return { label: `${hours}h waiting`, overdue: false }
     const days = Math.floor(hours / 24)
     return { label: `${days}d waiting`, overdue: ['under_review', 'pending'].includes(sub.status) && hours >= 24 }
+  }
+
+  // One way off the pipeline from any stage short of a public listing. The
+  // server releases an unused appointment and archives a draft listing.
+  async function closeSubmission(id: string) {
+    setActionId(id)
+    try {
+      const r = await api.closeSubmission(id, notes.trim())
+      toast(`Closed${r.released_appointment ? ' · appointment released' : ''}${r.archived_listing ? ' · draft listing archived' : ''}. The seller has been told why.`, 'success')
+      load(tab)
+    } catch (e: any) {
+      toast(e.message, 'error')
+    } finally {
+      setActionId(null)
+      setShowNotesFor(null)
+      setNotes('')
+    }
   }
 
   async function updateStatus(id: string, status: string, extra: any = {}) {
@@ -316,7 +343,7 @@ export default function SubmissionsPage() {
               tab === t ? 'bg-brand text-brand-on' : 'bg-surface text-gray-600 border border-gray-200 hover:border-brand'
             }`}
           >
-            {t === 'all' ? 'All' : t.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+            {STATUS_LABEL[t] || t}
           </button>
         ))}
       </div>
@@ -340,8 +367,13 @@ export default function SubmissionsPage() {
                       {sub.year} {sub.make} {sub.model}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[sub.status] || 'bg-gray-100 text-gray-600'}`}>
-                      {sub.status.replace('_', ' ')}
+                      {STATUS_LABEL[sub.status] || sub.status.replace('_', ' ')}
                     </span>
+                    {sub.inspection_status === 'complete' ? (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${sub.inspection_passed ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>
+                        {sub.inspection_score}/150{sub.inspection_passed ? '' : ' · defects disclosed'}
+                      </span>
+                    ) : null}
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${waiting.overdue ? 'bg-danger-tint text-danger-strong' : 'bg-surface-alt text-content-muted'}`}>{waiting.overdue ? 'Overdue · ' : ''}{waiting.label}</span>
                   </div>
                   <p className="text-sm text-gray-500">{fmtInt(sub.mileage)} km · {sub.condition} · {sub.transmission}</p>
@@ -357,50 +389,55 @@ export default function SubmissionsPage() {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions — every stage has its next step and a way out. */}
               <div className="mt-4 flex flex-wrap gap-2">
-                {sub.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => updateStatus(sub.id, 'under_review')}
-                      disabled={actionId === sub.id}
-                      className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-                    >
-                      Mark Under Review
-                    </button>
-                    <button
-                      onClick={() => setShowNotesFor(sub.id)}
-                      className="px-3 py-1.5 text-xs font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                    >
-                      Reject
-                    </button>
-                  </>
+                {['under_review', 'approved', 'scheduled'].includes(sub.status) && (
+                  <button
+                    onClick={() => {
+                      const next = showScheduleFor === sub.id ? null : sub.id
+                      setShowScheduleFor(next)
+                      if (next && !schedDate) setSchedDate(nextBusinessDay())
+                    }}
+                    disabled={actionId === sub.id}
+                    className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
+                  >
+                    {sub.status === 'scheduled' ? 'Reschedule' : 'Schedule inspection'}
+                  </button>
                 )}
-                {sub.status === 'under_review' && (
-                  <>
-                    <button
-                      onClick={() => {
-                        const next = showScheduleFor === sub.id ? null : sub.id
-                        setShowScheduleFor(next)
-                        if (next && !schedDate) setSchedDate(nextBusinessDay())
-                      }}
-                      disabled={actionId === sub.id}
-                      className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
-                    >
-                      Schedule Inspection
-                    </button>
-                    <button
-                      onClick={() => setShowNotesFor(sub.id)}
-                      className="px-3 py-1.5 text-xs font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                    >
-                      Reject
-                    </button>
-                  </>
+                {['scheduled', 'inspecting'].includes(sub.status) && (
+                  <Link href={sub.inspection_id ? `/inspections/${sub.inspection_id}` : '/inspections'}
+                    className="px-3 py-1.5 text-xs font-semibold bg-gray-900 text-white rounded-lg hover:bg-gray-700">
+                    {sub.status === 'scheduled' ? 'Open the appointment' : 'Continue the inspection'}
+                  </Link>
                 )}
-                {sub.status === 'scheduled' && (
-                  <p className="text-xs font-medium text-gray-500">
-                    Start this appointment from Inspections so the assigned inspector and start time are recorded.
-                  </p>
+                {sub.status === 'inspected' && !sub.car_id && sub.inspection_id && (
+                  <Link href={`/listings/new?submissionId=${sub.id}&inspectionId=${sub.inspection_id}`}
+                    className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light">
+                    Create the listing
+                  </Link>
+                )}
+                {sub.car_id && (
+                  <Link href={`/listings/${sub.car_id}/edit`}
+                    className="px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200">
+                    Open the listing{sub.car_status ? ` (${sub.car_status.replace('_', ' ')})` : ''}
+                  </Link>
+                )}
+                {!['rejected', 'live', 'archived'].includes(sub.status) && !['live', 'paused', 'sold'].includes(sub.car_status) && (
+                  <button
+                    onClick={() => setShowNotesFor(sub.id)}
+                    className="px-3 py-1.5 text-xs font-semibold bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                  >
+                    {sub.status === 'under_review' ? 'Reject' : 'Close'}
+                  </button>
+                )}
+                {sub.status === 'rejected' && (
+                  <button
+                    onClick={() => updateStatus(sub.id, 'under_review')}
+                    disabled={actionId === sub.id}
+                    className="px-3 py-1.5 text-xs font-semibold border border-gray-200 text-gray-800 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Reopen
+                  </button>
                 )}
               </div>
 
@@ -462,22 +499,30 @@ export default function SubmissionsPage() {
               {/* Reject notes modal */}
               {showNotesFor === sub.id && (
                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                  <p className="text-xs font-medium text-red-700 mb-2">Rejection reason (sent to the seller)</p>
+                  <p className="text-xs font-medium text-red-700 mb-2">
+                    {sub.status === 'under_review' ? 'Rejection reason' : 'Why it is being closed'} (sent to the seller)
+                  </p>
+                  {sub.status !== 'under_review' ? (
+                    <p className="mb-2 text-xs text-red-700/80">
+                      Takes it off the pipeline. A booked appointment with no fee is released and a draft listing is
+                      archived; a started or finished inspection is kept as a record. Reopen undoes it.
+                    </p>
+                  ) : null}
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
                     className="w-full text-sm border border-red-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-red-400"
-                    placeholder="e.g. Car mileage not verifiable, missing documents…"
+                    placeholder="e.g. Seller decided not to sell · car failed inspection and will not be listed…"
                   />
                   <div className="flex gap-2 mt-2">
                     <button
-                      onClick={() => updateStatus(sub.id, 'rejected', { admin_notes: notes.trim() })}
+                      onClick={() => closeSubmission(sub.id)}
                       disabled={actionId === sub.id || notes.trim().length < 4}
                       title={notes.trim().length < 4 ? 'Write the reason the seller will receive' : undefined}
                       className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                     >
-                      Confirm Reject
+                      {sub.status === 'under_review' ? 'Confirm reject' : 'Close submission'}
                     </button>
                     <button
                       onClick={() => { setShowNotesFor(null); setNotes('') }}

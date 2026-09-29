@@ -182,19 +182,20 @@ function inspectionStage(inspection) {
   if (!inspection) return { state: 'locked', actor: 'none', detail: 'Waiting on a booking', blockers: [] };
 
   if (inspection.status === 'complete') {
+    // Done either way. Under the transparency model (invariant 1) a score
+    // under the threshold or a critical defect is disclosed on the listing,
+    // not a reason to stop; publicationReadiness says the same. This stage
+    // used to call it "blocked", which left such a car stuck on the board with
+    // nothing anyone could do about it.
     const score = Number(inspection.score);
     const criticals = Array.isArray(inspection.critical_failures) ? inspection.critical_failures : [];
-    if (inspection.passed && score >= PUBLISH_THRESHOLD && criticals.length === 0) {
-      return { state: 'done', actor: 'none', at: inspection.completed_at,
-        detail: `${score}/150`, blockers: [] };
-    }
-    const blockers = criticals.length
-      ? criticals.map((failure) => ({
-          label: `Critical failure: ${failure.label || failure.id}. A critical failure blocks publication at any score.`,
-          fix: `/inspections/${inspection.id}`,
-        }))
-      : [{ label: `Scored ${score}/150, below the ${PUBLISH_THRESHOLD}/150 publication threshold`, fix: `/inspections/${inspection.id}` }];
-    return { state: 'blocked', actor: 'none', at: inspection.completed_at, detail: 'Inspection did not pass', blockers };
+    const clean = inspection.passed && score >= PUBLISH_THRESHOLD && criticals.length === 0;
+    const detail = clean
+      ? `${score}/150`
+      : criticals.length
+        ? `${score}/150 · ${criticals.length} critical defect${criticals.length === 1 ? '' : 's'} — disclosed on the listing`
+        : `${score}/150 · below ${PUBLISH_THRESHOLD} — disclosed on the listing`;
+    return { state: 'done', actor: 'none', at: inspection.completed_at, detail, blockers: [] };
   }
 
   if (inspection.status === 'in_progress') {
@@ -219,10 +220,14 @@ function listingStage(submission, inspection, car, inspectionDone) {
   if (car) {
     return { state: 'done', actor: 'none', at: car.created_at, detail: 'Draft created', blockers: [] };
   }
-  if (!inspectionDone) return { state: 'locked', actor: 'none', detail: 'Waiting on a passing inspection', blockers: [] };
+  if (!inspectionDone) return { state: 'locked', actor: 'none', detail: 'Waiting on a completed inspection', blockers: [] };
   return { state: 'active', actor: 'us', at: inspection ? inspection.completed_at : null,
     detail: 'No listing yet',
-    blockers: [{ label: 'Create the listing from this inspection — the link cannot be added later', fix: `/listings/new?submissionId=${submission ? submission.id : ''}&inspectionId=${inspection ? inspection.id : ''}` }] };
+    blockers: [
+      { label: 'Create the listing from this inspection — the link cannot be added later', fix: `/listings/new?submissionId=${submission ? submission.id : ''}&inspectionId=${inspection ? inspection.id : ''}` },
+      // The way off the board when the seller is not going ahead.
+      { label: 'Or close the submission if the seller is not going ahead', fix: submission ? `/submissions?focus=${submission.id}` : null },
+    ] };
 }
 
 function readinessStage(car, readiness) {
@@ -271,7 +276,7 @@ const LABELS = {
   seller_verified: 'Seller verified',
   submitted:       'Vehicle submitted',
   booked:          'Inspection booked',
-  inspected:       'Inspection passed',
+  inspected:       'Inspected',
   listing_created: 'Listing created',
   ready:           'Ready to publish',
   live:            'Live',
@@ -426,10 +431,12 @@ const SELLER_COPY = {
   inspected: {
     active_clock: 'Your inspection is booked. Bring the car and its papers to the centre.',
     active_us: 'The inspection appointment was missed. We will be in touch to rebook it.',
-    blocked: 'The 150-point inspection found problems that need attention before the car can be listed.',
+    // The only way this stage is blocked now is a missed appointment: a
+    // finished inspection is done whatever it scored (transparency model).
+    blocked: 'The inspection appointment was missed. We will be in touch to rebook it.',
   },
   listing_created: {
-    active_us: 'Your car passed the inspection. We are preparing the listing.',
+    active_us: 'Your car has been inspected. We are preparing the listing.',
   },
   ready: {
     active_us: 'We are finishing the listing — photographs and pricing.',

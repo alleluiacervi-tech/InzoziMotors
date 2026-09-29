@@ -1,188 +1,316 @@
 'use client'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// The photo review queue: propose, then approve.
+// Import catalogue images.
 //
-// The import catalogue carries no photographs by default, on purpose -- the
-// version before it drew 33 image references from 7 recycled stock photos, so
-// a Hilux and a BYD Atto 3 showed the same car. A Commons search on this
-// catalogue's own 233 models put the right car in the top result 38 times out
-// of 44 sampled -- good, not perfect, and "not perfect" is exactly the failure
-// this catalogue was rebuilt to remove. So nothing here publishes on its own:
-// this screen is the one point a human looks at each candidate before it can
-// ever reach a buyer's phone.
+// What a buyer sees for a brand-new import model, best first:
 //
-// One model at a time, at a size where a wrong photo is obvious -- the six
-// genuine misses found during research (a Mazda CX-80 offered for a CX-3) look
-// wrong instantly at this scale. The five that were actually correct cars
-// under a different market name (Isuzu Elf for Isuzu NPR) look right just as
-// fast. At roughly four seconds a model, that is the whole queue in minutes,
-// not a research project.
+//   1. An OFFICIAL PHOTO — from the exporter, the distributor or the
+//      manufacturer's dealer media kit — uploaded here with where it came from
+//      and on what permission. That note stays internal.
+//   2. A licensed STUDIO IMAGE (white background, the exact current model),
+//      once somebody here has confirmed it is the right car. The library
+//      answers "found" for an unknown model of a known brand and returns a
+//      different car of that brand, so nothing it sends goes public unchecked.
+//   3. Otherwise the brand's logo, which every client already draws.
+//
+// Wikimedia Commons used to fill this page. Its photographs were of used cars
+// in the street, and at least 78 of 232 showed the wrong vehicle, so they were
+// withdrawn (backend migration 0050) and the source retired.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api } from '@/lib/api'
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader } from '@/components/ui'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { api, type CatalogImageryRow } from '@/lib/api'
+import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, StatCard } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 
-type Candidate = {
-  id: string; image_url: string; thumb_url: string; page_url: string
-  title: string; author: string | null; license_name: string | null; license_url: string | null
-}
-type QueueItem = {
-  id: string; make: string; model: string; body_type: string; origin_country: string
-  candidates: Candidate[]
+type Tab = 'review' | 'none' | 'live' | 'all'
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'review', label: 'Check studio images' },
+  { key: 'none', label: 'No image yet' },
+  { key: 'live', label: 'Showing an image' },
+  { key: 'all', label: 'All models' },
+]
+
+function initials(make: string) {
+  const words = make.trim().split(/[\s-]+/).filter(Boolean)
+  return (words.length >= 2 ? words[0][0] + words[1][0] : make.slice(0, 2)).toUpperCase()
 }
 
-export default function CatalogPhotosPage() {
-  const [items, setItems] = useState<QueueItem[]>([])
-  const [tally, setTally] = useState({ awaiting_review: 0, not_yet_searched: 0, approved: 0, skipped: 0, total: 0 })
+function ModelCard({ row, busy, onReview, onUpload, onRemove }: {
+  row: CatalogImageryRow
+  busy: boolean
+  onReview: (row: CatalogImageryRow, decision: 'approved' | 'rejected') => void
+  onUpload: (row: CatalogImageryRow, file: File, source: string) => Promise<boolean>
+  onRemove: (row: CatalogImageryRow) => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const [source, setSource] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const input = useRef<HTMLInputElement | null>(null)
+  const official = row.images?.[0] || null
+  const picture = official || (row.render_status === 'found' ? row.render_url : null)
+
+  const badge = official
+    ? { text: 'Official photo', tone: 'bg-success-tint text-success-text' }
+    : row.state === 'render'
+      ? { text: 'Studio image · live', tone: 'bg-success-tint text-success-text' }
+      : row.state === 'review'
+        ? { text: 'Studio image · check it', tone: 'bg-warning-tint text-warning-text' }
+        : row.render_review === 'rejected'
+          ? { text: 'Studio image rejected', tone: 'bg-surface-alt text-content-muted' }
+          : { text: 'Brand logo shown', tone: 'bg-surface-alt text-content-muted' }
+
+  async function save() {
+    if (!file || source.trim().length < 4) return
+    const ok = await onUpload(row, file, source.trim())
+    if (ok) { setUploading(false); setSource(''); setFile(null) }
+  }
+
+  return (
+    <li>
+      <Card className="flex h-full flex-col overflow-hidden">
+        {/* White, always: official cut-outs and studio images are shot on
+            white, and this is exactly how the app and website draw them. */}
+        <div className="relative flex aspect-[16/10] items-center justify-center bg-white">
+          {picture ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={picture} alt={`${row.make} ${row.model}`} className="h-full w-full object-contain p-2" loading="lazy" />
+          ) : (
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-alt text-title-sm font-extrabold text-content-secondary">
+              {initials(row.make)}
+            </span>
+          )}
+          <span className={`absolute left-2 top-2 rounded-pill px-2 py-0.5 text-micro font-bold ${badge.tone}`}>{badge.text}</span>
+        </div>
+
+        <div className="flex flex-1 flex-col p-3">
+          <p className="font-bold text-content">{row.make} {row.model}</p>
+          <p className="text-caption text-content-muted">{row.body_type} · {row.origin_country}</p>
+          {official && row.image_source ? (
+            <p className="mt-1 line-clamp-2 text-micro text-content-muted" title={row.image_source}>
+              Source: {row.image_source}
+            </p>
+          ) : null}
+
+          <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
+            {row.state === 'review' ? (
+              <>
+                <button type="button" disabled={busy} onClick={() => onReview(row, 'approved')}
+                  className="rounded-lg bg-brand px-2.5 py-1.5 text-caption font-bold text-brand-on disabled:opacity-50">
+                  Right car — show it
+                </button>
+                <button type="button" disabled={busy} onClick={() => onReview(row, 'rejected')}
+                  className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+                  Wrong car
+                </button>
+              </>
+            ) : null}
+            {row.state === 'render' ? (
+              <button type="button" disabled={busy} onClick={() => onReview(row, 'rejected')}
+                className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+                Hide studio image
+              </button>
+            ) : null}
+            {!official && row.render_status === 'found' && row.render_review === 'rejected' ? (
+              <button type="button" disabled={busy} onClick={() => onReview(row, 'approved')}
+                className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+                Show studio image
+              </button>
+            ) : null}
+            <button type="button" disabled={busy} onClick={() => setUploading((v) => !v)}
+              className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+              {official ? 'Replace photo' : 'Upload official photo'}
+            </button>
+            {official ? (
+              <button type="button" disabled={busy} onClick={() => onRemove(row)}
+                className="rounded-lg px-2.5 py-1.5 text-caption font-bold text-content-muted hover:bg-surface-alt disabled:opacity-50">
+                Remove
+              </button>
+            ) : null}
+          </div>
+
+          {uploading ? (
+            <div className="mt-3 space-y-2 rounded-xl border border-line-soft bg-surface-alt p-2.5">
+              <input ref={input} type="file" accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="block w-full text-caption text-content file:mr-2 file:rounded-lg file:border file:border-line file:bg-surface file:px-2 file:py-1 file:text-caption file:font-bold" />
+              <label className="block text-micro font-bold text-content-secondary">
+                Where is it from, and on what permission?
+                <input value={source} onChange={(e) => setSource(e.target.value)}
+                  placeholder="e.g. Toyota Tsusho dealer kit — permission by email 30 Sep"
+                  className="mt-1 h-9 w-full rounded-lg border border-line bg-surface px-2 text-caption font-normal text-content" />
+              </label>
+              <button type="button" onClick={save} disabled={busy || !file || source.trim().length < 4}
+                className="w-full rounded-lg bg-brand px-3 py-2 text-caption font-bold text-brand-on disabled:opacity-50">
+                {busy ? 'Saving…' : 'Save official photo'}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </Card>
+    </li>
+  )
+}
+
+export default function CatalogImagesPage() {
+  const [items, setItems] = useState<CatalogImageryRow[]>([])
+  const [summary, setSummary] = useState({ total: 0, official: 0, render: 0, review: 0, none: 0, renders_not_found: 0, renders_not_checked: 0 })
+  const [rendersEnabled, setRendersEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
-  const [busy, setBusy] = useState(false)
-  const [searching, setSearching] = useState(false)
-  const [cursor, setCursor] = useState(0)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [resolving, setResolving] = useState(false)
+  const [tab, setTab] = useState<Tab>('review')
+  const [query, setQuery] = useState('')
   const toast = useToast()
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const data = await api.imageQueue()
+      const data = await api.catalogImagery()
       setItems(data.items)
-      setTally({ awaiting_review: data.awaiting_review, not_yet_searched: data.not_yet_searched, approved: data.approved, skipped: data.skipped, total: data.total })
-      setCursor(0)
+      setSummary(data.summary)
+      setRendersEnabled(data.renders_enabled)
+      // Open on the work there is: nothing to check means the gaps are next.
+      setTab((current) => (current === 'review' && data.summary.review === 0 ? 'none' : current))
     } catch (e) { setError(e) } finally { setLoading(false) }
   }, [])
   useEffect(() => { load() }, [load])
 
-  const current = items[cursor]
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return items.filter((row) => {
+      if (tab === 'review' && row.state !== 'review') return false
+      if (tab === 'none' && row.state !== 'none') return false
+      if (tab === 'live' && !['official', 'render'].includes(row.state)) return false
+      return !needle || `${row.make} ${row.model} ${row.body_type}`.toLowerCase().includes(needle)
+    })
+  }, [items, tab, query])
 
-  async function findMore() {
-    setSearching(true)
+  async function review(row: CatalogImageryRow, decision: 'approved' | 'rejected') {
+    setBusyId(row.id)
     try {
-      const r = await api.findImageCandidates(25)
-      toast(`Checked ${r.checked} models — ${r.with_candidates} found photos, ${r.with_none} found none`, 'success')
+      await api.reviewRender(row.id, decision)
+      toast(decision === 'approved' ? `${row.make} ${row.model}: studio image is live` : `${row.make} ${row.model}: studio image hidden`, 'success')
       await load()
-    } catch (e: any) { toast(e.message, 'error') } finally { setSearching(false) }
+    } catch (e: any) { toast(e.message, 'error') } finally { setBusyId(null) }
   }
 
-  function advance() {
-    // The item just decided drops out of `items` on the next load, but that
-    // round-trip takes a moment -- stepping the cursor locally keeps the queue
-    // feeling instant instead of freezing on the same photo between calls.
-    setCursor((c) => Math.min(c + 1, items.length - 1))
-  }
-
-  async function approve(candidate: Candidate) {
-    if (!current) return
-    setBusy(true)
+  async function upload(row: CatalogImageryRow, file: File, source: string) {
+    setBusyId(row.id)
     try {
-      await api.approveImage(current.id, candidate.id)
-      toast(`${current.make} ${current.model} approved`, 'success')
-      setItems((prev) => prev.filter((i) => i.id !== current.id))
-      setCursor((c) => Math.min(c, Math.max(items.length - 2, 0)))
-      setTally((t) => ({ ...t, awaiting_review: t.awaiting_review - 1, approved: t.approved + 1 }))
-    } catch (e: any) { toast(e.message, 'error') } finally { setBusy(false) }
+      const form = new FormData()
+      form.append('source', source)
+      form.append('photo', file)
+      await api.uploadCatalogPhoto(row.id, form)
+      toast(`${row.make} ${row.model}: official photo saved`, 'success')
+      await load()
+      return true
+    } catch (e: any) { toast(e.message, 'error'); return false } finally { setBusyId(null) }
   }
 
-  async function skip() {
-    if (!current) return
-    setBusy(true)
+  async function remove(row: CatalogImageryRow) {
+    if (!window.confirm(`Remove the photo of the ${row.make} ${row.model}? Its studio image (if approved) or the brand logo shows instead.`)) return
+    setBusyId(row.id)
     try {
-      await api.skipImage(current.id)
-      toast(`${current.make} ${current.model} skipped — lettermark stays until a photo is approved`, 'success')
-      setItems((prev) => prev.filter((i) => i.id !== current.id))
-      setCursor((c) => Math.min(c, Math.max(items.length - 2, 0)))
-      setTally((t) => ({ ...t, awaiting_review: t.awaiting_review - 1, skipped: t.skipped + 1 }))
-    } catch (e: any) { toast(e.message, 'error') } finally { setBusy(false) }
+      await api.removeCatalogPhoto(row.id)
+      toast(`${row.make} ${row.model}: photo removed`, 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') } finally { setBusyId(null) }
   }
 
-  const progress = useMemo(() => {
-    const decided = tally.approved + tally.skipped
-    return tally.total ? Math.round((decided / tally.total) * 100) : 0
-  }, [tally])
+  async function findStudioImages() {
+    setResolving(true)
+    try {
+      const r = await api.resolveRenders(60)
+      toast(`Checked ${r.checked} models: ${r.found} studio images to check, ${r.no_match} not in the library${r.remaining ? `, ${r.remaining} still to check — run it again` : ''}.`, 'success')
+      setTab('review')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') } finally { setResolving(false) }
+  }
 
-  return <div>
-    <PageHeader
-      title="Catalogue photography"
-      description="Propose candidates from Wikimedia Commons, then approve or skip each one by hand. Nothing an algorithm found reaches a buyer until you confirm it."
-      action={
-        <button onClick={findMore} disabled={searching} className="rounded-xl border border-line bg-surface px-4 py-2.5 text-label font-bold text-content disabled:opacity-50">
-          {searching ? 'Searching…' : `Find photos for ${tally.not_yet_searched} more models`}
-        </button>
-      }
-    />
+  const counts: Record<Tab, number> = {
+    review: summary.review,
+    none: summary.none,
+    live: summary.official + summary.render,
+    all: summary.total,
+  }
 
-    <Card className="mb-5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-6 text-label">
-          <span><b className="font-extrabold text-content">{tally.awaiting_review}</b> <span className="text-content-muted">awaiting review</span></span>
-          <span><b className="font-extrabold text-content">{tally.approved}</b> <span className="text-content-muted">approved</span></span>
-          <span><b className="font-extrabold text-content">{tally.skipped}</b> <span className="text-content-muted">skipped</span></span>
-          <span><b className="font-extrabold text-content">{tally.not_yet_searched}</b> <span className="text-content-muted">not yet searched</span></span>
-        </div>
-        <span className="text-caption font-bold text-content-muted">{progress}% of the catalogue decided</span>
+  return (
+    <div>
+      <PageHeader
+        title="Import catalogue images"
+        description="Official photos and checked studio images of every brand-new model buyers can import. Anything without one shows the brand's logo."
+      />
+
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon="camera" label="Official photos" value={summary.official} sub="uploaded with their source" tone="success" />
+        <StatCard icon="images" label="Studio images live" value={summary.render} sub="checked by the team" tone="success" />
+        <StatCard icon="eye" label="Waiting for your check" value={summary.review} sub="not shown until approved" tone={summary.review ? 'warning' : 'neutral'} />
+        <StatCard icon="grid" label="Brand logo only" value={summary.none} sub={`of ${summary.total} models`} tone="neutral" />
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-line-soft">
-        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${progress}%` }} />
-      </div>
-    </Card>
 
-    {error ? <ErrorState error={error} onRetry={load} />
-      : loading ? <LoadingState />
-      : !items.length ? (
-        tally.not_yet_searched > 0 ? (
-          <EmptyState icon="camera" title="No candidates waiting"
-            description={`${tally.not_yet_searched} models have not been searched yet. Click "Find photos" above to propose some.`} />
-        ) : (
-          <EmptyState icon="check" title="Every model has a decision"
-            description="Approved models show their photo everywhere in the app. Skipped ones show the brand mark until you approve something later." />
-        )
-      ) : !current ? (
-        <EmptyState icon="check" title="Queue cleared" description="Reload to check for anything new." />
-      ) : (
-        <Card className="p-6">
-          <div className="mb-5 flex items-baseline justify-between">
-            <div>
-              <p className="text-caption font-bold uppercase tracking-wide text-content-muted">{current.origin_country} · {current.body_type}</p>
-              <h2 className="text-xl font-extrabold text-content">{current.make} {current.model}</h2>
-            </div>
-            <p className="text-label text-content-muted">{cursor + 1} of {items.length} in this batch</p>
+      <Card className="mb-5 p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl text-label text-content-secondary">
+            <p className="font-bold text-content">Where good images come from</p>
+            <ol className="mt-1 list-decimal space-y-0.5 pl-5">
+              <li><b className="text-content">Official photos</b> from your exporter, the brand&apos;s distributor or its dealer media kit — with written permission. Upload them per model below.</li>
+              <li><b className="text-content">Studio images</b> from the licensed render library: the exact current model on white. Each one waits here until someone confirms it is the right car.</li>
+              <li>Never photos copied from manufacturer or press websites — they are copyrighted, and press images are licensed for news, not for selling cars.</li>
+            </ol>
           </div>
+          <div className="shrink-0 text-right">
+            <button type="button" onClick={findStudioImages} disabled={!rendersEnabled || resolving}
+              className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on disabled:opacity-50">
+              {resolving ? 'Checking the library…' : `Find studio images${summary.renders_not_checked ? ` (${summary.renders_not_checked} to check)` : ''}`}
+            </button>
+            {!rendersEnabled ? (
+              <p className="mt-1.5 max-w-xs text-caption text-content-muted">
+                Needs the studio image licence. Once the commercial key is set on the server
+                (<code className="font-mono">VEHICLE_RENDER_CUSTOMER</code>), this button fills the queue.
+              </p>
+            ) : summary.renders_not_found ? (
+              <p className="mt-1.5 text-caption text-content-muted">{summary.renders_not_found} models are not in the library — upload official photos for those.</p>
+            ) : null}
+          </div>
+        </div>
+      </Card>
 
-          {!current.candidates.length ? (
-            <div className="rounded-xl border border-line bg-canvas p-8 text-center">
-              <p className="font-bold text-content">No Commons photo found for this model.</p>
-              <p className="mt-1 text-label text-content-muted">Upload the operator&apos;s own photo elsewhere, or skip for now.</p>
-              <button onClick={skip} disabled={busy} className="mt-4 rounded-xl border border-line px-5 py-2.5 text-label font-bold text-content disabled:opacity-50">Skip this model</button>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {current.candidates.map((c) => (
-                <div key={c.id} className="flex flex-col overflow-hidden rounded-xl border border-line">
-                  <div className="flex aspect-[16/10] items-center justify-center bg-white">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- external Commons CDN, not a local upload */}
-                    <img src={c.thumb_url} alt={`${current.make} ${current.model} candidate`} className="h-full w-full object-contain" />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-2 p-3">
-                    <p className="text-caption text-content-muted">
-                      {c.author ? <>© {c.author}</> : 'Unattributed'}{c.license_name ? ` · ${c.license_name}` : ''}
-                    </p>
-                    <a href={c.page_url} target="_blank" rel="noreferrer" className="text-caption text-brand underline">View on Commons ↗</a>
-                    <button onClick={() => approve(c)} disabled={busy} className="mt-auto rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on disabled:opacity-50">Approve this photo</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-wrap gap-1" role="tablist">
+          {TABS.map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
+              className={`rounded-lg px-3 py-1.5 text-caption font-bold transition-colors ${tab === t.key ? 'bg-brand text-brand-on' : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'}`}>
+              {t.label} <span className="tabular-nums opacity-80">{counts[t.key]}</span>
+            </button>
+          ))}
+        </div>
+        <label className="relative sm:ml-auto sm:w-72">
+          <span className="sr-only">Find a model</span>
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-content-muted"><Icon name="search" size={15} /></span>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a make or model"
+            className="h-10 w-full rounded-xl border border-line bg-surface pl-9 pr-3 text-label text-content focus:border-content-muted focus:outline-none" />
+        </label>
+      </div>
 
-          {current.candidates.length ? (
-            <div className="mt-5 flex justify-between border-t border-line-soft pt-4">
-              <button onClick={skip} disabled={busy} className="rounded-xl border border-line px-5 py-2.5 text-label font-bold text-content disabled:opacity-50">None of these — skip</button>
-              <button onClick={advance} disabled={busy || cursor >= items.length - 1} className="text-label font-bold text-content-muted disabled:opacity-30">Come back to this later →</button>
-            </div>
-          ) : null}
-        </Card>
-      )}
-  </div>
+      {error ? <ErrorState error={error} onRetry={load} />
+        : loading ? <LoadingState />
+        : visible.length === 0 ? (
+          <EmptyState icon={tab === 'review' ? 'check' : 'images'}
+            title={tab === 'review' ? 'No studio images waiting' : 'Nothing here'}
+            description={tab === 'review'
+              ? (rendersEnabled ? 'Use "Find studio images" to check more models against the library.' : 'Studio images arrive here once the licence is set up. Meanwhile, upload official photos.')
+              : 'Try another tab or search.'} />
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {visible.map((row) => (
+              <ModelCard key={row.id} row={row} busy={busyId === row.id}
+                onReview={review} onUpload={upload} onRemove={remove} />
+            ))}
+          </ul>
+        )}
+    </div>
+  )
 }

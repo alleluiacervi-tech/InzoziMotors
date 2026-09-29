@@ -12,6 +12,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 //   /rentals/bookings/:bookingId/photos  -> rentals/<bookingId>
 //   /submissions/:id/reference-photos    -> submissions/<id>
 //   /admin/users/:userId/avatar          -> avatars
+//   /imports/admin/catalog/:catalogId/photo -> catalog
 //   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)
 //
 // id-docs is the fallback, so every new upload route needs its own rule above
@@ -24,6 +25,8 @@ const resolveSubdir = (req) => {
   if (req.params.makeId) return 'brands';
   // Seller and showroom profile photos: public, one per account.
   if (req.params.userId) return 'avatars';
+  // Official photographs of import-catalogue models: public, one per model.
+  if (req.params.catalogId) return 'catalog';
   if (req.params.bookingId) return `rentals/${req.params.bookingId}`;
   if (req.params.id && req.baseUrl === '/imports') return `imports/${req.params.id}`;
   if (req.params.id && req.baseUrl === '/submissions') return `submissions/${req.params.id}`;

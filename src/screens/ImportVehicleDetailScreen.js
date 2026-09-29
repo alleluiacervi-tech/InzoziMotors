@@ -98,6 +98,10 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
   // the marque instead, the same way an unlogo'd brand is drawn everywhere else.
   const uploaded = Array.isArray(item.images) ? item.images.filter(Boolean) : [];
   const images = uploaded.length ? uploaded : (item.renderUrl ? [item.renderUrl] : []);
+  // Which kind of picture this is, said plainly under it: an official photo of
+  // the model, or a studio image of the current model. Neither is the buyer's
+  // actual unit, and the quotation is where that unit's photos arrive.
+  const imageKind = uploaded.length ? 'official' : item.renderUrl ? 'studio' : null;
 
   const handleRequestQuote = async () => {
     if (!user) {
@@ -165,11 +169,14 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
             {images.length > 0 ? (
               images.map((img, idx) => (
                 <View key={idx} style={styles.slide}>
+                  {/* Contained on white: official cut-outs and studio images are
+                      shot on white, and cropping would cut the car's ends off. */}
                   <ExpoImage
-                    source={{ uri: transformCloudinaryUrl(img, { width: 900 }) }}
+                    source={{ uri: transformCloudinaryUrl(img, { width: 1200 }) }}
                     style={styles.slideImage}
-                    contentFit="cover"
+                    contentFit="contain"
                     priority="high"
+                    transition={150}
                   />
                 </View>
               ))
@@ -224,6 +231,13 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
             </Pressable>
           ) : null}
         </View>
+        {imageKind ? (
+          <Text style={styles.imageKindNote}>
+            {imageKind === 'studio'
+              ? 'Studio image of the current model. Colour, trim and your exact unit are confirmed on the quotation.'
+              : 'Official photo of the model. Photos of your exact unit come with the quotation.'}
+          </Text>
+        ) : null}
 
         {/* Title & Overview Card */}
         <View style={styles.sectionCard}>
@@ -599,6 +613,13 @@ const styles = StyleSheet.create({
   slide: {
     width: SCREEN_WIDTH,
     height: 270,
+    backgroundColor: '#FFFFFF',
+  },
+  imageKindNote: {
+    ...typography.caption,
+    color: colors.textMuted,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   slideImage: {
     width: '100%',

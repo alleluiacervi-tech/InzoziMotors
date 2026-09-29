@@ -21,17 +21,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState, useMemo } from 'react';
 import importsApi from '../api/imports';
-import { importCatalogModelsForMake } from '../data/importCatalog';
+import { importCatalogModelsForMake, FALLBACK_IMPORT_CATALOG } from '../data/importCatalog';
 
-export default function useImportCatalog(make) {
-  const bundled = useMemo(() => importCatalogModelsForMake(make), [make]);
+// `make` narrows to one marque; without it this is the whole catalogue (the
+// Cars tab's import list), fetched in one request of up to 250 rows.
+// `enabled: false` returns the bundle and fetches nothing — the Cars tab
+// passes it until somebody opens the import list.
+export default function useImportCatalog(make, { enabled = true } = {}) {
+  const bundled = useMemo(
+    () => (make ? importCatalogModelsForMake(make) : FALLBACK_IMPORT_CATALOG),
+    [make],
+  );
   const [server, setServer] = useState(null);
 
   useEffect(() => {
-    if (!make) return undefined;
+    if (!enabled || server) return undefined;
     let live = true;
     importsApi
-      .getCatalog({ make })
+      .getCatalog(make ? { make } : { limit: 250 })
       .then((data) => {
         if (live) setServer(Array.isArray(data?.items) ? data.items : []);
       })
@@ -40,15 +47,16 @@ export default function useImportCatalog(make) {
         if (live) setServer([]);
       });
     return () => { live = false; };
-  }, [make]);
+    // `server` is read only to skip a second fetch once the list has arrived.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [make, enabled]);
 
   return useMemo(() => {
     if (!server || !server.length) return bundled;
-    const byModel = new Map(
-      server.map((r) => [String(r.model || '').toLowerCase(), r]),
-    );
+    const key = (makeName, model) => `${String(makeName || '').toLowerCase()}|${String(model || '').toLowerCase()}`;
+    const byModel = new Map(server.map((r) => [key(r.make, r.model), r]));
     return bundled.map((item) => {
-      const row = byModel.get(item.model.toLowerCase());
+      const row = byModel.get(key(item.make, item.model));
       if (!row) return item;
       return {
         ...item,

@@ -60,7 +60,7 @@ function slug(value) {
  * Building a URL is not a promise that an image exists — resolveRender() is
  * what establishes that.
  */
-function renderUrl(make, model, { width = 640, fileType = 'webp' } = {}) {
+function renderUrl(make, model, { width = 1000, fileType = 'webp' } = {}) {
   if (!rendersEnabled()) return null;
   if (!slug(make) || !slug(model)) return null;
   const params = new URLSearchParams({

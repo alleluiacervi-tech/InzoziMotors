@@ -464,6 +464,14 @@ export async function signOut(): Promise<void> {
   await fetch('/api/session', { method: 'DELETE', credentials: 'same-origin' })
 }
 
+export type CatalogImageryRow = {
+  id: string; make: string; model: string; body_type: string; origin_country: string
+  images: string[]; image_status: string; image_source: string | null
+  image_uploaded_at: string | null; image_uploaded_by_name: string | null
+  render_url: string | null; render_status: string; render_review: 'unreviewed' | 'approved' | 'rejected'
+  state: 'official' | 'render' | 'review' | 'none'
+}
+
 export const api = {
   // Auth — sign-in is NOT here: it goes through signIn() above, which posts to
   // this app's own /api/session so the token never reaches the browser.
@@ -530,6 +538,11 @@ export const api = {
   }),
   updateSubmission: (id: string, data: any) =>
     request<any>(`/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  /** Take a vehicle off the pipeline from any stage short of a public listing:
+   *  releases an unused appointment, archives a draft listing, tells the seller. */
+  closeSubmission: (id: string, reason: string) =>
+    request<{ submission: any; released_appointment: boolean; archived_listing: boolean }>(
+      `/submissions/${id}/close`, { method: 'POST', body: JSON.stringify({ reason }) }),
 
   // Inspections
   inspections: (params?: Record<string, string>) => {
@@ -987,37 +1000,33 @@ export const api = {
   uploadMakeLogo: (id: string, data: FormData) =>
     request<MakeRow>(`/admin/makes/${id}/logo`, { method: 'POST', body: data }),
 
-  // ── Import catalogue photography ────────────────────────────────────────
-  // A propose/approve queue, not an automatic pipeline. A random sample of
-  // this catalogue's own 233 models put the right car in Commons' top result
-  // 38 times out of 44 -- good, not perfect, and "not perfect" is the exact
-  // failure the catalogue was rebuilt to remove. So findImageCandidates only
-  // STORES what it finds; nothing reaches a buyer until approveImage.
+  // ── Import catalogue imagery ────────────────────────────────────────────
+  // Best first: an official photo (uploaded with its source recorded), then a
+  // licensed studio render a person has confirmed, then the brand's mark.
+  // Wikimedia Commons is retired (migration 0050).
+  catalogImagery: () => request<{
+    items: CatalogImageryRow[]
+    renders_enabled: boolean
+    summary: { total: number; official: number; render: number; review: number; none: number; renders_not_found: number; renders_not_checked: number }
+  }>('/imports/admin/catalog/imagery'),
 
-  findImageCandidates: (limit = 25) =>
-    request<{
-      checked: number; with_candidates: number; with_none: number
-      awaiting_review: number; not_yet_searched: number; approved: number; skipped: number; total: number
-    }>('/imports/admin/catalog/find-images', { method: 'POST', body: JSON.stringify({ limit }) }),
+  /** Ask the licensed render library about models not yet checked. Bounded per
+   *  call; 503 when no commercial key is configured. */
+  resolveRenders: (limit = 60) =>
+    request<{ checked: number; found: number; no_match: number; unreachable: number; timeout: number; resolved: number; remaining: number; total: number }>(
+      '/imports/admin/catalog/resolve-renders', { method: 'POST', body: JSON.stringify({ limit }) }),
 
-  imageQueue: () => request<{
-    items: {
-      id: string; make: string; model: string; body_type: string; origin_country: string
-      candidates: {
-        id: string; image_url: string; thumb_url: string; page_url: string
-        title: string; author: string | null; license_name: string | null; license_url: string | null
-      }[]
-    }[]
-    awaiting_review: number; not_yet_searched: number; approved: number; skipped: number; total: number
-  }>('/imports/admin/catalog/image-queue'),
-
-  approveImage: (catalogId: string, candidateId: string) =>
-    request<any>(`/imports/admin/catalog/${catalogId}/approve-image`, {
-      method: 'POST', body: JSON.stringify({ candidate_id: candidateId }),
+  reviewRender: (catalogId: string, decision: 'approved' | 'rejected' | 'unreviewed') =>
+    request<{ id: string; render_review: string }>(`/imports/admin/catalog/${catalogId}/render-review`, {
+      method: 'POST', body: JSON.stringify({ decision }),
     }),
 
-  skipImage: (catalogId: string) =>
-    request<any>(`/imports/admin/catalog/${catalogId}/skip-image`, { method: 'POST', body: JSON.stringify({}) }),
+  /** FormData: `photo` and `source` (who supplied it, on what permission). */
+  uploadCatalogPhoto: (catalogId: string, data: FormData) =>
+    request<{ id: string; images: string[]; image_status: string }>(`/imports/admin/catalog/${catalogId}/photo`, { method: 'POST', body: data }),
+
+  removeCatalogPhoto: (catalogId: string) =>
+    request<{ id: string }>(`/imports/admin/catalog/${catalogId}/photo`, { method: 'DELETE' }),
 
   // ── Inspection centers ─────────────────────────────────────────────────────
   // Booking capacity is enforced against daily_capacity on every scheduling

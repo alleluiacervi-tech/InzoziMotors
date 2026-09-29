@@ -8,7 +8,8 @@ import ImportCarCard from '../components/ImportCarCard';
 import BrandMark from '../components/BrandMark';
 import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
-import { searchImportCatalog, importCatalogMakes, FALLBACK_IMPORT_CATALOG } from '../data/importCatalog';
+import { importCatalogMakes, FALLBACK_IMPORT_CATALOG } from '../data/importCatalog';
+import useImportCatalog from '../hooks/useImportCatalog';
 
 // The Cars tab.
 //
@@ -66,12 +67,21 @@ export default function SearchScreen({ navigation }) {
     return list;
   }, [cars, query, sort]);
 
-  // Only computed when the import scope is open, or when a search needs the
-  // "you could import this instead" hint.
-  const importModels = useMemo(
-    () => (scope === 'import' || query ? searchImportCatalog(query) : []),
-    [scope, query]
-  );
+  // The catalogue from the bundle, enriched from the server with approved
+  // images and any prices — fetched only once somebody opens the import list.
+  const [importOpened, setImportOpened] = useState(false);
+  React.useEffect(() => { if (scope === 'import') setImportOpened(true); }, [scope]);
+  const catalogue = useImportCatalog(null, { enabled: importOpened });
+  const importModels = useMemo(() => {
+    if (scope !== 'import' && !query) return [];
+    if (!query) return catalogue;
+    const q = query.toLowerCase();
+    return catalogue.filter((item) =>
+      `${item.make} ${item.model}`.toLowerCase().includes(q)
+      || item.bodyType.toLowerCase().includes(q)
+      || item.originCountry.toLowerCase().includes(q)
+      || (item.fuelTypes || []).some((f) => f.toLowerCase().includes(q)));
+  }, [catalogue, scope, query]);
   const importBrands = useMemo(
     () => importCatalogMakes().sort((a, b) => b.modelCount - a.modelCount),
     []

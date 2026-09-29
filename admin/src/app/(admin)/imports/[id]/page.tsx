@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { Card, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 import { fmtDateTime } from '@/lib/format'
+import { ImportStatusControls } from '@/components/ImportStatusControls'
 
 const money = (v: unknown) => `${new Intl.NumberFormat('en-RW').format(Number(v || 0))} RWF`
 
@@ -30,6 +31,10 @@ export default function ImportOperationsPage({ params }: { params: Promise<{ id:
   if(error)return <ErrorState error={error} onRetry={load}/>
   if(!order)return <LoadingState/>
   return <div><Link href="/imports" className="mb-4 inline-block text-label font-bold text-brand">← Import pipeline</Link><PageHeader title={`${order.year||''} ${order.make} ${order.model}`} description={`${order.order_ref} · ${order.buyer_name} · ${order.origin_country}`}/>
+    {/* Every move this order can make from here, and a way to stop it. */}
+    <div className="mb-5"><ImportStatusControls orderId={id} status={order.status}
+      allowed={(order.allowed_transitions || []).filter((next: string) => order.status !== 'enquiry' || next === 'cancelled')}
+      onChanged={load} /></div>
     <div className="grid gap-5 xl:grid-cols-2">
       <Card className="p-5"><div className="flex items-center justify-between"><h2 className="font-extrabold text-content">Agreement & money</h2><Pill status={order.status} label={order.status.replaceAll('_',' ')}/></div><p className="mt-3 text-2xl font-black text-content">{money(order.quoted_total_rwf)}</p>
         <div className="mt-4 space-y-3">{order.payments.map((p:any)=><div key={p.id} className="rounded-xl border border-line-soft p-4"><div className="flex justify-between gap-3"><div><p className="font-bold text-content">{p.milestone.replaceAll('_',' ')}</p><p className="text-caption text-content-muted">Expected reference: <span className="font-mono">{p.reference}</span></p><p className="text-caption text-content-muted">{p.bank_reference?<>Buyer submitted: <span className="font-mono">{p.bank_reference}</span>{p.bank_reference!==p.reference?<span className="font-bold text-warning-text"> · does not match</span>:null}</>:'No bank reference submitted'}</p></div><div className="text-right"><p className="font-extrabold text-content">{money(p.amount_rwf)}</p><Pill status={p.status} label={p.status}/></div></div>

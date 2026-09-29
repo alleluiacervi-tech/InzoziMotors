@@ -348,10 +348,18 @@ router.get('/admin/all', requireAdmin, async (req, res) => {
     if (status) { params.push(status); where = 'WHERE s.status = $1'; }
     const { rows } = await pool.query(
       `SELECT s.*, u.name AS seller_name, u.email AS seller_email,
-              c.title AS car_title
+              c.title AS car_title, c.status AS car_status,
+              -- So each row can offer its real next step (open the inspection,
+              -- create the listing) instead of a dead end.
+              insp.id AS inspection_id, insp.status AS inspection_status,
+              insp.score AS inspection_score, insp.passed AS inspection_passed
        FROM submissions s
        JOIN users u ON u.id = s.seller_id
        LEFT JOIN cars c ON c.id = s.car_id
+       LEFT JOIN LATERAL (
+         SELECT i.id, i.status, i.score, i.passed FROM inspections i
+          WHERE i.submission_id = s.id LIMIT 1
+       ) insp ON TRUE
        ${where}
        ORDER BY s.submitted_at DESC`,
       params
@@ -494,6 +502,98 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code, allowed_transitions: err.allowed });
     log.error('update submission error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /submissions/:id/close — admin: take a vehicle off the pipeline.
+//
+// For the seller who is not going ahead, the car that will not be listed, the
+// appointment nobody came to. The status machine above only lets a submission
+// be rejected before its inspection, so a car that had been inspected — and in
+// particular one that scored badly — could never leave the pipeline board.
+// This closes it from any stage short of a public listing, in one step:
+//
+//   · a booked appointment with nothing recorded against it is released, so
+//     the bay's slot frees up; an inspection that started or finished is kept,
+//     because it is evidence and may carry a fee;
+//   · a draft listing that never went public is archived;
+//   · the submission is marked rejected with the reason, which is what the
+//     seller is told, and which Reopen (→ under review) can undo.
+//
+// A car that is public (live, paused or sold) is refused: that is a listing,
+// and Listings is where it is paused, sold or removed.
+router.post('/:id/close', requireAdmin, requireUuid('id'), async (req, res) => {
+  const reason = String(req.body?.reason || '').trim().slice(0, 1000);
+  if (reason.length < 4) {
+    return res.status(400).json({ error: 'Give the reason — it is sent to the seller and kept in the audit log.', code: 'REASON_REQUIRED' });
+  }
+  try {
+    const result = await withTransaction(async (client) => {
+      const current = await client.query('SELECT * FROM submissions WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!current.rowCount) { const e = new Error('Submission not found'); e.status = 404; throw e; }
+      const sub = current.rows[0];
+      if (sub.status === 'rejected') { const e = new Error('This submission is already closed.'); e.status = 409; throw e; }
+
+      const car = sub.car_id
+        ? (await client.query('SELECT id, status, title FROM cars WHERE id = $1 FOR UPDATE', [sub.car_id])).rows[0]
+        : null;
+      if (car && ['live', 'paused', 'sold'].includes(car.status)) {
+        const e = new Error('This car is already a listing. Pause it, mark it sold or remove it from Listings instead.');
+        e.status = 409; e.code = 'IS_A_LISTING'; throw e;
+      }
+
+      const inspection = (await client.query(
+        `SELECT i.id, i.status,
+                (SELECT COUNT(*)::int FROM platform_fees f
+                  WHERE f.inspection_id = i.id AND f.status <> 'waived') AS fees
+           FROM inspections i WHERE i.submission_id = $1 FOR UPDATE OF i`,
+        [sub.id]
+      )).rows[0] || null;
+      let releasedAppointment = false;
+      if (inspection && inspection.status === 'scheduled' && inspection.fees === 0) {
+        await client.query('DELETE FROM inspections WHERE id = $1', [inspection.id]);
+        releasedAppointment = true;
+      }
+
+      let archivedListing = false;
+      if (car && !['archived', 'rejected'].includes(car.status)) {
+        await client.query(
+          `UPDATE cars SET status = 'archived', archived_at = NOW(), archive_reason = $2 WHERE id = $1`,
+          [car.id, reason]
+        );
+        archivedListing = true;
+      }
+
+      const { rows } = await client.query(
+        `UPDATE submissions SET status = 'rejected', admin_notes = $2, reviewed_at = NOW(), reviewer_id = $3
+          WHERE id = $1 RETURNING *`,
+        [sub.id, reason, req.user.id]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'submission.closed', targetType: 'submission', targetId: sub.id,
+        summary: `${sub.year || ''} ${sub.make || ''} ${sub.model || ''} closed`.replace(/\s+/g, ' ').trim(),
+        metadata: {
+          reason, previous_status: sub.status,
+          released_appointment: releasedAppointment,
+          kept_inspection: inspection && !releasedAppointment ? inspection.id : null,
+          archived_listing: archivedListing ? car.id : null,
+        },
+      });
+      return { submission: rows[0], released_appointment: releasedAppointment, archived_listing: archivedListing };
+    });
+
+    await notifyUser(pool, {
+      user_id: result.submission.seller_id,
+      type: 'listing_update',
+      title: 'Submission closed',
+      body: `Your submission was closed. Reason: ${reason}`,
+      meta: JSON.stringify({ submissionId: result.submission.id }),
+    });
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    log.error('close submission error', { error: err.message });
+    res.status(500).json({ error: 'Could not close the submission' });
   }
 });
 

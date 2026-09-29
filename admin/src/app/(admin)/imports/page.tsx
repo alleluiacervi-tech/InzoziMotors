@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 import Link from 'next/link'
+import { ImportStatusControls } from '@/components/ImportStatusControls'
 
 type ImportRow = {
   id: string; order_ref: string; buyer_name: string; buyer_email: string
@@ -13,16 +14,9 @@ type ImportRow = {
   status: string; quoted_total_rwf?: number | string; paid_rwf?: number | string
   actual_cost_rwf?: number | string | null
   created_at: string; delivery_estimate?: string
+  allowed_transitions?: string[]
 }
 type QuoteDraft = { vehicle?: string; freight?: string; landed?: string; expires?: string; delivery?: string }
-
-const nextStatus: Record<string, string> = {
-  quoted: 'agreement_pending', agreement_pending: 'deposit_due', deposit_due: 'deposit_review',
-  deposit_review: 'ordered', ordered: 'inspected_abroad', inspected_abroad: 'shipping_booked',
-  shipping_booked: 'in_transit', in_transit: 'arrived', arrived: 'kigali_inspection',
-  kigali_inspection: 'balance_due', balance_due: 'balance_review', balance_review: 'customs_clearance',
-  customs_clearance: 'ready_for_handover', ready_for_handover: 'completed',
-}
 
 const money = (value: number | string | undefined) =>
   `${new Intl.NumberFormat('en-RW').format(Number(value || 0))} RWF`
@@ -55,14 +49,6 @@ export default function ImportsPage() {
     catch (e: any) { toast(e.message, 'error') } finally { setBusy(null) }
   }
 
-  async function advance(item: ImportRow) {
-    const next = nextStatus[item.status]
-    if (!next) return
-    setBusy(item.id)
-    try { await api.updateImportStatus(item.id, next); toast(`Order moved to ${next.replaceAll('_', ' ')}`, 'success'); await load() }
-    catch (e: any) { toast(e.message, 'error') } finally { setBusy(null) }
-  }
-
   return <div>
     <PageHeader title="Vehicle imports" description="One auditable pipeline from customer enquiry and 50% order payment to Kigali inspection, final balance and handover." action={<ExportLink dataset="imports" />} />
     <Card className="mb-5 p-4">
@@ -91,7 +77,13 @@ export default function ImportsPage() {
           <input value={quote[item.id]?.delivery||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],delivery:e.target.value}})} placeholder="Delivery estimate, e.g. 8–12 weeks" className="h-11 rounded-xl border border-line px-3"/>
           <button onClick={() => issueQuote(item)} disabled={busy === item.id} className="rounded-xl bg-brand px-5 py-2.5 text-label font-bold text-brand-on disabled:opacity-50">Issue itemized 50/50 quotation</button>
         </div><p className="mt-2 text-caption text-content-muted">Total: {money(quoteTotal(quote[item.id]))}</p>
-        </div> : nextStatus[item.status] ? <div className="mt-4 flex flex-wrap gap-3 border-t border-line-soft pt-4"><button onClick={() => advance(item)} disabled={busy === item.id} className="rounded-xl bg-ink-900 px-5 py-2.5 text-label font-bold text-white disabled:opacity-50">Advance to {nextStatus[item.status].replaceAll('_',' ')}</button><Link href={`/imports/${item.id}`} className="rounded-xl border border-line px-5 py-2.5 text-label font-bold text-content">Open operations record</Link></div> : <div className="mt-4 border-t border-line-soft pt-4"><Link href={`/imports/${item.id}`} className="text-label font-bold text-brand">Open operations record →</Link></div>}
+        </div> : null}
+        <div className="mt-4 flex flex-col gap-3 border-t border-line-soft pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <ImportStatusControls orderId={item.id} status={item.status}
+            allowed={(item.allowed_transitions || []).filter((next) => item.status !== 'enquiry' || next === 'cancelled')}
+            onChanged={load} />
+          <Link href={`/imports/${item.id}`} className="shrink-0 text-label font-bold text-brand">Open operations record →</Link>
+        </div>
       </Card>)}</div>}
   </div>
 }
