@@ -46,7 +46,9 @@ test('buyer messages seller from the car page, seller replies, buyer sees it liv
   const buyerThread = await openConversation.getAttribute('href')
   expect(buyerThread).toMatch(/^\/dashboard\/messages\/.+/)
   await buyerPage.goto(buyerThread!)
-  await expect(buyerPage.getByText(firstMessage)).toBeVisible()
+  // Inside the conversation itself (role=log). From lg up the inbox list sits
+  // beside it and shows the same text as its preview.
+  await expect(buyerPage.getByRole('log').getByText(firstMessage)).toBeVisible()
 
   await signIn(sellerPage, sellerEmail, sellerPassword, '/dashboard/messages')
   const inboxRow = sellerPage.getByRole('link').filter({ hasText: firstMessage })
@@ -54,15 +56,15 @@ test('buyer messages seller from the car page, seller replies, buyer sees it liv
   const sellerThread = await inboxRow.getAttribute('href')
   expect(sellerThread).toBe(buyerThread)
   await sellerPage.goto(sellerThread!)
-  await expect(sellerPage.getByText(firstMessage)).toBeVisible()
+  await expect(sellerPage.getByRole('log').getByText(firstMessage)).toBeVisible()
 
   await sellerPage.locator('textarea').fill(reply)
   await sellerPage.locator('textarea').press('Enter')
-  await expect(sellerPage.getByText(reply)).toBeVisible()
+  await expect(sellerPage.getByRole('log').getByText(reply)).toBeVisible()
 
   // The buyer never reloads or re-navigates from here — this only passes if
   // the reply arrived over the socket.
-  await expect(buyerPage.getByText(reply)).toBeVisible({ timeout: 10_000 })
+  await expect(buyerPage.getByRole('log').getByText(reply)).toBeVisible({ timeout: 10_000 })
 
   await buyerContext.close()
   await sellerContext.close()
