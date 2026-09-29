@@ -742,6 +742,11 @@ export const api = {
     request<any>(`/cars/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   archiveCar: (id: string, reason: string) =>
     request<any>(`/cars/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
+  /** Erase an ARCHIVED listing for good. The inspection and submission are
+   *  kept (detached), and the whole row goes into the audit log first. */
+  deleteListingPermanently: (id: string, reason: string) =>
+    request<{ deleted: true; id: string; title: string; kept_inspections: number }>(
+      `/cars/${id}/permanently`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
 
   // Users / ID verification
   searchUsers: (q: string, limit = 8) =>

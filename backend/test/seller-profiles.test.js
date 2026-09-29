@@ -225,3 +225,45 @@ test('an admin sets and removes a showroom photo, and only real images are accep
   await api().delete(`/admin/users/${showroom.id}/avatar`).set('Authorization', `Bearer ${admin}`).expect(200);
   assert.equal((await api().get(`/sellers/${showroom.id}`).expect(200)).body.avatar_url, null);
 });
+
+test('an admin deletes an archived listing for good, keeping its inspection record', async () => {
+  const adminUser = await register();
+  const admin = await makeAdmin(adminUser);
+  const seller = await verifiedSeller();
+  const car = await liveCar({ seller, admin, make: 'Mazda', model: 'CX-5' });
+  const buyer = await register();
+  await api().post(`/cars/save/${car.id}`).set('Authorization', `Bearer ${buyer.token}`).expect(200);
+
+  // Only an archived listing, only an admin, and only with a reason.
+  await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'duplicate listing' }).expect(409);
+  await api().delete(`/cars/${car.id}`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'duplicate listing' }).expect(200);
+  await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${seller.token}`)
+    .send({ reason: 'duplicate listing' }).expect(403);
+  await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: '' }).expect(400);
+
+  const inspection = await pool.query('SELECT id FROM inspections WHERE car_id = $1', [car.id]);
+  assert.equal(inspection.rowCount, 1);
+
+  const res = await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'duplicate listing' }).expect(200);
+  assert.equal(res.body.deleted, true);
+
+  assert.equal((await pool.query('SELECT 1 FROM cars WHERE id = $1', [car.id])).rowCount, 0);
+  assert.equal((await pool.query('SELECT 1 FROM saved_cars WHERE car_id = $1', [car.id])).rowCount, 0);
+  // The 150-point record survives, detached, with anything that hangs off it.
+  const kept = await pool.query('SELECT car_id FROM inspections WHERE id = $1', [inspection.rows[0].id]);
+  assert.equal(kept.rowCount, 1);
+  assert.equal(kept.rows[0].car_id, null);
+  const audit = await pool.query(
+    "SELECT metadata FROM admin_audit_log WHERE action = 'listing.deleted' AND target_id = $1", [car.id]
+  );
+  assert.equal(audit.rowCount, 1);
+  assert.equal(audit.rows[0].metadata.listing.id, car.id);
+  assert.equal(audit.rows[0].metadata.reason, 'duplicate listing');
+  await api().get(`/cars/${car.id}`).expect(404);
+  await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'duplicate listing' }).expect(404);
+});
