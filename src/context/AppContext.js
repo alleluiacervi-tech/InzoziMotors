@@ -426,6 +426,10 @@ export function AppProvider({ children }) {
       transmission: c.transmission || 'Automatic',
       category: c.body_type || 'SUV',
       seller: c.seller_name || 'Verified Seller',
+      // A showroom sells under its business name (the server already puts it
+      // in seller_name) and links to its storefront instead of a person.
+      sellerIsShowroom: c.seller_is_showroom === true,
+      sellerAvatar: c.seller_avatar_url || null,
       // The seller's trust score as the server computed it, 0-100, or null.
       //
       // This used to be `seller_trust / 20` rendered as a star rating, with
@@ -1770,7 +1774,7 @@ export function AppProvider({ children }) {
     // Comparison
     comparisonCars, addToComparison, removeFromComparison, clearComparison,
     // Rentals
-    fetchCarDetail, searchCars, makes, findMake, brandLogo,
+    fetchCarDetail, searchCars, makes, findMake, brandLogo, mapCar,
     homeMode, setHomeMode, rentalCars, rentalInquiries, sendRentalInquiry, cancelRentalInquiry,
     recentlyViewedIds, recordCarView,
     currency, toggleCurrency,

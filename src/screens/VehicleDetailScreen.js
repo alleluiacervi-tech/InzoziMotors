@@ -12,6 +12,7 @@ import { formatPrice, formatMiles } from '../data/cars';
 import Price, { RateNote } from '../components/Price';
 import LoginModal from '../components/LoginModal';
 import PhotoViewer from '../components/PhotoViewer';
+import BrandMark from '../components/BrandMark';
 import { getCertTier } from '../data/certification';
 import { CarGlyph } from '../components/Logo';
 import {
@@ -58,7 +59,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   // id — there is no car object to render from until the fetch lands.
   const carId = route.params?.carId || listCar?.id;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail, t } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail, brandLogo, t } = useApp();
 
   // The browse payload is deliberately lean. The detail endpoint adds price
   // history, the seller's phone and the full market comparison — and counts the
@@ -88,7 +89,9 @@ export default function VehicleDetailScreen({ navigation, route }) {
   // conditional exit, and the derived values tolerate a null car.
   const [activeIdx, setActiveIdx] = useState(0);
   const [loginVisible, setLoginVisible] = useState(false);
-  const [viewerIdx, setViewerIdx] = useState(null);
+  // { index, mode: 'pager' | 'grid' } while the photo viewer is open.
+  const [viewer, setViewer] = useState(null);
+  const [rateOpen, setRateOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const { cars, recordCarView } = useApp();
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id, recordCarView]);
@@ -162,7 +165,15 @@ export default function VehicleDetailScreen({ navigation, route }) {
   const driveType = getDriveType(car);
   const price = isAuction ? car.currentBid : car.price;
   const tier = getCertTier(car);
-  const isDealer = isDealerSeller(car.seller);
+  // A real showroom (the server says so) opens its storefront. The demo
+  // dealer fixtures keep their own screen in development builds.
+  const isShowroom = car.sellerIsShowroom === true;
+  const isDealer = !isShowroom && isDealerSeller(car.seller);
+  const sellerName = car.seller || t('vehicleDetail.verifiedSeller');
+  // Sellers type the location themselves, so it is sometimes "Kimihurura" and
+  // sometimes "Kimihurura, Kigali". Append the city only when it is missing.
+  const place = /kigali/i.test(neighborhood) ? neighborhood : `${neighborhood}, Kigali`;
+  const brandSub = [car.model, car.category, car.year ? String(car.year) : null].filter(Boolean).join(' · ');
 
   const similarCars = cars.filter(
     (c) => c.id !== car.id && (c.make === car.make || c.category === car.category)
@@ -195,7 +206,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 184 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 + insets.bottom }}>
         {/* Gallery */}
         <View style={styles.gallery}>
           <ScrollView
@@ -207,7 +218,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
             scrollEventThrottle={16}
           >
             {imageList.map((img, index) => (
-              <Pressable key={index} onPress={() => setViewerIdx(index)}>
+              <Pressable key={index} onPress={() => setViewer({ index, mode: 'pager' })}>
                 <Photo
                   uri={img}
                   width={PHOTO.WIDE}
@@ -254,10 +265,18 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
           </View>
 
+          {/* Opens every photo as one vertical page (PhotoViewer's grid). */}
           {imageList.length > 1 && (
-            <View style={styles.indicatorContainer}>
+            <Pressable
+              style={styles.indicatorContainer}
+              onPress={() => setViewer({ index: activeIdx, mode: 'grid' })}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('browse.allPhotosCount', { count: imageList.length })}
+            >
+              <Ionicons name="grid-outline" size={12} color="#fff" />
               <Text style={styles.indicatorText}>{activeIdx + 1} / {imageList.length}</Text>
-            </View>
+            </Pressable>
           )}
           {tier && (
             <Badge variant={tier.variant} icon="shield-checkmark" label={tier.label} style={styles.inspectBadge} />
@@ -265,51 +284,54 @@ export default function VehicleDetailScreen({ navigation, route }) {
         </View>
 
         <View style={styles.body}>
-          {/* Title + price */}
-          <View style={styles.titleRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>{car.title}</Text>
-              <View style={styles.pipeRow}>
-                {[car.make, car.model, car.category, String(car.year)]
-                  .filter(Boolean)
-                  .map((part, i, arr) => (
-                    <Text key={i} style={styles.pipePart}>
-                      {part}
-                      {i < arr.length - 1 && <Text style={styles.pipeSep}>{'  |  '}</Text>}
-                    </Text>
-                  ))}
-              </View>
-              <View style={styles.metaRow}>
-                <Ionicons name="location-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.meta}>{neighborhood}, Kigali</Text>
-                <Text style={styles.metaDot}>·</Text>
-                <Text style={styles.meta}>{t('common.daysAgo', { count: listedDaysAgo })}</Text>
-                <Text style={styles.metaDot}>·</Text>
-                <Text style={[styles.meta, { fontFamily: fonts.bold }]}>{driveType}</Text>
-              </View>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              {isAuction && <Text style={styles.bidLabel}>{t('vehicleDetail.currentBid').toUpperCase()}</Text>}
-              <Price amountRwf={price} size="detail" align="right" />
-              {/* Market diff badge */}
-              {/* Null unless the server computed a position from real
-                  comparables — see getMarketDiff. */}
-              {typeof marketDiff === 'number' && marketDiff !== 0 && (
-                <View style={[styles.marketBadge, marketDiff < 0 ? styles.marketBadgeLow : styles.marketBadgeHigh]}>
-                  <Ionicons
-                    name={marketDiff < 0 ? 'trending-down' : 'trending-up'}
-                    size={11}
-                    color={marketDiff < 0 ? colors.green : colors.alertRed}
-                  />
-                  <Text style={[styles.marketBadgeText, { color: marketDiff < 0 ? colors.green : colors.alertRed }]}>
-                    {marketDiff < 0
-                      ? t('home.belowMarket', { percent: Math.abs(marketDiff) })
-                      : t('vehicleDetail.aboveMarket', { amount: `${Math.abs(marketDiff)}%` })}
-                  </Text>
-                </View>
-              )}
-            </View>
+          {/* Title, then price. The title gets the full width: beside a
+              30pt price it was squeezed into a narrow column and wrapped over
+              three or four lines. */}
+          <Text style={styles.title}>{car.title}</Text>
+          <View style={styles.metaRow}>
+            <Ionicons name="location-outline" size={14} color={colors.textMuted} />
+            <Text style={styles.meta}>{place}</Text>
+            <Text style={styles.metaDot}>·</Text>
+            <Text style={styles.meta}>{t('common.daysAgo', { count: listedDaysAgo })}</Text>
+            <Text style={styles.metaDot}>·</Text>
+            <Text style={[styles.meta, { fontFamily: fonts.bold }]}>{driveType}</Text>
           </View>
+
+          <View style={styles.priceRow}>
+            <View style={{ flexShrink: 1 }}>
+              {isAuction && <Text style={styles.bidLabel}>{t('vehicleDetail.currentBid').toUpperCase()}</Text>}
+              <Price amountRwf={price} size="detail" />
+            </View>
+            {/* Where the dollar figure comes from, one tap away instead of a
+                paragraph under every price. */}
+            <Pressable
+              onPress={() => setRateOpen((open) => !open)}
+              hitSlop={10}
+              style={styles.rateInfoBtn}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: rateOpen }}
+              accessibilityLabel={t('browse.aboutRate')}
+            >
+              <Ionicons name={rateOpen ? 'information-circle' : 'information-circle-outline'} size={18} color={colors.textMuted} />
+            </Pressable>
+            {/* Null unless the server computed a position from real
+                comparables — see getMarketDiff. */}
+            {typeof marketDiff === 'number' && marketDiff !== 0 && (
+              <View style={[styles.marketBadge, marketDiff < 0 ? styles.marketBadgeLow : styles.marketBadgeHigh]}>
+                <Ionicons
+                  name={marketDiff < 0 ? 'trending-down' : 'trending-up'}
+                  size={11}
+                  color={marketDiff < 0 ? colors.green : colors.alertRed}
+                />
+                <Text style={[styles.marketBadgeText, { color: marketDiff < 0 ? colors.green : colors.alertRed }]}>
+                  {marketDiff < 0
+                    ? t('home.belowMarket', { percent: Math.abs(marketDiff) })
+                    : t('vehicleDetail.aboveMarket', { amount: `${Math.abs(marketDiff)}%` })}
+                </Text>
+              </View>
+            )}
+          </View>
+          {rateOpen ? <RateNote style={styles.rateNote} /> : null}
 
           {/* Social proof bar */}
           <View style={styles.socialBar}>
@@ -327,11 +349,6 @@ export default function VehicleDetailScreen({ navigation, route }) {
           </View>
 
           {/* Financing strip — own it monthly */}
-          {/* Where the dollar line under the price came from. A converted
-              figure without its rate and its date is how the old hardcoded
-              1300 drifted 12% from reality unnoticed. */}
-          <RateNote style={{ paddingHorizontal: 20, marginBottom: 16 }} />
-
           {monthly && !isAuction && (
             <Pressable style={styles.financeStrip} onPress={() => navigation.navigate('Financing', { carPrice: car.price })}>
               <View style={styles.financeIcon}>
@@ -387,6 +404,23 @@ export default function VehicleDetailScreen({ navigation, route }) {
             </View>
           )}
 
+          {/* The marque, directly above the key specs: the logo when an
+              operator has uploaded one, its initials otherwise (BrandMark). */}
+          <Pressable
+            style={styles.brandBar}
+            onPress={() => navigation.navigate('SearchResults', { filters: { make: car.make } })}
+            accessibilityRole="button"
+            accessibilityLabel={t('browse.seeAllMake', { make: car.make })}
+          >
+            <BrandMark name={car.make} logoUrl={brandLogo(car.make)} size={44} style={styles.brandMark} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.brandName} numberOfLines={1}>{car.make}</Text>
+              <Text style={styles.brandSub} numberOfLines={1}>{brandSub}</Text>
+            </View>
+            <Text style={styles.brandLink} numberOfLines={1}>{t('browse.seeAllMake', { make: car.make })}</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </Pressable>
+
           {/* Specs grid */}
           <View style={styles.specs}>
             {[
@@ -420,42 +454,53 @@ export default function VehicleDetailScreen({ navigation, route }) {
             ))}
           </View>
 
-          {/* Seller — professional dealers get their branded storefront,
-              private sellers get the individual trust profile */}
+          {/* Seller. A showroom opens its storefront, an individual their
+              trust profile. The showroom's own photo when the team set one. */}
           <Pressable
             style={styles.sellerCard}
-            onPress={() =>
-              navigation.navigate(
-                isDealer ? 'DealerProfile' : 'SellerProfile',
-                isDealer
-                  ? { dealerName: car.seller, sellerId: car.sellerId }
-                  : { sellerName: car.seller, sellerId: car.sellerId }
-              )
-            }
+            onPress={() => {
+              if (isShowroom && car.sellerId) navigation.navigate('Showroom', { sellerId: car.sellerId, name: sellerName });
+              else if (isDealer) navigation.navigate('DealerProfile', { dealerName: car.seller, sellerId: car.sellerId });
+              else navigation.navigate('SellerProfile', { sellerName: car.seller, sellerId: car.sellerId });
+            }}
+            accessibilityRole="button"
           >
-            <View style={styles.sellerAvatar}>
-              <Text style={styles.sellerInitial}>{car.seller[0]}</Text>
-            </View>
+            {car.sellerAvatar ? (
+              <Image source={{ uri: car.sellerAvatar }} style={styles.sellerAvatarImage} accessibilityIgnoresInvertColors />
+            ) : (
+              <View style={styles.sellerAvatar}>
+                <Text style={styles.sellerInitial}>{sellerName[0]}</Text>
+              </View>
+            )}
             <View style={{ flex: 1 }}>
-              <Text style={styles.sellerName}>{car.seller}</Text>
+              <Text style={styles.sellerName} numberOfLines={1}>{sellerName}</Text>
               {/* What is actually verified about this seller, not a star.
                   A rating claims other buyers had an experience; none has been
                   recorded, so saying so plainly is both truer and — for a
                   platform whose product is verification — more persuasive. */}
               <View style={styles.ratingRow}>
                 <Ionicons
-                  name={car.sellerIdVerified ? 'shield-checkmark' : 'shield-outline'}
+                  name={car.sellerIdVerified || isShowroom ? 'shield-checkmark' : 'shield-outline'}
                   size={13}
-                  color={car.sellerIdVerified ? colors.green : colors.textMuted}
+                  color={car.sellerIdVerified || isShowroom ? colors.green : colors.textMuted}
                 />
-                <Text style={styles.ratingText}>
-                  {car.sellerIdVerified ? t('settings.verified') : t('settings.notVerified')}
-                  {isDealer ? ` · ${t('vehicleDetail.verifiedSeller')}` : ''} · {t('common.profile')}
+                <Text style={styles.ratingText} numberOfLines={1}>
+                  {isShowroom
+                    ? `${t('browse.verifiedShowroom')} · ${t('browse.visitShowroom')}`
+                    : `${car.sellerIdVerified ? t('settings.verified') : t('settings.notVerified')}${isDealer ? ` · ${t('vehicleDetail.verifiedSeller')}` : ''} · ${t('common.profile')}`}
                 </Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
+
+          {/* The direct-deal notice, in the page rather than the sticky bar,
+              where it took a fifth of the screen. It is repeated in full on
+              the contact step, before any contact detail is released. */}
+          <View style={styles.directDealNote}>
+            <Ionicons name="shield-checkmark-outline" size={14} color={colors.textMuted} />
+            <Text style={styles.directDealText}>{t('vehicleDetail.directDealBody')}</Text>
+          </View>
 
           {/* Trust rows */}
           {car.inspected && (
@@ -575,42 +620,32 @@ export default function VehicleDetailScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
-      {/* Sticky CTA */}
-      <View style={[styles.cta, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
+      {/* Sticky CTA — one slim row: what it costs, and how to ask. */}
+      <View style={[styles.cta, { paddingBottom: Math.max(insets.bottom, 10) + 8 }]}>
         <View style={styles.ctaInner}>
-          <View style={styles.ctaMetaRow}>
-            <View style={styles.ctaPrice}>
-              <Text style={styles.ctaPriceLabel}>{isAuction ? t('vehicleDetail.currentBid') : t('vehicleDetail.askingPrice')}</Text>
-              <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>
-                {formatPrice(price)}
-              </Text>
-              <Text style={styles.ctaContext}>
-                {t('vehicleDetail.directDealBody')}
-              </Text>
-            </View>
-            <View style={styles.ctaAssurance}>
-              <Ionicons name="shield-checkmark" size={14} color={colors.greenText} />
-              <Text style={styles.ctaAssuranceText}>{t('vehicleDetail.directDeal')}</Text>
-            </View>
+          <View style={styles.ctaPrice}>
+            <Text style={styles.ctaPriceLabel}>{isAuction ? t('vehicleDetail.currentBid') : t('vehicleDetail.askingPrice')}</Text>
+            <Text style={styles.ctaPriceValue} numberOfLines={1} adjustsFontSizeToFit>
+              {formatPrice(price)}
+            </Text>
           </View>
-
-          <View style={styles.ctaActions}>
-            <Button
-              title={t('vehicleDetail.contactVerifiedSeller')}
-              icon="chatbubble-outline"
-              style={styles.requestButton}
-              accessibilityHint={t('sellerContact.directDealNotice')}
-              onPress={() => executeWithAuth(() => navigation.navigate('SellerContact', { car }))}
-            />
-          </View>
+          <Button
+            title={t('vehicleDetail.contactVerifiedSeller')}
+            icon="chatbubble-outline"
+            style={styles.requestButton}
+            accessibilityHint={t('sellerContact.directDealNotice')}
+            onPress={() => executeWithAuth(() => navigation.navigate('SellerContact', { car }))}
+          />
         </View>
       </View>
 
       <PhotoViewer
-        visible={viewerIdx !== null}
+        visible={viewer !== null}
         images={imageList}
-        initialIndex={viewerIdx || 0}
-        onClose={() => setViewerIdx(null)}
+        initialIndex={viewer?.index || 0}
+        initialMode={viewer?.mode || 'pager'}
+        title={car.title}
+        onClose={() => setViewer(null)}
       />
 
       <LoginModal
@@ -651,19 +686,31 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   circleBtnActive: { backgroundColor: colors.greenTint, borderWidth: 1.5, borderColor: colors.primary },
-  inspectBadge: { position: 'absolute', bottom: 16, left: 16 },
+  inspectBadge: { position: 'absolute', bottom: 34, left: 16 },
   indicatorContainer: {
-    position: 'absolute', bottom: 16, right: 16,
+    position: 'absolute', bottom: 34, right: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: 'rgba(0,0,0,0.65)',
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.md,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill,
   },
   indicatorText: { color: '#fff', fontSize: 11, fontFamily: fonts.extraBold },
   body: {
     backgroundColor: colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     marginTop: -24, paddingHorizontal: 20, paddingTop: 22,
   },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
-  title: { fontSize: 22, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
+  title: { fontSize: 22, lineHeight: 28, fontFamily: fonts.extraBold, letterSpacing: -0.5, color: colors.textPrimary },
+  priceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  rateInfoBtn: { alignSelf: 'flex-start', marginTop: 8 },
+  rateNote: { marginTop: 8 },
+  brandBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
+    borderRadius: radius.xl, paddingVertical: 10, paddingLeft: 10, paddingRight: 12, marginTop: 18,
+  },
+  brandMark: { borderWidth: 1, borderColor: colors.borderSoft },
+  brandName: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.2 },
+  brandSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  brandLink: { fontSize: 12, fontFamily: fonts.bold, color: colors.textSecondary, maxWidth: 120 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, flexWrap: 'wrap' },
   meta: { fontSize: 12, color: colors.textSecondary },
   metaDot: { fontSize: 12, color: colors.textMuted },
@@ -697,7 +744,7 @@ const styles = StyleSheet.create({
   marketAvgText: { fontSize: 11, color: colors.textMuted },
   sparklineRight: { alignItems: 'flex-end', gap: 2 },
   sparklineNow: { fontSize: 10, color: colors.textMuted },
-  specs: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  specs: { flexDirection: 'row', gap: 10, marginTop: 10 },
   specCard: {
     flex: 1, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.borderSoft,
@@ -706,9 +753,6 @@ const styles = StyleSheet.create({
   },
   specValue: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textPrimary },
   specLabel: { fontSize: 11, color: colors.textMuted },
-  pipeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 5 },
-  pipePart: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
-  pipeSep: { fontFamily: fonts.bold, color: colors.primary },
   infoCard: {
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     borderRadius: radius.xl, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2,
@@ -735,7 +779,10 @@ const styles = StyleSheet.create({
     width: 46, height: 46, borderRadius: 23,
     backgroundColor: colors.navyMid, alignItems: 'center', justifyContent: 'center',
   },
+  sellerAvatarImage: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.surfaceAlt },
   sellerInitial: { color: '#fff', fontFamily: fonts.extraBold, fontSize: 18 },
+  directDealNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 10, paddingHorizontal: 4 },
+  directDealText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.textMuted },
   sellerName: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   ratingText: { fontSize: 12, color: colors.textSecondary },
@@ -808,35 +855,23 @@ const styles = StyleSheet.create({
   cta: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.borderSoft,
-    paddingHorizontal: 16, paddingTop: 12, ...shadows.floating,
+    paddingHorizontal: 16, paddingTop: 10, ...shadows.floating,
   },
   ctaInner: {
-    width: '100%', maxWidth: 720, alignSelf: 'center', gap: 12,
+    width: '100%', maxWidth: 720, alignSelf: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: 14,
   },
-  ctaMetaRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-  },
-  ctaPrice: { flex: 1, minWidth: 0 },
+  ctaPrice: { flexShrink: 1, minWidth: 96 },
   ctaPriceLabel: {
     fontSize: 10, lineHeight: 13, fontFamily: fonts.extraBold, color: colors.textMuted,
-    letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 1,
+    letterSpacing: 0.6, textTransform: 'uppercase',
   },
   ctaPriceValue: {
-    flexShrink: 1, fontVariant: ['tabular-nums'], fontSize: 22, lineHeight: 27,
-    fontFamily: fonts.extraBold, color: colors.textPrimary, letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'], fontSize: 19, lineHeight: 24,
+    fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: -0.4,
   },
-  ctaContext: {
-    fontSize: 11, lineHeight: 15, fontFamily: fonts.medium, color: colors.textSecondary, marginTop: 1,
-  },
-  ctaAssurance: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: colors.greenTint, borderRadius: radius.pill,
-    paddingHorizontal: 10, paddingVertical: 7,
-  },
-  ctaAssuranceText: { fontSize: 11, fontFamily: fonts.bold, color: colors.greenText },
-  ctaActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   requestButton: {
-    flex: 1, width: 'auto', minWidth: 0, minHeight: 54,
-    paddingVertical: 14, borderRadius: radius.lg,
+    flex: 1, width: 'auto', minWidth: 0, minHeight: 48,
+    paddingVertical: 12, borderRadius: radius.lg,
   },
 });

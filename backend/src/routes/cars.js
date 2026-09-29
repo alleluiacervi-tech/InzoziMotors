@@ -21,6 +21,7 @@ const {
 } = require('../lib/inspection-policy');
 const { publicationReadiness } = require('../lib/publication-readiness');
 const { maskVin } = require('../lib/vin-engine/validator');
+const { sellerDisplayName, sellerDisplayColumns } = require('../lib/seller-display');
 
 const router = express.Router();
 
@@ -221,7 +222,7 @@ router.get('/', async (req, res) => {
          LIMIT $${params.length - 1} OFFSET $${params.length}
        )
        SELECT ${publicCarSelect('c')},
-              u.name AS seller_name, u.trust_score AS seller_trust,
+              ${sellerDisplayColumns('u')}, u.trust_score AS seller_trust,
               u.id_verified AS seller_id_verified,
               u.business_verified AS seller_business_verified,
               (SELECT COUNT(*)::int FROM saved_cars sc WHERE sc.car_id = c.id) AS saves_count,
@@ -281,7 +282,7 @@ router.get('/featured', async (req, res) => {
     const { rows } = await pool.query(
       `SELECT f.id AS placement_id, f.kind, f.slot, f.headline, f.ends_at,
               ${publicCarSelect('c')},
-              u.name AS seller_name,
+              ${sellerDisplayColumns('u')},
               CASE WHEN ${PRICE_DROP_IS_REAL} THEN last_change.prior_price END AS previous_price,
               CASE WHEN ${PRICE_DROP_IS_REAL} THEN last_change.changed_at END AS price_dropped_at
          FROM featured_placements f
@@ -371,7 +372,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
     const carRes = await pool.query(
       `SELECT c.vin, c.make, c.model, c.year, c.mileage, c.drive_side,
               c.fuel_type, c.created_at, c.listed_at, c.inspection_score, c.inspected,
-              u.name AS seller_name, u.completed_sales AS seller_sales,
+              ${sellerDisplayName('u')} AS seller_name, u.completed_sales AS seller_sales,
               u.id_verified AS seller_id_verified
        FROM cars c
        JOIN users u ON u.id = c.seller_id
@@ -537,7 +538,7 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
     // synthesised; the app renders an empty history rather than a fake one.
     const { rows } = await pool.query(
       `SELECT ${publicCarSelect('c', [...PUBLIC_CAR_DETAIL_COLUMNS, ...INTERNAL_CAR_COLUMNS])},
-              u.name AS seller_name, u.phone AS seller_phone,
+              ${sellerDisplayColumns('u')}, u.phone AS seller_phone,
               u.whatsapp_phone AS seller_whatsapp,
               u.phone_visible AS seller_phone_visible,
               u.whatsapp_visible AS seller_whatsapp_visible,
@@ -700,7 +701,7 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
 router.get('/saved/list', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT c.*, u.name AS seller_name, u.trust_score AS seller_trust
+      `SELECT c.*, ${sellerDisplayColumns('u')}, u.trust_score AS seller_trust
        FROM saved_cars sc
        JOIN cars c ON c.id = sc.car_id
        JOIN users u ON u.id = c.seller_id
@@ -1545,3 +1546,5 @@ module.exports = router;
 module.exports.PUBLIC_CAR_COLUMNS = PUBLIC_CAR_COLUMNS;
 module.exports.PUBLIC_CAR_DETAIL_COLUMNS = PUBLIC_CAR_DETAIL_COLUMNS;
 module.exports.INTERNAL_CAR_COLUMNS = INTERNAL_CAR_COLUMNS;
+// The public-evidence predicate, for GET /showrooms (routes/showrooms.js).
+module.exports.validInspectionExists = validInspectionExists;

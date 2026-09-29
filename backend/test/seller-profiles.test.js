@@ -152,3 +152,76 @@ test('the seller sees how many buyers requested their contact details', async ()
   assert.equal(row.contacts_count, 2);
   assert.equal(typeof row.inquiries_count, 'number');
 });
+
+// ─── Showrooms (docs/SHOWROOMS-AND-POLISH.md) ────────────────────────────────
+
+const PNG_1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+
+test('a showroom sells under its business name, and GET /showrooms lists it with the brands it carries', async () => {
+  const admin = await makeAdmin(await register());
+  const showroom = await verifiedSeller({ name: 'Owner Person' });
+  const businessName = `Showroom ${Date.now()}`;
+  const toyota = await liveCar({ seller: showroom, admin, make: 'Toyota', model: 'RAV4' });
+  await liveCar({ seller: showroom, admin, make: 'Toyota', model: 'Harrier' });
+  await liveCar({ seller: showroom, admin, make: 'Hyundai', model: 'Tucson' });
+
+  // Marking the account a showroom and verifying the business in ONE save keeps
+  // every listing public; the individual name is what buyers saw before.
+  let listed = await api().get(`/cars?seller_id=${showroom.id}`).expect(200);
+  assert.equal(listed.body[0].seller_name, 'Owner Person');
+  assert.equal(listed.body[0].seller_is_showroom, false);
+  await api().patch(`/admin/users/${showroom.id}`).set('Authorization', `Bearer ${admin}`)
+    .send({ seller_type: 'showroom', business_name: businessName, business_verified: true }).expect(200);
+
+  listed = await api().get(`/cars?seller_id=${showroom.id}`).expect(200);
+  assert.equal(listed.body.length, 3, 'no listing may drop out when the account becomes a showroom');
+  assert.ok(listed.body.every((c) => c.seller_name === businessName && c.seller_is_showroom === true));
+  const detail = await api().get(`/cars/${toyota.id}`).expect(200);
+  assert.equal(detail.body.seller_name, businessName);
+
+  const all = await api().get('/showrooms').expect(200);
+  const row = all.body.find((s) => s.id === showroom.id);
+  assert.ok(row, 'a verified showroom with public cars is listed');
+  assert.equal(row.name, businessName);
+  assert.equal(row.live_count, 3);
+  assert.deepEqual(row.brands, [{ make: 'Toyota', count: 2 }, { make: 'Hyundai', count: 1 }]);
+  assert.ok(row.cover_image);
+  const serialized = JSON.stringify(all.body);
+  for (const secret of ['phone', 'whatsapp', 'email', showroom.email, '+250788000111']) {
+    assert.ok(!serialized.includes(secret), `showrooms must not carry ${secret}`);
+  }
+
+  // An individual seller is not a showroom, and an unverified business is not
+  // public at all.
+  const individual = await verifiedSeller();
+  await liveCar({ seller: individual, admin, model: 'Corolla' });
+  assert.ok(!(await api().get('/showrooms').expect(200)).body.some((s) => s.id === individual.id));
+  await pool.query('UPDATE users SET business_verified = FALSE WHERE id = $1', [showroom.id]);
+  assert.ok(!(await api().get('/showrooms').expect(200)).body.some((s) => s.id === showroom.id));
+});
+
+test('an admin sets and removes a showroom photo, and only real images are accepted', async () => {
+  const adminUser = await register();
+  const admin = await makeAdmin(adminUser);
+  const showroom = await verifiedSeller();
+  await pool.query("UPDATE users SET seller_type = 'showroom', business_name = 'Photo Motors', business_verified = TRUE WHERE id = $1", [showroom.id]);
+
+  await api().post(`/admin/users/${showroom.id}/avatar`).set('Authorization', `Bearer ${showroom.token}`)
+    .attach('avatar', PNG_1x1, { filename: 'logo.png', contentType: 'image/png' }).expect(403);
+  await api().post(`/admin/users/${showroom.id}/avatar`).set('Authorization', `Bearer ${admin}`)
+    .attach('avatar', Buffer.from('<?php echo 1; ?>'), { filename: 'logo.png', contentType: 'image/png' }).expect(400);
+
+  const set = await api().post(`/admin/users/${showroom.id}/avatar`).set('Authorization', `Bearer ${admin}`)
+    .attach('avatar', PNG_1x1, { filename: 'logo.png', contentType: 'image/png' }).expect(200);
+  assert.match(set.body.avatar_url, /\/uploads\/avatars\/|cloudinary/);
+  assert.equal((await api().get(`/sellers/${showroom.id}`).expect(200)).body.avatar_url, set.body.avatar_url);
+  const audit = await pool.query("SELECT 1 FROM admin_audit_log WHERE action = 'user.avatar_set' AND target_id = $1", [showroom.id]);
+  assert.equal(audit.rowCount, 1);
+
+  // An admin's own photo is not an operator's to change.
+  await api().post(`/admin/users/${adminUser.id}/avatar`).set('Authorization', `Bearer ${admin}`)
+    .attach('avatar', PNG_1x1, { filename: 'logo.png', contentType: 'image/png' }).expect(403);
+
+  await api().delete(`/admin/users/${showroom.id}/avatar`).set('Authorization', `Bearer ${admin}`).expect(200);
+  assert.equal((await api().get(`/sellers/${showroom.id}`).expect(200)).body.avatar_url, null);
+});

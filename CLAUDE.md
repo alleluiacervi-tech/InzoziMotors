@@ -63,7 +63,14 @@ case is a bug.
   - realtime uses a short-lived socket ticket
 
 **Showrooms** are admin-invited (one-use 48h activation link → `/activate-showroom`),
-need `business_verified`, and may hold rental inventory.
+need `business_verified`, and may hold rental inventory. An existing seller
+becomes one in Admin → Users → Edit (*Showroom account* + *Verified business*
+in the same save, or its listings drop to review). A showroom sells under its
+business name — every public `seller_name` goes through
+`backend/src/lib/seller-display.js` — and its brands are read off its live cars,
+never chosen (`GET /showrooms`). The team sets its photo
+(`POST /admin/users/:userId/avatar`). Storefronts: app `ShowroomScreen`, web
+`/sellers/[id]`. Plan and status: `docs/SHOWROOMS-AND-POLISH.md`.
 
 **Admin** runs the Action Center triage queue, submissions, inspections,
 rental inquiries, listings, users/ID checks, imports, reported content, the

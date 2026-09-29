@@ -10,6 +10,7 @@ const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-poli
 
 const router = express.Router();
 const { recordAdminAction } = require('../lib/admin-audit');
+const { sellerDisplayName } = require('../lib/seller-display');
 
 // A block in either direction ends the conversation: neither side can write.
 async function isBlockedBetween(a, b) {
@@ -79,7 +80,8 @@ router.get('/conversations', requireAuth, paginate(), async (req, res) => {
       `SELECT conv.*,
               c.title AS car_title, c.images AS car_images,
               buyer.name AS buyer_name,
-              seller.name AS seller_name,
+              ${sellerDisplayName('seller')} AS seller_name,
+              seller.avatar_url AS seller_avatar_url,
               (SELECT COUNT(*) FROM messages m
                WHERE m.conversation_id = conv.id AND m.read = FALSE
                  AND m.sender_id != $1) AS unread_count

@@ -122,7 +122,7 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="CarValuation" component={CarValuationScreen} />
       <Stack.Screen name="SawaPromise" component={SawaPromiseScreen} />
       <Stack.Screen name="BuyingGuide" component={BuyingGuideScreen} />
-      <Stack.Screen name="Showroom" component={ShowroomScreen} options={{ animation: 'fade' }} />
+      <Stack.Screen name="Showroom" component={ShowroomScreen} />
       <Stack.Screen name="ImportOrders" component={ImportOrdersScreen} />
       <Stack.Screen name="ImportOrderDetail" component={ImportOrderDetailScreen} />
       <Stack.Screen name="ImportVehicleDetail" component={ImportVehicleDetailScreen} />

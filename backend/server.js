@@ -316,6 +316,8 @@ app.use('/settings',        require('./src/routes/settings'));
 app.use('/makes',           require('./src/routes/makes'));
 // Public seller and showroom profiles — same eligibility as a public listing.
 app.use('/sellers',         require('./src/routes/sellers'));
+// Verified showrooms with public stock, and the brands they carry.
+app.use('/showrooms',       require('./src/routes/showrooms'));
 // The contact@ mailbox, read over IMAP and answered over SMTP. Admin-only;
 // see src/lib/mail/ for why it is a live read rather than a synced copy.
 app.use('/mail',            require('./src/routes/mail'));

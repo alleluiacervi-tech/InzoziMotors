@@ -1,8 +1,9 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView,
-  FlatList, Dimensions, Image, RefreshControl,
+  FlatList, Dimensions, Image, RefreshControl, AppState,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../components/Screen';
@@ -27,10 +28,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // what says "there is more".
 const FEATURED_CARD_W = SCREEN_WIDTH - 48;
 const FEATURED_GAP = 12;
-// The rail slides this far and back once per app session, the first time it
-// is on screen, then never moves on its own again.
-const FEATURED_NUDGE = 28;
-let featuredNudgedThisSession = false;
+// Auto-advance: one card every five seconds, and a touch holds it still for
+// eight — long enough to read a price without the card moving under a thumb.
+const FEATURED_INTERVAL_MS = 5000;
+const FEATURED_TOUCH_PAUSE_MS = 8000;
+const SHOWROOM_CARD_W = Math.min(SCREEN_WIDTH * 0.78, 340);
 
 const TOOLS = [
   { labelKey: 'certifyCar', icon: 'car-outline', screen: 'CarSubmission' },
@@ -41,6 +43,7 @@ const TOOLS = [
 
 export default function HomeScreen({ navigation }) {
   const { cars, homeMode, setHomeMode, rentalCars, notifications, rentalInquiries, recentlyViewedIds, savedCarIds, backendReachable, refreshCatalogue, refreshing, makes, t } = useApp();
+  const isFocused = useIsFocused();
 
   // Only worth saying when there is nothing to show; a cached catalogue with a
   // dropped connection does not need a banner over the top of it.
@@ -91,43 +94,38 @@ export default function HomeScreen({ navigation }) {
     return () => clearTimeout(t);
   }, []);
 
-  // The banner used to advance itself every six seconds.
-  //
-  // That is fine for three interchangeable marketing slides and wrong for a car
-  // somebody is looking at. It moved while a person was reading a price, it
-  // moved back under a thumb mid-swipe, and — now that these are real listings
-  // an operator placed, some of them paid for — it counted an impression
-  // nobody chose to look at. A rail that only moves when a person moves it is
-  // both more usable and more honest about what a placement is worth.
-  //
-  // What says "there is more here" instead: the next card peeking at the edge,
-  // the segmented line under the rail, and one small nudge — the rail slides a
-  // few points and back, once per session, the first time it appears. Never
-  // with Reduce Motion on, and never once a finger is on it.
-  const nudgeTimers = useRef([]);
-  const railTouched = useRef(false);
-  const stopNudge = () => {
-    railTouched.current = true;
-    nudgeTimers.current.forEach(clearTimeout);
-    nudgeTimers.current = [];
-  };
+  // The rail advances itself — the way a buyer expects a "featured" strip to
+  // behave — but only while somebody could be looking at it, and never in
+  // their way:
+  //   · every five seconds, looping back to the first card after the last;
+  //   · a touch or a drag holds it for eight seconds, so it never moves under
+  //     a thumb or while a price is being read;
+  //   · only while Home is the screen on top and the app is in the
+  //     foreground — a rail nobody can see does not count impressions;
+  //   · never with Reduce Motion on (the rail then only moves when swiped).
+  // The segmented line under it still says where you are.
+  const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   React.useEffect(() => {
-    if (featuredNudgedThisSession || reducedMotion || homeMode === 'rent' || slides.length < 2) return undefined;
-    featuredNudgedThisSession = true;
-    nudgeTimers.current = [
-      setTimeout(() => {
-        if (!railTouched.current) carouselRef.current?.scrollTo({ x: FEATURED_NUDGE, animated: true });
-      }, 900),
-      setTimeout(() => {
-        if (!railTouched.current) carouselRef.current?.scrollTo({ x: 0, animated: true });
-      }, 1300),
-    ];
-    return () => nudgeTimers.current.forEach(clearTimeout);
-  }, [slides.length, reducedMotion, homeMode]);
+    const sub = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
+    return () => sub.remove();
+  }, []);
+  const railIndex = useRef(0);
+  const railPausedUntil = useRef(0);
+  const pauseRail = () => { railPausedUntil.current = Date.now() + FEATURED_TOUCH_PAUSE_MS; };
+  React.useEffect(() => {
+    if (reducedMotion || homeMode === 'rent' || slides.length < 2 || !isFocused || !appActive) return undefined;
+    const timer = setInterval(() => {
+      if (Date.now() < railPausedUntil.current) return;
+      const next = (railIndex.current + 1) % slides.length;
+      carouselRef.current?.scrollTo({ x: next * (FEATURED_CARD_W + FEATURED_GAP), animated: true });
+    }, FEATURED_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [slides.length, reducedMotion, homeMode, isFocused, appActive]);
 
   const handleCarouselScroll = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / (FEATURED_CARD_W + FEATURED_GAP)) + 1;
+    railIndex.current = Math.max(0, index - 1);
     if (index !== carouselIndex) setCarouselIndex(index);
   };
 
@@ -149,20 +147,31 @@ export default function HomeScreen({ navigation }) {
     return true;
   }), [cars, originTab]);
 
-  // ── Brand showrooms: only brands with 2+ cars earn a window ──
-  const showrooms = useMemo(() => Object.values(
+  // ── Showrooms: real verified businesses, from GET /showrooms ──
+  // This rail used to group the catalogue by make and call each group a
+  // showroom ("Toyota", "Hyundai"), plus an invented "Sawa Center" window. A
+  // showroom is a business that sells whatever brands it stocks; the brands
+  // on each card are read off its live cars by the server.
+  const [showrooms, setShowrooms] = useState([]);
+  React.useEffect(() => {
+    if (refreshing) return undefined; // fetch again once a pull-to-refresh lands
+    let alive = true;
+    carsApi.getShowrooms()
+      .then((rows) => { if (alive && Array.isArray(rows)) setShowrooms(rows); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [refreshing]);
+
+  // ── Shop by brand: what the old "showrooms" rail really was ──
+  const brandsInStock = useMemo(() => Object.values(
     cars.reduce((acc, c) => {
-      (acc[c.make] = acc[c.make] || { brand: c.make, cars: [] }).cars.push(c);
+      if (!c.make) return acc;
+      const key = String(c.make).toLowerCase();
+      (acc[key] = acc[key] || { make: c.make, count: 0 }).count += 1;
       return acc;
     }, {})
-  )
-    .filter((g) => g.cars.length >= 2)
-    .map((g) => ({
-      ...g,
-      cars: [...g.cars].sort((a, b) => (b.inspectionScore || 0) - (a.inspectionScore || 0)),
-    }))
-    .sort((a, b) => b.cars.length - a.cars.length)
-    .slice(0, 6), [cars]);
+  ).sort((a, b) => b.count - a.count || a.make.localeCompare(b.make)), [cars]);
+
   // The served brand list, matched to the brands the catalogue actually holds.
   // A window with a real mark on it reads as a brand's shopfront; one without
   // still reads as a brand's shopfront, because BrandMark draws initials.
@@ -183,22 +192,6 @@ export default function HomeScreen({ navigation }) {
   const importBrands = useMemo(
     () => importCatalogMakes().sort((a, b) => b.modelCount - a.modelCount).slice(0, 12),
     [],
-  );
-
-  const centerWindow = useMemo(() => ({
-    brand: 'Sawa Center',
-    subtitle: t('home.onDisplay'),
-    cars: carsByListedDate.slice(0, 5),
-  }), [carsByListedDate, t]);
-
-  // The production catalogue is allowed to be empty (for example during a
-  // first deployment or while the admin is preparing the first listing). Do
-  // not render a showroom card without a lead vehicle: reading
-  // `cars[0].image` used to throw and send the whole app to ErrorBoundary as
-  // soon as a user tapped Explore Cars.
-  const showroomWindows = useMemo(
-    () => [centerWindow, ...showrooms].filter((window) => window.cars?.[0]?.image),
-    [centerWindow, showrooms]
   );
 
   // ── Personalization rails ──
@@ -451,8 +444,8 @@ export default function HomeScreen({ navigation }) {
               decelerationRate="fast"
               contentContainerStyle={styles.featuredRail}
               onScroll={handleCarouselScroll}
-              onScrollBeginDrag={stopNudge}
-              onTouchStart={stopNudge}
+              onScrollBeginDrag={pauseRail}
+              onTouchStart={pauseRail}
               scrollEventThrottle={16}
             >
               {slides.map((slide) => (
@@ -513,8 +506,8 @@ export default function HomeScreen({ navigation }) {
             neither a price nor a photograph to be useful. ── */}
         <View style={styles.sectionContainer}>
           <SectionHeader
-            title="Import brand new"
-            actionLabel="All brands"
+            title={t('browse.importEntryTitle')}
+            actionLabel={t('browse.allBrands')}
             onAction={() => navigation.navigate('ImportBrands')}
           />
           <FlatList
@@ -530,9 +523,9 @@ export default function HomeScreen({ navigation }) {
                 accessibilityRole="button"
                 accessibilityLabel={`${item.make}, ${item.modelCount} models`}
               >
-                <BrandMark name={item.make} logoUrl={brandRow(item.make)?.logo_url} size={40} />
+                <BrandMark name={item.make} logoUrl={brandRow(item.make)?.logo_url} size={36} />
                 <Text style={styles.importBrandName} numberOfLines={1}>{item.make}</Text>
-                <Text style={styles.importBrandCount}>{item.modelCount} models</Text>
+                <Text style={styles.importBrandCount}>{t('browse.modelsCount', { count: item.modelCount })}</Text>
               </Pressable>
             )}
           />
@@ -545,55 +538,94 @@ export default function HomeScreen({ navigation }) {
               <Ionicons name="calculator-outline" size={16} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.importNoteTitle}>Estimate your duty before you commit</Text>
-              <Text style={styles.importNoteSub}>
-                Brand new, zero kilometres, shipped from Japan, South Korea or China.
-                We quote each order individually.
-              </Text>
+              <Text style={styles.importNoteTitle}>{t('browse.dutyNoteTitle')}</Text>
+              <Text style={styles.importNoteSub}>{t('browse.dutyNoteBody')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
         </View>
 
-        {/* ── SHOWROOMS — walk past the glass ── */}
-        {showroomWindows.length > 0 && (
+        {/* ── SHOWROOMS — verified businesses and the brands they carry ── */}
+        {showrooms.length > 0 && (
           <View style={styles.sectionContainer}>
             <SectionHeader title={t('home.showrooms')} />
             <FlatList
               horizontal
-              data={showroomWindows}
-              keyExtractor={(w) => w.brand}
+              data={showrooms}
+              keyExtractor={(w) => w.id}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalListPadding}
-              snapToInterval={SCREEN_WIDTH * 0.78 + 12}
+              snapToInterval={SHOWROOM_CARD_W + 12}
               decelerationRate="fast"
+              renderItem={({ item }) => {
+                const brands = Array.isArray(item.brands) ? item.brands : [];
+                return (
+                  <Pressable
+                    style={({ pressed }) => [styles.showroomCard, pressed && { opacity: 0.94 }]}
+                    onPress={() => navigation.navigate('Showroom', { sellerId: item.id, name: item.name })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.name}, ${t('browse.showroomCars', { count: item.live_count })}`}
+                  >
+                    <View style={styles.showroomCover}>
+                      {item.cover_image ? (
+                        <Photo uri={item.cover_image} width={PHOTO.CARD} style={styles.showroomPhoto} resizeMode="cover" />
+                      ) : null}
+                      <LinearGradient colors={['transparent', 'rgba(12,10,10,0.82)']} style={styles.showroomFade} />
+                      <View style={styles.showroomCaption}>
+                        {item.avatar_url ? (
+                          <Image source={{ uri: item.avatar_url }} style={styles.showroomAvatar} />
+                        ) : (
+                          <View style={[styles.showroomAvatar, styles.showroomAvatarEmpty]}>
+                            <Text style={styles.showroomAvatarText}>{String(item.name || '?').charAt(0).toUpperCase()}</Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.showroomName} numberOfLines={1}>{item.name}</Text>
+                          <View style={styles.showroomVerifiedRow}>
+                            <Ionicons name="checkmark-circle" size={12} color={colors.greenLight} />
+                            <Text style={styles.showroomVerified} numberOfLines={1}>
+                              {t('browse.verifiedShowroom')}{item.location ? ` · ${item.location}` : ''}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={styles.showroomFoot}>
+                      <View style={styles.showroomBrands}>
+                        {brands.slice(0, 5).map((b) => (
+                          <BrandMark key={b.make} name={b.make} logoUrl={brandRow(b.make)?.logo_url} size={24} style={styles.showroomBrandMark} />
+                        ))}
+                        {brands.length > 5 ? <Text style={styles.showroomMore}>+{brands.length - 5}</Text> : null}
+                      </View>
+                      <Text style={styles.showroomCount}>{t('browse.showroomCars', { count: item.live_count })}</Text>
+                    </View>
+                  </Pressable>
+                );
+              }}
+            />
+          </View>
+        )}
+
+        {/* ── SHOP BY BRAND — the brands in stock right now ── */}
+        {brandsInStock.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <SectionHeader title={t('browse.shopByBrand')} />
+            <FlatList
+              horizontal
+              data={brandsInStock}
+              keyExtractor={(b) => b.make}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalListPadding}
               renderItem={({ item }) => (
                 <Pressable
-                  style={styles.showroomWindow}
-                  onPress={() => navigation.navigate('Showroom', {
-                    title: item.brand,
-                    subtitle: item.subtitle || t('home.carsInShowroom', { count: item.cars.length }),
-                    cars: item.cars,
-                  })}
+                  style={({ pressed }) => [styles.brandTile, pressed && { opacity: 0.85 }]}
+                  onPress={() => navigation.navigate('SearchResults', { filters: { make: item.make } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.make}, ${t('browse.showroomCars', { count: item.count })}`}
                 >
-                  <Photo uri={item.cars[0].image} width={PHOTO.CARD} style={styles.showroomPhoto} resizeMode="contain" />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(12,10,10,0.88)']}
-                    style={styles.showroomFade}
-                  />
-                  <View style={styles.showroomCaption}>
-                    <View style={styles.showroomBrandRow}>
-                      <BrandMark
-                        name={item.brand}
-                        logoUrl={brandRow(item.brand)?.logo_url}
-                        size={26}
-                      />
-                      <Text style={styles.showroomBrand}>{item.brand}</Text>
-                    </View>
-                    <Text style={styles.showroomCount}>
-                      {item.subtitle || t('home.showroomCarsView', { count: item.cars.length })}
-                    </Text>
-                  </View>
+                  <BrandMark name={item.make} logoUrl={brandRow(item.make)?.logo_url} size={36} />
+                  <Text style={styles.brandTileName} numberOfLines={1}>{item.make}</Text>
+                  <Text style={styles.brandTileCount}>{t('browse.showroomCars', { count: item.count })}</Text>
                 </Pressable>
               )}
             />
@@ -776,17 +808,17 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   importBrandCard: {
-    width: 104,
+    width: 84,
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    marginRight: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    marginRight: 8,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  importBrandName: { ...typography.cardTitle, color: colors.textPrimary, marginTop: 8 },
+  importBrandName: { ...typography.cardTitle, fontSize: 12.5, lineHeight: 16, color: colors.textPrimary, marginTop: 6 },
   importBrandCount: { ...typography.micro, color: colors.textSecondary, marginTop: 2 },
   importNoteStrip: {
     flexDirection: 'row',
@@ -994,20 +1026,52 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   toolItem: { flex: 1, alignItems: 'center', gap: 6 },
-  showroomWindow: {
-    width: SCREEN_WIDTH * 0.78,
-    aspectRatio: 16 / 10,
-    borderRadius: radius.xxl,
-    overflow: 'hidden',
+  showroomCard: {
+    width: SHOWROOM_CARD_W,
     marginRight: 12,
-    backgroundColor: '#1C1A1A',
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
   },
+  showroomCover: { height: 148, backgroundColor: '#1C1A1A' },
   showroomPhoto: { width: '100%', height: '100%' },
-  showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
-  showroomCaption: { position: 'absolute', left: 16, right: 16, bottom: 14 },
-  showroomBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  showroomBrand: { fontSize: 19, fontFamily: fonts.black, color: '#fff', letterSpacing: -0.4 },
-  showroomCount: { fontSize: 12, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  showroomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '70%' },
+  showroomCaption: {
+    position: 'absolute', left: 12, right: 12, bottom: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+  },
+  showroomAvatar: {
+    width: 44, height: 44, borderRadius: 22,
+    borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#FFFFFF',
+  },
+  showroomAvatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.navyMid },
+  showroomAvatarText: { fontSize: 18, fontFamily: fonts.extraBold, color: '#fff' },
+  showroomName: { fontSize: 17, fontFamily: fonts.extraBold, color: '#fff', letterSpacing: -0.3 },
+  showroomVerifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  showroomVerified: { flexShrink: 1, fontSize: 11.5, fontFamily: fonts.semiBold, color: 'rgba(255,255,255,0.82)' },
+  showroomFoot: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    gap: 8, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  showroomBrands: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 },
+  showroomBrandMark: { borderWidth: 1, borderColor: colors.borderSoft },
+  showroomMore: { fontSize: 11, fontFamily: fonts.bold, color: colors.textMuted },
+  showroomCount: { fontSize: 12, fontFamily: fonts.bold, color: colors.textSecondary },
+  brandTile: {
+    width: 84,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    marginRight: 8,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  brandTileName: { ...typography.cardTitle, fontSize: 12.5, lineHeight: 16, color: colors.textPrimary, marginTop: 6 },
+  brandTileCount: { ...typography.micro, color: colors.textSecondary, marginTop: 1 },
   originRow: { paddingHorizontal: 16, gap: 8, marginTop: 4, marginBottom: 4 },
   originChip: {
     paddingHorizontal: 16, paddingVertical: 9,

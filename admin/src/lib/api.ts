@@ -806,6 +806,11 @@ export const api = {
     request<any>('/admin/showrooms', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (userId: string, data: { name?: string; phone?: string | null; whatsapp_phone?: string | null; phone_visible?: boolean; whatsapp_visible?: boolean; business_name?: string | null; business_verified?: boolean; seller_type?: string | null; role?: 'buyer' | 'seller' }) =>
     request<any>(`/admin/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  /** A seller's or showroom's profile photo. FormData, field `avatar`. */
+  uploadUserAvatar: (userId: string, data: FormData) =>
+    request<{ id: string; avatar_url: string }>(`/admin/users/${userId}/avatar`, { method: 'POST', body: data }),
+  removeUserAvatar: (userId: string) =>
+    request<{ id: string; avatar_url: null }>(`/admin/users/${userId}/avatar`, { method: 'DELETE' }),
   initiateUserPasswordReset: (userId: string) =>
     request<{ success: boolean; delivery: 'email_sent' | 'email_not_configured' }>(`/admin/users/${userId}/password-reset`, { method: 'POST' }),
   setUserAccess: (userId: string, action: 'suspend' | 'restore', reason?: string) =>

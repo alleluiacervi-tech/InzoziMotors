@@ -2,8 +2,8 @@ import type { DutyRates } from '@/lib/business'
 import type {
   AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement,
   InspectionCenter, InspectionReport,
-  Message, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Submission, TrustScore, User,
-  Valuation, VehicleHistory,
+  Message, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Showroom, Submission, TrustScore, User,
+  Valuation, VehicleHistory, VehicleMake,
 } from './types'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -265,7 +265,12 @@ export const rentals = {
 /** The brand list the app's submission form offers (GET /makes). Public,
  *  cached for ten minutes server-side too. */
 export const vehicleMakes = {
-  list: () => request<{ name: string; slug: string }[]>('/makes', { revalidate: 600, tags: ['makes'] }),
+  list: () => request<VehicleMake[]>('/makes', { revalidate: 600, tags: ['makes'] }),
+}
+
+/** Verified showrooms with public stock (GET /showrooms). */
+export const showrooms = {
+  list: () => request<Showroom[]>('/showrooms', { revalidate: CATALOGUE_REVALIDATE, tags: ['showrooms'] }),
 }
 
 export const inspectionCenters = {
@@ -577,7 +582,7 @@ export const handovers = {
 }
 
 export const api = {
-  cars, rentals, sellers, auth, account, saved,
+  cars, rentals, sellers, showrooms, auth, account, saved,
   submissions, notifications, messages, sellerListings,
   disputes, referrals, handovers,
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { ExportLink } from '@/components/ExportLink'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill } from '@/components/ui'
 import ListingCap from '@/components/ListingCap'
@@ -37,6 +37,7 @@ type UserRow = {
   active_listings?: number
   business_name?: string | null
   business_verified?: boolean
+  avatar_url?: string | null
   must_change_password?: boolean
   account_status?: 'active' | 'suspended'
   suspended_at?: string | null
@@ -101,7 +102,9 @@ export default function UsersPage() {
   const [editing, setEditing] = useState<null | {
     id: string; name: string; role: 'buyer' | 'seller'; phone: string; whatsapp_phone: string;
     business_name: string; business_verified: boolean; phone_visible: boolean; whatsapp_visible: boolean
+    showroom: boolean; avatar_url: string | null
   }>(null)
+  const avatarInput = useRef<HTMLInputElement | null>(null)
   const [verifying, setVerifying] = useState<null | {
     user: UserRow; method: string; note: string; reference: string
   }>(null)
@@ -281,7 +284,36 @@ export default function UsersPage() {
       id: user.id, name: user.name || '', role: user.role === 'seller' ? 'seller' : 'buyer',
       phone: user.phone || '', whatsapp_phone: user.whatsapp_phone || '', business_name: user.business_name || '',
       business_verified: !!user.business_verified, phone_visible: !!user.phone_visible, whatsapp_visible: !!user.whatsapp_visible,
+      showroom: user.seller_type === 'showroom', avatar_url: user.avatar_url || null,
     })
+  }
+
+  // The photo is saved on its own, the moment it is chosen, like the listing
+  // cap: it is a file, not a field, and the rest of the form may still be mid-edit.
+  async function uploadAvatar(file: File) {
+    if (!editing) return
+    setActionId(`avatar-${editing.id}`)
+    try {
+      const form = new FormData()
+      form.append('avatar', file)
+      const saved = await api.uploadUserAvatar(editing.id, form)
+      setEditing((current) => (current && current.id === saved.id ? { ...current, avatar_url: saved.avatar_url } : current))
+      toast('Profile photo saved', 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
+  }
+
+  async function removeAvatar() {
+    if (!editing) return
+    setActionId(`avatar-${editing.id}`)
+    try {
+      await api.removeUserAvatar(editing.id)
+      setEditing((current) => (current ? { ...current, avatar_url: null } : current))
+      toast('Profile photo removed', 'success')
+      await load()
+    } catch (e: any) { toast(e.message, 'error') }
+    finally { setActionId(null) }
   }
 
   async function saveUser(event: React.FormEvent) {
@@ -291,6 +323,22 @@ export default function UsersPage() {
       toast('A contact channel cannot be visible without a number.', 'error')
       return
     }
+    const asShowroom = editing.role === 'seller' && editing.showroom
+    if (asShowroom && !editing.business_name.trim()) {
+      toast('A showroom needs its business name — that is the name buyers see.', 'error')
+      return
+    }
+    // A showroom is only public once its business is verified (invariant 4),
+    // so switching one on without the tick takes every listing it has offline.
+    if (asShowroom && !editing.business_verified) {
+      const ok = await ask({
+        title: 'Save as an unverified showroom?',
+        message: 'Showroom listings are public only once the business is verified. Until you tick Verified business, this account\'s live listings return to review.',
+        confirmLabel: 'Save anyway',
+        tone: 'danger',
+      })
+      if (!ok) return
+    }
     setActionId(`edit-${editing.id}`)
     try {
       await api.updateUser(editing.id, {
@@ -298,6 +346,7 @@ export default function UsersPage() {
         whatsapp_phone: editing.whatsapp_phone.trim() || null, business_name: editing.business_name.trim() || null,
         business_verified: editing.business_verified, phone_visible: editing.phone_visible,
         whatsapp_visible: editing.whatsapp_visible,
+        ...(editing.role === 'seller' ? { seller_type: editing.showroom ? 'showroom' : 'individual' } : {}),
       })
       toast('Account details updated', 'success')
       setEditing(null)
@@ -519,8 +568,40 @@ export default function UsersPage() {
               </select>
             </label>
             <div className="rounded-xl border border-line-soft bg-surface-alt p-3 text-caption text-content-muted">Contact information is revealed only after a buyer acknowledges the direct-deal notice. Visibility also requires the relevant number.</div>
+            {editing.role === 'seller' ? (
+              <div className="flex items-center gap-4 rounded-xl border border-line-soft p-3 sm:col-span-2">
+                <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-alt text-title-sm font-extrabold text-content-secondary ring-1 ring-inset ring-line">
+                  {editing.avatar_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={editing.avatar_url} alt="" className="h-full w-full object-cover" />
+                    : (editing.business_name || editing.name || '?').trim().charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-label font-bold text-content">Profile photo</p>
+                  <p className="text-caption text-content-muted">A showroom&apos;s logo or storefront. Buyers see it on its showroom page and on each of its listings. Square, JPEG, PNG or WebP, up to 3 MB.</p>
+                </div>
+                <input ref={avatarInput} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                  onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) uploadAvatar(file) }} />
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                  <button type="button" onClick={() => avatarInput.current?.click()} disabled={actionId === `avatar-${editing.id}`}
+                    className="rounded-lg border border-line px-3 py-1.5 text-caption font-bold text-content hover:bg-surface-alt disabled:opacity-50">
+                    {actionId === `avatar-${editing.id}` ? 'Saving…' : editing.avatar_url ? 'Replace' : 'Upload'}
+                  </button>
+                  {editing.avatar_url ? (
+                    <button type="button" onClick={removeAvatar} disabled={actionId === `avatar-${editing.id}`}
+                      className="rounded-lg px-3 py-1.5 text-caption font-bold text-content-muted hover:bg-surface-alt disabled:opacity-50">Remove</button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            {editing.role === 'seller' ? (
+              <label className="flex items-start gap-3 rounded-xl border border-line-soft p-3">
+                <input type="checkbox" checked={editing.showroom} onChange={(e) => setEditing({ ...editing, showroom: e.target.checked })} className="mt-1 h-4 w-4 accent-brand" />
+                <span><span className="block text-label font-bold text-content">Showroom account</span><span className="text-caption text-content-muted">Listings show the business name and link to its showroom page. Needs a business name and Verified business.</span></span>
+              </label>
+            ) : null}
             {([
-              ['business_verified', 'Verified business', 'Allow this seller to operate provider inventory.'],
+              ['business_verified', 'Verified business', 'Business registration checked. Required for a showroom to be public, and for rental inventory.'],
               ['phone_visible', 'Share phone on request', 'Allow acknowledged buyers to request this phone number.'],
               ['whatsapp_visible', 'Share WhatsApp on request', 'Allow acknowledged buyers to request this WhatsApp number.'],
             ] as const).map(([key, label, sub]) => (
@@ -561,7 +642,9 @@ export default function UsersPage() {
               </thead>
               <tbody className="divide-y divide-line-soft">
                 {visible.map((u) => <tr key={u.id} id={`row-${u.id}`} className={`hover:bg-surface-alt ${focusProps(u.id).className}`}>
-                  <td className="px-5 py-4"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</td>
+                  <td className="px-5 py-4"><div className="flex items-center gap-3">{u.avatar_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={u.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-line" /> : null}<div className="min-w-0"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</div></div></td>
                   <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'showroom' : u.role} />{u.business_verified ? <Pill status="approved" label="business verified" /> : null}</div></td>
                   <td className="px-4 py-4">
                     <Pill status={u.id_verified} label={u.id_verified === 'none' || !u.id_verified ? 'not submitted' : u.id_verified} />

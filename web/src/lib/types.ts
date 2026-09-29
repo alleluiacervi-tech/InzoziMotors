@@ -104,7 +104,10 @@ export interface Car {
   featured_until?: string | null
 
   // Joined by the API
+  /** The showroom's business name for a showroom, the person's name otherwise. */
   seller_name?: string
+  seller_is_showroom?: boolean
+  seller_avatar_url?: string | null
   seller_phone?: string | null
   seller_whatsapp?: string | null
   seller_contact_available?: { phone: boolean; whatsapp: boolean; in_app: boolean }
@@ -403,6 +406,28 @@ export interface SellerReviews {
   reviews: Review[]
   average_rating: string | null
   total: number
+}
+
+/** GET /showrooms — a verified showroom with public stock. `brands` is read
+ *  off its live cars by the server, most-stocked first. */
+export interface Showroom {
+  id: string
+  name: string
+  avatar_url: string | null
+  member_since: string
+  live_count: number
+  cover_image: string | null
+  location: string | null
+  brands: { make: string; count: number }[]
+  business_verified: true
+}
+
+/** GET /makes — one brand, with the operator-uploaded mark when there is one. */
+export interface VehicleMake {
+  name: string
+  slug: string
+  logo_url: string | null
+  aliases: string[]
 }
 
 /** GET /sellers/:id — only ever an eligible seller; never contact details. */
