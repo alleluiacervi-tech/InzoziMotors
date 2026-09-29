@@ -27,7 +27,8 @@ const {
 const {
   slugify, loadMakes, invalidateMakes,
 } = require('../lib/vehicle-makes');
-const { uploadBrandLogo, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const { uploadBrandLogo, uploadAvatar, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const { stripUploadMetadata } = require('../middleware/strip-metadata');
 const {
   CLOSURE_REASONS, REASON_LABELS, RECOVERY_DAYS,
   purgeAccount, removeIdDocuments, CLOSED_ACCOUNTS, DUE_FOR_PURGE,
@@ -744,7 +745,7 @@ router.get('/users', requireAdmin, async (req, res) => {
     const { rows } = await pool.query(
       `SELECT id, name, email, phone, whatsapp_phone, phone_visible,
               whatsapp_visible, contact_consent_at, role, id_verified, seller_type,
-              business_name, business_verified, admin_created, must_change_password, account_status,
+              business_name, business_verified, avatar_url, admin_created, must_change_password, account_status,
               suspended_at, suspension_reason, trust_score,
               id_verification_method, id_verification_note, id_verification_ref,
               id_verified_at,
@@ -870,6 +871,59 @@ router.patch('/users/:id', requireAdmin, requireUuid('id'), async (req, res) => 
     log.error('admin user update error', { error: err.message });
     res.status(500).json({ error: 'Could not update user' });
   } finally { client.release(); }
+});
+
+// POST /admin/users/:userId/avatar — a seller's or showroom's profile photo.
+//
+// Showrooms are onboarded by the team, so the team sets the photo buyers see
+// on the storefront and on each listing's seller card. The same
+// pipeline as every other public image: the bytes are checked (the extension
+// and content type are the client's word), the location and device data a
+// phone writes into a photo are removed, then Cloudinary or the volume.
+// `:userId`, not `:id`, because that is what sends it to the public `avatars`
+// folder in resolveSubdir rather than the private ID-document fallback.
+router.post('/users/:userId/avatar', requireAdmin, requireUuid('userId'),
+  uploadAvatar.single('avatar'), verifyImageContent, stripUploadMetadata, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No photo was uploaded.' });
+    try {
+      const target = await pool.query(
+        'SELECT id, email, role FROM users WHERE id=$1 AND deleted_at IS NULL', [req.params.userId]
+      );
+      if (!target.rows.length) return res.status(404).json({ error: 'Active user not found' });
+      if (target.rows[0].role === 'admin') return res.status(403).json({ error: 'Administrator accounts cannot be changed here' });
+      const url = await resolveUploadUrl(req, req.file);
+      const { rows } = await pool.query(
+        'UPDATE users SET avatar_url=$2 WHERE id=$1 RETURNING id, avatar_url', [req.params.userId, url]
+      );
+      await recordAdminAction(pool, {
+        actorId: req.user.id, action: 'user.avatar_set', targetType: 'user', targetId: req.params.userId,
+        summary: `Set the profile photo for ${target.rows[0].email}`, metadata: { avatar_url: url },
+      });
+      res.json(rows[0]);
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+      log.error('admin avatar upload error', { error: err.message });
+      res.status(500).json({ error: 'Could not save the photo' });
+    }
+  });
+
+// DELETE /admin/users/:userId/avatar — back to initials.
+router.delete('/users/:userId/avatar', requireAdmin, requireUuid('userId'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users SET avatar_url=NULL WHERE id=$1 AND deleted_at IS NULL AND role <> 'admin'
+       RETURNING id, email`, [req.params.userId]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Active user not found' });
+    await recordAdminAction(pool, {
+      actorId: req.user.id, action: 'user.avatar_removed', targetType: 'user', targetId: req.params.userId,
+      summary: `Removed the profile photo for ${rows[0].email}`,
+    });
+    res.json({ id: rows[0].id, avatar_url: null });
+  } catch (err) {
+    log.error('admin avatar remove error', { error: err.message });
+    res.status(500).json({ error: 'Could not remove the photo' });
+  }
 });
 
 // POST /admin/users/:id/password-reset — initiate, never set or reveal a password.

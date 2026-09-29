@@ -11,6 +11,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 //   /inspections/cars/:carId/photos      -> cars/<carId>
 //   /rentals/bookings/:bookingId/photos  -> rentals/<bookingId>
 //   /submissions/:id/reference-photos    -> submissions/<id>
+//   /admin/users/:userId/avatar          -> avatars
 //   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)
 //
 // id-docs is the fallback, so every new upload route needs its own rule above
@@ -21,6 +22,8 @@ const resolveSubdir = (req) => {
   // file per brand and a directory holding sixty files is easier to audit than
   // sixty directories holding one.
   if (req.params.makeId) return 'brands';
+  // Seller and showroom profile photos: public, one per account.
+  if (req.params.userId) return 'avatars';
   if (req.params.bookingId) return `rentals/${req.params.bookingId}`;
   if (req.params.id && req.baseUrl === '/imports') return `imports/${req.params.id}`;
   if (req.params.id && req.baseUrl === '/submissions') return `submissions/${req.params.id}`;
@@ -205,6 +208,12 @@ exports.uploadBrandLogo = multer({
   storage,
   fileFilter: imageFilter,
   limits: { fileSize: 512 * 1024, files: 1, fields: 5 },
+});
+// A profile photo or showroom logo: one image, shown small.
+exports.uploadAvatar = multer({
+  storage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 3 * 1024 * 1024, files: 1, fields: 5 },
 });
 exports.uploadIdDocs = multer({
   storage,

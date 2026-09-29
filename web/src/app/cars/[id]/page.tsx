@@ -20,6 +20,8 @@ import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { VehicleHistoryCard } from '@/components/marketplace/VehicleHistoryCard'
 import { RequestCarForm } from './RequestCarForm'
 import { CompareToggle } from '@/components/market/CompareControls'
+import { BrandMark } from '@/components/marketplace/BrandMark'
+import { getLogoLookup } from '@/lib/brands'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Car detail — the page the whole business runs through.
@@ -431,6 +433,7 @@ export default async function CarDetailPage({ params }: PageProps) {
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
                 {t('cars.detail.specification')}
               </h2>
+              <BrandBar car={car} />
               <SpecGrid specs={specs} />
             </section>
 
@@ -625,19 +628,57 @@ async function DecisionSummary({ car, report, history }: { car: Car; report: Awa
 
 // ─── Seller ──────────────────────────────────────────────────────────────────
 
+// The marque, directly above the key specs: the operator-uploaded logo when
+// there is one, the brand's initials otherwise, and a way into every car of
+// that make. The app draws the same bar (VehicleDetailScreen).
+async function BrandBar({ car }: { car: Car }) {
+  if (!car.make) return null
+  const [t, logoFor] = await Promise.all([getServerT(), getLogoLookup()])
+  return (
+    <Link
+      href={`/cars?make=${encodeURIComponent(car.make)}`}
+      className="group mb-5 flex items-center gap-4 rounded-2xl border border-line-soft bg-surface-alt/60 p-3 pr-4 transition-colors hover:bg-surface-alt"
+    >
+      <BrandMark name={car.make} logoUrl={logoFor(car.make)} size={48} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-body font-extrabold text-content">{car.make}</span>
+        <span className="block truncate text-caption text-content-secondary">
+          {t('cars.detail.brandLine', { model: [car.model, car.body_type].filter(Boolean).join(' · '), year: car.year })}
+        </span>
+      </span>
+      <span className="hidden shrink-0 items-center gap-1 text-caption font-bold text-content-secondary group-hover:text-content sm:inline-flex">
+        {t('cars.detail.allOfMake', { make: car.make })}
+        <Icon name="arrow-right" size={15} />
+      </span>
+      <Icon name="arrow-right" size={16} className="shrink-0 text-content-muted sm:hidden" />
+    </Link>
+  )
+}
+
 async function SellerCard({ car }: { car: Car }) {
   if (!car.seller_name) return null
   const t = await getServerT()
   const verified = car.seller_id_verified === 'approved'
+  const showroom = car.seller_is_showroom === true
 
   return (
     <Card className="p-5 sm:p-6">
       <h2 className="text-title font-extrabold text-content">{t('cars.detail.sellerTitle')}</h2>
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-surface-alt text-content-secondary">
-            <Icon name="user" size={20} />
-          </span>
+          {car.seller_avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- the showroom's own photo, set by the team
+            <img
+              src={car.seller_avatar_url}
+              alt=""
+              className="h-12 w-12 shrink-0 rounded-pill object-cover ring-1 ring-line-soft"
+              loading="lazy"
+            />
+          ) : (
+            <span className="flex h-11 w-11 items-center justify-center rounded-pill bg-surface-alt text-content-secondary">
+              <Icon name={showroom ? 'store' : 'user'} size={20} />
+            </span>
+          )}
           <div>
             <p className="text-body font-bold text-content">{car.seller_name}</p>
             <p className="text-caption text-content-muted">
@@ -646,7 +687,11 @@ async function SellerCard({ car }: { car: Car }) {
           </div>
         </div>
 
-        {verified ? <Badge tone="success" icon="shield-check">{t('cars.detail.verifiedSellerBadge')}</Badge> : null}
+        {showroom ? (
+          <Badge tone="success" icon="shield-check">{t('cars.detail.showroomBadge')}</Badge>
+        ) : verified ? (
+          <Badge tone="success" icon="shield-check">{t('cars.detail.verifiedSellerBadge')}</Badge>
+        ) : null}
 
         {typeof car.seller_sales === 'number' && car.seller_sales > 0 ? (
           <p className="text-caption text-content-secondary">
@@ -665,7 +710,7 @@ async function SellerCard({ car }: { car: Car }) {
           href={`/sellers/${car.seller_id}`}
           className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
         >
-          {t('market.profile.viewProfile')}
+          {showroom ? t('cars.detail.visitShowroom') : t('market.profile.viewProfile')}
           <Icon name="arrow-right" size={15} />
         </Link>
       </p>

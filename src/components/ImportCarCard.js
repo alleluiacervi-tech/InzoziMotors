@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, shadows, fonts } from '../theme';
+import { colors, radius, fonts } from '../theme';
 import { RWF_RATE, formatRWF, calcRwandaDuty } from '../data/marketData';
 import { transformCloudinaryUrl } from '../utils/photo';
 import BrandMark from './BrandMark';
 import { useApp } from '../context/AppContext';
 import Touchable from './Touchable';
+
+// One import-catalogue model, as a compact row.
+//
+// This was a full-width card with a 180pt picture area — and most models have
+// no photograph, so it was mostly an empty grey box with a small logo and
+// "Photos on request", about 330pt tall per model. A row says the same things
+// (the marque, the model, what kind of car, where it ships from, the price
+// when there is one) in about 88pt, so a list of them can actually be scanned.
 
 const COUNTRY_FLAGS = {
   'South Korea': '🇰🇷',
@@ -16,31 +24,31 @@ const COUNTRY_FLAGS = {
   'Japan': '🇯🇵',
 };
 
-export default function ImportCarCard({ item, onPress }) {
-  const { brandLogo } = useApp();
+function ImportCarCard({ item, onPress }) {
+  const { brandLogo, t } = useApp();
   const flag = COUNTRY_FLAGS[item.originCountry] || '🌐';
 
-  // A landed cost only when there is a price to land.
-  //
-  // This read `(item.typicalFobUsd || 15000)`, so a model with no price was
-  // given an invented $15,000, run through the RRA duty calculation, and
-  // captioned "Est. Landed in Kigali (Taxes Included)" — the most confident
-  // possible presentation of a number nobody had quoted.
+  // A landed cost only when there is a price to land — never an invented
+  // $15,000 run through the duty maths (see ImportVehicleDetailScreen).
   const fobUsd = Number(item.typicalFobUsd) > 0 ? Number(item.typicalFobUsd) : null;
   const freightUsd = Number(item.typicalFreightUsd) > 0 ? Number(item.typicalFreightUsd) : null;
   const landed = fobUsd && freightUsd && item.engineCc ? (() => {
     const vehicleValueRwf = fobUsd * RWF_RATE;
     const duty = calcRwandaDuty(vehicleValueRwf, item.engineCc, 0); // brand new: no age band
-    const rwf = (duty ? duty.grandTotal : vehicleValueRwf) + freightUsd * RWF_RATE;
-    return { rwf, usd: Math.round(rwf / RWF_RATE) };
+    return (duty ? duty.grandTotal : vehicleValueRwf) + freightUsd * RWF_RATE;
   })() : null;
 
-  // An operator's own photograph of the actual unit first — it is the better
-  // picture and somebody went to the trouble of taking it. Then the resolved
-  // studio render. Then nothing: a picture of a different car is a claim about
-  // what the buyer is getting, so BrandMark draws the marque instead.
+  // The operator's own photograph of the unit, then the resolved studio
+  // render, then the marque — a picture of a different car would be a claim
+  // about what the buyer is getting.
   const mainImage = (Array.isArray(item.images) && item.images[0]) || item.renderUrl || null;
-  const optimizedImage = mainImage ? transformCloudinaryUrl(mainImage, { width: 640 }) : null;
+  const thumb = mainImage ? transformCloudinaryUrl(mainImage, { width: 240 }) : null;
+
+  const specs = [
+    item.bodyType,
+    item.engineCc ? `${(item.engineCc / 1000).toFixed(1)}L` : null,
+    ...(item.fuelTypes || []).slice(0, 2),
+  ].filter(Boolean).join(' · ');
 
   return (
     <Touchable
@@ -48,254 +56,74 @@ export default function ImportCarCard({ item, onPress }) {
       style={styles.card}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Import ${item.make} ${item.model}`}
+      accessibilityLabel={`${item.make} ${item.model}, ${item.originCountry}`}
     >
-      {/* Image container */}
-      <View style={styles.imageContainer}>
-        {optimizedImage ? (
-          <ExpoImage
-            source={{ uri: optimizedImage }}
-            style={styles.image}
-            contentFit="cover"
-            transition={200}
-          />
+      <View style={styles.thumb}>
+        {thumb ? (
+          <ExpoImage source={{ uri: thumb }} style={styles.thumbImage} contentFit="cover" transition={150} />
         ) : (
-          <View style={styles.imageFallback}>
-            <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={48} />
-            <Text style={styles.imageFallbackText}>Photos on request</Text>
-          </View>
+          <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={40} />
         )}
-        {/* Origin Hub Badge */}
-        <View style={styles.originBadge}>
-          <Text style={styles.originBadgeText}>
-            {flag} {item.originCountry}
-          </Text>
-        </View>
-
-        {/* Brand new, which is the whole proposition — not a guarantee claim. */}
-        <View style={styles.conditionBadge}>
-          <Ionicons name="sparkles-outline" size={11} color={colors.greenText} />
-          <Text style={styles.conditionBadgeText}>Brand new · 0 km</Text>
-        </View>
       </View>
 
-      {/* Content */}
-      <View style={styles.content}>
-        <View style={styles.titleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>
-              {item.make} {item.model}
-            </Text>
-            {item.trim ? (
-              <Text style={styles.trim} numberOfLines={1}>
-                {item.trim}
-              </Text>
-            ) : null}
-          </View>
-        </View>
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>{item.make} {item.model}</Text>
+        {specs || item.trim ? (
+          <Text style={styles.meta} numberOfLines={1}>{item.trim ? `${item.trim} · ${specs}` : specs}</Text>
+        ) : null}
+        {/* "Brand new" is the scope's premise and is said once above the
+            list; each row only needs where it ships from. */}
+        <Text style={styles.origin} numberOfLines={1}>{flag} {item.originCountry}</Text>
+      </View>
 
-        {/* Specs Pill Row */}
-        <View style={styles.specsRow}>
-          {item.bodyType ? (
-            <View style={styles.specPill}>
-              <Text style={styles.specText}>{item.bodyType}</Text>
-            </View>
-          ) : null}
-          {item.engineCc ? (
-            <View style={styles.specPill}>
-              <Text style={styles.specText}>{`${(item.engineCc / 1000).toFixed(1)}L`}</Text>
-            </View>
-          ) : null}
-          {(item.fuelTypes || []).map((fuel) => (
-            <View key={fuel} style={styles.specPill}>
-              <Text style={styles.specText}>{fuel}</Text>
-            </View>
-          ))}
+      <View style={styles.end}>
+        <View style={styles.priceCol}>
+          {landed ? (
+            <>
+              <Text style={styles.priceLabel}>{t('browse.estLanded')}</Text>
+              <Text style={styles.price} numberOfLines={1}>{formatRWF(landed)}</Text>
+            </>
+          ) : (
+            <Text style={styles.onRequest} numberOfLines={2}>{t('browse.onRequest')}</Text>
+          )}
         </View>
-
-        {/* Price & Transit Breakdown */}
-        <View style={styles.priceContainer}>
-          <View>
-            <Text style={styles.priceLabel}>
-              {landed ? 'Est. landed in Kigali (taxes included)' : 'Price'}
-            </Text>
-            <View style={styles.priceRow}>
-              {landed ? (
-                <>
-                  <Text style={styles.priceRwf}>{formatRWF(landed.rwf)}</Text>
-                  <Text style={styles.priceUsd}>~${landed.usd.toLocaleString('en-US')}</Text>
-                </>
-              ) : (
-                <Text style={styles.priceOnRequest}>On request</Text>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.transitBadge}>
-            <Ionicons name="boat-outline" size={13} color={colors.infoText} />
-            <Text style={styles.transitText}>{item.estimatedTransitDays || 35}d transit</Text>
-          </View>
-        </View>
-
-        {/* Action button */}
-        <View style={styles.actionRow}>
-          <Text style={styles.actionText}>{landed ? 'View cost breakdown' : 'Request details'}</Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.primary} />
-        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </View>
     </Touchable>
   );
 }
 
-const styles = StyleSheet.create({
-  imageFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.surfaceAlt },
-  imageFallbackText: { fontFamily: fonts.medium, fontSize: 11, color: colors.textMuted },
-  priceOnRequest: { fontFamily: fonts.bold, fontSize: 17, color: colors.textPrimary, letterSpacing: -0.3 },
+export default memo(ImportCarCard);
 
+const styles = StyleSheet.create({
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    padding: 10,
+    marginBottom: 10,
+  },
+  thumb: {
+    width: 68,
+    height: 68,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    marginBottom: 16,
-    ...shadows.card,
   },
-  imageContainer: {
-    width: '100%',
-    height: 180,
-    backgroundColor: colors.surfaceAlt,
-    position: 'relative',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  originBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(23, 18, 15, 0.85)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-  },
-  originBadgeText: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    color: '#FFFFFF',
-  },
-  conditionBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: colors.greenTint,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  conditionBadgeText: {
-    fontFamily: fonts.bold,
-    fontSize: 10.5,
-    color: colors.greenText,
-  },
-  content: {
-    padding: 16,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  title: {
-    fontFamily: fonts.extraBold,
-    fontSize: 18,
-    color: colors.textPrimary,
-  },
-  trim: {
-    fontFamily: fonts.medium,
-    fontSize: 12.5,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  specsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 10,
-  },
-  specPill: {
-    backgroundColor: colors.surfaceAlt,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-  },
-  specText: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-  priceContainer: {
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  priceLabel: {
-    fontFamily: fonts.regular,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    marginTop: 3,
-  },
-  priceRwf: {
-    fontFamily: fonts.extraBold,
-    fontSize: 18,
-    color: colors.primary,
-  },
-  priceUsd: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  transitBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.blueTint,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  transitText: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    color: colors.infoText,
-  },
-  actionRow: {
-    marginTop: 14,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  actionText: {
-    fontFamily: fonts.bold,
-    fontSize: 12,
-    color: colors.primary,
-  },
+  thumbImage: { width: '100%', height: '100%' },
+  body: { flex: 1, gap: 2 },
+  title: { fontFamily: fonts.bold, fontSize: 14.5, color: colors.textPrimary, letterSpacing: -0.2 },
+  meta: { fontFamily: fonts.regular, fontSize: 12, color: colors.textMuted },
+  origin: { fontFamily: fonts.medium, fontSize: 11.5, color: colors.textSecondary, marginTop: 2 },
+  end: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  priceCol: { alignItems: 'flex-end', gap: 1, maxWidth: 96 },
+  priceLabel: { fontFamily: fonts.medium, fontSize: 10, color: colors.textMuted },
+  price: { fontFamily: fonts.extraBold, fontSize: 13.5, color: colors.primary, fontVariant: ['tabular-nums'] },
+  onRequest: { fontFamily: fonts.semiBold, fontSize: 11.5, lineHeight: 15, color: colors.textMuted, textAlign: 'right', maxWidth: 72 },
 });

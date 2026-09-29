@@ -63,6 +63,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         top: '35M+ RWF',
       },
     },
+    showrooms: {
+      title: 'Showrooms',
+      description: 'Verified dealerships and the brands they have in stock right now.',
+      cars: '{{count}} cars',
+      verified: 'Verified showroom',
+    },
     featured: {
       eyebrow: 'Just listed',
       title: 'Certified and available now',
@@ -272,6 +278,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         band2: '20 – 35M RWF',
         top: '35M+ RWF',
       },
+    },
+    showrooms: {
+      title: 'Amaduka y’imodoka',
+      description: 'Amaduka yemejwe n’ibirango by’imodoka afite ubu.',
+      cars: 'Imodoka {{count}}',
+      verified: 'Iduka ryemejwe',
     },
     featured: {
       eyebrow: 'Amaze gutangazwa',
@@ -485,6 +497,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         top: '35M+ RWF',
       },
     },
+    showrooms: {
+      title: 'Showrooms',
+      description: 'Des concessionnaires vérifiés et les marques qu’ils ont en stock aujourd’hui.',
+      cars: '{{count}} voitures',
+      verified: 'Showroom vérifié',
+    },
     featured: {
       eyebrow: 'À l’instant',
       title: 'Certifiées et disponibles maintenant',
@@ -696,6 +714,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         band2: '20 – 35M RWF',
         top: '35M+ RWF',
       },
+    },
+    showrooms: {
+      title: 'Vyumba vya maonyesho',
+      description: 'Wauzaji waliothibitishwa na chapa walizo nazo sasa.',
+      cars: 'Magari {{count}}',
+      verified: 'Chumba cha maonyesho kilichothibitishwa',
     },
     featured: {
       eyebrow: 'Yametangazwa sasa',
@@ -909,6 +933,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         top: '35M+ RWF',
       },
     },
+    showrooms: {
+      title: '쇼룸',
+      description: '인증된 딜러와 현재 보유 중인 브랜드.',
+      cars: '차량 {{count}}대',
+      verified: '인증된 쇼룸',
+    },
     featured: {
       eyebrow: '방금 등록됨',
       title: '인증 완료, 지금 구매 가능',
@@ -1119,6 +1149,12 @@ export const home: Record<Locale, Record<string, unknown>> = {
         band2: '20 – 35M RWF',
         top: '35M+ RWF',
       },
+    },
+    showrooms: {
+      title: '展厅',
+      description: '已认证的车行及其现有品牌。',
+      cars: '{{count}} 辆车',
+      verified: '已认证展厅',
     },
     featured: {
       eyebrow: '新上架',

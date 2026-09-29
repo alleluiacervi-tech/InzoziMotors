@@ -35,7 +35,7 @@ function BrandTile({ entry, logoUrl, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={`${entry.make}, ${entry.modelCount} models from ${entry.originCountry}`}
     >
-      <BrandMark name={entry.make} logoUrl={logoUrl} size={44} />
+      <BrandMark name={entry.make} logoUrl={logoUrl} size={38} />
       <Text style={styles.tileName} numberOfLines={1}>{entry.make}</Text>
       <Text style={styles.tileMeta} numberOfLines={1}>
         {entry.modelCount} {entry.modelCount === 1 ? 'model' : 'models'}
@@ -68,6 +68,15 @@ export default function ImportBrandsScreen({ navigation }) {
 
   const openBrand = (make) => navigation.navigate('ImportBrandModels', { make });
 
+  // A 3-column grid whose last row is padded with empty cells, so a row of one
+  // or two brands keeps the same tile width instead of stretching into two
+  // wide slabs.
+  const COLUMNS = 3;
+  const gridData = useMemo(() => {
+    const spare = (COLUMNS - (matchingMakes.length % COLUMNS)) % COLUMNS;
+    return [...matchingMakes, ...Array.from({ length: spare }, (_, i) => ({ make: `__spacer${i}`, spacer: true }))];
+  }, [matchingMakes]);
+
   return (
     <Screen>
       <BackHeader title="Import a new vehicle" onBack={() => navigation.goBack()} />
@@ -92,14 +101,15 @@ export default function ImportBrandsScreen({ navigation }) {
       </View>
 
       <FlatList
-        data={matchingMakes}
+        data={gridData}
         keyExtractor={(item) => item.make}
-        numColumns={3}
+        numColumns={COLUMNS}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <BrandTile entry={item} logoUrl={brandLogo(item.make)} onPress={() => openBrand(item.make)} />
+        renderItem={({ item }) => (item.spacer
+          ? <View style={styles.spacer} />
+          : <BrandTile entry={item} logoUrl={brandLogo(item.make)} onPress={() => openBrand(item.make)} />
         )}
         ListHeaderComponent={
           <View style={styles.intro}>
@@ -135,13 +145,13 @@ export default function ImportBrandsScreen({ navigation }) {
             </View>
           ) : null
         }
-        ListEmptyComponent={
+        ListEmptyComponent={matchingModels.length ? null : (
           <EmptyState
             icon="car-sport-outline"
             title="No brand matches that"
             sub={`Nothing in the import catalogue matches “${trimmed}”. Try the brand name on its own.`}
           />
-        }
+        )}
       />
     </Screen>
   );
@@ -172,7 +182,7 @@ const styles = StyleSheet.create({
   tile: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
@@ -181,7 +191,8 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   tilePressed: { opacity: 0.7 },
-  tileName: { ...typography.cardTitle, color: colors.textPrimary, marginTop: spacing.sm, textAlign: 'center' },
+  spacer: { flex: 1 },
+  tileName: { ...typography.cardTitle, fontSize: 13.5, color: colors.textPrimary, marginTop: spacing.sm, textAlign: 'center' },
   tileMeta: { ...typography.cardMeta, color: colors.textSecondary, marginTop: 2 },
   tileOrigin: { ...typography.micro, color: colors.textMuted, marginTop: 2 },
   modelMatches: { marginTop: spacing.xl },

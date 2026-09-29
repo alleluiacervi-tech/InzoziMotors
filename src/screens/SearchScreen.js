@@ -1,82 +1,239 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import CarListCard from '../components/CarListCard';
 import CarCard from '../components/CarCard';
 import ImportCarCard from '../components/ImportCarCard';
-import { colors, radius, fonts, shadows } from '../theme';
+import BrandMark from '../components/BrandMark';
+import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
-import { searchImportCatalog } from '../data/importCatalog';
+import { searchImportCatalog, importCatalogMakes, FALLBACK_IMPORT_CATALOG } from '../data/importCatalog';
 
-// Marketplace browse tab — unified inventory with local Kigali stock + global on-demand imports.
+// The Cars tab.
+//
+// Two scopes, and it opens on the cars that are actually here. It used to open
+// on "All", which rendered every local car AND all 233 import-catalogue models
+// as full cards inside the list's footer — not virtualized, all mounted at
+// once — which is why tapping the tab hung for seconds. It also announced
+// "258 vehicles found" by counting import *models* as cars.
+//
+// Now: In Rwanda is a virtualized list of real listings with an honest count,
+// and a single compact doorway to imports at its foot. Import brand new is its
+// own virtualized list, entered by brand, with the models as compact rows.
 
 const SORTS = ['Best match', 'Price ↑', 'Price ↓', 'Newest', 'Mileage'];
 const SORT_LABEL_KEYS = { 'Best match': 'bestMatch', 'Price ↑': 'priceLow', 'Price ↓': 'priceHigh', Newest: 'newest', Mileage: 'mileage' };
 
 const SCOPES = [
-  { id: 'all', label: 'All Vehicles', icon: 'apps-outline' },
-  { id: 'local', label: 'In Rwanda', icon: 'location-outline' },
-  { id: 'import', label: 'Import Direct', icon: 'globe-outline' },
+  { id: 'local', labelKey: 'browse.scopeLocal', icon: 'location-outline' },
+  { id: 'import', labelKey: 'browse.scopeImport', icon: 'boat-outline' },
 ];
 
+// Virtualization settings shared by both lists: draw a screenful first, keep a
+// few screens around, and let Android drop what has scrolled away.
+const LIST_TUNING = {
+  initialNumToRender: 6,
+  maxToRenderPerBatch: 6,
+  windowSize: 7,
+  removeClippedSubviews: Platform.OS === 'android',
+};
+
+const IMPORT_MODEL_COUNT = FALLBACK_IMPORT_CATALOG.length;
+
 export default function SearchScreen({ navigation }) {
-  const { cars, t } = useApp();
-  const [scope, setScope] = useState('all'); // 'all' | 'local' | 'import'
+  const { cars, brandLogo, t } = useApp();
+  const [scope, setScope] = useState('local');
   const [sort, setSort] = useState('Best match');
   const [searchQuery, setSearchQuery] = useState('');
   const [layout, setLayout] = useState('list'); // 'list' | 'grid'
   const isGrid = layout === 'grid';
+  const query = searchQuery.trim();
 
-  // 1. Filter local cars
-  const filteredLocalCars = useMemo(() => {
+  const localCars = useMemo(() => {
     let list = cars;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (c) =>
-          c.title.toLowerCase().includes(q) ||
-          c.make.toLowerCase().includes(q) ||
-          c.model.toLowerCase().includes(q) ||
-          c.category.toLowerCase().includes(q)
+    if (query) {
+      const q = query.toLowerCase();
+      list = list.filter((c) =>
+        [c.title, c.make, c.model, c.category].some((v) => String(v || '').toLowerCase().includes(q))
       );
     }
-
-    if (sort === 'Price ↑') {
-      list = [...list].sort((a, b) => {
-        const pa = a.type === 'auction' ? a.currentBid : a.price;
-        const pb = b.type === 'auction' ? b.currentBid : b.price;
-        return pa - pb;
-      });
-    } else if (sort === 'Price ↓') {
-      list = [...list].sort((a, b) => {
-        const pa = a.type === 'auction' ? a.currentBid : a.price;
-        const pb = b.type === 'auction' ? b.currentBid : b.price;
-        return pb - pa;
-      });
-    } else if (sort === 'Mileage') {
-      list = [...list].sort((a, b) => a.mileage - b.mileage);
-    } else if (sort === 'Newest') {
-      list = [...list].sort((a, b) => b.year - a.year);
-    }
+    const priceOf = (c) => (c.type === 'auction' ? c.currentBid : c.price);
+    if (sort === 'Price ↑') list = [...list].sort((a, b) => priceOf(a) - priceOf(b));
+    else if (sort === 'Price ↓') list = [...list].sort((a, b) => priceOf(b) - priceOf(a));
+    else if (sort === 'Mileage') list = [...list].sort((a, b) => a.mileage - b.mileage);
+    else if (sort === 'Newest') list = [...list].sort((a, b) => b.year - a.year);
     return list;
-  }, [cars, searchQuery, sort]);
+  }, [cars, query, sort]);
 
-  // 2. Filter global import catalog
-  const filteredImportCars = useMemo(() => {
-    return searchImportCatalog(searchQuery);
-  }, [searchQuery]);
+  // Only computed when the import scope is open, or when a search needs the
+  // "you could import this instead" hint.
+  const importModels = useMemo(
+    () => (scope === 'import' || query ? searchImportCatalog(query) : []),
+    [scope, query]
+  );
+  const importBrands = useMemo(
+    () => importCatalogMakes().sort((a, b) => b.modelCount - a.modelCount),
+    []
+  );
 
-  // Decide what to render based on scope
-  const showLocal = scope === 'all' || scope === 'local';
-  const showImport = scope === 'all' || scope === 'import';
+  const openCar = useCallback((item) => navigation.navigate('VehicleDetail', { car: item }), [navigation]);
+  const openImport = useCallback((item) => navigation.navigate('ImportVehicleDetail', { item }), [navigation]);
 
-  const totalResultsCount =
-    (showLocal ? filteredLocalCars.length : 0) + (showImport ? filteredImportCars.length : 0);
+  const renderCar = useCallback(({ item }) => (isGrid
+    ? <CarCard car={item} onPress={() => openCar(item)} />
+    : <CarListCard car={item} onPress={() => openCar(item)} />
+  ), [isGrid, openCar]);
+  const renderImport = useCallback(({ item }) => (
+    <ImportCarCard item={item} onPress={() => openImport(item)} />
+  ), [openImport]);
+
+  const sortChips = (
+    <FlatList
+      horizontal
+      data={SORTS}
+      keyExtractor={(s) => s}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.sortRow}
+      renderItem={({ item }) => {
+        const on = item === sort;
+        return (
+          <Pressable
+            style={[styles.sortChip, on && styles.sortChipOn]}
+            onPress={() => setSort(item)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+          >
+            <Text style={[styles.sortText, on && styles.sortTextOn]}>
+              {t(`searchResults.${SORT_LABEL_KEYS[item]}`)}
+            </Text>
+          </Pressable>
+        );
+      }}
+    />
+  );
+
+  const sourcingCard = (
+    <View style={styles.sourcingCard}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.sourcingTitle}>{t('browse.sourcingTitle')}</Text>
+        <Text style={styles.sourcingBody}>{t('browse.sourcingBody')}</Text>
+      </View>
+      <Pressable
+        style={styles.sourcingBtn}
+        onPress={() => navigation.navigate('ImportOrderDetail', { isNewCustom: true })}
+        accessibilityRole="button"
+      >
+        <Text style={styles.sourcingBtnText}>{t('browse.sourcingCta')}</Text>
+      </Pressable>
+    </View>
+  );
+
+  const localHeader = (
+    <View style={isGrid && styles.gridHeaderPad}>
+      <View style={styles.resultRow}>
+        <Text style={styles.resultCount} numberOfLines={1}>
+          {t(localCars.length === 1 ? 'browse.carsInRwandaOne' : 'browse.carsInRwanda', { count: localCars.length })}
+          {query ? <Text style={styles.resultQuery}>{` · ${t('browse.resultsFor', { query })}`}</Text> : null}
+        </Text>
+        <Pressable
+          style={styles.layoutBtn}
+          onPress={() => setLayout(isGrid ? 'list' : 'grid')}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={t(isGrid ? 'searchResults.showList' : 'searchResults.showGrid')}
+        >
+          <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
+        </Pressable>
+      </View>
+      {sortChips}
+    </View>
+  );
+
+  const localFooter = (
+    <View style={isGrid && styles.gridHeaderPad}>
+      <Pressable
+        style={styles.importEntry}
+        onPress={() => setScope('import')}
+        accessibilityRole="button"
+      >
+        <View style={styles.importEntryIcon}>
+          <Ionicons name="boat-outline" size={20} color={colors.textSecondary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.importEntryTitle}>{t('browse.importEntryTitle')}</Text>
+          <Text style={styles.importEntryBody}>
+            {t('browse.importEntryBody', { models: IMPORT_MODEL_COUNT, brands: importBrands.length })}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </Pressable>
+    </View>
+  );
+
+  const localEmpty = (
+    <View style={styles.emptyState}>
+      <Ionicons name="car-outline" size={48} color={colors.border} />
+      <Text style={styles.emptyTitle}>
+        {query ? t('browse.noLocalMatches', { query }) : t('filters.noResults')}
+      </Text>
+      {query && importModels.length ? (
+        <>
+          <Text style={styles.emptySub}>{t('browse.noLocalImportHint', { count: importModels.length })}</Text>
+          <Pressable style={styles.primaryBtn} onPress={() => setScope('import')} accessibilityRole="button">
+            <Text style={styles.primaryBtnText}>{t('browse.seeImports')}</Text>
+          </Pressable>
+        </>
+      ) : (
+        <>
+          <Text style={styles.emptySub}>{t('filters.adjust')}</Text>
+          {query ? (
+            <Pressable style={styles.primaryBtn} onPress={() => setSearchQuery('')} accessibilityRole="button">
+              <Text style={styles.primaryBtnText}>{t('searchResults.clearSearch')}</Text>
+            </Pressable>
+          ) : null}
+        </>
+      )}
+    </View>
+  );
+
+  const importHeader = (
+    <View>
+      {!query ? (
+        <>
+          <Text style={styles.sectionLabel}>{t('browse.browseBrands')}</Text>
+          <FlatList
+            horizontal
+            data={importBrands}
+            keyExtractor={(b) => b.make}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.brandRow}
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.brandChip}
+                onPress={() => navigation.navigate('ImportBrandModels', { make: item.make })}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.make}, ${item.modelCount}`}
+              >
+                <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={36} />
+                <Text style={styles.brandChipName} numberOfLines={1}>{item.make}</Text>
+              </Pressable>
+            )}
+          />
+        </>
+      ) : null}
+      <View style={styles.resultRow}>
+        <Text style={styles.resultCount} numberOfLines={1}>
+          {t('browse.importModels', { count: importModels.length })}
+          {query ? <Text style={styles.resultQuery}>{` · ${t('browse.resultsFor', { query })}`}</Text> : null}
+        </Text>
+      </View>
+      <Text style={styles.importNote}>{t('browse.importNote')}</Text>
+    </View>
+  );
 
   return (
     <Screen background={colors.bg}>
-      {/* Search header */}
       <View style={styles.header}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
@@ -87,6 +244,7 @@ export default function SearchScreen({ navigation }) {
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
+            returnKeyType="search"
           />
           {searchQuery ? (
             <Pressable onPress={() => setSearchQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('searchResults.clearSearch')}>
@@ -96,14 +254,15 @@ export default function SearchScreen({ navigation }) {
         </View>
         <Pressable
           style={styles.filterBtn}
-          onPress={() => navigation.navigate('Filters')} accessibilityRole="button" accessibilityLabel={t('searchResults.filterButton')}
+          onPress={() => navigation.navigate('Filters')}
+          accessibilityRole="button"
+          accessibilityLabel={t('searchResults.filterButton')}
         >
           <Ionicons name="options-outline" size={20} color="#fff" />
         </Pressable>
       </View>
 
-      {/* Scope Selector: All | In Rwanda | Import Direct */}
-      <View style={styles.scopeRow}>
+      <View style={styles.scopeRow} accessibilityRole="tablist">
         {SCOPES.map((s) => {
           const on = scope === s.id;
           return (
@@ -112,161 +271,59 @@ export default function SearchScreen({ navigation }) {
               style={[styles.scopeTab, on && styles.scopeTabOn]}
               onPress={() => setScope(s.id)}
               accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
             >
-              <Ionicons name={s.icon} size={14} color={on ? '#FFFFFF' : colors.textSecondary} />
-              <Text style={[styles.scopeText, on && styles.scopeTextOn]}>{s.label}</Text>
+              <Ionicons name={s.icon} size={15} color={on ? colors.textPrimary : colors.textMuted} />
+              <Text style={[styles.scopeText, on && styles.scopeTextOn]}>{t(s.labelKey)}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      <FlatList
-        key={layout}
-        numColumns={isGrid ? 2 : 1}
-        data={showLocal ? filteredLocalCars : []}
-        keyExtractor={(c) => c.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: isGrid ? 10 : 16, paddingBottom: 30 }}
-        ListHeaderComponent={
-          <View style={isGrid && { paddingHorizontal: 6 }}>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultCount}>
-                {totalResultsCount} vehicles found
-                {searchQuery.trim() ? ` for "${searchQuery.trim()}"` : ''}
-              </Text>
-              <View style={styles.resultActions}>
-                <Pressable
-                  style={styles.layoutBtn}
-                  onPress={() => setLayout(isGrid ? 'list' : 'grid')}
-                  hitSlop={6}
-                  accessibilityRole="button"
-                  accessibilityLabel={t(isGrid ? 'searchResults.showList' : 'searchResults.showGrid')}
-                >
-                  <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={17} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-            </View>
-
-            {/* Sorts */}
-            <FlatList
-              horizontal
-              data={SORTS}
-              keyExtractor={(s) => s}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingBottom: 12 }}
-              renderItem={({ item }) => {
-                const on = item === sort;
-                return (
-                  <Pressable style={[styles.sortChip, on && styles.sortChipOn]} onPress={() => setSort(item)}>
-                    <Text style={[styles.sortText, { color: on ? '#fff' : colors.slate600 }]}>
-                      {t(`searchResults.${SORT_LABEL_KEYS[item]}`)}
-                    </Text>
-                  </Pressable>
-                );
-              }}
-            />
-
-            {/* Local Section Header if in 'all' mode and we have local cars */}
-            {scope === 'all' && filteredLocalCars.length > 0 && (
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionHeaderLeft}>
-                  <Ionicons name="location" size={16} color={colors.primary} />
-                  <Text style={styles.sectionTitle}>Available in Kigali ({filteredLocalCars.length})</Text>
-                </View>
-                <Text style={styles.sectionSub}>Ready for immediate test drive</Text>
-              </View>
-            )}
-
-            {/* If 0 local cars but we have import cars */}
-            {showLocal && filteredLocalCars.length === 0 && filteredImportCars.length > 0 && (
-              <View style={styles.noLocalNotice}>
-                <Ionicons name="information-circle-outline" size={20} color={colors.infoText} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.noLocalTitle}>0 in Rwanda stock · {filteredImportCars.length} available to import</Text>
-                  <Text style={styles.noLocalSub}>
-                    You can import these verified models directly — get a formal landed-price quotation before you pay anything.
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
-        }
-        renderItem={({ item }) =>
-          isGrid ? (
-            <CarCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
-          ) : (
-            <CarListCard car={item} onPress={() => navigation.navigate('VehicleDetail', { car: item })} />
-          )
-        }
-        ListFooterComponent={
-          <View>
-            {/* Import On-Demand Section */}
-            {showImport && filteredImportCars.length > 0 && (
-              <View style={styles.importSection}>
-                <View style={styles.importSectionHeader}>
-                  <View style={styles.importHeaderLeft}>
-                    <Ionicons name="boat" size={18} color={colors.infoText} />
-                    <View>
-                      <Text style={styles.importSectionTitle}>
-                        Import from Korea, Dubai & China ({filteredImportCars.length})
-                      </Text>
-                      <Text style={styles.importSectionSub}>
-                        Verified sourcing, transparent landed pricing, 50/50 payment schedule
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {filteredImportCars.map((importCar) => (
-                  <ImportCarCard
-                    key={importCar.id}
-                    item={importCar}
-                    onPress={() => navigation.navigate('ImportVehicleDetail', { item: importCar })}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* Custom Sourcing Concierge Banner */}
-            <View style={styles.customSourcingCard}>
-              <View style={styles.sourcingIconCircle}>
-                <Ionicons name="search" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={styles.sourcingTitle}>Can't find your exact trim or model?</Text>
-              <Text style={styles.sourcingDesc}>
-                Our global sourcing team in South Korea, Dubai, and China will find your exact vehicle, verify its condition, and provide a formal landed-price quotation.
-              </Text>
-              <Pressable
-                style={styles.sourcingBtn}
-                onPress={() => {
-                  navigation.navigate('ImportOrderDetail', { isNewCustom: true });
-                }}
-              >
-                <Text style={styles.sourcingBtnText}>Request Custom Vehicle Sourcing</Text>
-                <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
-              </Pressable>
-            </View>
-          </View>
-        }
-        ListEmptyComponent={
-          !showLocal || (filteredLocalCars.length === 0 && filteredImportCars.length === 0) ? (
+      {scope === 'local' ? (
+        <FlatList
+          key={`local-${layout}`}
+          numColumns={isGrid ? 2 : 1}
+          data={localCars}
+          keyExtractor={(c) => String(c.id)}
+          renderItem={renderCar}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.listContent, isGrid && styles.gridContent]}
+          ListHeaderComponent={localHeader}
+          ListFooterComponent={localFooter}
+          ListEmptyComponent={localEmpty}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          {...LIST_TUNING}
+        />
+      ) : (
+        <FlatList
+          key="import"
+          data={importModels}
+          keyExtractor={(m) => m.id}
+          renderItem={renderImport}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={importHeader}
+          ListFooterComponent={sourcingCard}
+          ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="car-outline" size={52} color={colors.border} />
+              <Ionicons name="boat-outline" size={44} color={colors.border} />
               <Text style={styles.emptyTitle}>{t('filters.noResults')}</Text>
-              <Text style={styles.emptySub}>{t('filters.adjust')}</Text>
-              <Pressable style={styles.clearBtn} onPress={() => setSearchQuery('')}>
-                <Text style={styles.clearBtnText}>{t('searchResults.clearSearch')}</Text>
-              </Pressable>
+              <Text style={styles.emptySub}>{t('browse.importEmpty')}</Text>
             </View>
-          ) : null
-        }
-      />
+          }
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          {...LIST_TUNING}
+        />
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
@@ -281,11 +338,17 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, fontFamily: fonts.medium, color: colors.textPrimary, padding: 0 },
   filterBtn: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+
+  // A segmented control, not two red pills: red is for the primary action and
+  // the active state of a single choice, and this is a view switch.
   scopeRow: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 8,
+    padding: 3,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
   },
   scopeTab: {
     flex: 1,
@@ -293,166 +356,95 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 9,
-    backgroundColor: colors.surface,
+    height: 36,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
   },
   scopeTabOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
-  scopeText: {
-    fontFamily: fonts.bold,
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  scopeTextOn: {
-    color: '#FFFFFF',
-  },
-  resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 4 },
-  resultCount: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
-  resultActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scopeText: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.textMuted },
+  scopeTextOn: { fontFamily: fonts.bold, color: colors.textPrimary },
+
+  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  gridContent: { paddingHorizontal: 10 },
+  gridHeaderPad: { paddingHorizontal: 6 },
+
+  resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, marginBottom: 8, gap: 12 },
+  resultCount: { flex: 1, fontSize: 15, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  resultQuery: { fontFamily: fonts.medium, color: colors.textMuted },
   layoutBtn: {
-    width: 40, height: 40, borderRadius: radius.pill,
-    backgroundColor: colors.greenTint,
+    width: 38, height: 38, borderRadius: radius.pill,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderSoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  sortChip: { minHeight: 40, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.pill },
+  sortRow: { gap: 8, paddingBottom: 12 },
+  sortChip: {
+    height: 34, justifyContent: 'center',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 14, borderRadius: radius.pill,
+  },
   sortChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  sortText: { fontSize: 13, fontFamily: fonts.semiBold },
-  sectionHeader: {
-    marginTop: 10,
-    marginBottom: 12,
-  },
-  sectionHeaderLeft: {
+  sortText: { fontSize: 12.5, fontFamily: fonts.semiBold, color: colors.textSecondary },
+  sortTextOn: { color: '#FFFFFF' },
+
+  importEntry: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  sectionTitle: {
-    fontFamily: fonts.extraBold,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  sectionSub: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  noLocalNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.blueTint,
-    borderRadius: radius.lg,
+    gap: 12,
+    marginTop: 8,
     padding: 14,
-    marginVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.infoBorder,
-  },
-  noLocalTitle: {
-    fontFamily: fonts.bold,
-    fontSize: 13.5,
-    color: colors.infoText,
-  },
-  noLocalSub: {
-    fontFamily: fonts.regular,
-    fontSize: 11.5,
-    lineHeight: 16,
-    color: colors.infoText,
-    marginTop: 2,
-  },
-  importSection: {
-    marginTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSoft,
-    paddingTop: 20,
-  },
-  importSectionHeader: {
-    marginBottom: 16,
-  },
-  importHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  importSectionTitle: {
-    fontFamily: fonts.extraBold,
-    fontSize: 17,
-    color: colors.textPrimary,
-  },
-  importSectionSub: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    color: colors.greenText,
-    marginTop: 2,
-  },
-  customSourcingCard: {
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: 20,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderSoft,
+  },
+  importEntryIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  importEntryTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.textPrimary },
+  importEntryBody: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 2 },
+
+  sectionLabel: { fontFamily: fonts.bold, fontSize: 13, color: colors.textSecondary, marginTop: 6, marginBottom: 8 },
+  brandRow: { gap: 8, paddingBottom: 14 },
+  brandChip: {
+    width: 76,
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 20,
-    ...shadows.card,
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
   },
-  sourcingIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  sourcingTitle: {
-    fontFamily: fonts.extraBold,
-    fontSize: 16,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-  sourcingDesc: {
-    fontFamily: fonts.regular,
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 16,
-  },
-  sourcingBtn: {
+  brandChipName: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.textPrimary, maxWidth: 68 },
+  importNote: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginBottom: 12 },
+
+  sourcingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: radius.pill,
+    gap: 12,
+    marginTop: 8,
+    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
   },
-  sourcingBtnText: {
-    fontFamily: fonts.bold,
-    fontSize: 13,
-    color: '#FFFFFF',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
-    gap: 10,
-  },
-  emptyTitle: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 8 },
-  emptySub: { fontSize: 14, fontFamily: fonts.regular, color: colors.textMuted, textAlign: 'center', lineHeight: 20 },
-  clearBtn: {
-    marginTop: 12,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 30,
-  },
-  clearBtnText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
+  sourcingTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.textPrimary },
+  sourcingBody: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 2 },
+  sourcingBtn: { backgroundColor: colors.primary, paddingHorizontal: 14, height: 38, borderRadius: radius.pill, justifyContent: 'center' },
+  sourcingBtnText: { fontFamily: fonts.bold, fontSize: 12.5, color: '#FFFFFF' },
+
+  emptyState: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 28, gap: 8 },
+  emptyTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textPrimary, marginTop: 6, textAlign: 'center' },
+  emptySub: { fontSize: 13.5, fontFamily: fonts.regular, color: colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  primaryBtn: { marginTop: 10, backgroundColor: colors.primary, paddingHorizontal: 22, height: 44, borderRadius: radius.pill, justifyContent: 'center' },
+  primaryBtnText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
 });

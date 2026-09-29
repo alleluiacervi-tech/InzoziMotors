@@ -13,7 +13,7 @@ import type { ReactElement, SVGProps } from 'react'
 export type IconName =
   | 'shield' | 'shield-check' | 'check' | 'check-circle' | 'close' | 'close-circle'
   | 'chevron-right' | 'chevron-left' | 'chevron-down' | 'chevron-up' | 'arrow-right'
-  | 'search' | 'filter' | 'heart' | 'heart-filled' | 'star' | 'car' | 'key'
+  | 'search' | 'filter' | 'heart' | 'heart-filled' | 'star' | 'car' | 'key' | 'store'
   | 'camera' | 'document' | 'refresh' | 'cash' | 'eye-off' | 'eye' | 'clock'
   | 'calendar' | 'location' | 'phone' | 'mail' | 'whatsapp' | 'user' | 'bell'
   | 'menu' | 'grid' | 'chart' | 'gauge' | 'fuel' | 'settings' | 'logout'
@@ -83,6 +83,13 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="M4 16v-3.2a2 2 0 01.4-1.2l2-2.7A3 3 0 018.8 7.7h6.4a3 3 0 012.4 1.2l2 2.7a2 2 0 01.4 1.2V16" />
       <path d="M3 16h18v2a1 1 0 01-1 1h-1.5a1 1 0 01-1-1v-1h-11v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" />
       <path d="M6.5 12.5h11" />
+    </>
+  ),
+  store: (
+    <>
+      <path d="M4 9.5l1.4-4.2A1.5 1.5 0 016.8 4.3h10.4a1.5 1.5 0 011.4 1l1.4 4.2" />
+      <path d="M4 9.5a2.7 2.7 0 005.3 0 2.7 2.7 0 005.4 0 2.7 2.7 0 005.3 0" />
+      <path d="M5.5 12v7.2h13V12M10 19.2v-4.2h4v4.2" />
     </>
   ),
   key: (

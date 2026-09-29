@@ -54,6 +54,12 @@ export const cars = {
     return await api.get(`/cars?seller_id=${encodeURIComponent(userId)}&limit=100`);
   },
 
+  // Verified showrooms with public stock, and the brands each one carries —
+  // derived from its live cars on the server, never chosen.
+  getShowrooms: async () => {
+    return await api.get('/showrooms');
+  },
+
   getMyListings: async () => {
     return await api.get('/cars/seller/mine');
   },

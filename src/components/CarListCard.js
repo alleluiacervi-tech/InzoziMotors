@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { radius, spacing, typography, iconSize } from '../theme';
@@ -6,39 +6,51 @@ import { useTheme } from '../theme/ThemeContext';
 import { getCertTier } from '../data/certification';
 import { useApp } from '../context/AppContext';
 import { getMarketDiff, getSavedCount, getNeighborhood } from '../data/marketData';
-import { formatPrice } from '../data/cars';
 import Price from './Price';
+import BrandMark from './BrandMark';
 import { PHOTO } from '../utils/photo';
 import Photo from './Photo';
 import Touchable from './Touchable';
 import AppText from './AppText';
 
-// Encar-style horizontal list card: photo left, dense specs right.
-// Built for scanning many cars quickly in search results.
+// A search-results row: photo left, the facts a buyer triages on right.
+//
+// The photo FILLS its side of the card (cover). It used to be `contain`ed into
+// a 118×108 box beside a taller body, so every car floated in grey bands and
+// the list looked unfinished. The body is four lines, in the order people
+// scan: what it is, its year/km/fuel, where it is and its inspection score,
+// then the price on one line. At most one tag, because a row with two chips
+// and a two-line price was taller than the photo beside it.
+//
+// The registration month is gone. It was computed from the listing id —
+// `parseInt(uuid) % 12` — so it was invented for every car and NaN for most.
 
-const getRegYear = (car) => {
-  const yy = String(car.year).slice(-2);
-  const mm = String((parseInt(car.id) % 12) + 1).padStart(2, '0');
-  return `${car.year} (${yy}/${mm})`;
-};
+const PHOTO_W = 124;
+const ROW_H = 118;
 
-export default function CarListCard({ car, onPress }) {
+function CarListCard({ car, onPress }) {
   const tier = getCertTier(car);
-  const { isCarSaved, toggleSaveCar, t } = useApp();
+  const { isCarSaved, toggleSaveCar, brandLogo, t } = useApp();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const saved = isCarSaved(car.id);
   const price = car.type === 'auction' ? car.currentBid : car.price;
   const marketDiff = getMarketDiff(car);
-  const savedCount = getSavedCount(car);
   const belowMarket = typeof marketDiff === 'number' && marketDiff < 0;
-  const highDemand = savedCount >= 10;
+  const highDemand = getSavedCount(car) >= 10;
+  const km = `${Number(car.mileage ?? 0).toLocaleString('en-US')} km`;
+  const specs = [car.year, km, car.fuel].filter(Boolean).join(' · ');
 
   return (
-    <Touchable scaleTo={0.985} style={styles.card} onPress={onPress}>
-      {/* Photo */}
+    <Touchable
+      scaleTo={0.985}
+      style={styles.card}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${car.title}, ${specs}`}
+    >
       <View style={styles.imageWrap}>
-        <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="contain" />
+        <Photo uri={car.image} width={PHOTO.CARD} style={styles.image} resizeMode="cover" />
         {tier && (
           <View style={[styles.certBadge, tier.key === 'plus' && { backgroundColor: colors.primary }]}>
             <Ionicons name="shield-checkmark" size={9} color="#fff" />
@@ -47,15 +59,15 @@ export default function CarListCard({ car, onPress }) {
         )}
       </View>
 
-      {/* Specs */}
       <View style={styles.body}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>{car.title}</Text>
+          <BrandMark name={car.make} logoUrl={brandLogo?.(car.make)} size={20} style={styles.brand} />
+          <Text style={styles.title} numberOfLines={2}>{car.title}</Text>
           <Touchable
             scaleTo={0.88}
             haptic="selection"
             onPress={() => toggleSaveCar(car.id)}
-            hitSlop={10}
+            hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={t(saved ? 'home.removeSaved' : 'home.saveCar', { title: car.title })}
             accessibilityState={{ selected: saved }}
@@ -63,58 +75,53 @@ export default function CarListCard({ car, onPress }) {
             <Ionicons
               name={saved ? 'heart' : 'heart-outline'}
               size={iconSize.md}
-              color={saved ? '#EF4444' : colors.textMuted}
+              color={saved ? colors.primary : colors.textMuted}
             />
           </Touchable>
         </View>
 
-        <Text style={styles.meta} numberOfLines={1}>
-          {getRegYear(car)} · {(car.mileage ?? 0).toLocaleString('en-US')} km
-        </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {car.fuel} · {getNeighborhood(car)}
-        </Text>
+        <Text style={styles.meta} numberOfLines={1}>{specs}</Text>
 
-        {/* The row has room, and this is the differentiator. See CarCard. */}
-        {car.inspectionScore ? (
-          <View style={styles.scoreRow}>
-            <Ionicons name="shield-checkmark" size={11} color={colors.green} />
-            <Text style={styles.scoreText}>{t('home.inspected', { score: car.inspectionScore })}</Text>
-          </View>
-        ) : null}
+        <View style={styles.infoRow}>
+          <Ionicons name="location-outline" size={11} color={colors.textMuted} />
+          <Text style={[styles.meta, styles.shrink]} numberOfLines={1}>{getNeighborhood(car)}</Text>
+          {car.inspectionScore ? (
+            <>
+              <Text style={styles.dot}>·</Text>
+              <Ionicons name="shield-checkmark" size={11} color={colors.green} />
+              <Text style={styles.scoreText} numberOfLines={1}>{t('home.inspected', { score: car.inspectionScore })}</Text>
+            </>
+          ) : null}
+        </View>
 
-        {/* Stacked, not side by side: in a 118px-photo row the price (and its
-            dollar line) needs the full width, or it overprints the tags. */}
-        {(belowMarket || highDemand) && (
-          <View style={styles.tagsRow}>
-            {/* Only when the server actually computed a market position from
-                real comparables. getMarketDiff returns null otherwise. */}
-            {belowMarket && (
-              <View style={styles.tagGreen}>
-                <Text style={styles.tagGreenText}>{t('home.belowMarket', { percent: Math.abs(marketDiff) })}</Text>
-              </View>
-            )}
-            {highDemand && (
-              <View style={styles.tagAmber}>
-                <Text style={styles.tagAmberText}>{t('home.highDemand')}</Text>
-              </View>
-            )}
-          </View>
-        )}
-        <Price amountRwf={price} style={styles.priceBlock} />
+        <View style={styles.priceRow}>
+          <Price amountRwf={price} size="list" inline style={styles.shrink} />
+          {belowMarket ? (
+            <View style={styles.tagGreen}>
+              <Text style={styles.tagGreenText} numberOfLines={1}>{t('home.belowMarket', { percent: Math.abs(marketDiff) })}</Text>
+            </View>
+          ) : highDemand ? (
+            <View style={styles.tagAmber}>
+              <Text style={styles.tagAmberText} numberOfLines={1}>{t('home.highDemand')}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </Touchable>
   );
 }
+
+export default memo(CarListCard);
 
 // A function of the live theme — see the same note in Price.js.
 function makeStyles(colors) {
   return StyleSheet.create({
     card: {
       flexDirection: 'row',
+      height: ROW_H,
       backgroundColor: colors.surface,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       borderRadius: radius.lg,
       overflow: 'hidden',
       marginBottom: spacing.md,
@@ -122,10 +129,9 @@ function makeStyles(colors) {
     imageWrap: {
       // Fixed size — iOS lets an unconstrained image's natural dimensions
       // inflate the row height, so never rely on stretch here.
-      width: 118,
-      height: 108,
+      width: PHOTO_W,
+      height: ROW_H,
       backgroundColor: colors.surfaceAlt,
-      position: 'relative',
     },
     image: { width: '100%', height: '100%' },
     certBadge: {
@@ -136,30 +142,27 @@ function makeStyles(colors) {
       borderRadius: radius.sm,
     },
     certBadgeText: { ...typography.badge, color: colors.white },
-    body: { flex: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.md, gap: 2, justifyContent: 'center' },
-    titleRow: {
-      flexDirection: 'row', alignItems: 'center',
-      justifyContent: 'space-between', gap: spacing.sm, marginBottom: 2,
-    },
-    title: { flex: 1, ...typography.cardTitle, color: colors.textPrimary },
-    meta: { ...typography.cardMeta, color: colors.textMuted, lineHeight: 17 },
-    tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 },
-    priceBlock: { marginTop: 6 },
-    scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-    scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText },
+    body: { flex: 1, paddingLeft: spacing.md, paddingRight: 10, paddingVertical: 10, justifyContent: 'space-between' },
+    titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+    brand: { marginTop: 0 },
+    title: { flex: 1, ...typography.cardTitle, fontSize: 14, lineHeight: 18, color: colors.textPrimary },
+    meta: { ...typography.cardMeta, color: colors.textMuted },
+    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+    shrink: { flexShrink: 1 },
+    dot: { ...typography.cardMeta, color: colors.textMuted, marginHorizontal: 2 },
+    scoreText: { ...typography.cardMeta, fontFamily: typography.bodyStrong.fontFamily, color: colors.greenText, flexShrink: 0 },
+    priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
     tagGreen: {
       backgroundColor: colors.greenTint,
-      paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
+      paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, flexShrink: 0,
     },
-    // Was colors.primary — brand red lettering on a green "pass" chip. It cleared
-    // contrast but said the wrong thing, and red is reserved for prices, primary
-    // actions, selected states and the Certified+ badge. None of those is a tag.
-    tagGreenText: { ...typography.badge, color: colors.greenText },
+    // Red is reserved for prices, primary actions, selected states and the
+    // Certified+ badge. None of those is a tag.
+    tagGreenText: { ...typography.badge, fontSize: 10, color: colors.greenText },
     tagAmber: {
       backgroundColor: colors.amberTint,
-      paddingHorizontal: 6, paddingVertical: 3, borderRadius: radius.sm,
+      paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, flexShrink: 0,
     },
-    tagAmberText: { ...typography.badge, color: colors.amberText },
-    price: { ...typography.cardPrice, color: colors.primary },
+    tagAmberText: { ...typography.badge, fontSize: 10, color: colors.amberText },
   });
 }

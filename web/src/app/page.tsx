@@ -3,6 +3,7 @@ import { Container, Section, SectionHeading } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
 import { StockBand } from '@/components/home/StockBand'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
+import { Showrooms } from '@/components/home/Showrooms'
 import { TopDeals } from '@/components/home/TopDeals'
 import { ThreeWays } from '@/components/home/ThreeWays'
 import { InspectionStory } from '@/components/home/InspectionStory'
@@ -89,6 +90,9 @@ export default async function HomePage() {
       {/* Operator placements, then the newest inspected cars. */}
       <TopDeals placements={placements} />
       <FeaturedCars cars={stock.slice(0, 8)} />
+
+      {/* Verified showrooms and the brands each one has in stock. */}
+      <Showrooms />
 
       <ThreeWays saleCount={inventory.total} rentalCount={rentalFleet.length} />
 

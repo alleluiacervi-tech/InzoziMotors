@@ -31,6 +31,9 @@ export const linking = {
       VehicleDetail: 'cars/:carId',
       RentalDetail: 'rentals/:rentalId',
       InspectionReport: 'cars/:carId/inspection',
+      // The website's seller page. A showroom opens its storefront; an
+      // individual seller's id hands over to their profile (ShowroomScreen).
+      Showroom: 'sellers/:sellerId',
       // Push-notification taps land here (see src/utils/pushNavigation.js) —
       // a "New message" push carries conversationId in its data payload.
       Chat: 'chat/:convId',

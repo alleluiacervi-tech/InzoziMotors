@@ -24,7 +24,9 @@ import { formatUsdApprox, usdFromRwf } from '../data/marketData';
 // it. Reading it from context means a refreshed rate repaints every price.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function Price({ amountRwf, size = 'card', align = 'left', style }) {
+// `inline` puts the dollar figure beside the franc figure instead of under it:
+// a list row is one line shorter, and the pair still reads as price + courtesy.
+export default function Price({ amountRwf, size = 'card', align = 'left', inline = false, style }) {
   const { fx, t } = useApp();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -34,13 +36,14 @@ export default function Price({ amountRwf, size = 'card', align = 'left', style 
   const staleLabel = t ? t('price.rateMayBeOutOfDate') : '  rate may be out of date';
 
   return (
-    <View style={[align === 'right' && styles.right, style]}>
-      <Text style={size === 'detail' ? styles.priceDetail : styles.price}>
+    <View style={[inline && styles.inline, align === 'right' && styles.right, style]}>
+      <Text style={size === 'detail' ? styles.priceDetail : size === 'list' ? styles.priceList : styles.price} numberOfLines={1}>
         {formatPrice(amountRwf)}
       </Text>
       {usd == null ? null : (
         <Text
-          style={size === 'detail' ? styles.usdDetail : styles.usd}
+          style={size === 'detail' ? styles.usdDetail : inline ? styles.usdInline : styles.usd}
+          numberOfLines={1}
           // Says the quiet part out loud for a screen reader: this is an
           // approximation at today's rate, not a second price.
           accessibilityLabel={approxLabel}
@@ -92,6 +95,20 @@ export function RateNote({ style }) {
 function makeStyles(colors) {
   return StyleSheet.create({
     right: { alignItems: 'flex-end' },
+    inline: { flexDirection: 'row', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' },
+    priceList: {
+      fontSize: 16,
+      fontWeight: '800',
+      letterSpacing: -0.3,
+      color: colors.primary,
+      fontFamily: fonts?.bold,
+      fontVariant: ['tabular-nums'],
+    },
+    usdInline: {
+      fontSize: 11.5,
+      color: colors.textMuted,
+      fontVariant: ['tabular-nums'],
+    },
     price: {
       fontSize: 18,
       fontWeight: '800',
