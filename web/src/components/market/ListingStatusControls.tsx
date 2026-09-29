@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { setListingStatusAction } from '@/app/(dashboard)/dashboard/selling/actions'
 import { useT } from '@/lib/i18n/context'
 
@@ -16,6 +17,8 @@ export function ListingStatusControls({ carId, status }: { carId: string; status
   const [confirming, setConfirming] = useState<Target | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  const [, startRefresh] = useTransition()
 
   const actions: { target: Target; label: string; confirm: string; danger?: boolean }[] =
     status === 'live'
@@ -37,9 +40,14 @@ export function ListingStatusControls({ carId, status }: { carId: string; status
       setError(result.error)
       return
     }
-    // No router.refresh() here. The action calls revalidatePath, so its own
-    // response already carries the updated page.
     setConfirming(null)
+    // The action calls revalidatePath, so its response normally carries the
+    // updated page. It is not always applied: when this page was reached by
+    // a server-action redirect (signing in), Next can put back a copy of the
+    // page prefetched before the change, and a sold car reads Available again.
+    // One refresh after the action has fully resolved fetches the page anew
+    // and clears that stale copy, so the screen always ends on the truth.
+    startRefresh(() => router.refresh())
   }
 
   const pending = actions.find((a) => a.target === confirming)
