@@ -1538,6 +1538,64 @@ router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   }
 });
 
+// DELETE /cars/:id/permanently — admin: erase an archived listing for good.
+//
+// Archiving (above) is the reversible step and stays the only way a listing
+// leaves the marketplace. This is the clean-up after it — test listings,
+// duplicates, cars that will never come back — so it refuses anything that is
+// not already archived.
+//
+// "The listing" is the car row and what exists only because of it: photos,
+// saves, price history, placements and contact events (all ON DELETE CASCADE).
+// Three things are deliberately NOT erased with it, because they are records
+// about a real vehicle and real money rather than about a listing:
+//
+//   inspections   the 150-point evidence. Deleting it would cascade into
+//                 platform_fees (the inspection fee — revenue) and
+//                 report_entitlements (reports people paid for), so the
+//                 inspection is detached (car_id = NULL) and kept.
+//   submissions   the seller's own request, which platform_fees may also
+//                 reference; detached the same way.
+//   conversations messages between two people; ON DELETE SET NULL already.
+//
+// The full row is written to the audit log first, so what was deleted, by
+// whom and why is never lost.
+router.delete('/:id/permanently', requireAdmin, requireUuid('id'), async (req, res) => {
+  const reason = String(req.body?.reason || '').trim().slice(0, 1000);
+  if (reason.length < 4) return res.status(400).json({ error: 'Say why this listing is being deleted — it is recorded.' });
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query('SELECT * FROM cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!rows.length) { const e = new Error('Listing not found'); e.status = 404; throw e; }
+      const car = rows[0];
+      if (car.status !== 'archived') {
+        const e = new Error('Only an archived listing can be deleted. Remove it from the marketplace first.');
+        e.status = 409; e.code = 'NOT_ARCHIVED'; throw e;
+      }
+      const inspections = await client.query('UPDATE inspections SET car_id = NULL WHERE car_id = $1', [car.id]);
+      const submissions = await client.query('UPDATE submissions SET car_id = NULL WHERE car_id = $1', [car.id]);
+      // Retired, but its rows are history and its foreign key has no ON DELETE.
+      await client.query('UPDATE handovers SET car_id = NULL WHERE car_id = $1', [car.id]);
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'listing.deleted', targetType: 'listing', targetId: car.id,
+        summary: `Deleted the archived listing ${car.title}`,
+        metadata: {
+          reason,
+          listing: car,
+          kept: { inspections: inspections.rowCount, submissions: submissions.rowCount },
+        },
+      });
+      await client.query('DELETE FROM cars WHERE id = $1', [car.id]);
+      return { id: car.id, title: car.title, kept_inspections: inspections.rowCount };
+    });
+    res.json({ deleted: true, ...result });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    log.error('listing delete error', { error: err.message, id: req.params.id });
+    res.status(500).json({ error: 'Could not delete the listing' });
+  }
+});
+
 module.exports = router;
 // Exported for backend/test/public-payload.test.js, which checks both lists
 // against the real table: a name that is not a column, and a column that is in

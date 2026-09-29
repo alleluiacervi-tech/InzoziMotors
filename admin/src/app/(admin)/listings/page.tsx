@@ -197,6 +197,31 @@ export default function ListingsPage() {
     }
   }
 
+  // Archiving is the reversible step; this is the clean-up after it, for test
+  // listings and duplicates. The server refuses anything not archived, keeps
+  // the inspection record, and writes the full listing to the activity log.
+  async function deletePermanently(car: any) {
+    const ok = await ask({
+      title: `Delete the ${car.year} ${car.make} ${car.model} for good?`,
+      message: 'The listing, its photos, saves and price history are erased and cannot be restored. Its 150-point inspection, the seller\'s submission and any fees paid are kept, and the full listing is written to the activity log.',
+      confirmLabel: 'Delete permanently',
+      tone: 'danger',
+    })
+    if (!ok) return
+    const reason = window.prompt('Why is this listing being deleted? (recorded in the activity log)')
+    if (!reason?.trim()) return
+    setActionId(car.id)
+    try {
+      await api.deleteListingPermanently(car.id, reason.trim())
+      toast(`${car.year} ${car.make} ${car.model} deleted`, 'success')
+      load(statusFilter, query)
+    } catch (e: any) {
+      toast(e.message, 'error')
+    } finally {
+      setActionId(null)
+    }
+  }
+
   async function feature(id: string) {
     const ok = await ask({
       title: 'Feature this listing for 7 days?',
@@ -397,6 +422,15 @@ export default function ListingsPage() {
                       className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                       Mark Sold
+                    </button>
+                  )}
+                  {car.status === 'archived' && (
+                    <button
+                      onClick={() => deletePermanently(car)}
+                      disabled={actionId === car.id}
+                      className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                    >
+                      {actionId === car.id ? 'Deleting…' : 'Delete permanently'}
                     </button>
                   )}
                   {!['sold', 'archived'].includes(car.status) && (
