@@ -34,6 +34,14 @@ test('a seller marks a car sold and it leaves the marketplace', async ({ page })
   const carId = process.env.E2E_SOLO_CAR_ID!
   await signIn(page, process.env.E2E_SOLO_SELLER_EMAIL!, process.env.E2E_SOLO_SELLER_PASSWORD!, '/dashboard/selling')
   await page.waitForURL('**/dashboard/selling')
+  // Let the sign-in redirect finish before acting. The sign-in action renders
+  // this page, and Next's RedirectBoundary then pushes the same URL again from
+  // an effect, using the sidebar's prefetch of it. That prefetch was taken
+  // before the sale, so when the test clicked within half a second of
+  // arriving, the push could land after the sale and put the old page back:
+  // the server said sold, the screen said Available. A person can't click
+  // twice that fast.
+  await page.waitForLoadState('networkidle')
   await page.getByRole('button', { name: 'Mark as sold' }).click()
   await page.getByRole('button', { name: 'Mark as sold' }).click()
   await expect(page.getByRole('heading', { name: 'Closed listings' })).toBeVisible()

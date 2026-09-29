@@ -38,9 +38,7 @@ export function ListingStatusControls({ carId, status }: { carId: string; status
       return
     }
     // No router.refresh() here. The action calls revalidatePath, so its own
-    // response already carries the updated page. A second refresh racing it
-    // could leave the old tree on screen, showing a sold car as "Available"
-    // (and failing the e2e "mark as sold" test intermittently).
+    // response already carries the updated page.
     setConfirming(null)
   }
 
