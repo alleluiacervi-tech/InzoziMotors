@@ -534,21 +534,25 @@ router.post('/:id/close', requireAdmin, requireUuid('id'), async (req, res) => {
       const sub = current.rows[0];
       if (sub.status === 'rejected') { const e = new Error('This submission is already closed.'); e.status = 409; throw e; }
 
-      const car = sub.car_id
-        ? (await client.query('SELECT id, status, title FROM cars WHERE id = $1 FOR UPDATE', [sub.car_id])).rows[0]
+      const inspection = (await client.query(
+        `SELECT i.id, i.status, i.car_id,
+                (SELECT COUNT(*)::int FROM platform_fees f
+                  WHERE f.inspection_id = i.id AND f.status <> 'waived') AS fees
+           FROM inspections i WHERE i.submission_id = $1 FOR UPDATE OF i`,
+        [sub.id]
+      )).rows[0] || null;
+
+      // The listing is linked from either side (submissions.car_id or
+      // inspections.car_id — see routes/cars.js), so both are read.
+      const carId = sub.car_id || (inspection && inspection.car_id) || null;
+      const car = carId
+        ? (await client.query('SELECT id, status, title FROM cars WHERE id = $1 FOR UPDATE', [carId])).rows[0]
         : null;
       if (car && ['live', 'paused', 'sold'].includes(car.status)) {
         const e = new Error('This car is already a listing. Pause it, mark it sold or remove it from Listings instead.');
         e.status = 409; e.code = 'IS_A_LISTING'; throw e;
       }
 
-      const inspection = (await client.query(
-        `SELECT i.id, i.status,
-                (SELECT COUNT(*)::int FROM platform_fees f
-                  WHERE f.inspection_id = i.id AND f.status <> 'waived') AS fees
-           FROM inspections i WHERE i.submission_id = $1 FOR UPDATE OF i`,
-        [sub.id]
-      )).rows[0] || null;
       let releasedAppointment = false;
       if (inspection && inspection.status === 'scheduled' && inspection.fees === 0) {
         await client.query('DELETE FROM inspections WHERE id = $1', [inspection.id]);

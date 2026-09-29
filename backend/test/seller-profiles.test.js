@@ -301,7 +301,7 @@ test('an admin closes a submission from any stage short of a public listing', as
 
   // A public listing is not closed from here.
   const car = await liveCar({ seller, admin, make: 'Honda', model: 'Fit' });
-  const { rows: [sub] } = await pool.query('SELECT id FROM submissions WHERE car_id=$1', [car.id]);
+  const { rows: [sub] } = await pool.query('SELECT submission_id AS id FROM inspections WHERE car_id=$1', [car.id]);
   const refused = await api().post(`/submissions/${sub.id}/close`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: 'not going ahead' }).expect(409);
   assert.equal(refused.body.code, 'IS_A_LISTING');
