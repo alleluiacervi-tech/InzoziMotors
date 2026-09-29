@@ -34,17 +34,16 @@ test('a seller marks a car sold and it leaves the marketplace', async ({ page })
   const carId = process.env.E2E_SOLO_CAR_ID!
   await signIn(page, process.env.E2E_SOLO_SELLER_EMAIL!, process.env.E2E_SOLO_SELLER_PASSWORD!, '/dashboard/selling')
   await page.waitForURL('**/dashboard/selling')
-  // Let the sign-in redirect finish before acting. The sign-in action renders
-  // this page, and Next's RedirectBoundary then pushes the same URL again from
-  // an effect, using the sidebar's prefetch of it. That prefetch was taken
-  // before the sale, so when the test clicked within half a second of
-  // arriving, the push could land after the sale and put the old page back:
-  // the server said sold, the screen said Available. A person can't click
-  // twice that fast.
-  await page.waitForLoadState('networkidle')
+  // Then load the page fresh. Arriving by the sign-in action's redirect leaves
+  // Next's RedirectBoundary holding a push of this same URL, served from the
+  // dashboard nav's prefetch — taken before the sale. Whenever that push landed
+  // after the sale it put the old page back (the server said sold, the screen
+  // said Available), and no wait made that reliable: CI failed on main twice
+  // with a networkidle wait in place. A real page load has no pending push.
+  await page.goto('/dashboard/selling')
   await page.getByRole('button', { name: 'Mark as sold' }).click()
   await page.getByRole('button', { name: 'Mark as sold' }).click()
-  await expect(page.getByRole('heading', { name: 'Closed listings' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Closed listings' })).toBeVisible({ timeout: 15_000 })
 
   const listed = await (await fetch(`${API_URL}/cars?seller_id=${process.env.E2E_SOLO_SELLER_ID}`)).json()
   expect(listed.some((c: { id: string }) => c.id === carId)).toBe(false)
