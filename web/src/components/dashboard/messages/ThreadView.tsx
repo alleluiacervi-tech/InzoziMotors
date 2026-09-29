@@ -12,7 +12,7 @@ import {
 } from '@/app/(dashboard)/dashboard/messages/actions'
 import { Alert, Icon } from '@/components/ui'
 import { useSocket } from '@/lib/socket'
-import { useT } from '@/lib/i18n/context'
+import { useLocale, useT } from '@/lib/i18n/context'
 import type { Message } from '@/lib/types'
 import type { ConversationView } from './shared'
 
@@ -33,19 +33,39 @@ function dayKey(iso: string): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 }
 
-function dayLabel(iso: string, todayLabel: string): string {
+// Consecutive messages from one person, close together, read as one block:
+// tight spacing, one avatar, rounded like a single speech bubble. A gap this
+// long, or a new day, starts a new block with its own time stamp.
+const GROUP_GAP_MS = 10 * 60 * 1000
+const STAMP_GAP_MS = 60 * 60 * 1000
+
+function stampLabel(iso: string, locale: string, labels: { today: string; yesterday: string }): string {
   const d = new Date(iso)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(today.getDate() - 1)
-  if (dayKey(iso) === dayKey(today.toISOString())) return todayLabel
-  if (dayKey(iso) === dayKey(yesterday.toISOString())) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric' })
+  const now = new Date()
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  const time = d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
+  if (dayKey(iso) === dayKey(now.toISOString())) return `${labels.today} ${time}`
+  if (dayKey(iso) === dayKey(yesterday.toISOString())) return `${labels.yesterday} ${time}`
+  const date = d.toLocaleDateString(locale, {
+    weekday: now.getTime() - d.getTime() < 6 * 86400000 ? 'long' : undefined,
+    month: 'short',
+    day: 'numeric',
+    year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+  })
+  return `${date}, ${time}`
 }
 
-function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+function exactTime(iso: string, locale: string): string {
+  return new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })
 }
+
+// One conversation, drawn the way messaging apps have taught everyone to read
+// one: the other person on the left in grey, you on the right in ink, bubbles
+// grouped by who spoke and when, a quiet time stamp between blocks, "Seen"
+// under your last message once it has been read, and a composer that grows
+// with what you type. It fills its pane (messages/layout.tsx) and, on a
+// phone, the whole screen.
 
 export function ThreadView({
   conversation,
@@ -57,6 +77,7 @@ export function ThreadView({
   myId: string
 }) {
   const t = useT()
+  const { locale } = useLocale()
   const router = useRouter()
   const { socket } = useSocket(true)
 
@@ -82,6 +103,7 @@ export function ThreadView({
 
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const listEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   // Fixes a staleness window that is otherwise inherent to server rendering:
   // the sidebar's unread-message badge (in the layout) and this page's
@@ -143,6 +165,14 @@ export function ThreadView({
       if (typingTimeout.current) clearTimeout(typingTimeout.current)
     }
   }, [])
+
+  // The composer grows with what is typed, up to about five lines.
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`
+  }, [text])
 
   function handleTextChange(value: string) {
     setText(value)
@@ -208,48 +238,64 @@ export function ThreadView({
   }
 
   const blocked = isBlockedByMe || blockedByBackend
-  let lastDay = ''
+  const labels = { today: t('messages.today'), yesterday: t('messages.yesterday') }
+  const other = conversation.otherName || '?'
+  const otherInitial = other.charAt(0).toUpperCase()
+  const lastMessage = messages[messages.length - 1]
+  const at = (m?: Message) => (m ? new Date(m.created_at).getTime() : 0)
+  const startsBlock = (m: Message, prev?: Message) =>
+    !prev || dayKey(prev.created_at) !== dayKey(m.created_at) || at(m) - at(prev) > STAMP_GAP_MS
 
   return (
-    <div className="flex h-[calc(100vh-var(--header-h)-2rem)] max-h-[820px] flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface sm:h-[calc(100vh-var(--header-h)-4rem)]">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-line-soft px-4 py-3 sm:px-5">
+    <div className="flex h-full min-h-0 flex-col bg-surface">
+      {/* Header: who, and what the conversation is about */}
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-line-soft px-2 sm:px-5">
         <Link
           href="/dashboard/messages"
           aria-label={t('messages.backToInbox')}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-content-secondary hover:bg-surface-alt"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-content hover:bg-surface-alt lg:hidden"
         >
-          <Icon name="chevron-left" size={20} />
+          <Icon name="chevron-left" size={24} />
         </Link>
+        {/* The car's photo when there is one, as in the conversation list:
+            it is what the conversation is about. */}
         <span
           aria-hidden="true"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-alt text-caption font-extrabold text-content-secondary ring-1 ring-inset ring-line"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-alt text-caption font-extrabold text-content-secondary ring-1 ring-inset ring-line"
         >
-          {(conversation.otherName || '?').charAt(0).toUpperCase()}
+          {conversation.carImage ? (
+            <Image src={conversation.carImage} alt="" fill sizes="40px" className="object-cover" />
+          ) : (
+            otherInitial
+          )}
         </span>
-        <p className="min-w-0 flex-1 truncate text-body font-extrabold text-content">
-          {conversation.otherName}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-caption font-extrabold text-content">{other}</p>
+          <p className="truncate text-micro text-content-muted" aria-live="polite">
+            {otherTyping ? t('messages.typing') : conversation.carTitle || ''}
+          </p>
+        </div>
         {conversation.carId ? (
           <Link
             href={`/cars/${conversation.carId}`}
             aria-label={t('messages.viewListing')}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-content-secondary hover:bg-surface-alt"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-content hover:bg-surface-alt"
           >
-            <Icon name="car" size={18} />
+            <Icon name="car" size={21} />
           </Link>
         ) : null}
         <div ref={menuRef} className="relative shrink-0">
           <button
             type="button"
             aria-label={t('messages.safety.menu')}
+            aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-content-secondary hover:bg-surface-alt"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-content hover:bg-surface-alt"
           >
-            <Icon name="settings" size={18} />
+            <Icon name="info" size={21} />
           </button>
           {menuOpen ? (
-            <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-xl border border-line-soft bg-surface p-1.5 shadow-card-lg">
+            <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl border border-line-soft bg-surface p-1.5 shadow-card-lg">
               <button
                 type="button"
                 onClick={() => {
@@ -271,7 +317,7 @@ export function ThreadView({
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-caption font-semibold text-content hover:bg-surface-alt"
                 >
                   <Icon name="shield-check" size={15} />
-                  {t('messages.safety.unblock', { name: conversation.otherName })}
+                  {t('messages.safety.unblock', { name: other })}
                 </button>
               ) : (
                 <button
@@ -283,7 +329,7 @@ export function ThreadView({
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-caption font-semibold text-danger hover:bg-danger-tint"
                 >
                   <Icon name="close-circle" size={15} />
-                  {t('messages.safety.block', { name: conversation.otherName })}
+                  {t('messages.safety.block', { name: other })}
                 </button>
               )}
             </div>
@@ -291,27 +337,9 @@ export function ThreadView({
         </div>
       </div>
 
-      {/* Pinned car card */}
-      {conversation.carId && conversation.carTitle ? (
-        <Link
-          href={`/cars/${conversation.carId}`}
-          className="flex items-center gap-3 border-b border-line-soft bg-surface-alt/60 px-4 py-2.5 hover:bg-surface-alt sm:px-5"
-        >
-          {conversation.carImage ? (
-            <span className="relative h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-alt">
-              <Image src={conversation.carImage} alt="" fill sizes="56px" className="object-cover" />
-            </span>
-          ) : null}
-          <span className="min-w-0 flex-1 truncate text-caption font-bold text-content">
-            {conversation.carTitle}
-          </span>
-          <Icon name="chevron-right" size={16} className="shrink-0 text-content-muted" />
-        </Link>
-      ) : null}
-
       {/* Inline panels */}
       {reportOpen ? (
-        <div className="border-b border-line-soft bg-surface-alt px-4 py-3 sm:px-5">
+        <div className="shrink-0 border-b border-line-soft bg-surface-alt px-4 py-3 sm:px-5">
           {reportDone === 'sent' ? (
             <Alert tone="success">{t('messages.safety.reportSent')}</Alert>
           ) : (
@@ -359,9 +387,9 @@ export function ThreadView({
       ) : null}
 
       {blockConfirmOpen ? (
-        <div className="border-b border-line-soft bg-danger-tint px-4 py-3 sm:px-5">
+        <div className="shrink-0 border-b border-line-soft bg-danger-tint px-4 py-3 sm:px-5">
           <p className="text-caption font-bold text-danger">
-            {t('messages.safety.blockTitle', { name: conversation.otherName })}
+            {t('messages.safety.blockTitle', { name: other })}
           </p>
           <p className="mt-1 text-micro text-content-secondary">{t('messages.safety.blockBody')}</p>
           {blockError ? <Alert tone="danger" className="mt-2">{blockError}</Alert> : null}
@@ -386,40 +414,92 @@ export function ThreadView({
       ) : null}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+      <div role="log" aria-live="polite" className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
         {messages.length === 0 ? (
-          <p className="pt-10 text-center text-caption text-content-muted">{t('messages.threadEmpty')}</p>
+          <div className="flex flex-col items-center pt-10 text-center">
+            <span
+              aria-hidden="true"
+              className="flex h-20 w-20 items-center justify-center rounded-full bg-surface-alt text-title font-extrabold text-content-secondary ring-1 ring-inset ring-line"
+            >
+              {otherInitial}
+            </span>
+            <p className="mt-3 text-body font-extrabold text-content">{other}</p>
+            {conversation.carTitle ? (
+              <p className="text-caption text-content-muted">{conversation.carTitle}</p>
+            ) : null}
+            <p className="mt-4 max-w-xs text-caption text-content-secondary">{t('messages.threadEmpty')}</p>
+          </div>
         ) : null}
-        {messages.map((m) => {
-          const showDay = dayKey(m.created_at) !== lastDay
-          lastDay = dayKey(m.created_at)
+
+        {messages.map((m, i) => {
+          const prev = messages[i - 1]
+          const next = messages[i + 1]
           const mine = m.sender_id === myId
+          const stamp = startsBlock(m, prev)
+          const joinsPrev = !stamp && prev?.sender_id === m.sender_id && at(m) - at(prev) < GROUP_GAP_MS
+          const joinsNext =
+            !!next && !startsBlock(next, m) && next.sender_id === m.sender_id && at(next) - at(m) < GROUP_GAP_MS
+          // A block reads as one bubble: the corners between its messages
+          // tighten on the sender's side.
+          const shape = mine
+            ? `${joinsPrev ? 'rounded-tr-md' : ''} ${joinsNext ? 'rounded-br-md' : ''}`
+            : `${joinsPrev ? 'rounded-tl-md' : ''} ${joinsNext ? 'rounded-bl-md' : ''}`
           return (
             <div key={m.id}>
-              {showDay ? (
-                <div className="my-3 text-center text-micro font-bold text-content-muted">
-                  {dayLabel(m.created_at, t('messages.today'))}
-                </div>
+              {stamp ? (
+                <p className="my-4 text-center text-micro font-semibold text-content-muted">
+                  {stampLabel(m.created_at, locale, labels)}
+                </p>
               ) : null}
-              <div className={`mb-2 flex ${mine ? 'justify-end' : 'justify-start'}`}>
+              <div className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'} ${joinsNext ? 'mb-0.5' : 'mb-2'}`}>
+                {!mine ? (
+                  joinsNext ? (
+                    <span aria-hidden="true" className="w-7 shrink-0" />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-alt text-micro font-extrabold text-content-secondary ring-1 ring-inset ring-line"
+                    >
+                      {otherInitial}
+                    </span>
+                  )
+                ) : null}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-caption leading-relaxed ${
-                    mine ? 'bg-brand text-brand-on' : 'border border-line-soft bg-surface-alt text-content'
-                  }`}
+                  title={exactTime(m.created_at, locale)}
+                  className={`max-w-[75%] rounded-[22px] px-4 py-2 text-caption leading-relaxed sm:max-w-[62%] ${
+                    mine ? 'bg-content text-surface' : 'bg-surface-alt text-content'
+                  } ${shape}`}
                 >
-                  <p className="whitespace-pre-wrap">{m.text}</p>
-                  <p className={`mt-0.5 text-right text-micro ${mine ? 'text-brand-on/70' : 'text-content-muted'}`}>
-                    {timeLabel(m.created_at)}
-                  </p>
+                  <p className="whitespace-pre-wrap break-words">{m.text}</p>
                 </div>
               </div>
+              {mine && m.id === lastMessage?.id ? (
+                <p className="-mt-1 mb-2 pr-1 text-right text-micro text-content-muted">
+                  {m.read ? t('messages.seen') : t('messages.sent')}
+                </p>
+              ) : null}
             </div>
           )
         })}
+
         {otherTyping ? (
-          <div className="flex justify-start">
-            <div className="rounded-2xl border border-line-soft bg-surface-alt px-3.5 py-2 text-caption text-content-muted">
-              {t('messages.typing')}
+          <div className="flex items-end gap-2">
+            <span
+              aria-hidden="true"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-alt text-micro font-extrabold text-content-secondary ring-1 ring-inset ring-line"
+            >
+              {otherInitial}
+            </span>
+            <div className="flex h-9 items-center gap-1 rounded-[22px] bg-surface-alt px-4">
+              <span className="sr-only">{t('messages.typing')}</span>
+              {[0, 150, 300].map((delay) => (
+                <span
+                  key={delay}
+                  aria-hidden="true"
+                  style={{ animationDelay: `${delay}ms` }}
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-content-muted motion-reduce:animate-none"
+                />
+              ))}
             </div>
           </div>
         ) : null}
@@ -428,13 +508,13 @@ export function ThreadView({
 
       {/* Compose */}
       {blocked ? (
-        <div className="border-t border-line-soft bg-surface-alt px-4 py-3 text-center text-caption text-content-secondary sm:px-5">
+        <div className="shrink-0 border-t border-line-soft bg-surface-alt px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-center text-caption text-content-secondary sm:px-5">
           {isBlockedByMe
-            ? t('messages.safety.blockedBanner', { name: conversation.otherName })
+            ? t('messages.safety.blockedBanner', { name: other })
             : t('messages.safety.blockedByOther')}
         </div>
       ) : (
-        <div className="border-t border-line-soft p-3 sm:p-4">
+        <div className="shrink-0 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 sm:px-5 sm:pb-4">
           {failedText ? (
             <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-danger-tint px-3 py-2 text-micro text-danger">
               <span>{t('messages.failedToSend')}</span>
@@ -448,9 +528,12 @@ export function ThreadView({
               e.preventDefault()
               submit(text)
             }}
-            className="flex items-end gap-2"
+            className="flex items-end gap-2 rounded-[24px] border border-line bg-surface py-1 pl-4 pr-2 transition-colors focus-within:border-content/40"
           >
+            <label htmlFor="thread-composer" className="sr-only">{t('messages.placeholder')}</label>
             <textarea
+              id="thread-composer"
+              ref={inputRef}
               value={text}
               onChange={(e) => handleTextChange(e.target.value)}
               onKeyDown={(e) => {
@@ -461,15 +544,14 @@ export function ThreadView({
               }}
               placeholder={t('messages.placeholder')}
               rows={1}
-              className="max-h-32 flex-1 resize-none rounded-xl border border-line bg-surface px-3.5 py-2.5 text-caption text-content placeholder:text-content-muted focus:border-brand focus:outline-none"
+              className="max-h-32 min-h-[38px] flex-1 resize-none bg-transparent py-2 text-caption text-content placeholder:text-content-muted focus:outline-none"
             />
             <button
               type="submit"
               disabled={!text.trim() || sending}
-              aria-label={t('messages.send')}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-brand-on disabled:opacity-40"
+              className="h-[38px] shrink-0 rounded-full px-3 text-caption font-extrabold text-brand transition-opacity disabled:opacity-40"
             >
-              <Icon name="arrow-right" size={18} />
+              {sending ? t('messages.sending') : t('messages.send')}
             </button>
           </form>
         </div>

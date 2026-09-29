@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { SiteChrome } from '@/components/layout/SiteChrome'
 import { getCurrentUser } from '@/lib/session'
 import { duty, fx } from '@/lib/api'
 import { setDutyRates, setRwfRate } from '@/lib/business'
@@ -156,11 +157,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             reload. */}
         <CurrencyProvider initial={rate}>
           <LanguageProvider initialLocale={locale} messages={messagesFor(locale, CHROME_NAMESPACES)}>
-            <Header user={user} />
+            <SiteChrome><Header user={user} /></SiteChrome>
             <main id="main" className="flex-1">
               {children}
             </main>
-            <Footer />
+            <SiteChrome><Footer /></SiteChrome>
           </LanguageProvider>
         </CurrencyProvider>
       </body>

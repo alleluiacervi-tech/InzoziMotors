@@ -46,6 +46,12 @@ const en = {
     selling: 'Loading your cars',
     reports: 'Loading your reports',
   },
+  shell: {
+    more: 'More',
+    menu: 'Menu',
+    closeMenu: 'Close menu',
+    backToSite: 'Back to marketplace',
+  },
   common: {
     new: 'New',
     signOut: 'Sign out',
@@ -519,6 +525,12 @@ const rw: typeof en = {
     saved: 'Gutegura imodoka wabitse',
     selling: 'Gutegura imodoka zawe',
     reports: 'Gutegura raporo zawe',
+  },
+  shell: {
+    more: 'Ibindi',
+    menu: 'Menu',
+    closeMenu: 'Funga menu',
+    backToSite: 'Subira ku isoko',
   },
   common: {
     new: 'Gishya',
@@ -994,6 +1006,12 @@ const fr: typeof en = {
     selling: 'Chargement de vos voitures',
     reports: 'Chargement de vos rapports',
   },
+  shell: {
+    more: 'Plus',
+    menu: 'Menu',
+    closeMenu: 'Fermer le menu',
+    backToSite: 'Retour aux annonces',
+  },
   common: {
     new: 'Nouveau',
     signOut: 'Se déconnecter',
@@ -1467,6 +1485,12 @@ const sw: typeof en = {
     saved: 'Inapakia magari uliyohifadhi',
     selling: 'Inapakia magari yako',
     reports: 'Inapakia ripoti zako',
+  },
+  shell: {
+    more: 'Zaidi',
+    menu: 'Menyu',
+    closeMenu: 'Funga menyu',
+    backToSite: 'Rudi sokoni',
   },
   common: {
     new: 'Mpya',
@@ -1942,6 +1966,12 @@ const ko: typeof en = {
     selling: '내 차량을 불러오는 중',
     reports: '보고서를 불러오는 중',
   },
+  shell: {
+    more: '더보기',
+    menu: '메뉴',
+    closeMenu: '메뉴 닫기',
+    backToSite: '마켓플레이스로 돌아가기',
+  },
   common: {
     new: '새로움',
     signOut: '로그아웃',
@@ -2414,6 +2444,12 @@ const zh: typeof en = {
     saved: '正在加载收藏车辆',
     selling: '正在加载我的车辆',
     reports: '正在加载报告',
+  },
+  shell: {
+    more: '更多',
+    menu: '菜单',
+    closeMenu: '关闭菜单',
+    backToSite: '返回车源市场',
   },
   common: {
     new: '新',
