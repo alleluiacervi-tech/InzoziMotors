@@ -97,6 +97,15 @@ keep every screen agreeing:
 orders with quote → agreement → 50/50 milestones evidenced by **uploaded bank
 transfer proof**. No gateway; an admin reviews the proof.
 
+**Import catalogue images** (Admin → Catalogue images, migration 0050): best
+first, an **official photo** uploaded with its source and permission recorded
+(`image_source`, internal), then a licensed **studio render** that a person has
+approved (`render_review` — the library answers "found" with a different car
+for an unknown model, so nothing it returns is public unreviewed; needs
+`VEHICLE_RENDER_CUSTOMER`), then the brand's mark. Wikimedia Commons is retired
+(street photos of used cars, many of the wrong model) and its routes answer 410.
+Never copy images from manufacturer or press websites.
+
 ---
 
 ## 3. The invariants — do not weaken these
@@ -113,7 +122,10 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
    under 105 or a critical defect **does not block publication**:
    `publicationReadiness` still requires a complete, consistent checklist, and
    turns a low score or critical defect into a warning that the listing
-   discloses so buyer and seller can negotiate on it.
+   discloses so buyer and seller can negotiate on it. Listing creation
+   (`POST /cars`) and the pipeline board (`lib/vehicle-journey.js`) follow the
+   same rule: a completed inspection is done whatever it scored. A submission
+   that will not become a listing is closed with `POST /submissions/:id/close`.
 2. **Inspection is evidence, not publication.** Completing it sets `inspected`;
    it never publishes. Failing a re-inspection still demotes `live`/`approved`
    → `under_review`, for an admin to review and republish with the defects

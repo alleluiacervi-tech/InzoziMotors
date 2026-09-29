@@ -419,6 +419,10 @@ export interface ImportCatalogModel {
   origin_port: string | null
   typical_fob_usd: number | null
   estimated_transit_days: number | null
+  /** An official photo of the model, uploaded with its source recorded. */
+  images: string[] | null
+  /** A licensed studio image — only ever sent once a person confirmed it. */
+  render_url: string | null
 }
 
 export interface ImportCatalogMake {
@@ -433,7 +437,9 @@ export const importCatalog = {
     request<{ items: ImportCatalogMake[] }>('/imports/catalog/makes', { revalidate: 3600, tags: ['import-catalog'] }),
   list: (query: { make?: string; origin?: string; limit?: number } = {}) =>
     request<{ items: ImportCatalogModel[] }>(`/imports/catalog${qs(query as Record<string, unknown>)}`, {
-      revalidate: 3600,
+      // Ten minutes, not an hour: an image approved in the admin should reach
+      // the site the same morning.
+      revalidate: 600,
       tags: ['import-catalog'],
     }),
 }

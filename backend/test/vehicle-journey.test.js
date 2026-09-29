@@ -179,7 +179,10 @@ test('the rail goes backwards when the system does', async () => {
   const auth = { Authorization: `Bearer ${admin}` };
   const live = await pipeline(admin, { upTo: 'live' });
 
-  // 1. A failed re-inspection demotes the listing; the rail must show it.
+  // 1. A failed re-inspection demotes the listing; the rail must show it —
+  // as work for us, not a dead end. Under the transparency model a critical
+  // defect is disclosed on the listing, so the inspection stage is done and
+  // says so, and the listing is back in our hands to review and republish.
   await pool.query(
     `UPDATE inspections SET passed=FALSE, score=70,
        critical_failures='[{"id":"brakes","label":"Brake system"}]'::jsonb
@@ -187,13 +190,11 @@ test('the rail goes backwards when the system does', async () => {
   );
   await pool.query("UPDATE cars SET status='under_review' WHERE id=$1", [live.carId]);
   let journey = (await api().get(`/admin/journey/submission/${live.submissionId}`).set(auth).expect(200)).body;
-  assert.equal(stageOf(journey, 'inspected').state, 'blocked');
-  assert.match(stageOf(journey, 'inspected').blockers[0].label, /critical failure/i);
+  assert.equal(stageOf(journey, 'inspected').state, 'done');
+  assert.match(stageOf(journey, 'inspected').detail, /critical defect/i);
   assert.equal(stageOf(journey, 'live').state, 'locked');
-  assert.equal(journey.blocked, true);
   assert.equal(journey.complete, false);
-  // A blocked stage outranks a later active one — the earliest real problem wins.
-  assert.equal(journey.current_stage, 'inspected');
+  assert.equal(journey.actor, 'us');
 
   // 2. Revoking the seller's identity drops the very first stage.
   const clean = await pipeline(admin, { upTo: 'live' });

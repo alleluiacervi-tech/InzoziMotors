@@ -49,8 +49,14 @@ export default async function SellingPage({ searchParams }: { searchParams: Prom
     sellerListings.mine(token),
     submissions.progress(token),
   ])
-  const mySubmissions = settled(submissionResult, [])
   const myListings = settled(listingResult, [])
+  // A submission whose car became a listing lives under "Your listings" from
+  // then on. Showing it in the pipeline as well put every live car on the page
+  // twice, the first time stuck at "Inspected".
+  const listedCarIds = new Set(myListings.map((car) => car.id))
+  const mySubmissions = settled(submissionResult, []).filter((submission) =>
+    !['live', 'archived'].includes(submission.status)
+    && !(submission.car_id && listedCarIds.has(submission.car_id)))
   // Progress is additive: if it fails the cards still render, minus one line.
   const progress = settled(progressResult, {})
   const failed = submissionResult.status === 'rejected' || listingResult.status === 'rejected'

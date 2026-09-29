@@ -792,9 +792,15 @@ router.post('/', requireAdmin, async (req, res) => {
         }
         inspectionEvidence = inspection.rows[0];
         const evaluated = evaluateChecklist(inspectionEvidence.checklist_results);
-        if (inspectionEvidence.checklist_version !== CHECKLIST_VERSION || !inspectionEvidence.passed
-            || !evaluated.valid || !evaluated.passed || evaluated.score !== Number(inspectionEvidence.score)) {
-          const e = new Error('The submission does not have a valid, passing 150-point inspection'); e.status = 409; throw e;
+        // A COMPLETE, consistent checklist is required; a PASSING one is not.
+        // Under the transparency model (invariant 1) a low score or a critical
+        // defect is disclosed on the listing rather than refused, which is what
+        // publicationReadiness already enforces. This used to demand `passed`,
+        // so a car that scored under the threshold could neither be listed nor
+        // leave the pipeline: it sat on the board as "blocked" for good.
+        if (inspectionEvidence.checklist_version !== CHECKLIST_VERSION
+            || !evaluated.valid || evaluated.score !== Number(inspectionEvidence.score)) {
+          const e = new Error('The submission does not have a complete, valid 150-point inspection'); e.status = 409; throw e;
         }
       }
       const { rows } = await client.query(
@@ -1141,6 +1147,17 @@ router.post('/:id/reassign-seller', requireAdmin, requireUuid('id'), async (req,
         'UPDATE cars SET seller_id = $1 WHERE id = $2 RETURNING *',
         [new_seller_id, req.params.id]
       );
+      // The inspection evidence is bound to the submission's seller as well as
+      // the car's (validInspectionExists), so the submission moves with the
+      // listing. Moving only the car used to make it vanish from the public
+      // marketplace — a 404 on its own page — the moment it was reassigned.
+      const moved = await client.query(
+        `UPDATE submissions SET seller_id = $1
+          WHERE car_id = $2
+             OR id IN (SELECT submission_id FROM inspections WHERE car_id = $2 AND submission_id IS NOT NULL)
+          RETURNING id`,
+        [new_seller_id, req.params.id]
+      );
 
       await recordAdminAction(client, {
         actorId: req.user.id,
@@ -1152,6 +1169,7 @@ router.post('/:id/reassign-seller', requireAdmin, requireUuid('id'), async (req,
           previous_seller_id: car.rows[0].seller_id,
           new_seller_id,
           reason: reason.trim(),
+          submissions_moved: moved.rows.map((row) => row.id),
         },
       });
 

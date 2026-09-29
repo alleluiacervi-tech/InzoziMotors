@@ -89,3 +89,41 @@ viewer, Home rails and showrooms. Tick each item in the PR that ships it.
       *Showroom account*, business name "Sawa Cars Showroom", tick *Verified
       business*, upload the photo, Save.
 - [ ] Upload the missing brand logos in Admin → Brands.
+
+## Follow-up, 30 Sep 2026: import images, stuck pipeline, admin dead ends
+
+### Import catalogue images
+- [x] Withdraw every Wikimedia Commons photo (migration 0050; candidate rows
+      kept so it is reversible). Audit: ≥78 of 232 showed the wrong vehicle or
+      generation; the rest were used cars in the street.
+- [x] Retire the Commons routes (410) and the admin queue.
+- [x] Studio renders wait for a person to approve them (`render_review`); the
+      public catalogue only serves approved ones. Render width 1000px.
+- [x] Official photo upload per model with a required source/permission note.
+- [x] Admin → Catalogue images: stats, "Find studio images", review
+      (right car / wrong car), upload / replace / remove.
+- [x] App: the Cars tab import list uses the live catalogue (images, prices);
+      catalogue fetch honours `make` (it was silently ignored); images are
+      contained on white; the detail says whether it is an official photo or
+      a studio image.
+- [x] Web /imports: model cards show the image (or brand mark) and brand chips
+      carry logos.
+- [ ] **Human:** buy the studio image licence and set `VEHICLE_RENDER_CUSTOMER`
+      on the server; then Admin → Catalogue images → Find studio images, and
+      approve each one.
+- [ ] **Human:** ask exporters/distributors for official photos with written
+      permission for models the library does not have, and upload them.
+
+### Pipeline and dashboard
+- [x] A car whose inspection scored low or found a critical defect is no
+      longer stuck: listing creation accepts a complete checklist (defects are
+      disclosed), the board shows it as ours to list or close, and the listing
+      picker offers it.
+- [x] `POST /submissions/:id/close` from any stage short of a public listing;
+      Submissions gains Close / Reopen / Reschedule / Open the appointment /
+      Create the listing / Open the listing on the right rows.
+- [x] Reassigning a listing to another seller moves its submission too (it
+      used to make the car disappear from the marketplace).
+- [x] Import orders: advance, skip and cancel controls on the list and the
+      operations record, from the server's allowed transitions.
+- [x] Seller dashboard (web) no longer lists a live car twice.

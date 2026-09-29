@@ -42,7 +42,7 @@ function ImportCarCard({ item, onPress }) {
   // render, then the marque — a picture of a different car would be a claim
   // about what the buyer is getting.
   const mainImage = (Array.isArray(item.images) && item.images[0]) || item.renderUrl || null;
-  const thumb = mainImage ? transformCloudinaryUrl(mainImage, { width: 240 }) : null;
+  const thumb = mainImage ? transformCloudinaryUrl(mainImage, { width: 320 }) : null;
 
   const specs = [
     item.bodyType,
@@ -60,7 +60,9 @@ function ImportCarCard({ item, onPress }) {
     >
       <View style={styles.thumb}>
         {thumb ? (
-          <ExpoImage source={{ uri: thumb }} style={styles.thumbImage} contentFit="cover" transition={150} />
+          // Contained on white: official cut-outs and studio images are shot
+          // on white, and cropping one to a square cuts the car's ends off.
+          <ExpoImage source={{ uri: thumb }} style={styles.thumbImage} contentFit="contain" transition={150} />
         ) : (
           <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={40} />
         )}
@@ -108,10 +110,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   thumb: {
-    width: 68,
-    height: 68,
+    width: 84,
+    height: 64,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

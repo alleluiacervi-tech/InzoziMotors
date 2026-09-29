@@ -38,7 +38,11 @@ function InspectionPicker() {
 
   useEffect(() => {
     api.inspections({ status: 'complete' })
-      .then((data) => setRows(data.filter((i: any) => i.passed && !i.car_id)))
+      // Every completed listing inspection not yet used — passed or not. Under
+      // the transparency model a low score or a critical defect is disclosed
+      // on the listing, not a bar to it; hiding those here is what left them
+      // stuck on the pipeline with no way forward. Walk-ins have no listing.
+      .then((data) => setRows(data.filter((i: any) => i.submission_id && !i.car_id && i.kind !== 'standalone')))
       .catch((e: any) => { toast('Could not load inspections: ' + e.message, 'error'); setRows([]) })
   }, [])
 
@@ -92,6 +96,7 @@ function InspectionPicker() {
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-gray-500">
                       {insp.seller_name || insp.seller_email || 'Seller'} · scored {insp.score}/150
+                      {!insp.passed ? ' · defects will be disclosed on the listing' : ''}
                     </span>
                   </span>
                   <span className="flex-shrink-0 text-xs font-bold text-brand">Use this →</span>

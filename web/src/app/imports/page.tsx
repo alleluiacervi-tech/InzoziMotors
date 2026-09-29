@@ -9,6 +9,8 @@ import { getCurrentUser } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
 import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 import { RequestImportForm } from './RequestImportForm'
+import { BrandMark } from '@/components/marketplace/BrandMark'
+import { getLogoLookup } from '@/lib/brands'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /imports — the import service, in public.
@@ -51,36 +53,64 @@ function byOrigin(makes: ImportCatalogMake[]) {
   return [...map.entries()].sort((a, b) => b[1].models - a[1].models)
 }
 
-function ModelRow({ model, t }: { model: ImportCatalogModel; t: (k: string, v?: Record<string, string | number>) => string }) {
+function ModelRow({ model, t, logoUrl }: {
+  model: ImportCatalogModel
+  t: (k: string, v?: Record<string, string | number>) => string
+  logoUrl?: string
+}) {
   const specs = [model.body_type, model.fuel_types?.join(', '), model.transmission].filter(Boolean)
   const request = new URLSearchParams({ make: model.make, model: model.model, origin: model.origin_country })
+  // Best first: an official photo, then a studio image a person confirmed, then
+  // the brand's mark. Never a photograph of some other car.
+  const official = model.images?.[0] || null
+  const picture = official || model.render_url || null
   return (
-    <li className="flex min-w-0 flex-col justify-between gap-3 rounded-2xl border border-line-soft bg-surface p-4 sm:p-5">
-      <div className="min-w-0">
-        <p className="text-micro font-semibold text-content-muted">{model.make}</p>
-        <h3 className="mt-0.5 text-body font-extrabold text-content">
-          {model.model}
-          {model.trim ? <span className="font-semibold text-content-secondary"> {model.trim}</span> : null}
-        </h3>
-        {specs.length ? <p className="mt-1 text-caption text-content-secondary">{specs.join(' / ')}</p> : null}
-        <p className="mt-2 text-micro text-content-muted">
-          {model.estimated_transit_days ? t('imports.transitDays', { days: model.estimated_transit_days }) : null}
-          {model.estimated_transit_days && model.origin_port ? ' ' : null}
-          {model.origin_port ? t('imports.fromPort', { port: model.origin_port }) : null}
-        </p>
-        {model.typical_fob_usd ? (
-          <p className="mt-1 text-caption font-semibold text-content">
-            {t('imports.typicalFob', { amount: formatUsdApprox(model.typical_fob_usd) })}
-          </p>
+    <li className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface">
+      {/* White and contained: official cut-outs and studio images are shot on
+          white, and cropping would cut the car's ends off. */}
+      <div className="relative flex aspect-[16/10] items-center justify-center bg-white">
+        {picture ? (
+          // eslint-disable-next-line @next/next/no-img-element -- catalogue imagery, contained on white
+          <img src={picture} alt={`${model.make} ${model.model}`} loading="lazy" className="h-full w-full object-contain p-3" />
+        ) : (
+          <BrandMark name={model.make} logoUrl={logoUrl} size={56} />
+        )}
+        <span className="absolute left-3 top-3 rounded-pill bg-success-tint px-2 py-0.5 text-micro font-bold text-success">
+          {t('imports.brandNewBadge')}
+        </span>
+        {picture ? (
+          <span className="absolute bottom-2 right-3 text-[10px] font-semibold text-content-muted">
+            {official ? t('imports.officialPhoto') : t('imports.studioImage')}
+          </span>
         ) : null}
       </div>
-      <Link
-        href={`/imports?${request.toString()}#request`}
-        className="-my-1 inline-flex items-center gap-1.5 py-1 text-caption font-bold text-brand hover:underline"
-      >
-        {t('imports.requestThis')}
-        <Icon name="arrow-right" size={14} aria-hidden="true" />
-      </Link>
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 p-4 sm:p-5">
+        <div className="min-w-0">
+          <p className="text-micro font-semibold text-content-muted">{model.make}</p>
+          <h3 className="mt-0.5 text-body font-extrabold text-content">
+            {model.model}
+            {model.trim ? <span className="font-semibold text-content-secondary"> {model.trim}</span> : null}
+          </h3>
+          {specs.length ? <p className="mt-1 text-caption text-content-secondary">{specs.join(' / ')}</p> : null}
+          <p className="mt-2 text-micro text-content-muted">
+            {model.estimated_transit_days ? t('imports.transitDays', { days: model.estimated_transit_days }) : null}
+            {model.estimated_transit_days && model.origin_port ? ' ' : null}
+            {model.origin_port ? t('imports.fromPort', { port: model.origin_port }) : null}
+          </p>
+          {model.typical_fob_usd ? (
+            <p className="mt-1 text-caption font-semibold text-content">
+              {t('imports.typicalFob', { amount: formatUsdApprox(model.typical_fob_usd) })}
+            </p>
+          ) : null}
+        </div>
+        <Link
+          href={`/imports?${request.toString()}#request`}
+          className="-my-1 inline-flex items-center gap-1.5 py-1 text-caption font-bold text-brand hover:underline"
+        >
+          {t('imports.requestThis')}
+          <Icon name="arrow-right" size={14} aria-hidden="true" />
+        </Link>
+      </div>
     </li>
   )
 }
@@ -94,10 +124,11 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
   const yearParam = one(params.year)
   const priceUsd = Number(one(params.price_usd)) || 0
 
-  const [makesRes, modelsRes, user] = await Promise.all([
+  const [makesRes, modelsRes, user, logoFor] = await Promise.all([
     importCatalog.makes().catch(() => null),
     importCatalog.list({ make, origin, limit: make ? 250 : 12 }).catch(() => null),
     getCurrentUser(),
+    getLogoLookup(),
   ])
   const origins = byOrigin(makesRes?.items ?? [])
   const visibleMakes = (makesRes?.items ?? []).filter((m) => !origin || m.origin_country === origin)
@@ -243,10 +274,11 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
                       <Link
                         href={makeHref(m)}
                         aria-current={active ? 'true' : undefined}
-                        className={`inline-flex h-9 items-center gap-2 rounded-pill border px-3.5 text-micro font-bold transition-colors ${
+                        className={`inline-flex h-9 items-center gap-2 rounded-pill border pl-1.5 pr-3.5 text-micro font-bold transition-colors ${
                           active ? 'border-brand bg-brand-tint text-content' : 'border-line-soft bg-surface text-content-secondary hover:border-content hover:text-content'
                         }`}
                       >
+                        <BrandMark name={m.make} logoUrl={logoFor(m.make)} size={24} />
                         {m.make}
                         <span className="tabular-nums font-semibold text-content-muted">{m.model_count}</span>
                       </Link>
@@ -257,7 +289,7 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
 
               {models.length ? (
                 <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {models.map((m) => <ModelRow key={m.id} model={m} t={t} />)}
+                  {models.map((m) => <ModelRow key={m.id} model={m} t={t} logoUrl={logoFor(m.make)} />)}
                 </ul>
               ) : null}
             </>

@@ -267,3 +267,58 @@ test('an admin deletes an archived listing for good, keeping its inspection reco
   await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: 'duplicate listing' }).expect(404);
 });
+
+test('an admin closes a submission from any stage short of a public listing', async () => {
+  const admin = await makeAdmin(await register());
+  const seller = await verifiedSeller();
+
+  // Booked but never inspected: the appointment is released.
+  const booked = await api().post('/submissions').set('Authorization', `Bearer ${seller.token}`)
+    .send({ make: 'Nissan', model: 'Note', year: 2019, mileage: 50000, asking_price: 9000000 }).expect(201);
+  const day = new Date(Date.now() + fixtureDay++ * 86400_000).toISOString().slice(0, 10);
+  await api().patch(`/submissions/${booked.body.id}`).set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'scheduled', center: 'Nyarutarama Center', scheduled_date: day, scheduled_time: '10:00 AM' }).expect(200);
+  assert.equal((await pool.query('SELECT 1 FROM inspections WHERE submission_id=$1', [booked.body.id])).rowCount, 1);
+
+  await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${seller.token}`)
+    .send({ reason: 'seller sold it privately' }).expect(403);
+  await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: '' }).expect(400);
+  const closed = await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'seller sold it privately' }).expect(200);
+  assert.equal(closed.body.submission.status, 'rejected');
+  assert.equal(closed.body.released_appointment, true);
+  assert.equal((await pool.query('SELECT 1 FROM inspections WHERE submission_id=$1', [booked.body.id])).rowCount, 0);
+  await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'seller sold it privately' }).expect(409);
+
+  const board = await api().get('/admin/journey').set('Authorization', `Bearer ${admin}`).expect(200);
+  assert.ok(!board.body.vehicles.some((v) => v.subject.submission_id === booked.body.id), 'a closed submission leaves the board');
+
+  // Reopen puts it back under review.
+  await api().patch(`/submissions/${booked.body.id}`).set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'under_review' }).expect(200);
+
+  // A public listing is not closed from here.
+  const car = await liveCar({ seller, admin, make: 'Honda', model: 'Fit' });
+  const { rows: [sub] } = await pool.query('SELECT submission_id AS id FROM inspections WHERE car_id=$1', [car.id]);
+  const refused = await api().post(`/submissions/${sub.id}/close`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'not going ahead' }).expect(409);
+  assert.equal(refused.body.code, 'IS_A_LISTING');
+});
+
+test('reassigning a listing to another seller keeps it public', async () => {
+  const admin = await makeAdmin(await register());
+  const from = await verifiedSeller();
+  const to = await verifiedSeller({ name: 'New Owner' });
+  const car = await liveCar({ seller: from, admin, make: 'Suzuki', model: 'Swift' });
+
+  await api().post(`/cars/${car.id}/reassign-seller`).set('Authorization', `Bearer ${admin}`)
+    .send({ new_seller_id: to.id, reason: 'moved into the showroom account' }).expect(200);
+
+  const pub = await api().get(`/cars/${car.id}`).expect(200);
+  assert.equal(pub.body.seller_id, to.id);
+  assert.equal(pub.body.seller_name, 'New Owner');
+  const listed = await api().get(`/cars?seller_id=${to.id}`).expect(200);
+  assert.deepEqual(listed.body.map((c) => c.id), [car.id]);
+});
