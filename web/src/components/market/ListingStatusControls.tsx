@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { setListingStatusAction } from '@/app/(dashboard)/dashboard/selling/actions'
 import { useT } from '@/lib/i18n/context'
 
@@ -17,8 +16,6 @@ export function ListingStatusControls({ carId, status }: { carId: string; status
   const [confirming, setConfirming] = useState<Target | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-  const [, startRefresh] = useTransition()
 
   const actions: { target: Target; label: string; confirm: string; danger?: boolean }[] =
     status === 'live'
@@ -35,19 +32,20 @@ export function ListingStatusControls({ carId, status }: { carId: string; status
     setBusy(true)
     setError(null)
     const result = await setListingStatusAction(carId, target)
-    setBusy(false)
     if (!result.ok) {
+      setBusy(false)
       setError(result.error)
       return
     }
-    setConfirming(null)
-    // The action calls revalidatePath, so its response normally carries the
-    // updated page. It is not always applied: when this page was reached by
-    // a server-action redirect (signing in), Next can put back a copy of the
-    // page prefetched before the change, and a sold car reads Available again.
-    // One refresh after the action has fully resolved fetches the page anew
-    // and clears that stale copy, so the screen always ends on the truth.
-    startRefresh(() => router.refresh())
+    // Reload the page, rather than trusting the client router to show the
+    // change. The action revalidates this path and its response carries the
+    // updated page, but CI caught the router keeping the old one, sometimes:
+    // the car sold on the server, a follow-up router.refresh() fetched the
+    // page again, and the card still said Available, with Mark as sold still
+    // on it. A seller must never be looking at a sale that did not seem to
+    // happen, so the page is read afresh from the server. `busy` stays on
+    // until the reload replaces it.
+    window.location.reload()
   }
 
   const pending = actions.find((a) => a.target === confirming)
