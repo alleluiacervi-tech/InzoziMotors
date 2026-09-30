@@ -30,6 +30,39 @@ async function verifyLiveSession(payload) {
   return { ok: true };
 }
 
+// ─── Which JWTs are sessions ─────────────────────────────────────────────────
+// Three kinds of token are signed with JWT_SECRET: the session (routes/auth.js
+// makeToken), the website's 60-second socket ticket (`purpose: 'socket'`) and
+// the ID-document view link (`scope: 'kyc-doc'`). Only the first is a login.
+// This used to accept any of them, so a socket ticket — the one credential
+// handed to browser JavaScript — worked on every route, including the route
+// that mints tickets: one ticket could renew itself forever, past the 12-hour
+// admin limit, from any machine.
+//
+// An admin session is also held to its lifetime here, not only when it is
+// minted, so a token issued before the 12-hour rule, or under a longer
+// setting, stops being an admin credential when its time is up.
+const ADMIN_SESSION_SECONDS = durationSeconds(process.env.ADMIN_JWT_EXPIRES_IN, 12 * 3600);
+
+function durationSeconds(value, fallback) {
+  const match = /^(\d+)\s*([smhd]?)$/.exec(String(value || '').trim());
+  if (!match) return fallback;
+  const unit = { '': 1, s: 1, m: 60, h: 3600, d: 86400 }[match[2]];
+  return Number(match[1]) * unit;
+}
+
+/** The payload of a SESSION token, or throws. Tickets and view links are not sessions. */
+function verifySessionToken(token) {
+  const payload = jwt.verify(token, process.env.JWT_SECRET);
+  if (!payload || typeof payload !== 'object' || !payload.id || payload.purpose || payload.scope) {
+    throw new Error('not a session token');
+  }
+  if (payload.role === 'admin' && (Date.now() / 1000 - Number(payload.iat || 0)) > ADMIN_SESSION_SECONDS) {
+    throw new Error('admin session past its lifetime');
+  }
+  return payload;
+}
+
 function requireAuth(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -38,7 +71,7 @@ function requireAuth(req, res, next) {
   const token = header.slice(7);
   let payload;
   try {
-    payload = jwt.verify(token, process.env.JWT_SECRET);
+    payload = verifySessionToken(token);
   } catch {
     // The code lets clients tell "your session is dead — drop the stored token"
     // apart from credential 401s (wrong password on login/change-password/delete),
@@ -103,4 +136,4 @@ function requireVerified(req, res, next) {
   });
 }
 
-module.exports = { requireAuth, requireAdmin, requireVerified, verifyLiveSession };
+module.exports = { requireAuth, requireAdmin, requireVerified, verifyLiveSession, verifySessionToken };

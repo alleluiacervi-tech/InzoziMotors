@@ -23,7 +23,36 @@ customer/data risk, not by how visible the work is in the interface.
 - [ ] Configure transactional SMTP and verify reset, invitation, and account
   lifecycle emails externally.
 - [ ] Rotate the previously exposed email/storage credentials at their
-  providers; removing them from templates does not invalidate old keys.
+  providers; removing them from templates does not invalidate old keys. The
+  30 Sep 2026 security review confirmed the Resend key and the Cloudinary
+  key/secret are still in public history (commits `1a0874d`, `1e6411c`,
+  `a28e292`, `9afccc1`): rotate both, check provider logs since 17 Aug, and
+  turn on GitHub secret scanning and push protection.
+
+### Security review, 30 Sep 2026 (fixed in `fix/security-review`)
+
+- [x] `mobile-build.yml` ran a fork pull request's own code with `EXPO_TOKEN`
+  (a `workflow_run` trust boundary missing, unlike `deploy.yml`). Both mobile
+  workflows now require a push from this repo, refuse a commit that is not on
+  main, and run with `contents: read`.
+- [x] `mobile-update.yml` pasted the commit message into its shell script;
+  it now goes through `env:`.
+- [x] `GET /cars/saved/list` returned `c.*` (raw VIN, review notes, plate,
+  internal ids) to any signed-in account; it uses the public allow-list.
+- [x] `GET /cars/:id/history` and `GET /inspections/report/:carId` returned the
+  raw VIN publicly; both mask it.
+- [x] Sign-in `?next=` accepted `/\evil.com` (a backslash reads as a slash);
+  `web/src/lib/same-origin-path.ts` parses it the way a browser does.
+- [x] A socket ticket was accepted as a session everywhere, and could mint its
+  own replacement; only session tokens are sessions now, and an admin session
+  is refused past its 12-hour lifetime.
+- [x] The ID-document download trusted a signed admin token without checking
+  the session was still live.
+- [x] Private upload folders were matched on the raw URL (`%69d-docs` got
+  through) and `uploads/imports` was not private at all; the rule now reads
+  the decoded path, bank proofs open only through
+  `GET /imports/:id/payments/:paymentId/proof`, and upload names and reset
+  codes come from the CSPRNG.
 - [ ] Complete and evidence an off-site backup restore drill.
 
 ## P1 — reliability and operations

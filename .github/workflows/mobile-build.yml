@@ -57,6 +57,9 @@ on:
         default: false
         required: false
 
+permissions:
+  contents: read
+
 concurrency:
   group: mobile-build-${{ github.event.inputs.profile || 'production' }}
   # A newer commit supersedes an older build request. Building both wastes
@@ -68,9 +71,18 @@ jobs:
     name: Build the app on EAS
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # THE TRUST BOUNDARY, as in deploy.yml. `workflow_run` runs in this repo's
+    # context with EXPO_TOKEN, and CI also runs on pull requests from forks —
+    # whose branch may be called `main`, which the `branches:` filter above
+    # happily matches. "CI passed" is therefore not enough: the triggering run
+    # must be a push to this repository. Without this, a fork could get its own
+    # package.json installed here and read the token that publishes updates to
+    # every installed app.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
 
     steps:
       - name: Checkout the commit CI validated
@@ -78,6 +90,23 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
+
+      # Defence in depth behind the job's `if:`. Whatever triggered this run,
+      # the commit it is about to install and hand EXPO_TOKEN to must already be
+      # part of main. A fork's pull-request commit can be fetched by SHA, but it
+      # is never an ancestor of main.
+      - name: Refuse a commit that is not on main
+        if: github.event_name == 'workflow_run'
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          # fetch-depth: 0 above already brought every branch, main included.
+          if ! git merge-base --is-ancestor "$HEAD_SHA" origin/main; then
+            echo "::error title=Untrusted commit::$HEAD_SHA is not on main; refusing to run with release credentials."
+            exit 1
+          fi
 
       - name: Decide whether this commit needs a new binary
         id: scope

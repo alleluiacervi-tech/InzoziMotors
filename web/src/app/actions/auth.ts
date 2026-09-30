@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { auth as authApi, ApiError } from '@/lib/api'
 import { clearSession, setSession } from '@/lib/session'
+import { sameOriginPath } from '@/lib/same-origin-path'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth via Server Actions.
@@ -25,11 +26,10 @@ export type AuthState = {
   closed?: { email: string; until: string | null }
 } | null
 
-/** Only allow same-origin paths, so `?next=` can't be used as an open redirect. */
+/** Only allow same-origin paths, so `?next=` can't be used as an open redirect
+ *  (lib/same-origin-path.ts has the rule and the backslash case it closes). */
 function safeNext(value: FormDataEntryValue | null): string {
-  const next = typeof value === 'string' ? value : ''
-  if (next.startsWith('/') && !next.startsWith('//')) return next
-  return '/dashboard'
+  return sameOriginPath(value, '/dashboard')
 }
 
 export async function signInAction(_prev: AuthState, formData: FormData): Promise<AuthState> {

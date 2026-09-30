@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { log } = require('../lib/log');
@@ -933,7 +934,7 @@ router.post('/users/:id/password-reset', requireAdmin, requireUuid('id'), async 
     await client.query('BEGIN');
     const user = await client.query('SELECT id,email,name,role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
     if (!user.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = String(crypto.randomInt(100000, 1000000));
     const codeHash = await bcrypt.hash(code, 12);
     await client.query('UPDATE password_resets SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [req.params.id]);
     await client.query("INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES ($1,$2,NOW()+INTERVAL '30 minutes')", [req.params.id, codeHash]);

@@ -2,6 +2,8 @@
 // promise of a record whose values may be arrays — a repeated `?next=` gives
 // `string[]` — so every read goes through `first()` rather than a cast.
 
+import { sameOriginPath } from '@/lib/same-origin-path'
+
 export type SearchParams = Promise<Record<string, string | string[] | undefined>>
 
 export function first(value: string | string[] | undefined): string {
@@ -19,7 +21,8 @@ const LOOPS = ['/signin', '/signup', '/forgot-password']
  * and the page must not trust the URL.
  */
 export function safePath(value: string, fallback = '/dashboard'): string {
-  if (!value.startsWith('/') || value.startsWith('//')) return fallback
-  if (LOOPS.some((path) => value === path || value.startsWith(`${path}?`))) return fallback
-  return value
+  const path = sameOriginPath(value, '')
+  if (!path) return fallback
+  if (LOOPS.some((loop) => path === loop || path.startsWith(`${loop}?`))) return fallback
+  return path
 }
