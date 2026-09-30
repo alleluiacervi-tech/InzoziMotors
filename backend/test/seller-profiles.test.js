@@ -244,8 +244,12 @@ test('an admin deletes an archived listing for good, keeping its inspection reco
   await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: '' }).expect(400);
 
-  const inspection = await pool.query('SELECT id FROM inspections WHERE car_id = $1', [car.id]);
+  const inspection = await pool.query('SELECT id, submission_id FROM inspections WHERE car_id = $1', [car.id]);
   assert.equal(inspection.rowCount, 1);
+  // Its submission (linked here only through the inspection) went with it.
+  const subStatus = async () =>
+    (await pool.query('SELECT status FROM submissions WHERE id = $1', [inspection.rows[0].submission_id])).rows[0].status;
+  assert.equal(await subStatus(), 'archived');
 
   const res = await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: 'duplicate listing' }).expect(200);
@@ -266,6 +270,33 @@ test('an admin deletes an archived listing for good, keeping its inspection reco
   await api().get(`/cars/${car.id}`).expect(404);
   await api().delete(`/cars/${car.id}/permanently`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: 'duplicate listing' }).expect(404);
+
+  // And it stays finished: a deleted listing used to come back to the pipeline
+  // as a car waiting for a listing, with no way to clear it.
+  assert.equal(await subStatus(), 'archived');
+  const board = await api().get('/admin/journey').set('Authorization', `Bearer ${admin}`).expect(200);
+  assert.ok(!board.body.vehicles.some((v) => v.subject.submission_id === inspection.rows[0].submission_id));
+  const journey = await api().get(`/admin/journey/submission/${inspection.rows[0].submission_id}`)
+    .set('Authorization', `Bearer ${admin}`).expect(200);
+  assert.equal(journey.body.stages.find((st) => st.key === 'listing_created').detail, 'Listing removed');
+});
+
+test('a listing restored from the archive takes its submission back to the pipeline', async () => {
+  const admin = await makeAdmin(await register());
+  const seller = await verifiedSeller();
+  const car = await liveCar({ seller, admin, make: 'Kia', model: 'Sorento' });
+  const { rows: [link] } = await pool.query('SELECT submission_id FROM inspections WHERE car_id = $1', [car.id]);
+  await api().patch(`/cars/${car.id}/status`).set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'archived', reason: 'seller asked to take it down' }).expect(200);
+  assert.equal((await pool.query('SELECT status FROM submissions WHERE id = $1', [link.submission_id])).rows[0].status, 'archived');
+  await api().patch(`/cars/${car.id}/status`).set('Authorization', `Bearer ${admin}`)
+    .send({ status: 'under_review' }).expect(200);
+  assert.equal((await pool.query('SELECT status FROM submissions WHERE id = $1', [link.submission_id])).rows[0].status, 'inspected');
+  const board = await api().get('/admin/journey').set('Authorization', `Bearer ${admin}`).expect(200);
+  const entry = board.body.vehicles.find((v) => v.subject.submission_id === link.submission_id);
+  assert.ok(entry, 'back on the board');
+  assert.equal(entry.listing_status, 'under_review');
+  assert.equal(entry.submission_status, 'inspected');
 });
 
 test('an admin closes a submission from any stage short of a public listing', async () => {
@@ -284,10 +315,15 @@ test('an admin closes a submission from any stage short of a public listing', as
     .send({ reason: 'seller sold it privately' }).expect(403);
   await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: '' }).expect(400);
+  const told = () => pool.query(
+    "SELECT 1 FROM notifications WHERE user_id = $1 AND title = 'Submission closed'", [seller.id]
+  ).then((r) => r.rowCount);
   const closed = await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: 'seller sold it privately' }).expect(200);
   assert.equal(closed.body.submission.status, 'rejected');
   assert.equal(closed.body.released_appointment, true);
+  assert.equal(closed.body.seller_notified, true);
+  assert.equal(await told(), 1);
   assert.equal((await pool.query('SELECT 1 FROM inspections WHERE submission_id=$1', [booked.body.id])).rowCount, 0);
   await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${admin}`)
     .send({ reason: 'seller sold it privately' }).expect(409);
@@ -298,6 +334,17 @@ test('an admin closes a submission from any stage short of a public listing', as
   // Reopen puts it back under review.
   await api().patch(`/submissions/${booked.body.id}`).set('Authorization', `Bearer ${admin}`)
     .send({ status: 'under_review' }).expect(200);
+
+  // Closing quietly — a test entry, a duplicate — records it without a message.
+  const quiet = await api().post(`/submissions/${booked.body.id}/close`).set('Authorization', `Bearer ${admin}`)
+    .send({ reason: 'duplicate entry', notify: false }).expect(200);
+  assert.equal(quiet.body.seller_notified, false);
+  assert.equal(await told(), 1);
+  const audit = await pool.query(
+    "SELECT metadata FROM admin_audit_log WHERE action = 'submission.closed' AND target_id = $1 ORDER BY created_at DESC LIMIT 1",
+    [booked.body.id]
+  );
+  assert.equal(audit.rows[0].metadata.seller_notified, false);
 
   // A public listing is not closed from here.
   const car = await liveCar({ seller, admin, make: 'Honda', model: 'Fit' });

@@ -57,10 +57,14 @@ router.get('/:subjectType/:id', requireAdmin, requireUuid('id'), async (req, res
 
 // GET /admin/journey — every vehicle in flight, ready to lay out in columns.
 //
-// "In flight" means a submission that has not been rejected, or a listing that
+// "In flight" means a submission that has not been closed, or a listing that
 // is not yet finished with. A live listing is deliberately absent: it is the
 // end of the journey, it is counted, and putting forty-seven of them in a
 // column would bury the six that need someone today.
+//
+// So is a submission whose listing was archived and then deleted for good: it
+// is 'archived' with no car left to point at. Without that line every deleted
+// listing came back to the board as a car "waiting for a listing".
 router.get('/', requireAdmin, async (_req, res) => {
   try {
     const { rows: anchors } = await pool.query(
@@ -72,7 +76,8 @@ router.get('/', requireAdmin, async (_req, res) => {
          LEFT JOIN inspections i ON i.submission_id = s.id
          LEFT JOIN cars c ON c.id = COALESCE(s.car_id, i.car_id)
         WHERE s.status <> 'rejected'
-          AND (c.id IS NULL OR c.status NOT IN ('live', 'sold', 'archived', 'rejected'))
+          AND (c.id IS NULL AND s.status <> 'archived'
+               OR c.status NOT IN ('live', 'sold', 'archived', 'rejected'))
         ORDER BY s.submitted_at ASC
         LIMIT $1`,
       [BOARD_LIMIT + 1]

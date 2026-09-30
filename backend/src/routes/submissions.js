@@ -520,12 +520,17 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
 //   · the submission is marked rejected with the reason, which is what the
 //     seller is told, and which Reopen (→ under review) can undo.
 //
+// `notify: false` skips the seller's notification — for test entries, a
+// duplicate, or a seller who has already been told in person. The audit row
+// records which it was.
+//
 // A car that is public (live, paused or sold) is refused: that is a listing,
 // and Listings is where it is paused, sold or removed.
 router.post('/:id/close', requireAdmin, requireUuid('id'), async (req, res) => {
   const reason = String(req.body?.reason || '').trim().slice(0, 1000);
+  const notify = req.body?.notify !== false;
   if (reason.length < 4) {
-    return res.status(400).json({ error: 'Give the reason — it is sent to the seller and kept in the audit log.', code: 'REASON_REQUIRED' });
+    return res.status(400).json({ error: 'Give the reason — it is kept in the audit log, and sent to the seller if they are told.', code: 'REASON_REQUIRED' });
   }
   try {
     const result = await withTransaction(async (client) => {
@@ -577,7 +582,7 @@ router.post('/:id/close', requireAdmin, requireUuid('id'), async (req, res) => {
         actorId: req.user.id, action: 'submission.closed', targetType: 'submission', targetId: sub.id,
         summary: `${sub.year || ''} ${sub.make || ''} ${sub.model || ''} closed`.replace(/\s+/g, ' ').trim(),
         metadata: {
-          reason, previous_status: sub.status,
+          reason, previous_status: sub.status, seller_notified: notify,
           released_appointment: releasedAppointment,
           kept_inspection: inspection && !releasedAppointment ? inspection.id : null,
           archived_listing: archivedListing ? car.id : null,
@@ -586,14 +591,16 @@ router.post('/:id/close', requireAdmin, requireUuid('id'), async (req, res) => {
       return { submission: rows[0], released_appointment: releasedAppointment, archived_listing: archivedListing };
     });
 
-    await notifyUser(pool, {
-      user_id: result.submission.seller_id,
-      type: 'listing_update',
-      title: 'Submission closed',
-      body: `Your submission was closed. Reason: ${reason}`,
-      meta: JSON.stringify({ submissionId: result.submission.id }),
-    });
-    res.json(result);
+    if (notify) {
+      await notifyUser(pool, {
+        user_id: result.submission.seller_id,
+        type: 'listing_update',
+        title: 'Submission closed',
+        body: `Your submission was closed. Reason: ${reason}`,
+        meta: JSON.stringify({ submissionId: result.submission.id }),
+      });
+    }
+    res.json({ ...result, seller_notified: notify });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
     log.error('close submission error', { error: err.message });

@@ -61,6 +61,13 @@ function validInspectionExists(carAlias = 'c') {
 // Allow-list, never deny-list: a column added to `cars` tomorrow is private
 // until someone puts it here on purpose. `archive_reason` and `vin_key` are
 // omitted for the same reason — internal, and nothing renders them.
+// A listing's submission. The link is written from both sides at listing
+// creation (submissions.car_id and inspections.car_id) and older rows may hold
+// only the second, so every update that follows a listing matches either.
+const linkedSubmissions = (carParam) =>
+  `(car_id = ${carParam} OR id IN (SELECT submission_id FROM inspections
+                                    WHERE car_id = ${carParam} AND submission_id IS NOT NULL))`;
+
 const PUBLIC_CAR_COLUMNS = [
   'id', 'seller_id', 'title', 'make', 'model', 'year', 'mileage',
   'fuel_type', 'transmission', 'body_type', 'color', 'price', 'currency',
@@ -1152,10 +1159,7 @@ router.post('/:id/reassign-seller', requireAdmin, requireUuid('id'), async (req,
       // listing. Moving only the car used to make it vanish from the public
       // marketplace — a 404 on its own page — the moment it was reassigned.
       const moved = await client.query(
-        `UPDATE submissions SET seller_id = $1
-          WHERE car_id = $2
-             OR id IN (SELECT submission_id FROM inspections WHERE car_id = $2 AND submission_id IS NOT NULL)
-          RETURNING id`,
+        `UPDATE submissions SET seller_id = $1 WHERE ${linkedSubmissions('$2')} RETURNING id`,
         [new_seller_id, req.params.id]
       );
 
@@ -1456,16 +1460,20 @@ router.patch('/:id/status', requireAdmin, requireUuid('id'), async (req, res) =>
        WHERE id = $2 RETURNING *`,
       [status, req.params.id, req.user.id, reason || null]
     );
+    // The submission follows its listing. It is linked from either side
+    // (submissions.car_id or inspections.car_id), so both are matched; a
+    // listing restored from the archive takes its submission back with it.
     await client.query(
       `UPDATE submissions SET status = CASE
          WHEN $1 = 'live' THEN 'live'
          WHEN $1 = 'rejected' THEN 'rejected'
          WHEN $1 = 'archived' THEN 'archived'
+         WHEN $1 = 'under_review' AND status IN ('archived', 'rejected') THEN 'inspected'
          ELSE status END,
          admin_notes = CASE WHEN $1 IN ('rejected','archived') THEN $3 ELSE admin_notes END,
          reviewed_at = CASE WHEN $1 IN ('approved','live','rejected') THEN NOW() ELSE reviewed_at END,
          reviewer_id = CASE WHEN $1 IN ('approved','live','rejected') THEN $4 ELSE reviewer_id END
-       WHERE car_id = $2`,
+       WHERE ${linkedSubmissions('$2')}`,
       [status, req.params.id, reason || null, req.user.id]
     );
     await recordAdminAction(client, {
@@ -1543,6 +1551,15 @@ router.delete('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
         [reason, req.params.id]
       );
       if (!rows.length) { const e = new Error('Car not found'); e.status = 404; throw e; }
+      // Its submission goes with it, as it does through PATCH /:id/status.
+      // This route used to leave the submission 'inspected', so a listing
+      // deleted after archiving reappeared on the pipeline as a car waiting
+      // for a listing.
+      await client.query(
+        `UPDATE submissions SET status = 'archived', admin_notes = $2
+          WHERE status <> 'rejected' AND ${linkedSubmissions('$1')}`,
+        [req.params.id, reason]
+      );
       await recordAdminAction(client, {
         actorId: req.user.id, action: 'listing.archived', targetType: 'listing', targetId: req.params.id,
         summary: `${rows[0].title} archived`, metadata: { reason },
@@ -1590,6 +1607,14 @@ router.delete('/:id/permanently', requireAdmin, requireUuid('id'), async (req, r
         const e = new Error('Only an archived listing can be deleted. Remove it from the marketplace first.');
         e.status = 409; e.code = 'NOT_ARCHIVED'; throw e;
       }
+      // Its submission is finished too: 'archived', with no car left to point
+      // at, is what keeps it off the pipeline board (routes/journey.js).
+      const archived = await client.query(
+        `UPDATE submissions SET status = 'archived'
+          WHERE status NOT IN ('rejected', 'archived') AND ${linkedSubmissions('$1')}
+          RETURNING id`,
+        [car.id]
+      );
       const inspections = await client.query('UPDATE inspections SET car_id = NULL WHERE car_id = $1', [car.id]);
       const submissions = await client.query('UPDATE submissions SET car_id = NULL WHERE car_id = $1', [car.id]);
       // Retired, but its rows are history and its foreign key has no ON DELETE.
@@ -1601,6 +1626,7 @@ router.delete('/:id/permanently', requireAdmin, requireUuid('id'), async (req, r
           reason,
           listing: car,
           kept: { inspections: inspections.rowCount, submissions: submissions.rowCount },
+          archived_submissions: archived.rows.map((row) => row.id),
         },
       });
       await client.query('DELETE FROM cars WHERE id = $1', [car.id]);

@@ -125,7 +125,11 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
    discloses so buyer and seller can negotiate on it. Listing creation
    (`POST /cars`) and the pipeline board (`lib/vehicle-journey.js`) follow the
    same rule: a completed inspection is done whatever it scored. A submission
-   that will not become a listing is closed with `POST /submissions/:id/close`.
+   that will not become a listing is closed with `POST /submissions/:id/close`
+   (the pipeline board's Remove; `notify: false` skips the seller's message).
+   A submission follows its listing, linked from either side: archived with
+   it, back to `inspected` when it is restored, and still `archived` after the
+   listing is deleted for good — which is what keeps it off the board.
 2. **Inspection is evidence, not publication.** Completing it sets `inspected`;
    it never publishes. Failing a re-inspection still demotes `live`/`approved`
    → `under_review`, for an admin to review and republish with the defects
@@ -229,7 +233,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0049`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0051`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.

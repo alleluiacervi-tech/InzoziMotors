@@ -48,6 +48,20 @@ const TEXT: Record<string, string> = {
   clock: 'text-content-muted', blocked: 'text-danger-strong', idle: 'text-content-muted',
 }
 
+/** Each stage named as the work it waits on. The board's columns hold the
+ *  vehicles WAITING for a stage, and headed with the milestone ("Listing
+ *  created") the column of cars with no listing read as the opposite of what
+ *  it held. */
+export const STEP_TITLE: Record<string, string> = {
+  seller_verified: 'Verify seller',
+  submitted:       'Submission',
+  booked:          'Book inspection',
+  inspected:       'Inspection',
+  listing_created: 'Create listing',
+  ready:           'Finish listing',
+  live:            'Publish',
+}
+
 export function ageLabel(hours: number | null | undefined): string | null {
   if (hours == null || !Number.isFinite(hours)) return null
   if (hours < 1) return 'just now'
@@ -179,5 +193,50 @@ export function JourneyRail({
         </div>
       ) : null}
     </section>
+  )
+}
+
+/**
+ * The same seven stages, stacked — for a side panel too narrow for the rail.
+ * Same tones, same rule: this draws what the server said and decides nothing.
+ */
+export function JourneyStageList({ journey }: { journey: Journey }) {
+  return (
+    <ol className="grid gap-2.5">
+      {journey.stages.map((stage) => {
+        const key = tone(stage)
+        const age = stage.state === 'active' || stage.state === 'blocked' ? ageLabel(stage.age_hours) : null
+        const current = stage.key === journey.current_stage
+        const body = (
+          <>
+            <span className={`mt-1 h-auto w-[3px] shrink-0 self-stretch rounded ${BAR[key]}`} aria-hidden />
+            <span className="min-w-0">
+              <span className={`block text-label font-semibold leading-tight ${stage.state === 'locked' ? 'text-content-muted' : 'text-content'}`}>
+                <span className="mr-1.5 text-caption font-bold tabular-nums text-content-muted">{String(stage.index).padStart(2, '0')}</span>
+                {stage.label}
+              </span>
+              <span className={`mt-0.5 block text-caption leading-snug ${TEXT[key]}`}>
+                {stage.detail}{age ? ` · ${age}` : ''}
+              </span>
+            </span>
+          </>
+        )
+        return (
+          <li key={stage.key} aria-current={current ? 'step' : undefined}>
+            {stage.href && stage.state !== 'locked' ? (
+              <Link href={stage.href} className={`flex gap-2.5 rounded-lg p-1.5 hover:bg-surface-alt focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${current ? 'bg-surface-alt' : ''}`}>
+                {body}
+                <span className="sr-only">{`${stage.label}: ${stage.state}`}</span>
+              </Link>
+            ) : (
+              <div className={`flex gap-2.5 rounded-lg p-1.5 ${current ? 'bg-surface-alt' : ''}`}>
+                {body}
+                <span className="sr-only">{`${stage.label}: ${stage.state}`}</span>
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ol>
   )
 }

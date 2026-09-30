@@ -220,6 +220,13 @@ function listingStage(submission, inspection, car, inspectionDone) {
   if (car) {
     return { state: 'done', actor: 'none', at: car.created_at, detail: 'Draft created', blockers: [] };
   }
+  // The submission follows its listing to 'archived' (routes/cars.js), and a
+  // listing deleted for good leaves it with no car. That is the end of this
+  // vehicle's journey, not a car waiting for a listing: before this rule, every
+  // deleted listing reappeared on the board asking to be created again.
+  if (submission && submission.status === 'archived') {
+    return { state: 'blocked', actor: 'none', at: submission.reviewed_at, detail: 'Listing removed', blockers: [] };
+  }
   if (!inspectionDone) return { state: 'locked', actor: 'none', detail: 'Waiting on a completed inspection', blockers: [] };
   return { state: 'active', actor: 'us', at: inspection ? inspection.completed_at : null,
     detail: 'No listing yet',
@@ -373,6 +380,10 @@ function buildJourney({ anchor, seller, submission, inspection, car, readiness }
     },
     vehicle,
     seller: seller ? { id: seller.id, name: seller.name, email: seller.email, seller_type: seller.seller_type } : null,
+    // Raw statuses, so the board can offer only the actions the server allows
+    // (a public listing is managed from Listings, never closed from here).
+    submission_status: submission ? submission.status : null,
+    listing_status: car ? car.status : null,
     complete: done === STAGE_KEYS.length,
     stages_done: done,
     stages_total: STAGE_KEYS.length,
