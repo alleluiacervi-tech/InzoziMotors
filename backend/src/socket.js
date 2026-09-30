@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
-const { verifyLiveSession } = require('./middleware/auth');
+const { verifyLiveSession, verifySessionToken } = require('./middleware/auth');
 
 module.exports = function attachSocket(io) {
   // Authenticate every socket connection via JWT in handshake — either the
@@ -10,11 +10,18 @@ module.exports = function attachSocket(io) {
   // live socket past its next handshake — this used to only be true of REST
   // requests (see B3 in the plan).
   io.use((socket, next) => {
-    const raw = socket.handshake.auth?.token || socket.handshake.auth?.ticket;
-    if (!raw) return next(new Error('Authentication required'));
+    // Each field takes only its own kind: `token` a session, `ticket` a socket
+    // ticket. A ticket is refused everywhere else (middleware/auth.js).
+    const { token, ticket } = socket.handshake.auth || {};
+    if (!token && !ticket) return next(new Error('Authentication required'));
     let payload;
     try {
-      payload = jwt.verify(raw, process.env.JWT_SECRET);
+      if (token) {
+        payload = verifySessionToken(token);
+      } else {
+        payload = jwt.verify(ticket, process.env.JWT_SECRET);
+        if (payload.purpose !== 'socket') throw new Error('not a socket ticket');
+      }
     } catch {
       return next(new Error('Invalid token'));
     }

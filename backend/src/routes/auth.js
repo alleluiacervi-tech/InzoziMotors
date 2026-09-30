@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const { log } = require('../lib/log');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -62,8 +63,9 @@ async function revokeSessions(client, userId) {
 
 // A socket ticket is a 60-second, single-purpose credential the browser uses
 // to open the realtime connection (docs/WEB-PARITY-PLAN.md D2). The long-lived
-// session JWT never reaches browser JavaScript; this does, but it expires
-// before it could be replayed anywhere useful. `tv` is copied from the
+// session JWT never reaches browser JavaScript; this does, so it opens the
+// socket and nothing else: middleware/auth.js refuses it as a session, which
+// also means a ticket cannot mint the next ticket. `tv` is copied from the
 // already-verified request token so socket.js's verifyLiveSession check (the
 // same one requireAuth just ran) compares against the right version.
 const SOCKET_TICKET_TTL = '60s';
@@ -183,7 +185,7 @@ async function acceptInvite(req, res) {
   if (token.length < 32 || password.length < 8) {
     return res.status(400).json({ error: 'A valid invitation and password of 8+ characters are required' });
   }
-  const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   try {
     const result = await withTransaction(async (client) => {
       const { rows } = await client.query(
@@ -246,7 +248,7 @@ router.post('/forgot-password', async (req, res) => {
     );
     if (recent.rows.length) return res.json({ success: true });
 
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = String(crypto.randomInt(100000, 1000000));
     const codeHash = await bcrypt.hash(code, 10);
     await withTransaction(async (client) => {
       // Issuing a new code retires every older one

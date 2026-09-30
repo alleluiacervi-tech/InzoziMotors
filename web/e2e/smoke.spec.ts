@@ -23,3 +23,15 @@ test('home -> car detail -> sign-in', async ({ page }) => {
   await expect(page.locator('input[name="email"]')).toBeVisible()
   await expect(page.locator('input[name="password"]')).toBeVisible()
 })
+
+// ?next= is where the browser goes after a real sign-in, so it must stay on
+// this site. A backslash reads as a slash to the browser: `/\evil.com` is
+// `//evil.com`. Each of these used to reach redirect() unchanged.
+test('sign-in never carries ?next= off the site', async ({ page }) => {
+  for (const next of ['/\\evil.example/x', '/\\/evil.example', '//evil.example', 'https://evil.example']) {
+    await page.goto(`/signin?next=${encodeURIComponent(next)}`)
+    await expect(page.locator('input[name="next"]').first()).toHaveValue('/dashboard')
+  }
+  await page.goto(`/signin?next=${encodeURIComponent('/cars?make=Toyota')}`)
+  await expect(page.locator('input[name="next"]').first()).toHaveValue('/cars?make=Toyota')
+})

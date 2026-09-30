@@ -17,6 +17,7 @@ const { badgeSvg, readQuad, maskPlate } = require('../lib/plate-badge');
 // stored URL can be mapped back to the file it came from.
 const UPLOAD_ROOT = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
 const { recordAdminAction } = require('../lib/admin-audit');
+const { maskVin } = require('../lib/vin-engine/validator');
 const { notifyUser } = require('../lib/notify');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
 const { elapsedMinutes, integrityFlags } = require('../lib/inspection-integrity');
@@ -178,8 +179,11 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
     if (!evaluated.valid || !evaluated.passed || evaluated.score !== Number(rows[0].score)) {
       return res.status(404).json({ error: 'No valid inspection report found' });
     }
+    // Public route: the VIN goes out masked, never whole (GET /cars/:id).
+    const { vin, ...report } = rows[0];
     res.json({
-      ...rows[0],
+      ...report,
+      vin_masked: vin ? maskVin(vin) : null,
       checklist_version: CHECKLIST_VERSION,
       max_score: 150,
       passing_score: PUBLISH_THRESHOLD,
