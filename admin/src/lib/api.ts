@@ -159,6 +159,9 @@ export type Journey = {
   subject: { submission_id: string | null; inspection_id: string | null; car_id: string | null; seller_id: string | null }
   vehicle: { make: string | null; model: string | null; year: number | null; title: string }
   seller: { id: string; name: string; email: string; seller_type: string | null } | null
+  /** Raw statuses, so a client offers only what the server allows. */
+  submission_status: string | null
+  listing_status: string | null
   complete: boolean
   stages_done: number
   stages_total: number
@@ -540,9 +543,11 @@ export const api = {
     request<any>(`/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   /** Take a vehicle off the pipeline from any stage short of a public listing:
    *  releases an unused appointment, archives a draft listing, tells the seller. */
-  closeSubmission: (id: string, reason: string) =>
-    request<{ submission: any; released_appointment: boolean; archived_listing: boolean }>(
-      `/submissions/${id}/close`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  // `notify: false` closes it without messaging the seller (a test entry, a
+  // duplicate); the audit log records which.
+  closeSubmission: (id: string, reason: string, notify = true) =>
+    request<{ submission: any; released_appointment: boolean; archived_listing: boolean; seller_notified: boolean }>(
+      `/submissions/${id}/close`, { method: 'POST', body: JSON.stringify({ reason, notify }) }),
 
   // Inspections
   inspections: (params?: Record<string, string>) => {

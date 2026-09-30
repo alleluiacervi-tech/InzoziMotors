@@ -45,18 +45,23 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = {
   all: 'All', under_review: 'Under review', approved: 'Approved', scheduled: 'Booked',
   inspecting: 'Being inspected', inspected: 'Inspected', live: 'Live', rejected: 'Closed',
+  // Follows its listing: archived, or deleted for good after archiving.
+  archived: 'Listing removed',
 }
 
 export default function SubmissionsPage() {
-  // Arrives here from an Action Center item; marks the row it named.
-  const { focusProps } = useFocusRow()
-  const [tab, setTab]               = useState('under_review')
   const [items, setItems]           = useState<any[]>([])
   const [loading, setLoading]       = useState(true)
+  // Arrives here from an Action Center item or the pipeline; marks the row it
+  // named. A named row can be in any status, so it opens on All — on the
+  // default tab an inspected car's row simply was not there.
+  const { focusId, focusProps } = useFocusRow(!loading)
+  const [tab, setTab]               = useState(() => (focusId ? 'all' : 'under_review'))
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId]     = useState<string | null>(null)
   const toast = useToast()
   const [notes, setNotes]           = useState('')
+  const [notifySeller, setNotifySeller] = useState(true)
   const [showNotesFor, setShowNotesFor] = useState<string | null>(null)
   const [showScheduleFor, setShowScheduleFor] = useState<string | null>(null)
   const [schedCenter, setSchedCenter] = useState('')
@@ -126,8 +131,8 @@ export default function SubmissionsPage() {
   async function closeSubmission(id: string) {
     setActionId(id)
     try {
-      const r = await api.closeSubmission(id, notes.trim())
-      toast(`Closed${r.released_appointment ? ' · appointment released' : ''}${r.archived_listing ? ' · draft listing archived' : ''}. The seller has been told why.`, 'success')
+      const r = await api.closeSubmission(id, notes.trim(), notifySeller)
+      toast(`Closed${r.released_appointment ? ' · appointment released' : ''}${r.archived_listing ? ' · draft listing archived' : ''}. ${r.seller_notified ? 'The seller has been told why.' : 'The seller was not messaged.'}`, 'success')
       load(tab)
     } catch (e: any) {
       toast(e.message, 'error')
@@ -135,6 +140,7 @@ export default function SubmissionsPage() {
       setActionId(null)
       setShowNotesFor(null)
       setNotes('')
+      setNotifySeller(true)
     }
   }
 
@@ -500,7 +506,7 @@ export default function SubmissionsPage() {
               {showNotesFor === sub.id && (
                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-xs font-medium text-red-700 mb-2">
-                    {sub.status === 'under_review' ? 'Rejection reason' : 'Why it is being closed'} (sent to the seller)
+                    {sub.status === 'under_review' ? 'Rejection reason' : 'Why it is being closed'}{notifySeller ? ' (sent to the seller)' : ''}
                   </p>
                   {sub.status !== 'under_review' ? (
                     <p className="mb-2 text-xs text-red-700/80">
@@ -515,6 +521,10 @@ export default function SubmissionsPage() {
                     className="w-full text-sm border border-red-200 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-red-400"
                     placeholder="e.g. Seller decided not to sell · car failed inspection and will not be listed…"
                   />
+                  <label className="mt-1.5 flex items-center gap-2 text-xs text-red-700">
+                    <input type="checkbox" checked={notifySeller} onChange={(e) => setNotifySeller(e.target.checked)} />
+                    Tell the seller — untick for a test entry or a duplicate
+                  </label>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => closeSubmission(sub.id)}
@@ -525,7 +535,7 @@ export default function SubmissionsPage() {
                       {sub.status === 'under_review' ? 'Confirm reject' : 'Close submission'}
                     </button>
                     <button
-                      onClick={() => { setShowNotesFor(null); setNotes('') }}
+                      onClick={() => { setShowNotesFor(null); setNotes(''); setNotifySeller(true) }}
                       className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
                     >
                       Cancel

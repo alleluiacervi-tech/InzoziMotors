@@ -16,7 +16,10 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api, type Journey, type JourneyBoard } from '@/lib/api'
 import { Card, ErrorState, LoadingState, PageHeader, StatCard } from '@/components/ui'
-import { ActorChip, ageLabel } from '@/components/JourneyRail'
+import { ActorChip, STEP_TITLE, ageLabel } from '@/components/JourneyRail'
+import { PipelineDrawer } from '@/components/PipelineDrawer'
+import { useToast } from '@/components/feedback'
+
 
 const BORDER: Record<string, string> = {
   us: 'border-l-danger-strong',
@@ -33,25 +36,20 @@ function columnFor(journey: Journey): string {
   return done ? done.key : journey.stages[0].key
 }
 
-function VehicleCard({ journey }: { journey: Journey }) {
+function VehicleCard({ journey, onOpen }: { journey: Journey; onOpen: () => void }) {
   const stage = journey.stages.find((s) => s.key === journey.current_stage)
   const age = ageLabel(journey.age_hours)
-  const href = stage?.href
-    || (journey.subject.car_id ? `/listings/${journey.subject.car_id}/edit` : null)
-    || (journey.subject.inspection_id ? `/inspections/${journey.subject.inspection_id}` : null)
-    || (journey.subject.submission_id ? `/submissions?focus=${journey.subject.submission_id}` : '#')
-
-  const blockerCount = stage?.blockers.length ?? 0
-  const summary = journey.blocked
-    ? (stage?.detail || 'Blocked')
-    : blockerCount > 1 ? `${blockerCount} blockers`
-    : (stage?.detail || 'Nothing outstanding')
+  // The stage's own words ("No listing yet", "Appointment missed 3 days ago")
+  // rather than "2 blockers": the blockers themselves are one click away.
+  const summary = stage?.detail || (journey.blocked ? 'Blocked' : 'Nothing outstanding')
 
   return (
     <li>
-      <Link
-        href={href}
-        className={`block rounded border border-line border-l-[3px] bg-surface p-2.5 shadow-sm transition-colors hover:border-content-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${BORDER[journey.actor]}`}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-haspopup="dialog"
+        className={`block w-full rounded border border-line border-l-[3px] bg-surface p-2.5 text-left shadow-sm transition-colors hover:border-content-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${BORDER[journey.actor]}`}
       >
         <span className="block text-label font-semibold leading-tight text-content">{journey.vehicle.title}</span>
         <span className="mt-1 block text-caption text-content-muted">
@@ -61,7 +59,7 @@ function VehicleCard({ journey }: { journey: Journey }) {
         {journey.seller ? (
           <span className="mt-0.5 block truncate text-caption text-content-muted">{journey.seller.name}</span>
         ) : null}
-      </Link>
+      </button>
     </li>
   )
 }
@@ -84,6 +82,8 @@ export default function PipelinePage() {
   const [waitingOn, setWaitingOn] = useState<WaitingOn>('all')
   const [minAge, setMinAge] = useState(0)
   const [q, setQ] = useState('')
+  const [opened, setOpened] = useState<Journey | null>(null)
+  const toast = useToast()
   const visible = useMemo(() => {
     if (!board) return []
     const needle = q.trim().toLowerCase()
@@ -94,8 +94,10 @@ export default function PipelinePage() {
   }, [board, waitingOn, minAge, q])
   const filtered = waitingOn !== 'all' || minAge > 0 || q.trim() !== ''
 
-  async function load() {
-    setLoading(true); setError(null)
+  // `quiet` refreshes in place after an action, without the skeleton flash.
+  async function load(quiet = false) {
+    if (!quiet) setLoading(true)
+    setError(null)
     try { setBoard(await api.journeyBoard()) } catch (e) { setError(e) } finally { setLoading(false) }
   }
   useEffect(() => { load() }, [])
@@ -104,10 +106,10 @@ export default function PipelinePage() {
     <div>
       <PageHeader
         title="Pipeline"
-        description="Every vehicle between a seller and a public listing. Sorted so the work that is ours, and oldest, comes first."
+        description="Every vehicle between a seller and a public listing, in the column of the step it is waiting for. Ours and oldest first. Open a car to see what is holding it, move it on, or take it off the board."
       />
 
-      {loading ? <LoadingState /> : error ? <ErrorState error={error} onRetry={load} /> : board ? (
+      {loading ? <LoadingState /> : error ? <ErrorState error={error} onRetry={() => load()} /> : board ? (
           <>
             <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard icon="alert" label="Waiting on us" value={board.summary.waiting_on_us}
@@ -176,13 +178,16 @@ export default function PipelinePage() {
                     return (
                       <section key={column.key} className="min-w-[9rem] flex-1">
                         <header className={`mb-2.5 flex items-baseline gap-2 border-b-2 pb-1.5 ${ours ? 'border-brand' : 'border-line'}`}>
-                          <h2 className="text-caption font-bold uppercase tracking-wide text-content">{column.label}</h2>
+                          <h2 className="text-caption font-bold uppercase tracking-wide text-content" title={`Waiting for: ${column.label}`}>
+                            {STEP_TITLE[column.key] || column.label}
+                          </h2>
                           <span className="ml-auto text-caption font-bold tabular-nums text-content-muted">{cards.length}</span>
                         </header>
                         {cards.length ? (
                           <ul className="grid gap-2">
                             {cards.map((journey) => (
-                              <VehicleCard key={journey.subject.submission_id || journey.subject.car_id} journey={journey} />
+                              <VehicleCard key={journey.subject.submission_id || journey.subject.car_id} journey={journey}
+                                onOpen={() => setOpened(journey)} />
                             ))}
                           </ul>
                         ) : (
@@ -202,6 +207,14 @@ export default function PipelinePage() {
                 </div>
               </div>
             )}
+
+            {opened ? (
+              <PipelineDrawer
+                journey={opened}
+                onClose={() => setOpened(null)}
+                onRemoved={(message) => { setOpened(null); toast(message, 'success'); load(true) }}
+              />
+            ) : null}
 
             <p className="mt-5 flex flex-wrap items-center gap-3 text-caption text-content-muted">
               <ActorChip actor="us" /> ours to move
