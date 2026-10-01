@@ -97,6 +97,51 @@ keep every screen agreeing:
 orders with quote → agreement → 50/50 milestones evidenced by **uploaded bank
 transfer proof**. No gateway; an admin reviews the proof.
 
+**Korean imports from Encar** (branch `feature/encar-foundation`; plan `docs/ENCAR-IMPORT-PLAN.md`,
+tasks `docs/ENCAR-IMPORT-TODO.md`, how to run it `docs/ENCAR-IMPORT-OPERATIONS.md`). Every used
+car for sale in South Korea, searchable on web and app with all photos, replacing the model
+catalogue once switched on. **All phases are written and ship OFF**; what remains needs a person,
+the provider key or production data (see the status block below). Rules that must not be broken:
+- It is a **mirror, not live search**: a separate `encar-sync` container (`backend/src/workers/encar-sync.js`)
+  loads the catalogue, then applies the provider's change feed; the API reads only our tables
+  (`encar_listings`, `encar_detail_cache`, `encar_sync_state`, `encar_sync_runs`, `encar_usage`;
+  migration 0052). It never calls the provider per search.
+- **Storage never grows unbounded**: only cars for sale now (sold ones deleted), photo *addresses*
+  never files, reports cached 24 h in an UNLOGGED table, row ceiling (default 250k), rows rewritten
+  only on a shown-field change, `ops/backup.sh` excludes `encar_*` data.
+- **Switches** in `platform_settings`: `encar_flags` (`sync_enabled`, `catalog_public`, both false),
+  `encar_ingest_rules`, `encar_cost_inputs` (exporter costs; **no landed-cost figure is shown until
+  `configured` is true** with a `reviewed_on` date: never a guessed shipping price).
+- **Never exposed**: the provider key (header only, redacted in logs), licence plates, VINs,
+  inspection certificate numbers, dealer details. Reports are rebuilt from named fields in
+  `backend/src/lib/encar/detail.js`; do not pass a provider payload through.
+- Prices are the provider's 만원 (10,000 KRW), converted for display only. Korean cars are **never**
+  labelled "Sawa Certified"; they show the *Korean* inspection report and say Sawa inspects again in
+  Kigali. Sawa is not the seller; no escrow or guarantee wording (import orders stay quote →
+  agreement → 50/50 bank-transfer proof).
+- Ordering: `POST /imports` with `encar_listing_id` freezes a server-built snapshot into the order
+  (`listing_snapshot`, `snapshot_photos`, migration 0053); the client's make/model/year are ignored.
+- Clients prefer the Korean catalogue only while `catalog_public` is true and fall back to the old
+  model catalogue otherwise, so the import page is never empty. The old catalogue code is deleted
+  in a later pull request, after go-live (deliberate, see the TODO's Phase 6).
+- Provider limits (Business plan): 60 requests/min (API paces itself 20, worker 35), 12 GB traffic a
+  month, 100 refreshes a day. `GET /health/encar` feeds an uptime check.
+
+*Encar status, 1 Oct 2026, so a new session knows where it stands:*
+- Done and pushed on `feature/encar-foundation`: Phases 1–5 and the code half of Phase 6. 93 backend
+  unit tests pass locally; the web and admin typecheck; the app's release, module-scope, hook-order,
+  undefined-ref and import checks pass.
+- **Not yet run anywhere**: the Postgres tests (`encar-store`, `imports-korea`, `fx`) and the
+  Playwright spec (`web/e2e/korea-imports.spec.ts`) only run in CI, which only runs on a pull request
+  to `main`. No pull request is open (the user has not asked for one).
+- **Waiting on the user**: the provider key and plan, written terms from encarapi (storing data,
+  showing photos, photo traffic), the Korean exporter and its cost sheet (E7), decisions E1–E8,
+  disk space on their Mac, native-speaker review of rw/sw strings, device test, one real order.
+- **Waiting on the key (assistant)**: run `backend/scripts/encar-spike.js`, record the numbers in
+  plan §9, confirm the photo option (E3), check the export's columns, capture fixtures, tighten the
+  inspection allow-list, load-test 150k rows.
+- Go-live order is in the operations guide. Last: delete the old catalogue (TODO Phase 6).
+
 **Import catalogue images** (Admin → Catalogue images, migration 0050): best
 first, an **official photo** uploaded with its source and permission recorded
 (`image_source`, internal), then a licensed **studio render** that a person has
@@ -236,7 +281,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0051`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0053`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
