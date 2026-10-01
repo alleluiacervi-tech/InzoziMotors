@@ -22,6 +22,11 @@ const EAS_PROJECT_ID = 'f2c5d3f8-8777-4b97-96ec-1482d374a42a';
 const GOOGLE_SERVICES_FILE = process.env.GOOGLE_SERVICES_JSON
   || (existsSync('./google-services.json') ? './google-services.json' : undefined);
 
+// Native crash reporting. The config plugin (build-time source-map upload) is
+// added only when a DSN is configured, so a build without Sentry is unchanged.
+// See src/utils/sentry.js for how to switch it on.
+const SENTRY_ENABLED = Boolean(process.env.EXPO_PUBLIC_SENTRY_DSN);
+
 export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
@@ -221,6 +226,12 @@ export default ({ config }) => ({
         color: '#CC050F',
       },
     ],
+    ...(SENTRY_ENABLED
+      ? [['@sentry/react-native/expo', {
+          organization: process.env.SENTRY_ORG,
+          project: process.env.SENTRY_PROJECT,
+        }]]
+      : []),
   ],
   extra: {
     // Set EXPO_PUBLIC_API_URL in eas.json (per profile) or the shell for local

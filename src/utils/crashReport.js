@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { BASE_URL } from '../api/client';
 import { runningBuild } from './updates';
+import { captureError } from './sentry';
 
 // Sends a JavaScript error to our own API (POST /client-errors) so a crash on a
 // real phone leaves a trace. What is sent: the error message and stack, which
@@ -22,6 +23,8 @@ export function reportClientError(error, where, { fatal = false } = {}) {
     const key = `${where}|${message}`;
     if (seen.has(key) || seen.size >= MAX_PER_LAUNCH) return;
     seen.add(key);
+    // The native reporter too, when one is configured (src/utils/sentry.js).
+    captureError(error, where);
     const build = runningBuild();
     fetch(`${BASE_URL}/client-errors`, {
       method: 'POST',
