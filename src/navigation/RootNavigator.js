@@ -56,6 +56,8 @@ import ImportOrdersScreen from '../screens/ImportOrdersScreen';
 import ImportOrderDetailScreen from '../screens/ImportOrderDetailScreen';
 import ImportVehicleDetailScreen from '../screens/ImportVehicleDetailScreen';
 import ImportBrandsScreen from '../screens/ImportBrandsScreen';
+import KoreaCarsScreen from '../screens/KoreaCarsScreen';
+import KoreaCarDetailScreen from '../screens/KoreaCarDetailScreen';
 import ImportBrandModelsScreen from '../screens/ImportBrandModelsScreen';
 
 const Stack = createNativeStackNavigator();
@@ -127,6 +129,8 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="ImportOrderDetail" component={ImportOrderDetailScreen} />
       <Stack.Screen name="ImportVehicleDetail" component={ImportVehicleDetailScreen} />
       <Stack.Screen name="ImportBrands" component={ImportBrandsScreen} />
+      <Stack.Screen name="KoreaCars" component={KoreaCarsScreen} />
+      <Stack.Screen name="KoreaCarDetail" component={KoreaCarDetailScreen} />
       <Stack.Screen name="ImportBrandModels" component={ImportBrandModelsScreen} />
     </Stack.Navigator>
   );
