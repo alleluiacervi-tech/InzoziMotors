@@ -18,7 +18,7 @@ needs Postgres (runs in CI on a pull request) or live provider data · `[ ]` not
       and in a local `backend/.env` (never in chat, never committed)
 - [ ] **(You)** Ask encarapi support, in writing: may we store listing data, display photos in our app
       and website, and copy photos of cars a customer orders? Do photo views count against monthly traffic?
-- [ ] **(You)** Find the Korean exporter partner: who buys, deregisters and ships; the per-car cost
+- [~] **(You)** Find the Korean exporter partner (research, shortlist, indicative costs and the message to send are in [`KOREAN-EXPORTER-SEARCH.md`](KOREAN-EXPORTER-SEARCH.md); none contacted yet, no written cost sheet): who buys, deregisters and ships; the per-car cost
       sheet (export fee, inland transport, freight to Mombasa/Dar by category, insurance) — **E7**
 - [ ] **(You)** Answer E1–E8 (recommendations in the plan, §12)
 - [ ] **(You)** Merge the pull request(s); the deploy applies migrations 0052 and 0053
