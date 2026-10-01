@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const { loadFlags, loadSetting } = require('../lib/encar/store');
 const { photoUrl } = require('../lib/encar/normalize');
 const { createClient } = require('../lib/encar/client');
-const { createDetail, findDisplacement } = require('../lib/encar/detail');
+const { createDetail } = require('../lib/encar/detail');
 const { estimateLandedCost, SETTING_KEY: COST_KEY } = require('../lib/encar/landed-cost');
 const { loadDutyRates } = require('../lib/duty-rates');
 
@@ -131,7 +131,7 @@ async function estimateFor(row, fx) {
     priceKrw: row.price_man * 10000,
     year: row.year,
     category: row.category,
-    cc: cached ? findDisplacement(cached) : null,
+    cc: cached?.engine_cc ?? null,
     krwPerUsd: fx.rate,
     rwfPerUsd: rwf.rate,
     costs,
@@ -254,11 +254,12 @@ router.get('/facets', async (req, res) => {
 
     let value;
     if (!make) {
-      const { rows } = await pool.query(
-        `SELECT make, COUNT(*)::int AS count FROM encar_listings GROUP BY make ORDER BY count DESC, make ASC`
-      );
-      const total = rows.reduce((n, r) => n + r.count, 0);
-      value = { available: true, total, makes: rows };
+      const [makes, fuels] = await Promise.all([
+        pool.query(`SELECT make, COUNT(*)::int AS count FROM encar_listings GROUP BY make ORDER BY count DESC, make ASC`),
+        pool.query(`SELECT fuel, COUNT(*)::int AS count FROM encar_listings WHERE fuel IS NOT NULL GROUP BY fuel ORDER BY count DESC`),
+      ]);
+      const total = makes.rows.reduce((n, r) => n + r.count, 0);
+      value = { available: true, total, makes: makes.rows, fuels: fuels.rows };
     } else {
       const [models, fuels, range] = await Promise.all([
         pool.query(
@@ -337,8 +338,8 @@ router.get('/:id/reports', reportsLimiter, async (req, res) => {
     const { rowCount } = await pool.query('SELECT 1 FROM encar_listings WHERE id = $1', [id]);
     if (!rowCount) return res.status(404).json({ error: 'This car is no longer available' });
 
-    // The vehicle detail is fetched only for the engine size, which narrows the
-    // duty estimate from a range to a figure; nothing else of it is returned.
+    // The vehicle detail is kept only for the engine size (which narrows the duty
+    // estimate from a range to a figure) and the asking-price history.
     const [inspection, record, vehicle] = await Promise.all([
       detail.get(id, 'inspection'), detail.get(id, 'record'), detail.get(id, 'detail'),
     ]);
@@ -350,7 +351,8 @@ router.get('/:id/reports', reportsLimiter, async (req, res) => {
       available: true,
       inspection: part(inspection),
       record: part(record),
-      engine_cc: vehicle.status === 'ok' ? findDisplacement(vehicle.payload) : null,
+      engine_cc: vehicle.status === 'ok' ? vehicle.payload.engine_cc ?? null : null,
+      price_history: vehicle.status === 'ok' ? vehicle.payload.price_history ?? [] : [],
       source_note: 'The Korean inspection report and accident record are from the Korean market, not Sawa Cars. Sawa inspects every imported car again in Kigali.',
     });
   } catch (err) {

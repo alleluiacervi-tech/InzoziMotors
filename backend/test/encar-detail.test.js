@@ -1,38 +1,66 @@
 // What may leave the Korean reports, and how they are cached. No network or DB.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { createDetail, sanitize, findDisplacement } = require('../src/lib/encar/detail');
+const { createDetail, scrub, shapeRecord, shapeInspection, shapeDetail, findDisplacement } = require('../src/lib/encar/detail');
 const { EncarError } = require('../src/lib/encar/client');
 
-test('scrub drops plates, VINs, contacts and people, by key and by what a value looks like', () => {
-  const { payload } = sanitize({
-    accident: 'none',
-    PlateNumber: '123가4567',
-    note: 'seen at 12가3456 yesterday',
-    vinCode: 'KNAPB81ABC1234567',
-    comment: 'chassis KNAPB81ABC1234567 checked',
-    dealer: { name: 'Kim Motors', phone: '010-1234-5678' },
-    remark: 'call 010-1234-5678',
-    mail: 'a@b.co',
-    items: [{ name: 'Engine', status: 'good' }, { name: 'Brakes', status: 'good' }],
+test('the record is rebuilt from named fields: counts, dates and costs only', () => {
+  const r = shapeRecord({
+    accidentCnt: 2, myAccidentCnt: 1, myAccidentCost: 1748300, otherAccidentCnt: 1, otherAccidentCost: 273719,
+    ownerChangeCnt: 2, ownerChanges: ['2026-02-19', '2021-07-08', 'call 010-1234-5678'],
+    carNoChangeCnt: 0, totalLossCnt: 0, totalLossDate: null, floodTotalLossCnt: 0, floodPartLossCnt: null,
+    robberCnt: 0, use: '2', business: 0, firstDate: '2017-07-31', regDate: '2026-09-30T10:00:00',
+    carNo: '123가4567', ownerName: 'Kim', vin: 'KNAPB81ABC1234567',
+    accidents: [{ date: '2024-01-23', type: '3', partCost: 0, laborCost: 72630, paintingCost: 201089, insuranceBenefit: 300000, shop: 'Kim Motors' }],
   });
-  assert.equal(payload.accident, 'none');
-  assert.deepEqual(payload.items, [{ name: 'Engine', status: 'good' }, { name: 'Brakes', status: 'good' }]);
-  for (const k of ['PlateNumber', 'note', 'vinCode', 'comment', 'dealer', 'remark', 'mail']) {
-    assert.equal(k in payload, false, `${k} must not survive`);
-  }
-  assert.doesNotMatch(JSON.stringify(payload), /010|KNAPB|가|@/);
+  assert.equal(r.accident_count, 2);
+  assert.equal(r.commercial, false);
+  assert.deepEqual(r.owner_changes, ['2026-02-19', '2021-07-08']); // the odd entry is not a date
+  assert.deepEqual(r.accidents, [{ date: '2024-01-23', type: '3', part_cost: 0, labor_cost: 72630, painting_cost: 201089, insurance_benefit: 300000 }]);
+  assert.doesNotMatch(JSON.stringify(r), /carNo|ownerName|"vin"|KNAPB|가|Kim|010-/i);
+  assert.equal('total_loss_date' in r, false, 'null fields are left out, not sent as null');
 });
 
-test('scrub caps depth, width and size', () => {
-  const deep = { a: { b: { c: { d: { e: { f: { g: 'x' } } } } } } };
-  assert.equal(JSON.stringify(sanitize(deep).payload).includes('"g"'), false);
-  const wide = { list: Array.from({ length: 500 }, (_, i) => i) };
-  assert.equal(sanitize(wide).payload.list.length, 200);
-  const huge = { big: Array.from({ length: 200 }, () => ({ t: 'y'.repeat(390) })), keep: 'yes' };
-  const r = sanitize(huge);
-  assert.equal(r.truncated, true);
-  assert.equal(r.payload.keep, 'yes');
+test('the inspection keeps its summary, and scrubs the free-form parts', () => {
+  const r = shapeInspection({
+    vehicleId: '1', inspectionSource: 'x', directManagement: true,
+    master: {
+      accdient: false, simpleRepair: true, supplyNum: 'CERT-12345', registrationDate: '2026-09-01',
+      detail: {
+        vin: 'KNAPB81ABC1234567', mileage: 38200, waterlog: false, recall: 'none',
+        engine: { check: 'good', plateNo: '12가3456' }, dealerPhone: '010-1234-5678', remark: 'seen at 12가3456',
+      },
+    },
+    outers: [{ panel: 'door', status: 'paint' }],
+    inners: [],
+    etcs: [{ note: 'call 010-9999-8888 for details' }, { note: 'minor scratch' }],
+    images: [{ url: 'https://x/y.jpg' }],
+  });
+  assert.equal(r.accident, false);
+  assert.equal(r.simple_repair, true);
+  assert.equal(r.inspected_on, '2026-09-01');
+  assert.equal(r.detail.mileage, 38200);
+  assert.equal(r.detail.engine.check, 'good');
+  assert.deepEqual(r.exterior, [{ panel: 'door', status: 'paint' }]);
+  assert.deepEqual(r.notes, [{ note: 'minor scratch' }]);
+  assert.doesNotMatch(JSON.stringify(r), /KNAPB|CERT-|plate|가|010|dealer|https/i);
+});
+
+test('scrub caps depth and width, and an oversized inspection keeps only its headline', () => {
+  assert.equal(JSON.stringify(scrub({ a: { b: { c: { d: { e: { f: { g: 'x' } } } } } } }) ?? '').includes('"g"'), false);
+  assert.equal(scrub({ list: Array.from({ length: 500 }, (_, i) => i) }).list.length, 200);
+  const huge = shapeInspection({ master: { accdient: true, detail: { rows: Array.from({ length: 200 }, (_, i) => ({ [`k${i}`]: 'y'.repeat(390) })) } }, outers: [] });
+  assert.equal(huge.__truncated, true);
+  assert.equal(huge.accident, true);
+});
+
+test('the vehicle detail keeps only the engine size and the price history', () => {
+  const r = shapeDetail({
+    spec: { displacement: 1998, colorName: 'white' }, vin: 'KNAPB81ABC1234567', contact: { phone: '010-1' },
+    priceHistory: [{ price: 2500, observedAt: '2026-08-01T00:00:00Z' }, { price: 2400, observedAt: '2026-09-01T00:00:00Z' }, { price: 'x' }],
+  });
+  assert.deepEqual(r, { engine_cc: 1998, price_history: [{ price_man: 2500, observed_at: '2026-08-01' }, { price_man: 2400, observed_at: '2026-09-01' }] });
+  assert.deepEqual(shapeDetail({ vin: 'x' }), {});
 });
 
 test('engine size is found wherever the provider puts it, and only if plausible', () => {
@@ -63,12 +91,12 @@ function fakeDb() {
 
 test('a car opened twice costs one provider request, and concurrent opens share one', async () => {
   let calls = 0;
-  const client = { configured: true, inspection: async () => { calls += 1; await new Promise((r) => setTimeout(r, 10)); return { ok: 'fine' }; } };
+  const client = { configured: true, inspection: async () => { calls += 1; await new Promise((r) => setTimeout(r, 10)); return { master: { accdient: false } }; } };
   const detail = createDetail({ db: fakeDb(), client });
   const [a, b] = await Promise.all([detail.get('1', 'inspection'), detail.get('1', 'inspection')]);
   assert.equal(calls, 1);
   assert.equal(a.status, 'ok');
-  assert.deepEqual(b.payload, { ok: 'fine' });
+  assert.deepEqual(b.payload, { accident: false });
   await detail.get('1', 'inspection');
   assert.equal(calls, 1, 'second open is served from the cache');
 });
@@ -86,7 +114,7 @@ test('a provider failure serves the older copy when there is one, "unavailable" 
   const db = fakeDb();
   let fail = false;
   let t = Date.now();
-  const client = { configured: true, inspection: async () => { if (fail) throw new EncarError('unavailable', 'down'); return { v: 1 }; } };
+  const client = { configured: true, inspection: async () => { if (fail) throw new EncarError('unavailable', 'down'); return { master: { simpleRepair: true } }; } };
   const detail = createDetail({ db, client, now: () => t });
   assert.equal((await detail.get('3', 'inspection')).status, 'ok');
   t += 25 * 3_600_000; // the 24 h copy has expired
@@ -104,7 +132,7 @@ test('with no key configured, nothing is requested', async () => {
 
 test('the daily on-demand budget stops further fetches but still serves what is cached', async () => {
   let calls = 0;
-  const client = { configured: true, inspection: async (id) => { calls += 1; return { id }; } };
+  const client = { configured: true, inspection: async () => { calls += 1; return { master: { accdient: false } }; } };
   const detail = createDetail({ db: fakeDb(), client, dailyMax: 2 });
   await detail.get('a', 'inspection');
   await detail.get('b', 'inspection');

@@ -444,10 +444,129 @@ export const importCatalog = {
     }),
 }
 
+/** A used car for sale in South Korea (GET /imports/korea). */
+export interface KoreaCar {
+  id: string
+  make: string
+  model: string
+  badge: string | null
+  year: number
+  month: number | null
+  mileage_km: number | null
+  fuel: string | null
+  transmission: string | null
+  color: string | null
+  price_krw: number
+  /** Display only, rounded; null when no exchange rate is available. */
+  price_usd: number | null
+  photo_count: number
+  cover: string | null
+  first_seen_at: string
+}
+
+export interface KoreaList {
+  available: boolean
+  items: KoreaCar[]
+  next_cursor: string | null
+}
+
+/** What landed in Kigali is estimated to cost. Null until the exporter's costs are entered. */
+export interface KoreaEstimate {
+  currency: 'RWF'
+  to_port_rwf: number
+  duty_rwf: { low: number; high: number }
+  total_rwf: { low: number; high: number }
+  breakdown_usd: { car: number; export_fee: number; inland_transport: number; freight: number; insurance: number }
+  depreciation_pct: number
+  excise_pct: { min: number; max: number }
+  engine_cc: number | null
+  costs_reviewed_on: string | null
+  duty_reviewed_on: string | null
+  note: string
+}
+
+export interface KoreaCarDetail extends KoreaCar {
+  available: boolean
+  power_ps: number | null
+  seats: number | null
+  category: string | null
+  photos: string[]
+  estimate: KoreaEstimate | null
+  source_note: string
+}
+
+export type KoreaReportPart<T> =
+  | { status: 'ok'; data: T; fetched_at: string; stale: boolean }
+  | { status: 'none' | 'unavailable' }
+
+export interface KoreaRecord {
+  accident_count?: number
+  own_damage_count?: number
+  own_damage_cost_krw?: number
+  other_damage_count?: number
+  other_damage_cost_krw?: number
+  owner_change_count?: number
+  owner_changes?: string[]
+  plate_change_count?: number
+  total_loss_count?: number
+  total_loss_date?: string
+  flood_total_loss_count?: number
+  flood_partial_loss_count?: number
+  flood_date?: string
+  theft_count?: number
+  theft_date?: string
+  usage?: string
+  commercial?: boolean
+  first_registered?: string
+  accidents?: { date: string; type?: string; part_cost?: number; labor_cost?: number; painting_cost?: number; insurance_benefit?: number }[]
+}
+
+export interface KoreaInspection {
+  accident?: boolean
+  simple_repair?: boolean
+  inspected_on?: string
+  detail?: Record<string, unknown>
+  exterior?: unknown
+  structure?: unknown
+  notes?: unknown
+  __truncated?: boolean
+}
+
+export interface KoreaReports {
+  available: boolean
+  inspection: KoreaReportPart<KoreaInspection>
+  record: KoreaReportPart<KoreaRecord>
+  engine_cc: number | null
+  price_history: { price_man: number; observed_at: string }[]
+  source_note: string
+}
+
+export interface KoreaFacets {
+  available: boolean
+  total?: number
+  makes?: { make: string; count: number }[]
+  make?: string
+  models?: { model: string; count: number }[]
+  fuels?: { fuel: string; count: number }[]
+  ranges?: { min_year: number; max_year: number }
+}
+
+/** Used cars for sale in South Korea, from our own mirror of the Encar listings. */
+export const koreaCatalog = {
+  list: (query: Record<string, unknown> = {}) =>
+    request<KoreaList>(`/imports/korea${qs(query)}`, { revalidate: 300, tags: ['korea-catalog'] }),
+  facets: (make?: string) =>
+    request<KoreaFacets>(`/imports/korea/facets${qs({ make })}`, { revalidate: 600, tags: ['korea-catalog'] }),
+  get: (id: string) =>
+    request<KoreaCarDetail>(`/imports/korea/${encodeURIComponent(id)}`, { revalidate: 300, tags: ['korea-catalog'] }),
+  reports: (id: string) =>
+    request<KoreaReports>(`/imports/korea/${encodeURIComponent(id)}/reports`, { revalidate: 300, tags: ['korea-catalog'] }),
+}
+
 export const importOrders = {
   mine: (token: string) => request<any[]>('/imports/mine', { token }),
   get: (token: string, id: string) => request<any>(`/imports/${id}`, { token }),
-  create: (token: string, data: { origin_country: string; make: string; model: string; year?: number; supplier_reference?: string; customer_notes?: string }) =>
+  create: (token: string, data: { origin_country?: string; make?: string; model?: string; year?: number; supplier_reference?: string; customer_notes?: string; encar_listing_id?: string }) =>
     request<any>('/imports', { token, method: 'POST', body: JSON.stringify(data) }),
   acceptAgreement: (token: string, id: string) => request<any>(`/imports/${id}/accept-agreement`, { token, method: 'POST' }),
   submitPaymentProof: (token: string, orderId: string, paymentId: string, data: FormData) =>

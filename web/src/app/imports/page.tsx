@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Button, Container, Icon, Section } from '@/components/ui'
 import { JsonLd } from '@/components/JsonLd'
 import { DutyCalculator } from '@/components/tools/DutyCalculator'
-import { importCatalog, type ImportCatalogMake, type ImportCatalogModel } from '@/lib/api'
+import { importCatalog, koreaCatalog, type ImportCatalogMake, type ImportCatalogModel } from '@/lib/api'
 import { formatUsdApprox, getRwfRate } from '@/lib/business'
 import { getCurrentUser } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
@@ -124,12 +124,17 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
   const yearParam = one(params.year)
   const priceUsd = Number(one(params.price_usd)) || 0
 
-  const [makesRes, modelsRes, user, logoFor] = await Promise.all([
+  const [makesRes, modelsRes, user, logoFor, koreaFacets] = await Promise.all([
     importCatalog.makes().catch(() => null),
     importCatalog.list({ make, origin, limit: make ? 250 : 12 }).catch(() => null),
     getCurrentUser(),
     getLogoLookup(),
+    koreaCatalog.facets().catch(() => null),
   ])
+  // Once the Korean catalogue is open it IS the catalogue: every car for sale in
+  // Korea, rather than a list of models. Until then (and if the API cannot be
+  // reached) the model catalogue below stays, so the page is never empty.
+  const korea = Boolean(koreaFacets?.available && koreaFacets.total)
   const origins = byOrigin(makesRes?.items ?? [])
   const visibleMakes = (makesRes?.items ?? []).filter((m) => !origin || m.origin_country === origin)
   const models = modelsRes?.items ?? []
@@ -187,7 +192,7 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
               {t('imports.ctaEstimate')}
             </Button>
           </div>
-          {origins.length ? (
+          {!korea && origins.length ? (
             <ul className="mt-8 flex flex-wrap gap-2">
               {origins.map(([name, info]) => (
                 <li key={name}>
@@ -243,7 +248,36 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
         </Container>
       </Section>
 
-      {/* The catalogue. Server-rendered and linkable: ?origin= and ?make=. */}
+      {korea ? (
+        // Every car for sale in South Korea, one click away. The makes with the
+        // most cars lead; each is a link into the filtered search.
+        <Section tone="page" id="catalog">
+          <Container>
+            <h2 className="text-headline font-extrabold text-content">{t('imports.korea.teaserTitle')}</h2>
+            <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.korea.teaserBody')}</p>
+            <ul className="mt-6 flex flex-wrap gap-2">
+              {(koreaFacets?.makes ?? []).slice(0, 14).map((m) => (
+                <li key={m.make}>
+                  <Link
+                    href={`/imports/korea?make=${encodeURIComponent(m.make)}`}
+                    className="inline-flex h-9 items-center gap-2 rounded-pill border border-line-soft bg-surface pl-1.5 pr-3.5 text-micro font-bold text-content-secondary transition-colors hover:border-content hover:text-content"
+                  >
+                    <BrandMark name={m.make} logoUrl={logoFor(m.make)} size={24} />
+                    {m.make}
+                    <span className="tabular-nums font-semibold text-content-muted">{m.count.toLocaleString('en-US')}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-7">
+              <Button href="/imports/korea" size="lg" trailingIcon={<Icon name="arrow-right" size={18} />}>
+                {t('imports.korea.teaserCta')}
+              </Button>
+            </div>
+          </Container>
+        </Section>
+      ) : (
+        // The model catalogue: server-rendered and linkable (?origin= and ?make=).
       <Section tone="page" id="catalog">
         <Container>
           <h2 className="text-headline font-extrabold text-content">{t('imports.catalogTitle')}</h2>
@@ -300,6 +334,7 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
           )}
         </Container>
       </Section>
+      )}
 
       <Section tone="surface" id="estimate">
         <Container>
