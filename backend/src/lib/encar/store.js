@@ -123,9 +123,14 @@ async function deleteListings(db, ids) {
   return rowCount;
 }
 
-/** Every id we hold, for the weekly cross-check against the export. */
-async function listIds(db) {
-  const { rows } = await db.query('SELECT id FROM encar_listings');
+/**
+ * Every id we hold, for the weekly cross-check against the export. With
+ * `firstSeenBefore`, only the cars we already had at that moment.
+ */
+async function listIds(db, { firstSeenBefore } = {}) {
+  const { rows } = firstSeenBefore
+    ? await db.query('SELECT id FROM encar_listings WHERE first_seen_at < $1', [firstSeenBefore])
+    : await db.query('SELECT id FROM encar_listings');
   return rows.map((r) => r.id);
 }
 

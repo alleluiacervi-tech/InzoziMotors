@@ -23,6 +23,10 @@ const { readExport } = require('./csv');
 
 const PAGE_SIZE = 1000;
 
+// When the provider does not say when an export was built, assume the oldest it
+// can be: it is regenerated daily, plus slack for a slow generation.
+const EXPORT_MAX_AGE_MS = 26 * 3_600_000;
+
 class CeilingError extends Error {
   constructor(count, ceiling) {
     super(`Row ceiling reached (${count} >= ${ceiling}); refusing to store more`);
@@ -33,6 +37,15 @@ class CeilingError extends Error {
 
 function emptyCounts() {
   return { added: 0, updated: 0, removed: 0, skipped: 0, unparsed: 0 };
+}
+
+/** The export's own build time (a header), else the oldest it could be. */
+function exportBuiltAt(res, startedAt) {
+  const header = res?.headers?.get?.('x-encarapi-generated-at');
+  const stated = header ? new Date(header) : null;
+  // A stated time is used when it is sane (a real date, not in the future).
+  if (stated && !Number.isNaN(stated.getTime()) && stated <= startedAt) return stated;
+  return new Date(startedAt.getTime() - EXPORT_MAX_AGE_MS);
 }
 
 function createSync({
@@ -71,10 +84,15 @@ function createSync({
     return { keep, drop };
   }
 
-  async function checkCeiling(conn, rules, incoming) {
-    if (!incoming) return;
+  // Run inside the page's transaction, AFTER its upserts and deletes. Only a page
+  // that actually added cars can breach the ceiling, and its own removals count
+  // towards the room. Checking before the work (and counting every kept row) made
+  // a full table refuse the very deletes that would have made space, so the feed
+  // stalled for good. Throwing rolls the whole page back.
+  async function enforceCeiling(conn, rules, inserted) {
+    if (!inserted) return;
     const count = await store.countListings(conn);
-    if (count >= rules.row_ceiling) throw new CeilingError(count, rules.row_ceiling);
+    if (count > rules.row_ceiling) throw new CeilingError(count, rules.row_ceiling);
   }
 
   async function runBaseline({ rules, maxPages = 60 }) {
@@ -104,13 +122,16 @@ function createSync({
       if (!items) throw new EncarError('bad_response', 'The catalogue response had no SearchResults');
 
       const { keep, drop } = triage(items, rules, counts);
-      const last = items.length < PAGE_SIZE;
+      // Only an empty page ends the walk. A short one is not proof: if the provider
+      // caps `limit` below PAGE_SIZE every page is "short", and the baseline would
+      // declare itself complete after page 1 with most of the catalogue missing.
+      const last = items.length === 0;
       await withTx(async (conn) => {
-        await checkCeiling(conn, rules, keep.length);
         const r = await store.upsertListings(conn, keep);
         counts.added += r.inserted;
         counts.updated += r.updated;
         counts.removed += await store.deleteListings(conn, drop);
+        await enforceCeiling(conn, rules, r.inserted);
         await store.patchState(conn, last
           ? { baseline_page: page, baseline_completed_at: now(), last_error: null }
           : { baseline_page: page + 1 });
@@ -155,11 +176,11 @@ function createSync({
       const { keep, drop } = triage(upserts, rules, counts);
 
       await withTx(async (conn) => {
-        await checkCeiling(conn, rules, keep.length);
         const r = await store.upsertListings(conn, keep);
         counts.added += r.inserted;
         counts.updated += r.updated;
         counts.removed += await store.deleteListings(conn, [...removedIds, ...drop]);
+        await enforceCeiling(conn, rules, r.inserted);
         await store.patchState(conn, { change_cursor: Number(nextCursor), last_error: null });
       });
       state = { ...state, change_cursor: Number(nextCursor) };
@@ -189,10 +210,15 @@ function createSync({
     if (repair && !state.baseline_completed_at) return { skipped: 'no_baseline', counts, rows: 0 };
 
     const startedAt = now();
-    if (!repair && !state.baseline_started_at) await store.patchState(db, { baseline_started_at: startedAt });
-
     const res = await client.exportCsv({ lang: 'en' });
     if (!res || !res.body) throw new EncarError('bad_response', 'The export had no body');
+
+    // The file describes the catalogue as it was when it was BUILT, not when we
+    // downloaded it. Everything the change feed reports after that moment is
+    // missing from the file, so the feed must be read from there, and a car first
+    // seen after it must not be mistaken for one that has since been removed.
+    const builtAt = exportBuiltAt(res, startedAt);
+    if (!repair && !state.baseline_started_at) await store.patchState(db, { baseline_started_at: builtAt });
 
     const seen = new Set();
     let batch = [];
@@ -203,11 +229,11 @@ function createSync({
       batch = [];
       for (const row of keep) seen.add(row.id);
       await withTx(async (conn) => {
-        await checkCeiling(conn, rules, keep.length);
         const r = await store.upsertListings(conn, keep);
         counts.added += r.inserted;
         counts.updated += r.updated;
         counts.removed += await store.deleteListings(conn, drop);
+        await enforceCeiling(conn, rules, r.inserted);
       });
     };
     for await (const item of readExport(res.body)) {
@@ -224,7 +250,10 @@ function createSync({
       if (seen.size < held.length * 0.5) {
         throw new EncarError('bad_response', `The export lists ${seen.size} cars but we hold ${held.length}; not removing anything`);
       }
-      const stale = held.filter((id) => !seen.has(id));
+      // Only cars we already had when the export was built can have left it: one
+      // the feed added since is absent from the file for that reason alone.
+      const older = new Set(await store.listIds(db, { firstSeenBefore: builtAt }));
+      const stale = held.filter((id) => !seen.has(id) && older.has(id));
       for (let i = 0; i < stale.length; i += 1000) {
         counts.removed += await store.deleteListings(db, stale.slice(i, i + 1000));
       }

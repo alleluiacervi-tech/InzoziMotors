@@ -36,6 +36,12 @@ const int = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? Math.trunc(n) : null;
 };
+// An optional figure that does not fit its column is a bad value, not a bad
+// listing: it becomes "unknown" (null) so the car is kept. Columns: SMALLINT is
+// 32767, INTEGER 2147483647 (migration 0052); a real odometer never nears it.
+const SMALLINT_MAX = 32767;
+const INT_MAX = 2147483647;
+const bounded = (n, max) => (n != null && n >= 0 && n <= max ? n : null);
 const first = (...values) => values.find((v) => v !== undefined && v !== null && v !== '');
 
 /** Provider ids are strings; bare numeric for Encar. Tolerant of the field's name. */
@@ -94,10 +100,10 @@ function normalizeItem(raw, { photoPrefix = '' } = {}) {
     category: text(first(raw.Category, raw.category), 40)?.toLowerCase() || null,
     year,
     month: month >= 1 && month <= 12 ? month : null,
-    mileage_km: int(first(raw.Mileage, raw.mileage)),
+    mileage_km: bounded(int(first(raw.Mileage, raw.mileage)), INT_MAX),
     price_man: price,
-    power_ps: int(first(raw.PowerPs, raw.power_ps)),
-    seats: int(first(raw.SeatCount, raw.seats)),
+    power_ps: bounded(int(first(raw.PowerPs, raw.power_ps)), SMALLINT_MAX),
+    seats: bounded(int(first(raw.SeatCount, raw.seats)), SMALLINT_MAX),
     photo_count: photos.length,
     photos,
     is_duplicate: raw.IsDuplicate === true,
@@ -114,7 +120,7 @@ function evaluate(row, rulesIn = {}, now = new Date()) {
   if (rules.require_photos && row.photo_count === 0) return { keep: false, reason: 'no_photos' };
   // Not rules, constraints: the table refuses these (CHECK in migration 0052), and
   // one bad row must never fail a whole page.
-  if (row.price_man <= 0) return { keep: false, reason: 'price' };
+  if (row.price_man <= 0 || row.price_man > INT_MAX) return { keep: false, reason: 'price' };
   if (row.year < 1980 || row.year > 2100) return { keep: false, reason: 'year' };
   if (row.price_man < rules.min_price_man || (rules.exclude_prices_man || []).includes(row.price_man)) {
     return { keep: false, reason: 'price' };

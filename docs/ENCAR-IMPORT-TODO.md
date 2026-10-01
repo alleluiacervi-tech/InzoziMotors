@@ -21,7 +21,7 @@ needs Postgres (runs in CI on a pull request) or live provider data · `[ ]` not
 - [~] **(You)** Find the Korean exporter partner (research, shortlist, indicative costs and the message to send are in [`KOREAN-EXPORTER-SEARCH.md`](KOREAN-EXPORTER-SEARCH.md); none contacted yet, no written cost sheet): who buys, deregisters and ships; the per-car cost
       sheet (export fee, inland transport, freight to Mombasa/Dar by category, insurance) — **E7**
 - [ ] **(You)** Answer E1–E8 (recommendations in the plan, §12)
-- [ ] **(You)** Merge the pull request(s); the deploy applies migrations 0052 and 0053
+- [ ] **(You)** Merge the pull request(s); the deploy applies migrations 0052, 0053 and 0054
 - [ ] **(You)** Run one real order end to end with the exporter
 - [ ] **(You)** Turn on sync, then (after a week of watching) turn on `catalog_public`
       (Admin → Korean catalogue; steps in the operations guide)

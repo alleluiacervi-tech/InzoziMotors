@@ -4,7 +4,8 @@ const { requireAdmin } = require('../middleware/auth');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { log } = require('../lib/log');
 const store = require('../lib/encar/store');
-const { createClient, EncarError } = require('../lib/encar/client');
+const { EncarError } = require('../lib/encar/client');
+const client = require('../lib/encar/shared-client');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /admin/encar — the operator's window onto the Korean-import mirror.
@@ -23,7 +24,6 @@ const router = express.Router();
 router.use(requireAdmin);
 
 const DAILY_REFRESH_LIMIT = Number(process.env.ENCAR_REFRESH_DAILY_LIMIT || 100);
-const client = createClient({ ratePerMinute: Number(process.env.ENCAR_RATE_PER_MIN || 20) });
 
 router.get('/status', async (_req, res) => {
   try {

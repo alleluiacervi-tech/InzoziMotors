@@ -177,3 +177,11 @@ test('migration 0053: orders carry a Korean snapshot, and the cost sheet ships s
   const costs = await store.loadSetting(pool, 'encar_cost_inputs');
   assert.equal(costs.configured, false);
 });
+
+test('listIds can be limited to the cars first seen before a moment', async () => {
+  await store.upsertListings(pool, [row(1), row(2)]);
+  await pool.query(`UPDATE encar_listings SET first_seen_at = NOW() - INTERVAL '2 days' WHERE id = '1'`);
+  const cutoff = new Date(Date.now() - 24 * 3_600_000);
+  assert.deepEqual(await store.listIds(pool, { firstSeenBefore: cutoff }), ['1']);
+  assert.deepEqual((await store.listIds(pool)).sort(), ['1', '2']);
+});

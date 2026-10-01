@@ -146,3 +146,17 @@ test('the two switches accept only booleans and only known names', () => {
   assert.ok(validateFlags({ sync_enabled: true, catalog_public: true, extra: 1 }).length);
   assert.ok(validateFlags(null).length);
 });
+
+test('a figure that does not fit its column is unknown, not a reason to fail the page', () => {
+  const row = normalizeItem(item({ PowerPs: 40000, SeatCount: 99999, Mileage: 5_000_000_000 }));
+  assert.equal(row.power_ps, null);
+  assert.equal(row.seats, null);
+  assert.equal(row.mileage_km, null);
+  assert.equal(evaluate(row, DEFAULT_RULES).keep, true, 'the car itself is still fine');
+  assert.equal(normalizeItem(item({ PowerPs: 150, SeatCount: 5, Mileage: 40000 })).power_ps, 150);
+  assert.equal(normalizeItem(item({ Mileage: -5 })).mileage_km, null);
+});
+
+test('a price above INTEGER is dropped, since the table could not hold it', () => {
+  assert.equal(evaluate(normalizeItem(item({ Price: 3_000_000_000 })), DEFAULT_RULES).reason, 'price');
+});

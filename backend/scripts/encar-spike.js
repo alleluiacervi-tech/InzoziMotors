@@ -197,17 +197,15 @@ async function main() {
     const res = await client.exportCsv();
     const generatedAt = res.headers.get('x-encarapi-generated-at');
     const contentLength = Number(res.headers.get('content-length')) || null;
-    const reader = res.body.getReader();
     let head = '';
     let got = 0;
-    while (got < 64 * 1024) {
-      const { value, done } = await reader.read();
-      if (done) break;
+    // The body is a counted async stream; leaving the loop early cancels the download,
+    // so a spike never fetches the whole file.
+    for await (const value of res.body) {
       got += value.length;
       head += Buffer.from(value).toString('utf8');
-      if (head.includes('\n')) break;
+      if (head.includes('\n') || got >= 64 * 1024) break;
     }
-    await reader.cancel(); // never download the whole file in a spike
     const header = head.split('\n')[0].replace(/\r$/, '');
     return { generatedAt, contentLength, contentEncoding: res.headers.get('content-encoding'), columns: header.split(',').map((c) => c.replace(/^"|"$/g, '')) };
   });

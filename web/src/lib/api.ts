@@ -560,7 +560,9 @@ export const koreaCatalog = {
   get: (id: string) =>
     request<KoreaCarDetail>(`/imports/korea/${encodeURIComponent(id)}`, { revalidate: 300, tags: ['korea-catalog'] }),
   reports: (id: string) =>
-    request<KoreaReports>(`/imports/korea/${encodeURIComponent(id)}/reports`, { revalidate: 300, tags: ['korea-catalog'] }),
+    // Three provider calls on a cold cache, paced a few seconds apart: the default 10 s
+    // would give up on a report the server is about to finish and cache.
+    request<KoreaReports>(`/imports/korea/${encodeURIComponent(id)}/reports`, { revalidate: 300, tags: ['korea-catalog'], timeoutMs: 30_000 }),
 }
 
 export const importOrders = {

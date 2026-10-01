@@ -87,8 +87,6 @@ export default function KoreaCarsScreen({ navigation, route }) {
   let body;
   if (!available) {
     body = <EmptyState title={t('korea.unavailableTitle')} sub={t('korea.unavailableBody')} actionLabel={t('korea.unavailableCta')} onAction={() => navigation.navigate('ImportOrderDetail', { isNewCustom: true })} />;
-  } else if (state === 'error') {
-    body = <ErrorState title={t('korea.loadError')} actionLabel={t('korea.retry')} onAction={reload} />;
   } else {
     body = (
       <FlatList
@@ -103,9 +101,13 @@ export default function KoreaCarsScreen({ navigation, route }) {
         initialNumToRender={8}
         windowSize={7}
         removeClippedSubviews
+        /* The error sits INSIDE the list so the search box and chips stay: a failed
+           search is fixed by changing it, not only by retrying it. */
         ListEmptyComponent={state === 'loading'
           ? <ActivityIndicator style={styles.spinner} color={colors.primary} />
-          : <Text style={styles.empty}>{t('korea.empty')}</Text>}
+          : state === 'error'
+            ? <ErrorState title={t('korea.loadError')} actionLabel={t('korea.retry')} onAction={reload} />
+            : <Text style={styles.empty}>{t('korea.empty')}</Text>}
         ListFooterComponent={
           <View style={styles.footer}>
             {moreState === 'loading' ? <ActivityIndicator color={colors.primary} /> : null}

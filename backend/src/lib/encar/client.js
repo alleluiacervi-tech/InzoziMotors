@@ -20,6 +20,7 @@
 
 const DEFAULT_BASE_URL = 'https://api.encarapi.com';
 const DEFAULT_RATE_PER_MIN = 50;
+const DEFAULT_MAX_QUEUE = 8;
 const HEADERS_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 4;
 const MAX_JSON_BYTES = 80 * 1024 * 1024; // a runaway response is a bug, not data
@@ -75,10 +76,25 @@ function qs(params) {
  * @param {string}   [opts.apiKey]        defaults to process.env.ENCAR_API_KEY
  * @param {string}   [opts.baseUrl]       defaults to ENCAR_API_BASE or the provider's
  * @param {number}   [opts.ratePerMinute]
+ * @param {number}   [opts.maxQueue]      callers allowed to wait for a turn before new ones are refused
  * @param {Function} [opts.fetchImpl]     injected in tests
  * @param {Function} [opts.sleep]         injected in tests
  * @param {Function} [opts.onUsage]       ({ requests, bytes }) after every response
  */
+// Passes a stream through unchanged and reports how many bytes went by, once,
+// when it ends: complete, abandoned or failed, the traffic was spent either way.
+async function* countBytes(source, report) {
+  let bytes = 0;
+  try {
+    for await (const chunk of source) {
+      bytes += chunk.length;
+      yield chunk;
+    }
+  } finally {
+    if (bytes) report(bytes);
+  }
+}
+
 function createClient(opts = {}) {
   const apiKey = opts.apiKey ?? process.env.ENCAR_API_KEY ?? '';
   const baseUrl = String(opts.baseUrl ?? process.env.ENCAR_API_BASE ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
@@ -87,6 +103,7 @@ function createClient(opts = {}) {
   const sleep = opts.sleep ?? sleepReal;
   const onUsage = opts.onUsage ?? (() => {});
   const spacingMs = Math.ceil(60_000 / Math.max(1, ratePerMinute));
+  const maxQueue = Math.max(1, Number(opts.maxQueue ?? DEFAULT_MAX_QUEUE));
 
   if (!/^https:\/\//.test(baseUrl) && !/^http:\/\/(localhost|127\.0\.0\.1)/.test(baseUrl)) {
     throw new EncarError('not_configured', 'ENCAR_API_BASE must be https');
@@ -94,14 +111,22 @@ function createClient(opts = {}) {
 
   // Serialises request starts so they are at least `spacingMs` apart, however
   // many callers are waiting. A promise chain, not a timer: order is preserved.
+  //
+  // The queue is bounded: past `maxQueue` waiting callers a new one is refused at
+  // once, rather than joining a line it would give up on (a visitor's browser
+  // waits seconds, not minutes) while still spending the provider's allowance
+  // for an answer nobody reads. The worker never has more than one waiting.
   let lastStart = 0;
   let gate = Promise.resolve();
+  let waiting = 0;
   function takeTurn() {
+    if (waiting >= maxQueue) throw new EncarError('rate_limited', 'Too many requests are waiting for the provider');
+    waiting += 1;
     const turn = gate.then(async () => {
       const wait = lastStart + spacingMs - Date.now();
       if (wait > 0) await sleep(wait);
       lastStart = Date.now();
-    });
+    }).finally(() => { waiting -= 1; });
     gate = turn.catch(() => {});
     return turn;
   }
@@ -191,8 +216,16 @@ function createClient(opts = {}) {
     /** Asks the provider to re-collect one listing (100/day on Business). */
     refresh: (id) => json('POST', `/api/vehicle/${encodeURIComponent(id)}/refresh`),
 
-    /** The daily full export. Returns the streaming Response, unread. */
-    exportCsv: (query) => send('GET', '/api/catalog/export', { query, timeoutMs: 120_000 }),
+    /**
+     * The daily full export, as { headers, body }: the body is a stream, unread.
+     * Its bytes are reported as they are read, because the provider's monthly
+     * traffic allowance counts them (the export is exempt from the request cap,
+     * not from the 12 GB).
+     */
+    exportCsv: async (query) => {
+      const res = await send('GET', '/api/catalog/export', { query, timeoutMs: 120_000 });
+      return { headers: res.headers, status: res.status, body: countBytes(res.body, (bytes) => onUsage({ requests: 0, bytes })) };
+    },
 
     enums: () => json('GET', '/api/enums'),
   };

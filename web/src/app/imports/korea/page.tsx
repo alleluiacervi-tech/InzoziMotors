@@ -160,7 +160,7 @@ export default async function KoreaPage({ searchParams }: { searchParams: Search
               <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {list.items.map((c) => <KoreaCard key={c.id} car={c} />)}
               </ul>
-              <KoreaMore filters={filterString} initialCursor={list.next_cursor} />
+              <KoreaMore key={filterString} filters={filterString} initialCursor={list.next_cursor} />
             </>
           ) : (
             <p className="mt-8 rounded-2xl border border-line-soft bg-surface p-5 text-body text-content-secondary">{t('imports.korea.empty')}</p>

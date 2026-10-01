@@ -70,7 +70,7 @@ snapshot, so nothing a customer ordered depends on the mirror.
 
 - Only cars for sale **now**; sold cars are deleted as the feed reports them.
 - Photos are addresses, never files. Reports are cached 24 h in an unlogged table that purges itself.
-- Row ceiling (default 250,000): the sync stops and alerts rather than filling the disk.
+- Row ceiling (default 250,000): the sync stops and alerts rather than filling the disk. Only a page that would add cars past it is refused (and rolled back whole); updates and removals always go through, and a page's removals count towards its room.
 - Rows are rewritten only when something we show changed (`IS DISTINCT FROM`), so the table does not bloat.
 - Search is indexed (trigram for typos); paging is by cursor, so deep pages cost the same as the first.
 
