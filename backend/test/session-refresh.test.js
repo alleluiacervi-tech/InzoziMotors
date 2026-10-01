@@ -45,7 +45,9 @@ test('a socket ticket cannot be exchanged for a session', async () => {
   const user = await register();
   const ticket = (await api().post('/auth/socket-ticket')
     .set('Authorization', `Bearer ${user.token}`).expect(200)).body.ticket;
-  await api().post('/auth/refresh').set('Authorization', `Bearer ${ticket}`).expect(403);
+  // Not a session, so it is not even authenticated: 401, exactly as for any
+  // other token that is not a login (CLAUDE.md invariant 5).
+  await api().post('/auth/refresh').set('Authorization', `Bearer ${ticket}`).expect(401);
 });
 
 test('an admin session is not renewable', async () => {
