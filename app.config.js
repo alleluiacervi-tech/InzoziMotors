@@ -6,8 +6,21 @@
 // Play Store and talks to the backend on the VPS. Anything the app must know
 // about that server has to travel through here.
 
+import { existsSync } from 'fs';
+
 const DEV_FALLBACK = null; // resolved on-device in src/api/client.js
 const EAS_PROJECT_ID = 'f2c5d3f8-8777-4b97-96ec-1482d374a42a';
+
+// Firebase client config for Android push (FCM). It is NOT a secret in the way a
+// server key is, but it is per-Firebase-project, so it is supplied rather than
+// committed: on EAS as a file-type environment variable
+//   eas env:create --name GOOGLE_SERVICES_JSON --type file --visibility secret \
+//     --value ./google-services.json --environment production
+// or as ./google-services.json for a local build. When neither exists the build
+// still succeeds — Android just cannot receive a push while the app is closed,
+// which is the state before this existed. iOS is unaffected (it uses APNs).
+const GOOGLE_SERVICES_FILE = process.env.GOOGLE_SERVICES_JSON
+  || (existsSync('./google-services.json') ? './google-services.json' : undefined);
 
 export default ({ config }) => ({
   ...config,
@@ -23,7 +36,7 @@ export default ({ config }) => ({
   // forged value rather than the binary's real one, so the app misreports its
   // own version. The build and the publish must agree on this number, and the
   // only way to guarantee that is for it not to be configurable.
-  version: '1.0.7',
+  version: '1.0.8',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
@@ -108,6 +121,7 @@ export default ({ config }) => ({
     // Differs from the iOS bundle id on purpose: com.sawacars.app is held by a
     // personal Play account, so the company account publishes under this name.
     package: 'com.sawacars.android',
+    ...(GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
     permissions: [
       'CAMERA',
       'android.permission.POST_NOTIFICATIONS',
@@ -141,6 +155,12 @@ export default ({ config }) => ({
           { scheme: 'https', host: 'www.sawacars.com', pathPrefix: '/cars' },
           { scheme: 'https', host: 'sawacars.com', pathPrefix: '/rentals' },
           { scheme: 'https', host: 'www.sawacars.com', pathPrefix: '/rentals' },
+          // Seller and showroom pages, and the calculators — each has a screen
+          // in the app (src/navigation/linking.js).
+          { scheme: 'https', host: 'sawacars.com', pathPrefix: '/sellers' },
+          { scheme: 'https', host: 'www.sawacars.com', pathPrefix: '/sellers' },
+          { scheme: 'https', host: 'sawacars.com', pathPrefix: '/tools' },
+          { scheme: 'https', host: 'www.sawacars.com', pathPrefix: '/tools' },
         ],
         category: ['BROWSABLE', 'DEFAULT'],
       },
