@@ -156,3 +156,24 @@ test('search finds a car by part of its name, and by a typo (trigram index)', as
   assert.equal((await pool.query(`SELECT id FROM encar_listings WHERE 'sorentoo' <% ${text}`)).rows.length, 1);
   assert.equal((await pool.query(`SELECT id FROM encar_listings WHERE 'tucsonn' <% ${text}`)).rows.length, 0);
 });
+
+test('the status summary counts what is held and reports the table size', async () => {
+  await store.upsertListings(pool, [row(1), row(2)]);
+  const run = await store.startRun(pool, 'repair'); // the third kind of run (migration 0053)
+  await store.finishRun(pool, run, { ok: true, added: 2 });
+  const s = await store.statusSummary(pool);
+  assert.equal(s.listings, 2);
+  assert.ok(s.size_bytes > 0);
+  assert.equal(s.recent_runs[0].kind, 'repair');
+  assert.deepEqual((await store.listIds(pool)).sort(), ['1', '2']);
+});
+
+test('migration 0053: orders carry a Korean snapshot, and the cost sheet ships switched off', async () => {
+  const cols = await pool.query(
+    `SELECT column_name FROM information_schema.columns WHERE table_name = 'import_orders'
+        AND column_name IN ('source', 'encar_listing_id', 'listing_snapshot', 'snapshot_at', 'snapshot_photos')`
+  );
+  assert.equal(cols.rowCount, 5);
+  const costs = await store.loadSetting(pool, 'encar_cost_inputs');
+  assert.equal(costs.configured, false);
+});

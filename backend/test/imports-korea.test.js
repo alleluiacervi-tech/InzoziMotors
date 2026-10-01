@@ -33,6 +33,8 @@ beforeEach(async () => {
   fx._resetForTests();
   await pool.query('DELETE FROM encar_listings');
   require('../src/routes/imports-korea')._facetCache.clear();
+  require('../src/routes/imports-korea')._resetCosts();
+  await pool.query('DELETE FROM encar_detail_cache');
   await pool.query("DELETE FROM fx_rates WHERE base = 'USD' AND quote = 'KRW'");
   await pool.query("INSERT INTO fx_rates (base, quote, rate, source, fetched_at) VALUES ('USD','KRW', 1400, 'test', NOW())");
   await setPublic(true);
@@ -173,4 +175,86 @@ test('with no exchange rate anywhere, the floor answers and is flagged stale', a
     const res = await api().get('/imports/korea?max_price_usd=50000').expect(200);
     assert.equal(res.body.fx.stale, true);
   } finally { global.fetch = real; }
+});
+
+const COSTS = {
+  configured: true, export_fee_usd: 500, inland_transport_usd: 200,
+  freight_usd: { default: 1500, sedan: null, suv: null, van: null }, insurance_pct: 1, reviewed_on: '2026-10-01',
+};
+async function setCosts(value) {
+  await pool.query("UPDATE platform_settings SET value = $1::jsonb WHERE key = 'encar_cost_inputs'", [JSON.stringify(value)]);
+  require('../src/routes/imports-korea')._resetCosts();
+}
+
+test('the landed-cost estimate appears only once the exporter costs are configured', async () => {
+  await store.upsertListings(pool, [car(1)]);
+  await pool.query("DELETE FROM fx_rates WHERE base = 'USD' AND quote = 'RWF'");
+  await pool.query("INSERT INTO fx_rates (base, quote, rate, source, fetched_at) VALUES ('USD','RWF', 1450, 'test', NOW())");
+  fx._resetForTests();
+  try {
+    assert.equal((await api().get('/imports/korea/1').expect(200)).body.estimate, null);
+    await setCosts(COSTS);
+    const e = (await api().get('/imports/korea/1').expect(200)).body.estimate;
+    assert.equal(e.currency, 'RWF');
+    assert.ok(e.total_rwf.high >= e.total_rwf.low && e.total_rwf.low > e.to_port_rwf);
+    assert.match(e.note, /Estimate/);
+  } finally {
+    await setCosts({ ...COSTS, configured: false });
+  }
+});
+
+test('reports: unavailable without a provider key, served from the 24 h cache when held, and 404 for a sold car', async () => {
+  await store.upsertListings(pool, [car(1)]);
+  const none = await api().get('/imports/korea/1/reports').expect(200);
+  assert.equal(none.body.inspection.status, 'unavailable');
+  assert.equal(none.body.record.status, 'unavailable');
+
+  await pool.query(
+    `INSERT INTO encar_detail_cache (id, kind, payload, expires_at)
+     VALUES ('1', 'inspection', '{"summary":"no accident"}'::jsonb, NOW() + INTERVAL '1 hour'),
+            ('1', 'record', '{"__missing":true}'::jsonb, NOW() + INTERVAL '1 hour')`
+  );
+  const held = await api().get('/imports/korea/1/reports').expect(200);
+  assert.deepEqual(held.body.inspection.data, { summary: 'no accident' });
+  assert.equal(held.body.record.status, 'none');
+  assert.match(held.body.source_note, /not Sawa Cars/);
+
+  await api().get('/imports/korea/999999/reports').expect(404);
+});
+
+async function buyer() {
+  const email = `korea-${Date.now()}-${Math.floor(Math.random() * 1e6)}@test.local`;
+  const r = await api().post('/auth/register').send({ name: 'Buyer', email, password: 'password123', role: 'buyer' }).expect(201);
+  return { id: r.body.user.id, token: r.body.token };
+}
+
+test('ordering a Korean car freezes what was asked for, from our data and not the request', async () => {
+  await store.upsertListings(pool, [car(7)]);
+  const b = await buyer();
+  const res = await api().post('/imports').set('Authorization', `Bearer ${b.token}`)
+    // The client lies about the car; the server must not listen.
+    .send({ encar_listing_id: '7', origin_country: 'Japan', make: 'Toyota', model: 'Yaris', year: 2024 }).expect(201);
+  assert.equal(res.body.make, 'Kia');
+  assert.equal(res.body.origin_country, 'South Korea');
+  assert.equal(res.body.source, 'korea_catalog');
+  assert.equal(res.body.listing_snapshot.price_krw, 25_000_000);
+  assert.deepEqual(res.body.listing_snapshot.photos, ['https://img.test/7/1.jpg', 'https://img.test/7/2.jpg']);
+  assert.ok(res.body.snapshot_at);
+
+  // The car sells and leaves the mirror; the order keeps its record.
+  await store.deleteListings(pool, ['7']);
+  const mine = await api().get(`/imports/${res.body.id}`).set('Authorization', `Bearer ${b.token}`).expect(200);
+  assert.equal(mine.body.listing_snapshot.model, 'Sorento');
+});
+
+test('a second request for the same car is refused with the existing order, and a sold car is a 404', async () => {
+  await store.upsertListings(pool, [car(8)]);
+  const b = await buyer();
+  const first = await api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: '8' }).expect(201);
+  const again = await api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: '8' }).expect(409);
+  assert.equal(again.body.code, 'ALREADY_REQUESTED');
+  assert.equal(again.body.order_id, first.body.id);
+  const gone = await api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: '424242' }).expect(404);
+  assert.equal(gone.body.code, 'LISTING_GONE');
+  await api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: 'x; y' }).expect(400);
 });

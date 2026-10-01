@@ -2,8 +2,13 @@ const express = require('express');
 const pool = require('../db');
 const { log } = require('../lib/log');
 const { getRate } = require('../lib/fx');
-const { loadFlags } = require('../lib/encar/store');
+const rateLimit = require('express-rate-limit');
+const { loadFlags, loadSetting } = require('../lib/encar/store');
 const { photoUrl } = require('../lib/encar/normalize');
+const { createClient } = require('../lib/encar/client');
+const { createDetail, findDisplacement } = require('../lib/encar/detail');
+const { estimateLandedCost, SETTING_KEY: COST_KEY } = require('../lib/encar/landed-cost');
+const { loadDutyRates } = require('../lib/duty-rates');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Used cars in South Korea, browsable from our own database (docs/
@@ -24,6 +29,16 @@ const { photoUrl } = require('../lib/encar/normalize');
 // ─────────────────────────────────────────────────────────────────────────────
 
 const router = express.Router();
+
+// This process asks the provider only for on-demand reports, and paces itself
+// well below the worker (20 vs 35 a minute) so the two together stay under the
+// plan's 60 a minute.
+const client = createClient({ ratePerMinute: Number(process.env.ENCAR_RATE_PER_MIN || 20) });
+const detail = createDetail({ db: pool, client });
+const reportsLimiter = rateLimit({
+  windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many requests. Try again in a minute.' },
+});
 
 const PAGE_DEFAULT = 24;
 const PAGE_MAX = 48;
@@ -89,6 +104,39 @@ function present(row, fx, prefix) {
     cover: photoUrl(row.cover, prefix),
     first_seen_at: row.first_seen_at,
   };
+}
+
+// The cost sheet changes when an admin edits it, not per visitor.
+let costCache = { at: 0, value: null };
+async function loadCosts() {
+  if (Date.now() - costCache.at < 60_000) return costCache.value;
+  const value = await loadSetting(pool, COST_KEY).catch(() => null);
+  costCache = { at: Date.now(), value };
+  return value;
+}
+
+/** null whenever the exporter's costs are not set or any rate is missing. */
+async function estimateFor(row, fx) {
+  if (!fx) return null;
+  const [costs, rates, rwf, cached] = await Promise.all([
+    loadCosts(),
+    loadDutyRates().catch(() => null),
+    getRate('USD', 'RWF'),
+    // The engine size, only if someone has already opened this car's detail.
+    pool.query(`SELECT payload FROM encar_detail_cache WHERE id = $1 AND kind = 'detail' AND expires_at > NOW()`, [row.id])
+      .then((r) => r.rows[0]?.payload || null).catch(() => null),
+  ]);
+  if (!rwf.rate) return null;
+  return estimateLandedCost({
+    priceKrw: row.price_man * 10000,
+    year: row.year,
+    category: row.category,
+    cc: cached ? findDisplacement(cached) : null,
+    krwPerUsd: fx.rate,
+    rwfPerUsd: rwf.rate,
+    costs,
+    rates,
+  });
 }
 
 const unavailable = (res) => {
@@ -236,9 +284,9 @@ router.get('/facets', async (req, res) => {
   }
 });
 
-// GET /imports/korea/:id — one car, with every photo. The inspection report and
-// the insurance record join this response once their shapes are confirmed
-// against real provider data (Phase 0 spike); until then they are not served.
+// GET /imports/korea/:id — one car, with every photo, and the cost estimate once
+// the exporter's costs are configured. The Korean inspection report and
+// insurance record are fetched separately (`/:id/reports`) so this stays fast.
 router.get('/:id', async (req, res) => {
   try {
     if (!(await loadFlags(pool)).catalog_public) return unavailable(res);
@@ -262,9 +310,9 @@ router.get('/:id', async (req, res) => {
       seats: row.seats,
       category: row.category,
       photos: (row.photos || []).map((p) => photoUrl(p, prefix)),
-      // Honest about what is not yet known: no landed-cost figure is shown until
-      // the exporter's cost sheet exists (plan E7); the request form gets a quote.
-      estimate: null,
+      // Null until an admin has entered the exporter's real costs (plan E7):
+      // no landed-cost figure is ever shown on guessed shipping numbers.
+      estimate: await estimateFor(row, fx),
       source_note: 'Listing data comes from the Korean market. Price shown is the Korean asking price, not the cost in Kigali.',
       fx: fx ? { krw_per_usd: fx.rate, fetched_at: fx.fetched_at, stale: fx.stale } : null,
     });
@@ -274,5 +322,44 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET /imports/korea/:id/reports — the Korean inspection report and the
+// insurance accident record, fetched on first open and kept 24 hours.
+//
+// Each part answers on its own: `status` is 'ok', 'none' (the provider has no
+// such report for this car) or 'unavailable' (we could not get it just now), so
+// the page can say which rather than showing an empty box. Nothing in either
+// payload can carry a plate, VIN or contact (lib/encar/detail.js scrubs it).
+router.get('/:id/reports', reportsLimiter, async (req, res) => {
+  try {
+    if (!(await loadFlags(pool)).catalog_public) return unavailable(res);
+    const id = String(req.params.id || '');
+    if (!/^[A-Za-z0-9:_-]{1,40}$/.test(id)) return res.status(404).json({ error: 'Listing not found' });
+    const { rowCount } = await pool.query('SELECT 1 FROM encar_listings WHERE id = $1', [id]);
+    if (!rowCount) return res.status(404).json({ error: 'This car is no longer available' });
+
+    // The vehicle detail is fetched only for the engine size, which narrows the
+    // duty estimate from a range to a figure; nothing else of it is returned.
+    const [inspection, record, vehicle] = await Promise.all([
+      detail.get(id, 'inspection'), detail.get(id, 'record'), detail.get(id, 'detail'),
+    ]);
+    const part = (r) => (r.status === 'ok'
+      ? { status: 'ok', data: r.payload, fetched_at: r.fetched_at, stale: Boolean(r.stale) }
+      : { status: r.status });
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({
+      available: true,
+      inspection: part(inspection),
+      record: part(record),
+      engine_cc: vehicle.status === 'ok' ? findDisplacement(vehicle.payload) : null,
+      source_note: 'The Korean inspection report and accident record are from the Korean market, not Sawa Cars. Sawa inspects every imported car again in Kigali.',
+    });
+  } catch (err) {
+    log.error('korea reports error', { error: err.message });
+    res.status(500).json({ error: 'Could not load the reports' });
+  }
+});
+
 module.exports = router;
 module.exports._facetCache = facetCache;
+module.exports._detail = detail;
+module.exports._resetCosts = () => { costCache = { at: 0, value: null }; };

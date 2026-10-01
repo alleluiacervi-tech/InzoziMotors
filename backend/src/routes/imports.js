@@ -19,6 +19,9 @@ const { documentForSubject, downloadableDocument, DocumentError } = require('../
 const { rendersEnabled, fetchRender, slug: renderSlug } = require('../lib/vehicle-renders');
 const { storage } = require('../lib/storage');
 const { publicApiOrigin } = require('../lib/public-origin');
+const { getRate } = require('../lib/fx');
+const { photoUrl } = require('../lib/encar/normalize');
+const cloudinaryLib = require('../lib/cloudinary');
 
 const router = express.Router();
 
@@ -126,35 +129,128 @@ async function streamGenerated(res, req, document) {
   stream.pipe(res);
 }
 
+const SNAPSHOT_PHOTOS = 12;
+
+/**
+ * What a customer ordered, frozen at the moment they ordered it. Built here,
+ * from our own mirror, never from anything the client sent: a buyer cannot
+ * claim a car was cheaper than it was. The mirror forgets a car the moment it
+ * sells, so this copy is the only record of what was asked for.
+ */
+async function koreanSnapshot(client, listingId) {
+  const { rows } = await client.query(
+    `SELECT id, make, model, badge, year, month, mileage_km, fuel, transmission, color, category,
+            price_man, power_ps, seats, photos FROM encar_listings WHERE id = $1`, [listingId]
+  );
+  if (!rows.length) return null;
+  const r = rows[0];
+  const fx = await getRate('USD', 'KRW');
+  const prefix = process.env.ENCAR_PHOTO_PREFIX || '';
+  return {
+    source: 'encar',
+    listing_id: r.id,
+    captured_at: new Date().toISOString(),
+    make: r.make, model: r.model, badge: r.badge, year: r.year, month: r.month,
+    mileage_km: r.mileage_km, fuel: r.fuel, transmission: r.transmission, color: r.color,
+    category: r.category, power_ps: r.power_ps, seats: r.seats,
+    price_man: r.price_man,
+    price_krw: r.price_man * 10000,
+    krw_per_usd: fx.rate || null,
+    photos: (r.photos || []).map((p) => photoUrl(p, prefix)).filter(Boolean),
+  };
+}
+
+/**
+ * Copies the order's photos into our own storage, after the response has gone.
+ * The Korean listing is gone within days of the car selling, and an order whose
+ * pictures vanish with it is a dispute waiting to happen (plan A8). Best effort:
+ * a failure leaves the snapshot's original addresses in place and is logged.
+ */
+async function copySnapshotPhotos(orderId, photos) {
+  if (!cloudinaryLib.isConfigured || !photos.length) return;
+  try {
+    const urls = [];
+    for (const url of photos.slice(0, SNAPSHOT_PHOTOS)) {
+      if (!/^https:\/\//i.test(url)) continue;
+      const result = await cloudinaryLib.cloudinary.uploader.upload(url, {
+        folder: `sawa/imports/${orderId}`, resource_type: 'image', unique_filename: true, overwrite: false,
+      });
+      if (result?.secure_url) urls.push(result.secure_url);
+    }
+    if (urls.length) {
+      await pool.query('UPDATE import_orders SET snapshot_photos = $2::jsonb WHERE id = $1', [orderId, JSON.stringify(urls)]);
+    }
+  } catch (err) {
+    log.warn('import snapshot photo copy failed', { orderId, error: err.message });
+  }
+}
+
 // Buyer creates an enquiry. This is deliberately payment-free: finance only
 // becomes due after an admin issues a versioned quotation and agreement.
+//
+// With `encar_listing_id` the enquiry is for one specific Korean car: its make,
+// model, year and price come from our own mirror (never from the request), and
+// are frozen into `listing_snapshot` so the order outlives the listing.
 router.post('/', requireAuth, async (req, res) => {
-  const origin = clean(req.body.origin_country, 80);
-  const make = clean(req.body.make, 80);
-  const model = clean(req.body.model, 80);
-  const year = req.body.year ? Number(req.body.year) : null;
+  const listingId = clean(req.body.encar_listing_id, 40);
+  if (listingId && !/^[A-Za-z0-9:_-]{1,40}$/.test(listingId)) {
+    return res.status(400).json({ error: 'That Korean listing id is not valid' });
+  }
+  let origin = clean(req.body.origin_country, 80);
+  let make = clean(req.body.make, 80);
+  let model = clean(req.body.model, 80);
+  let year = req.body.year ? Number(req.body.year) : null;
+  let snapshot = null;
+  if (listingId) {
+    snapshot = await koreanSnapshot(pool, listingId).catch((err) => {
+      log.error('korean snapshot error', { error: err.message });
+      return undefined;
+    });
+    if (snapshot === undefined) return res.status(500).json({ error: 'Could not create import request' });
+    if (!snapshot) return res.status(404).json({ error: 'This car is no longer available', code: 'LISTING_GONE' });
+    origin = 'South Korea'; make = snapshot.make; model = snapshot.model; year = snapshot.year;
+  }
   if (!ORIGINS.has(origin) || !make || !model || (year && (year < 1980 || year > new Date().getFullYear() + 1))) {
     return res.status(400).json({ error: 'A supported origin, make, model and valid year are required' });
   }
   try {
     const result = await withTransaction(async (client) => {
+      if (listingId) {
+        // One open order per buyer per car: a double tap must not become two orders.
+        const dup = await client.query(
+          `SELECT id FROM import_orders
+            WHERE buyer_id=$1 AND encar_listing_id=$2 AND status NOT IN ('cancelled', 'completed') LIMIT 1`,
+          [req.user.id, listingId]
+        );
+        if (dup.rowCount) return { duplicate: dup.rows[0].id };
+      }
       const ref = orderRef();
       const { rows } = await client.query(
         `INSERT INTO import_orders
-          (order_ref,buyer_id,origin_country,make,model,year,supplier_reference,specification,customer_notes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+          (order_ref,buyer_id,origin_country,make,model,year,supplier_reference,specification,customer_notes,
+           source,encar_listing_id,listing_snapshot,snapshot_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13) RETURNING *`,
         [ref, req.user.id, origin, make, model, year,
-          clean(req.body.supplier_reference, 500) || null,
+          listingId ? `encar:${listingId}` : clean(req.body.supplier_reference, 500) || null,
           req.body.specification && typeof req.body.specification === 'object' ? req.body.specification : {},
-          clean(req.body.customer_notes, 2000) || null]
+          clean(req.body.customer_notes, 2000) || null,
+          listingId ? 'korea_catalog' : 'request',
+          listingId || null,
+          snapshot ? JSON.stringify(snapshot) : null,
+          snapshot ? new Date() : null]
       );
       await client.query(
         `INSERT INTO import_order_events (import_order_id,actor_id,event_type,to_status,summary)
-         VALUES ($1,$2,'enquiry_created','enquiry','Import request received')`, [rows[0].id, req.user.id]
+         VALUES ($1,$2,'enquiry_created','enquiry',$3)`,
+        [rows[0].id, req.user.id, listingId ? 'Import request received for a Korean listing' : 'Import request received']
       );
-      return rows[0];
+      return { order: rows[0] };
     });
-    res.status(201).json(result);
+    if (result.duplicate) {
+      return res.status(409).json({ error: 'You already have an open request for this car', code: 'ALREADY_REQUESTED', order_id: result.duplicate });
+    }
+    res.status(201).json(result.order);
+    if (snapshot) copySnapshotPhotos(result.order.id, snapshot.photos); // after the response, never blocks it
   } catch (err) {
     log.error('create import enquiry error', { error: err.message });
     res.status(500).json({ error: 'Could not create import request' });

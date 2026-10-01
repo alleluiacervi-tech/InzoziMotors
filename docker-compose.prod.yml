@@ -67,6 +67,11 @@ services:
       PUBLIC_API_URL:      ${PUBLIC_API_URL:-https://api.sawacars.com}
       UPLOAD_DIR:          /app/uploads
       CLOUDINARY_URL:      ${CLOUDINARY_URL:-}
+      # Korean imports: on-demand inspection/record fetches only. Empty key = the
+      # reports answer 'unavailable'. Paced below the worker so both fit 60/min.
+      ENCAR_API_KEY:       ${ENCAR_API_KEY:-}
+      ENCAR_PHOTO_PREFIX:  ${ENCAR_PHOTO_PREFIX:-}
+      ENCAR_RATE_PER_MIN:  20
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
       CLOUDINARY_API_KEY:  ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
@@ -132,6 +137,8 @@ services:
       ENCAR_API_KEY:       ${ENCAR_API_KEY:-}
       ENCAR_PHOTO_PREFIX:  ${ENCAR_PHOTO_PREFIX:-}
       ENCAR_SYNC_INTERVAL_SEC: ${ENCAR_SYNC_INTERVAL_SEC:-600}
+      ENCAR_BASELINE_SOURCE: ${ENCAR_BASELINE_SOURCE:-catalog}
+      ENCAR_RATE_PER_MIN:  35
       LOG_LEVEL:           info
     mem_limit: 384m
     healthcheck:
