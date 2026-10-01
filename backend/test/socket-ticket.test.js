@@ -113,3 +113,26 @@ test('a forged or garbage credential is rejected on both fields', async () => {
   await assert.rejects(() => connect({ ticket: 'not.a.jwt' }));
   await assert.rejects(() => connect({}));
 });
+
+test('a ticket opens the socket and nothing else', async () => {
+  const user = await register();
+  const { body: { ticket } } = await api().post('/auth/socket-ticket')
+    .set('Authorization', `Bearer ${user.token}`).expect(200);
+  // Not a session on any route — including the one that mints tickets, so it
+  // cannot renew itself.
+  await api().get('/auth/me').set('Authorization', `Bearer ${ticket}`).expect(401);
+  await api().post('/auth/socket-ticket').set('Authorization', `Bearer ${ticket}`).expect(401);
+  // Each handshake field takes only its own kind.
+  await assert.rejects(() => connect({ token: ticket }));
+  await assert.rejects(() => connect({ ticket: user.token }));
+});
+
+test('an admin session is refused once it is older than the admin lifetime', async () => {
+  const admin = await register();
+  await pool.query("UPDATE users SET role = 'admin' WHERE id = $1", [admin.id]);
+  const old = jwt.sign(
+    { id: admin.id, role: 'admin', tv: 0, iat: Math.floor(Date.now() / 1000) - 13 * 3600 },
+    process.env.JWT_SECRET, { expiresIn: '30d' }
+  );
+  await api().get('/auth/me').set('Authorization', `Bearer ${old}`).expect(401);
+});

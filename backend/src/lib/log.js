@@ -34,6 +34,9 @@ const REDACTED = new Set([
   'password', 'current_password', 'new_password', 'password_hash',
   'token', 'jwt', 'authorization', 'sig', 'code', 'secret',
   'id_front_url', 'id_back_url', 'selfie_url',
+  // The Encar provider key. It travels in a header and must never reach a log
+  // line, whichever way a caller happens to name it.
+  'x-api-key', 'api_key', 'apikey',
 ]);
 
 /** Recursively strips credentials and identity-document URLs. A log line is

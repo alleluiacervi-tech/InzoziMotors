@@ -142,7 +142,10 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
 4. **Seller eligibility**: `role='seller'` + `id_verified='approved'` +
    `account_status='active'` + not deleted + (not a showroom OR `business_verified`).
 5. **Sessions are re-checked every request** (`verifyLiveSession`): deleted or
-   suspended takes effect on the *next request*, not the next login.
+   suspended takes effect on the *next request*, not the next login. Only a
+   session JWT is a session (`verifySessionToken`): the web's socket ticket
+   (`purpose`) and ID-document view link (`scope`) are refused as logins, and
+   an admin session is refused past its 12-hour lifetime.
 6. **Revoking an ID verification cascades**: sessions die, contact visibility is
    forced off, listings → `under_review`, rentals → `maintenance`.
 7. **Money is RWF whole francs, canonically, in the database.** Never convert in
@@ -331,6 +334,10 @@ fixed the same day (§10, §11):
 
 Every new upload route needs its own rule in `resolveSubdir`
 (`middleware/upload.js`). The fallback is the private `id-docs` folder.
+Private folders (`PRIVATE_UPLOAD_DIRS` in `server.js`: id-docs, contracts,
+documents, plate-originals, imports) are refused on the decoded path and
+served only through their own owner-checked routes. Public car payloads use
+the `PUBLIC_CAR_COLUMNS` allow-list — never `c.*` — and never a raw VIN.
 
 ---
 

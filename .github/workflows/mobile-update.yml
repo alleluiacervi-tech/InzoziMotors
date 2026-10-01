@@ -84,6 +84,9 @@ on:
         required: false
         default: false
 
+permissions:
+  contents: read
+
 concurrency:
   # ONE production lane, shared with deploy.yml, ops.yml and mobile-rollback.yml.
   #
@@ -104,9 +107,14 @@ jobs:
     # A red CI never reaches a phone, and now neither does a failed or skipped
     # deploy: a bundle built for a backend that did not ship is worse than no
     # bundle. workflow_dispatch is the deliberate human override.
+    #
+    # And only for Deploy runs of THIS repository. Deploy itself refuses fork
+    # pull requests, so this is a second lock on the same door; the commit
+    # check below is a third.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
 
     steps:
       - name: Checkout the commit CI validated
@@ -118,6 +126,23 @@ jobs:
           # Needed to diff against what is already published, which may be
           # many commits back.
           fetch-depth: 0
+          persist-credentials: false
+
+      # Defence in depth behind the job's `if:`. Whatever triggered this run,
+      # the commit it is about to install and hand EXPO_TOKEN to must already be
+      # part of main. A fork's pull-request commit can be fetched by SHA, but it
+      # is never an ancestor of main.
+      - name: Refuse a commit that is not on main
+        if: github.event_name == 'workflow_run'
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          # fetch-depth: 0 above already brought every branch, main included.
+          if ! git merge-base --is-ancestor "$HEAD_SHA" origin/main; then
+            echo "::error title=Untrusted commit::$HEAD_SHA is not on main; refusing to run with release credentials."
+            exit 1
+          fi
 
       # Node moves ABOVE the decision because the decision now asks EAS what is
       # actually on the channel, rather than guessing from the commit's diff.
@@ -376,11 +401,19 @@ jobs:
         if: steps.scope.outputs.publish == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Through env, never pasted into the script: a commit message is text
+          # a pull-request author chose (a merge commit carries the PR title and
+          # branch name), and inside `run:` any $(...) or backtick in it would
+          # execute here, next to EXPO_TOKEN. Ordinary backticks and quotes in
+          # messages used to break this step for the same reason.
+          PUBLISH_BRANCH: ${{ github.event.inputs.branch || 'production' }}
+          PUBLISH_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          COMMIT_MESSAGE: ${{ github.event.workflow_run.head_commit.message || github.event.head_commit.message || 'manual publish' }}
         run: |
           set -euo pipefail
-          branch="${{ github.event.inputs.branch || 'production' }}"
-          sha="${{ github.event.workflow_run.head_sha || github.sha }}"
-          msg="${sha:0:8} ${{ github.event.workflow_run.head_commit.message || github.event.head_commit.message || 'manual publish' }}"
+          branch="$PUBLISH_BRANCH"
+          sha="$PUBLISH_SHA"
+          msg="${sha:0:8} ${COMMIT_MESSAGE%%$'\n'*}"
 
           # ── Never loop over historical runtimes ─────────────────────────────
           # This step briefly published the SAME bundle to runtimes 1.0.4,

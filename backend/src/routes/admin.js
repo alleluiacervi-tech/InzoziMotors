@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { log } = require('../lib/log');
@@ -24,6 +25,7 @@ const {
   validateRates: validateServiceRates,
   invalidateServiceRates,
 } = require('../lib/service-rates');
+const { validateFlags: validateEncarFlags, validateRules: validateEncarRules } = require('../lib/encar/normalize');
 const {
   slugify, loadMakes, invalidateMakes,
 } = require('../lib/vehicle-makes');
@@ -933,7 +935,7 @@ router.post('/users/:id/password-reset', requireAdmin, requireUuid('id'), async 
     await client.query('BEGIN');
     const user = await client.query('SELECT id,email,name,role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [req.params.id]);
     if (!user.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Active user not found' }); }
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = String(crypto.randomInt(100000, 1000000));
     const codeHash = await bcrypt.hash(code, 12);
     await client.query('UPDATE password_resets SET used_at=NOW() WHERE user_id=$1 AND used_at IS NULL', [req.params.id]);
     await client.query("INSERT INTO password_resets (user_id, code_hash, expires_at) VALUES ($1,$2,NOW()+INTERVAL '30 minutes')", [req.params.id, codeHash]);
@@ -1411,6 +1413,10 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // Three flat RWF amounts — still names which one is wrong rather than a
     // generic "invalid value" for a form with three fields.
     [SERVICE_RATES_KEY]: (value) => validateServiceRates(value).length === 0,
+    // The Korean-import mirror (docs/ENCAR-IMPORT-PLAN.md). The switches and the
+    // rules for what is kept. Both are audit-logged below like every setting.
+    encar_flags: (value) => validateEncarFlags(value).length === 0,
+    encar_ingest_rules: (value) => validateEncarRules(value).length === 0,
   };
   if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
   if (!validators[key](req.body.value)) {
@@ -1425,6 +1431,10 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     if (key === SERVICE_RATES_KEY) {
       const problems = validateServiceRates(req.body.value);
       return res.status(400).json({ error: problems[0], code: 'INVALID_SERVICE_RATES', problems });
+    }
+    if (key === 'encar_flags' || key === 'encar_ingest_rules') {
+      const problems = key === 'encar_flags' ? validateEncarFlags(req.body.value) : validateEncarRules(req.body.value);
+      return res.status(400).json({ error: problems[0], code: 'INVALID_ENCAR_SETTING', problems });
     }
     return res.status(400).json({ error: `Invalid value for ${key}` });
   }

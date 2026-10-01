@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -41,7 +42,9 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    // The name is the only secret some of these files have, so it is drawn
+    // from the CSPRNG, not Math.random.
+    cb(null, `${Date.now()}-${crypto.randomBytes(12).toString('hex')}${ext}`);
   },
 });
 
