@@ -209,11 +209,15 @@ router.get('/', async (req, res) => {
 
     const pageSize = limit ?? PAGE_DEFAULT;
     params.push(pageSize + 1);
+    // One interpolation for the whole ordering: CI parses every SQL literal with
+    // the real PostgreSQL grammar (.github/scripts/check-sql.js), which stands in
+    // `1` for each ${...}, and "ORDER BY 1 1, id 1" is not SQL. "ORDER BY 1" is.
+    const orderBy = `${sort.expr} ${sort.dir}, id ${sort.dir}`;
     const { rows } = await pool.query(
       `SELECT ${LIST_COLUMNS}, ${sort.select} AS cursor_value
          FROM encar_listings
         ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-        ORDER BY ${sort.expr} ${sort.dir}, id ${sort.dir}
+        ORDER BY ${orderBy}
         LIMIT $${params.length}`,
       params
     );
