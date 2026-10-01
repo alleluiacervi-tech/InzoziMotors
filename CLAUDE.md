@@ -217,6 +217,21 @@ adds delivery while the app isn't open. Permissions: `CAMERA` and
 `app.config.js` `android.permissions`); `RECORD_AUDIO` and `READ_MEDIA_IMAGES`
 stay blocked; `supportsTablet: false`.
 
+**Push status (Oct 2026).** iOS delivers with the app closed (APNs key on EAS).
+Android does not yet: it needs a Firebase project, `google-services.json` supplied
+to the build (`GOOGLE_SERVICES_JSON` as an EAS file env var, read by
+`app.config.js` — never committed), and the FCM V1 service-account key uploaded
+with `eas credentials`; then a new store build. To tell "phone", "credentials"
+and "server" apart, Settings → *Send a test notification* calls
+`POST /devices/test`, which reports per device what Expo said. The backend also
+reads Expo's receipts 15 minutes after a send and logs credential errors
+(`expo push receipt error`).
+
+**Crash visibility.** JavaScript errors go to `POST /client-errors`
+(`src/utils/crashReport.js` → one structured log line, no user data). Native
+crash reporting (Sentry) is wired but inert until `EXPO_PUBLIC_SENTRY_DSN` is
+set — see `src/utils/sentry.js`.
+
 `src/api/client.js` **refuses to start a release build against a non-HTTPS API**
 and only clears the keychain on `SESSION_EXPIRED`/`SESSION_REVOKED` (so a wrong
 password never signs you out). Demo fixtures are `__DEV__`-only.
