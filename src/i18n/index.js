@@ -706,13 +706,17 @@ export const TRANSLATIONS = {
       "arrivalNote": "Please arrive 10 minutes early. Bring all available service records.",
       "booked": "Booked",
       "bookingSummary": "Booking Summary",
+      "capacity": "Capacity {{count}} / day",
+      "centersFailed": "Could not load inspection centers. Try again.",
       "chooseCenter": "Choose Inspection Center",
       "chooseDate": "Choose a Date",
       "chooseTimeSlot": "Choose a Time Slot",
       "closed": "Closed",
+      "noCenters": "No inspection centers are currently accepting bookings.",
       "reportRequiredNote": "The completed report is required before admin approval and publication.",
       "selectCenterDateTime": "Select center, date, and time to confirm",
-      "title": "Schedule Inspection"
+      "title": "Schedule Inspection",
+      "yourCar": "Your car"
     },
     "language": {
       "current": "Current language",
@@ -2495,13 +2499,17 @@ export const TRANSLATIONS = {
       "arrivalNote": "Nyamuneka uhagere hasigaye iminota 10. Zana n'ibyangombwa byose by'imodoka ufite.",
       "booked": "Huzuye",
       "bookingSummary": "Incamake y'igihe wahisemo",
+      "capacity": "Ubushobozi {{count}} ku munsi",
+      "centersFailed": "Ntibyakunze gutangiza ibigo by’isuzuma. Ongera ugerageze.",
       "chooseCenter": "Hitamo aho gusuzumira",
       "chooseDate": "Hitamo itariki",
       "chooseTimeSlot": "Hitamo isaha",
       "closed": "Hafunze",
+      "noCenters": "Nta bigo by’isuzuma byemera ubwiyandikishe ubu.",
       "reportRequiredNote": "Raporo y'isuzuma igomba kurangira mbere y'uko imodoka yemerwa igashyirwa ku isoko.",
       "selectCenterDateTime": "Hitamo ikigo, itariki n'isaha kugira ngo wemeze",
-      "title": "Guhitamo umunsi wo gusuzumisha"
+      "title": "Guhitamo umunsi wo gusuzumisha",
+      "yourCar": "Imodoka yawe"
     },
     "language": {
       "current": "Ururimi rukoreshwa",
@@ -4284,13 +4292,17 @@ export const TRANSLATIONS = {
       "arrivalNote": "Merci d'arriver 10 minutes à l'avance avec l'ensemble des documents d'entretien disponibles.",
       "booked": "Complet",
       "bookingSummary": "Récapitulatif du rendez-vous",
+      "capacity": "Capacité {{count}} / jour",
+      "centersFailed": "Impossible de charger les centres d’inspection. Réessayez.",
       "chooseCenter": "Choisir un centre d'inspection",
       "chooseDate": "Choisir une date",
       "chooseTimeSlot": "Choisir un créneau horaire",
       "closed": "Fermé",
+      "noCenters": "Aucun centre d’inspection n’accepte de réservation pour le moment.",
       "reportRequiredNote": "Le rapport complet est obligatoire avant validation et publication de l'annonce.",
       "selectCenterDateTime": "Sélectionnez le centre, la date et l'heure pour confirmer",
-      "title": "Planifier une inspection"
+      "title": "Planifier une inspection",
+      "yourCar": "Votre voiture"
     },
     "language": {
       "current": "Langue actuelle",
@@ -6073,13 +6085,17 @@ export const TRANSLATIONS = {
       "arrivalNote": "Tafadhali fika dakika 10 mapema ukiwa na nyaraka zote za matengenezo.",
       "booked": "Kimejaa",
       "bookingSummary": "Muhtasari wa miadi",
+      "capacity": "Uwezo {{count}} kwa siku",
+      "centersFailed": "Imeshindwa kupakia vituo vya ukaguzi. Jaribu tena.",
       "chooseCenter": "Chagua kituo cha ukaguzi",
       "chooseDate": "Chagua tarehe",
       "chooseTimeSlot": "Chagua muda",
       "closed": "Kimefungwa",
+      "noCenters": "Hakuna kituo cha ukaguzi kinachopokea miadi kwa sasa.",
       "reportRequiredNote": "Ripoti kamili ya ukaguzi inahitajika kabla ya idhini na uchapishaji wa tangazo.",
       "selectCenterDateTime": "Chagua kituo, tarehe na muda ili kuthibitisha",
-      "title": "Panga ukaguzi wa gari"
+      "title": "Panga ukaguzi wa gari",
+      "yourCar": "Gari lako"
     },
     "language": {
       "current": "Lugha ya sasa",
@@ -7862,13 +7878,17 @@ export const TRANSLATIONS = {
       "arrivalNote": "예약 시간 10분 전까지 도착해 주시기 바라며, 지참 가능한 정비 서류를 함께 가져오세요.",
       "booked": "예약 마감",
       "bookingSummary": "예약 내역 확인",
+      "capacity": "하루 수용 {{count}}대",
+      "centersFailed": "검사 센터를 불러오지 못했습니다. 다시 시도하세요.",
       "chooseCenter": "검사 센터 선택",
       "chooseDate": "날짜 선택",
       "chooseTimeSlot": "시간대 선택",
       "closed": "휴무",
+      "noCenters": "현재 예약을 받는 검사 센터가 없습니다.",
       "reportRequiredNote": "매물이 승인되고 플랫폼에 공개되기 전에 150가지 항목 정밀 점검이 필수적으로 진행됩니다.",
       "selectCenterDateTime": "센터, 날짜, 시간을 선택하여 예약을 완료하세요",
-      "title": "차량 점검 예약"
+      "title": "차량 점검 예약",
+      "yourCar": "내 차량"
     },
     "language": {
       "current": "현재 언어",
@@ -9651,13 +9671,17 @@ export const TRANSLATIONS = {
       "arrivalNote": "请提前 10 分钟到店，并随车携带所有可提供的保养档案及证件原件。",
       "booked": "已约满",
       "bookingSummary": "预约信息摘要",
+      "capacity": "每日容量 {{count}} 辆",
+      "centersFailed": "无法加载检测中心，请重试。",
       "chooseCenter": "选择预约检测服务中心",
       "chooseDate": "选择预约日期",
       "chooseTimeSlot": "选择到店时间段",
       "closed": "未营业",
+      "noCenters": "目前没有接受预约的检测中心。",
       "reportRequiredNote": "车辆必须在检测中心完成全套检测并出具合格报告后，方可在平台正式审核上架。",
       "selectCenterDateTime": "请依次选择服务中心、日期及时间段以完成预约",
-      "title": "预约 150 项实车检测"
+      "title": "预约 150 项实车检测",
+      "yourCar": "您的车辆"
     },
     "language": {
       "current": "当前语言",
