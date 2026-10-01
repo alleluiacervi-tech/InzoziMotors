@@ -211,7 +211,7 @@ run_bounded "$MIGRATE_TIMEOUT" $COMPOSE run --rm -T --entrypoint node api src/mi
   || die "migrations failed or timed out after ${MIGRATE_TIMEOUT}s — nothing was restarted, the old containers are still serving"
 
 log "restarting services"
-run_bounded 300 $COMPOSE up -d api web admin || die "restart failed — run ops/rollback.sh"
+run_bounded 300 $COMPOSE up -d api web admin encar-sync || die "restart failed — run ops/rollback.sh"
 
 # ─── Confirm it actually works ──────────────────────────────────────────────
 log "waiting for readiness"

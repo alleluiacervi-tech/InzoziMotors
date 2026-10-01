@@ -47,14 +47,18 @@ die() { printf 'BACKUP FAILED: %s\n' "$*" >&2; exit 1; }
 mkdir -p "$BACKUP_DIR"
 
 # ─── Database ────────────────────────────────────────────────────────────────
+# The encar_* tables (the Korean-import mirror) are left out of the dump: they
+# hold ~150k rows that one provider export rebuilds, and including them would
+# make every backup larger for no safety. The table definitions are still dumped.
+# After a restore, the sync worker refills them on its own.
 # Custom format (-Fc): compressed, and restorable table-by-table, which is what
 # you want at 3am when one table is wrong rather than the whole database.
 log "dumping $DB_NAME"
 if command -v docker >/dev/null && docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
-  docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc > "$DB_FILE" \
+  docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc --exclude-table-data='encar_*' > "$DB_FILE" \
     || die "pg_dump failed"
 else
-  pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc > "$DB_FILE" || die "pg_dump failed"
+  pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc --exclude-table-data='encar_*' > "$DB_FILE" || die "pg_dump failed"
 fi
 [ -s "$DB_FILE" ] || die "dump is empty"
 

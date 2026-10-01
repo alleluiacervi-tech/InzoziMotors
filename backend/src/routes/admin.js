@@ -25,6 +25,7 @@ const {
   validateRates: validateServiceRates,
   invalidateServiceRates,
 } = require('../lib/service-rates');
+const { validateFlags: validateEncarFlags, validateRules: validateEncarRules } = require('../lib/encar/normalize');
 const {
   slugify, loadMakes, invalidateMakes,
 } = require('../lib/vehicle-makes');
@@ -1412,6 +1413,10 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // Three flat RWF amounts — still names which one is wrong rather than a
     // generic "invalid value" for a form with three fields.
     [SERVICE_RATES_KEY]: (value) => validateServiceRates(value).length === 0,
+    // The Korean-import mirror (docs/ENCAR-IMPORT-PLAN.md). The switches and the
+    // rules for what is kept. Both are audit-logged below like every setting.
+    encar_flags: (value) => validateEncarFlags(value).length === 0,
+    encar_ingest_rules: (value) => validateEncarRules(value).length === 0,
   };
   if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
   if (!validators[key](req.body.value)) {
@@ -1426,6 +1431,10 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     if (key === SERVICE_RATES_KEY) {
       const problems = validateServiceRates(req.body.value);
       return res.status(400).json({ error: problems[0], code: 'INVALID_SERVICE_RATES', problems });
+    }
+    if (key === 'encar_flags' || key === 'encar_ingest_rules') {
+      const problems = key === 'encar_flags' ? validateEncarFlags(req.body.value) : validateEncarRules(req.body.value);
+      return res.status(400).json({ error: problems[0], code: 'INVALID_ENCAR_SETTING', problems });
     }
     return res.status(400).json({ error: `Invalid value for ${key}` });
   }
