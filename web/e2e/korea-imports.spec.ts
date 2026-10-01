@@ -22,6 +22,10 @@ function db() {
   })
 }
 
+// One worker, one seeded car: with parallel workers each would seed its own copy and
+// the search would find the other worker's car first.
+test.describe.configure({ mode: 'serial' })
+
 test.beforeAll(async () => {
   const client = db()
   await client.connect()
@@ -65,7 +69,8 @@ test('search → open a Korean car → request it → the order keeps what was a
   await expect(page.getByRole('heading', { name: /2021 Kia E2E Sorento/ })).toBeVisible()
   await expect(page.getByText(/not the cost in Kigali/i)).toBeVisible()
   await expect(page.getByText(/Sawa Cars is not the seller/i)).toBeVisible()
-  await expect(page.getByText(/escrow|guarantee/i)).toHaveCount(0)
+  // <main> only: the site footer legitimately links to the guarantee page.
+  await expect(page.locator('main').getByText(/escrow|guarantee/i)).toHaveCount(0)
 
   // Signed out, the request button asks for a sign-in rather than failing.
   await expect(page.getByRole('link', { name: 'Sign in to request' })).toBeVisible()
