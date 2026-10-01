@@ -136,19 +136,39 @@ app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded car photos publicly; KYC identity docs and sale contracts are
-// NEVER served here — they go through admin-gated routes
-// (GET /id-verification/doc/:filename and GET /contracts/:id/file).
-// Both 403s are mounted BEFORE the static handler so they win.
+// Serve uploaded car photos publicly. Private files are NEVER served here —
+// they go through their own checked routes; see PRIVATE_UPLOAD_DIRS below,
+// mounted BEFORE the static handler so it wins.
 const { imageVariants } = require('./src/middleware/image-variants');
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
-app.use('/uploads/id-docs', (req, res) => res.status(403).json({ error: 'Forbidden' }));
-app.use('/uploads/contracts', (req, res) => res.status(403).json({ error: 'Forbidden' }));
-app.use('/uploads/documents', (req, res) => res.status(403).json({ error: 'Forbidden' }));
-// Unmasked listing photos. The whole point of burning the badge in is that the
-// file containing the plate is not reachable — a masked public image beside a
-// readable original is theatre.
-app.use('/uploads/plate-originals', (req, res) => res.status(403).json({ error: 'Forbidden' }));
+// The private folders, answered 403 before anything below can serve them.
+// Matched on the DECODED, NORMALISED path — the one express.static will
+// actually open. Matching the raw URL let `/uploads/%69d-docs/…` and
+// `/uploads/cars/../id-docs/…` straight past these rules.
+//
+//   id-docs          identity documents (GET /id-verification/doc/:filename)
+//   contracts        retired sale contracts
+//   documents        generated PDFs (their own owner-checked routes)
+//   plate-originals  unmasked listing photos. The whole point of burning the
+//                    badge in is that the readable original is not reachable.
+//   imports          import-order bank-transfer proofs and documents, served
+//                    only through routes/imports.js, which checks the buyer
+//                    or admin. They used to be protected by an unguessable
+//                    filename alone.
+const PRIVATE_UPLOAD_DIRS = new Set(['id-docs', 'contracts', 'documents', 'plate-originals', 'imports']);
+app.use('/uploads', (req, res, next) => {
+  let relative;
+  try {
+    relative = path.posix.normalize(decodeURIComponent(req.path)).replace(/^\/+/, '');
+  } catch {
+    return res.status(400).json({ error: 'Bad path' });
+  }
+  const top = relative.split('/')[0].toLowerCase();
+  if (PRIVATE_UPLOAD_DIRS.has(top) || relative.startsWith('..')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  next();
+});
 // Listing photos at the width the client will actually draw them, ahead of the
 // static handler so `?w=400` is answered by a resized WebP rather than a
 // 1600x1200 JPEG. Falls through to the original for anything it cannot or
@@ -298,6 +318,8 @@ app.use('/admin/vehicles',  require('./src/routes/vehicle-history'));
 app.use('/admin/vehicles',  require('./src/routes/vehicle-intelligence'));
 app.use('/vehicles',        require('./src/routes/public-vehicles'));
 app.use('/admin',           require('./src/routes/admin'));
+// Ahead of /imports: that router's /:id would otherwise swallow "korea".
+app.use('/imports/korea',   require('./src/routes/imports-korea'));
 app.use('/imports',         require('./src/routes/imports'));
 // Inspection centers. Admin-only CRUD over the table submissions.js already
 // enforces booking capacity against — see the header of routes/centers.js.

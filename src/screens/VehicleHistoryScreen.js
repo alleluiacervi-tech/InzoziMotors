@@ -95,7 +95,7 @@ export default function VehicleHistoryScreen({ navigation, route }) {
           rraDutyNote: `${t('vehicleHistory.taxCleared')}: ${h.rra_duty_paid || t('common.verified')}`,
           insuranceActive: h.insurance_valid === 'pass',
           insuranceNote: `${t('vehicleHistory.insuranceStatus')}: ${h.insurance_valid || t('common.verified')}`,
-          chassisNumber: h.vin || '—',
+          chassisNumber: h.vin_masked || h.vin || '—',
           vinVerified: !!h.vin_verified,
           serviceHistory: h.service_history === 'pass',
           lastService: h.service_history === 'pass' ? t('common.verified') : t('common.pending'),

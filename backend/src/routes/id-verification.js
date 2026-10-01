@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const pool = require('../db');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, verifyLiveSession, verifySessionToken } = require('../middleware/auth');
 const { requireUuid } = require('../middleware/validate');
 const { uploadIdDocs, verifyImageContent } = require('../middleware/upload');
 const { stripUploadMetadata } = require('../middleware/strip-metadata');
@@ -68,15 +68,17 @@ function removeIdDocuments(urls) {
 // GET /id-verification/doc/:filename
 // Two ways in: an admin session via the Authorization header (programmatic
 // access, still fully privileged), or a view token bound to this exact file.
-router.get('/doc/:filename', (req, res) => {
+router.get('/doc/:filename', async (req, res) => {
   const filename = path.basename(req.params.filename); // strip any traversal
   const header = req.headers.authorization;
 
   let authorised = false;
   if (header && header.startsWith('Bearer ')) {
     try {
-      const user = jwt.verify(header.slice(7), process.env.JWT_SECRET);
-      authorised = user.role === 'admin';
+      // A session, still live: a signed admin token alone used to be enough,
+      // so a revoked or demoted admin's token kept opening ID documents.
+      const user = verifySessionToken(header.slice(7));
+      authorised = user.role === 'admin' && (await verifyLiveSession(user)).ok;
     } catch { /* fall through to the view token */ }
   } else if (req.query.sig) {
     try {

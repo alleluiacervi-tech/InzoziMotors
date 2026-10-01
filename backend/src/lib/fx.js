@@ -34,6 +34,14 @@ const { log } = require('./log');
  *  never reached a provider, and always flagged stale. */
 const FLOOR_RATE = { rate: 1470, source: 'builtin-floor' };
 
+/** Floors per pair. A floor for one pair is NOT a floor for another — handing
+ *  the USD→RWF number to USD→KRW would be wrong by a factor of a thousand — so
+ *  a pair with no floor reports rate: null, stale, and the caller says so. */
+const FLOORS = {
+  'USD/RWF': FLOOR_RATE,
+  'USD/KRW': { rate: 1400, source: 'builtin-floor' },
+};
+
 const MEMORY_TTL_MS = 15 * 60 * 1000;      // how often a busy server re-checks
 const DB_FRESH_MS = 24 * 60 * 60 * 1000;   // providers update daily
 const FETCH_TIMEOUT_MS = 8_000;
@@ -173,7 +181,7 @@ async function getRate(base = 'USD', quote = 'RWF') {
       return value;
     }
 
-    const value = { base, quote, ...FLOOR_RATE, fetched_at: null, stale: true };
+    const value = { base, quote, ...(FLOORS[key] || { rate: null, source: 'none' }), fetched_at: null, stale: true };
     memory.set(key, { value, at: Date.now() });
     return value;
   })().finally(() => inflight.delete(key));

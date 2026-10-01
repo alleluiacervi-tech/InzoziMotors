@@ -369,3 +369,49 @@ test('reassigning a listing to another seller keeps it public', async () => {
   const listed = await api().get(`/cars?seller_id=${to.id}`).expect(200);
   assert.deepEqual(listed.body.map((c) => c.id), [car.id]);
 });
+
+// ─── Findings from the 30 Sep 2026 security review ───────────────────────────
+
+test('the saved list carries public columns only, and public routes mask the VIN', async () => {
+  const admin = await makeAdmin(await register());
+  const seller = await verifiedSeller();
+  const car = await liveCar({ seller, admin, make: 'Toyota', model: 'Harrier' });
+  const RAW = 'JTDBZ29E123456789';
+  await pool.query(
+    "UPDATE cars SET vin = $2, review_notes = 'internal: seller was difficult', registration_plate = 'RAD123A' WHERE id = $1",
+    [car.id, RAW]
+  );
+  const buyer = await register();
+  await api().post(`/cars/save/${car.id}`).set('Authorization', `Bearer ${buyer.token}`).expect(200);
+
+  const saved = await api().get('/cars/saved/list').set('Authorization', `Bearer ${buyer.token}`).expect(200);
+  assert.equal(saved.body.length, 1);
+  const row = saved.body[0];
+  for (const column of ['vin', 'review_notes', 'registration_plate', 'approved_by', 'archive_reason', 'vin_key', 'vehicle_id']) {
+    assert.equal(row[column], undefined, `${column} must not reach a buyer`);
+  }
+  assert.doesNotMatch(JSON.stringify(saved.body), new RegExp(RAW));
+
+  const history = await api().get(`/cars/${car.id}/history`).expect(200);
+  assert.doesNotMatch(JSON.stringify(history.body), new RegExp(RAW));
+  assert.equal(history.body.vin_masked, 'JTDBZ29E***6789');
+
+  const report = await api().get(`/inspections/report/${car.id}`).expect(200);
+  assert.doesNotMatch(JSON.stringify(report.body), new RegExp(RAW));
+  assert.equal(report.body.vin_masked, 'JTDBZ29E***6789');
+});
+
+test('private upload folders are refused however the path is spelled', async () => {
+  for (const path of [
+    '/uploads/id-docs/x.jpg',
+    '/uploads/%69d-docs/x.jpg',
+    '/uploads/cars/%2e%2e/id-docs/x.jpg',
+    '/uploads/ID-DOCS/x.jpg',
+    '/uploads/imports/00000000-0000-4000-8000-000000000000/x.jpg',
+    '/uploads//imports/x.jpg',
+    '/uploads/plate-originals/x.jpg',
+  ]) {
+    const res = await api().get(path);
+    assert.equal(res.status, 403, `${path} answered ${res.status}`);
+  }
+});

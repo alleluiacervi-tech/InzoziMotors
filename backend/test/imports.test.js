@@ -114,6 +114,18 @@ test('final-50 proof cannot jump ahead of the pipeline, and each payment carries
   // it again are gone -- there is nothing left to instruct.
   const afterSubmit=await api().get(`/imports/${created.body.id}`).set('Authorization',`Bearer ${buyer.token}`).expect(200);
   assert.equal(afterSubmit.body.payments.find((p)=>p.milestone==='initial_50').payment_instructions,null);
+
+  // The proof opens for the buyer and the finance team through its route, for
+  // nobody else, and never as a static file.
+  const proofPath=`/imports/${created.body.id}/payments/${initial.id}/proof`;
+  await api().get(proofPath).set('Authorization',`Bearer ${buyer.token}`).expect(200).expect('Cache-Control',/no-store/);
+  await api().get(proofPath).set('Authorization',`Bearer ${operator.token}`).expect(200);
+  const stranger=await register();
+  await api().get(proofPath).set('Authorization',`Bearer ${stranger.token}`).expect(404);
+  await api().get(proofPath).expect(401);
+  const stored=afterSubmit.body.payments.find((p)=>p.milestone==='initial_50').proof_url;
+  assert.ok(stored);
+  await api().get(`/uploads/${stored}`).expect(403);
 });
 
 test('an expired quote cannot be accepted',async()=>{

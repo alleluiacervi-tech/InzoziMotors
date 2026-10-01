@@ -838,6 +838,33 @@ router.get('/:id/payments/:paymentId/receipt/file', requireAuth, requireUuid('id
   }catch(error){ documentFailure(res,error); }
 });
 
+// GET /imports/:id/payments/:paymentId/proof — the bank-transfer proof the
+// buyer uploaded, for that buyer or an admin. /uploads/imports is not served
+// statically (server.js), so this is the only way to open one; before, the
+// finance review had no link to the proof it was reviewing.
+router.get('/:id/payments/:paymentId/proof', requireAuth, requireUuid('id'), requireUuid('paymentId'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.proof_url, o.buyer_id FROM import_payments p JOIN import_orders o ON o.id = p.import_order_id
+        WHERE p.id = $1 AND o.id = $2`,
+      [req.params.paymentId, req.params.id]
+    );
+    if (!rows.length || !rows[0].proof_url || (req.user.role !== 'admin' && rows[0].buyer_id !== req.user.id)) {
+      return res.status(404).json({ error: 'Proof not found' });
+    }
+    const resolved = path.resolve(UPLOAD_DIR, rows[0].proof_url);
+    if (!resolved.startsWith(UPLOAD_DIR + path.sep)) {
+      log.error('import proof path escaped upload dir', { paymentId: req.params.paymentId });
+      return res.status(404).json({ error: 'Proof not found' });
+    }
+    res.set('Cache-Control', 'no-store, private'); res.set('Referrer-Policy', 'no-referrer');
+    res.sendFile(resolved, (err) => { if (err && !res.headersSent) res.status(404).json({ error: 'Proof not found' }); });
+  } catch (err) {
+    log.error('import proof error', { error: err.message });
+    res.status(500).json({ error: 'Could not open the proof' });
+  }
+});
+
 router.patch('/:id/shipment', requireAdmin, requireUuid('id'), async (req, res) => {
   const fields = ['supplier_name','supplier_country','carrier','booking_reference','bill_of_lading','vessel_or_flight','departure_port','arrival_port','departed_at','estimated_arrival','arrived_at','last_location'];
   const values = fields.map((f) => req.body[f] || null);

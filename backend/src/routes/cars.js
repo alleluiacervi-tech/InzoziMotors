@@ -2,7 +2,7 @@ const express = require('express');
 const { log } = require('../lib/log');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
-const { requireAuth, requireAdmin, verifyLiveSession } = require('../middleware/auth');
+const { requireAuth, requireAdmin, verifyLiveSession, verifySessionToken } = require('../middleware/auth');
 const { requireUuid, paginate, isUuid } = require('../middleware/validate');
 const { withTransaction } = require('../lib/tx');
 const { matchSavedSearches, notifyPriceDrop } = require('../lib/alerts');
@@ -44,6 +44,13 @@ function validInspectionExists(carAlias = 'c') {
   )`;
 }
 
+// A listing's submission. The link is written from both sides at listing
+// creation (submissions.car_id and inspections.car_id) and older rows may hold
+// only the second, so every update that follows a listing matches either.
+const linkedSubmissions = (carParam) =>
+  `(car_id = ${carParam} OR id IN (SELECT submission_id FROM inspections
+                                    WHERE car_id = ${carParam} AND submission_id IS NOT NULL))`;
+
 // ─── What a stranger may read ─────────────────────────────────────────────────
 // The public browse and detail routes used to `SELECT c.*`, which meant every
 // column the cars table would ever grow was published the moment it was added.
@@ -61,13 +68,6 @@ function validInspectionExists(carAlias = 'c') {
 // Allow-list, never deny-list: a column added to `cars` tomorrow is private
 // until someone puts it here on purpose. `archive_reason` and `vin_key` are
 // omitted for the same reason — internal, and nothing renders them.
-// A listing's submission. The link is written from both sides at listing
-// creation (submissions.car_id and inspections.car_id) and older rows may hold
-// only the second, so every update that follows a listing matches either.
-const linkedSubmissions = (carParam) =>
-  `(car_id = ${carParam} OR id IN (SELECT submission_id FROM inspections
-                                    WHERE car_id = ${carParam} AND submission_id IS NOT NULL))`;
-
 const PUBLIC_CAR_COLUMNS = [
   'id', 'seller_id', 'title', 'make', 'model', 'year', 'mileage',
   'fuel_type', 'transmission', 'body_type', 'color', 'price', 'currency',
@@ -422,7 +422,11 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
     const docVerdict = (itemId) => checklist[itemId] || 'unknown';
 
     res.json({
-      vin: car.vin || null,
+      // Masked, as on the listing itself (GET /cars/:id). This route is public
+      // and used to return the full VIN of every live car to anyone. `vin`
+      // stays as a key, masked, because installed app builds read it.
+      vin: car.vin ? maskVin(car.vin) : null,
+      vin_masked: car.vin ? maskVin(car.vin) : null,
       vin_verified: docVerdict('d06') === 'pass',
       make: car.make, model: car.model, year: car.year,
       drive_side: car.drive_side,
@@ -455,7 +459,7 @@ async function optionalAuth(req, _res, next) {
   const header = req.headers.authorization;
   if (header && header.startsWith('Bearer ')) {
     try {
-      const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+      const payload = verifySessionToken(header.slice(7));
       const live = await verifyLiveSession(payload);
       if (live.ok) req.user = payload;
     } catch { /* invalid, revoked or unavailable optional identity is anonymous */ }
@@ -719,7 +723,10 @@ router.post('/save/:id', requireAuth, requireUuid('id'), async (req, res) => {
 router.get('/saved/list', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT c.*, ${sellerDisplayColumns('u')}, u.trust_score AS seller_trust
+      // The same allow-list as the public feed. This used to be `c.*`, which
+      // handed any signed-in account the raw VIN, the admin's review notes,
+      // the plate string and internal ids of every car it had saved.
+      `SELECT ${publicCarSelect('c')}, ${sellerDisplayColumns('u')}, u.trust_score AS seller_trust
        FROM saved_cars sc
        JOIN cars c ON c.id = sc.car_id
        JOIN users u ON u.id = c.seller_id
