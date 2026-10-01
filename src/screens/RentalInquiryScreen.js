@@ -15,13 +15,13 @@ const tomorrowISO = () => {
 
 export default function RentalInquiryScreen({ navigation, route }) {
   const car = route.params?.car;
-  const { isLoggedIn, sendRentalInquiry } = useApp();
+  const { isLoggedIn, sendRentalInquiry, t } = useApp();
   const available = car?.providerContactAvailable || { in_app: true, phone: false, whatsapp: false };
   const channels = useMemo(() => [
-    { id: 'in_app', label: 'In-app', icon: 'chatbubble-outline' },
+    { id: 'in_app', label: t('rentalInquiry.channelInApp'), icon: 'chatbubble-outline' },
     ...(available.whatsapp ? [{ id: 'whatsapp', label: 'WhatsApp', icon: 'logo-whatsapp' }] : []),
-    ...(available.phone ? [{ id: 'phone', label: 'Phone', icon: 'call-outline' }] : []),
-  ], [available.phone, available.whatsapp]);
+    ...(available.phone ? [{ id: 'phone', label: t('rentalInquiry.channelPhone'), icon: 'call-outline' }] : []),
+  ], [available.phone, available.whatsapp, t]);
   const [startDate, setStartDate] = useState(tomorrowISO());
   const [days, setDays] = useState(String(car?.minDays || 1));
   const [pickupLocation, setPickupLocation] = useState('');
@@ -32,22 +32,22 @@ export default function RentalInquiryScreen({ navigation, route }) {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
 
-  if (!car) return <Screen background={colors.bg}><BackHeader title="Request availability" onBack={() => navigation.goBack()} /><View style={styles.center}><Text style={styles.title}>Rental unavailable</Text></View></Screen>;
+  if (!car) return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.title')} onBack={() => navigation.goBack()} /><View style={styles.center}><Text style={styles.title}>{t('rentalInquiry.unavailable')}</Text></View></Screen>;
 
   const submit = async () => {
     if (!isLoggedIn) return navigation.navigate('SignIn');
     const count = Number(days);
     const requested = new Date(`${startDate}T00:00:00`);
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || Number.isNaN(requested.getTime()) || requested <= today) return setError('Enter a future date in YYYY-MM-DD format.');
-    if (!Number.isInteger(count) || count < (car.minDays || 1) || count > 365) return setError(`Choose between ${car.minDays || 1} and 365 days.`);
-    if (!acknowledged) return setError('Read and accept the direct-provider notice to continue.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || Number.isNaN(requested.getTime()) || requested <= today) return setError(t('rentalInquiry.errDate'));
+    if (!Number.isInteger(count) || count < (car.minDays || 1) || count > 365) return setError(t('rentalInquiry.errDays', { min: car.minDays || 1 }));
+    if (!acknowledged) return setError(t('rentalInquiry.errAccept'));
     setLoading(true); setError('');
     try {
       const created = await sendRentalInquiry({ carId: car.id, carTitle: car.title, startDateISO: startDate, startDate, days: count, pickupLocation: pickupLocation.trim(), message: message.trim(), preferredChannel });
       setResult({ reference: created.inquiry_ref || created.inquiryRef, contact: created.contact || null, notice: created.notice || car.directDealNotice, channel: preferredChannel });
     } catch (err) {
-      setError(err?.message || 'The inquiry could not be sent. Please try again.');
+      setError(err?.message || t('rentalInquiry.errSend'));
     } finally { setLoading(false); }
   };
 
@@ -57,20 +57,20 @@ export default function RentalInquiryScreen({ navigation, route }) {
       const url = result.channel === 'whatsapp' ? `https://wa.me/${String(result.contact).replace(/\D/g, '')}` : `tel:${result.contact}`;
       await Linking.openURL(url);
     };
-    return <Screen background={colors.bg}><BackHeader title="Inquiry sent" onBack={() => navigation.navigate('MyRentals')} /><View style={styles.success}><View style={styles.successIcon}><Ionicons name="checkmark" size={34} color="#fff" /></View><Text style={styles.successTitle}>Availability request sent</Text><Text style={styles.successBody}>Reference {result.reference || 'created'}. The provider will confirm availability, price, deposit, contract, pickup and return terms directly.</Text>{result.contact && result.channel !== 'in_app' ? <Button title={result.channel === 'whatsapp' ? 'Continue on WhatsApp' : `Call ${result.contact}`} icon={result.channel === 'whatsapp' ? 'logo-whatsapp' : 'call-outline'} onPress={openContact} style={styles.successButton} /> : null}<Button title="View my inquiries" variant="outline" onPress={() => navigation.replace('MyRentals')} style={styles.successButton} /><Text style={styles.noticeSmall}>{result.notice}</Text></View></Screen>;
+    return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.sentTitle')} onBack={() => navigation.navigate('MyRentals')} /><View style={styles.success}><View style={styles.successIcon}><Ionicons name="checkmark" size={34} color="#fff" /></View><Text style={styles.successTitle}>{t('rentalInquiry.sentHeading')}</Text><Text style={styles.successBody}>{t('rentalInquiry.sentBody', { ref: result.reference || '—' })}</Text>{result.contact && result.channel !== 'in_app' ? <Button title={result.channel === 'whatsapp' ? t('rentalInquiry.continueWhatsapp') : t('rentalInquiry.callContact', { contact: result.contact })} icon={result.channel === 'whatsapp' ? 'logo-whatsapp' : 'call-outline'} onPress={openContact} style={styles.successButton} /> : null}<Button title={t('rentalInquiry.viewInquiries')} variant="outline" onPress={() => navigation.replace('MyRentals')} style={styles.successButton} /><Text style={styles.noticeSmall}>{result.notice}</Text></View></Screen>;
   }
 
-  return <Screen background={colors.bg}><BackHeader title="Request availability" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <View style={styles.summary}><Ionicons name="key-outline" size={24} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.title}>{car.title}</Text><Text style={styles.sub}>{car.providerName || 'Verified rental provider'}</Text></View></View>
-    <Text style={styles.section}>Requested dates</Text><Text style={styles.helper}>The provider confirms availability. This request does not reserve the vehicle.</Text>
-    <View style={styles.row}><View style={styles.half}><Text style={styles.label}>Start date</Text><TextInput value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" style={styles.input} /></View><View style={styles.half}><Text style={styles.label}>Days</Text><TextInput value={days} onChangeText={setDays} keyboardType="number-pad" style={styles.input} /></View></View>
-    <Text style={styles.label}>Preferred pickup area</Text><TextInput value={pickupLocation} onChangeText={setPickupLocation} maxLength={200} placeholder="e.g. Kigali Airport" placeholderTextColor={colors.textMuted} style={styles.input} />
-    <Text style={[styles.label, { marginTop: 16 }]}>Message (optional)</Text><TextInput value={message} onChangeText={setMessage} maxLength={1500} multiline placeholder="Tell the provider anything important" placeholderTextColor={colors.textMuted} style={styles.textarea} />
-    <Text style={styles.section}>Preferred reply</Text><View style={styles.channels}>{channels.map((item) => <Button key={item.id} title={item.label} icon={item.icon} fullWidth={false} variant={preferredChannel === item.id ? 'primary' : 'outline'} onPress={() => setPreferredChannel(item.id)} style={styles.channel} />)}</View>
-    <View style={styles.notice}><Ionicons name="information-circle-outline" size={22} color={colors.primary} /><Text style={styles.noticeText}>This is an inquiry, not a confirmed booking. The independent rental provider—not Sawa Cars—sets and manages the contract, payment, deposit, insurance, pickup, return and any dispute.</Text></View>
-    <Button title={acknowledged ? 'Notice accepted' : 'I understand and accept'} icon={acknowledged ? 'checkmark-circle' : 'ellipse-outline'} variant={acknowledged ? 'secondary' : 'outline'} onPress={() => { setAcknowledged((value) => !value); setError(''); }} />
+  return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.title')} onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <View style={styles.summary}><Ionicons name="key-outline" size={24} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.title}>{car.title}</Text><Text style={styles.sub}>{car.providerName || t('rentalInquiry.verifiedProvider')}</Text></View></View>
+    <Text style={styles.section}>{t('rentalInquiry.requestedDates')}</Text><Text style={styles.helper}>{t('rentalInquiry.datesHelper')}</Text>
+    <View style={styles.row}><View style={styles.half}><Text style={styles.label}>{t('rentalInquiry.startDate')}</Text><TextInput value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" style={styles.input} /></View><View style={styles.half}><Text style={styles.label}>{t('rentalInquiry.days')}</Text><TextInput value={days} onChangeText={setDays} keyboardType="number-pad" style={styles.input} /></View></View>
+    <Text style={styles.label}>{t('rentalInquiry.pickupArea')}</Text><TextInput value={pickupLocation} onChangeText={setPickupLocation} maxLength={200} placeholder={t('rentalInquiry.pickupPlaceholder')} placeholderTextColor={colors.textMuted} style={styles.input} />
+    <Text style={[styles.label, { marginTop: 16 }]}>{t('rentalInquiry.message')}</Text><TextInput value={message} onChangeText={setMessage} maxLength={1500} multiline placeholder={t('rentalInquiry.messagePlaceholder')} placeholderTextColor={colors.textMuted} style={styles.textarea} />
+    <Text style={styles.section}>{t('rentalInquiry.preferredReply')}</Text><View style={styles.channels}>{channels.map((item) => <Button key={item.id} title={item.label} icon={item.icon} fullWidth={false} variant={preferredChannel === item.id ? 'primary' : 'outline'} onPress={() => setPreferredChannel(item.id)} style={styles.channel} />)}</View>
+    <View style={styles.notice}><Ionicons name="information-circle-outline" size={22} color={colors.primary} /><Text style={styles.noticeText}>{t('rentalInquiry.notice')}</Text></View>
+    <Button title={acknowledged ? t('rentalInquiry.noticeAccepted') : t('rentalInquiry.accept')} icon={acknowledged ? 'checkmark-circle' : 'ellipse-outline'} variant={acknowledged ? 'secondary' : 'outline'} onPress={() => { setAcknowledged((value) => !value); setError(''); }} />
     {!!error && <View style={styles.error}><Ionicons name="alert-circle-outline" size={18} color={colors.danger} /><Text style={styles.errorText}>{error}</Text></View>}
-    <Button title={isLoggedIn ? 'Send availability request' : 'Sign in to continue'} icon="arrow-forward-outline" loading={loading} onPress={submit} style={{ marginTop: 14 }} />
+    <Button title={isLoggedIn ? t('rentalInquiry.send') : t('rentalInquiry.signIn')} icon="arrow-forward-outline" loading={loading} onPress={submit} style={{ marginTop: 14 }} />
   </ScrollView></Screen>;
 }
 
