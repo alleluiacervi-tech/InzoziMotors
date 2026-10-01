@@ -9,14 +9,15 @@ import { useApp } from '../context/AppContext';
 import { colors, fonts, radius, shadows } from '../theme';
 
 const STATUS = {
-  new: { label: 'Sent', color: colors.primary, bg: colors.blueTint },
-  contacted: { label: 'Provider contacted', color: colors.green, bg: colors.greenTint },
-  closed: { label: 'Closed', color: colors.textSecondary, bg: colors.surfaceAlt },
-  cancelled: { label: 'Cancelled', color: colors.textMuted, bg: colors.surfaceAlt },
+  new: { key: 'myRentals.statusNew', color: colors.primary, bg: colors.blueTint },
+  contacted: { key: 'myRentals.statusContacted', color: colors.green, bg: colors.greenTint },
+  closed: { key: 'myRentals.statusClosed', color: colors.textSecondary, bg: colors.surfaceAlt },
+  cancelled: { key: 'myRentals.statusCancelled', color: colors.textMuted, bg: colors.surfaceAlt },
 };
+const CHANNEL_KEY = { in_app: 'myRentals.channelInApp', phone: 'myRentals.channelPhone', whatsapp: 'myRentals.channelWhatsapp' };
 
 export default function MyRentalsScreen({ navigation }) {
-  const { rentalInquiries, cancelRentalInquiry, setHomeMode } = useApp();
+  const { rentalInquiries, cancelRentalInquiry, setHomeMode, t } = useApp();
   const [busyId, setBusyId] = useState(null);
 
   const browse = () => {
@@ -25,26 +26,26 @@ export default function MyRentalsScreen({ navigation }) {
   };
 
   const cancel = async (item) => {
-    const ok = await showConfirm({ title: 'Cancel this inquiry?', message: 'This closes the availability request. It does not cancel any separate agreement you may already have made with the provider.', confirmLabel: 'Cancel inquiry', cancelLabel: 'Keep inquiry', destructive: true });
+    const ok = await showConfirm({ title: t('myRentals.cancelTitle'), message: t('myRentals.cancelMessage'), confirmLabel: t('myRentals.cancel'), cancelLabel: t('myRentals.keep'), destructive: true });
     if (!ok) return;
     setBusyId(item.id);
     try {
       await cancelRentalInquiry(item.id);
-      showToast('Inquiry cancelled.', 'success');
+      showToast(t('myRentals.cancelled'), 'success');
     } catch (err) {
-      showToast(err?.message || 'Could not cancel the inquiry.', 'error');
+      showToast(err?.message || t('myRentals.cancelFailed'), 'error');
     } finally { setBusyId(null); }
   };
 
-  return <Screen background={colors.bg}><BackHeader title="Rental inquiries" onBack={() => navigation.goBack()} />
+  return <Screen background={colors.bg}><BackHeader title={t('myRentals.title')} onBack={() => navigation.goBack()} />
     <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.info}><Ionicons name="information-circle-outline" size={21} color={colors.primary} /><Text style={styles.infoText}>These are availability requests—not bookings. The provider confirms dates and manages any contract, payment, deposit, pickup and return directly with you.</Text></View>
-      {rentalInquiries.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="calendar-outline" size={34} color={colors.primary} /></View><Text style={styles.emptyTitle}>No rental inquiries yet</Text><Text style={styles.emptyText}>Browse verified provider vehicles and request the dates you need.</Text><Button title="Browse rentals" icon="key-outline" onPress={browse} style={styles.emptyButton} /></View> : rentalInquiries.map((item) => {
+      <View style={styles.info}><Ionicons name="information-circle-outline" size={21} color={colors.primary} /><Text style={styles.infoText}>{t('myRentals.info')}</Text></View>
+      {rentalInquiries.length === 0 ? <View style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="calendar-outline" size={34} color={colors.primary} /></View><Text style={styles.emptyTitle}>{t('myRentals.emptyTitle')}</Text><Text style={styles.emptyText}>{t('myRentals.emptyText')}</Text><Button title={t('myRentals.browse')} icon="key-outline" onPress={browse} style={styles.emptyButton} /></View> : rentalInquiries.map((item) => {
         const meta = STATUS[item.status] || STATUS.new;
-        return <View key={item.id} style={styles.card}><View style={styles.cardHead}><View style={{ flex: 1 }}><Text style={styles.carTitle}>{item.carTitle || 'Rental vehicle'}</Text><Text style={styles.reference}>{item.inquiryRef || 'Inquiry'} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently'}</Text></View><View style={[styles.badge, { backgroundColor: meta.bg }]}><Text style={[styles.badgeText, { color: meta.color }]}>{meta.label}</Text></View></View>
-          <View style={styles.details}><Detail icon="calendar-outline" label="Requested" value={`${item.startDate || 'Flexible'}${item.days ? ` · ${item.days} days` : ''}`} /><Detail icon="business-outline" label="Provider" value={item.providerName || 'Rental provider'} /><Detail icon="chatbubble-outline" label="Preferred reply" value={(item.preferredChannel || 'in_app').replace('_', ' ')} /></View>
+        return <View key={item.id} style={styles.card}><View style={styles.cardHead}><View style={{ flex: 1 }}><Text style={styles.carTitle}>{item.carTitle || t('myRentals.rentalVehicle')}</Text><Text style={styles.reference}>{item.inquiryRef || t('myRentals.inquiry')} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : t('myRentals.recently')}</Text></View><View style={[styles.badge, { backgroundColor: meta.bg }]}><Text style={[styles.badgeText, { color: meta.color }]}>{t(meta.key)}</Text></View></View>
+          <View style={styles.details}><Detail icon="calendar-outline" label={t('myRentals.requested')} value={`${item.startDate || t('myRentals.flexible')}${item.days ? ` · ${t('myRentals.daysCount', { count: item.days })}` : ''}`} /><Detail icon="business-outline" label={t('myRentals.provider')} value={item.providerName || t('myRentals.rentalProvider')} /><Detail icon="chatbubble-outline" label={t('myRentals.preferredReply')} value={t(CHANNEL_KEY[item.preferredChannel] || CHANNEL_KEY.in_app)} /></View>
           {!!item.message && <Text style={styles.message}>{item.message}</Text>}
-          <View style={styles.actions}><Button title="View vehicle" variant="outline" fullWidth={false} onPress={() => navigation.navigate('RentalDetail', { rentalId: item.carId })} style={styles.actionButton} />{['new', 'contacted'].includes(item.status) && <Button title="Cancel inquiry" variant="secondary" fullWidth={false} loading={busyId === item.id} onPress={() => cancel(item)} style={styles.actionButton} />}</View>
+          <View style={styles.actions}><Button title={t('myRentals.viewVehicle')} variant="outline" fullWidth={false} onPress={() => navigation.navigate('RentalDetail', { rentalId: item.carId })} style={styles.actionButton} />{['new', 'contacted'].includes(item.status) && <Button title={t('myRentals.cancel')} variant="secondary" fullWidth={false} loading={busyId === item.id} onPress={() => cancel(item)} style={styles.actionButton} />}</View>
         </View>;
       })}
     </ScrollView>

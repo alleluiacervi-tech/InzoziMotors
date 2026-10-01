@@ -2,6 +2,7 @@ const express = require('express');
 const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { sendExpoPushDetailed } = require('../lib/push');
 
 const router = express.Router();
 
@@ -62,6 +63,39 @@ router.get('/tokens', requireAuth, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /devices/test — send a notification to the caller's own devices.
+//
+// Answers the question every push problem starts with: "is it the phone, the
+// credentials, or the server?" Each device reports whether Expo accepted the
+// message and, if not, why (DeviceNotRegistered, InvalidCredentials…). An
+// Android phone with no FCM config shows up here as an error, not as silence.
+// Limited to one per 20 seconds per account, and only ever to your own tokens.
+const lastTest = new Map();
+router.post('/test', requireAuth, async (req, res) => {
+  const now = Date.now();
+  if (now - (lastTest.get(req.user.id) || 0) < 20000) {
+    return res.status(429).json({ error: 'Please wait a few seconds before sending another test.' });
+  }
+  lastTest.set(req.user.id, now);
+  try {
+    const { rows } = await pool.query(
+      'SELECT token, platform FROM device_tokens WHERE user_id = $1', [req.user.id]
+    );
+    if (!rows.length) return res.json({ sent: 0, devices: [] });
+    const platformOf = new Map(rows.map((r) => [r.token, r.platform || 'unknown']));
+    const { results } = await sendExpoPushDetailed(rows.map((r) => r.token), {
+      title: 'Sawa Cars',
+      body: 'Notifications are working on this device.',
+      data: { type: 'test' },
+    });
+    const devices = results.map((r) => ({ platform: platformOf.get(r.token), ok: r.ok, error: r.error || null }));
+    res.json({ sent: devices.filter((d) => d.ok).length, devices });
+  } catch (err) {
+    log.error('test push error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

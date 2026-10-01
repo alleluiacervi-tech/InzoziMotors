@@ -123,10 +123,11 @@ export const MOCK_INSPECTION_RESULT = {
 };
 
 // Convert GET /inspections/report/:carId into the shape the report screen renders.
+// Passed or not, the report is shown: hiding a failed one would hide the defects.
 // Category scores are recomputed by the backend from the versioned canonical
 // checklist. The app never fills a missing category with a fabricated pass.
 export function buildReportFromApi(report) {
-  if (!report?.passed || !Array.isArray(report.category_scores) || !report.category_scores.length) return null;
+  if (!Array.isArray(report?.category_scores) || !report.category_scores.length) return null;
   const categories = report.category_scores.map((category) => ({
     id: category.id,
     name: category.name,
@@ -143,7 +144,11 @@ export function buildReportFromApi(report) {
       ? new Date(report.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : 'Recently',
     inspector: report.inspector_name || 'Sawa Inspection Team',
+    // `passed` is the server's verdict (score at the threshold AND no critical
+    // failure). A report is served either way — a car with defects is still
+    // listed, with the defects shown — so the screen reads this, not the score.
     certified: report.passed === true,
+    criticalFailures: (report.critical_failures || []).map((f) => ({ label: f.label, category: f.category })),
     categories,
   };
 }

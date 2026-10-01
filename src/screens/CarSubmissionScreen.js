@@ -40,11 +40,11 @@ const BODY_TYPES = ['Sedan', 'SUV', 'Hatchback', 'Pickup', 'Coupe', 'Van', 'Wago
 const YEARS = Array.from({ length: 16 }, (_, i) => String(2026 - i));
 // Two optional reference shots help the inspection team prepare.
 const PHOTO_SLOTS = [
-  { key: 'front', label: 'Front' },
-  { key: 'side', label: 'Side' },
+  { key: 'front', labelKey: 'submission.photoFront' },
+  { key: 'side', labelKey: 'submission.photoSide' },
 ];
 
-const STEP_LABELS = ['Vehicle', 'Price & Submit'];
+const STEP_LABEL_KEYS = ['submission.stepVehicle', 'submission.stepPrice'];
 
 // Kept for the multi-select groups (the photo angles), which have a fixed and
 // genuinely complete set. Single-select pickers of real-world things use
@@ -79,9 +79,12 @@ function Field({ label, children, hint }) {
 }
 
 function StepBar({ current, total }) {
+  const { t } = useApp();
   return (
     <View style={styles.stepBar}>
-      {STEP_LABELS.map((label, idx) => (
+      {STEP_LABEL_KEYS.map((labelKey, idx) => {
+        const label = t(labelKey);
+        return (
         <React.Fragment key={label}>
           <View style={styles.stepItem}>
             <View style={[styles.stepDot, idx <= current && styles.stepDotActive]}>
@@ -95,13 +98,14 @@ function StepBar({ current, total }) {
           </View>
           {idx < total - 1 && <View style={[styles.stepLine, idx < current && styles.stepLineActive]} />}
         </React.Fragment>
-      ))}
+        );
+      })}
     </View>
   );
 }
 
 export default function CarSubmissionScreen({ navigation, route }) {
-  const { addSubmission, cars, makes } = useApp();
+  const { addSubmission, cars, makes, t } = useApp();
   // Served list when it has arrived, bundled floor when it has not. Names only:
   // ChipSelect takes strings, and its "Other brand" field means an unlisted
   // brand has always been submittable either way.
@@ -146,8 +150,8 @@ export default function CarSubmissionScreen({ navigation, route }) {
   const handlePhotoPress = async (slot) => {
     if (photos[slot.key]) {
       const ok = await showConfirm({
-        title: `Remove the ${slot.label.toLowerCase()} photo?`,
-        confirmLabel: 'Remove',
+        title: t('submission.removePhotoConfirm', { slot: t(slot.labelKey).toLowerCase() }),
+        confirmLabel: t('submission.removeBtn'),
         destructive: true,
       });
       if (ok) {
@@ -161,8 +165,8 @@ export default function CarSubmissionScreen({ navigation, route }) {
     }
     const asset = await captureImage({
       preset: 'listing',
-      title: `${slot.label} photo`,
-      message: 'A quick reference shot — our photographer takes the official set at inspection.',
+      title: t('submission.photoTitle', { slot: t(slot.labelKey) }),
+      message: t('submission.photoMsg'),
     });
     if (asset) setPhotos((p) => ({ ...p, [slot.key]: asset }));
   };
@@ -201,20 +205,20 @@ export default function CarSubmissionScreen({ navigation, route }) {
         try {
           await submissionsApi.uploadReferencePhotos(submissionId, photos);
         } catch {
-          showToast('Your car was submitted, but the reference photos did not upload.', 'error');
+          showToast(t('submission.photoUploadFailed'), 'error');
         }
       }
       showConfirm({
-        title: 'Submission received',
-        message: `Your ${carTitle} is in. Pick an inspection slot now — it takes 30 seconds.`,
-        confirmLabel: 'Book Inspection Slot',
-        cancelLabel: 'Later',
+        title: t('submission.submissionReceived'),
+        message: t('submission.submissionReceivedMsg', { title: carTitle }),
+        confirmLabel: t('submission.bookInspectionSlot'),
+        cancelLabel: t('submission.later'),
       }).then((ok) => {
         if (ok) navigation.replace('InspectionScheduling', { carName: carTitle, submissionId });
         else navigation.navigate('SellerDashboard');
       });
     } catch (err) {
-      showToast(err.message || 'Your submission could not be saved. Please try again.', 'error');
+      showToast(err.message || t('submission.errorSave'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -222,7 +226,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Submit Your Car" onBack={() => { step > 0 ? setStep(step - 1) : navigation.goBack(); }} />
+      <BackHeader title={t('submission.formTitle')} onBack={() => { step > 0 ? setStep(step - 1) : navigation.goBack(); }} />
       <StepBar current={step} total={2} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -231,61 +235,61 @@ export default function CarSubmissionScreen({ navigation, route }) {
           {/* STEP 0: Vehicle Details */}
           {step === 0 && (
             <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Tell us about your car</Text>
+              <Text style={styles.stepTitle}>{t('submission.tellUsAboutCar')}</Text>
               <Text style={styles.stepSub}>
-                Just the basics — our 150-point inspection covers condition, history and everything else.
+                {t('submission.tellUsSub')}
               </Text>
 
-              <Field label="Make">
+              <Field label={t('submission.make')}>
                 <ChipSelect options={MAKES} selected={form.make} onSelect={(v) => set('make', v)}
-                  allowOther otherLabel="Other brand" placeholder="Type the make, e.g. Peugeot" />
+                  allowOther otherLabel={t('submission.otherBrand')} placeholder={t('submission.makePlaceholder')} />
               </Field>
-              <Field label="Model">
+              <Field label={t('submission.model')}>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. RAV4, Civic, Hilux..."
+                  placeholder={t('submission.modelPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={form.model}
                   onChangeText={(v) => set('model', v)}
                 />
               </Field>
-              <Field label="Year">
+              <Field label={t('submission.year')}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <ChipGroup options={YEARS} selected={form.year} onSelect={(v) => set('year', v)} />
                 </ScrollView>
               </Field>
-              <Field label="Mileage (km)">
+              <Field label={t('submission.mileage')}>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. 45000"
+                  placeholder={t('submission.mileagePlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   keyboardType="numeric"
                   value={form.mileage}
                   onChangeText={(v) => set('mileage', v)}
                 />
               </Field>
-              <Field label="Fuel Type">
+              <Field label={t('submission.fuelType')}>
                 <ChipSelect options={FUEL_TYPES} selected={form.fuelType} onSelect={(v) => set('fuelType', v)}
-                  allowOther placeholder="e.g. Plug-in hybrid, LPG" />
+                  allowOther placeholder={t('submission.fuelPlaceholder')} />
               </Field>
-              <Field label="Transmission">
+              <Field label={t('submission.transmission')}>
                 <ChipGroup options={TRANSMISSIONS} selected={form.transmission} onSelect={(v) => set('transmission', v)} />
               </Field>
-              <Field label="Body Type">
+              <Field label={t('submission.bodyType')}>
                 <ChipSelect options={BODY_TYPES} selected={form.bodyType} onSelect={(v) => set('bodyType', v)}
-                  allowOther placeholder="e.g. Convertible, Truck" />
+                  allowOther placeholder={t('submission.bodyPlaceholder')} />
               </Field>
-              <Field label="Exterior Color">
+              <Field label={t('submission.color')}>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Pearl White, Midnight Black..."
+                  placeholder={t('submission.colorPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={form.color}
                   onChangeText={(v) => set('color', v)}
                 />
               </Field>
               <Button
-                title={canAdvanceStep0 ? 'Continue — Price & Submit' : 'Fill in the required fields'}
+                title={canAdvanceStep0 ? t('submission.continuePrice') : t('submission.fillRequired')}
                 onPress={() => setStep(1)}
                 disabled={!canAdvanceStep0}
                 style={{ marginTop: 8 }}
@@ -296,13 +300,13 @@ export default function CarSubmissionScreen({ navigation, route }) {
           {/* STEP 1: Price & Submit */}
           {step === 1 && (
             <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Almost there</Text>
-              <Text style={styles.stepSub}>Your asking price is a reference — our team will suggest a certified market price after inspection.</Text>
+              <Text style={styles.stepTitle}>{t('submission.almostThere')}</Text>
+              <Text style={styles.stepSub}>{t('submission.almostThereSub')}</Text>
 
-              <Field label="Your Asking Price (RWF)" hint="Enter the full amount in Rwandan francs. We'll provide a certified market price after inspection.">
+              <Field label={t('submission.askingPrice')} hint={t('submission.askingPriceHint')}>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. 24000"
+                  placeholder={t('submission.askingPricePlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   keyboardType="numeric"
                   value={form.askingPrice}
@@ -315,9 +319,9 @@ export default function CarSubmissionScreen({ navigation, route }) {
                 <View style={styles.aiSuggestCard}>
                   <View style={styles.aiSuggestHeader}>
                     <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
-                    <Text style={styles.aiSuggestTitle}>AI Price Suggestion</Text>
+                    <Text style={styles.aiSuggestTitle}>{t('submission.aiSuggestTitle')}</Text>
                     <View style={styles.aiSuggestBeta}>
-                      <Text style={styles.aiSuggestBetaText}>Beta</Text>
+                      <Text style={styles.aiSuggestBetaText}>{t('submission.aiSuggestBeta')}</Text>
                     </View>
                   </View>
                   <Text style={styles.aiSuggestRange}>
@@ -325,14 +329,14 @@ export default function CarSubmissionScreen({ navigation, route }) {
                   </Text>
                   <Text style={styles.aiSuggestSub}>
                     {comparablesCount
-                      ? `Based on ${comparablesCount} similar ${form.make} cars on Sawa Cars`
-                      : 'Based on current Kigali market data'}
+                      ? t('submission.aiSuggestBasedComparables', { count: comparablesCount, make: form.make })
+                      : t('submission.aiSuggestBasedMarket')}
                   </Text>
                   {form.askingPrice > 0 && (
                     <View style={[styles.aiSuggestCheck, { backgroundColor: priceInRange ? colors.greenTint : '#FEF3C7' }]}>
                       <Ionicons name={priceInRange ? 'checkmark-circle' : 'warning-outline'} size={13} color={priceInRange ? colors.green : colors.amber} />
                       <Text style={[styles.aiSuggestCheckText, { color: priceInRange ? colors.green : colors.amber }]}>
-                        {priceInRange ? 'Your price is within the suggested range — great!' : 'Your price is outside the suggested range'}
+                        {priceInRange ? t('submission.priceInRange') : t('submission.priceOutOfRange')}
                       </Text>
                     </View>
                   )}
@@ -340,7 +344,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
               )}
 
               {/* Optional reference photos — 2 shots max */}
-              <Field label="Reference Photos (optional)" hint="Helps our team prepare. The approved listing gallery is added after inspection.">
+              <Field label={t('submission.referencePhotos')} hint={t('submission.referencePhotosHint')}>
                 <View style={styles.photoGrid}>
                   {PHOTO_SLOTS.map((slot) => {
                     const asset = photos[slot.key];
@@ -360,7 +364,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
                         ) : (
                           <>
                             <Ionicons name="camera-outline" size={26} color={colors.textMuted} />
-                            <Text style={styles.photoSlotLabel}>{slot.label}</Text>
+                            <Text style={styles.photoSlotLabel}>{t(slot.labelKey)}</Text>
                           </>
                         )}
                       </Pressable>
@@ -369,10 +373,10 @@ export default function CarSubmissionScreen({ navigation, route }) {
                 </View>
               </Field>
 
-              <Field label="Anything we should know? (optional)">
+              <Field label={t('submission.sellerNotes')}>
                 <TextInput
                   style={[styles.input, styles.inputMulti]}
-                  placeholder="Known issues, modifications, urgency, availability..."
+                  placeholder={t('submission.sellerNotesPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   multiline
                   numberOfLines={3}
@@ -384,22 +388,22 @@ export default function CarSubmissionScreen({ navigation, route }) {
 
               {/* Summary card */}
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryTitle}>Submission Summary</Text>
+                <Text style={styles.summaryTitle}>{t('submission.summaryTitle')}</Text>
                 <View style={styles.summaryRows}>
-                  <SummaryRow label="Vehicle" value={`${form.year} ${form.make} ${form.model}`} />
-                  <SummaryRow label="Mileage" value={`${Number(form.mileage || 0).toLocaleString()} km`} />
-                  <SummaryRow label="Fuel / Trans" value={`${form.fuelType} · ${form.transmission}`} />
-                  {form.askingPrice ? <SummaryRow label="Asking price" value={`RWF ${Number(form.askingPrice).toLocaleString()}`} /> : null}
+                  <SummaryRow label={t('submission.summaryVehicle')} value={`${form.year} ${form.make} ${form.model}`} />
+                  <SummaryRow label={t('submission.summaryMileage')} value={`${Number(form.mileage || 0).toLocaleString()} km`} />
+                  <SummaryRow label={t('submission.summaryFuelTrans')} value={`${form.fuelType} · ${form.transmission}`} />
+                  {form.askingPrice ? <SummaryRow label={t('submission.summaryAskingPrice')} value={`RWF ${Number(form.askingPrice).toLocaleString()}`} /> : null}
                 </View>
               </View>
 
               {/* What happens next */}
               <View style={styles.timelineCard}>
-                <Text style={styles.timelineTitle}>What happens next</Text>
+                <Text style={styles.timelineTitle}>{t('submission.whatHappensNext')}</Text>
                 {[
-                  { icon: 'calendar-outline', text: 'Book your inspection slot right after submitting' },
-                  { icon: 'shield-checkmark-outline', text: 'Bring the car and your ID — we inspect, verify and photograph everything at the center' },
-                  { icon: 'storefront-outline', text: 'Your car goes live on the marketplace' },
+                  { icon: 'calendar-outline', text: t('submission.timeline1') },
+                  { icon: 'shield-checkmark-outline', text: t('submission.timeline2') },
+                  { icon: 'storefront-outline', text: t('submission.timeline3') },
                 ].map((item, i) => (
                   <View key={i} style={styles.timelineRow}>
                     <View style={styles.timelineDot}>
@@ -411,7 +415,7 @@ export default function CarSubmissionScreen({ navigation, route }) {
               </View>
 
               <Button
-                title={submitting ? 'Submitting…' : 'Submit & Book Inspection'}
+                title={submitting ? t('submission.submitting') : t('submission.submitAndBook')}
                 icon="send-outline"
                 onPress={handleSubmit}
                 disabled={submitting}

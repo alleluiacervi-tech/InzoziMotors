@@ -15,27 +15,28 @@ const UPLOAD_STEPS = [
   {
     key: 'front',
     icon: 'card-outline',
-    label: 'National ID — Front',
-    hint: 'Clear photo showing your name, ID number, and photo',
+    labelKey: 'idVerification.frontLabel',
+    hintKey: 'idVerification.frontHint',
     preset: 'document',
   },
   {
     key: 'back',
     icon: 'card-outline',
-    label: 'National ID — Back',
-    hint: 'Clear photo of the back side of your ID card',
+    labelKey: 'idVerification.backLabel',
+    hintKey: 'idVerification.backHint',
     preset: 'document',
   },
   {
     key: 'selfie',
     icon: 'person-circle-outline',
-    label: 'Selfie holding your ID',
-    hint: 'Hold your ID next to your face — both must be clearly visible',
+    labelKey: 'idVerification.selfieLabel',
+    hintKey: 'idVerification.selfieHint',
     preset: 'selfie',
   },
 ];
 
 function StatusScreen({ status }) {
+  const { t } = useApp();
   const isApproved = status === 'approved';
   return (
     <View style={styles.statusCenter}>
@@ -46,17 +47,17 @@ function StatusScreen({ status }) {
           color={isApproved ? colors.green : colors.amber}
         />
       </View>
-      <Text style={styles.statusTitle}>{isApproved ? 'Identity Verified' : 'Under Review'}</Text>
+      <Text style={styles.statusTitle}>{isApproved ? t('idVerification.verifiedTitle') : t('idVerification.pendingTitle')}</Text>
       <Text style={styles.statusSub}>
         {isApproved
-          ? 'Your identity has been confirmed by our team. You can now submit cars for listing on Sawa Cars.'
-          : 'Our team is reviewing your documents. This usually takes less than 24 hours. You\'ll be notified once approved.'}
+          ? t('idVerification.verifiedSub')
+          : t('idVerification.pendingSub')}
       </Text>
       <View style={styles.docList}>
         {UPLOAD_STEPS.map((s) => (
           <View key={s.key} style={styles.docRow}>
             <Ionicons name="checkmark-circle" size={18} color={colors.green} />
-            <Text style={styles.docText}>{s.label}</Text>
+            <Text style={styles.docText}>{t(s.labelKey)}</Text>
           </View>
         ))}
       </View>
@@ -65,7 +66,7 @@ function StatusScreen({ status }) {
 }
 
 export default function IDVerificationScreen({ navigation, route }) {
-  const { idVerificationStatus, submitIDVerification } = useApp();
+  const { idVerificationStatus, submitIDVerification, t } = useApp();
   // Each slot holds the picked asset ({ uri, mimeType, … }) or null
   const [docs, setDocs] = useState({ front: null, back: null, selfie: null });
   const [submitting, setSubmitting] = useState(false);
@@ -78,17 +79,17 @@ export default function IDVerificationScreen({ navigation, route }) {
   const handleCapture = async (step) => {
     const asset = await captureImage({
       preset: step.preset,
-      title: step.label,
-      message: step.hint,
+      title: t(step.labelKey),
+      message: t(step.hintKey),
     });
     if (asset) setDocs((prev) => ({ ...prev, [step.key]: asset }));
   };
 
   const handleRemove = async (step) => {
     const ok = await showConfirm({
-      title: `Remove ${step.label}?`,
-      message: 'You will need to take this photo again before submitting.',
-      confirmLabel: 'Remove',
+      title: t('idVerification.removeConfirm', { label: t(step.labelKey) }),
+      message: t('idVerification.removeMsg'),
+      confirmLabel: t('idVerification.removeBtn'),
       destructive: true,
     });
     if (ok) setDocs((prev) => ({ ...prev, [step.key]: null }));
@@ -101,14 +102,14 @@ export default function IDVerificationScreen({ navigation, route }) {
     setSubmitting(true);
     try {
       await submitIDVerification(docs);
-      showToast('Documents submitted — we will verify your identity within 24 hours.', 'success');
+      showToast(t('idVerification.toastSubmitted'), 'success');
       // Submission only makes the seller 'pending', so returning them to the
       // gated screen would bounce them straight back. Send them to the
       // dashboard where the pipeline shows what happens next.
       if (returnTo) navigation.replace('SellerDashboard');
       else navigation.goBack();
     } catch (err) {
-      showToast(err.message || 'Could not submit your documents. Please try again.', 'error');
+      showToast(err.message || t('idVerification.toastFailed'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -117,12 +118,12 @@ export default function IDVerificationScreen({ navigation, route }) {
   if (idVerificationStatus === 'pending' || idVerificationStatus === 'approved') {
     return (
       <Screen background={colors.bg}>
-        <BackHeader title="ID Verification" onBack={() => navigation.goBack()} />
+        <BackHeader title={t('idVerification.title')} onBack={() => navigation.goBack()} />
         <StatusScreen status={idVerificationStatus} />
         {idVerificationStatus === 'approved' && (
           <StickyFooter style={styles.approvedFooter}>
             <Button
-              title="Submit a Car for Sale"
+              title={t('idVerification.submitForSale')}
               icon="car-outline"
               onPress={() => navigation.replace(returnTo || 'CarSubmission', returnParams)}
             />
@@ -134,7 +135,7 @@ export default function IDVerificationScreen({ navigation, route }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="ID Verification" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('idVerification.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* Hero */}
@@ -142,15 +143,15 @@ export default function IDVerificationScreen({ navigation, route }) {
           <View style={styles.heroIcon}>
             <Ionicons name="shield-checkmark" size={32} color={colors.blueLight} />
           </View>
-          <Text style={styles.heroTitle}>Verify your identity</Text>
+          <Text style={styles.heroTitle}>{t('idVerification.heroTitle')}</Text>
           <Text style={styles.heroSub}>
-            We verify every seller to protect all parties. This is a one-time process and takes less than 5 minutes.
+            {t('idVerification.heroSub')}
           </Text>
         </LinearGradient>
 
         {/* Upload cards */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Required Documents</Text>
+          <Text style={styles.sectionLabel}>{t('idVerification.requiredDocs')}</Text>
           <View style={styles.uploadList}>
             {UPLOAD_STEPS.map((step) => {
               const asset = docs[step.key];
@@ -168,19 +169,19 @@ export default function IDVerificationScreen({ navigation, route }) {
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.uploadLabel, asset && { color: colors.primary }]}>{step.label}</Text>
+                    <Text style={[styles.uploadLabel, asset && { color: colors.primary }]}>{t(step.labelKey)}</Text>
                     <Text style={styles.uploadHint}>
-                      {asset ? 'Photo ready — tap to retake' : step.hint}
+                      {asset ? t('idVerification.photoReady') : t(step.hintKey)}
                     </Text>
                   </View>
                   {asset ? (
-                    <Pressable onPress={() => handleRemove(step)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear">
+                    <Pressable onPress={() => handleRemove(step)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('idVerification.removeBtn')}>
                       <Ionicons name="close-circle" size={22} color={colors.textMuted} />
                     </Pressable>
                   ) : (
                     <View style={styles.uploadBtn}>
                       <Ionicons name="camera-outline" size={14} color={colors.primary} />
-                      <Text style={styles.uploadBtnText}>Add</Text>
+                      <Text style={styles.uploadBtnText}>{t('idVerification.addBtn')}</Text>
                     </View>
                   )}
                 </Pressable>
@@ -192,14 +193,12 @@ export default function IDVerificationScreen({ navigation, route }) {
         {/* Privacy note */}
         <View style={styles.privacyNote}>
           <Ionicons name="lock-closed-outline" size={16} color={colors.textMuted} />
-          <Text style={styles.privacyText}>
-            Your documents are end-to-end encrypted and reviewed only by our verification team. They are never shared with buyers or third parties.
-          </Text>
+          <Text style={styles.privacyText}>{t('idVerification.privacyNote')}</Text>
         </View>
 
         <View style={styles.submitWrap}>
           <Button
-            title="Submit for Verification"
+            title={t('idVerification.submitVerification')}
             onPress={handleSubmit}
             loading={submitting}
             disabled={!allUploaded}
@@ -207,7 +206,7 @@ export default function IDVerificationScreen({ navigation, route }) {
           />
           {!allUploaded ? (
             <Text style={styles.uploadReminder}>
-              Add all 3 photos to continue
+              {t('idVerification.add3Photos')}
             </Text>
           ) : null}
         </View>

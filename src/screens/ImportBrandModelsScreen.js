@@ -117,7 +117,7 @@ function ModelRow({ item, logoUrl, onPress }) {
 }
 
 export default function ImportBrandModelsScreen({ route, navigation }) {
-  const { brandLogo } = useApp();
+  const { brandLogo, t } = useApp();
   const make = route?.params?.make;
   const models = useImportCatalog(make);
 
@@ -154,7 +154,7 @@ export default function ImportBrandModelsScreen({ route, navigation }) {
 
   return (
     <Screen>
-      <BackHeader title={make || 'Brand'} onBack={() => navigation.goBack()} />
+      <BackHeader title={make || t('importCatalog.brandFallback')} onBack={() => navigation.goBack()} />
 
       <SectionList
         sections={sections}
@@ -166,9 +166,9 @@ export default function ImportBrandModelsScreen({ route, navigation }) {
             <BrandMark name={make} logoUrl={brandLogo(make)} size={52} />
             <View style={styles.headerText}>
               <Text style={styles.headerCount}>
-                {models.length} {models.length === 1 ? 'model' : 'models'}
+                {models.length === 1 ? t('importCatalog.modelCountOne') : t('importCatalog.modelsCount', { count: models.length })}
               </Text>
-              {origin ? <Text style={styles.headerOrigin}>Sourced from {origin}</Text> : null}
+              {origin ? <Text style={styles.headerOrigin}>{t('importCatalog.sourcedFrom', { origin: t(`importCatalog.origin_${String(origin).replace(/ /g, '_')}`) })}</Text> : null}
             </View>
           </View>
         }
@@ -197,9 +197,7 @@ export default function ImportBrandModelsScreen({ route, navigation }) {
         }}
         ListFooterComponent={
           <Text style={styles.footerNote}>
-            All vehicles are brand new and unregistered. Price depends on the
-            trim, the exporter and the shipping week, so we quote each order
-            individually — open a model to request yours.
+            {t('importCatalog.modelsFooter')}
           </Text>
         }
       />

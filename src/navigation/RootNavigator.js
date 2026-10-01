@@ -45,6 +45,8 @@ import TrustScoreScreen from '../screens/TrustScoreScreen';
 import RentalDetailScreen from '../screens/RentalDetailScreen';
 import RentalInquiryScreen from '../screens/RentalInquiryScreen';
 import MyRentalsScreen from '../screens/MyRentalsScreen';
+import RentalInboxScreen from '../screens/RentalInboxScreen';
+import ServiceFeesScreen from '../screens/ServiceFeesScreen';
 // Seller tools
 import SellScreen from '../screens/SellScreen';
 import CarValuationScreen from '../screens/CarValuationScreen';
@@ -120,6 +122,8 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
         options={{ animation: 'slide_from_bottom' }}
       />
       <Stack.Screen name="MyRentals" component={MyRentalsScreen} />
+      <Stack.Screen name="RentalInbox" component={RentalInboxScreen} />
+      <Stack.Screen name="ServiceFees" component={ServiceFeesScreen} />
       <Stack.Screen name="Sell" component={SellScreen} />
       <Stack.Screen name="CarValuation" component={CarValuationScreen} />
       <Stack.Screen name="SawaPromise" component={SawaPromiseScreen} />

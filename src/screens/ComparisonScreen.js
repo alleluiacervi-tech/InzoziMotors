@@ -12,18 +12,18 @@ import Photo from '../components/Photo';
 import { PHOTO } from '../utils/photo';
 
 const SPEC_ROWS = [
-  { key: 'price', label: 'Price', getValue: (car) => car.type === 'auction' ? car.currentBid : car.price, format: (v) => formatPrice(v), winner: 'lowest' },
-  { key: 'year', label: 'Year', getValue: (car) => car.year, format: (v) => String(v), winner: 'highest' },
-  { key: 'mileage', label: 'Mileage', getValue: (car) => car.mileage, format: (v) => formatMiles(v), winner: 'lowest' },
-  { key: 'fuel', label: 'Fuel Type', getValue: (car) => car.fuel, format: (v) => v, winner: 'none' },
-  { key: 'transmission', label: 'Transmission', getValue: (car) => car.transmission, format: (v) => v, winner: 'none' },
-  { key: 'category', label: 'Category', getValue: (car) => car.category, format: (v) => v, winner: 'none' },
+  { key: 'price', labelKey: 'comparison.rowPrice', getValue: (car) => car.type === 'auction' ? car.currentBid : car.price, format: (v, t) => formatPrice(v), winner: 'lowest' },
+  { key: 'year', labelKey: 'comparison.rowYear', getValue: (car) => car.year, format: (v, t) => String(v), winner: 'highest' },
+  { key: 'mileage', labelKey: 'comparison.rowMileage', getValue: (car) => car.mileage, format: (v, t) => formatMiles(v), winner: 'lowest' },
+  { key: 'fuel', labelKey: 'comparison.rowFuel', getValue: (car) => car.fuel, format: (v, t) => v, winner: 'none' },
+  { key: 'transmission', labelKey: 'comparison.rowTransmission', getValue: (car) => car.transmission, format: (v, t) => v, winner: 'none' },
+  { key: 'category', labelKey: 'comparison.rowCategory', getValue: (car) => car.category, format: (v, t) => v, winner: 'none' },
   // Was "Seller Rating ⭐ {car.rating}", a trust score divided by 20. Buyers
   // compare cars on evidence, and the evidence Sawa actually holds is the
   // inspection score and whether the seller's identity was checked.
-  { key: 'inspectionScore', label: 'Inspection score', getValue: (car) => car.inspectionScore ?? 0, format: (v) => v ? `${v}/150` : '— Not inspected', winner: 'highest' },
-  { key: 'inspected', label: 'Inspection', getValue: (car) => car.inspected ? 1 : 0, format: (v) => v ? '✓ 150-pt Certified' : '— Not inspected', winner: 'highest' },
-  { key: 'sellerIdVerified', label: 'Seller identity', getValue: (car) => car.sellerIdVerified ? 1 : 0, format: (v) => v ? '✓ ID verified' : '— Not verified', winner: 'highest' },
+  { key: 'inspectionScore', labelKey: 'comparison.rowScore', getValue: (car) => car.inspectionScore ?? 0, format: (v, t) => v ? `${v}/150` : t('comparison.notInspected'), winner: 'highest' },
+  { key: 'inspected', labelKey: 'comparison.rowInspection', getValue: (car) => car.inspected ? 1 : 0, format: (v, t) => v ? t('comparison.inspected150') : t('comparison.notInspected'), winner: 'highest' },
+  { key: 'sellerIdVerified', labelKey: 'comparison.rowSeller', getValue: (car) => car.sellerIdVerified ? 1 : 0, format: (v, t) => v ? t('comparison.idVerified') : t('comparison.notVerified'), winner: 'highest' },
 ];
 
 function getWinnerIndex(row, cars) {
@@ -37,9 +37,10 @@ function getWinnerIndex(row, cars) {
 }
 
 function CarColumn({ car, onRemove, style }) {
+  const { t } = useApp();
   return (
     <View style={[styles.carCol, style]}>
-      <Pressable style={styles.removeChip} onPress={onRemove} accessibilityRole="button" accessibilityLabel="Close">
+      <Pressable style={styles.removeChip} onPress={onRemove} accessibilityRole="button" accessibilityLabel={t('comparison.close')}>
         <Ionicons name="close" size={14} color={colors.textMuted} />
       </Pressable>
       <Photo uri={car.image} width={PHOTO.CARD} style={styles.carThumb} resizeMode="contain" />
@@ -47,7 +48,7 @@ function CarColumn({ car, onRemove, style }) {
       {car.inspected && (
         <View style={styles.certPill}>
           <Ionicons name="shield-checkmark" size={10} color={colors.green} />
-          <Text style={styles.certPillText}>Certified</Text>
+          <Text style={styles.certPillText}>{t('comparison.pillInspected')}</Text>
         </View>
       )}
     </View>
@@ -55,21 +56,23 @@ function CarColumn({ car, onRemove, style }) {
 }
 
 function EmptySlot({ onAdd, style }) {
+  const { t } = useApp();
   return (
     <Pressable style={[styles.carCol, styles.emptySlot, style]} onPress={onAdd}>
       <View style={styles.addCircle}>
         <Ionicons name="add" size={24} color={colors.primary} />
       </View>
-      <Text style={styles.addSlotText}>Add car to compare</Text>
+      <Text style={styles.addSlotText}>{t('comparison.addSlot')}</Text>
     </Pressable>
   );
 }
 
 function SpecRow({ row, cars }) {
+  const { t } = useApp();
   const winnerIdx = getWinnerIndex(row, cars);
   return (
     <View style={styles.specRow}>
-      <Text style={styles.specLabel}>{row.label}</Text>
+      <Text style={styles.specLabel}>{t(row.labelKey)}</Text>
       <View style={styles.specCells}>
         {cars.map((car, i) => {
           const val = row.getValue(car);
@@ -77,7 +80,7 @@ function SpecRow({ row, cars }) {
           return (
             <View key={car.id} style={[styles.specCell, isWinner && styles.specCellWinner]}>
               <Text style={[styles.specValue, isWinner && styles.specValueWinner]} numberOfLines={2}>
-                {row.format(val)}
+                {row.format(val, t)}
               </Text>
               {isWinner && <View style={styles.winnerDot} />}
             </View>
@@ -89,19 +92,15 @@ function SpecRow({ row, cars }) {
   );
 }
 
-const COMPARE_FEATURES = [
-  'Price vs market average',
-  'Mileage & year comparison',
-  'Inspection status side-by-side',
-];
+const COMPARE_FEATURE_KEYS = ['comparison.feat1', 'comparison.feat2', 'comparison.feat3'];
 
 export default function ComparisonScreen({ navigation }) {
-  const { comparisonCars, removeFromComparison, cars } = useApp();
+  const { comparisonCars, removeFromComparison, cars, t } = useApp();
   const canShowTable = comparisonCars.length >= 2;
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Compare Cars" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('comparison.header')} onBack={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Car columns header */}
@@ -126,27 +125,27 @@ export default function ComparisonScreen({ navigation }) {
                 <Ionicons name="git-compare-outline" size={36} color={colors.textSecondary} />
               </View>
             </View>
-            <Text style={styles.emptyTitle}>Add 2 cars to compare</Text>
+            <Text style={styles.emptyTitle}>{t('comparison.add2')}</Text>
             <Text style={styles.emptySub}>
-              Open any listing and tap "Compare" to add it here. Up to 3 cars side by side.
+              {t('comparison.add2Sub')}
             </Text>
             <View style={styles.emptyFeatures}>
-              {COMPARE_FEATURES.map((f) => (
-                <View key={f} style={styles.emptyFeature}>
+              {COMPARE_FEATURE_KEYS.map((fk) => (
+                <View key={fk} style={styles.emptyFeature}>
                   <Ionicons name="checkmark-circle" size={15} color={colors.textSecondary} />
-                  <Text style={styles.emptyFeatureText}>{f}</Text>
+                  <Text style={styles.emptyFeatureText}>{t(fk)}</Text>
                 </View>
               ))}
             </View>
             <Pressable style={styles.browseBtn} onPress={() => navigation.navigate('SearchResults')}>
-              <Text style={styles.browseBtnText}>Browse listings</Text>
+              <Text style={styles.browseBtnText}>{t('comparison.browse')}</Text>
             </Pressable>
           </View>
         ) : (
           <>
             <View style={styles.legendRow}>
               <View style={styles.legendDot} />
-              <Text style={styles.legendText}>Green highlight = best value in this category</Text>
+              <Text style={styles.legendText}>{t('comparison.legend')}</Text>
             </View>
             <View style={styles.table}>
               {SPEC_ROWS.map((row, i) => (
@@ -157,7 +156,7 @@ export default function ComparisonScreen({ navigation }) {
             </View>
             <Pressable style={styles.clearBtn} onPress={() => comparisonCars.forEach((c) => removeFromComparison(c.id))}>
               <Ionicons name="trash-outline" size={16} color={colors.alertRed} />
-              <Text style={styles.clearBtnText}>Clear comparison</Text>
+              <Text style={styles.clearBtnText}>{t('comparison.clearComparison')}</Text>
             </Pressable>
           </>
         )}

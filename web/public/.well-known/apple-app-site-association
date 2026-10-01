@@ -4,8 +4,19 @@
     "details": [
       {
         "appID": "5Z2LA9U639.com.sawacars.app",
-        "appIDs": ["5Z2LA9U639.com.sawacars.app"],
-        "paths": ["/cars/*", "/rentals/*", "/download"],
+        "appIDs": [
+          "5Z2LA9U639.com.sawacars.app"
+        ],
+        "paths": [
+          "/cars/*",
+          "/rentals/*",
+          "/download",
+          "/sellers/*",
+          "/tools/import-duty",
+          "/tools/finance",
+          "/tools/valuation",
+          "/tools/pricing"
+        ],
         "components": [
           {
             "/": "/cars/*",
@@ -18,6 +29,26 @@
           {
             "/": "/download",
             "comment": "App landing page and deep-link target."
+          },
+          {
+            "/": "/sellers/*",
+            "comment": "A seller or showroom page — opens the seller profile in the app."
+          },
+          {
+            "/": "/tools/import-duty",
+            "comment": "Import duty calculator."
+          },
+          {
+            "/": "/tools/finance",
+            "comment": "Financing calculator."
+          },
+          {
+            "/": "/tools/valuation",
+            "comment": "What's my car worth."
+          },
+          {
+            "/": "/tools/pricing",
+            "comment": "Service fees."
           }
         ]
       }

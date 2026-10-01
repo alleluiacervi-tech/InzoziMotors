@@ -42,8 +42,13 @@ forbidText('web/public/.well-known/apple-app-site-association', /REPLACE_WITH_AP
   'apple-app-site-association still contains the Apple Team ID placeholder.');
 requireText('src/screens/SellerContactScreen.js', /Direct-deal marketplace notice/,
   'Mobile seller contact is missing the direct-deal acknowledgement.');
-requireText('src/screens/RentalInquiryScreen.js', /not a confirmed booking/,
+// The notice's wording lives in the translations (one entry per language); the
+// screen must render that entry, and the English text must still say what the
+// law of the product requires.
+requireText('src/screens/RentalInquiryScreen.js', /t\('rentalInquiry\.notice'\)/,
   'Mobile rental inquiries are missing the independent-provider notice.');
+requireText('src/i18n/index.js', /This is an inquiry, not a confirmed booking\. The independent rental provider/,
+  'The rental inquiry notice no longer says it is not a confirmed booking.');
 forbidPath('src/screens/CheckoutScreen.js', 'The retired mobile purchase checkout still exists.');
 forbidPath('src/screens/RentalBookingScreen.js', 'The retired mobile rental booking/checkout still exists.');
 forbidPath('src/api/handovers.js', 'The retired mobile handover API still exists.');

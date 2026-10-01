@@ -1,3 +1,4 @@
+import { trustGrade } from '../data/trustGrade';
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Image,
@@ -17,11 +18,13 @@ import { formatPrice } from '../data/cars';
 import { showToast, showActionSheet } from '../components/Feedback';
 
 // Same vocabulary as the chat's report sheet — one reporting language app-wide.
+// `value` is what the server stores (English, shared with the chat report
+// sheet); `labelKey` is what the person reads.
 const REPORT_REASONS = [
-  { label: 'Scam or fraud', icon: 'warning-outline' },
-  { label: 'Harassment or abuse', icon: 'sad-outline' },
-  { label: 'Spam', icon: 'megaphone-outline' },
-  { label: 'Something else', icon: 'chatbox-ellipses-outline' },
+  { value: 'Scam or fraud', labelKey: 'sellerProfile.reasonScam', icon: 'warning-outline' },
+  { value: 'Harassment or abuse', labelKey: 'sellerProfile.reasonHarassment', icon: 'sad-outline' },
+  { value: 'Spam', labelKey: 'sellerProfile.reasonSpam', icon: 'megaphone-outline' },
+  { value: 'Something else', labelKey: 'sellerProfile.reasonOther', icon: 'chatbox-ellipses-outline' },
 ];
 import { useApp } from '../context/AppContext';
 import Photo from '../components/Photo';
@@ -37,49 +40,49 @@ function formatReviewDate(iso) {
 const SCORE_COMPONENTS = [
   {
     key: 'idVerified',
-    label: 'ID Verified',
+    labelKey: 'trustScore.compId',
     icon: 'id-card-outline',
     max: 30,
     color: colors.primary,
     bg: colors.greenTint,
     calcPts: (p) => p.idVerified ? 30 : 0,
-    desc: (p) => p.idVerified ? 'National ID confirmed by Sawa Cars' : 'ID not yet verified',
+    desc: (p, t) => p.idVerified ? t('sellerProfile.descIdYes') : t('sellerProfile.descIdNo'),
   },
   {
     key: 'completedSales',
-    label: 'Completed Sales',
+    labelKey: 'trustScore.compSales',
     icon: 'bag-check-outline',
     max: 30,
     color: colors.primary,
     bg: colors.greenTint,
     calcPts: (p) => Math.min(p.completedSales, 30),
-    desc: (p) => `${p.completedSales} successful sale${p.completedSales !== 1 ? 's' : ''} (1 pt each, max 30)`,
+    desc: (p, t) => t('sellerProfile.descSales', { count: p.completedSales }),
   },
   {
     key: 'responseRate',
-    label: 'Response Rate',
+    labelKey: 'trustScore.compResponse',
     icon: 'chatbubble-outline',
     max: 20,
     color: colors.amberText,
     bg: colors.amberTint,
     calcPts: (p) => Math.round((p.responseRate / 100) * 20),
-    desc: (p) => `${p.responseRate}% messages replied within 24h`,
+    desc: (p, t) => t('sellerProfile.descResponse', { rate: p.responseRate }),
   },
   {
     key: 'reviews',
-    label: 'Buyer Reviews',
+    labelKey: 'trustScore.compReviews',
     icon: 'star-outline',
     max: 20,
     color: colors.amberText,
     bg: colors.amberTint,
     calcPts: (p) => Math.round((p.avgRating / 5) * 20),
-    desc: (p) => `${p.avgRating}★ avg from ${p.totalReviews} review${p.totalReviews !== 1 ? 's' : ''}`,
+    desc: (p, t) => t('sellerProfile.descReviews', { avg: p.avgRating, count: p.totalReviews }),
   },
 ];
 
 function TrustScoreCircle({ score }) {
-  const grade = score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 50 ? 'C' : 'D';
-  const color = score >= 80 ? colors.green : score >= 65 ? colors.primary : score >= 50 ? colors.amber : colors.statusRejected;
+  const { t } = useApp();
+  const { letter: grade, color } = trustGrade(score);
   return (
     <View style={styles.trustCircleWrap}>
       <View style={[styles.trustCircle, { borderColor: color }]}>
@@ -87,13 +90,14 @@ function TrustScoreCircle({ score }) {
         <Text style={styles.trustMax}>/100</Text>
       </View>
       <View style={[styles.gradeChip, { backgroundColor: color + '18', borderColor: color + '44' }]}>
-        <Text style={[styles.gradeText, { color }]}>Grade {grade}</Text>
+        <Text style={[styles.gradeText, { color }]}>{t('trustScore.gradeLetter', { letter: grade })}</Text>
       </View>
     </View>
   );
 }
 
 function ScoreBar({ component, profile }) {
+  const { t } = useApp();
   const pts = component.calcPts(profile);
   const pct = pts / component.max;
   return (
@@ -103,13 +107,13 @@ function ScoreBar({ component, profile }) {
       </View>
       <View style={{ flex: 1 }}>
         <View style={styles.scoreBarTop}>
-          <Text style={styles.scoreBarLabel}>{component.label}</Text>
+          <Text style={styles.scoreBarLabel}>{t(component.labelKey)}</Text>
           <Text style={[styles.scoreBarPts, { color: component.color }]}>{pts}<Text style={styles.scoreBarMax}>/{component.max}</Text></Text>
         </View>
         <View style={styles.barTrack}>
           <View style={[styles.barFill, { width: `${pct * 100}%`, backgroundColor: component.color }]} />
         </View>
-        <Text style={styles.scoreBarDesc}>{component.desc(profile)}</Text>
+        <Text style={styles.scoreBarDesc}>{component.desc(profile, t)}</Text>
       </View>
     </View>
   );
@@ -134,7 +138,7 @@ export default function SellerProfileScreen({ navigation, route }) {
   const sellerName = route.params?.sellerName || '';
   // Real seller id (UUID) when navigated from an API-backed listing; absent in demo mode
   const sellerId = route.params?.sellerId || route.params?.userId || null;
-  const { demoMode } = useApp();
+  const { demoMode, t } = useApp();
 
   // The canned SELLER_PROFILES / DEFAULT_SELLER_PROFILE fixtures exist for the
   // bundled demo catalogue in dev builds ONLY. A real seller's profile is built
@@ -165,7 +169,7 @@ export default function SellerProfileScreen({ navigation, route }) {
       const reviews = Array.isArray(revData?.reviews)
         ? revData.reviews.map((r) => ({
             id: r.id,
-            buyer: r.reviewer_name || 'Buyer',
+            buyer: r.reviewer_name || t('sellerProfile.buyerFallback'),
             rating: r.rating,
             text: r.comment || (r.car_title ? `Purchased: ${r.car_title}` : ''),
             date: formatReviewDate(r.created_at),
@@ -174,7 +178,7 @@ export default function SellerProfileScreen({ navigation, route }) {
       const avg = revData?.average_rating != null
         ? Number(revData.average_rating)
         : Number(b.reviews?.avg || 0);
-      const name = (pub?.is_showroom && pub?.business_name) || pub?.name || sellerName || 'Seller';
+      const name = (pub?.is_showroom && pub?.business_name) || pub?.name || sellerName || t('sellerProfile.sellerFallback');
       setApiProfile({
         name,
         initials: name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase(),
@@ -199,7 +203,7 @@ export default function SellerProfileScreen({ navigation, route }) {
       });
     });
     return () => { cancelled = true; };
-  }, [sellerId, sellerName]);
+  }, [sellerId, sellerName, t]);
 
   const profile = apiProfile || demoProfile;
 
@@ -207,14 +211,14 @@ export default function SellerProfileScreen({ navigation, route }) {
     const loading = Boolean(sellerId) && !failed;
     return (
       <Screen background={colors.bg}>
-        <BackHeader title="Seller Profile" onBack={() => navigation.goBack()} />
+        <BackHeader title={t('sellerProfile.title')} onBack={() => navigation.goBack()} />
         {loading ? (
-          <LoadingState label="Loading seller profile…" />
+          <LoadingState label={t('sellerProfile.loading')} />
         ) : (
           <ErrorState
             icon="person-circle-outline"
-            title="Profile not available"
-            sub="We couldn't load this seller's profile. Check your connection and try again."
+            title={t('sellerProfile.notAvailable')}
+            sub={t('sellerProfile.notAvailableSub')}
           />
         )}
       </Screen>
@@ -229,22 +233,22 @@ export default function SellerProfileScreen({ navigation, route }) {
 
   const handleReportReview = async (review) => {
     const reasonIdx = await showActionSheet({
-      title: 'Report this review',
-      message: 'Our team reviews every report. The author is not told.',
-      options: REPORT_REASONS,
+      title: t('sellerProfile.reportTitle'),
+      message: t('sellerProfile.reportMessage'),
+      options: REPORT_REASONS.map((r) => ({ label: t(r.labelKey), icon: r.icon })),
     });
     if (reasonIdx === -1) return;
     try {
-      await reviewsApi.reportReview(review.id, REPORT_REASONS[reasonIdx].label);
-      showToast('Thanks — our team will take a look.', 'success');
+      await reviewsApi.reportReview(review.id, REPORT_REASONS[reasonIdx].value);
+      showToast(t('sellerProfile.reportThanks'), 'success');
     } catch (err) {
-      showToast(err?.message || "The report didn't send. Check your connection and try again.", 'error');
+      showToast(err?.message || t('sellerProfile.reportFailed'), 'error');
     }
   };
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Seller Profile" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('sellerProfile.title')} onBack={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Hero */}
@@ -264,14 +268,14 @@ export default function SellerProfileScreen({ navigation, route }) {
               {profile.memberSince ? (
                 <View style={styles.heroMeta}>
                   <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.6)" />
-                  <Text style={styles.heroMetaText}>Member since {profile.memberSince}</Text>
+                  <Text style={styles.heroMetaText}>{t('sellerProfile.memberSince', { date: profile.memberSince })}</Text>
                 </View>
               ) : null}
               <View style={styles.heroBadges}>
                 {profile.idVerified && (
                   <View style={styles.heroBadge}>
                     <Ionicons name="checkmark-circle" size={12} color={colors.greenLight} />
-                    <Text style={styles.heroBadgeText}>Verified Seller</Text>
+                    <Text style={styles.heroBadgeText}>{t('trustScore.verifiedSeller')}</Text>
                   </View>
                 )}
               </View>
@@ -286,10 +290,10 @@ export default function SellerProfileScreen({ navigation, route }) {
         {/* Quick stats */}
         <View style={styles.statsRow}>
           {[
-            { label: 'Sales', value: String(profile.completedSales), icon: 'bag-check-outline', color: colors.primary },
-            { label: 'Response', value: `${profile.responseRate}%`, icon: 'chatbubble-outline', color: colors.primary },
-            { label: 'Rating', value: `${profile.avgRating}★`, icon: 'star', color: colors.amberText },
-            { label: 'Reviews', value: String(profile.totalReviews), icon: 'people-outline', color: colors.amberText },
+            { label: t('trustScore.sales'), value: String(profile.completedSales), icon: 'bag-check-outline', color: colors.primary },
+            { label: t('trustScore.response'), value: `${profile.responseRate}%`, icon: 'chatbubble-outline', color: colors.primary },
+            { label: t('trustScore.rating'), value: `${profile.avgRating}★`, icon: 'star', color: colors.amberText },
+            { label: t('trustScore.reviews'), value: String(profile.totalReviews), icon: 'people-outline', color: colors.amberText },
           ].map((s) => (
             <View key={s.label} style={styles.statCard}>
               <Ionicons name={s.icon} size={18} color={s.color} />
@@ -301,8 +305,8 @@ export default function SellerProfileScreen({ navigation, route }) {
 
         {/* Trust Score breakdown */}
         <View style={styles.trustCard}>
-          <Text style={styles.cardTitle}>Trust Score Breakdown</Text>
-          <Text style={styles.cardSub}>How the {totalScore}/100 score is calculated</Text>
+          <Text style={styles.cardTitle}>{t('sellerProfile.breakdownTitle')}</Text>
+          <Text style={styles.cardSub}>{t('sellerProfile.breakdownSub', { score: totalScore })}</Text>
           <View style={styles.scoreComponents}>
             {SCORE_COMPONENTS.map((comp) => (
               <ScoreBar key={comp.key} component={comp} profile={profile} />
@@ -313,7 +317,7 @@ export default function SellerProfileScreen({ navigation, route }) {
         {/* Active listings */}
         {profile.activeListings && profile.activeListings.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Active Listings ({profile.activeListings.length})</Text>
+            <Text style={styles.sectionTitle}>{t('sellerProfile.activeListings', { count: profile.activeListings.length })}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -16, paddingHorizontal: 16 }}>
               <View style={{ flexDirection: 'row', gap: 12, paddingRight: 16 }}>
                 {profile.activeListings.map((listing) => (
@@ -327,7 +331,7 @@ export default function SellerProfileScreen({ navigation, route }) {
                     <Text style={styles.listingPrice}>{listing.price}</Text>
                     <View style={styles.listingBadge}>
                       <Ionicons name="shield-checkmark" size={9} color={colors.green} />
-                      <Text style={styles.listingBadgeText}>Inspected</Text>
+                      <Text style={styles.listingBadgeText}>{t('comparison.pillInspected')}</Text>
                     </View>
                   </Pressable>
                 ))}
@@ -339,7 +343,7 @@ export default function SellerProfileScreen({ navigation, route }) {
         {/* Reviews */}
         <View style={styles.section}>
           <View style={styles.sectionRow}>
-            <Text style={styles.sectionTitle}>Reviews ({profile.totalReviews})</Text>
+            <Text style={styles.sectionTitle}>{t('sellerProfile.reviewsTitle', { count: profile.totalReviews })}</Text>
             <View style={styles.avgRatingRow}>
               <StarRating value={Math.round(profile.avgRating)} />
               <Text style={styles.avgRatingText}>{profile.avgRating}</Text>
@@ -348,7 +352,7 @@ export default function SellerProfileScreen({ navigation, route }) {
           <View style={styles.reviews}>
             {profile.reviews.length === 0 && (
               <Text style={{ fontSize: 13, fontFamily: fonts.regular, color: colors.textMuted }}>
-                No reviews yet — verified platform feedback will appear here.
+                {t('sellerProfile.noReviews')}
               </Text>
             )}
             {profile.reviews.map((review) => (
@@ -370,7 +374,7 @@ export default function SellerProfileScreen({ navigation, route }) {
                       onPress={() => handleReportReview(review)}
                       hitSlop={10}
                       accessibilityRole="button"
-                      accessibilityLabel={`Report review by ${review.buyer}`}
+                      accessibilityLabel={t('sellerProfile.reportBy', { name: review.buyer })}
                       style={styles.reviewFlag}
                     >
                       <Ionicons name="flag-outline" size={14} color={colors.textMuted} />
@@ -386,7 +390,7 @@ export default function SellerProfileScreen({ navigation, route }) {
 
       {/* Sticky contact CTA */}
       <StickyFooter style={styles.cta}>
-        <Button title={`Contact ${profile.name.split(' ')[0]}`} icon="chatbubble-outline" onPress={handleContact} />
+        <Button title={t('sellerProfile.contact', { name: profile.name.split(' ')[0] })} icon="chatbubble-outline" onPress={handleContact} />
       </StickyFooter>
     </Screen>
   );

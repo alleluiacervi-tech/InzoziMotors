@@ -24,9 +24,8 @@ const CATEGORY_ICONS = {
   documentation: 'document-text-outline',
 };
 
-function ScoreCircle({ score, maxScore }) {
+function ScoreCircle({ score, maxScore, certified }) {
   const pct = score / maxScore;
-  const certified = pct >= 0.88;
   return (
     <View style={styles.scoreCircleWrap}>
       <ScoreRing
@@ -116,13 +115,14 @@ export default function InspectionReportScreen({ navigation, route }) {
   // 143/150 "certified" result for a car nobody inspected is the one thing
   // this product can never do.
   const [data, setData] = useState(() => (!isApiCar && demoMode ? MOCK_INSPECTION_RESULT : null));
-  const [failed, setFailed] = useState(false);
+  // null = fine, 'missing' = the server has no report (404), 'network' = could not ask.
+  const [failed, setFailed] = useState(null);
   const [selectedZoneRaw, setSelectedZone] = useState(null);
 
   useEffect(() => {
     if (!isApiCar) return;
     let alive = true;
-    setFailed(false);
+    setFailed(null);
     const loadReport = car?.listingType === 'rental'
       ? inspectionsApi.getRentalReport(carId)
       : inspectionsApi.getReport(carId);
@@ -131,9 +131,9 @@ export default function InspectionReportScreen({ navigation, route }) {
         if (!alive) return;
         const mapped = buildReportFromApi(report);
         if (mapped) setData(mapped);
-        else setFailed(true);
+        else setFailed('missing');
       })
-      .catch(() => { if (alive) setFailed(true); });
+      .catch((err) => { if (alive) setFailed(err?.status === 404 ? 'missing' : 'network'); });
     return () => { alive = false; };
   }, [carId, isApiCar, car?.listingType]);
 
@@ -147,7 +147,7 @@ export default function InspectionReportScreen({ navigation, route }) {
           <ErrorState
             icon="document-text-outline"
             title={t('inspection.subtitle')}
-            sub={t('settings.networkError')}
+            sub={failed === 'missing' ? t('inspection.unavailable') : t('settings.networkError')}
           />
         ) : (
           <LoadingState label={t('inspection.loadingChecklist')} />
@@ -157,7 +157,10 @@ export default function InspectionReportScreen({ navigation, route }) {
   }
 
   const pct = data.score / data.maxScore;
-  const certified = pct >= 0.88;
+  // The server's verdict — threshold met and no critical failure — not the
+  // score alone. A car can score 149 and still have failed its brakes.
+  const certified = data.certified === true;
+  const critical = data.criticalFailures || [];
   const allFlags = data.categories.flatMap((c) => c.flags.map((f) => ({ cat: c.name, flag: f })));
 
   // Zone map: pre-select the first flagged category so the detail card
@@ -180,10 +183,10 @@ export default function InspectionReportScreen({ navigation, route }) {
           style={styles.hero}
         >
           <View style={styles.heroTop}>
-            <ScoreCircle score={data.score} maxScore={data.maxScore} />
+            <ScoreCircle score={data.score} maxScore={data.maxScore} certified={certified} />
             <View style={{ flex: 1, paddingLeft: 8 }}>
               <Text style={styles.heroTitle}>
-                {certified ? t('inspection.statusPassed') : t('inspection.flagsPresent')}
+                {certified ? t('inspection.statusPassed') : t('inspection.notPassedTitle')}
               </Text>
               {car && <Text style={styles.heroCar}>{car.title || car.make + ' ' + car.model}</Text>}
               <Text style={styles.heroDate}>{data.inspector}</Text>
@@ -199,10 +202,30 @@ export default function InspectionReportScreen({ navigation, route }) {
           ) : (
             <View style={[styles.certifiedBadge, styles.warnBadge]}>
               <Ionicons name="alert-circle" size={16} color="#fff" />
-              <Text style={styles.certifiedText}>{t('inspection.flagsPresent')}</Text>
+              <Text style={styles.certifiedText}>{t('inspection.notPassedTitle')}</Text>
             </View>
           )}
         </LinearGradient>
+
+        {/* What was found — shown first, because it is what a buyer most needs. */}
+        {!certified && (
+          <View style={styles.foundCard}>
+            <View style={styles.flagSummaryHeader}>
+              <Ionicons name="alert-circle" size={16} color={colors.statusRejected} />
+              <Text style={styles.foundTitle}>{t('inspection.foundTitle')}</Text>
+            </View>
+            <Text style={styles.foundNote}>{t('inspection.notPassedNote')}</Text>
+            {critical.map((item, i) => (
+              <View key={i} style={styles.flagSummaryRow}>
+                <View style={styles.criticalTag}>
+                  <Text style={styles.criticalTagText}>{t('inspection.criticalTag')}</Text>
+                </View>
+                <Text style={styles.flagSummaryFlag}>{item.label}</Text>
+              </View>
+            ))}
+            {critical.length > 0 && <Text style={styles.foundNote}>{t('inspection.criticalNote')}</Text>}
+          </View>
+        )}
 
         {/* ── Interactive zone map ── */}
         <View style={styles.zoneCard}>
@@ -354,6 +377,19 @@ const styles = StyleSheet.create({
   },
   warnBadge: { backgroundColor: colors.amber },
   certifiedText: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
+  foundCard: {
+    marginHorizontal: 16, marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.statusRejected + '55',
+    borderRadius: radius.xl, padding: 14, gap: 10,
+  },
+  foundTitle: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textPrimary },
+  foundNote: { fontSize: 12, color: colors.textSecondary, lineHeight: 18 },
+  criticalTag: {
+    backgroundColor: colors.statusRejected + '22', borderRadius: radius.pill,
+    paddingHorizontal: 8, paddingVertical: 2, flexShrink: 0,
+  },
+  criticalTagText: { fontSize: 11, fontFamily: fonts.bold, color: colors.statusRejected },
   zoneCard: {
     marginHorizontal: 16, marginBottom: 12,
     backgroundColor: colors.surface,
