@@ -1,3 +1,4 @@
+import { trustGrade } from '../data/trustGrade';
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Image,
@@ -78,8 +79,7 @@ const SCORE_COMPONENTS = [
 ];
 
 function TrustScoreCircle({ score }) {
-  const grade = score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 50 ? 'C' : 'D';
-  const color = score >= 80 ? colors.green : score >= 65 ? colors.primary : score >= 50 ? colors.amber : colors.statusRejected;
+  const { letter: grade, color } = trustGrade(score);
   return (
     <View style={styles.trustCircleWrap}>
       <View style={[styles.trustCircle, { borderColor: color }]}>

@@ -1,3 +1,4 @@
+import { trustGrade } from '../data/trustGrade';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,12 +54,7 @@ const SCORE_COMPONENTS = [
   },
 ];
 
-function getGrade(score) {
-  if (score >= 85) return { letter: 'A', label: 'Excellent', color: colors.greenText };
-  if (score >= 70) return { letter: 'B', label: 'Good', color: colors.statusScheduled };
-  if (score >= 55) return { letter: 'C', label: 'Fair', color: colors.amberText };
-  return { letter: 'D', label: 'Needs work', color: colors.alertRed };
-}
+const getGrade = trustGrade;
 
 function TrustGauge({ score, grade }) {
   const SIZE = 160;
