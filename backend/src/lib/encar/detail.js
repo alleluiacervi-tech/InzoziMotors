@@ -45,6 +45,7 @@ const PHONE = /(\+?\d{1,3}[\s-]?)?\(?0?\d{1,3}\)?[\s-]\d{3,4}[\s-]\d{4}|\b\d{10,
 const EMAIL = /[^\s@]+@[^\s@]+\.[^\s@]+/;
 const leaky = (s) => KOREAN_PLATE.test(s) || VIN.test(s) || PHONE.test(s) || EMAIL.test(s);
 
+/** Scrubs an arbitrary provider value: deny by key and by what a value looks like. */
 function scrub(value, depth = 0) {
   if (value === null || value === undefined) return undefined;
   if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
@@ -111,35 +112,6 @@ function shapeRecord(raw) {
     first_registered: date(raw.firstDate),
     accidents,
   });
-}
-
-/** Scrubs an arbitrary provider value: deny by key and by what a value looks like. */
-function scrub(value, depth = 0) {
-  if (value === null || value === undefined) return undefined;
-  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') {
-    const s = value.trim();
-    if (!s || leaky(s)) return undefined;
-    return s.slice(0, MAX_STRING);
-  }
-  if (depth >= MAX_DEPTH) return undefined;
-  if (Array.isArray(value)) {
-    const out = value.slice(0, MAX_ARRAY).map((v) => scrub(v, depth + 1)).filter((v) => v !== undefined);
-    return out.length ? out : undefined;
-  }
-  if (typeof value === 'object') {
-    const out = {};
-    let n = 0;
-    for (const [key, v] of Object.entries(value)) {
-      if (n >= MAX_KEYS) break;
-      if (!/^[A-Za-z0-9_ .-]{1,60}$/.test(key) || DENY_KEY.test(key)) continue;
-      const clean = scrub(v, depth + 1);
-      if (clean !== undefined) { out[key] = clean; n += 1; }
-    }
-    return n ? out : undefined;
-  }
-  return undefined;
 }
 
 /** The documented inspection summary, plus the scrubbed panel codes and detail. */

@@ -29,6 +29,9 @@ export default function useKoreaCars({ q = '', make = '', sort = 'newest', fuel 
   const load = useCallback(async () => {
     const mine = ++run.current;
     setState('loading');
+    // A next-page request still in flight belongs to the search being replaced;
+    // its answer will be discarded, so it must not leave the footer "loading".
+    setMoreState('idle');
     try {
       const page = await koreaApi.list(params());
       if (mine !== run.current) return; // a newer search has started
@@ -38,6 +41,9 @@ export default function useKoreaCars({ q = '', make = '', sort = 'newest', fuel 
       setState('idle');
     } catch {
       if (mine !== run.current) return;
+      // Nothing of the old search stays on screen under the error.
+      setItems([]);
+      setCursor(null);
       setState('error');
     }
   }, [params]);

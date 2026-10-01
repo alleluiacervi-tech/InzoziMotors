@@ -41,7 +41,7 @@ test('photo cells: JSON array, or addresses split on | ; , or spaces', () => {
 const csv = (rows) => ['Id,Manufacturer,Model,Year,Price,Photos', ...rows].join('\n');
 const line = (id, extra = {}) => `${id},${extra.make ?? 'Kia'},Sorento,202001,${extra.price ?? 2500},${extra.photos ?? `https://img.test/${id}/1.jpg`}`;
 
-function fakeStore(initial = {}, held = []) {
+function fakeStore(initial = {}, held = [], firstSeen = {}) {
   const state = { baseline_started_at: null, baseline_completed_at: null, baseline_page: 1, last_repair_at: null, ...initial };
   const listings = new Map(held.map((id) => [id, { id }]));
   return {
@@ -51,12 +51,16 @@ function fakeStore(initial = {}, held = []) {
     async countListings() { return listings.size; },
     async upsertListings(_d, rows) { let inserted = 0; for (const r of rows) { if (!listings.has(r.id)) inserted += 1; listings.set(r.id, r); } return { inserted, updated: 0 }; },
     async deleteListings(_d, ids) { let n = 0; for (const id of new Set(ids)) if (listings.delete(id)) n += 1; return n; },
-    async listIds() { return [...listings.keys()]; },
+    async listIds(_d, { firstSeenBefore } = {}) {
+      const ids = [...listings.keys()];
+      if (!firstSeenBefore) return ids;
+      return ids.filter((id) => !firstSeen[id] || new Date(firstSeen[id]) < firstSeenBefore);
+    },
   };
 }
-const build = (store, text, extra = {}) => createSync({
+const build = (store, text, extra = {}, headers = null) => createSync({
   db: {}, store, withTx: (fn) => fn({}), now: () => new Date('2026-10-01T00:00:00Z'),
-  client: { exportCsv: async () => ({ body: chunks(text, 64) }) }, ...extra,
+  client: { exportCsv: async () => ({ headers: headers && new Headers(headers), body: chunks(text, 64) }) }, ...extra,
 });
 
 test('export baseline loads every row, applies the rules, and completes', async () => {
@@ -84,6 +88,48 @@ test('weekly repair removes cars the export no longer lists, and keeps the rest'
   assert.equal(r.repaired, 1);
   assert.deepEqual([...store.listings.keys()].sort(), ['1', '2', '3']);
   assert.ok(store.state.last_repair_at);
+});
+
+test('repair keeps a car the change feed added after the export was built', async () => {
+  // The export was built at 02:00; car 9 was first seen at 09:00, so its absence
+  // from the file says nothing. Car 8 was already held at 02:00 and is truly gone.
+  const store = fakeStore(
+    { baseline_started_at: new Date(), baseline_completed_at: new Date() },
+    ['1', '2', '3', '8', '9'],
+    { 8: '2026-09-29T00:00:00Z', 9: '2026-09-30T09:00:00Z' },
+  );
+  const sync = build(store, csv([line(1), line(2), line(3)]), {}, { 'x-encarapi-generated-at': '2026-09-30T02:00:00Z' });
+  const r = await sync.runExport({ rules: DEFAULT_RULES, repair: true });
+  assert.equal(r.repaired, 1);
+  assert.deepEqual([...store.listings.keys()].sort(), ['1', '2', '3', '9']);
+});
+
+test('without a build time the oldest an export can be is assumed (26 hours before the download)', async () => {
+  const store = fakeStore(
+    { baseline_completed_at: new Date() },
+    ['1', '2', '3', '8', '9'],
+    { 8: '2026-09-29T00:00:00Z', 9: '2026-09-30T20:00:00Z' }, // now is 2026-10-01T00:00Z: 9 is within 26 h
+  );
+  const sync = build(store, csv([line(1), line(2), line(3)]));
+  await sync.runExport({ rules: DEFAULT_RULES, repair: true });
+  assert.deepEqual([...store.listings.keys()].sort(), ['1', '2', '3', '9']);
+});
+
+test('the change feed is read from when the export was built, not from when it was downloaded', async () => {
+  const store = fakeStore();
+  const sync = build(store, csv([line(1)]), {}, { 'x-encarapi-generated-at': '2026-09-30T02:00:00Z' });
+  await sync.runExport({ rules: DEFAULT_RULES });
+  assert.equal(new Date(store.state.baseline_started_at).toISOString(), '2026-09-30T02:00:00.000Z');
+
+  const fallback = fakeStore();
+  await build(fallback, csv([line(1)])).runExport({ rules: DEFAULT_RULES });
+  assert.equal(new Date(fallback.state.baseline_started_at).toISOString(), '2026-09-29T22:00:00.000Z');
+});
+
+test('a build time in the future is not believed', async () => {
+  const store = fakeStore();
+  await build(store, csv([line(1)]), {}, { 'x-encarapi-generated-at': '2027-01-01T00:00:00Z' }).runExport({ rules: DEFAULT_RULES });
+  assert.equal(new Date(store.state.baseline_started_at).toISOString(), '2026-09-29T22:00:00.000Z');
 });
 
 test('repair refuses to delete anything when the export is suspiciously small', async () => {

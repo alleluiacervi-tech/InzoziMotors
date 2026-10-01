@@ -132,3 +132,39 @@ test('the key is redacted from any log context, whatever it is called', () => {
   assert.ok(!JSON.stringify(out).includes(KEY));
   assert.equal(out.ok, 'fine');
 });
+
+test('the queue for a turn is bounded: past maxQueue a caller is refused at once', async () => {
+  let release;
+  const held = new Promise((r) => { release = r; });
+  const { client, calls } = make(() => res(200, {}), { ratePerMinute: 1, maxQueue: 2, sleep: () => held });
+  const tick = () => new Promise((r) => setImmediate(r));
+  const first = client.catalog({});       // takes the turn at once...
+  await tick();                           // ...and is through it
+  const second = client.catalog({});      // waits (1)
+  const third = client.catalog({});       // waits (2)
+  await tick();
+  await assert.rejects(() => client.catalog({}), (e) => e instanceof EncarError && e.code === 'rate_limited');
+  release();
+  await Promise.all([first, second, third]);
+  assert.equal(calls.length, 3, 'the refused caller never reached the provider');
+});
+
+test('export bytes are reported as the body is read, and the stream is passed through untouched', async () => {
+  const usage = [];
+  async function* body() { yield Buffer.from('abcd'); yield Buffer.from('efghij'); }
+  const { client } = make(() => ({ ...res(200), body: body() }), { onUsage: (u) => usage.push(u) });
+  const out = await client.exportCsv({ lang: 'en' });
+  const got = [];
+  for await (const c of out.body) got.push(c.toString());
+  assert.deepEqual(got, ['abcd', 'efghij']);
+  assert.deepEqual(usage, [{ requests: 0, bytes: 10 }]);
+});
+
+test('bytes are reported even when the reader gives up early', async () => {
+  const usage = [];
+  async function* body() { yield Buffer.from('abcd'); yield Buffer.from('efgh'); }
+  const { client } = make(() => ({ ...res(200), body: body() }), { onUsage: (u) => usage.push(u) });
+  const out = await client.exportCsv({});
+  for await (const c of out.body) { void c; break; }
+  assert.deepEqual(usage, [{ requests: 0, bytes: 4 }]);
+});

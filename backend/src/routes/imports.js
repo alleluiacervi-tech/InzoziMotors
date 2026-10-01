@@ -252,6 +252,15 @@ router.post('/', requireAuth, async (req, res) => {
     res.status(201).json(result.order);
     if (snapshot) copySnapshotPhotos(result.order.id, snapshot.photos); // after the response, never blocks it
   } catch (err) {
+    // The unique index (migration 0054) caught a concurrent twin of this request.
+    if (err.code === '23505' && listingId) {
+      const { rows } = await pool.query(
+        `SELECT id FROM import_orders
+          WHERE buyer_id=$1 AND encar_listing_id=$2 AND status NOT IN ('cancelled', 'completed') LIMIT 1`,
+        [req.user.id, listingId]
+      ).catch(() => ({ rows: [] }));
+      return res.status(409).json({ error: 'You already have an open request for this car', code: 'ALREADY_REQUESTED', order_id: rows[0]?.id });
+    }
     log.error('create import enquiry error', { error: err.message });
     res.status(500).json({ error: 'Could not create import request' });
   }

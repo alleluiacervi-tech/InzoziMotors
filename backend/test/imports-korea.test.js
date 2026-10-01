@@ -258,3 +258,24 @@ test('a second request for the same car is refused with the existing order, and 
   assert.equal(gone.body.code, 'LISTING_GONE');
   await api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: 'x; y' }).expect(400);
 });
+
+test('two requests in flight together for the same car make one order (migration 0054)', async () => {
+  await store.upsertListings(pool, [car(9)]);
+  const b = await buyer();
+  const send = () => api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: '9' });
+  const [one, two] = await Promise.all([send(), send()]);
+  assert.deepEqual([one.status, two.status].sort(), [201, 409]);
+  const loser = one.status === 409 ? one : two;
+  assert.equal(loser.body.code, 'ALREADY_REQUESTED');
+  const { rows } = await pool.query(`SELECT id FROM import_orders WHERE encar_listing_id = '9'`);
+  assert.equal(rows.length, 1);
+  assert.equal(loser.body.order_id, rows[0].id);
+});
+
+test('a cancelled request does not stop the buyer asking again', async () => {
+  await store.upsertListings(pool, [car(10)]);
+  const b = await buyer();
+  const first = await api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: '10' }).expect(201);
+  await pool.query(`UPDATE import_orders SET status = 'cancelled' WHERE id = $1`, [first.body.id]);
+  await api().post('/imports').set('Authorization', `Bearer ${b.token}`).send({ encar_listing_id: '10' }).expect(201);
+});

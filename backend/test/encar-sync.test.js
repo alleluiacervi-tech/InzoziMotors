@@ -49,15 +49,27 @@ function build({ store = fakeStore(), provider }) {
     catalog: async (q) => { calls.catalog.push(q); return provider.catalog(q, calls.catalog.length); },
     changes: async (q) => { calls.changes.push(q); return provider.changes(q, calls.changes.length); },
   };
-  const sync = createSync({ db: {}, client, store, withTx: (fn) => fn({}), now: () => new Date('2026-10-01T00:00:00Z') });
+  // A page is one transaction: if it throws, rows AND cursor go back as they were.
+  const withTx = async (fn) => {
+    const before = new Map(store.listings);
+    const state = { ...store.state };
+    try { return await fn({}); } catch (err) {
+      store.listings.clear();
+      for (const [k, v] of before) store.listings.set(k, v);
+      for (const k of Object.keys(store.state)) delete store.state[k];
+      Object.assign(store.state, state);
+      throw err;
+    }
+  };
+  const sync = createSync({ db: {}, client, store, withTx, now: () => new Date('2026-10-01T00:00:00Z') });
   return { sync, store, calls };
 }
 
 const range = (from, n) => Array.from({ length: n }, (_, i) => car(from + i));
 
-test('baseline pages through the catalogue and completes on a short page', async () => {
+test('baseline pages through the catalogue and completes on an empty page', async () => {
   const { sync, store, calls } = build({
-    provider: { catalog: (q, n) => ({ SearchResults: n === 1 ? range(1, PAGE_SIZE) : range(5000, 10) }) },
+    provider: { catalog: (q, n) => ({ SearchResults: n === 1 ? range(1, PAGE_SIZE) : n === 2 ? range(5000, 10) : [] }) },
   });
   const r = await sync.runBaseline({ rules: DEFAULT_RULES });
   assert.equal(r.done, true);
@@ -65,7 +77,7 @@ test('baseline pages through the catalogue and completes on a short page', async
   assert.equal(r.counts.added, PAGE_SIZE + 10);
   assert.ok(store.state.baseline_completed_at);
   assert.ok(store.state.baseline_started_at, 'the start time is taken before the first page');
-  assert.deepEqual(calls.catalog.map((c) => c.page), [1, 2]);
+  assert.deepEqual(calls.catalog.map((c) => c.page), [1, 2, 3]);
   assert.equal(calls.catalog[0].lang, 'en');
   assert.equal(calls.catalog[0].exclude_duplicates, true);
   assert.equal(calls.catalog[0].has_photos, true);
@@ -77,7 +89,7 @@ test('baseline saves its place and resumes where it stopped', async () => {
   const provider = {
     catalog: (q) => {
       if (q.page === 2 && failOnSecond) throw new EncarError('unavailable', 'down');
-      return { SearchResults: q.page === 1 ? range(1, PAGE_SIZE) : range(5000, 3) };
+      return { SearchResults: q.page === 1 ? range(1, PAGE_SIZE) : q.page === 2 ? range(5000, 3) : [] };
     },
   };
   const { sync } = build({ store, provider });
@@ -90,7 +102,7 @@ test('baseline saves its place and resumes where it stopped', async () => {
   const { calls, sync: again } = build({ store, provider });
   const r = await again.runBaseline({ rules: DEFAULT_RULES });
   assert.equal(r.done, true);
-  assert.deepEqual(calls.catalog.map((c) => c.page), [2], 'does not start over');
+  assert.deepEqual(calls.catalog.map((c) => c.page), [2, 3], 'does not start over');
   assert.equal(store.listings.size, PAGE_SIZE + 3);
 });
 
@@ -114,7 +126,7 @@ test('baseline does nothing once complete', async () => {
 
 test('cars that fail the rules are not stored', async () => {
   const items = [car(1), car(2, { IsDuplicate: true }), car(3, { FuelType: 'lpg' }), car(4, { Photos: [] }), car(5, { Price: 1 })];
-  const { sync, store } = build({ provider: { catalog: () => ({ SearchResults: items }) } });
+  const { sync, store } = build({ provider: { catalog: (q) => ({ SearchResults: q.page === 1 ? items : [] }) } });
   const r = await sync.runBaseline({ rules: DEFAULT_RULES });
   assert.deepEqual([...store.listings.keys()], ['1']);
   assert.equal(r.counts.skipped, 4);
@@ -139,6 +151,56 @@ test('the ceiling stops the table growing', async () => {
   await assert.rejects(() => capped.runBaseline({ rules: { ...DEFAULT_RULES, row_ceiling: 5 } }), (e) => e instanceof CeilingError);
   assert.equal(full.listings.size, 5, 'nothing was added');
   assert.equal(store.listings.size, 10);
+});
+
+test('a short page does not end the baseline: a provider that caps the page size is still read to the end', async () => {
+  // Every page is "short" (200 of the 1000 asked for); only the empty page is the end.
+  const { sync, store, calls } = build({
+    provider: { catalog: (q) => ({ SearchResults: q.page <= 3 ? range(q.page * 1000, 200) : [] }) },
+  });
+  const r = await sync.runBaseline({ rules: DEFAULT_RULES });
+  assert.equal(r.done, true);
+  assert.equal(store.listings.size, 600);
+  assert.deepEqual(calls.catalog.map((c) => c.page), [1, 2, 3, 4]);
+});
+
+test('a full table still takes updates and removals: only NEW cars are refused', async () => {
+  const store = ready({ change_cursor: 1 });
+  for (let i = 1; i <= 5; i += 1) store.listings.set(String(i), { ...car(i), id: String(i) });
+  const provider = {
+    changes: () => ({ added: [], updated: [car(1, { Price: 2400 })], reappeared: [], removed: ['2', '3'], nextCursor: 2 }),
+  };
+  const { sync } = build({ store, provider });
+  const r = await sync.runChanges({ rules: { ...DEFAULT_RULES, row_ceiling: 5 } });
+  assert.equal(r.counts.updated, 1);
+  assert.equal(r.counts.removed, 2);
+  assert.equal(store.state.change_cursor, 2, 'the cursor advances: sold cars stop being shown');
+});
+
+test('removals in a page make room for the new cars in the same page', async () => {
+  const store = ready({ change_cursor: 1 });
+  for (let i = 1; i <= 5; i += 1) store.listings.set(String(i), { ...car(i), id: String(i) });
+  const provider = {
+    changes: () => ({ added: [car(10), car(11)], updated: [], reappeared: [], removed: ['1', '2'], nextCursor: 2 }),
+  };
+  const { sync } = build({ store, provider });
+  await sync.runChanges({ rules: { ...DEFAULT_RULES, row_ceiling: 5 } });
+  assert.equal(store.listings.size, 5);
+  assert.ok(store.listings.has('10') && !store.listings.has('1'));
+});
+
+test('new cars past the ceiling roll the whole page back, cursor included', async () => {
+  const store = ready({ change_cursor: 1 });
+  for (let i = 1; i <= 5; i += 1) store.listings.set(String(i), { ...car(i), id: String(i) });
+  // One removal frees one place, but two new cars need two.
+  const provider = {
+    changes: () => ({ added: [car(10), car(11)], updated: [], reappeared: [], removed: ['1'], nextCursor: 2 }),
+  };
+  const { sync } = build({ store, provider });
+  await assert.rejects(() => sync.runChanges({ rules: { ...DEFAULT_RULES, row_ceiling: 5 } }), (e) => e instanceof CeilingError);
+  assert.equal(store.listings.size, 5);
+  assert.ok(store.listings.has('1'), 'the removal was rolled back with the page');
+  assert.equal(store.state.change_cursor, 1);
 });
 
 test('a catalogue response with no SearchResults is a bad response, and nothing moves', async () => {

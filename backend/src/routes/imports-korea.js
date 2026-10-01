@@ -5,7 +5,7 @@ const { getRate } = require('../lib/fx');
 const rateLimit = require('express-rate-limit');
 const { loadFlags, loadSetting } = require('../lib/encar/store');
 const { photoUrl } = require('../lib/encar/normalize');
-const { createClient } = require('../lib/encar/client');
+const client = require('../lib/encar/shared-client');
 const { createDetail } = require('../lib/encar/detail');
 const { estimateLandedCost, SETTING_KEY: COST_KEY } = require('../lib/encar/landed-cost');
 const { loadDutyRates } = require('../lib/duty-rates');
@@ -30,10 +30,10 @@ const { loadDutyRates } = require('../lib/duty-rates');
 
 const router = express.Router();
 
-// This process asks the provider only for on-demand reports, and paces itself
-// well below the worker (20 vs 35 a minute) so the two together stay under the
+// This process asks the provider only for on-demand reports, through the one
+// shared client (lib/encar/shared-client.js), which paces the whole API well
+// below the worker (20 vs 35 a minute) so the two together stay under the
 // plan's 60 a minute.
-const client = createClient({ ratePerMinute: Number(process.env.ENCAR_RATE_PER_MIN || 20) });
 const detail = createDetail({ db: pool, client });
 const reportsLimiter = rateLimit({
   windowMs: 60_000, limit: 30, standardHeaders: true, legacyHeaders: false,
@@ -350,7 +350,10 @@ router.get('/:id/reports', reportsLimiter, async (req, res) => {
     const part = (r) => (r.status === 'ok'
       ? { status: 'ok', data: r.payload, fetched_at: r.fetched_at, stale: Boolean(r.stale) }
       : { status: r.status });
-    res.set('Cache-Control', 'public, max-age=300');
+    // "We could not get it just now" must not be remembered by a CDN or a browser
+    // for five minutes: the next visitor deserves a fresh try.
+    const gaveUp = [inspection, record, vehicle].some((r) => r.status === 'unavailable');
+    res.set('Cache-Control', gaveUp ? 'no-store' : 'public, max-age=300');
     res.json({
       available: true,
       inspection: part(inspection),
