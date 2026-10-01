@@ -118,3 +118,13 @@ test('concurrent callers share one refresh', async () => {
   assert.ok(results.every((r) => r.rate === 1473.5));
   assert.equal(calls, 1, 'a burst of requests caused multiple provider calls');
 });
+
+test('a pair with no floor never borrows another pair\'s number', async () => {
+  stubFetch(() => { throw new Error('offline'); });
+  const krw = await fx.getRate('USD', 'KRW');
+  assert.equal(krw.stale, true);
+  assert.equal(krw.rate, 1400, 'USD→KRW has its own floor');
+  const odd = await fx.getRate('EUR', 'JPY');
+  assert.equal(odd.stale, true);
+  assert.equal(odd.rate, null, 'an unknown pair has no number rather than a wrong one');
+});

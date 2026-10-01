@@ -317,6 +317,8 @@ app.use('/admin/vehicles',  require('./src/routes/vehicle-history'));
 app.use('/admin/vehicles',  require('./src/routes/vehicle-intelligence'));
 app.use('/vehicles',        require('./src/routes/public-vehicles'));
 app.use('/admin',           require('./src/routes/admin'));
+// Ahead of /imports: that router's /:id would otherwise swallow "korea".
+app.use('/imports/korea',   require('./src/routes/imports-korea'));
 app.use('/imports',         require('./src/routes/imports'));
 // Inspection centers. Admin-only CRUD over the table submissions.js already
 // enforces booking capacity against — see the header of routes/centers.js.

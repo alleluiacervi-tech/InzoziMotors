@@ -38,17 +38,18 @@ refer to that document. Tick items in the PR that ships them.
 
 ## Phase 2 — API and pricing
 
-- [ ] `fx.js`: KRW → RWF and KRW → USD with the same provider fallbacks
-- [ ] **A9** `lib/landed-cost.js` + cost inputs in `service_rates` (admin-editable, `reviewed_on`)
+- [x] `fx.js`: KRW → RWF and KRW → USD with the same provider fallbacks — the generic rate lookup already handled any pair; fixed the built-in floor, which would have returned the USD→RWF number for a KRW pair
+- [ ] **A9** `lib/landed-cost.js` + cost inputs in `service_rates` (admin-editable, `reviewed_on`) — **blocked on E7** (the exporter's cost sheet). Not built on guessed numbers: the API returns `estimate: null`. Note the list items carry no engine size, so duty is a range until the detail response gives one
 - [ ] Batch recompute of estimates after sync and on FX / input change
-- [ ] **A10** `GET /imports/korea` (filters, sort, cursor, 24/page, cache headers)
-- [ ] **A10** `GET /imports/korea/facets` (cached 10 min)
-- [ ] **A10** `GET /imports/korea/:id` + 24 h detail/inspection/record cache, allow-listed payload (no plate, masked VIN, no dealer contact)
+- [x] **A10** `GET /imports/korea` (filters, sort, cursor, 24/page, cache headers) — `routes/imports-korea.js`; price filters in USD, converted at the live rate
+- [x] **A10** `GET /imports/korea/facets` (cached 10 min)
+- [x] **A10** `GET /imports/korea/:id` serves the row and every photo address
+- [ ] **A10** The same route with the 24 h detail / inspection / record cache and an allow-listed payload — **after the spike**, once the real shapes are known (the vehicle-detail response is undocumented and may carry plates and contacts)
 - [ ] **A8** Photo URL helper for the chosen option (E3)
 - [ ] Hourly purge of expired cache rows
 - [ ] Admin endpoints: status, refresh (counts the 100/day), rules
 - [ ] Load test on 150k rows: search p95 < 150 ms, facets < 300 ms
-- [ ] API tests: filters, pagination, 404 on removed, payload allow-list, key absent
+- [x] API tests: filters, pagination, 404 on removed, payload allow-list, key absent — `imports-korea.test.js` (needs Postgres; first runs in CI)
 
 ## Phase 3 — Website (needs E7 answered before going public)
 
