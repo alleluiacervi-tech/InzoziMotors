@@ -19,6 +19,7 @@
 const defaultStore = require('./store');
 const { normalizeItem, evaluate, extractId } = require('./normalize');
 const { EncarError } = require('./client');
+const { readExport } = require('./csv');
 
 const PAGE_SIZE = 1000;
 
@@ -41,6 +42,10 @@ function createSync({
   withTx,
   photoPrefix = process.env.ENCAR_PHOTO_PREFIX || '',
   now = () => new Date(),
+  // Optional: maps the provider's spelling of a brand onto the one in
+  // vehicle_makes ("Mercedes-Benz" and "Benz" are one make to the filters).
+  // Returning a falsy value keeps the provider's spelling: never guess.
+  canonicalMake = null,
   log = { info() {}, warn() {}, error() {} },
 }) {
   if (!withTx) withTx = require('../tx').withTransaction;
@@ -58,6 +63,7 @@ function createSync({
         if (id) { counts.unparsed += 1; }
         continue;
       }
+      if (canonicalMake) row.make = canonicalMake(row.make) || row.make;
       const verdict = evaluate(row, rules, now());
       if (verdict.keep) keep.push(row);
       else { drop.push(row.id); counts.skipped += 1; }
@@ -164,7 +170,73 @@ function createSync({
     return { counts, pages };
   }
 
-  return { runBaseline, runChanges, triage };
+  /**
+   * Reads the provider's daily export as a stream.
+   *
+   *   repair: false  (baseline)  upserts every row; marks the baseline done.
+   *   repair: true   (weekly)    upserts what differs AND deletes any car we
+   *                              hold that the export no longer lists, which is
+   *                              how a missed "removed" event is healed.
+   *
+   * The export does not count against the request cap, so it is the cheap way
+   * to do either. A file we cannot read is refused (see csv.js) and the caller
+   * falls back to the catalogue pages.
+   */
+  async function runExport({ rules, repair = false }) {
+    const counts = emptyCounts();
+    const state = await store.getState(db);
+    if (!repair && state.baseline_completed_at) return { done: true, counts, rows: 0 };
+    if (repair && !state.baseline_completed_at) return { skipped: 'no_baseline', counts, rows: 0 };
+
+    const startedAt = now();
+    if (!repair && !state.baseline_started_at) await store.patchState(db, { baseline_started_at: startedAt });
+
+    const res = await client.exportCsv({ lang: 'en' });
+    if (!res || !res.body) throw new EncarError('bad_response', 'The export had no body');
+
+    const seen = new Set();
+    let batch = [];
+    let rows = 0;
+    const flush = async () => {
+      if (!batch.length) return;
+      const { keep, drop } = triage(batch, rules, counts);
+      batch = [];
+      for (const row of keep) seen.add(row.id);
+      await withTx(async (conn) => {
+        await checkCeiling(conn, rules, keep.length);
+        const r = await store.upsertListings(conn, keep);
+        counts.added += r.inserted;
+        counts.updated += r.updated;
+        counts.removed += await store.deleteListings(conn, drop);
+      });
+    };
+    for await (const item of readExport(res.body)) {
+      rows += 1;
+      batch.push(item);
+      if (batch.length >= PAGE_SIZE) await flush();
+    }
+    await flush();
+
+    if (repair) {
+      // Safety: an export that is suspiciously small (a truncated download) must
+      // not be allowed to delete the catalogue. Refuse below half.
+      const held = await store.listIds(db);
+      if (seen.size < held.length * 0.5) {
+        throw new EncarError('bad_response', `The export lists ${seen.size} cars but we hold ${held.length}; not removing anything`);
+      }
+      const stale = held.filter((id) => !seen.has(id));
+      for (let i = 0; i < stale.length; i += 1000) {
+        counts.removed += await store.deleteListings(db, stale.slice(i, i + 1000));
+      }
+      await store.patchState(db, { last_repair_at: now() });
+      return { counts, rows, repaired: stale.length };
+    }
+
+    await store.patchState(db, { baseline_page: 1, baseline_completed_at: now(), last_error: null });
+    return { done: true, counts, rows };
+  }
+
+  return { runBaseline, runChanges, runExport, triage };
 }
 
 module.exports = { createSync, CeilingError, PAGE_SIZE };

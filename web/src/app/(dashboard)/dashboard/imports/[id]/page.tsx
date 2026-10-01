@@ -7,6 +7,7 @@ import { getServerT } from '@/lib/i18n/server'
 import { acceptAgreementAction } from './actions'
 import { PaymentProofForm } from './PaymentProofForm'
 
+const won = (v: unknown) => `₩${Math.round(Number(v || 0)).toLocaleString('en-US')}`
 const money = (v: unknown) => `${new Intl.NumberFormat('en-RW').format(Number(v || 0))} RWF`
 
 const GENERATED_DOCUMENT_LABELS: Record<string, string> = {
@@ -38,6 +39,29 @@ export default async function ImportOrderPage({ params }: { params: Promise<{ id
     <PageHeader title={`${order.year || ''} ${order.make} ${order.model}`} description={`${order.order_ref} · ${t('dashboard.imports.importingFrom', { country: order.origin_country })}`} />
     <div className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
       <div className="space-y-5">
+        {/* A request for one specific Korean car: what was asked for, frozen the day
+            it was asked. The Korean listing may have changed or sold since; this
+            record does not. Our own copies of the photos are used when they exist. */}
+        {order.listing_snapshot ? (() => {
+          const snap = order.listing_snapshot
+          const photos: string[] = (order.snapshot_photos?.length ? order.snapshot_photos : snap.photos) ?? []
+          return <Card className="p-6">
+            <h2 className="text-xl font-black text-content">{t('imports.korea.requestedCar')}</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-[200px_1fr]">
+              {photos[0] ? (
+                // eslint-disable-next-line @next/next/no-img-element -- our own copy, or the provider's photo host
+                <img src={photos[0]} alt={`${snap.year} ${snap.make} ${snap.model}`} loading="lazy" referrerPolicy="no-referrer" className="aspect-[4/3] w-full rounded-xl object-cover" />
+              ) : null}
+              <div className="min-w-0 text-label text-content-secondary">
+                <p className="font-extrabold text-content">{snap.year} {snap.make} {snap.model}{snap.badge ? ` ${snap.badge}` : ''}</p>
+                <p className="mt-1 capitalize">{[snap.mileage_km != null ? t('imports.korea.mileage', { km: Number(snap.mileage_km).toLocaleString('en-US') }) : null, snap.fuel, snap.transmission, snap.color].filter(Boolean).join(' · ')}</p>
+                <p className="mt-2">{t('imports.korea.koreanPrice')}: <span className="font-bold text-content tabular-nums">{won(snap.price_krw)}</span></p>
+                <p className="mt-2 text-caption text-content-muted">{t('imports.korea.snapshotNote', { date: String(snap.captured_at).slice(0, 10) })}</p>
+              </div>
+            </div>
+          </Card>
+        })() : null}
+
         <Card className="p-6">
           <div className="flex items-start justify-between gap-3">
             <div>

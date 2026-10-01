@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { api } from '@/lib/api'
+import { api, koreaCatalog } from '@/lib/api'
 import { SITE } from '@/lib/site'
 import type { Car, RentalCar } from '@/lib/types'
 import { buildBrowseHref, DEFAULT_SORT, type Filters } from '@/components/marketplace/query'
@@ -91,7 +91,11 @@ function lastModified(iso?: string | null): Date | undefined {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [cars, rentals] = await Promise.all([liveCars(), activeRentals()])
+  const [cars, rentals, koreaFacets] = await Promise.all([
+    liveCars(),
+    activeRentals(),
+    koreaCatalog.facets().catch(() => null),
+  ])
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
     url: `${SITE.url}${route.path}`,
@@ -146,5 +150,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     (sellerId) => ({ url: `${SITE.url}/sellers/${sellerId}`, changeFrequency: 'weekly', priority: 0.5 })
   )
 
-  return [...staticEntries, ...facetEntries, ...carEntries, ...sellerEntries, ...rentalEntries]
+  // The Korean catalogue: the list and its biggest makes, and only once it is open.
+  // Individual Korean cars are never listed (noindex: they vanish when sold).
+  const koreaEntries: MetadataRoute.Sitemap = koreaFacets?.available && koreaFacets.total
+    ? [
+        { url: `${SITE.url}/imports/korea`, changeFrequency: 'daily' as const, priority: 0.7 },
+        ...(koreaFacets.makes ?? []).slice(0, 30).map((m) => ({
+          url: `${SITE.url}/imports/korea?make=${encodeURIComponent(m.make)}`,
+          changeFrequency: 'daily' as const,
+          priority: 0.5,
+        })),
+      ]
+    : []
+
+  return [...staticEntries, ...koreaEntries, ...facetEntries, ...carEntries, ...sellerEntries, ...rentalEntries]
 }

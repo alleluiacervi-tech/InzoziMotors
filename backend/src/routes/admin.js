@@ -25,6 +25,7 @@ const {
   validateRates: validateServiceRates,
   invalidateServiceRates,
 } = require('../lib/service-rates');
+const { validateCostInputs: validateEncarCosts } = require('../lib/encar/landed-cost');
 const { validateFlags: validateEncarFlags, validateRules: validateEncarRules } = require('../lib/encar/normalize');
 const {
   slugify, loadMakes, invalidateMakes,
@@ -1417,6 +1418,8 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
     // rules for what is kept. Both are audit-logged below like every setting.
     encar_flags: (value) => validateEncarFlags(value).length === 0,
     encar_ingest_rules: (value) => validateEncarRules(value).length === 0,
+    // The exporter's costs; the landed-cost estimate stays off until configured.
+    encar_cost_inputs: (value) => validateEncarCosts(value).length === 0,
   };
   if (!validators[key]) return res.status(400).json({ error: 'This setting is not editable' });
   if (!validators[key](req.body.value)) {
@@ -1432,8 +1435,9 @@ router.patch('/settings/:key', requireAdmin, async (req, res) => {
       const problems = validateServiceRates(req.body.value);
       return res.status(400).json({ error: problems[0], code: 'INVALID_SERVICE_RATES', problems });
     }
-    if (key === 'encar_flags' || key === 'encar_ingest_rules') {
-      const problems = key === 'encar_flags' ? validateEncarFlags(req.body.value) : validateEncarRules(req.body.value);
+    if (key === 'encar_flags' || key === 'encar_ingest_rules' || key === 'encar_cost_inputs') {
+      const check = { encar_flags: validateEncarFlags, encar_ingest_rules: validateEncarRules, encar_cost_inputs: validateEncarCosts }[key];
+      const problems = check(req.body.value);
       return res.status(400).json({ error: problems[0], code: 'INVALID_ENCAR_SETTING', problems });
     }
     return res.status(400).json({ error: `Invalid value for ${key}` });

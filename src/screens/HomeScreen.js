@@ -17,6 +17,7 @@ import { colors, radius, fonts, typography } from '../theme';
 import { useApp } from '../context/AppContext';
 import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
 import { importCatalogMakes } from '../data/importCatalog';
+import useKoreaAvailable from '../hooks/useKoreaAvailable';
 import { PHOTO } from '../utils/photo';
 import { cars as carsApi } from '../api/cars';
 import Photo from '../components/Photo';
@@ -193,6 +194,14 @@ export default function HomeScreen({ navigation }) {
     () => importCatalogMakes().sort((a, b) => b.modelCount - a.modelCount).slice(0, 12),
     [],
   );
+
+  // The Korean catalogue, once the operator has opened it, replaces the model
+  // strip below: the makes with the most cars for sale in Korea. Until then the
+  // strip is exactly what it was.
+  const korea = useKoreaAvailable();
+  const importRail = korea.available
+    ? korea.makes.slice(0, 12).map((m) => ({ make: m.make, count: m.count, korea: true }))
+    : importBrands;
 
   // ── Personalization rails ──
   const allInventory = useMemo(() => [...cars, ...rentalCars], [cars, rentalCars]);
@@ -508,24 +517,26 @@ export default function HomeScreen({ navigation }) {
           <SectionHeader
             title={t('browse.importEntryTitle')}
             actionLabel={t('browse.allBrands')}
-            onAction={() => navigation.navigate('ImportBrands')}
+            onAction={() => navigation.navigate(korea.available ? 'KoreaCars' : 'ImportBrands')}
           />
           <FlatList
             horizontal
-            data={importBrands}
+            data={importRail}
             keyExtractor={(b) => b.make}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalListPadding}
             renderItem={({ item }) => (
               <Pressable
                 style={styles.importBrandCard}
-                onPress={() => navigation.navigate('ImportBrandModels', { make: item.make })}
+                onPress={() => (item.korea
+                  ? navigation.navigate('KoreaCars', { make: item.make })
+                  : navigation.navigate('ImportBrandModels', { make: item.make }))}
                 accessibilityRole="button"
-                accessibilityLabel={`${item.make}, ${item.modelCount} models`}
+                accessibilityLabel={item.korea ? `${item.make}, ${t('korea.carsCount', { count: item.count })}` : `${item.make}, ${item.modelCount} models`}
               >
                 <BrandMark name={item.make} logoUrl={brandRow(item.make)?.logo_url} size={36} />
                 <Text style={styles.importBrandName} numberOfLines={1}>{item.make}</Text>
-                <Text style={styles.importBrandCount}>{t('browse.modelsCount', { count: item.modelCount })}</Text>
+                <Text style={styles.importBrandCount}>{item.korea ? t('korea.carsCount', { count: item.count.toLocaleString('en-US') }) : t('browse.modelsCount', { count: item.modelCount })}</Text>
               </Pressable>
             )}
           />

@@ -17,6 +17,23 @@ const BASE = '/api/backend'
 // counts as CONNECTED — the API answered, it just refused — while a network
 // throw or a 502/504 from the proxy (which returns exactly that when it cannot
 // reach the backend) counts as unreachable.
+/** GET /admin/encar/status — what the sync has done and what governs it. */
+export type EncarStatus = {
+  configured: { api_key: boolean; photo_prefix: boolean }
+  flags: { sync_enabled: boolean; catalog_public: boolean }
+  rules: Record<string, any>
+  costs: any
+  state: { baseline_started_at: string | null; baseline_completed_at: string | null; baseline_page: number; change_cursor: string | null; last_success_at: string | null; last_error: string | null; last_error_at: string | null; last_repair_at: string | null }
+  listings: number
+  row_ceiling: number
+  size_bytes: number
+  cache_rows: number
+  recent_runs: { id: number; kind: string; started_at: string; finished_at: string | null; ok: boolean | null; added: number; updated: number; removed: number; skipped: number; error: string | null }[]
+  usage: { month: { requests: number; bytes: number }; days: { day: string; requests: number; bytes: string }[]; monthly_bytes_allowance: number }
+  refresh: { used_today: number; daily_limit: number }
+  stale: boolean
+}
+
 export type ApiStatus = 'unknown' | 'ok' | 'unreachable'
 
 export type ActionCenterItem = {
@@ -1053,6 +1070,11 @@ export const api = {
     request<any>(`/admin/settings/${encodeURIComponent(key)}`, {
       method: 'PATCH', body: JSON.stringify({ value }),
     }),
+  // ── Korean imports (Encar mirror) ──────────────────────────────────────────
+  encarStatus: () => request<EncarStatus>('/admin/encar/status'),
+  encarRefresh: (id: string) =>
+    request<{ ok: boolean; note: string }>(`/admin/encar/listings/${encodeURIComponent(id)}/refresh`, { method: 'POST' }),
+
   // The public rate card — same numbers a customer would see, so a
   // fee-recording form can prefill what the office should be charging
   // without duplicating the whole settings read.

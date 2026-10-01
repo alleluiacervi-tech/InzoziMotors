@@ -69,6 +69,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/settings', icon: 'settings', label: 'Platform settings' },
       { href: '/brands', icon: 'tag', label: 'Brands' },
       { href: '/banner', icon: 'megaphone', label: 'Home banner' },
+      { href: '/imports/korea', icon: 'ship', label: 'Korean catalogue' },
       { href: '/imports/photos', icon: 'images', label: 'Catalogue images' },
       { href: '/centers', icon: 'location', label: 'Center setup' },
     ],

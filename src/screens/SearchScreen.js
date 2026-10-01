@@ -10,6 +10,7 @@ import { colors, radius, fonts } from '../theme';
 import { useApp } from '../context/AppContext';
 import { importCatalogMakes, FALLBACK_IMPORT_CATALOG } from '../data/importCatalog';
 import useImportCatalog from '../hooks/useImportCatalog';
+import useKoreaAvailable from '../hooks/useKoreaAvailable';
 
 // The Cars tab.
 //
@@ -71,7 +72,11 @@ export default function SearchScreen({ navigation }) {
   // images and any prices — fetched only once somebody opens the import list.
   const [importOpened, setImportOpened] = useState(false);
   React.useEffect(() => { if (scope === 'import') setImportOpened(true); }, [scope]);
-  const catalogue = useImportCatalog(null, { enabled: importOpened });
+  // Once the Korean catalogue is open it replaces the model catalogue: every car
+  // for sale in Korea, searched on the server. Until then (or if the server cannot
+  // be reached) the model catalogue below is shown exactly as before.
+  const korea = useKoreaAvailable();
+  const catalogue = useImportCatalog(null, { enabled: importOpened && !korea.available });
   const importModels = useMemo(() => {
     if (scope !== 'import' && !query) return [];
     if (!query) return catalogue;
@@ -207,6 +212,44 @@ export default function SearchScreen({ navigation }) {
     </View>
   );
 
+  const koreaHeader = (
+    <View>
+      <Pressable
+        style={styles.importEntry}
+        onPress={() => navigation.navigate('KoreaCars', { q: query || undefined })}
+        accessibilityRole="button"
+      >
+        <View style={styles.importEntryIcon}>
+          <Ionicons name="boat-outline" size={20} color={colors.textSecondary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.importEntryTitle}>{t('korea.doorTitle')}</Text>
+          <Text style={styles.importEntryBody}>{t('korea.doorBody', { count: korea.total.toLocaleString('en-US') })}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </Pressable>
+      <FlatList
+        horizontal
+        data={korea.makes.slice(0, 16)}
+        keyExtractor={(b) => b.make}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.brandRow}
+        renderItem={({ item }) => (
+          <Pressable
+            style={styles.brandChip}
+            onPress={() => navigation.navigate('KoreaCars', { make: item.make })}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.make}, ${t('korea.carsCount', { count: item.count })}`}
+          >
+            <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={36} />
+            <Text style={styles.brandChipName} numberOfLines={1}>{item.make}</Text>
+          </Pressable>
+        )}
+      />
+      <Text style={styles.importNote}>{t('korea.disclaimer')}</Text>
+    </View>
+  );
+
   const importHeader = (
     <View>
       {!query ? (
@@ -309,20 +352,20 @@ export default function SearchScreen({ navigation }) {
       ) : (
         <FlatList
           key="import"
-          data={importModels}
+          data={korea.available ? [] : importModels}
           keyExtractor={(m) => m.id}
           renderItem={renderImport}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
-          ListHeaderComponent={importHeader}
+          ListHeaderComponent={korea.available ? koreaHeader : importHeader}
           ListFooterComponent={sourcingCard}
-          ListEmptyComponent={
+          ListEmptyComponent={korea.available ? null : (
             <View style={styles.emptyState}>
               <Ionicons name="boat-outline" size={44} color={colors.border} />
               <Text style={styles.emptyTitle}>{t('filters.noResults')}</Text>
               <Text style={styles.emptySub}>{t('browse.importEmpty')}</Text>
             </View>
-          }
+          )}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           {...LIST_TUNING}

@@ -317,6 +317,7 @@ app.use('/admin/statements', require('./src/routes/statements'));
 app.use('/admin/vehicles',  require('./src/routes/vehicle-history'));
 app.use('/admin/vehicles',  require('./src/routes/vehicle-intelligence'));
 app.use('/vehicles',        require('./src/routes/public-vehicles'));
+app.use('/admin/encar',     require('./src/routes/admin-encar'));
 app.use('/admin',           require('./src/routes/admin'));
 // Ahead of /imports: that router's /:id would otherwise swallow "korea".
 app.use('/imports/korea',   require('./src/routes/imports-korea'));
@@ -380,6 +381,27 @@ app.get('/health/ready', async (req, res) => {
       database: 'unreachable',
       ts: new Date().toISOString(),
     });
+  }
+});
+
+// The Korean-import feed: 200 while it is switched off or fresh, 503 when it is
+// ON and has not succeeded for an hour — which is what the uptime check pages on.
+// Reveals only that state, never counts or settings.
+app.get('/health/encar', async (_req, res) => {
+  try {
+    const store = require('./src/lib/encar/store');
+    const [flags, state] = await Promise.all([store.loadFlags(pool), store.getState(pool)]);
+    if (!flags.sync_enabled) return res.json({ status: 'off' });
+    const last = state?.last_success_at ? new Date(state.last_success_at).getTime() : 0;
+    const fresh = Date.now() - last < 3_600_000;
+    // While the very first baseline is still running there is no success yet:
+    // that is not an outage, so it is allowed up to six hours.
+    const loading = !state?.baseline_completed_at && state?.baseline_started_at
+      && Date.now() - new Date(state.baseline_started_at).getTime() < 6 * 3_600_000;
+    const ok = fresh || loading;
+    res.status(ok ? 200 : 503).json({ status: ok ? 'ok' : 'stale' });
+  } catch {
+    res.status(503).json({ status: 'unknown' });
   }
 });
 

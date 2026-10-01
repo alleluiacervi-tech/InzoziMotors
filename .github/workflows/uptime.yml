@@ -44,3 +44,22 @@ jobs:
             fi
           done
           exit "$fail"
+
+  korean-feed:
+    name: Korean import feed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # 200 while the feed is off or fresh; 503 only when it is switched ON and has
+      # not succeeded for an hour (backend /health/encar). A feed that is off is
+      # not an outage, so this stays green until the sync is turned on.
+      - name: Check the sync is fresh
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            code="$(curl -sS -o /tmp/encar.json -w '%{http_code}' --max-time 20 https://api.sawacars.com/health/encar || true)"
+            if [ "$code" = 200 ]; then echo "OK    $(cat /tmp/encar.json)"; exit 0; fi
+            [ "$attempt" = 3 ] || sleep 10
+          done
+          echo "::error title=Korean import feed is stale::the Encar sync has not succeeded for an hour ($(cat /tmp/encar.json 2>/dev/null || echo no response))"
+          exit 1

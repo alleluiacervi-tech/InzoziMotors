@@ -34,7 +34,7 @@ async function getState(db) {
 
 const STATE_COLUMNS = new Set([
   'baseline_started_at', 'baseline_completed_at', 'baseline_page', 'change_cursor',
-  'last_success_at', 'last_error', 'last_error_at',
+  'last_success_at', 'last_error', 'last_error_at', 'last_repair_at',
 ]);
 
 /** Allow-listed, so a typo can never become SQL. */
@@ -123,6 +123,39 @@ async function deleteListings(db, ids) {
   return rowCount;
 }
 
+/** Every id we hold, for the weekly cross-check against the export. */
+async function listIds(db) {
+  const { rows } = await db.query('SELECT id FROM encar_listings');
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Everything the admin status card shows, in a handful of cheap queries.
+ * `size_bytes` is the table plus its indexes: the number to watch against the
+ * storage budget (plan section 6).
+ */
+async function statusSummary(db) {
+  const [state, count, size, runs, cache, usage, month] = await Promise.all([
+    getState(db),
+    countListings(db),
+    db.query(`SELECT pg_total_relation_size('encar_listings')::bigint AS bytes`),
+    db.query(`SELECT id, kind, started_at, finished_at, ok, added, updated, removed, skipped, error
+                FROM encar_sync_runs ORDER BY started_at DESC LIMIT 10`),
+    db.query('SELECT COUNT(*)::int AS n FROM encar_detail_cache'),
+    db.query(`SELECT day, requests, bytes FROM encar_usage ORDER BY day DESC LIMIT 14`),
+    monthUsage(db),
+  ]);
+  return {
+    state,
+    listings: count,
+    size_bytes: Number(size.rows[0].bytes),
+    recent_runs: runs.rows,
+    cache_rows: cache.rows[0].n,
+    usage_days: usage.rows,
+    month,
+  };
+}
+
 async function startRun(db, kind) {
   const { rows } = await db.query('INSERT INTO encar_sync_runs (kind) VALUES ($1) RETURNING id', [kind]);
   return rows[0].id;
@@ -164,5 +197,5 @@ async function housekeeping(db) {
 
 module.exports = {
   DEFAULT_FLAGS, loadSetting, loadFlags, loadRules, getState, patchState, countListings,
-  upsertListings, deleteListings, startRun, finishRun, recordUsage, monthUsage, housekeeping,
+  upsertListings, deleteListings, listIds, statusSummary, startRun, finishRun, recordUsage, monthUsage, housekeeping,
 };
