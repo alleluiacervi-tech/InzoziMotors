@@ -11,27 +11,29 @@ refer to that document. Tick items in the PR that ships them.
 - [ ] **(You)** Ask encarapi support, in writing: may we store listing data, display photos in our app and website, and copy photos of cars a customer orders? Do photo views count against monthly traffic?
 - [ ] **(You)** Korean exporter partner: who buys, deregisters and ships; per-car cost sheet (export fee, inland transport, freight to Mombasa/Dar by category, insurance) — **E7**
 - [ ] **(You)** Answer E1–E8 (recommendations in the plan, §12)
-- [ ] Read-only spike script (`backend/scripts/encar-spike.js`): pulls one export, 200 details, 50 inspections and records, a day of the change feed; stores nothing; prints the §9 numbers
+- [x] Read-only spike script (`backend/scripts/encar-spike.js`): pulls one export, 200 details, 50 inspections and records, a day of the change feed; stores nothing; prints the §9 numbers — written (`backend/scripts/encar-spike.js`), **not yet run: needs the trial key**
 - [ ] Capture redacted fixtures (plates, VINs, contacts removed) for tests
 - [ ] Fill in plan §9; confirm or revise the budget in §6 and photo option **E3**
 - [ ] Go / no-go review with you
 
 ## Phase 1 — Data foundation (deploys with `encar_catalog_public` off)
 
-- [ ] **A1** `lib/encar/client.js`: auth header, shared limiter < 60/min, timeouts, backoff on 429/5xx, size guard
-- [ ] **A1** Add `x-api-key` and `api_key` to log redaction; test that the key never reaches a log line
-- [ ] **A5** Migration: `encar_listings`, `encar_detail_cache`, `encar_sync_state`, `encar_sync_runs`; indexes; `pg_trgm`; fillfactor; `schema.sql` updated
-- [ ] **A4** `encar_ingest_rules` setting (validated, editable) and defaults
-- [ ] Normaliser: 만원 → KRW, YYYYMM → year/month, English values (`lang=en`), fuel/category mapping, makes through `vehicle_makes` aliases
-- [ ] **A3** Worker `src/workers/encar-sync.js`: advisory lock, own pool, loop
-- [ ] Baseline import from `/api/catalog/export`, streamed (never loaded whole into memory), batches of 500
-- [ ] Change feed every 10 min: added / updated (write only on shown-field change) / reappeared / removed (delete); cursor saved after each batch
+- [x] **A1** `lib/encar/client.js`: auth header, shared limiter < 60/min, timeouts, backoff on 429/5xx, size guard
+- [x] **A1** Add `x-api-key` and `api_key` to log redaction; test that the key never reaches a log line
+- [x] **A5** Migration: `encar_listings`, `encar_detail_cache`, `encar_sync_state`, `encar_sync_runs`; indexes; `pg_trgm`; fillfactor; `schema.sql` updated — `0052_encar_mirror.sql` (`schema.sql` is documentation only and is not edited)
+- [x] **A4** `encar_ingest_rules` setting (validated, editable) and defaults — setting + `validateRules`; the admin editor is Phase 5
+- [x] Normaliser: man-won kept as the provider's unit, YYYYMM → year/month, English values (`lang=en`), photo prefix stripping, allow-listed fields only
+- [ ] Normaliser: makes through `vehicle_makes` aliases, body category (the provider's items carry none; check the export)
+- [x] **A3** Worker `src/workers/encar-sync.js`: advisory lock, own pool, loop
+- [x] Baseline import by paging `/api/catalog` (1000 per page, newest first, resumable). **The CSV-export baseline is still to do** — its columns are only known after the spike
+- [ ] Baseline from the CSV export, streamed (never loaded whole into memory) — after the spike
+- [x] Change feed every 10 min: added / updated (write only on shown-field change) / reappeared / removed (delete); cursor saved after each batch
 - [ ] Weekly drift repair from the export
-- [ ] **A6** Row ceiling with alert; `encar_sync_runs` kept 30 days
-- [ ] **A13** `encar_sync_enabled` and `encar_catalog_public` flags
-- [ ] **A7** `ops/backup.sh` excludes `encar_*` data; restore runbook note
-- [ ] `docker-compose.prod.yml`: `sawa-encar-sync` service; deploy script health-checks it
-- [ ] Tests: sync scenarios against Postgres with a mocked client (plan §8)
+- [x] **A6** Row ceiling with alert; `encar_sync_runs` kept 30 days
+- [x] **A13** `encar_flags` setting (`sync_enabled`, `catalog_public`), both off; `sync_enabled` is read by the worker, `catalog_public` by the Phase 2 routes
+- [x] **A7** `ops/backup.sh` excludes `encar_*` data; restore runbook note — restore runbook note still to write
+- [x] `docker-compose.prod.yml`: `sawa-encar-sync` service; deploy script health-checks it — service is `encar-sync`; `deploy.sh` and `rollback.sh` start it
+- [x] Tests: sync scenarios against Postgres with a mocked client (plan §8) — 48 unit tests pass locally; `encar-store.test.js` needs Postgres and will first run in CI
 - [ ] Production: run baseline, watch 7 days, record size and event volume
 
 ## Phase 2 — API and pricing

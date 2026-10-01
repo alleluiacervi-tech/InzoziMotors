@@ -99,7 +99,7 @@ log "rebuilding"
 $COMPOSE build api web admin || die "build failed"
 
 log "restarting"
-$COMPOSE up -d api web admin || die "restart failed — the host needs manual attention"
+$COMPOSE up -d api web admin encar-sync || die "restart failed — the host needs manual attention"
 
 log "waiting for readiness"
 for i in $(seq 1 30); do
