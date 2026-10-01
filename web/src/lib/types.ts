@@ -95,6 +95,8 @@ export interface Car {
   images?: string[] | null
   inspected: boolean
   inspection_score?: number | null
+  /** Server verdict: threshold met and no critical failure. Null/absent = unknown. */
+  inspection_passed?: boolean | null
   status: CarStatus
   views: number
   saves?: number
@@ -178,8 +180,8 @@ export interface InspectionReport {
   notes?: string | null
   completed_at?: string | null
   center?: string
-  /** Critical items that failed. The report endpoint only answers for a
-   *  passed inspection, so this is empty whenever it is present. */
+  /** Critical items that failed. Empty when the inspection passed; a listing
+   *  with critical failures is still published, with them shown. */
   critical_failures?: Array<{ id: string; label: string; category?: string }>
 }
 

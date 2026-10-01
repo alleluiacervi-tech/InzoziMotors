@@ -21,34 +21,32 @@ import { colors, radius, fonts, spacing, typography, shadows } from '../theme';
 import { importCatalogMakes, searchImportCatalog } from '../data/importCatalog';
 import { useApp } from '../context/AppContext';
 
-const ORIGIN_LABEL = {
-  'South Korea': 'South Korea',
-  Japan: 'Japan',
-  China: 'China',
-};
+const originKey = (country) => `importCatalog.origin_${String(country).replace(/ /g, '_')}`;
 
 function BrandTile({ entry, logoUrl, onPress }) {
+  const { t } = useApp();
+  const origin = t(originKey(entry.originCountry));
   return (
     <Pressable
       style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${entry.make}, ${entry.modelCount} models from ${entry.originCountry}`}
+      accessibilityLabel={t('importCatalog.tileLabel', { brand: entry.make, count: entry.modelCount, origin })}
     >
       <BrandMark name={entry.make} logoUrl={logoUrl} size={38} />
       <Text style={styles.tileName} numberOfLines={1}>{entry.make}</Text>
       <Text style={styles.tileMeta} numberOfLines={1}>
-        {entry.modelCount} {entry.modelCount === 1 ? 'model' : 'models'}
+        {entry.modelCount === 1 ? t('importCatalog.modelCountOne') : t('importCatalog.modelsCount', { count: entry.modelCount })}
       </Text>
       <Text style={styles.tileOrigin} numberOfLines={1}>
-        {ORIGIN_LABEL[entry.originCountry] || entry.originCountry}
+        {origin.startsWith('importCatalog.') ? entry.originCountry : origin}
       </Text>
     </Pressable>
   );
 }
 
 export default function ImportBrandsScreen({ navigation }) {
-  const { brandLogo } = useApp();
+  const { brandLogo, t } = useApp();
   const [query, setQuery] = useState('');
   const makes = useMemo(() => importCatalogMakes(), []);
 
@@ -79,7 +77,7 @@ export default function ImportBrandsScreen({ navigation }) {
 
   return (
     <Screen>
-      <BackHeader title="Import a new vehicle" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('importCatalog.brandsTitle')} onBack={() => navigation.goBack()} />
 
       <View style={styles.searchWrap}>
         <Ionicons name="search" size={18} color={colors.textSecondary} />
@@ -87,14 +85,14 @@ export default function ImportBrandsScreen({ navigation }) {
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
-          placeholder="Search a brand or model"
+          placeholder={t('importCatalog.searchPlaceholder')}
           placeholderTextColor={colors.textMuted}
           autoCorrect={false}
           returnKeyType="search"
-          accessibilityLabel="Search import brands and models"
+          accessibilityLabel={t('importCatalog.searchLabel')}
         />
         {trimmed.length > 0 && (
-          <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
+          <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel={t('importCatalog.clearSearch')}>
             <Ionicons name="close-circle" size={18} color={colors.textMuted} />
           </Pressable>
         )}
@@ -114,9 +112,7 @@ export default function ImportBrandsScreen({ navigation }) {
         ListHeaderComponent={
           <View style={styles.intro}>
             <Text style={styles.introText}>
-              Brand-new, zero-kilometre vehicles sourced to order from Japan, South
-              Korea and China. Pick a brand to see its full range, then ask us for
-              details on the one you want.
+              {t('importCatalog.brandsIntro')}
             </Text>
           </View>
         }
@@ -124,7 +120,7 @@ export default function ImportBrandsScreen({ navigation }) {
           trimmed && matchingModels.length > 0 ? (
             <View style={styles.modelMatches}>
               <Text style={styles.modelMatchesTitle}>
-                Models matching “{trimmed}”
+                {t('importCatalog.modelsMatching', { query: trimmed })}
               </Text>
               {matchingModels.map((m) => (
                 <Pressable
@@ -148,8 +144,8 @@ export default function ImportBrandsScreen({ navigation }) {
         ListEmptyComponent={matchingModels.length ? null : (
           <EmptyState
             icon="car-sport-outline"
-            title="No brand matches that"
-            sub={`Nothing in the import catalogue matches “${trimmed}”. Try the brand name on its own.`}
+            title={t('importCatalog.noBrandTitle')}
+            sub={t('importCatalog.noBrandBody', { query: trimmed })}
           />
         )}
       />

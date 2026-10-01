@@ -13,7 +13,7 @@ function VisibilityRow({ icon, label, description, enabled, onPress, disabled })
 }
 
 export default function ContactSettingsScreen({ navigation }) {
-  const { currentUser, updateCurrentUserProfile } = useApp();
+  const { currentUser, updateCurrentUserProfile, t } = useApp();
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [whatsapp, setWhatsApp] = useState(currentUser?.whatsapp_phone || '');
   const [phoneVisible, setPhoneVisible] = useState(!!currentUser?.phone_visible);
@@ -34,29 +34,29 @@ export default function ContactSettingsScreen({ navigation }) {
   const save = async () => {
     if (!eligible) return;
     const phonePattern = /^\+?[0-9 ()-]{9,24}$/;
-    if (phone.trim() && !phonePattern.test(phone.trim())) return setError('Enter a valid phone number including the country code.');
-    if (whatsapp.trim() && !phonePattern.test(whatsapp.trim())) return setError('Enter a valid WhatsApp number including the country code.');
+    if (phone.trim() && !phonePattern.test(phone.trim())) return setError(t('contactSettings.invalidPhone'));
+    if (whatsapp.trim() && !phonePattern.test(whatsapp.trim())) return setError(t('contactSettings.invalidWhatsapp'));
     setSaving(true); setError('');
     try {
       await updateCurrentUserProfile({ phone: phone.trim(), whatsapp_phone: whatsapp.trim(), phone_visible: phoneVisible && !!phone.trim(), whatsapp_visible: whatsappVisible && !!whatsapp.trim() });
-      showToast('Contact settings saved.', 'success');
+      showToast(t('contactSettings.saved'), 'success');
       navigation.goBack();
     } catch (err) {
-      setError(err?.message || 'Could not save your contact settings.');
+      setError(err?.message || t('contactSettings.saveFailed'));
     } finally { setSaving(false); }
   };
 
-  return <Screen background={colors.bg}><BackHeader title="Contact visibility" onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    {!eligible && <View style={styles.locked}><Ionicons name="lock-closed-outline" size={23} color={colors.amberText} /><View style={{ flex: 1 }}><Text style={styles.lockedTitle}>Verification required</Text><Text style={styles.lockedText}>Contact disclosure unlocks after the team approves your identity{currentUser?.seller_type === 'showroom' ? ' and business' : ''}. An administrator can also add these details for you.</Text></View></View>}
-    <Text style={styles.intro}>Choose exactly which details signed-in buyers can request from a live listing. Turning visibility off hides that channel immediately.</Text>
-    <Text style={styles.label}>Phone number</Text><TextInput value={phone} onChangeText={(value) => { setPhone(value); setError(''); }} editable={eligible && !saving} keyboardType="phone-pad" placeholder="+250 ..." placeholderTextColor={colors.textMuted} style={styles.input} />
-    <Text style={[styles.label, { marginTop: 17 }]}>WhatsApp number</Text><TextInput value={whatsapp} onChangeText={(value) => { setWhatsApp(value); setError(''); }} editable={eligible && !saving} keyboardType="phone-pad" placeholder="+250 ..." placeholderTextColor={colors.textMuted} style={styles.input} />
-    <Text style={styles.section}>Buyer access</Text>
-    <VisibilityRow icon="call-outline" label="Allow phone calls" description={phone.trim() ? 'Signed-in buyers can request this phone number.' : 'Add a phone number first.'} enabled={phoneVisible} onPress={() => setPhoneVisible((value) => !value)} disabled={!eligible || !phone.trim()} />
-    <VisibilityRow icon="logo-whatsapp" label="Allow WhatsApp" description={whatsapp.trim() ? 'Signed-in buyers can request this WhatsApp number.' : 'Add a WhatsApp number first.'} enabled={whatsappVisible} onPress={() => setWhatsAppVisible((value) => !value)} disabled={!eligible || !whatsapp.trim()} />
-    <View style={styles.safety}><Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} /><Text style={styles.safetyText}>Every disclosure is authenticated and logged. Buyers still accept the direct-deal notice before your contact is returned.</Text></View>
+  return <Screen background={colors.bg}><BackHeader title={t('contactSettings.title')} onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    {!eligible && <View style={styles.locked}><Ionicons name="lock-closed-outline" size={23} color={colors.amberText} /><View style={{ flex: 1 }}><Text style={styles.lockedTitle}>{t('contactSettings.verificationRequired')}</Text><Text style={styles.lockedText}>{t(currentUser?.seller_type === 'showroom' ? 'contactSettings.lockedBodyBusiness' : 'contactSettings.lockedBody')}</Text></View></View>}
+    <Text style={styles.intro}>{t('contactSettings.intro')}</Text>
+    <Text style={styles.label}>{t('contactSettings.phoneNumber')}</Text><TextInput value={phone} onChangeText={(value) => { setPhone(value); setError(''); }} editable={eligible && !saving} keyboardType="phone-pad" placeholder="+250 ..." placeholderTextColor={colors.textMuted} style={styles.input} />
+    <Text style={[styles.label, { marginTop: 17 }]}>{t('contactSettings.whatsappNumber')}</Text><TextInput value={whatsapp} onChangeText={(value) => { setWhatsApp(value); setError(''); }} editable={eligible && !saving} keyboardType="phone-pad" placeholder="+250 ..." placeholderTextColor={colors.textMuted} style={styles.input} />
+    <Text style={styles.section}>{t('contactSettings.buyerAccess')}</Text>
+    <VisibilityRow icon="call-outline" label={t('contactSettings.allowPhone')} description={phone.trim() ? t('contactSettings.phoneRequestable') : t('contactSettings.addPhoneFirst')} enabled={phoneVisible} onPress={() => setPhoneVisible((value) => !value)} disabled={!eligible || !phone.trim()} />
+    <VisibilityRow icon="logo-whatsapp" label={t('contactSettings.allowWhatsapp')} description={whatsapp.trim() ? t('contactSettings.whatsappRequestable') : t('contactSettings.addWhatsappFirst')} enabled={whatsappVisible} onPress={() => setWhatsAppVisible((value) => !value)} disabled={!eligible || !whatsapp.trim()} />
+    <View style={styles.safety}><Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} /><Text style={styles.safetyText}>{t('contactSettings.safety')}</Text></View>
     {!!error && <Text style={styles.error}>{error}</Text>}
-    <Button title="Save contact settings" icon="checkmark-outline" loading={saving} disabled={!eligible} onPress={save} style={{ marginTop: 16 }} />
+    <Button title={t('contactSettings.saveBtn')} icon="checkmark-outline" loading={saving} disabled={!eligible} onPress={save} style={{ marginTop: 16 }} />
   </ScrollView></Screen>;
 }
 

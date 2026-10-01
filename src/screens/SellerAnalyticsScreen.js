@@ -94,7 +94,7 @@ const daysSince = (iso) => {
 };
 
 export default function SellerAnalyticsScreen({ navigation, route }) {
-  const { submissions, isLoggedIn, demoMode } = useApp();
+  const { submissions, isLoggedIn, demoMode, t } = useApp();
   const liveSubmissions = submissions.filter((s) => s.status === 'live' || s.status === 'sold');
   const [selectedId, setSelectedId] = useState(
     route?.params?.subId || liveSubmissions[0]?.id || 'sub1'
@@ -155,32 +155,32 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Seller Analytics" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('sellerAnalytics.title')} onBack={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
         {/* Hero stats */}
         <LinearGradient colors={[colors.navyMid, colors.navyDeep]} style={styles.hero}>
-          <Text style={styles.heroLabel}>All listings · all time</Text>
+          <Text style={styles.heroLabel}>{t('sellerAnalytics.allListingsAllTime')}</Text>
           <View style={styles.heroStats}>
             <View style={styles.heroStatItem}>
               <Text style={styles.heroStatValue}>{totalViews}</Text>
-              <Text style={styles.heroStatLabel}>Total views</Text>
+              <Text style={styles.heroStatLabel}>{t('sellerAnalytics.totalViews')}</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStatItem}>
               <Text style={styles.heroStatValue}>{totalSaves}</Text>
-              <Text style={styles.heroStatLabel}>Saves</Text>
+              <Text style={styles.heroStatLabel}>{t('sellerAnalytics.saves')}</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStatItem}>
               <Text style={styles.heroStatValue}>{allLive.length}</Text>
-              <Text style={styles.heroStatLabel}>Live</Text>
+              <Text style={styles.heroStatLabel}>{t('sellerAnalytics.live')}</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStatItem}>
               <Text style={styles.heroStatValue}>{totalInquiries}</Text>
-              <Text style={styles.heroStatLabel}>Inquiries</Text>
+              <Text style={styles.heroStatLabel}>{t('sellerAnalytics.inquiries')}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -188,7 +188,7 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
         {/* Listing selector */}
         {liveSubmissions.length > 0 ? (
           <>
-            <Text style={styles.sectionTitle}>Listing performance</Text>
+            <Text style={styles.sectionTitle}>{t('sellerAnalytics.listingPerformance')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectorRow}>
               {liveSubmissions.map((sub) => (
                 <Pressable
@@ -207,19 +207,11 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
             <View style={styles.chartCard}>
               <View style={styles.chartHeader}>
                 <View>
-                  <Text style={styles.chartTitle}>Views this week</Text>
+                  <Text style={styles.chartTitle}>{t('sellerAnalytics.viewsThisWeek')}</Text>
                   <Text style={styles.chartSub}>
-                    {analytics.viewsThisWeek === null ? (
-                      <>
-                        <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{analytics.views}</Text>
-                        {' '}views total
-                      </>
-                    ) : (
-                      <>
-                        <Text style={{ color: colors.primary, fontFamily: fonts.extraBold }}>{analytics.viewsThisWeek}</Text>
-                        {' '}views · {analytics.trend === 'up' ? '↑ trending up' : 'stable'}
-                      </>
-                    )}
+                    {analytics.viewsThisWeek === null
+                      ? t('sellerAnalytics.viewsTotal', { count: analytics.views })
+                      : t('sellerAnalytics.viewsWeeklyTrend', { count: analytics.viewsThisWeek, trend: analytics.trend === 'up' ? t('sellerAnalytics.trendingUp') : t('sellerAnalytics.stable') })}
                   </Text>
                 </View>
                 <View style={[styles.trendChip, { backgroundColor: analytics.trend === 'up' ? colors.greenTint : colors.surfaceAlt }]}>
@@ -237,59 +229,41 @@ export default function SellerAnalyticsScreen({ navigation, route }) {
                 <BarChart data={VIEWS_DATA} />
               ) : (
                 <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: fonts.regular }}>
-                  No daily breakdown is available for this listing yet.
+                  {t('sellerAnalytics.noDailyBreakdown')}
                 </Text>
               )}
             </View>
 
             {/* Metrics grid */}
             <View style={styles.metricsGrid}>
-              <StatCard icon="eye-outline" label="Total Views" value={analytics.views} color={colors.statusScheduled} />
-              <StatCard icon="heart-outline" label="Saves" value={analytics.saves} color="#EF4444" />
-              <StatCard icon="chatbubble-outline" label="Inquiries" value={analytics.inquiries} color={colors.amber} />
-              <StatCard icon="call-outline" label="Contact requests" value={analytics.contacts || 0} color={colors.statusLive} />
+              <StatCard icon="eye-outline" label={t('sellerAnalytics.totalViewsMetric')} value={analytics.views} color={colors.statusScheduled} />
+              <StatCard icon="heart-outline" label={t('sellerAnalytics.savesMetric')} value={analytics.saves} color="#EF4444" />
+              <StatCard icon="chatbubble-outline" label={t('sellerAnalytics.inquiriesMetric')} value={analytics.inquiries} color={colors.amber} />
+              <StatCard icon="call-outline" label={t('sellerAnalytics.contactRequests')} value={analytics.contacts || 0} color={colors.statusLive} />
               <StatCard
                 icon="time-outline"
-                label="Days Live"
+                label={t('sellerAnalytics.daysLiveMetric')}
                 value={analytics.daysLive}
-                sub={`Avg: ${analytics.categoryAvgDays}d`}
-                color={analytics.daysLive > analytics.categoryAvgDays ? colors.amber : colors.green}
+                color={colors.green}
               />
             </View>
 
-            {/* Time on market */}
-            <View style={styles.tomCard}>
-              <Text style={styles.tomTitle}>Time on market</Text>
-              <View style={styles.tomBar}>
-                <View style={[styles.tomFill, { width: `${Math.min(100, (analytics.daysLive / analytics.categoryAvgDays) * 100)}%` }]} />
-              </View>
-              <View style={styles.tomLabels}>
-                <Text style={styles.tomLabel}>{analytics.daysLive} days live</Text>
-                <Text style={styles.tomLabel}>Category avg: {analytics.categoryAvgDays} days</Text>
-              </View>
-              {analytics.daysLive < analytics.categoryAvgDays && (
-                <View style={styles.tomHint}>
-                  <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-                  <Text style={styles.tomHintText}>Selling faster than average — great sign!</Text>
-                </View>
-              )}
-            </View>
           </>
         ) : (
           <View style={styles.empty}>
             <Ionicons name="bar-chart-outline" size={44} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No analytics yet</Text>
-            <Text style={styles.emptySub}>Analytics appear once your car goes live on the marketplace.</Text>
+            <Text style={styles.emptyTitle}>{t('sellerAnalytics.noAnalytics')}</Text>
+            <Text style={styles.emptySub}>{t('sellerAnalytics.noAnalyticsSub')}</Text>
           </View>
         )}
 
         {/* Tips card */}
         <View style={styles.tipsCard}>
-          <Text style={styles.tipsTitle}>Tips to sell faster</Text>
+          <Text style={styles.tipsTitle}>{t('sellerAnalytics.tipsTitle')}</Text>
           {[
-            { icon: 'pricetag-outline', tip: 'Price within 5% of market average to attract more buyers' },
-            { icon: 'chatbubble-outline', tip: 'Reply to inquiries within 2h — fast response = 2× more views' },
-            { icon: 'star-outline', tip: 'Ask satisfied buyers for a review to boost your trust score' },
+            { icon: 'pricetag-outline', tip: t('sellerAnalytics.tip1') },
+            { icon: 'chatbubble-outline', tip: t('sellerAnalytics.tip2') },
+            { icon: 'create-outline', tip: t('sellerAnalytics.tip3') },
           ].map((item, i) => (
             <View key={i} style={[styles.tipRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderSoft, marginTop: 10, paddingTop: 10 }]}>
               <View style={styles.tipIcon}>

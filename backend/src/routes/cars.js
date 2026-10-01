@@ -89,6 +89,16 @@ const INTERNAL_CAR_COLUMNS = [
   'registration_plate', 'vin_key', 'vehicle_id',
 ];
 
+// Whether the car's latest complete inspection passed (score at the threshold
+// and no critical failure). The listing shows a grade only when it did — a
+// score alone cannot say that a failed brake check sits behind a high number.
+// Computed rather than stored so it can never disagree with the inspection.
+const inspectionPassedSelect = (alias) =>
+  `(SELECT i.passed FROM inspections i
+     WHERE i.car_id = ${alias}.id AND i.status = 'complete'
+       AND i.checklist_version = '${CHECKLIST_VERSION}'
+     ORDER BY i.completed_at DESC LIMIT 1) AS inspection_passed`;
+
 /** `c.id, c.title, …` for a SELECT list. */
 const publicCarSelect = (alias, columns = PUBLIC_CAR_COLUMNS) =>
   columns.map((col) => `${alias}.${col}`).join(', ');
@@ -228,7 +238,7 @@ router.get('/', async (req, res) => {
                   c.${safeSort} ${safeOrder}
          LIMIT $${params.length - 1} OFFSET $${params.length}
        )
-       SELECT ${publicCarSelect('c')},
+       SELECT ${publicCarSelect('c')}, ${inspectionPassedSelect('c')},
               ${sellerDisplayColumns('u')}, u.trust_score AS seller_trust,
               u.id_verified AS seller_id_verified,
               u.business_verified AS seller_business_verified,
@@ -288,7 +298,7 @@ router.get('/featured', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT f.id AS placement_id, f.kind, f.slot, f.headline, f.ends_at,
-              ${publicCarSelect('c')},
+              ${publicCarSelect('c')}, ${inspectionPassedSelect('c')},
               ${sellerDisplayColumns('u')},
               CASE WHEN ${PRICE_DROP_IS_REAL} THEN last_change.prior_price END AS previous_price,
               CASE WHEN ${PRICE_DROP_IS_REAL} THEN last_change.changed_at END AS price_dropped_at
@@ -397,7 +407,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
       `SELECT i.checklist_results, i.score, i.completed_at FROM inspections i
        JOIN submissions s ON s.id = i.submission_id
        JOIN cars c ON c.id = i.car_id
-       WHERE i.car_id = $1 AND i.status = 'complete' AND i.passed = TRUE
+       WHERE i.car_id = $1 AND i.status = 'complete'
          AND i.checklist_version = $2 AND s.seller_id = c.seller_id
          AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model) AND s.year = c.year
        ORDER BY completed_at DESC LIMIT 1`,
@@ -406,7 +416,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
     if (!inspRes.rowCount) return res.status(404).json({ error: 'Vehicle history not found' });
     const checklist = inspRes.rows[0].checklist_results;
     const evaluated = evaluateChecklist(checklist);
-    if (!evaluated.valid || !evaluated.passed || evaluated.score !== Number(inspRes.rows[0].score)) {
+    if (!evaluated.valid || evaluated.score !== Number(inspRes.rows[0].score)) {
       return res.status(404).json({ error: 'Vehicle history not found' });
     }
     const docVerdict = (itemId) => checklist[itemId] || 'unknown';
@@ -549,6 +559,7 @@ router.get('/:id', requireUuid('id'), optionalAuth, async (req, res) => {
     // synthesised; the app renders an empty history rather than a fake one.
     const { rows } = await pool.query(
       `SELECT ${publicCarSelect('c', [...PUBLIC_CAR_DETAIL_COLUMNS, ...INTERNAL_CAR_COLUMNS])},
+              ${inspectionPassedSelect('c')},
               ${sellerDisplayColumns('u')}, u.phone AS seller_phone,
               u.whatsapp_phone AS seller_whatsapp,
               u.phone_visible AS seller_phone_visible,

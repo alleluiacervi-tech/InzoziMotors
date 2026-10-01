@@ -74,9 +74,9 @@ const TIME_SLOTS = [
 const DATES = getDates();
 
 export default function InspectionSchedulingScreen({ navigation, route }) {
-  const carName = route?.params?.carName || 'Your Car';
   const submissionId = route?.params?.submissionId || null;
   const { scheduleInspection, demoMode, t } = useApp();
+  const carName = route?.params?.carName || t('inspectionScheduling.yourCar');
   const [centers, setCenters] = useState(demoMode ? DEMO_CENTERS : []);
   const [centersError, setCentersError] = useState('');
   const [booking, setBooking] = useState(false);
@@ -92,16 +92,16 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
       .then((rows) => {
         if (!current) return;
         setCenters(rows);
-        setCentersError(rows.length ? '' : 'No inspection centers are currently accepting bookings.');
+        setCentersError(rows.length ? '' : t('inspectionScheduling.noCenters'));
         setSelectedCenter((value) => rows.some((center) => center.id === value) ? value : null);
       })
       .catch((error) => {
         if (!current || demoMode) return;
         setCenters([]);
-        setCentersError(error.message || 'Could not load inspection centers. Try again.');
+        setCentersError(error.message || t('inspectionScheduling.centersFailed'));
       });
     return () => { current = false; };
-  }, [demoMode]);
+  }, [demoMode, t]);
 
   const handleBook = async () => {
     const center = centers.find((c) => c.id === selectedCenter);
@@ -164,7 +164,7 @@ export default function InspectionSchedulingScreen({ navigation, route }) {
                   <Text style={styles.centerAddress}>{c.address}</Text>
                   <View style={styles.centerMeta}>
                     <Ionicons name="time-outline" size={12} color={colors.textMuted} />
-                    <Text style={styles.centerMetaText}>Capacity {c.daily_capacity} / day</Text>
+                    <Text style={styles.centerMetaText}>{t('inspectionScheduling.capacity', { count: c.daily_capacity })}</Text>
                   </View>
                 </View>
                 {selectedCenter === c.id && (

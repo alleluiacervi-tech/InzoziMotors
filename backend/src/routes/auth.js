@@ -70,6 +70,31 @@ async function revokeSessions(client, userId) {
 // same one requireAuth just ran) compares against the right version.
 const SOCKET_TICKET_TTL = '60s';
 
+// POST /auth/refresh — a fresh session token for a session that is still valid.
+//
+// Tokens live 30 days from sign-in, so a person who opens the app every week
+// was still signed out a month after they last typed a password. The app calls
+// this once per launch, which makes the 30 days run from the last visit instead.
+// It proves nothing new: requireAuth has already checked the signature and the
+// live account state (suspended, closed, version bumped), so it cannot revive a
+// dead session. Admin sessions are deliberately not renewable (12-hour limit),
+// and neither is a socket ticket or any other purpose-scoped token.
+router.post('/refresh', requireAuth, async (req, res) => {
+  if (req.user.role === 'admin' || req.user.purpose || req.user.scope) {
+    return res.status(403).json({ error: 'This session cannot be renewed' });
+  }
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, email, role, name, token_version FROM users WHERE id = $1', [req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'User not found' });
+    res.json({ token: makeToken(rows[0]) });
+  } catch (err) {
+    log.error('refresh error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST /auth/socket-ticket
 router.post('/socket-ticket', requireAuth, (req, res) => {
   const ticket = jwt.sign(

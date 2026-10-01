@@ -1,3 +1,4 @@
+import { trustGrade } from '../data/trustGrade';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,54 +14,48 @@ import { useApp } from '../context/AppContext';
 const SCORE_COMPONENTS = [
   {
     id: 'id',
-    label: 'ID Verified',
+    labelKey: 'trustScore.compId',
     maxPts: 30,
     icon: 'finger-print-outline',
     color: colors.primary,
     getPts: (p) => p.idVerified ? 30 : 0,
-    description: 'Confirmed government ID + selfie',
-    improve: 'Submit your National ID and selfie in ID Verification to earn 30 pts instantly.',
+    descriptionKey: 'trustScore.compIdDesc',
+    improveKey: 'trustScore.compIdImprove',
   },
   {
     id: 'sales',
-    label: 'Completed Sales',
+    labelKey: 'trustScore.compSales',
     maxPts: 30,
     icon: 'car-outline',
     color: colors.primary,
     getPts: (p) => Math.min(30, p.completedSales || 0),
-    description: '1 point per completed sale, max 30',
-    improve: 'Each verified sale adds 1 point. Respond quickly and keep listing information accurate.',
+    descriptionKey: 'trustScore.compSalesDesc',
+    improveKey: 'trustScore.compSalesImprove',
   },
   {
     id: 'response',
-    label: 'Response Rate',
+    labelKey: 'trustScore.compResponse',
     maxPts: 20,
     icon: 'chatbubble-outline',
     color: colors.amberText,
     getPts: (p) => Math.round(((p.responseRate || 0) / 100) * 20),
-    description: 'Messages replied to within 24 hours',
-    improve: 'Reply to every buyer inquiry within 24h. Consistent response earns full 20 pts.',
+    descriptionKey: 'trustScore.compResponseDesc',
+    improveKey: 'trustScore.compResponseImprove',
   },
   {
     id: 'reviews',
-    label: 'Buyer Reviews',
+    labelKey: 'trustScore.compReviews',
     maxPts: 20,
     icon: 'star-outline',
     color: colors.amberText,
     getPts: (p) => Math.round(((p.avgRating || 0) / 5) * 20),
-    description: 'Average star rating × 4',
-    improve: 'Build a strong platform record through accurate listings and respectful communication.',
+    descriptionKey: 'trustScore.compReviewsDesc',
+    improveKey: 'trustScore.compReviewsImprove',
   },
 ];
 
-function getGrade(score) {
-  if (score >= 85) return { letter: 'A', label: 'Excellent', color: colors.greenText };
-  if (score >= 70) return { letter: 'B', label: 'Good', color: colors.statusScheduled };
-  if (score >= 55) return { letter: 'C', label: 'Fair', color: colors.amberText };
-  return { letter: 'D', label: 'Needs work', color: colors.alertRed };
-}
 
-function TrustGauge({ score, grade }) {
+function TrustGauge({ score, grade, gradeLabel }) {
   const SIZE = 160;
   const R = 64;
   const C = 2 * Math.PI * R;
@@ -96,13 +91,14 @@ function TrustGauge({ score, grade }) {
         / 100
       </SvgText>
       <SvgText x={SIZE / 2} y={SIZE / 2 + 30} textAnchor="middle" fontSize="13" fontWeight="bold" fill={grade.color}>
-        {grade.letter} · {grade.label}
+        {grade.letter} · {gradeLabel}
       </SvgText>
     </Svg>
   );
 }
 
 function ComponentRow({ comp, profile, expanded, onToggle }) {
+  const { t } = useApp();
   const pts = comp.getPts(profile);
   const pct = Math.round((pts / comp.maxPts) * 100);
 
@@ -113,7 +109,7 @@ function ComponentRow({ comp, profile, expanded, onToggle }) {
           <Ionicons name={comp.icon} size={18} color={comp.color} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.compLabel}>{comp.label}</Text>
+          <Text style={styles.compLabel}>{t(comp.labelKey)}</Text>
           <View style={styles.compBarWrap}>
             <View style={styles.compBar}>
               <View style={[styles.compBarFill, { width: `${pct}%`, backgroundColor: comp.color }]} />
@@ -125,17 +121,17 @@ function ComponentRow({ comp, profile, expanded, onToggle }) {
       </Pressable>
       {expanded && (
         <View style={styles.compDetail}>
-          <Text style={styles.compDesc}>{comp.description}</Text>
+          <Text style={styles.compDesc}>{t(comp.descriptionKey)}</Text>
           {pts < comp.maxPts && (
             <View style={styles.improveCard}>
               <Ionicons name="bulb-outline" size={14} color={colors.amber} />
-              <Text style={styles.improveText}>{comp.improve}</Text>
+              <Text style={styles.improveText}>{t(comp.improveKey)}</Text>
             </View>
           )}
           {pts === comp.maxPts && (
             <View style={[styles.improveCard, { backgroundColor: colors.greenTint }]}>
               <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-              <Text style={[styles.improveText, { color: colors.greenText }]}>Maximum score reached!</Text>
+              <Text style={[styles.improveText, { color: colors.greenText }]}>{t('trustScore.maxScoreReached')}</Text>
             </View>
           )}
         </View>
@@ -146,7 +142,7 @@ function ComponentRow({ comp, profile, expanded, onToggle }) {
 
 export default function TrustScoreScreen({ navigation, route }) {
   const sellerName = route.params?.sellerName;
-  const { currentUser, isLoggedIn, demoMode } = useApp();
+  const { currentUser, isLoggedIn, demoMode, t } = useApp();
   // Real user id (UUID) when navigated from an API-backed context. The drawer
   // opens this screen with no params at all — that means "my own score", so
   // fall back to the signed-in user rather than to a canned 72/100 profile.
@@ -189,16 +185,16 @@ export default function TrustScoreScreen({ navigation, route }) {
     const loading = Boolean(userId) && !failed;
     return (
       <Screen background={colors.bg}>
-        <BackHeader title="Trust Score" onBack={() => navigation.goBack()} />
+        <BackHeader title={t('trustScore.title')} onBack={() => navigation.goBack()} />
         {loading ? (
-          <LoadingState label="Loading trust score…" />
+          <LoadingState label={t('trustScore.loading')} />
         ) : (
           <ErrorState
             icon="ribbon-outline"
-            title={isLoggedIn ? 'Trust score not available' : 'Sign in to see your trust score'}
+            title={isLoggedIn ? t('trustScore.notAvailable') : t('trustScore.signInPrompt')}
             sub={isLoggedIn
-              ? "We couldn't load this trust score. Check your connection and try again."
-              : 'Your score builds from ID verification, completed sales, response rate and buyer reviews.'}
+              ? t('trustScore.errorSub')
+              : t('trustScore.guestSub')}
           />
         )}
       </Screen>
@@ -208,31 +204,31 @@ export default function TrustScoreScreen({ navigation, route }) {
   const score = apiScore
     ? apiScore.totalScore
     : SCORE_COMPONENTS.reduce((sum, c) => sum + c.getPts(profile), 0);
-  const grade = getGrade(score);
+  const grade = trustGrade(score);
 
   return (
     <Screen background={colors.bg}>
-      <BackHeader title="Trust Score" onBack={() => navigation.goBack()} />
+      <BackHeader title={t('trustScore.title')} onBack={() => navigation.goBack()} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Gauge hero */}
         <View style={styles.gaugeSection}>
-          <TrustGauge score={score} grade={grade} />
+          <TrustGauge score={score} grade={grade} gradeLabel={t(grade.labelKey)} />
           {sellerName && (
             <Text style={styles.sellerName}>{sellerName}</Text>
           )}
           <Text style={styles.gaugeDesc}>
-            Trust score out of 100 points across 4 verified categories
+            {t('trustScore.gaugeSub')}
           </Text>
           {profile.idVerified && (
             <View style={styles.verifiedRow}>
               <View style={styles.verifiedPill}>
                 <Ionicons name="checkmark-circle" size={14} color={colors.green} />
-                <Text style={styles.verifiedText}>ID Verified</Text>
+                <Text style={styles.verifiedText}>{t('trustScore.idVerified')}</Text>
               </View>
               <View style={[styles.verifiedPill, { backgroundColor: colors.greenTint }]}>
                 <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
-                <Text style={[styles.verifiedText, { color: colors.primary }]}>Verified Seller</Text>
+                <Text style={[styles.verifiedText, { color: colors.primary }]}>{t('trustScore.verifiedSeller')}</Text>
               </View>
             </View>
           )}
@@ -241,10 +237,10 @@ export default function TrustScoreScreen({ navigation, route }) {
         {/* Quick stats */}
         <View style={styles.quickStats}>
           {[
-            { icon: 'car-outline', label: 'Sales', value: profile.completedSales || 0, color: colors.primary },
-            { icon: 'chatbubble-outline', label: 'Response', value: `${profile.responseRate || 0}%`, color: colors.amberText },
-            { icon: 'star', label: 'Rating', value: `${(profile.avgRating || 0).toFixed(1)} ⭐`, color: colors.amberText },
-            { icon: 'chatbox-outline', label: 'Reviews', value: profile.totalReviews || profile.reviewCount || 0, color: colors.primary },
+            { icon: 'car-outline', label: t('trustScore.sales'), value: profile.completedSales || 0, color: colors.primary },
+            { icon: 'chatbubble-outline', label: t('trustScore.response'), value: `${profile.responseRate || 0}%`, color: colors.amberText },
+            { icon: 'star', label: t('trustScore.rating'), value: `${(profile.avgRating || 0).toFixed(1)} ⭐`, color: colors.amberText },
+            { icon: 'chatbox-outline', label: t('trustScore.reviews'), value: profile.totalReviews || profile.reviewCount || 0, color: colors.primary },
           ].map((s, i) => (
             <View key={s.label} style={[styles.quickStat, i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.borderSoft }]}>
               <Text style={[styles.quickStatValue, { color: s.color }]}>{s.value}</Text>
@@ -254,7 +250,7 @@ export default function TrustScoreScreen({ navigation, route }) {
         </View>
 
         {/* Component breakdown */}
-        <Text style={styles.sectionTitle}>Score breakdown</Text>
+        <Text style={styles.sectionTitle}>{t('trustScore.scoreBreakdown')}</Text>
         <View style={styles.components}>
           {SCORE_COMPONENTS.map((comp, i) => (
             <View key={comp.id} style={i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderSoft }}>
@@ -270,16 +266,14 @@ export default function TrustScoreScreen({ navigation, route }) {
 
         {/* How trust score works */}
         <View style={styles.howCard}>
-          <Text style={styles.howTitle}>How trust score works</Text>
-          <Text style={styles.howBody}>
-            Your trust score signals reliability to buyers. A higher score means more visibility in search results, priority scheduling for inspections, and greater buyer confidence — all leading to faster sales.
-          </Text>
+          <Text style={styles.howTitle}>{t('trustScore.howTrustScoreWorks')}</Text>
+          <Text style={styles.howBody}>{t('trustScore.howBody')}</Text>
           <View style={styles.howGrid}>
             {[
-              { range: '85–100', grade: 'A', label: 'Excellent · Priority listing' },
-              { range: '70–84', grade: 'B', label: 'Good · Standard listing' },
-              { range: '55–69', grade: 'C', label: 'Fair · Limited visibility' },
-              { range: '< 55', grade: 'D', label: 'Needs work · Review required' },
+              { range: '85–100', grade: 'A', label: t('trustScore.gradeExcellent') },
+              { range: '70–84', grade: 'B', label: t('trustScore.gradeGood') },
+              { range: '55–69', grade: 'C', label: t('trustScore.gradeFair') },
+              { range: '< 55', grade: 'D', label: t('trustScore.gradeNeedsWork') },
             ].map((g) => (
               <View key={g.grade} style={styles.gradeRow}>
                 <Text style={styles.gradeText}>{g.grade}</Text>

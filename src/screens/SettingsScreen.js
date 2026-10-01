@@ -16,6 +16,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../theme/ThemeContext';
 import authApi from '../api/auth';
+import api from '../api/client';
 import { getJSON } from '../storage';
 import {
   SAWA_WHATSAPP, SAWA_PHONE_DISPLAY, SAWA_EMAIL, WHATSAPP_VERIFIED,
@@ -41,6 +42,19 @@ const FALLBACK_REASONS = [
   { value: 'duplicate_account', label: 'I have another account' },
   { value: 'other', label: 'Something else' },
 ];
+// The server owns the VALUES (a CHECK constraint); the words shown come from
+// the translations, keyed by value. An unknown value falls back to the label
+// the server sent.
+const REASON_KEYS = {
+  found_a_car: 'settings.reasonFound',
+  sold_my_car: 'settings.reasonSold',
+  not_useful: 'settings.reasonNotUseful',
+  too_many_messages: 'settings.reasonTooMany',
+  privacy: 'settings.reasonPrivacy',
+  bad_experience: 'settings.reasonBad',
+  duplicate_account: 'settings.reasonDuplicate',
+  other: 'settings.reasonOther',
+};
 
 const SITE_URL = (Constants.expoConfig?.extra?.siteUrl || 'https://sawacars.com').replace(/\/+$/, '');
 const LEGAL = {
@@ -49,11 +63,11 @@ const LEGAL = {
   guarantee: `${SITE_URL}/legal/guarantee`,
 };
 
-async function openLink(url) {
+async function openLink(url, failedMessage) {
   try {
     await Linking.openURL(url);
   } catch {
-    showToast('Could not open the page. Please try again.', 'error');
+    showToast(failedMessage, 'error');
   }
 }
 
@@ -64,7 +78,7 @@ async function openLink(url) {
 // All user-facing settings labels come through the same translation function as
 // the language picker. This keeps the selector useful even when the user cannot
 // read the default English screen.
-const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearanceLabel) => [
+const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearanceLabel, showTestPush, signedIn) => [
   {
     title: t('settings.account'),
     items: [
@@ -78,6 +92,10 @@ const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearance
       { icon: 'language-outline', label: t('settings.language'), value: languageLabel, screen: 'Language' },
       { icon: 'contrast-outline', label: t('settings.appearance'), value: appearanceLabel, screen: 'Appearance' },
       { icon: 'notifications-outline', label: t('settings.push'), toggle: 'push' },
+      ...(showTestPush ? [{ icon: 'paper-plane-outline', label: t('settings.testPush'), action: 'testPush' }] : []),
+      // The same switch the website has: one email at most per conversation per
+      // hour, only when no session is open, never the message itself.
+      ...(signedIn ? [{ icon: 'mail-outline', label: t('settings.messageEmails'), sub: t('settings.messageEmailsHint'), toggle: 'messageEmail' }] : []),
     ],
   },
   {
@@ -107,6 +125,7 @@ const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearance
           ]
         : []),
       { icon: 'mail-outline', label: t('settings.email'), value: SAWA_EMAIL, link: `mailto:${SAWA_EMAIL}` },
+      { icon: 'pricetag-outline', label: t('settings.serviceFees'), screen: 'ServiceFees' },
     ],
   },
   {
@@ -144,12 +163,15 @@ function Toggle({ on }) {
 export default function SettingsScreen({ navigation }) {
   const {
     isLoggedIn, deleteAccount, setPushEnabled, idVerificationStatus,
-    languageInfo, t,
+    languageInfo, t, currentUser, updateCurrentUserProfile,
   } = useApp();
   const { mode: themeMode } = useTheme();
 
   // Persisted, and actually wired: off tells the server to forget this device.
   const [pushOn, setPushOn] = useState(true);
+  // Off only when the account says so explicitly; the server default is on.
+  const [messageEmailOn, setMessageEmailOn] = useState(currentUser?.message_email_notifications !== false);
+  React.useEffect(() => { setMessageEmailOn(currentUser?.message_email_notifications !== false); }, [currentUser?.message_email_notifications]);
   // Whether a downloaded update applies itself on the next return to the app.
   const [autoUpdateOn, setAutoUpdateOn] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
@@ -177,9 +199,23 @@ export default function SettingsScreen({ navigation }) {
     );
   };
 
-  const handleToggle = (which) => (
-    which === 'autoUpdate' ? handleAutoUpdateToggle() : handlePushToggle()
-  );
+  const handleMessageEmailToggle = async () => {
+    const next = !messageEmailOn;
+    setMessageEmailOn(next);
+    try {
+      await updateCurrentUserProfile({ message_email_notifications: next });
+    } catch {
+      // Show what the server actually holds, not the tap.
+      setMessageEmailOn(!next);
+      showToast(t('settings.genericError'), 'error');
+    }
+  };
+
+  const handleToggle = (which) => {
+    if (which === 'autoUpdate') return handleAutoUpdateToggle();
+    if (which === 'messageEmail') return handleMessageEmailToggle();
+    return handlePushToggle();
+  };
 
   const handlePushToggle = async () => {
     const next = !pushOn;
@@ -205,6 +241,8 @@ export default function SettingsScreen({ navigation }) {
     checkingUpdate ? t('common.loading') : `v${build.version}`,
     languageInfo.nativeLabel,
     t(`appearance.${themeMode}`),
+    isLoggedIn && pushOn,
+    isLoggedIn,
   );
 
   // Deletion state. A dedicated modal rather than showConfirm(), because this
@@ -228,13 +266,28 @@ export default function SettingsScreen({ navigation }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
+  // Asks the server to push to THIS account's devices and reports what Expo
+  // said for each, so "nothing arrived" can be told apart from "never sent".
+  const sendTestPush = async () => {
+    try {
+      const { sent, devices } = await api.post('/devices/test', {});
+      if (!devices.length) showToast(t('settings.testPushNone'), 'error');
+      else if (sent > 0) showToast(t('settings.testPushSent'), 'success');
+      else showToast(t('settings.testPushFailed'), 'error');
+    } catch (err) {
+      showToast(err?.status === 429 ? t('settings.testPushWait') : t('settings.testPushFailed'), 'error');
+    }
+  };
+
   const handleItemPress = (item) => {
     if (item.action === 'checkUpdate') {
       runUpdateCheck();
+    } else if (item.action === 'testPush') {
+      sendTestPush();
     } else if (item.screen) {
       navigation.navigate(item.screen);
     } else if (item.link) {
-      openLink(item.link);
+      openLink(item.link, t('settings.openFailed'));
     }
   };
 
@@ -247,21 +300,21 @@ export default function SettingsScreen({ navigation }) {
       const { status } = await checkForUpdate();
       if (status === UPDATE_STATUS.AVAILABLE) {
         const ok = await showConfirm({
-          title: 'A new version is ready',
-          message: 'It is downloaded already. Restarting takes a second and you will not be signed out.',
-          confirmLabel: 'Restart now',
-          cancelLabel: 'Later',
+          title: t('updates.newVersionReady'),
+          message: t('settings.updateReadyBody'),
+          confirmLabel: t('settings.restartNow'),
+          cancelLabel: t('settings.later'),
         });
         if (ok) await applyUpdate();
       } else if (status === UPDATE_STATUS.CURRENT) {
-        showToast('You are on the latest version.', 'success');
+        showToast(t('settings.upToDate'), 'success');
       } else if (status === UPDATE_STATUS.UNSUPPORTED) {
         // Expo Go or a development build: the bundle comes from Metro, so
         // there is nothing to fetch. Saying so beats a check that never
         // succeeds and never explains why.
-        showToast('Updates apply to the installed app, not this development build.', 'info');
+        showToast(t('settings.updateUnsupported'), 'info');
       } else {
-        showToast('Could not reach the update server. Try again on a better connection.', 'error');
+        showToast(t('settings.updateUnreachable'), 'error');
       }
     } finally {
       setCheckingUpdate(false);
@@ -270,13 +323,10 @@ export default function SettingsScreen({ navigation }) {
 
   const askToDelete = async () => {
     const ok = await showConfirm({
-      title: 'Close your account?',
-      message:
-        'Your listings come down, your number stops being shown, and you are signed out everywhere — straight away. ' +
-        `Nothing is erased for ${RECOVERY_DAYS} days: until then you can sign back in with the same password and pick up where you left off. ` +
-        'After that it is permanent.',
-      confirmLabel: 'Continue',
-      cancelLabel: 'Keep my account',
+      title: t('settings.closeConfirmTitle'),
+      message: t('settings.closeConfirmBody', { days: RECOVERY_DAYS }),
+      confirmLabel: t('settings.continue'),
+      cancelLabel: t('settings.keepAccount'),
       destructive: true,
     });
     if (!ok) return;
@@ -289,11 +339,11 @@ export default function SettingsScreen({ navigation }) {
 
   const confirmDelete = async () => {
     if (!reason) {
-      setDeleteError('Choose a reason so we know what to fix.');
+      setDeleteError(t('settings.chooseReason'));
       return;
     }
     if (!password) {
-      setDeleteError('Enter your password to confirm.');
+      setDeleteError(t('settings.enterPassword'));
       return;
     }
     setDeleting(true);
@@ -308,19 +358,17 @@ export default function SettingsScreen({ navigation }) {
         ? String(result.reopen_until).slice(0, 10)
         : null;
       await showConfirm({
-        title: 'Your account is closed',
+        title: t('settings.closedTitle'),
         message: until
-          ? `You are signed out everywhere and any listings are off the marketplace.\n\n`
-            + `Until ${until} you can sign in with the same email and password to reopen it, and everything comes back. `
-            + 'After that it is erased for good. We have emailed you the same details.'
-          : 'You are signed out everywhere and any listings are off the marketplace. We have emailed you what happens next.',
-        confirmLabel: 'Done',
+          ? t('settings.closedBodyUntil', { date: until })
+          : t('settings.closedBody'),
+        confirmLabel: t('settings.done'),
         hideCancel: true,
       });
       navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
     } catch (err) {
       if (err?.status === 409) {
-        setDeleteError(err.message || 'The account cannot be deleted while required records are still active.');
+        setDeleteError(err.message || t('settings.deleteBlocked'));
       } else if (err?.status === 401) {
         setDeleteError(t('settings.wrongPassword'));
       } else if (err?.isNetworkError) {
@@ -353,9 +401,16 @@ export default function SettingsScreen({ navigation }) {
                     <View style={styles.itemIcon}>
                       <Ionicons name={item.icon} size={20} color={colors.slate700} />
                     </View>
-                    <Text style={styles.itemLabel}>{item.label}</Text>
+                    {item.sub ? (
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.itemLabelText}>{item.label}</Text>
+                        <Text style={styles.itemSub}>{item.sub}</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.itemLabel}>{item.label}</Text>
+                    )}
                     {isToggle ? (
-                      <Toggle on={item.toggle === 'autoUpdate' ? autoUpdateOn : pushOn} />
+                      <Toggle on={item.toggle === 'autoUpdate' ? autoUpdateOn : item.toggle === 'messageEmail' ? messageEmailOn : pushOn} />
                     ) : (
                       <View style={styles.itemRight}>
                         {item.value ? <Text style={styles.itemValue}>{item.value}</Text> : null}
@@ -397,7 +452,7 @@ export default function SettingsScreen({ navigation }) {
         )}
 
         <Text style={styles.version}>
-          Sawa Cars v{build.version}
+          {t('settings.versionLabel', { version: build.version })}
         </Text>
       </ScrollView>
 
@@ -407,7 +462,7 @@ export default function SettingsScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Before you go</Text>
+            <Text style={styles.modalTitle}>{t('settings.beforeYouGo')}</Text>
             <Text style={styles.modalBody}>{t('settings.closeWhy')}</Text>
 
             {/* Scrollable: eight reasons plus a password field does not fit on
@@ -431,7 +486,7 @@ export default function SettingsScreen({ navigation }) {
                       size={19}
                       color={on ? colors.primary : colors.textMuted}
                     />
-                    <Text style={[styles.reasonText, on && styles.reasonTextOn]}>{option.label}</Text>
+                    <Text style={[styles.reasonText, on && styles.reasonTextOn]}>{REASON_KEYS[option.value] ? t(REASON_KEYS[option.value]) : option.label}</Text>
                   </Pressable>
                 );
               })}
@@ -490,6 +545,8 @@ const styles = StyleSheet.create({
   itemBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   itemIcon: { width: 36, alignItems: 'center' },
   itemLabel: { flex: 1, fontSize: 15, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  itemLabelText: { fontSize: 15, fontFamily: fonts.semiBold, color: colors.textPrimary },
+  itemSub: { marginTop: 3, fontSize: 12, lineHeight: 16, color: colors.textMuted },
   itemHint: { fontSize: 12.5, fontFamily: fonts.regular, color: colors.textMuted, marginTop: 2 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 },
   modalCard: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: 22 },

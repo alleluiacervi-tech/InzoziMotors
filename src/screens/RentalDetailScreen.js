@@ -216,7 +216,8 @@ export default function RentalDetailScreen({ navigation, route }) {
             )}
           </View>
 
-          {/* What's included */}
+          {/* Nothing here is promised by Sawa Cars: the provider sets these terms, so
+              the screen lists what to ask rather than claiming what is included. */}
           <Text style={styles.sectionTitle}>{t('rentalDetail.confirmTerms')}</Text>
           <View style={styles.includesGrid}>
             {[
@@ -256,9 +257,9 @@ export default function RentalDetailScreen({ navigation, route }) {
           {/* How it works */}
           <Text style={styles.sectionTitle}>{t('rentalDetail.howItWorks')}</Text>
           {[
-            { n: '1', t: t('rentalDetail.step1Title'), d: t('rentalDetail.step1Desc') },
-            { n: '2', t: t('rentalDetail.step2Title'), d: t('rentalDetail.step2Desc') },
-            { n: '3', t: t('rentalDetail.step3Title'), d: t('rentalDetail.step3Desc') },
+            { n: '1', t: t('rentals.step1Title'), d: t('rentals.step1Desc') },
+            { n: '2', t: t('rentals.step2Title'), d: t('rentals.step2Desc') },
+            { n: '3', t: t('rentals.step3Title'), d: t('rentals.step3Desc') },
           ].map((step) => (
             <View key={step.n} style={styles.stepRow}>
               <View style={styles.stepNum}><Text style={styles.stepNumText}>{step.n}</Text></View>

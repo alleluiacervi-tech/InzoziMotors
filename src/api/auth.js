@@ -20,6 +20,18 @@ export const auth = {
     return data;
   },
 
+  // Trade the current token for a fresh one, so the 30 days run from the last
+  // visit rather than the last sign-in. Never throws: a failed renewal just
+  // leaves the existing token to run out on its original date.
+  refreshSession: async () => {
+    try {
+      const data = await api.post('/auth/refresh', {});
+      if (data?.token) await setToken(data.token);
+    } catch {
+      // keep the current token
+    }
+  },
+
   // Get current user profile (resolves details like verified status and roles)
   getMe: async () => {
     return await api.get('/auth/me');

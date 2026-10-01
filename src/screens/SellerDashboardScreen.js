@@ -13,35 +13,37 @@ import Photo from '../components/Photo';
 import { PHOTO } from '../utils/photo';
 
 const PIPELINE_STAGES = [
-  { key: 'under_review', label: 'Review', icon: 'time-outline' },
-  { key: 'scheduled', label: 'Scheduled', icon: 'calendar-outline' },
-  { key: 'inspected', label: 'Inspected', icon: 'scan-outline' },
-  { key: 'live', label: 'Live', icon: 'storefront-outline' },
-  { key: 'sold', label: 'Sold', icon: 'checkmark-done-outline' },
+  { key: 'under_review', labelKey: 'sellerDashboard.stageReview', icon: 'time-outline' },
+  { key: 'scheduled', labelKey: 'sellerDashboard.stageScheduled', icon: 'calendar-outline' },
+  { key: 'inspected', labelKey: 'sellerDashboard.stageInspected', icon: 'scan-outline' },
+  { key: 'live', labelKey: 'sellerDashboard.stageLive', icon: 'storefront-outline' },
+  { key: 'sold', labelKey: 'sellerDashboard.stageSold', icon: 'checkmark-done-outline' },
 ];
 
 const STATUS_CONFIG = {
-  under_review: { label: 'Under Review', color: colors.statusPending, bg: colors.statusPendingBg, icon: 'time-outline' },
-  approved: { label: 'Approved — Book Inspection', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'checkmark-circle-outline' },
-  scheduled: { label: 'Inspection Booked', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
-  inspected: { label: 'Inspection Done', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'scan-outline' },
-  live: { label: 'Live', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'radio-outline' },
-  paused: { label: 'Paused', color: colors.statusPending, bg: colors.statusPendingBg, icon: 'pause-circle-outline' },
-  sold: { label: 'Sold', color: colors.statusSold, bg: colors.statusSoldBg, icon: 'checkmark-done-circle-outline' },
-  rejected: { label: 'Changes Needed', color: colors.statusRejected, bg: colors.statusRejectedBg, icon: 'alert-circle-outline' },
+  under_review: { labelKey: 'sellerDashboard.statusUnderReview', color: colors.statusPending, bg: colors.statusPendingBg, icon: 'time-outline' },
+  approved: { labelKey: 'sellerDashboard.statusApproved', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'checkmark-circle-outline' },
+  scheduled: { labelKey: 'sellerDashboard.statusScheduled', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'calendar-outline' },
+  inspected: { labelKey: 'sellerDashboard.statusInspected', color: colors.statusScheduled, bg: colors.statusScheduledBg, icon: 'scan-outline' },
+  live: { labelKey: 'sellerDashboard.statusLive', color: colors.statusLive, bg: colors.statusLiveBg, icon: 'radio-outline' },
+  paused: { labelKey: 'sellerDashboard.statusPaused', color: colors.statusPending, bg: colors.statusPendingBg, icon: 'pause-circle-outline' },
+  sold: { labelKey: 'sellerDashboard.statusSold', color: colors.statusSold, bg: colors.statusSoldBg, icon: 'checkmark-done-circle-outline' },
+  rejected: { labelKey: 'sellerDashboard.statusRejected', color: colors.statusRejected, bg: colors.statusRejectedBg, icon: 'alert-circle-outline' },
 };
 
 function StatusBadge({ status }) {
+  const { t } = useApp();
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.under_review;
   return (
     <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
       <Ionicons name={cfg.icon} size={11} color={cfg.color} />
-      <Text style={[styles.statusBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
+      <Text style={[styles.statusBadgeText, { color: cfg.color }]}>{t(cfg.labelKey)}</Text>
     </View>
   );
 }
 
 function PipelineDiagram({ currentStatus }) {
+  const { t } = useApp();
   // 'approved' sits between review (done) and scheduled (next up); a paused
   // listing has reached Live and is simply hidden for now.
   const normalized = currentStatus === 'approved' ? 'scheduled' : currentStatus === 'paused' ? 'live' : currentStatus;
@@ -74,7 +76,7 @@ function PipelineDiagram({ currentStatus }) {
                 active && { color: colors.primary, fontFamily: fonts.bold },
                 done && { color: colors.primary },
                 upcoming && { color: colors.textDisabled },
-              ]}>{stage.label}</Text>
+              ]}>{t(stage.labelKey)}</Text>
             </View>
             {idx < PIPELINE_STAGES.length - 1 && (
               <View style={[styles.pipelineLine, (done || active) && idx < currentIdx && styles.pipelineLineDone]} />
@@ -87,7 +89,7 @@ function PipelineDiagram({ currentStatus }) {
 }
 
 export default function SellerDashboardScreen({ navigation }) {
-  const { submissions, updateSubmissionPrice, cars } = useApp();
+  const { submissions, updateSubmissionPrice, cars, t } = useApp();
   const [relistId, setRelistId] = useState(null);
   const [relistPrice, setRelistPrice] = useState('');
   // listing id -> { status, views } from GET /cars/seller/mine. A submission
@@ -118,21 +120,21 @@ export default function SellerDashboardScreen({ navigation }) {
   const totalViews = Object.values(listings).reduce((sum, l) => sum + l.views, 0);
 
   const LISTING_ACTIONS = {
-    paused: { title: 'Pause this listing?', message: 'Buyers won’t see it until you make it live again.', confirmLabel: 'Pause', done: 'Listing paused.' },
-    live: { title: 'Make it live again?', message: 'We check it still meets every publication requirement first.', confirmLabel: 'Make live', done: 'Your listing is live again.' },
-    sold: { title: 'Mark as sold?', message: 'It leaves the marketplace for good — this can’t be undone.', confirmLabel: 'Mark as sold', destructive: true, done: 'Marked as sold.' },
+    paused: { title: t('sellerDashboard.pauseTitle'), message: t('sellerDashboard.pauseMessage'), confirmLabel: t('sellerDashboard.pauseConfirm'), done: t('sellerDashboard.pausedToast') },
+    live: { title: t('sellerDashboard.liveAgainTitle'), message: t('sellerDashboard.liveAgainMessage'), confirmLabel: t('sellerDashboard.liveAgainConfirm'), done: t('sellerDashboard.liveAgainToast') },
+    sold: { title: t('sellerDashboard.soldTitle'), message: t('sellerDashboard.soldMessage'), confirmLabel: t('sellerDashboard.soldConfirm'), destructive: true, done: t('sellerDashboard.soldToast') },
   };
 
   const changeListingStatus = async (sub, target) => {
     const { done, ...copy } = LISTING_ACTIONS[target];
-    const ok = await showConfirm({ ...copy, cancelLabel: 'Cancel' });
+    const ok = await showConfirm({ ...copy, cancelLabel: t('sellerDashboard.cancel') });
     if (!ok) return;
     try {
       await carsApi.setSellerStatus(sub.listingId, target);
       showToast(done, 'success');
       loadListings();
     } catch (err) {
-      showToast(err.message || 'That change could not be saved.', 'error');
+      showToast(err.message || t('sellerDashboard.saveFailed'), 'error');
     }
   };
 
@@ -143,7 +145,7 @@ export default function SellerDashboardScreen({ navigation }) {
     } else if (sub.status === 'approved') {
       navigation.navigate('InspectionScheduling', { carName: sub.carTitle, submissionId: sub.id });
     } else if (sub.status === 'scheduled') {
-      showToast(sub.statusDetail || `Your inspection for ${sub.carTitle} is confirmed. Bring your vehicle and service records.`, 'info');
+      showToast(sub.statusDetail || t('sellerDashboard.inspectionConfirmed', { title: sub.carTitle }), 'info');
     } else if (sub.status === 'rejected') {
       gate('CarSubmission', {
         prefill: { make: sub.make, model: sub.model, year: sub.year, mileage: sub.mileage },
@@ -158,16 +160,16 @@ export default function SellerDashboardScreen({ navigation }) {
       // Whole francs: the server stores an integer and refuses anything else.
       const price = Math.round(parseFloat(relistPrice));
       if (!price || price <= 0) {
-        showToast('Please enter a valid asking price.', 'error');
+        showToast(t('sellerDashboard.validPriceToast'), 'error');
         return;
       }
       try {
         await updateSubmissionPrice(sub.id, price);
       } catch (err) {
-        showToast(err?.message || 'Could not update the price. Try again.', 'error');
+        showToast(err?.message || t('sellerDashboard.priceUpdateFailed'), 'error');
         return;
       }
-      showToast('Price updated — your listing stays live.', 'success');
+      showToast(t('sellerDashboard.priceUpdatedToast'), 'success');
       setRelistId(null);
       setRelistPrice('');
     } else {
@@ -178,10 +180,10 @@ export default function SellerDashboardScreen({ navigation }) {
 
   const getActionLabel = (status) => {
     switch (status) {
-      case 'live': return 'View Listing';
-      case 'approved': return 'Book Inspection';
-      case 'scheduled': return 'View Inspection';
-      case 'rejected': return 'Update & Resubmit';
+      case 'live': return t('sellerDashboard.viewListing');
+      case 'approved': return t('sellerDashboard.bookInspection');
+      case 'scheduled': return t('sellerDashboard.viewInspection');
+      case 'rejected': return t('sellerDashboard.updateResubmit');
       default: return null;
     }
   };
@@ -189,10 +191,10 @@ export default function SellerDashboardScreen({ navigation }) {
   return (
     <Screen background={colors.bg}>
       <BackHeader
-        title="My Submissions"
+        title={t('sellerDashboard.title')}
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.addBtn} onPress={() => gate('CarSubmission')} accessibilityRole="button" accessibilityLabel="Add">
+          <Pressable style={styles.addBtn} onPress={() => gate('CarSubmission')} accessibilityRole="button" accessibilityLabel={t('sellerDashboard.add')}>
             <Ionicons name="add" size={22} color={colors.slate700} />
           </Pressable>
         }
@@ -205,32 +207,32 @@ export default function SellerDashboardScreen({ navigation }) {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{submissions.length}</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={styles.statLabel}>{t('sellerDashboard.statTotal')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{liveCount}</Text>
-              <Text style={styles.statLabel}>Live</Text>
+              <Text style={styles.statLabel}>{t('sellerDashboard.statLive')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{totalViews}</Text>
-              <Text style={styles.statLabel}>Views</Text>
+              <Text style={styles.statLabel}>{t('sellerDashboard.statViews')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{soldCount}</Text>
-              <Text style={styles.statLabel}>Sold</Text>
+              <Text style={styles.statLabel}>{t('sellerDashboard.statSold')}</Text>
             </View>
           </View>
         </LinearGradient>
 
         {/* Section header */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>All Submissions</Text>
+          <Text style={styles.sectionTitle}>{t('sellerDashboard.allSubmissions')}</Text>
           <Pressable style={styles.submitNewBtn} onPress={() => gate('CarSubmission')}>
             <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
-            <Text style={styles.submitNewText}>Submit Another</Text>
+            <Text style={styles.submitNewText}>{t('sellerDashboard.submitAnother')}</Text>
           </Pressable>
         </View>
 
@@ -245,7 +247,7 @@ export default function SellerDashboardScreen({ navigation }) {
                 <Photo uri={sub.image} width={PHOTO.THUMB} style={styles.subThumb} resizeMode="contain" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.subTitle}>{sub.carTitle}</Text>
-                  <Text style={styles.subDate}>Submitted {sub.submittedDate}</Text>
+                  <Text style={styles.subDate}>{t('sellerDashboard.submittedOn', { date: sub.submittedDate })}</Text>
                   <StatusBadge status={status} />
                 </View>
                 {sub.askingPrice > 0 && (
@@ -277,7 +279,7 @@ export default function SellerDashboardScreen({ navigation }) {
                 {status === 'live' && (
                   <Pressable style={styles.analyticsBtn} onPress={() => navigation.navigate('SellerAnalytics', { subId: sub.id })}>
                     <Ionicons name="bar-chart-outline" size={13} color={colors.primary} />
-                    <Text style={styles.analyticsBtnText}>Analytics</Text>
+                    <Text style={styles.analyticsBtnText}>{t('sellerDashboard.analytics')}</Text>
                   </Pressable>
                 )}
               </View>
@@ -290,14 +292,14 @@ export default function SellerDashboardScreen({ navigation }) {
                     onPress={() => changeListingStatus(sub, status === 'live' ? 'paused' : 'live')}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.controlText}>{status === 'live' ? 'Pause listing' : 'Make live again'}</Text>
+                    <Text style={styles.controlText}>{status === 'live' ? t('sellerDashboard.pauseListing') : t('sellerDashboard.makeLiveAgain')}</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.controlBtn, styles.controlBtnDanger]}
                     onPress={() => changeListingStatus(sub, 'sold')}
                     accessibilityRole="button"
                   >
-                    <Text style={[styles.controlText, styles.controlTextDanger]}>Mark as sold</Text>
+                    <Text style={[styles.controlText, styles.controlTextDanger]}>{t('sellerDashboard.markAsSold')}</Text>
                   </Pressable>
                 </View>
               ) : null}
@@ -311,23 +313,23 @@ export default function SellerDashboardScreen({ navigation }) {
                         style={styles.relistInput}
                         value={relistPrice}
                         onChangeText={setRelistPrice}
-                        placeholder="New asking price (RWF)"
+                        placeholder={t('sellerDashboard.newPricePlaceholder')}
                         keyboardType="numeric"
                         placeholderTextColor={colors.textMuted}
                       />
                       <View style={styles.relistBtns}>
                         <Pressable style={styles.relistCancel} onPress={() => setRelistId(null)}>
-                          <Text style={styles.relistCancelText}>Cancel</Text>
+                          <Text style={styles.relistCancelText}>{t('sellerDashboard.cancel')}</Text>
                         </Pressable>
                         <Pressable style={styles.relistConfirm} onPress={() => handleRelist(sub)}>
-                          <Text style={styles.relistConfirmText}>Relist</Text>
+                          <Text style={styles.relistConfirmText}>{t('sellerDashboard.relistBtn')}</Text>
                         </Pressable>
                       </View>
                     </View>
                   ) : (
                     <Pressable style={styles.relistBtn} onPress={() => handleRelist(sub)}>
                       <Ionicons name="pricetag-outline" size={13} color={colors.amber} />
-                      <Text style={styles.relistBtnText}>Change price</Text>
+                      <Text style={styles.relistBtnText}>{t('sellerDashboard.changePrice')}</Text>
                     </Pressable>
                   )}
                 </View>
@@ -339,18 +341,18 @@ export default function SellerDashboardScreen({ navigation }) {
         {/* Submit CTA */}
         <Pressable style={styles.submitCta} onPress={() => gate('CarSubmission')}>
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-          <Text style={styles.submitCtaText}>Submit another car for sale</Text>
+          <Text style={styles.submitCtaText}>{t('sellerDashboard.submitAnotherCta')}</Text>
         </Pressable>
 
         {/* How it works */}
         <View style={styles.howItWorks}>
-          <Text style={styles.howTitle}>How Sawa Cars Works for Sellers</Text>
+          <Text style={styles.howTitle}>{t('sellerDashboard.howSawaWorks')}</Text>
           {[
-            { icon: 'shield-checkmark-outline', text: 'Submit your car — takes 5 minutes' },
-            { icon: 'time-outline', text: 'Our team reviews in under 24 hours' },
-            { icon: 'scan-outline', text: 'Professional 150-point inspection' },
-            { icon: 'camera-outline', text: 'Clear listing gallery added by our team' },
-            { icon: 'storefront-outline', text: 'Listed and matched with verified buyers' },
+            { icon: 'shield-checkmark-outline', text: t('sellerDashboard.step1') },
+            { icon: 'time-outline', text: t('sellerDashboard.step2') },
+            { icon: 'scan-outline', text: t('sellerDashboard.step3') },
+            { icon: 'camera-outline', text: t('sellerDashboard.step4') },
+            { icon: 'storefront-outline', text: t('sellerDashboard.step5') },
           ].map((item, i) => (
             <View key={i} style={styles.howRow}>
               <View style={styles.howDot}>

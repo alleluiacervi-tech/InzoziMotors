@@ -446,6 +446,7 @@ export function AppProvider({ children }) {
       sellerBusinessVerified: c.seller_business_verified === true,
       inspected: !!c.inspected,
       inspectionScore: c.inspection_score,
+      inspectionPassed: c.inspection_passed ?? null,
       type: 'sale',
       image: c.images?.[0] || DEFAULT_CAR_IMAGE,
       images: c.images && c.images.length ? c.images : DEFAULT_CAR_IMAGES,
@@ -842,6 +843,9 @@ export function AppProvider({ children }) {
           setCurrentUser(withInitials(me));
           setIsLoggedIn(true);
           setJSON('cachedProfile', me);
+          // Only after the server has just answered for this token — a renewal
+          // can never be the thing that discovers the session is dead.
+          authApi.refreshSession();
           await loadInitialData(me);
         } else {
           setCars(await fetchCars());
@@ -1315,6 +1319,9 @@ export function AppProvider({ children }) {
         service_history: data.serviceHistory,
       };
       const res = await submissionsApi.createSubmission(mapped);
+      // A submitted car waits on an inspection booking and a team review, which
+      // is exactly what a notification is for. Asks once ever; fire-and-forget.
+      maybeAskForPush();
 
       // Refresh list
       const list = await submissionsApi.getSubmissions();
@@ -1388,7 +1395,7 @@ export function AppProvider({ children }) {
           : s)
       );
     }
-  }, [mapSubmission]);
+  }, [mapSubmission, maybeAskForPush]);
 
   const updateSubmissionStatus = useCallback((id, status, detail = '') => {
     // Local-first so the admin UI responds instantly; sync to the API for
@@ -1569,6 +1576,9 @@ export function AppProvider({ children }) {
         const actualCarId = convId.split('_')[1] || carId;
         const res = await messagesApi.startConversation(actualCarId, text);
         const newConvId = res.conversation.id;
+        // The first message to a seller is the moment a reply notification has an
+        // obvious payoff. Asks once ever (see maybeAskForPush); fire-and-forget.
+        maybeAskForPush();
 
         // Force reload conversations & message list
         const convList = await messagesApi.getConversations();
@@ -1639,7 +1649,7 @@ export function AppProvider({ children }) {
       console.warn('Error sending message:', err);
       throw err;
     }
-  }, [socket, currentUser?.name, mapConversation, loadConversationMessages]);
+  }, [socket, currentUser?.name, mapConversation, loadConversationMessages, maybeAskForPush]);
 
   const getMessages = useCallback((convId) => chatMessages[convId] || [], [chatMessages]);
 
