@@ -77,6 +77,33 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
         </p>
       </div>
 
+      {!summary.passed ? (
+        <div className="border-b border-line-soft bg-danger-tint p-5 sm:p-6">
+          <p className="flex items-center gap-2 text-body font-bold text-danger">
+            <Icon name="alert" size={16} />
+            {t('cars.report.foundTitle')}
+          </p>
+          <p className="mt-1.5 text-caption leading-relaxed text-content-secondary">
+            {t('cars.report.notPassedNote')}
+          </p>
+          {summary.critical.length ? (
+            <>
+              <ul className="mt-3 space-y-1.5">
+                {summary.critical.map((label) => (
+                  <li key={label} className="flex items-start gap-2 text-caption text-content">
+                    <span className="mt-0.5 shrink-0 rounded-pill bg-danger/15 px-2 py-0.5 text-micro font-bold text-danger">
+                      {t('cars.report.criticalTag')}
+                    </span>
+                    <span>{label}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-caption text-content-secondary">{t('cars.report.criticalNote')}</p>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
       <ul className="divide-y divide-line-soft">
         {summary.categories.map((category) => {
           const width = Math.max(0, Math.min(100, Math.round((category.earned / category.weight) * 100)))

@@ -446,6 +446,7 @@ export function AppProvider({ children }) {
       sellerBusinessVerified: c.seller_business_verified === true,
       inspected: !!c.inspected,
       inspectionScore: c.inspection_score,
+      inspectionPassed: c.inspection_passed ?? null,
       type: 'sale',
       image: c.images?.[0] || DEFAULT_CAR_IMAGE,
       images: c.images && c.images.length ? c.images : DEFAULT_CAR_IMAGES,

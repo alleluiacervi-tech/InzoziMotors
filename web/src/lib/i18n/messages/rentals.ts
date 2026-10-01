@@ -28,7 +28,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     emptyMatchDesc: 'Try the full fleet — availability changes as cars come back from trips.',
     emptyUnreachableDesc: 'The cars are still there. Check back in a moment, or ask us at a center.',
     seeWholeFleet: 'See the whole fleet',
-    providerFeaturesEyebrow: 'Provider-stated features',
+    providerFeaturesEyebrow: 'Ask the provider',
     providerFeaturesTitle: 'Compare the published terms, then confirm in writing',
     providerDisclaimer:
       'These features and rates are supplied by each rental provider. Before paying, confirm availability, insurance, mileage, taxes, deposit, pickup, return, cancellation and damage terms directly with that provider.',
@@ -46,10 +46,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       },
     },
     includes: {
-      insurance: 'Comprehensive insurance',
-      roadside: '24/7 roadside assistance',
-      unlimitedKm: 'Unlimited kilometres',
-      cleaned: 'Cleaned and sanitised between trips',
+      insurance: 'Insurance cover',
+      roadside: 'Breakdown assistance',
+      unlimitedKm: 'Mileage limit',
+      cleaned: 'Cleaning between trips',
     },
     requirements: {
       licence: 'A valid driving licence, held for at least two years',
@@ -98,10 +98,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       theCar: 'The car',
       tripCostTitle: 'What a trip costs',
       rentalWord: 'rental',
-      refundableDeposit: '+ {{amount}} refundable deposit',
+      refundableDeposit: '+ {{amount}} deposit, set by the provider',
       tripCostNote:
         "Illustrative calculation from the provider's published rates. Ask the provider to confirm the final price, taxes, deposit, mileage, insurance and extras in writing.",
-      featuresTitle: 'Provider-stated rental features',
+      featuresTitle: 'Ask the provider about',
       whatToBring: 'What to bring',
       pickupTitle: 'Pickup and return',
       pickupBody:
@@ -148,7 +148,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     emptyMatchDesc: 'Gerageza ububiko bwose — ukuboneka guhinduka uko imodoka zigaruka mu ngendo.',
     emptyUnreachableDesc: 'Imodoka ziracyahari. Ongera ugaruke nyuma y’akanya, cyangwa utubaze mu kigo.',
     seeWholeFleet: 'Reba ububiko bwose',
-    providerFeaturesEyebrow: 'Ibiranga byatangajwe n’utanga',
+    providerFeaturesEyebrow: 'Baza utanga serivisi',
     providerFeaturesTitle: 'Gereranya amabwiriza yatangajwe, hanyuma wemeze mu nyandiko',
     providerDisclaimer:
       'Ibi biranga n’ibiciro bitangwa na buri utanga imodoka zikodeshwa. Mbere yo kwishyura, emeza ukuboneka, ubwishingizi, ibirometero, imisoro, ingwate, gufata, kugarura, gukuraho n’amabwiriza y’ibyangiritse butaziguye n’uwo utanga.',
@@ -166,10 +166,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       },
     },
     includes: {
-      insurance: 'Ubwishingizi bwuzuye',
-      roadside: 'Ubufasha ku muhanda amasaha 24/24',
-      unlimitedKm: 'Ibirometero bitagira urugero',
-      cleaned: 'Zisukurwa kandi zisukwa hagati y’ingendo',
+      insurance: 'Ubwishingizi',
+      roadside: 'Ubufasha igihe imodoka yapfuye mu nzira',
+      unlimitedKm: 'Ibirometero byemewe',
+      cleaned: 'Isuku hagati y’ingendo',
     },
     requirements: {
       licence: 'Uruhushya rwo gutwara rwemewe, umaze nibura imyaka ibiri urufite',
@@ -218,10 +218,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       theCar: 'Imodoka',
       tripCostTitle: 'Icyo urugendo rutwara',
       rentalWord: 'ubukode',
-      refundableDeposit: '+ ingwate {{amount}} igarurwa',
+      refundableDeposit: '+ ingwate {{amount}}, yashyizweho n’utanga serivisi',
       tripCostNote:
         'Kubara ni ukugereranya gukoresheje ibiciro utanga yatangaje. Saba utanga kwemeza igiciro nyakuri, imisoro, ingwate, ibirometero, ubwishingizi n’ibindi mu nyandiko.',
-      featuresTitle: 'Ibiranga by’ubukode byatangajwe n’utanga',
+      featuresTitle: 'Baza utanga serivisi kuri ibi',
       whatToBring: 'Icyo uzana',
       pickupTitle: 'Gufata no kugarura',
       pickupBody:
@@ -268,7 +268,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     emptyMatchDesc: 'Essayez la flotte complète — la disponibilité change à mesure que les voitures reviennent de voyage.',
     emptyUnreachableDesc: 'Les voitures sont toujours là. Revenez dans un instant, ou demandez-nous dans un centre.',
     seeWholeFleet: 'Voir toute la flotte',
-    providerFeaturesEyebrow: 'Prestations indiquées par le prestataire',
+    providerFeaturesEyebrow: 'Demandez au loueur',
     providerFeaturesTitle: 'Comparez les conditions publiées, puis confirmez par écrit',
     providerDisclaimer:
       'Ces prestations et tarifs sont fournis par chaque prestataire de location. Avant de payer, confirmez directement avec ce prestataire la disponibilité, l’assurance, le kilométrage, les taxes, la caution, la prise en charge, le retour, l’annulation et les conditions relatives aux dommages.',
@@ -286,10 +286,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       },
     },
     includes: {
-      insurance: 'Assurance tous risques',
-      roadside: 'Assistance routière 24h/24 et 7j/7',
-      unlimitedKm: 'Kilométrage illimité',
-      cleaned: 'Nettoyée et désinfectée entre les locations',
+      insurance: 'Assurance',
+      roadside: 'Assistance en cas de panne',
+      unlimitedKm: 'Kilométrage autorisé',
+      cleaned: 'Nettoyage entre les locations',
     },
     requirements: {
       licence: 'Un permis de conduire valide, détenu depuis au moins deux ans',
@@ -338,10 +338,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       theCar: 'La voiture',
       tripCostTitle: 'Ce que coûte un voyage',
       rentalWord: 'de location',
-      refundableDeposit: '+ {{amount}} de caution remboursable',
+      refundableDeposit: '+ caution de {{amount}}, fixée par le loueur',
       tripCostNote:
         'Calcul indicatif à partir des tarifs publiés par le prestataire. Demandez au prestataire de confirmer par écrit le prix final, les taxes, la caution, le kilométrage, l’assurance et les extras.',
-      featuresTitle: 'Prestations de location indiquées par le prestataire',
+      featuresTitle: 'À demander au loueur',
       whatToBring: 'Ce qu’il faut apporter',
       pickupTitle: 'Prise en charge et retour',
       pickupBody:
@@ -388,7 +388,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     emptyMatchDesc: 'Jaribu kundi kamili — upatikanaji hubadilika magari yanaporudi kutoka safari.',
     emptyUnreachableDesc: 'Magari bado yapo. Rudi baada ya muda, au tuulize katika kituo.',
     seeWholeFleet: 'Ona kundi zima',
-    providerFeaturesEyebrow: 'Vipengele vilivyotajwa na mtoa huduma',
+    providerFeaturesEyebrow: 'Muulize mtoa huduma',
     providerFeaturesTitle: 'Linganisha masharti yaliyochapishwa, kisha thibitisha kwa maandishi',
     providerDisclaimer:
       'Vipengele na bei hizi hutolewa na kila mtoa huduma wa ukodishaji. Kabla ya kulipa, thibitisha upatikanaji, bima, umbali, kodi, amana, uchukuaji, urudishaji, ufutaji na masharti ya uharibifu moja kwa moja na mtoa huduma huyo.',
@@ -406,10 +406,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       },
     },
     includes: {
-      insurance: 'Bima ya kina',
-      roadside: 'Msaada wa barabarani saa 24/7',
-      unlimitedKm: 'Kilomita zisizo na kikomo',
-      cleaned: 'Husafishwa na kuwekwa dawa kati ya safari',
+      insurance: 'Bima',
+      roadside: 'Msaada gari likiharibika njiani',
+      unlimitedKm: 'Kikomo cha kilomita',
+      cleaned: 'Usafi kati ya safari',
     },
     requirements: {
       licence: 'Leseni halali ya udereva, uliyonayo kwa angalau miaka miwili',
@@ -458,10 +458,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       theCar: 'Gari',
       tripCostTitle: 'Gharama ya safari',
       rentalWord: 'ukodishaji',
-      refundableDeposit: '+ amana ya {{amount}} inayorudishwa',
+      refundableDeposit: '+ amana ya {{amount}}, iliyowekwa na mtoa huduma',
       tripCostNote:
         'Hesabu ya mfano kutoka bei zilizochapishwa za mtoa huduma. Muulize mtoa huduma athibitishe bei ya mwisho, kodi, amana, umbali, bima na nyongeza kwa maandishi.',
-      featuresTitle: 'Vipengele vya ukodishaji vilivyotajwa na mtoa huduma',
+      featuresTitle: 'Muulize mtoa huduma kuhusu',
       whatToBring: 'Cha kuleta',
       pickupTitle: 'Uchukuaji na urudishaji',
       pickupBody:
@@ -508,7 +508,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     emptyMatchDesc: '전체 목록을 확인해 보세요 — 차량이 여행에서 돌아오면서 가용 상황이 바뀝니다.',
     emptyUnreachableDesc: '차량은 그대로 있습니다. 잠시 후 다시 확인하거나 센터로 문의하세요.',
     seeWholeFleet: '전체 목록 보기',
-    providerFeaturesEyebrow: '제공자 제시 사항',
+    providerFeaturesEyebrow: '제공자에게 문의',
     providerFeaturesTitle: '게시된 조건을 비교한 뒤 서면으로 확정하세요',
     providerDisclaimer:
       '이 사항과 요금은 각 렌트 제공자가 제시한 것입니다. 결제 전에 예약 가능 여부, 보험, 주행거리, 세금, 보증금, 인수, 반납, 취소 및 손해 조건을 해당 제공자와 직접 확인하세요.',
@@ -526,10 +526,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       },
     },
     includes: {
-      insurance: '종합 보험',
-      roadside: '연중무휴 24시간 긴급출동',
-      unlimitedKm: '주행거리 무제한',
-      cleaned: '이용 사이 세차 및 소독',
+      insurance: '보험 보장',
+      roadside: '고장 시 지원',
+      unlimitedKm: '주행거리 제한',
+      cleaned: '이용 사이 세차',
     },
     requirements: {
       licence: '2년 이상 보유한 유효한 운전면허증',
@@ -578,10 +578,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       theCar: '차량',
       tripCostTitle: '이용 비용',
       rentalWord: '렌트',
-      refundableDeposit: '+ 환불 보증금 {{amount}}',
+      refundableDeposit: '+ 보증금 {{amount}}, 제공자 설정',
       tripCostNote:
         '제공자가 게시한 요금을 바탕으로 한 예시 계산입니다. 최종 가격, 세금, 보증금, 주행거리, 보험 및 추가 항목은 제공자에게 서면으로 확인하세요.',
-      featuresTitle: '제공자 제시 렌트 사항',
+      featuresTitle: '제공자에게 문의할 사항',
       whatToBring: '준비물',
       pickupTitle: '인수 및 반납',
       pickupBody:
@@ -628,7 +628,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     emptyMatchDesc: '试试浏览整个车队——车辆返回后可用情况会随之变化。',
     emptyUnreachableDesc: '车辆仍然都在。请稍后再来查看，或到中心咨询我们。',
     seeWholeFleet: '查看整个车队',
-    providerFeaturesEyebrow: '提供方说明的车辆特性',
+    providerFeaturesEyebrow: '向车主询问',
     providerFeaturesTitle: '比较已公布的条款，再以书面形式确认',
     providerDisclaimer:
       '这些特性与价格均由各租赁提供方提供。付款前，请直接与该提供方确认可用性、保险、里程、税费、押金、取车、还车、取消及损坏赔偿条款。',
@@ -646,10 +646,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       },
     },
     includes: {
-      insurance: '全险保障',
-      roadside: '24/7道路救援',
-      unlimitedKm: '不限里程',
-      cleaned: '每次行程之间进行清洁消毒',
+      insurance: '保险保障',
+      roadside: '故障救援',
+      unlimitedKm: '里程限制',
+      cleaned: '行程间清洁',
     },
     requirements: {
       licence: '有效驾照，持有至少两年',
@@ -698,10 +698,10 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       theCar: '车辆信息',
       tripCostTitle: '行程费用',
       rentalWord: '租赁',
-      refundableDeposit: '+ 可退还押金 {{amount}}',
+      refundableDeposit: '+ 押金 {{amount}}，由车主设定',
       tripCostNote:
         '此为依据提供方公布价格的示例计算。请让提供方以书面形式确认最终价格、税费、押金、里程、保险及其他附加项目。',
-      featuresTitle: '提供方说明的租赁特性',
+      featuresTitle: '请向车主确认',
       whatToBring: '需携带物品',
       pickupTitle: '取车与还车',
       pickupBody:

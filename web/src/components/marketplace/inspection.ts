@@ -19,6 +19,10 @@ export interface CategorySummary {
 
 export interface ReportSummary {
   score: number
+  /** The server's verdict: threshold met and no critical failure. */
+  passed: boolean
+  /** Critical checks that failed, by name. */
+  critical: string[]
   categories: CategorySummary[]
   pass: number
   flag: number
@@ -27,9 +31,10 @@ export interface ReportSummary {
   issues: { item: string; verdict: 'flag' | 'fail' }[]
 }
 
-/** Returns null unless the API supplied a passing, complete canonical report. */
+/** Returns null unless the API supplied a complete canonical report. A failed
+ *  one is still returned — hiding it would hide the defects it records. */
 export function summariseReport(report: InspectionReport | null): ReportSummary | null {
-  if (!report?.passed || !Array.isArray(report.category_scores)) return null
+  if (!report || !Array.isArray(report.category_scores)) return null
   const categories = report.category_scores.map((category) => ({
     id: category.id,
     name: category.name,
@@ -47,6 +52,8 @@ export function summariseReport(report: InspectionReport | null): ReportSummary 
   if (!categories.length || categories.some((category) => !Number.isFinite(category.earned))) return null
   return {
     score: Number(report.score),
+    passed: report.passed === true,
+    critical: (report.critical_failures || []).map((failure) => failure.label),
     categories,
     pass: categories.reduce((sum, category) => sum + category.pass, 0),
     flag: categories.reduce((sum, category) => sum + category.flag, 0),

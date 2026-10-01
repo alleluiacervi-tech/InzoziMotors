@@ -51,10 +51,13 @@ export function isDemoListing(car: Pick<Car, 'images'>): boolean {
  * to kill.
  */
 export function getCertTier(
-  car: Pick<Car, 'inspected' | 'inspection_score' | 'images'>
+  car: Pick<Car, 'inspected' | 'inspection_score' | 'images'> & { inspection_passed?: boolean | null }
 ): CertTier | null {
   if (!car?.inspected || isDemoListing(car)) return null
   const score = car.inspection_score || 0
+  // A grade is earned only by a car that PASSED (threshold and no critical
+  // failure); a high score cannot hide a failed brake check.
+  if (car.inspection_passed === false) return { key: 'inspected', label: '150-pt Inspected', short: 'Inspected' }
   if (score >= 140) return { key: 'plus', label: 'Certified+', short: 'Certified+' }
   if (score >= 120) return { key: 'certified', label: 'Sawa Certified', short: 'Certified' }
   return { key: 'inspected', label: '150-pt Inspected', short: 'Inspected' }

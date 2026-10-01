@@ -163,7 +163,7 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
        JOIN submissions s ON s.id = i.submission_id
        LEFT JOIN users u ON u.id = i.inspector_id
        JOIN users seller ON seller.id = c.seller_id
-       WHERE i.car_id = $1 AND i.status = 'complete' AND i.passed = TRUE
+       WHERE i.car_id = $1 AND i.status = 'complete'
          AND i.checklist_version = $2 AND c.status = 'live'
          AND s.seller_id = c.seller_id
          AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model) AND s.year = c.year
@@ -174,8 +174,12 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
       [req.params.carId, CHECKLIST_VERSION]
     );
     if (!rows.length) return res.status(404).json({ error: 'No inspection report found' });
+    // Transparency model (PR #106): a score under the threshold or a critical
+    // defect does not stop a listing going live — it is disclosed instead. So
+    // the report is served whatever it scored, and `passed` tells the client
+    // which kind it is. Only an inconsistent checklist is withheld.
     const evaluated = evaluateChecklist(rows[0].checklist_results);
-    if (!evaluated.valid || !evaluated.passed || evaluated.score !== Number(rows[0].score)) {
+    if (!evaluated.valid || evaluated.score !== Number(rows[0].score)) {
       return res.status(404).json({ error: 'No valid inspection report found' });
     }
     res.json({
@@ -183,7 +187,7 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
       checklist_version: CHECKLIST_VERSION,
       max_score: 150,
       passing_score: PUBLISH_THRESHOLD,
-      passed: true,
+      passed: evaluated.passed,
       category_scores: evaluated.category_scores,
       critical_failures: evaluated.critical_failures,
     });

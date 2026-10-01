@@ -576,10 +576,10 @@ async function DecisionSummary({ car, report, history }: { car: Car; report: Awa
 
   const signals = [
     {
-      icon: report ? 'shield-check' : 'clock',
+      icon: report ? (report.passed ? 'shield-check' : 'alert') : 'clock',
       label: t('cars.detail.signalInspection'),
       value: report ? t('cars.detail.inspectionRecorded', { score: report.score }) : car.inspected ? t('cars.detail.reportBeingPrepared') : t('cars.detail.notYetPublished'),
-      tone: report ? 'text-success' : 'text-content-muted',
+      tone: report ? (report.passed ? 'text-success' : 'text-warning-text') : 'text-content-muted',
     },
     {
       icon: documentIssues ? 'alert' : verifiedDocuments ? 'check-circle' : 'minus',
