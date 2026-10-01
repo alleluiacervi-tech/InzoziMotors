@@ -84,6 +84,10 @@ export default function PlatformSettingsPage() {
                 <Link href="/settings/rate-card" className="rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
                   Edit rate card
                 </Link>
+              ) : row.key.startsWith('encar_') ? (
+                <Link href="/imports/korea" className="rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800">
+                  Open Korean catalogue
+                </Link>
               ) : <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">{String(row.value)}</code>}
             </div>
           </Card>

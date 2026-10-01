@@ -36,6 +36,26 @@ export default function ImportOperationsPage({ params }: { params: Promise<{ id:
       allowed={(order.allowed_transitions || []).filter((next: string) => order.status !== 'enquiry' || next === 'cancelled')}
       onChanged={load} /></div>
     <div className="grid gap-5 xl:grid-cols-2">
+      {/* A request for a specific Korean car: what the customer asked for, frozen the day they
+          asked. The live listing may have changed or sold since; this record has not. */}
+      {order.listing_snapshot ? <Card className="p-5 xl:col-span-2">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><h2 className="font-extrabold text-content">Korean listing (as requested)</h2><p className="mt-1 text-caption text-content-muted">Captured {fmtDateTime(order.snapshot_at)}. Refresh and confirm it is still available before you quote.</p></div>
+          <div className="flex gap-2">
+            <a href={`https://fem.encar.com/cars/detail/${encodeURIComponent(order.encar_listing_id)}`} target="_blank" rel="noreferrer" className="rounded-xl border border-line px-4 py-2 text-caption font-bold text-content">Open the source listing ↗</a>
+            <button disabled={busy==='encar'} onClick={async()=>{setBusy('encar');try{const r=await api.encarRefresh(order.encar_listing_id);toast(r.note,'success')}catch(e:any){toast(e.message,'error')}finally{setBusy('')}}} className="rounded-xl bg-ink-900 px-4 py-2 text-caption font-bold text-white disabled:opacity-40">Ask the provider to refresh</button>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[180px_1fr]">
+          {(order.snapshot_photos?.[0] || order.listing_snapshot.photos?.[0]) ? <img src={order.snapshot_photos?.[0] || order.listing_snapshot.photos[0]} alt="" referrerPolicy="no-referrer" className="aspect-[4/3] w-full rounded-xl object-cover" /> : null}
+          <div className="text-label text-content-secondary">
+            <p className="font-extrabold text-content">{order.listing_snapshot.year} {order.listing_snapshot.make} {order.listing_snapshot.model} {order.listing_snapshot.badge||''}</p>
+            <p className="mt-1 capitalize">{[order.listing_snapshot.mileage_km!=null?`${Number(order.listing_snapshot.mileage_km).toLocaleString('en-US')} km`:null,order.listing_snapshot.fuel,order.listing_snapshot.transmission,order.listing_snapshot.color].filter(Boolean).join(' · ')}</p>
+            <p className="mt-2">Korean price: <span className="font-bold text-content tabular-nums">₩{Number(order.listing_snapshot.price_krw).toLocaleString('en-US')}</span>{order.listing_snapshot.krw_per_usd?<span className="text-content-muted"> (≈ ${Math.round(order.listing_snapshot.price_krw/order.listing_snapshot.krw_per_usd).toLocaleString('en-US')} at ₩{Math.round(order.listing_snapshot.krw_per_usd)}/US$)</span>:null}</p>
+            <p className="mt-1 text-caption text-content-muted">Photos: {order.snapshot_photos?.length ? `${order.snapshot_photos.length} copied to our storage` : 'not yet copied (the provider\'s addresses are shown)'}</p>
+          </div>
+        </div>
+      </Card> : null}
       <Card className="p-5"><div className="flex items-center justify-between"><h2 className="font-extrabold text-content">Agreement & money</h2><Pill status={order.status} label={order.status.replaceAll('_',' ')}/></div><p className="mt-3 text-2xl font-black text-content">{money(order.quoted_total_rwf)}</p>
         <div className="mt-4 space-y-3">{order.payments.map((p:any)=><div key={p.id} className="rounded-xl border border-line-soft p-4"><div className="flex justify-between gap-3"><div><p className="font-bold text-content">{p.milestone.replaceAll('_',' ')}</p><p className="text-caption text-content-muted">Expected reference: <span className="font-mono">{p.reference}</span></p><p className="text-caption text-content-muted">{p.bank_reference?<>Buyer submitted: <span className="font-mono">{p.bank_reference}</span>{p.bank_reference!==p.reference?<span className="font-bold text-warning-text"> · does not match</span>:null}</>:'No bank reference submitted'}</p></div><div className="text-right"><p className="font-extrabold text-content">{money(p.amount_rwf)}</p><Pill status={p.status} label={p.status}/></div></div>
           {p.proof_url?<a href={`/api/backend/imports/${id}/payments/${p.id}/proof`} target="_blank" rel="noreferrer" className="mr-2 mt-3 inline-block rounded-xl border border-line px-4 py-2 text-caption font-bold text-content">View transfer proof</a>:null}
