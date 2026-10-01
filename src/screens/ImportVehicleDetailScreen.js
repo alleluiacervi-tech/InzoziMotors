@@ -45,9 +45,9 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
   if (!item) {
     return (
       <Screen background={colors.bg}>
-        <BackHeader title="Import Vehicle" onBack={() => navigation.goBack()} />
+        <BackHeader title={t('importCatalog.title')} onBack={() => navigation.goBack()} />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Vehicle information not available.</Text>
+          <Text style={styles.errorText}>{t('importCatalog.unavailable')}</Text>
         </View>
       </Screen>
     );
@@ -106,11 +106,11 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
   const handleRequestQuote = async () => {
     if (!user) {
       Alert.alert(
-        'Sign In Required',
-        'Please sign in or create an account to request an import quotation.',
+        t('importCatalog.signInTitle'),
+        t('importCatalog.signInBody'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign In', onPress: () => navigation.navigate('SignIn') },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('importCatalog.signIn'), onPress: () => navigation.navigate('SignIn') },
         ]
       );
       return;
@@ -140,10 +140,10 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
 
       const created = await importsApi.create(payload);
       setModalVisible(false);
-      showToast('Import request submitted successfully!', 'success');
+      showToast(t('importCatalog.submitted'), 'success');
       navigation.navigate('ImportOrderDetail', { id: created.id });
     } catch (err) {
-      Alert.alert('Request Failed', err.message || 'Could not submit import enquiry. Please try again.');
+      Alert.alert(t('importCatalog.requestFailedTitle'), err.message || t('importCatalog.requestFailedBody'));
     } finally {
       setSubmitting(false);
     }
@@ -188,7 +188,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
                 <BrandMark name={item.make} logoUrl={brandLogo(item.make)} size={72} />
                 <Text style={styles.slideFallbackTitle}>{item.make} {item.model}</Text>
                 <Text style={styles.slideFallbackText}>
-                  Photographs of the exact unit come with your quotation
+                  {t('importCatalog.photosWithQuote')}
                 </Text>
               </View>
             )}
@@ -209,7 +209,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
           {/* Origin Badge */}
           <View style={styles.originFloatingBadge}>
             <Text style={styles.originFloatingText}>
-              {flag} Direct Import from {item.originCountry}
+              {flag} {t('importCatalog.directImportFrom', { country: item.originCountry })}
             </Text>
           </View>
 
@@ -233,9 +233,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
         </View>
         {imageKind ? (
           <Text style={styles.imageKindNote}>
-            {imageKind === 'studio'
-              ? 'Studio image of the current model. Colour, trim and your exact unit are confirmed on the quotation.'
-              : 'Official photo of the model. Photos of your exact unit come with the quotation.'}
+            {imageKind === 'studio' ? t('importCatalog.studioNote') : t('importCatalog.officialNote')}
           </Text>
         ) : null}
 
@@ -250,14 +248,14 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
             </View>
             <View style={styles.transitPill}>
               <Ionicons name="boat-outline" size={14} color={colors.infoText} />
-              <Text style={styles.transitPillText}>~{item.estimatedTransitDays || 35} Days</Text>
+              <Text style={styles.transitPillText}>{t('importCatalog.transitDays', { days: item.estimatedTransitDays || 35 })}</Text>
             </View>
           </View>
 
           <View style={styles.routeRow}>
             <Ionicons name="navigate-outline" size={15} color={colors.textMuted} />
             <Text style={styles.routeText}>
-              {item.originPort} → Mombasa / Dar es Salaam → Kigali Dry Port
+              {t('importCatalog.route', { port: item.originPort })}
             </Text>
           </View>
 
@@ -268,41 +266,41 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
 
         {/* Technical Specs */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Vehicle Specifications</Text>
+          <Text style={styles.sectionTitle}>{t('importCatalog.specsTitle')}</Text>
           <View style={styles.specGrid}>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Displacement</Text>
+              <Text style={styles.specBoxLabel}>{t('importCatalog.displacement')}</Text>
               <Text style={[styles.specBoxVal, !item.engineCc && styles.specBoxValUnknown]}>
-                {item.engineCc ? `${item.engineCc} cc` : 'By trim'}
+                {item.engineCc ? `${item.engineCc} cc` : t('importCatalog.byTrim')}
               </Text>
             </View>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Fuel</Text>
+              <Text style={styles.specBoxLabel}>{t('importCatalog.fuel')}</Text>
               <Text style={styles.specBoxVal}>
                 {(item.fuelTypes || []).join(' · ') || '—'}
               </Text>
             </View>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Transmission</Text>
+              <Text style={styles.specBoxLabel}>{t('importCatalog.transmission')}</Text>
               <Text style={styles.specBoxVal}>{item.transmission}</Text>
             </View>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Drive Side</Text>
-              <Text style={styles.specBoxVal}>{item.driveSide || 'LHD (Rwanda)'}</Text>
+              <Text style={styles.specBoxLabel}>{t('importCatalog.driveSide')}</Text>
+              <Text style={styles.specBoxVal}>{item.driveSide || t('importCatalog.lhdRwanda')}</Text>
             </View>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Body Class</Text>
+              <Text style={styles.specBoxLabel}>{t('importCatalog.bodyClass')}</Text>
               <Text style={styles.specBoxVal}>{item.bodyType}</Text>
             </View>
             <View style={styles.specBox}>
-              <Text style={styles.specBoxLabel}>Condition</Text>
-              <Text style={styles.specBoxVal}>Brand new · 0 km</Text>
+              <Text style={styles.specBoxLabel}>{t('importCatalog.condition')}</Text>
+              <Text style={styles.specBoxVal}>{t('importCatalog.brandNew')}</Text>
             </View>
           </View>
 
           {item.highlights && item.highlights.length > 0 && (
             <View style={styles.highlightsContainer}>
-              <Text style={styles.highlightsTitle}>Key Equipment & Options</Text>
+              <Text style={styles.highlightsTitle}>{t('importCatalog.keyEquipment')}</Text>
               <View style={styles.highlightTags}>
                 {item.highlights.map((h, i) => (
                   <View key={i} style={styles.highlightTag}>
@@ -323,12 +321,10 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.sectionTitle}>
-                {quote ? 'Landed cost estimate' : 'Pricing'}
+                {quote ? t('importCatalog.costEstimateTitle') : t('importCatalog.pricingTitle')}
               </Text>
               <Text style={styles.costSub}>
-                {quote
-                  ? 'Estimate, delivered and cleared in Kigali'
-                  : 'Quoted per order — ask and we will come back to you'}
+                {quote ? t('importCatalog.costEstimateSub') : t('importCatalog.quotedPerOrderSub')}
               </Text>
             </View>
           </View>
@@ -336,19 +332,19 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
           {quote ? (
             <View style={styles.costTable}>
               <View style={styles.costRow}>
-                <Text style={styles.costLabel}>1. Vehicle price (FOB)</Text>
+                <Text style={styles.costLabel}>{t('importCatalog.cost1')}</Text>
                 <Text style={styles.costVal}>{formatRWF(quote.vehicleValueRwf)}</Text>
               </View>
-              <Text style={styles.costNote}>Source market vehicle cost (${quote.fobUsd.toLocaleString()} USD)</Text>
+              <Text style={styles.costNote}>{t('importCatalog.cost1Note', { usd: quote.fobUsd.toLocaleString('en-US') })}</Text>
 
               <View style={styles.costRow}>
-                <Text style={styles.costLabel}>2. Ocean & overland freight</Text>
+                <Text style={styles.costLabel}>{t('importCatalog.cost2')}</Text>
                 <Text style={styles.costVal}>{formatRWF(quote.freightRwf)}</Text>
               </View>
-              <Text style={styles.costNote}>Container transport to Kigali Dry Port (${quote.freightUsd.toLocaleString()} USD)</Text>
+              <Text style={styles.costNote}>{t('importCatalog.cost2Note', { usd: quote.freightUsd.toLocaleString('en-US') })}</Text>
 
               <View style={styles.costRow}>
-                <Text style={styles.costLabel}>3. Marine transit insurance</Text>
+                <Text style={styles.costLabel}>{t('importCatalog.cost3')}</Text>
                 <Text style={styles.costVal}>{formatRWF(quote.insuranceRwf)}</Text>
               </View>
 
@@ -356,29 +352,27 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
                   guess dressed as a tariff calculation, so it says what is
                   missing instead of printing a number. */}
               <View style={styles.costRow}>
-                <Text style={styles.costLabel}>4. RRA customs duties & taxes</Text>
+                <Text style={styles.costLabel}>{t('importCatalog.cost4')}</Text>
                 <Text style={[styles.costVal, !quote.dutyKnown && styles.costValUnknown]}>
-                  {quote.dutyKnown ? formatRWF(quote.totalDutiesRwf) : 'Not yet known'}
+                  {quote.dutyKnown ? formatRWF(quote.totalDutiesRwf) : t('importCatalog.dutyUnknown')}
                 </Text>
               </View>
               <Text style={styles.costNote}>
-                {quote.dutyKnown
-                  ? 'Official RRA tariff: 25% customs, excise by engine size, 18% VAT, 5% WHT, 1.5% infrastructure'
-                  : 'Depends on the engine size of the trim you choose — confirmed with your quotation.'}
+                {quote.dutyKnown ? t('importCatalog.dutyNoteKnown') : t('importCatalog.dutyNoteUnknown')}
               </Text>
 
               <View style={styles.costRow}>
-                <Text style={styles.costLabel}>5. Port clearance & registration</Text>
+                <Text style={styles.costLabel}>{t('importCatalog.cost5')}</Text>
                 <Text style={styles.costVal}>{formatRWF(quote.clearingRwf)}</Text>
               </View>
-              <Text style={styles.costNote}>RADEX, clearing agents, plate inspection & RRA yellow card</Text>
+              <Text style={styles.costNote}>{t('importCatalog.cost5Note')}</Text>
 
               <View style={styles.totalDivider} />
 
               <View style={styles.costRowTotal}>
                 <View>
                   <Text style={styles.totalLabel}>
-                    {quote.dutyKnown ? 'Estimated landed price' : 'Estimated, before duty'}
+                    {quote.dutyKnown ? t('importCatalog.totalEstimated') : t('importCatalog.totalBeforeDuty')}
                   </Text>
                   <Text style={styles.totalUsd}>~${quote.grandTotalUsd.toLocaleString('en-US')} USD</Text>
                 </View>
@@ -390,18 +384,15 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
                the gap with $15,000 and ran the duty maths on it, which turned a
                blank into a figure a buyer could plan around. */
             <View style={styles.noQuoteBox}>
-              <Text style={styles.noQuoteTitle}>We quote this model per order</Text>
+              <Text style={styles.noQuoteTitle}>{t('importCatalog.noQuoteTitle')}</Text>
               <Text style={styles.noQuoteBody}>
-                What a brand-new {item.make} {item.model} costs landed in Kigali depends on
-                the trim, the exporter and the shipping week. Rather than show you a
-                number we would have to take back, we price your exact specification
-                and send it to you.
+                {t('importCatalog.noQuoteBody', { make: item.make, model: item.model })}
               </Text>
               <View style={styles.noQuoteList}>
                 {[
-                  'Exact trim, colour and options you choose',
-                  'FOB price from the exporter, freight and insurance',
-                  'RRA duty, clearance and yellow-card registration',
+                  t('importCatalog.noQuote1'),
+                  t('importCatalog.noQuote2'),
+                  t('importCatalog.noQuote3'),
                 ].map((line) => (
                   <View key={line} style={styles.noQuoteItem}>
                     <Ionicons name="checkmark-circle-outline" size={15} color={colors.green} />
@@ -413,67 +404,27 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
           )}
         </View>
 
-        {/* 4-Step Sourcing Stepper */}
+        {/* The steps of an import order. Same eight, in the same words, as the
+            website's import page — the previous four-step copy here promised an
+            overseas inspection with video and GPS container tracking that the
+            order flow does not provide. */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>How Your Import Works</Text>
+          <Text style={styles.sectionTitle}>{t('importCatalog.stepsTitle')}</Text>
           <View style={styles.steps}>
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumText}>1</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>Verified Quotation & Sourcing Agreement</Text>
-                <Text style={styles.stepDesc}>
-                  Our sourcing desk locks in exact vehicle specs, VIN/chassis, and issues your formal contract.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.stepLine} />
-
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumText}>2</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>Deposit to the exporter (50%)</Text>
-                <Text style={styles.stepDesc}>
-                  {quote
-                    ? `You pay ${formatRWF(quote.initialDepositRwf)} directly to the exporter and upload the bank transfer proof, which we check before sourcing begins.`
-                    : 'You pay half directly to the exporter and upload the bank transfer proof, which we check before sourcing begins.'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.stepLine} />
-
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumText}>3</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>Overseas Inspection & GPS Container Tracking</Text>
-                <Text style={styles.stepDesc}>
-                  Pre-shipment 150-point inspection in Incheon/Dubai/Shanghai with HD videos, followed by live vessel tracking.
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.stepLine} />
-
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumText}>4</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.stepTitle}>Kigali arrival & final payment (50%)</Text>
-                <Text style={styles.stepDesc}>
-                  {quote
-                    ? `Inspect the vehicle in Kigali, then settle the remaining ${formatRWF(quote.finalBalanceRwf)} with the exporter and take the yellow card.`
-                    : 'Inspect the vehicle in Kigali, then settle the balance with the exporter and take the yellow card.'}
-                </Text>
-              </View>
-            </View>
+            {['request', 'quote', 'agreement', 'deposit', 'shipping', 'inspection', 'balance', 'handover'].map((key, index, all) => (
+              <React.Fragment key={key}>
+                <View style={styles.stepItem}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumText}>{index + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.stepTitle}>{t(`importCatalog.step_${key}_t`)}</Text>
+                    <Text style={styles.stepDesc}>{t(`importCatalog.step_${key}_b`)}</Text>
+                  </View>
+                </View>
+                {index < all.length - 1 ? <View style={styles.stepLine} /> : null}
+              </React.Fragment>
+            ))}
           </View>
         </View>
 
@@ -484,10 +435,10 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
       <View style={styles.bottomBar}>
         <View style={styles.bottomPriceCol}>
           <Text style={styles.bottomPriceLabel}>
-            {quote ? 'Est. landed in Kigali' : 'Brand new · 0 km'}
+            {quote ? t('importCatalog.estLanded') : t('importCatalog.brandNew')}
           </Text>
           <Text style={styles.bottomPriceRwf}>
-            {quote ? formatRWF(quote.grandTotalRwf) : 'Price on request'}
+            {quote ? formatRWF(quote.grandTotalRwf) : t('importCatalog.priceOnRequest')}
           </Text>
         </View>
 
@@ -496,7 +447,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
           onPress={() => setModalVisible(true)}
           accessibilityRole="button"
         >
-          <Text style={styles.quoteBtnText}>Request Import Quote</Text>
+          <Text style={styles.quoteBtnText}>{t('importCatalog.requestQuote')}</Text>
           <Ionicons name="arrow-forward" size={16} color="#fff" />
         </Pressable>
       </View>
@@ -511,7 +462,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Request Import Sourcing Quote</Text>
+              <Text style={styles.modalTitle}>{t('importCatalog.modalTitle')}</Text>
               <Pressable onPress={() => setModalVisible(false)} hitSlop={10}>
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </Pressable>
@@ -521,13 +472,13 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
               {item.make} {item.model} ({item.originCountry})
             </Text>
             <Text style={styles.modalSub}>
-              Our procurement desk will verify active overseas stock in {item.originPort} and send you a formal quotation with locked landed pricing.
+              {t('importCatalog.modalSub', { port: item.originPort })}
             </Text>
 
-            <Text style={styles.inputLabel}>Your Preferences / Color / Notes</Text>
+            <Text style={styles.inputLabel}>{t('importCatalog.notesLabel')}</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="e.g. Prefer Black or Pearl White, leather seats, 2022+ model year..."
+              placeholder={t('importCatalog.notesPlaceholder')}
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={4}
@@ -538,7 +489,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
             <View style={styles.modalEscrowNote}>
               <Ionicons name="shield-checkmark" size={16} color={colors.greenText} />
               <Text style={styles.modalEscrowText}>
-                No payment is required to submit this request — Sawa reviews it and sends a formal quotation first.
+                {t('importCatalog.noPayment')}
               </Text>
             </View>
 
@@ -550,7 +501,7 @@ export default function ImportVehicleDetailScreen({ navigation, route }) {
               {submitting ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.modalSubmitBtnText}>Submit Sourcing Request</Text>
+                <Text style={styles.modalSubmitBtnText}>{t('importCatalog.submit')}</Text>
               )}
             </Pressable>
           </View>
