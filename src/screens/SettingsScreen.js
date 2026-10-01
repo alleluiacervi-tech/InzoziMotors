@@ -16,6 +16,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../theme/ThemeContext';
 import authApi from '../api/auth';
+import api from '../api/client';
 import { getJSON } from '../storage';
 import {
   SAWA_WHATSAPP, SAWA_PHONE_DISPLAY, SAWA_EMAIL, WHATSAPP_VERIFIED,
@@ -64,7 +65,7 @@ async function openLink(url) {
 // All user-facing settings labels come through the same translation function as
 // the language picker. This keeps the selector useful even when the user cannot
 // read the default English screen.
-const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearanceLabel) => [
+const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearanceLabel, showTestPush) => [
   {
     title: t('settings.account'),
     items: [
@@ -78,6 +79,7 @@ const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearance
       { icon: 'language-outline', label: t('settings.language'), value: languageLabel, screen: 'Language' },
       { icon: 'contrast-outline', label: t('settings.appearance'), value: appearanceLabel, screen: 'Appearance' },
       { icon: 'notifications-outline', label: t('settings.push'), toggle: 'push' },
+      ...(showTestPush ? [{ icon: 'paper-plane-outline', label: t('settings.testPush'), action: 'testPush' }] : []),
     ],
   },
   {
@@ -205,6 +207,7 @@ export default function SettingsScreen({ navigation }) {
     checkingUpdate ? t('common.loading') : `v${build.version}`,
     languageInfo.nativeLabel,
     t(`appearance.${themeMode}`),
+    isLoggedIn && pushOn,
   );
 
   // Deletion state. A dedicated modal rather than showConfirm(), because this
@@ -228,9 +231,24 @@ export default function SettingsScreen({ navigation }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
+  // Asks the server to push to THIS account's devices and reports what Expo
+  // said for each, so "nothing arrived" can be told apart from "never sent".
+  const sendTestPush = async () => {
+    try {
+      const { sent, devices } = await api.post('/devices/test', {});
+      if (!devices.length) showToast(t('settings.testPushNone'), 'error');
+      else if (sent > 0) showToast(t('settings.testPushSent'), 'success');
+      else showToast(t('settings.testPushFailed'), 'error');
+    } catch (err) {
+      showToast(err?.status === 429 ? t('settings.testPushWait') : t('settings.testPushFailed'), 'error');
+    }
+  };
+
   const handleItemPress = (item) => {
     if (item.action === 'checkUpdate') {
       runUpdateCheck();
+    } else if (item.action === 'testPush') {
+      sendTestPush();
     } else if (item.screen) {
       navigation.navigate(item.screen);
     } else if (item.link) {

@@ -17,6 +17,19 @@ export const rentals = {
     return await api.get('/rentals/inquiries/my');
   },
 
+  // The provider side. Providers see only their own leads; the server scopes it.
+  getReceivedInquiries: async () => {
+    return await api.get('/rentals/inquiries');
+  },
+
+  getMyFleet: async () => {
+    return await api.get('/rentals/mine');
+  },
+
+  setInquiryStatus: async (inquiryId, status) => {
+    return await api.patch(`/rentals/inquiries/${inquiryId}/status`, { status });
+  },
+
   cancelInquiry: async (inquiryId) => {
     return await api.patch(`/rentals/inquiries/${inquiryId}/status`, { status: 'cancelled' });
   },

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
@@ -6,6 +6,7 @@ import Badge from '../components/Badge';
 import { useApp } from '../context/AppContext';
 import { colors, radius, shadows, fonts } from '../theme';
 import { showToast } from '../components/Feedback';
+import rentalsApi from '../api/rentals';
 import { SAWA_WHATSAPP, SAWA_EMAIL, WHATSAPP_VERIFIED } from '../utils/whatsapp';
 
 const MENU_SELLER = [
@@ -72,6 +73,19 @@ function MenuSection({ title, items, navigation }) {
 export default function ProfileScreen({ navigation }) {
   const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest, demoMode, t } = useApp();
 
+  // A rental provider is someone who has rental vehicles on file. Asked once per
+  // visit and quietly: for everyone else the answer is an empty list and the
+  // row simply never appears.
+  const [isRentalProvider, setIsRentalProvider] = useState(false);
+  useEffect(() => {
+    if (!isLoggedIn || demoMode) return undefined;
+    let alive = true;
+    rentalsApi.getMyFleet()
+      .then((list) => { if (alive) setIsRentalProvider(Array.isArray(list) && list.length > 0); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [isLoggedIn, demoMode]);
+
   const liveCount = submissions.filter((s) => s.status === 'live').length;
   const soldCount = submissions.filter((s) => s.status === 'sold').length;
 
@@ -88,6 +102,7 @@ export default function ProfileScreen({ navigation }) {
 
   const menuAccount = [
     { icon: 'key-outline', label: t('profile.rentalInquiries'), screen: 'MyRentals' },
+    ...(isRentalProvider ? [{ icon: 'mail-open-outline', label: t('profile.rentalRequests'), screen: 'RentalInbox' }] : []),
     { icon: 'boat-outline', label: t('profile.myImports'), screen: 'ImportOrders' },
     { icon: 'chatbubbles-outline', label: t('profile.messages'), screen: 'Messages' },
     { icon: 'shield-checkmark-outline', label: t('profile.marketplaceSafety'), screen: 'SawaPromise' },

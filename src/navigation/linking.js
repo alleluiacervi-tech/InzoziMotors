@@ -39,6 +39,7 @@ export const linking = {
       Chat: 'chat/:convId',
       Messages: 'messages',
       MyRentals: 'rentals/inquiries',
+      RentalInbox: 'dashboard/rentals/inbox',
       NotificationCenter: 'notifications',
       SellerDashboard: 'selling',
       ImportOrders: 'imports',
