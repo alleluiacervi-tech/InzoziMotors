@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, fonts } from '../theme';
+import { reportClientError } from '../utils/crashReport';
+import { getJSON } from '../storage';
+import { translate, normalizeLanguage } from '../i18n';
 
 // The last line of defence. In a release bundle a render-time throw has no
 // redbox — without a boundary it is a permanent white screen with no way out
@@ -12,16 +15,21 @@ import { colors, radius, fonts } from '../theme';
 // A class because React only exposes error boundaries through
 // getDerivedStateFromError/componentDidCatch — there is no hook for this.
 export default class ErrorBoundary extends React.Component {
-  state = { failed: false, resetKey: 0 };
+  state = { failed: false, resetKey: 0, language: 'en' };
 
   static getDerivedStateFromError() {
     return { failed: true };
   }
 
   componentDidCatch(error) {
-    // Log-only: no crash-reporting service is wired up yet, and the message
-    // alone (never the user's data) is what a `adb logcat` / device log needs.
     console.warn('Render crash caught by ErrorBoundary:', error?.message);
+    // Message and stack only, to our own API — see utils/crashReport.js.
+    reportClientError(error, 'render', { fatal: true });
+    // This sits above the context that holds the language, so it reads the
+    // saved choice directly. Failing to read it leaves English, never a blank.
+    getJSON('language', null)
+      .then((saved) => { if (saved) this.setState({ language: normalizeLanguage(saved) }); })
+      .catch(() => {});
   }
 
   handleReset = () => {
@@ -35,13 +43,12 @@ export default class ErrorBoundary extends React.Component {
           <View style={styles.iconWrap}>
             <Ionicons name="construct-outline" size={30} color={colors.textMuted} />
           </View>
-          <Text style={styles.title}>Something went wrong</Text>
+          <Text style={styles.title}>{translate(this.state.language, 'errors.title')}</Text>
           <Text style={styles.sub}>
-            The app hit an unexpected problem. Your account and data are fine —
-            tap below to pick up where you left off.
+            {translate(this.state.language, 'errors.body')}
           </Text>
           <Pressable style={styles.btn} onPress={this.handleReset} accessibilityRole="button">
-            <Text style={styles.btnText}>Reload</Text>
+            <Text style={styles.btnText}>{translate(this.state.language, 'errors.reload')}</Text>
           </Pressable>
         </View>
       );

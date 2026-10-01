@@ -280,6 +280,7 @@ app.use('/referrals',       require('./src/routes/referrals'));
 app.use('/disputes', (req, res, next) => req.method === 'POST'
   ? transactionFeatureRetired(req, res, next) : next(), require('./src/routes/disputes'));
 app.use('/devices',         require('./src/routes/devices'));
+app.use('/client-errors',   require('./src/routes/client-errors'));
 // Mounted ahead of /admin so the pipeline reads keep their own module rather
 // than growing the admin router further. Both are admin-gated identically.
 app.use('/admin/journey',   require('./src/routes/journey'));

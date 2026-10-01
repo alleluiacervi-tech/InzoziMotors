@@ -16,6 +16,10 @@ import FeedbackHost from './src/components/Feedback';
 import UpdateBanner from './src/components/UpdateBanner';
 import StoreUpdateGate from './src/components/StoreUpdateGate';
 import { getJSON } from './src/storage';
+import { installGlobalErrorReporting } from './src/utils/crashReport';
+
+// Before anything renders: an error in the first frame should still be reported.
+installGlobalErrorReporting();
 
 // Light icons on the dark theme, dark icons on the light theme — the
 // inverse of the background, which is what makes status-bar content

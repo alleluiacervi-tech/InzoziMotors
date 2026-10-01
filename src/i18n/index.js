@@ -1739,6 +1739,11 @@ export const TRANSLATIONS = {
       "reviewedNote": "Prices last reviewed {{date}}.",
       "title": "Service fees",
       "unavailable": "Prices could not be loaded. Check your connection and try again."
+    },
+    "errors": {
+      "body": "The app hit an unexpected problem. Your account and data are fine — tap below to pick up where you left off.",
+      "reload": "Reload",
+      "title": "Something went wrong"
     }
   },
   "rw": {
@@ -3430,6 +3435,11 @@ export const TRANSLATIONS = {
       "reviewedNote": "Ibiciro byasuzumwe bwa nyuma {{date}}.",
       "title": "Ibiciro bya serivisi",
       "unavailable": "Ibiciro ntibyashoboye kuboneka. Reba interineti wongere ugerageze."
+    },
+    "errors": {
+      "body": "Porogaramu yahuye n’ikibazo kitateganyijwe. Konti yawe n’amakuru yawe ni byiza — kanda hasi ukomereze aho wari ugeze.",
+      "reload": "Ongera utangire",
+      "title": "Hari ikitagenze neza"
     }
   },
   "fr": {
@@ -5121,6 +5131,11 @@ export const TRANSLATIONS = {
       "reviewedNote": "Tarifs revus pour la dernière fois le {{date}}.",
       "title": "Tarifs des services",
       "unavailable": "Impossible de charger les tarifs. Vérifiez votre connexion."
+    },
+    "errors": {
+      "body": "L’application a rencontré un problème inattendu. Votre compte et vos données sont intacts — touchez ci-dessous pour reprendre.",
+      "reload": "Recharger",
+      "title": "Une erreur est survenue"
     }
   },
   "sw": {
@@ -6812,6 +6827,11 @@ export const TRANSLATIONS = {
       "reviewedNote": "Bei zilipitiwa mara ya mwisho {{date}}.",
       "title": "Ada za huduma",
       "unavailable": "Bei hazikuweza kupakiwa. Angalia mtandao na ujaribu tena."
+    },
+    "errors": {
+      "body": "Programu imekutana na tatizo lisilotarajiwa. Akaunti na data yako ziko salama — gusa hapa chini kuendelea ulipoishia.",
+      "reload": "Pakia upya",
+      "title": "Kuna hitilafu imetokea"
     }
   },
   "ko": {
@@ -8503,6 +8523,11 @@ export const TRANSLATIONS = {
       "reviewedNote": "요금은 {{date}}에 마지막으로 검토되었습니다.",
       "title": "서비스 요금",
       "unavailable": "요금을 불러오지 못했습니다. 연결을 확인하고 다시 시도하세요."
+    },
+    "errors": {
+      "body": "앱에 예기치 않은 문제가 발생했습니다. 계정과 데이터는 안전합니다. 아래를 눌러 이어서 사용하세요.",
+      "reload": "다시 불러오기",
+      "title": "문제가 발생했습니다"
     }
   },
   "zh": {
@@ -10194,6 +10219,11 @@ export const TRANSLATIONS = {
       "reviewedNote": "价格最后审核于{{date}}。",
       "title": "服务费用",
       "unavailable": "无法加载价格，请检查网络后重试。"
+    },
+    "errors": {
+      "body": "应用遇到了意外问题。您的账户和数据都安全——点击下方即可继续。",
+      "reload": "重新加载",
+      "title": "出了点问题"
     }
   }
 };
