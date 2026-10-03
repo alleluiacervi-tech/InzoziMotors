@@ -467,7 +467,7 @@ export default function UsersPage() {
           <button key={key} type="button" role="tab" aria-selected={tab === key}
             onClick={() => { setTab(key); setRole('all') }}
             className={`border-b-2 px-3 py-3 text-label font-bold transition-colors ${
-              tab === key ? 'border-brand text-brand' : 'border-transparent text-content-muted hover:text-content'
+              tab === key ? 'border-content text-content' : 'border-transparent text-content-muted hover:text-content'
             }`}>
             {label}
           </button>
@@ -714,7 +714,7 @@ export default function UsersPage() {
                   <p className="mt-1 text-caption text-content-muted">Submitted {fmtDate(u.id_submitted_at || u.created_at)}</p>
                   <div className="mt-3 flex flex-wrap gap-3">
                     {[['ID front', u.id_front_url], ['ID back', u.id_back_url], ['Selfie', u.selfie_url]].map(([label, url]) => url ?
-                      <a key={label} href={url} target="_blank" rel="noreferrer" className="text-caption font-bold text-brand underline hover:text-brand-bright">{label}</a> : null)}
+                      <a key={label} href={url} target="_blank" rel="noreferrer" className="text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">{label}</a> : null)}
                   </div>
                 </div>
               </div>

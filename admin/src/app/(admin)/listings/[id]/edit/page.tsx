@@ -210,7 +210,7 @@ export default function EditListingPage() {
                 type="button"
                 onClick={correctIdentity}
                 disabled={saving || correctionReason.trim().length < 4}
-                className="rounded-xl bg-brand px-4 py-2 text-xs font-bold text-brand-on disabled:opacity-50 sm:col-span-4 hover:bg-brand-light"
+                className="rounded-xl bg-ink-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50 sm:col-span-4 hover:bg-ink-800"
               >
                 {saving ? 'Saving…' : 'Confirm & Save Identity Correction'}
               </button>
@@ -412,7 +412,7 @@ export default function EditListingPage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 text-xs font-bold bg-brand text-brand-on rounded-xl hover:bg-brand-light disabled:opacity-50 shadow-sm"
+              className="px-6 py-2.5 text-xs font-bold bg-ink-900 text-white rounded-xl hover:bg-ink-800 disabled:opacity-50 shadow-sm"
             >
               {saving ? 'Saving…' : 'Save Changes'}
             </button>

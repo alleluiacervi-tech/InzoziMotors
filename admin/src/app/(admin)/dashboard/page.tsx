@@ -333,7 +333,7 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
             <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Recorded by Sawa</span>
             <div className="flex items-end justify-between gap-4">
-              <span className="text-stat-lg font-extrabold tabular-nums text-brand">
+              <span className="text-stat-lg font-extrabold tabular-nums text-content">
                 {money ? fmtMoneyShort(collected, money.currency) : '—'}
               </span>
             </div>
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                         <span className="mt-0.5 block truncate text-caption text-content-muted">{action.kind} · {action.detail}</span>
                       </span>
                       <span className="hidden shrink-0 self-center text-caption tabular-nums text-content-muted sm:block">{waited(action.age_hours)}</span>
-                      <span className="self-center text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={16} /></span>
+                      <span className="self-center text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-content"><Icon name="chevron-right" size={16} /></span>
                     </Link>
                   </li>
                 ))}
@@ -591,10 +591,10 @@ export default function DashboardPage() {
                 className="group flex items-center gap-3 border-b border-line-soft py-2.5 last:border-0"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-label font-bold text-content group-hover:text-brand">{label}</span>
+                  <span className="block text-label font-bold text-content group-hover:text-content">{label}</span>
                   <span className="mt-0.5 block text-caption text-content-muted">{sub}</span>
                 </span>
-                <span className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={15} /></span>
+                <span className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-content"><Icon name="chevron-right" size={15} /></span>
               </Link>
             ))}
           </div>

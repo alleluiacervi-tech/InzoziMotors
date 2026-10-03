@@ -337,7 +337,7 @@ export default function InboxPage() {
               {t.label}
               {t.key === 'inbox' && info && info.unread > 0 ? (
                 <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-micro font-bold ${
-                  active ? 'bg-surface/20 text-white' : 'bg-brand text-brand-on'
+                  active ? 'bg-surface/20 text-white' : 'bg-ink-900 text-white'
                 }`}>
                   {info.unread}
                 </span>
@@ -577,7 +577,7 @@ export default function InboxPage() {
                     <button
                       type="button"
                       onClick={() => { setShowImages(true); openMessage(message.uid, true) }}
-                      className="ml-auto text-caption font-bold text-brand underline underline-offset-2"
+                      className="ml-auto text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content"
                     >
                       Load images
                     </button>

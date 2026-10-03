@@ -171,7 +171,7 @@ export default function BannerPage() {
                 }`}>
                   {row.label}
                 </span>
-                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-brand">
+                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-content">
                   Open
                 </Link>
                 <button
@@ -211,7 +211,7 @@ export default function BannerPage() {
                 <span className="rounded-md bg-surface-alt px-2 py-1 text-caption font-bold text-content-secondary">
                   {row.sponsored ? 'Sponsored · ' : ''}{HIDDEN[row.hidden_reason] || row.hidden_reason}
                 </span>
-                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-brand">
+                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-content">
                   Open
                 </Link>
                 <button

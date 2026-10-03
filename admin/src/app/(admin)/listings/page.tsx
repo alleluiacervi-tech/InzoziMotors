@@ -299,7 +299,7 @@ export default function ListingsPage() {
             key={s}
             onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors capitalize ${
-              statusFilter === s ? 'bg-brand text-brand-on' : 'bg-surface text-gray-600 border border-gray-200 hover:border-brand'
+              statusFilter === s ? 'bg-ink-900 text-white' : 'bg-surface text-gray-600 border border-gray-200 hover:border-content-muted'
             }`}
           >
             {STATUS_LABELS[s] || s.replace('_', ' ')}
@@ -346,7 +346,7 @@ export default function ListingsPage() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500">{fmtInt(car.mileage)} km · {car.location}</p>
-                <p className="text-sm font-bold text-brand mt-1">{fmtMoney(car.price, car.currency)}</p>
+                <p className="text-sm font-bold text-content mt-1">{fmtMoney(car.price, car.currency)}</p>
                 <p className="text-xs text-content-muted">{car.views || 0} views</p>
                 <div className="mt-3 grid grid-cols-3 gap-1 text-center text-[11px]">
                   <span className={`rounded-md px-1 py-1 ${car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? 'bg-success-tint text-success-text' : 'bg-danger-tint text-danger-strong'}`}>Seller</span>
@@ -396,12 +396,12 @@ export default function ListingsPage() {
                       }}
                       disabled={actionId === car.id || !mayPublish(car)}
                       title={mayPublish(car) ? undefined : 'Something below is still required before this can be published.'}
-                      className="px-2 py-1 text-xs font-medium bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
+                      className="px-2 py-1 text-xs font-medium bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50"
                     >Publish</button>
                   )}
                   {car.status === 'under_review' && mayPublish(car) ? (
                     <>
-                      <button onClick={() => approveAndPublish(car)} disabled={actionId === car.id} className="px-2 py-1 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50">
+                      <button onClick={() => approveAndPublish(car)} disabled={actionId === car.id} className="px-2 py-1 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50">
                         {actionId === car.id ? 'Publishing…' : 'Approve & publish'}
                       </button>
                       {/* Kept for the case where the decision to publish is

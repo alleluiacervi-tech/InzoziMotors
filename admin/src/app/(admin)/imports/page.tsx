@@ -48,7 +48,7 @@ export default function ImportsPage() {
       <EmptyState icon="car" title="No import orders here" description="New customer import enquiries will appear in this pipeline." /> :
       <div className="space-y-4">{items.map((item) => <Card key={item.id} className="p-5">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-          <div><div className="flex flex-wrap items-center gap-2"><span className="text-caption font-bold text-brand">{item.order_ref}</span><Pill status={item.status} label={item.status.replaceAll('_',' ')} /></div>
+          <div><div className="flex flex-wrap items-center gap-2"><span className="text-caption font-bold text-content">{item.order_ref}</span><Pill status={item.status} label={item.status.replaceAll('_',' ')} /></div>
             <h2 className="mt-2 text-lg font-extrabold text-content">{item.year || ''} {item.make} {item.model}</h2>
             <p className="mt-1 text-label text-content-muted">From {item.origin_country} · {item.buyer_name} · {item.buyer_email}</p>
           </div>
@@ -64,7 +64,7 @@ export default function ImportsPage() {
           <ImportStatusControls orderId={item.id} status={item.status}
             allowed={(item.allowed_transitions || []).filter((next) => item.status !== 'enquiry' || next === 'cancelled')}
             onChanged={load} />
-          <Link href={`/imports/${item.id}`} className="shrink-0 text-label font-bold text-brand">Open operations record →</Link>
+          <Link href={`/imports/${item.id}`} className="shrink-0 text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">Open order</Link>
         </div>
       </Card>)}</div>}
   </div>

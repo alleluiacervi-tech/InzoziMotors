@@ -311,8 +311,8 @@ export default function RentalFleetPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3">
           <p className="text-sm font-semibold text-gray-900">{selected.size} vehicle{selected.size === 1 ? '' : 's'} selected for renewal</p>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-brand">Clear</button>
-            <button type="button" onClick={bulkRenew} disabled={bulkRenewing} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
+            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-content-muted">Clear</button>
+            <button type="button" onClick={bulkRenew} disabled={bulkRenewing} className="rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50">
               {bulkRenewing ? 'Renewing…' : `Renew ${selected.size} for 30 days`}
             </button>
           </div>
@@ -380,7 +380,7 @@ export default function RentalFleetPage() {
                     in the workshop should stay parked.
                   </p>
                   <button type="button" onClick={() => publish(car)} disabled={publishing === car.id}
-                    className="mt-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
+                    className="mt-2 rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50">
                     {publishing === car.id ? 'Publishing…' : 'Publish to the fleet'}
                   </button>
                 </div>
@@ -397,7 +397,7 @@ export default function RentalFleetPage() {
                     />
                     {car.status === 'pending_review' ? (
                       <button onClick={() => approveAndActivate(car)} disabled={renewing === car.id}
-                        className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
+                        className="whitespace-nowrap rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50">
                         {renewing === car.id ? 'Activating…' : 'Approve & activate'}
                       </button>
                     ) : (
@@ -418,7 +418,7 @@ export default function RentalFleetPage() {
                 </div>
               ) : null}
 
-              <button onClick={() => begin(car)} className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-brand">Edit inventory</button>
+              <button onClick={() => begin(car)} className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-content-muted">Edit inventory</button>
             </div>
           </article>
         ))}</div>

@@ -323,7 +323,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </span>
                       <span className="min-w-0 flex-1 truncate">{label}</span>
                       {badge > 0 && (
-                        <span className="tnum ml-auto min-w-5 shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-brand-on">
+                        <span className="tnum ml-auto min-w-5 shrink-0 rounded-full bg-ink-900 px-1.5 py-0.5 text-center text-micro font-bold text-white">
                           {badge}
                           <span className="sr-only"> waiting</span>
                         </span>
@@ -417,7 +417,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <li key={`${result.kind}-${result.id}`}>
                       <Link href={result.href} onClick={() => { setGlobalQuery(''); setSearchResults([]) }}
                         className="flex items-center gap-3 px-4 py-3 hover:bg-surface-alt">
-                        <span className="w-20 shrink-0 text-micro font-bold uppercase tracking-wide text-brand">{result.kind}</span>
+                        <span className="w-20 shrink-0 text-micro font-bold uppercase tracking-wide text-content">{result.kind}</span>
                         <span className="min-w-0"><span className="block truncate text-label font-semibold text-content">{result.title}</span><span className="block truncate text-caption text-content-muted">{result.detail}</span></span>
                       </Link>
                     </li>

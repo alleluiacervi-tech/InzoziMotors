@@ -89,7 +89,7 @@ function InspectionPicker() {
                 <button
                   type="button"
                   onClick={() => router.push(`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`)}
-                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-gray-100 bg-surface p-4 text-left shadow-sm transition-colors hover:border-brand"
+                  className="flex w-full items-center justify-between gap-4 rounded-xl border border-gray-100 bg-surface p-4 text-left shadow-sm transition-colors hover:border-content-muted"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-bold text-gray-900">
@@ -100,7 +100,7 @@ function InspectionPicker() {
                       {!insp.passed ? ' · defects will be disclosed on the listing' : ''}
                     </span>
                   </span>
-                  <span className="flex-shrink-0 text-xs font-bold text-brand">Use this →</span>
+                  <span className="flex-shrink-0 text-xs font-bold text-content">Use this →</span>
                 </button>
               </li>
             ))}
@@ -251,7 +251,7 @@ function ListingCreatorForm() {
                 <button
                   type="button"
                   onClick={() => { setSellerId(''); setSellerLabel(''); setSellerQuery('') }}
-                  className="shrink-0 text-xs font-semibold text-gray-500 hover:text-brand"
+                  className="shrink-0 text-xs font-semibold text-gray-500 hover:text-content"
                 >
                   Change
                 </button>

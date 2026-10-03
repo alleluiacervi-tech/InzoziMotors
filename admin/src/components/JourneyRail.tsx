@@ -44,7 +44,7 @@ const BAR: Record<string, string> = {
 // the DEFAULT success and warning hues fail AA on their tints and are for icons
 // and graphics only. BAR above is a graphic, so it keeps the DEFAULTs.
 const TEXT: Record<string, string> = {
-  done: 'text-success-text', us: 'text-brand', seller: 'text-warning-text',
+  done: 'text-success-text', us: 'text-content', seller: 'text-warning-text',
   clock: 'text-content-muted', blocked: 'text-danger-strong', idle: 'text-content-muted',
 }
 
@@ -183,7 +183,7 @@ export function JourneyRail({
                 <span className="text-content">{blocker.label}</span>
                 {/* Every blocker is the shortest route out of itself. */}
                 {blocker.fix ? (
-                  <Link href={blocker.fix} className="ml-auto shrink-0 whitespace-nowrap text-caption font-bold text-brand hover:underline">
+                  <Link href={blocker.fix} className="ml-auto shrink-0 whitespace-nowrap text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
                     Fix this →
                   </Link>
                 ) : null}

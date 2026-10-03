@@ -346,7 +346,7 @@ export default function SubmissionsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              tab === t ? 'bg-brand text-brand-on' : 'bg-surface text-gray-600 border border-gray-200 hover:border-brand'
+              tab === t ? 'bg-ink-900 text-white' : 'bg-surface text-gray-600 border border-gray-200 hover:border-content-muted'
             }`}
           >
             {STATUS_LABEL[t] || t}
@@ -385,7 +385,7 @@ export default function SubmissionsPage() {
                   <p className="text-sm text-gray-500">{fmtInt(sub.mileage)} km · {sub.condition} · {sub.transmission}</p>
                   <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {fmtDate(sub.submitted_at)}</p>
                   {sub.asking_price && (
-                    <p className="text-sm font-medium text-brand mt-1">
+                    <p className="text-sm font-medium text-content mt-1">
                       {fmtMoney(sub.asking_price, sub.currency)}
                     </p>
                   )}
@@ -405,7 +405,7 @@ export default function SubmissionsPage() {
                       if (next && !schedDate) setSchedDate(nextBusinessDay())
                     }}
                     disabled={actionId === sub.id}
-                    className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50"
                   >
                     {sub.status === 'scheduled' ? 'Reschedule' : 'Schedule inspection'}
                   </button>
@@ -418,7 +418,7 @@ export default function SubmissionsPage() {
                 )}
                 {sub.status === 'inspected' && !sub.car_id && sub.inspection_id && (
                   <Link href={`/listings/new?submissionId=${sub.id}&inspectionId=${sub.inspection_id}`}
-                    className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light">
+                    className="px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800">
                     Create the listing
                   </Link>
                 )}
@@ -495,7 +495,7 @@ export default function SubmissionsPage() {
                       setShowScheduleFor(null)
                     }}
                     disabled={actionId === sub.id || !schedCenter}
-                    className="px-4 py-2 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50"
                   >
                     Book Appointment
                   </button>

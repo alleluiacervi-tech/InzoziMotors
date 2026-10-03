@@ -365,7 +365,7 @@ export default function InspectionsPage() {
               {insp.status !== 'complete' && (
                 <Link
                   href={`/inspections/${insp.id}`}
-                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
+                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                 >
                   {insp.status === 'scheduled' ? 'Start Checklist' : 'Continue'}
                 </Link>
@@ -414,7 +414,7 @@ export default function InspectionsPage() {
                     // concludes the rental side simply does not work.
                     <Link
                       href={`/rentals/fleet?inspectionId=${insp.id}`}
-                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
+                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                     >
                       Add to rental fleet
                     </Link>
@@ -422,7 +422,7 @@ export default function InspectionsPage() {
                     <div className="flex flex-shrink-0 flex-wrap justify-end gap-2">
                       <Link
                         href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
-                        className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
+                        className="px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                       >
                         Create Listing
                       </Link>

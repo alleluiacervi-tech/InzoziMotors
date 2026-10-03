@@ -97,7 +97,7 @@ function ModelCard({ row, busy, onReview, onUpload, onRemove }: {
             {row.state === 'review' ? (
               <>
                 <button type="button" disabled={busy} onClick={() => onReview(row, 'approved')}
-                  className="rounded-lg bg-brand px-2.5 py-1.5 text-caption font-bold text-brand-on disabled:opacity-50">
+                  className="rounded-lg bg-ink-900 px-2.5 py-1.5 text-caption font-bold text-white disabled:opacity-50">
                   Right car — show it
                 </button>
                 <button type="button" disabled={busy} onClick={() => onReview(row, 'rejected')}
@@ -142,7 +142,7 @@ function ModelCard({ row, busy, onReview, onUpload, onRemove }: {
                   className="mt-1 h-9 w-full rounded-lg border border-line bg-surface px-2 text-caption font-normal text-content" />
               </label>
               <button type="button" onClick={save} disabled={busy || !file || source.trim().length < 4}
-                className="w-full rounded-lg bg-brand px-3 py-2 text-caption font-bold text-brand-on disabled:opacity-50">
+                className="w-full rounded-lg bg-ink-900 px-3 py-2 text-caption font-bold text-white disabled:opacity-50">
                 {busy ? 'Saving…' : 'Save official photo'}
               </button>
             </div>

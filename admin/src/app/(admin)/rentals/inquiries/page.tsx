@@ -136,8 +136,8 @@ export default function RentalInquiriesPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3">
           <p className="text-sm font-semibold text-gray-900">{selected.size} {selected.size === 1 ? 'inquiry' : 'inquiries'} selected</p>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-brand">Clear</button>
-            <button type="button" onClick={bulkMarkContacted} disabled={bulkWorking} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
+            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-content-muted">Clear</button>
+            <button type="button" onClick={bulkMarkContacted} disabled={bulkWorking} className="rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50">
               {bulkWorking ? 'Marking…' : `Mark ${selected.size} contacted`}
             </button>
           </div>
@@ -176,7 +176,7 @@ export default function RentalInquiriesPage() {
                   <td className="px-4 py-3"><p className="text-gray-900">{item.provider_business_name || item.provider_name || 'Sawa operations'}</p></td>
                   <td className="px-4 py-3 text-gray-600"><p>{item.start_date || 'Flexible date'}{item.days ? ` · ${item.days} days` : ''}</p><p className="mt-1 max-w-xs text-xs">{item.message || item.pickup_location || 'No additional message'}</p></td>
                   <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2">
-                    {item.status === 'new' && <button disabled={working === item.id} onClick={() => transition(item, 'contacted')} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-on disabled:opacity-50">Contacted</button>}
+                    {item.status === 'new' && <button disabled={working === item.id} onClick={() => transition(item, 'contacted')} className="rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Contacted</button>}
                     {['new', 'contacted'].includes(item.status) && <button disabled={working === item.id} onClick={() => transition(item, 'closed')} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:opacity-50">Close</button>}
                   </div></td>
                 </tr>

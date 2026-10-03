@@ -135,7 +135,7 @@ export default function CarPhotosPage() {
       <div className="flex items-center justify-between border-b border-gray-150 pb-5">
         <div>
           <h1 className="text-xl font-bold text-gray-900">{car.year} {car.make} {car.model}</h1>
-          <p className="text-xs text-gray-500">VIN: {car.vin || 'Not provided'} · Status: <span className="capitalize font-semibold text-brand">{car.status}</span></p>
+          <p className="text-xs text-gray-500">VIN: {car.vin || 'Not provided'} · Status: <span className="capitalize font-semibold text-content">{car.status}</span></p>
         </div>
         <button
           onClick={() => router.push('/listings')}
@@ -170,7 +170,7 @@ export default function CarPhotosPage() {
             onDrop={handleDrop}
             onClick={triggerFileSelect}
             className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all ${
-              dragActive ? 'border-brand bg-brand/5' : 'border-gray-300 hover:border-brand hover:bg-gray-50'
+              dragActive ? 'border-brand bg-brand/5' : 'border-gray-300 hover:border-content-muted hover:bg-gray-50'
             }`}
           >
             <input
@@ -184,12 +184,12 @@ export default function CarPhotosPage() {
             <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500"><Icon name="camera" size={24} /></span>
             <p className="text-sm font-semibold text-gray-800">Drag and drop photos here</p>
             <p className="text-xs text-gray-500 mt-1">or click to browse (up to 40 JPEG, PNG, or WebP images)</p>
-            <p className="mt-2 text-xs font-medium text-brand">Aim for 6–10 clear photos. More are welcome when they help a buyer understand the vehicle.</p>
+            <p className="mt-2 text-xs font-medium text-content">Aim for 6–10 clear photos. More are welcome when they help a buyer understand the vehicle.</p>
             
             {uploading && (
               <div className="mt-4 flex flex-col items-center">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand mb-2"></div>
-                <p className="text-xs text-brand font-medium">{uploadProgress}</p>
+                <p className="text-xs text-content font-medium">{uploadProgress}</p>
               </div>
             )}
             {!uploading && uploadProgress && (
@@ -253,10 +253,10 @@ export default function CarPhotosPage() {
           <h2 className="text-sm font-bold text-gray-900 mb-2">Photo quality checklist</h2>
           <p className="text-xs text-gray-500 mb-4">There is no fixed angle requirement. Use the images that best represent this vehicle.</p>
           <ul className="space-y-3 text-xs text-gray-600">
-            <li className="flex gap-2"><span className="font-bold text-brand">1.</span><span>Choose a bright, sharp exterior image as the cover.</span></li>
-            <li className="flex gap-2"><span className="font-bold text-brand">2.</span><span>Include exterior, cabin, dashboard, boot, engine and visible defects where relevant.</span></li>
-            <li className="flex gap-2"><span className="font-bold text-brand">3.</span><span>Never hide damage, registration details that must be disclosed, or material differences.</span></li>
-            <li className="flex gap-2"><span className="font-bold text-brand">4.</span><span>Publishing remains a separate admin action and will run all verification checks.</span></li>
+            <li className="flex gap-2"><span className="font-bold text-content">1.</span><span>Choose a bright, sharp exterior image as the cover.</span></li>
+            <li className="flex gap-2"><span className="font-bold text-content">2.</span><span>Include exterior, cabin, dashboard, boot, engine and visible defects where relevant.</span></li>
+            <li className="flex gap-2"><span className="font-bold text-content">3.</span><span>Never hide damage, registration details that must be disclosed, or material differences.</span></li>
+            <li className="flex gap-2"><span className="font-bold text-content">4.</span><span>Publishing remains a separate admin action and will run all verification checks.</span></li>
           </ul>
           <div className={`mt-5 rounded-lg border p-3 ${galleryMeetsMinimum ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
             <p className="text-xs font-bold">

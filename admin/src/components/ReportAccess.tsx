@@ -155,7 +155,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
         </div>
         {complete ? (
           <button type="button" onClick={() => setOpen(!open)}
-            className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-brand-on hover:bg-brand-light">
+            className="rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white hover:bg-ink-800">
             {open ? 'Cancel' : 'Give or sell a copy'}
           </button>
         ) : null}
@@ -229,7 +229,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
           ) : null}
 
           <button disabled={busy || !form.user_id}
-            className="rounded-lg bg-brand px-4 py-2.5 text-xs font-bold text-brand-on disabled:opacity-50">
+            className="rounded-lg bg-ink-900 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">
             {busy ? 'Saving…' : form.source === 'purchased' ? 'Record the sale' : 'Grant access'}
           </button>
         </form>

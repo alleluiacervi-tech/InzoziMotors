@@ -155,7 +155,7 @@ export default function ReportsPage() {
             onClick={() => setSurface(s)}
             className={`inline-flex h-9 items-center rounded-xl px-4 text-label font-bold capitalize transition-colors ${
               surface === s
-                ? 'bg-brand text-brand-on'
+                ? 'bg-ink-900 text-white'
                 : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'
             }`}
           >
@@ -349,7 +349,7 @@ export default function ReportsPage() {
               <button
                 type="button"
                 onClick={() => showThread(r.id)}
-                className="mt-3 inline-flex items-center gap-1.5 text-label font-semibold text-brand hover:underline"
+                className="mt-3 inline-flex items-center gap-1.5 text-label font-semibold text-content underline decoration-line underline-offset-4 hover:decoration-content"
               >
                 <Icon name={openThread === r.id ? 'chevron-up' : 'chevron-down'} size={14} />
                 {openThread === r.id ? 'Hide the conversation' : 'Read the conversation'}
