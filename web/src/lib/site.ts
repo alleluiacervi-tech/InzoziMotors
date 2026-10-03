@@ -279,7 +279,7 @@ export const FAQS = [
   {
     id: 'cost',
     q: 'What does it cost to sell?',
-    a: 'Any commercial service or listing charges are communicated separately by Sawa Cars and are not collected through a buyer–seller payment gateway. A vehicle transaction itself is always between the users.',
+    a: 'One charge: the 150-point inspection, paid at the centre (the current price is on the Sell page). Listing your car, buyer messages and the valuation are free, and Sawa Cars never takes a share of the sale.',
   },
   {
     id: 'reserve',

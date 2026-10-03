@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { StoreButtons } from '@/components/app/StoreButtons'
 import { ValuationTool } from '@/components/tools/ValuationTool'
 import {
   Badge,
@@ -12,11 +11,10 @@ import {
   SectionHeading,
   type IconName,
 } from '@/components/ui'
-import { cars } from '@/lib/api'
+import { cars, rateCard } from '@/lib/api'
+import { formatMoneyExact } from '@/lib/business'
 import { FAQS, SITE } from '@/lib/site'
 import { getDisplayCenters } from '@/lib/centers'
-import { InkClose } from '@/components/layout/InkClose'
-import { LISTING_PIPELINE, PipelineModules } from '@/components/marketing/PipelineModules'
 import { JsonLd } from '@/components/JsonLd'
 import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 import { getServerT } from '@/lib/i18n/server'
@@ -47,10 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const WHAT_WE_DO: { icon: IconName; key: string }[] = [
   { icon: 'shield-check', key: 'inspect' },
   { icon: 'camera', key: 'photograph' },
-  { icon: 'chart', key: 'price' },
-  { icon: 'user', key: 'contact' },
-  { icon: 'document', key: 'agree' },
-  { icon: 'cash', key: 'payment' },
+  { icon: 'document', key: 'publish' },
 ]
 
 /** Seller-side questions, pulled from the shared FAQ set so the site and the
@@ -91,6 +86,7 @@ export default async function SellPage({
   const t = await getServerT()
   const makes = await catalogueMakes()
   const centers = await getDisplayCenters()
+  const rates = await rateCard.get()
   const currentYear = new Date().getFullYear()
   const sellerFaqs = FAQS.filter((faq) => SELLER_QUESTIONS.includes(faq.q))
 
@@ -154,140 +150,59 @@ export default async function SellPage({
         </Container>
       </Section>
 
-      {/* ─── What we take on ──────────────────────────────────────────────── */}
+      {/* ─── What we do for you ───────────────────────────────────────────── */}
       <Section>
         <Container>
-          <SectionHeading
-            eyebrow={t('sell.work.eyebrow')}
-            title={t('sell.work.title')}
-            description={t('sell.work.description')}
-          />
+          <SectionHeading title={t('sell.work.title')} description={t('sell.work.description')} />
 
-          <div className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-10 grid gap-x-8 gap-y-8 sm:grid-cols-3">
             {WHAT_WE_DO.map((item) => (
-              <Card key={item.key} interactive className="p-6">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
-                  <Icon name={item.icon} size={22} />
-                </span>
-                <h3 className="mt-4 text-title-sm font-extrabold text-content">{t(`sell.work.${item.key}.title`)}</h3>
-                <p className="mt-2 text-caption leading-relaxed text-content-secondary">{t(`sell.work.${item.key}.body`)}</p>
-              </Card>
+              <li key={item.key} className="min-w-0 border-t border-line pt-5">
+                <Icon name={item.icon} size={22} className="text-content-muted" aria-hidden="true" />
+                <h3 className="mt-3 text-title-sm font-extrabold text-content">{t(`sell.work.${item.key}.title`)}</h3>
+                <p className="mt-2 text-body leading-relaxed text-content-secondary">{t(`sell.work.${item.key}.body`)}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         </Container>
       </Section>
 
-      {/* ─── Pipeline ─────────────────────────────────────────────────────── */}
-      <Section id="how" tone="surface">
-        <Container>
-          <SectionHeading
-            eyebrow={t('sell.pipeline.eyebrow')}
-            title={t('sell.pipeline.title')}
-            description={t('sell.pipeline.description')}
-          />
-
-          <div className="mt-12">
-            <PipelineModules steps={LISTING_PIPELINE} />
-          </div>
-        </Container>
-      </Section>
-
-      {/* ─── Cost ─────────────────────────────────────────────────────────── */}
+      {/* ─── What it costs, and the start button ──────────────────────────── */}
       <Section id="cost" tone="surface">
         <Container>
-          <SectionHeading
-            eyebrow={t('sell.boundaries.eyebrow')}
-            title={t('sell.boundaries.title')}
-            description={t('sell.boundaries.description')}
-          />
-
-          <div className="mt-12 grid gap-4 lg:grid-cols-3">
-            <Card className="p-6">
-              <Badge tone="neutral">{t('sell.boundaries.platform')}</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">{t('sell.boundaries.pubReqTitle')}</h3>
-              <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                {t('sell.boundaries.pubReqBody')}
-              </p>
-            </Card>
-
-            <Card className="p-6">
-              <Badge tone="success">{t('sell.boundaries.seller')}</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">{t('sell.boundaries.commTitle')}</h3>
-              <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                {t('sell.boundaries.commBody')}
-              </p>
-            </Card>
-
-            <Card className="p-6">
-              <Badge tone="neutral">{t('sell.boundaries.independent')}</Badge>
-              <h3 className="mt-4 text-title-sm font-extrabold text-content">{t('sell.boundaries.contractTitle')}</h3>
-              <p className="mt-2 text-caption leading-relaxed text-content-secondary">
-                {t('sell.boundaries.contractBody')}
-              </p>
-            </Card>
-          </div>
-
-          <div className="mt-8 flex flex-col gap-3 rounded-2xl bg-ink-900 p-6 text-white sm:flex-row sm:items-center sm:gap-5 sm:p-8">
-            <Icon name="info" size={22} className="text-white/70" />
-            <p className="text-body leading-relaxed text-white/85">
-              <span className="font-extrabold text-white">{t('sell.boundaries.noCheckoutBold')}</span>{t('sell.boundaries.noCheckoutBody')}
-            </p>
-          </div>
-        </Container>
-      </Section>
-
-      {/* ─── The one step the web cannot do ───────────────────────────────── */}
-      <Section>
-        <Container>
-          <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-16">
-            <div>
-              <p className="mb-4 text-caption font-bold text-brand">{t('sell.app.eyebrow')}</p>
-              <h2 className="text-headline font-extrabold text-content">
-                {t('sell.app.title')}
-              </h2>
-              <p className="mt-4 text-title-sm leading-relaxed text-content-secondary">
-                {t('sell.app.body1')}
-              </p>
-              <p className="mt-4 text-body leading-relaxed text-content-secondary">
-                {t('sell.app.body2')}
-              </p>
-            </div>
-
-            <Card className="p-6 sm:p-8">
-              <h3 className="text-caption font-bold text-content-muted">
-                {t('sell.app.whereTitle')}
-              </h3>
-              <ul className="mt-5 space-y-3.5">
-                {[
-                  { where: t('sell.app.whereBoth'), what: t('sell.app.step1') },
-                  { where: t('sell.app.whereWeb'), what: t('sell.app.step2') },
-                  { where: t('sell.app.whereBoth'), what: t('sell.app.step3') },
-                  { where: t('sell.app.whereBoth'), what: t('sell.app.step4') },
-                  { where: t('sell.app.whereCenter'), what: t('sell.app.step5') },
-                  { where: t('sell.app.whereDirect'), what: t('sell.app.step6') },
-                ].map((row) => (
-                  <li key={row.what} className="flex items-start gap-3">
-                    <span className="mt-0.5 w-[52px] shrink-0 rounded-pill bg-surface-alt px-2 py-1 text-center text-micro font-bold text-content-muted">
-                      {row.where}
-                    </span>
-                    <span className="text-body leading-relaxed text-content-secondary">
-                      {row.what}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-7 border-t border-line-soft pt-6">
-                <StoreButtons size="sm" />
-                <p className="mt-4 text-micro leading-relaxed text-content-muted">
-                  {t('sell.app.alreadyHaveApp')}{' '}
-                  <Link href="/download" className="font-bold text-brand hover:underline">
-                    {t('sell.app.openSellerFlow')}
+          <div className="grid gap-8 lg:grid-cols-12 lg:items-center lg:gap-16">
+            <div className="min-w-0 lg:col-span-7">
+              <h2 className="text-headline font-extrabold text-content">{t('sell.cost.title')}</h2>
+              <dl className="mt-6 divide-y divide-line-soft border-y border-line-soft">
+                <div className="flex items-baseline justify-between gap-6 py-4">
+                  <dt className="min-w-0">
+                    <span className="block text-body font-bold text-content">{t('sell.cost.inspection')}</span>
+                    <span className="mt-0.5 block text-caption text-content-secondary">{t('sell.cost.inspectionNote')}</span>
+                  </dt>
+                  <dd className="tnum shrink-0 text-title font-extrabold text-content">
+                    {rates?.inspection_fee_rwf != null ? formatMoneyExact(rates.inspection_fee_rwf) : t('sell.cost.atCentre')}
+                  </dd>
+                </div>
+                <div className="flex items-baseline justify-between gap-6 py-4">
+                  <dt className="min-w-0 text-body font-bold text-content">{t('sell.cost.free')}</dt>
+                  <dd className="shrink-0 text-title font-extrabold text-content">{t('sell.cost.freeValue')}</dd>
+                </div>
+              </dl>
+              {rates?.reviewed_on ? (
+                <p className="mt-3 text-caption text-content-muted">
+                  {t('tools.pricingPage.reviewedNote', { date: rates.reviewed_on })}{' '}
+                  <Link href="/tools/pricing" className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
+                    {t('sell.cost.allPrices')}
                   </Link>
-                  .
                 </p>
-              </div>
-            </Card>
+              ) : null}
+            </div>
+            <div className="min-w-0 lg:col-span-5">
+              <p className="text-body leading-relaxed text-content-secondary">{t('sell.cost.bookLede')}</p>
+              <Button href="/sell/submit" size="lg" className="mt-5" fullWidth trailingIcon={<Icon name="arrow-right" size={18} />}>
+                {t('sell.cost.book')}
+              </Button>
+            </div>
           </div>
         </Container>
       </Section>
@@ -346,22 +261,6 @@ export default async function SellPage({
         </Section>
       ) : null}
 
-      {/* ─── Close ────────────────────────────────────────────────────────── */}
-      <InkClose
-        headline={t('sell.close.headline')}
-        actions={
-          <>
-            <Button href="#valuation" size="lg">
-              {t('sell.close.valueMy')}
-            </Button>
-            <Button href="/sell/submit" variant="inverse" size="lg">
-              {t('sell.close.getApp')}
-            </Button>
-          </>
-        }
-      >
-        {t('sell.close.body')}
-      </InkClose>
     </>
   )
 }

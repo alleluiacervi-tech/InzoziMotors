@@ -247,6 +247,10 @@ function NextSteps() {
         </a>
         .
       </p>
+      {/* The direct-deal rule, once, beside the result a seller acts on. */}
+      <p className="text-center text-micro leading-relaxed text-content-secondary">
+        {t('common.directDeal')}
+      </p>
     </div>
   )
 }
