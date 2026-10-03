@@ -7,7 +7,7 @@ import { SellStrip } from '@/components/home/SellStrip'
 import { cars, rentals } from '@/lib/api'
 import { graph, organizationNode, websiteNode } from '@/lib/seo'
 import { summarizeInventory } from '@/lib/inventory'
-import type { Car, FeaturedPlacement, InspectionReport, RentalCar } from '@/lib/types'
+import type { Car, FeaturedPlacement, InspectionReport, RentalCar, SoldCar } from '@/lib/types'
 
 // The homepage is a Server Component so the live inventory below the fold is in
 // the HTML a crawler receives, not fetched afterwards by the browser.
@@ -45,6 +45,15 @@ async function getPlacements(): Promise<FeaturedPlacement[]> {
   }
 }
 
+/** Sold in the last 90 days, for the row under the stock grid. */
+async function getRecentlySold(): Promise<SoldCar[]> {
+  try {
+    return await cars.recentlySold(6)
+  } catch {
+    return []
+  }
+}
+
 async function getRentals(): Promise<RentalCar[]> {
   try {
     return await rentals.list()
@@ -65,7 +74,12 @@ async function getReport(carId: string | undefined): Promise<InspectionReport | 
 }
 
 export default async function HomePage() {
-  const [stock, placements, rentalFleet] = await Promise.all([getStock(), getPlacements(), getRentals()])
+  const [stock, placements, rentalFleet, sold] = await Promise.all([
+    getStock(),
+    getPlacements(),
+    getRentals(),
+    getRecentlySold(),
+  ])
   const inventory = summarizeInventory(stock)
   const report = await getReport(inventory.best?.id)
   const organizationLd = graph(organizationNode(), websiteNode())
@@ -85,6 +99,7 @@ export default async function HomePage() {
         placements={placements}
         excludeId={inventory.best?.id}
         inventory={inventory}
+        sold={sold}
       />
 
       {/* 3. The standard every car is measured against: the one dark band. */}

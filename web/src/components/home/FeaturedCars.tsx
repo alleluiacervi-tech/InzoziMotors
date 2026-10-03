@@ -3,7 +3,8 @@ import { Button, Card, Container, EmptyState, Section, SectionHeading, TextLink 
 import { CarCard } from '@/components/marketplace/CarCard'
 import { formatMoney } from '@/lib/business'
 import { budgetHref, type InventorySummary } from '@/lib/inventory'
-import type { Car, FeaturedPlacement } from '@/lib/types'
+import type { Car, FeaturedPlacement, SoldCar } from '@/lib/types'
+import { RecentlySold } from './RecentlySold'
 import { displayMake } from '@/lib/vehicle-names'
 import { makeSlug } from '@/components/marketplace/query'
 import { getServerT } from '@/lib/i18n/server'
@@ -46,6 +47,7 @@ export async function FeaturedCars({
   placements = [],
   excludeId,
   inventory,
+  sold = [],
 }: {
   /** Live stock, newest first. */
   cars: Car[]
@@ -54,6 +56,8 @@ export async function FeaturedCars({
   /** The hero's car, already on screen above. */
   excludeId?: string
   inventory: InventorySummary
+  /** Sold in the last 90 days; the row shows only with three or more. */
+  sold?: SoldCar[]
 }) {
   const t = await getServerT()
 
@@ -156,6 +160,8 @@ export async function FeaturedCars({
             />
           </Card>
         )}
+
+        <RecentlySold cars={sold} />
       </Container>
     </Section>
   )

@@ -187,6 +187,13 @@ export const home: Record<Locale, Record<string, unknown>> = {
         view: 'View this car',
         bar: 'Pass mark: {{threshold}}',
       },
+      sold: {
+        title: 'Recently sold',
+        lede: 'Inspected at our centres and sold in the last 90 days.',
+        score: '{{score}}/150',
+        soldOn: 'Sold {{date}}',
+        asked: 'Asked {{amount}}',
+      },
       stock: {
         title: '{{count}} inspected cars in stock',
         titleOne: '1 inspected car in stock',
@@ -434,6 +441,13 @@ export const home: Record<Locale, Record<string, unknown>> = {
         inspected: 'Yasuzumwe {{date}}',
         view: 'Reba iyi modoka',
         bar: 'Amanota yo gutsinda: {{threshold}}',
+      },
+      sold: {
+        title: 'Izagurishijwe vuba',
+        lede: 'Zasuzumiwe mu bigo byacu kandi zagurishijwe mu minsi 90 ishize.',
+        score: '{{score}}/150',
+        soldOn: 'Yagurishijwe {{date}}',
+        asked: 'Yasabirwaga {{amount}}',
       },
       stock: {
         title: 'Imodoka {{count}} zasuzumwe zirahari',
@@ -683,6 +697,13 @@ export const home: Record<Locale, Record<string, unknown>> = {
         view: 'Voir cette voiture',
         bar: 'Seuil de réussite : {{threshold}}',
       },
+      sold: {
+        title: 'Vendues récemment',
+        lede: 'Inspectées dans nos centres et vendues au cours des 90 derniers jours.',
+        score: '{{score}}/150',
+        soldOn: 'Vendue le {{date}}',
+        asked: 'Prix demandé : {{amount}}',
+      },
       stock: {
         title: '{{count}} voitures inspectées en stock',
         titleOne: '1 voiture inspectée en stock',
@@ -931,6 +952,13 @@ export const home: Record<Locale, Record<string, unknown>> = {
         view: 'Tazama gari hili',
         bar: 'Alama ya kufaulu: {{threshold}}',
       },
+      sold: {
+        title: 'Zilizouzwa hivi karibuni',
+        lede: 'Zimekaguliwa katika vituo vyetu na kuuzwa ndani ya siku 90 zilizopita.',
+        score: '{{score}}/150',
+        soldOn: 'Iliuzwa {{date}}',
+        asked: 'Iliombwa {{amount}}',
+      },
       stock: {
         title: 'Magari {{count}} yaliyokaguliwa yapo',
         titleOne: 'Gari 1 lililokaguliwa lipo',
@@ -1178,6 +1206,13 @@ export const home: Record<Locale, Record<string, unknown>> = {
         view: '이 차량 보기',
         bar: '합격 기준: {{threshold}}',
       },
+      sold: {
+        title: '최근 판매된 차량',
+        lede: '저희 센터에서 점검을 거쳐 최근 90일 안에 판매된 차량입니다.',
+        score: '{{score}}/150',
+        soldOn: '{{date}} 판매',
+        asked: '희망가 {{amount}}',
+      },
       stock: {
         title: '검사 완료 재고 {{count}}대',
         titleOne: '검사 완료 재고 1대',
@@ -1424,6 +1459,13 @@ export const home: Record<Locale, Record<string, unknown>> = {
         inspected: '{{date}} 检测',
         view: '查看此车',
         bar: '合格线：{{threshold}}',
+      },
+      sold: {
+        title: '最近售出',
+        lede: '在我们的中心检测，并在过去 90 天内售出。',
+        score: '{{score}}/150',
+        soldOn: '售出于 {{date}}',
+        asked: '要价 {{amount}}',
       },
       stock: {
         title: '{{count}} 辆已检测车辆在售',

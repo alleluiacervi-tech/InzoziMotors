@@ -50,6 +50,12 @@ export interface PricePoint {
   at: string
 }
 
+/** One row of GET /cars/recently-sold: a sold car, narrowed to what the row shows. */
+export type SoldCar = Pick<
+  Car,
+  'id' | 'title' | 'make' | 'model' | 'year' | 'mileage' | 'price' | 'images' | 'inspection_score' | 'inspection_passed'
+> & { currency?: string | null; sold_at: string }
+
 /**
  * A car an operator deliberately placed at the top of the marketplace.
  *

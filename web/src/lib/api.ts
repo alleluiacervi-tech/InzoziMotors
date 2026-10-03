@@ -1,6 +1,6 @@
 import type { DutyRates } from '@/lib/business'
 import type {
-  AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement,
+  AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement, SoldCar,
   InspectionCenter, InspectionReport,
   Message, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Showroom, Submission, TrustScore, User,
   Valuation, VehicleHistory, VehicleMake,
@@ -208,6 +208,13 @@ export const cars = {
     request<FeaturedPlacement[]>(`/cars/featured?limit=${limit}`, {
       revalidate: CATALOGUE_REVALIDATE,
       tags: ['cars', 'featured'],
+    }).then((rows) => rows.map(withCleanTitle)),
+
+  /** Cars sold in the last 90 days whose listing is still public, newest sale first. */
+  recentlySold: (limit = 6) =>
+    request<SoldCar[]>(`/cars/recently-sold?limit=${limit}`, {
+      revalidate: CATALOGUE_REVALIDATE,
+      tags: ['cars'],
     }).then((rows) => rows.map(withCleanTitle)),
 
   get: (id: string) =>
