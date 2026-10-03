@@ -3,6 +3,7 @@ import { Hero } from '@/components/home/Hero'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { Standard } from '@/components/home/Standard'
 import { Proof } from '@/components/home/Proof'
+import { ImportBand } from '@/components/home/ImportBand'
 import { SellStrip } from '@/components/home/SellStrip'
 import { cars, rentals } from '@/lib/api'
 import { graph, organizationNode, websiteNode } from '@/lib/seo'
@@ -86,7 +87,7 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Five sections, each a screen or less on a phone, each showing a car
+      {/* Six sections, each a screen or less on a phone, each showing a car
           or moving someone toward one (docs/WEBSITE-REDESIGN-TODO.md, 2.2).
           1. The promise, one search, and the evidence: the best-scoring car
              in stock with its 150-point result. */}
@@ -108,7 +109,10 @@ export default async function HomePage() {
       {/* 4. Who inspects, and where you can find them. */}
       <Proof />
 
-      {/* 5. The only ask of sellers on this page. */}
+      {/* 5. Import, the unfamiliar business, as a photograph. */}
+      <ImportBand />
+
+      {/* 6. The only ask of sellers on this page. */}
       <SellStrip makes={inventory.makes.map((m) => m.value)} />
 
       <script

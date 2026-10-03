@@ -116,7 +116,7 @@ decoration. Nothing here changes the backend or the app.
       stays, linked from Sell, Import and the footer). Update `NAV_KEY` in `Header.tsx` and
       `nav.*` keys in `messages/ui.ts`/dictionary. Done when: header and mobile drawer show
       four links; `/tools` still loads.
-- [x] **2.2 Homepage to five sections.** *(Done. On a phone the content above the footer is 5,630px, down from about 9,800px; the footer adds 1,687px and is Phase 3's to tighten. The first car card is at 1,524px. Four cards on a phone, whole rows of three on a laptop.)* In `web/src/app/page.tsx` the order becomes:
+- [x] **2.2 Homepage to five sections.** *(Owner, 3 Oct 2026: the Import photo card comes back as a sixth section, `ImportBand`, after the centres.) (Done. On a phone the content above the footer is 5,630px, down from about 9,800px; the footer adds 1,687px and is Phase 3's to tighten. The first car card is at 1,524px. Four cards on a phone, whole rows of three on a laptop.)* In `web/src/app/page.tsx` the order becomes:
       1. `Hero` (task 2.3), 2. `FeaturedCars` (stock, task 2.4), 3. `Standard` (task 2.5),
       4. Proof (task 2.6), 5. Sell strip (task 2.6). Delete the imports of `TopDeals`,
       `ThreeWays`, the FAQ block and `FinalCta` from the homepage (keep the components for
@@ -136,7 +136,7 @@ decoration. Nothing here changes the backend or the app.
       `cars.featured()` are merged into this grid with a small "Featured" / "Sponsored" label
       inside the card's top-right corner instead of a separate section. Done when: no car id
       appears twice on the homepage.
-- [x] **2.5 One dark band, flat.** `components/home/Standard.tsx`: keep the headline, the
+- [x] **2.5 One dark band, flat.** *(Owner, 3 Oct 2026: the inspector photograph is back in this band, on every width; alt text describes the scene and never claims a Sawa centre.)* `components/home/Standard.tsx`: keep the headline, the
       three numbers (150 / 105 / 49) and the full-width ruler; remove the photo figure, the
       four-item "controls" list and the second link. Remove the `ambient-ink grain` classes
       (flat `bg-ink-900`). Done when: the band is one screen on desktop and under 1.5 screens on
@@ -268,6 +268,6 @@ decoration. Nothing here changes the backend or the app.
 
 - Every page: paper opening, one red button per screen, one disclaimer, visible on load,
   readable at 390 px with the primary action in reach.
-- Homepage: five sections, a car on the first screen, nothing promoted that is empty.
+- Homepage: six sections (five plus the Import photo card), a car on the first screen, nothing promoted that is empty.
 - Seller: valuation → book on the web, never a forced app download.
 - The invariants in `CLAUDE.md` §3 and §4 untouched.
