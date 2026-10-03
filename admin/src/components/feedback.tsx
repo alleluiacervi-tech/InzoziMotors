@@ -42,8 +42,11 @@ type ConfirmOptions = {
   tone?: 'primary' | 'danger'
 }
 
+/** One button on a toast, e.g. Undo. Clicking it runs `onClick` and closes the toast. */
+type ToastAction = { label: string; onClick: () => void }
+
 type FeedbackApi = {
-  toast: (message: string, tone?: ToastTone) => void
+  toast: (message: string, tone?: ToastTone, action?: ToastAction) => void
   confirm: (options: ConfirmOptions) => Promise<boolean>
 }
 
@@ -63,7 +66,7 @@ export function useConfirm(): FeedbackApi['confirm'] {
 
 // ─── Toast stack ─────────────────────────────────────────────────────────────
 
-type ToastItem = { id: number; message: string; tone: ToastTone }
+type ToastItem = { id: number; message: string; tone: ToastTone; action?: ToastAction }
 
 // Errors linger twice as long: a success is confirmation of something the
 // operator just did, an error is news they have to act on.
@@ -92,6 +95,15 @@ function ToastStack({ toasts, dismiss }: { toasts: ToastItem[]; dismiss: (id: nu
               <Icon name={s.name} size={15} />
             </span>
             <p className="min-w-0 flex-1 pt-0.5 text-label leading-snug text-content">{t.message}</p>
+            {t.action ? (
+              <button
+                type="button"
+                onClick={() => { t.action!.onClick(); dismiss(t.id) }}
+                className="shrink-0 rounded-lg px-2.5 py-1 text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content"
+              >
+                {t.action.label}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => dismiss(t.id)}
@@ -191,10 +203,11 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const toast = useCallback((message: string, tone: ToastTone = 'info') => {
+  const toast = useCallback((message: string, tone: ToastTone = 'info', action?: ToastAction) => {
     const id = nextToastId++
-    setToasts((prev) => [...prev.slice(-3), { id, message, tone }])
-    window.setTimeout(() => dismiss(id), TOAST_MS[tone])
+    setToasts((prev) => [...prev.slice(-3), { id, message, tone, action }])
+    // A toast that offers Undo stays long enough to reach for it.
+    window.setTimeout(() => dismiss(id), action ? 10000 : TOAST_MS[tone])
   }, [dismiss])
 
   const confirm = useCallback((options: ConfirmOptions) => {
