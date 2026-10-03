@@ -279,7 +279,7 @@ const en = {
       'Per vehicle, per month, for a verified rental provider to keep a car visible in the rental fleet. Renters never pay to browse or inquire.',
     reviewedNote: 'Prices last reviewed {{date}}.',
     disclaimer:
-      'These are fees for Sawa Cars’ own inspection and listing services, paid or recorded at our office — never a marketplace transaction fee. Sawa Cars is not a party to any sale or rental; buyers, sellers and renters agree their own price, payment and terms directly.',
+      'These are fees for Sawa Cars’ own inspection and listing services, paid or recorded at our office, never a share of a sale. Buyers, sellers and renters agree their own price, payment and terms directly.',
     bookInspection: 'Book a walk-in inspection',
     browseCars: 'Browse inspected cars',
   },
@@ -556,7 +556,7 @@ const rw = {
       'Ku modoka imwe, buri kwezi, kugira ngo uwatanga imodoka wemejwe akomeze kuyerekana mu modoka zikodeshwa. Abakodesha ntibishyura gushakisha cyangwa gusaba.',
     reviewedNote: 'Ibiciro byasuzumwe bwa nyuma {{date}}.',
     disclaimer:
-      'Aya ni amafaranga ya serivisi za Sawa Cars ubwazo z’isuzuma n’ikodeshwa, yishyurwa cyangwa yanditswe ku kigo cyacu — ntabwo ari amafaranga y’ubucuruzi bwo ku isoko. Sawa Cars ntabwo ari uruhande mu igurisha cyangwa ikodeshwa; abaguzi, abagurisha n’abakodesha bumvikana bwite ku giciro, kwishyura n’amabwiriza.',
+      'Aya ni amafaranga ya serivisi z’isuzuma n’amatangazo za Sawa Cars, yishyurwa cyangwa yandikwa ku biro byacu, ntabwo ari umugabane ku igurishwa. Abaguzi, abagurisha n’abakodesha bumvikana ubwabo ku giciro, ubwishyu n’amasezerano.',
     bookInspection: 'Saba isuzuma ku kigo',
     browseCars: 'Reba imodoka zasuzumwe',
   },
@@ -833,7 +833,7 @@ const fr = {
       'Par véhicule, par mois, pour qu’un loueur vérifié garde une voiture visible dans le parc de location. Les locataires ne paient jamais pour parcourir ou envoyer une demande.',
     reviewedNote: 'Tarifs revus pour la dernière fois le {{date}}.',
     disclaimer:
-      'Ce sont des frais pour les propres services d’inspection et d’annonce de Sawa Cars, payés ou enregistrés à notre bureau — jamais des frais de transaction sur le marché. Sawa Cars n’est partie à aucune vente ni location ; acheteurs, vendeurs et locataires conviennent eux-mêmes du prix, du paiement et des conditions.',
+      'Ce sont les frais des services d’inspection et d’annonce de Sawa Cars, payés ou enregistrés à notre bureau, jamais une part d’une vente. Acheteurs, vendeurs et locataires conviennent directement du prix, du paiement et des conditions.',
     bookInspection: 'Réserver une inspection sur place',
     browseCars: 'Parcourir les voitures inspectées',
   },
@@ -1110,7 +1110,7 @@ const sw = {
       'Kwa gari moja, kwa mwezi, ili mtoa huduma wa kukodisha aliyethibitishwa aendelee kuonyesha gari kwenye orodha ya kukodisha. Wakodishaji hawalipi kutafuta au kuuliza.',
     reviewedNote: 'Bei zilipitiwa mara ya mwisho {{date}}.',
     disclaimer:
-      'Haya ni malipo kwa huduma za Sawa Cars mwenyewe za ukaguzi na tangazo, yanayolipwa au kuandikwa kituoni kwetu — si ada ya muamala wa sokoni. Sawa Cars si upande katika mauzo au ukodishaji wowote; wanunuzi, wauzaji na wakodishaji hukubaliana wenyewe bei, malipo na masharti.',
+      'Hizi ni ada za huduma za ukaguzi na matangazo za Sawa Cars, zinazolipwa au kurekodiwa ofisini kwetu, si sehemu ya mauzo. Wanunuzi, wauzaji na wakodishaji hukubaliana wenyewe bei, malipo na masharti.',
     bookInspection: 'Panga ukaguzi kituoni',
     browseCars: 'Tazama magari yaliyokaguliwa',
   },
@@ -1387,7 +1387,7 @@ const ko = {
       '인증된 렌트 제공자가 차량을 렌트 목록에 계속 노출하기 위해 차량당 월 단위로 지불합니다. 렌트 이용자는 둘러보거나 문의하는 데 비용을 지불하지 않습니다.',
     reviewedNote: '요금은 {{date}}에 마지막으로 검토되었습니다.',
     disclaimer:
-      '이는 Sawa Cars 자체의 검사 및 등록 서비스에 대한 요금으로, 저희 사무실에서 지불되거나 기록됩니다 — 마켓플레이스 거래 수수료가 아닙니다. Sawa Cars는 어떤 판매나 렌트 계약의 당사자도 아니며, 구매자·판매자·렌트 이용자가 가격, 결제, 조건을 직접 합의합니다.',
+      '이 요금은 Sawa Cars의 검사 및 매물 서비스 비용으로, 사무실에서 결제하거나 기록하며 판매 대금의 일부가 아닙니다. 가격, 결제, 조건은 구매자, 판매자, 임차인이 직접 합의합니다.',
     bookInspection: '워크인 검사 예약',
     browseCars: '검사된 차량 둘러보기',
   },
@@ -1664,7 +1664,7 @@ const zh = {
       '按车辆、按月收费，供已认证的租车提供方保持车辆在租车车队中可见。租车者浏览或咨询始终无需付费。',
     reviewedNote: '价格最后审核于{{date}}。',
     disclaimer:
-      '这些费用是 Sawa Cars 自身检测及信息服务的收费，均在我们办公室支付或记录——绝非市场交易手续费。Sawa Cars 不是任何买卖或租赁交易的一方；买家、卖家及租车者直接自行约定价格、付款方式及条款。',
+      '以上为 Sawa Cars 自有检测和车源服务的费用，在我们的办公室支付或登记，绝不从成交款中抽成。价格、付款和条款由买家、卖家和租车人直接商定。',
     bookInspection: '预约上门检测',
     browseCars: '浏览已检测车辆',
   },

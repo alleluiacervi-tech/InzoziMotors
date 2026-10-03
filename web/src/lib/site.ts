@@ -240,7 +240,7 @@ export const BUYING_STEPS = [
   },
   {
     title: 'Complete the deal independently',
-    desc: 'Sawa Cars does not receive or hold the purchase money and is not a party to the resulting contract or dispute.',
+    desc: 'You pay the seller directly, and any problem with the deal is settled between the two of you.',
   },
 ] as const
 

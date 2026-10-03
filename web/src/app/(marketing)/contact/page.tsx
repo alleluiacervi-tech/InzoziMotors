@@ -176,6 +176,7 @@ export default async function ContactPage() {
 
                 <Button
                   type="submit"
+                  variant="dark"
                   fullWidth
                   className="mt-6"
                   leadingIcon={<Icon name="whatsapp" size={19} />}

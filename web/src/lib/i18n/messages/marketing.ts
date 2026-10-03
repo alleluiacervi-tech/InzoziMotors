@@ -43,7 +43,7 @@ const en = {
         { title: 'We do not take payments', desc: 'There is no checkout, payment gateway or escrow in the app or website. Buyers, sellers and rental providers decide payment directly at their own risk.' },
         { title: 'We do not let sellers publish', desc: 'A seller submits a car. Only the Sawa team can turn a submission into a listing, and only after the car has been at a center.' },
         { title: 'We do not hide what we found', desc: 'Every live listing has a 150-point report behind it. A low score or a critical defect is shown on the listing, never removed from it.' },
-        { title: 'We do not manage user contracts', desc: 'We do not confirm the sale or rental, take custody of a deposit, write the parties’ contract, process ownership transfer or decide an external transaction dispute.' },
+        { title: 'We do not manage user contracts', desc: 'We do not confirm the sale or rental, hold a deposit, write your contract, transfer ownership or settle disagreements between you and the other side.' },
       ],
     },
     centers: {
@@ -84,7 +84,7 @@ const en = {
     },
     usersControl: {
       title: 'What users control',
-      body: 'Viewings, independent checks, negotiation, contract, payment, deposit, ownership transfer, delivery, pickup, return, insurance and any external dispute.',
+      body: 'Viewings, independent checks, negotiation, contract, payment, deposit, ownership transfer, delivery, pickup, return, insurance, and any disagreement about the deal.',
     },
   },
 
@@ -171,7 +171,7 @@ const en = {
       { title: 'Contact the seller', desc: 'Use in-app chat, phone or WhatsApp when the verified seller has enabled that channel.' },
       { title: 'Inspect and verify', desc: 'Arrange your own viewing or additional inspection and check the vehicle, VIN, original documents and ownership independently.' },
       { title: 'Agree written terms', desc: 'Buyer and seller decide the price, payment method, delivery, ownership transfer and written contract directly.' },
-      { title: 'Complete the deal independently', desc: 'Sawa Cars does not receive or hold the purchase money and is not a party to the resulting contract or dispute.' },
+      { title: 'Complete the deal independently', desc: 'You pay the seller directly, and any problem with the deal is settled between the two of you.' },
     ],
     checks: {
       eyebrow: 'Stay in control',
@@ -501,7 +501,7 @@ const rw = {
         { title: 'Ntitwakira amafaranga', desc: 'Nta kwishyura, uburyo bwo kwishyura cyangwa kubika amafaranga muri porogaramu cyangwa urubuga. Abaguzi, abagurisha n’abakodesha bafata icyemezo cy’ubwishyu ubwabo ku bwishingire bwabo.' },
         { title: 'Ntitwemerera abagurisha gutangaza', desc: 'Umugurisha atanga imodoka. Ni ikipe ya Sawa gusa ishobora guhindura icyatanzwe itangazo, kandi gusa nyuma y’uko imodoka yaba yaramaze kuza mu kigo.' },
         { title: 'Ntiduhisha ibyo twabonye', desc: 'Buri tangazo riri ku mugaragaro rifite raporo y’ingingo 150. Amanota make cyangwa ikibazo gikomeye bigaragara ku itangazo, ntibivanwaho.' },
-        { title: 'Ntitucunga amasezerano y’abakoresha', desc: 'Ntitwemeza igurisha cyangwa ikodeshwa, ntitwakira ingwate, ntitwandika amasezerano y’impande, ntitunyuza ihererekanya ry’umutungo cyangwa ngo dutange icyemezo ku mpaka z’igicuruzwa cyo hanze.' },
+        { title: 'Ntitucunga amasezerano y’abakoresha', desc: 'Ntitwemeza igurishwa cyangwa ubukode, ntitubika ingwate, ntitwandika amasezerano yanyu, ntiduhererekanya umutungo kandi ntidukemura ukutumvikana hagati yawe n’undi muntu.' },
       ],
     },
     centers: {
@@ -542,7 +542,7 @@ const rw = {
     },
     usersControl: {
       title: 'Icyo abakoresha bagenzura',
-      body: 'Kureba imodoka, isuzuma ryigenga, imishyikirano, amasezerano, ubwishyu, ingwate, ihererekanya ry’umutungo, gutanga, gufata, gusubiza, ubwishingizi n’impaka izo ari zo zose zo hanze.',
+      body: 'Kureba imodoka, igenzura ryigenga, imishyikirano, amasezerano, ubwishyu, ingwate, ihererekanya ry’umutungo, itangwa, ifatwa, isubizwa, ubwishingizi, n’ukutumvikana kose ku igurishwa.',
     },
   },
 
@@ -629,7 +629,7 @@ const rw = {
       { title: 'Vugana n’umugurisha', desc: 'Koresha ikiganiro cyo muri porogaramu, telefone cyangwa WhatsApp igihe umugurisha wemewe yashoboje uwo muyoboro.' },
       { title: 'Suzuma kandi ugenzure', desc: 'Tegura ukwikorera cyangwa isuzuma ry’inyongera kandi ugenzure imodoka, VIN, impapuro z’umwimerere n’uburenganzira bwigenga.' },
       { title: 'Mwumvikane ku masezerano yanditse', desc: 'Umuguzi n’umugurisha bafata icyemezo ku giciro, uburyo bw’ubwishyu, gutanga, ihererekanya ry’umutungo n’amasezerano yanditse ubwabo.' },
-      { title: 'Zuza ubucuruzi bigenga', desc: 'Sawa Cars ntiyakira cyangwa ngo ibike amafaranga y’igurisha kandi ntabwo ari uruhande mu masezerano cyangwa impaka bikomokaho.' },
+      { title: 'Zuza ubucuruzi bigenga', desc: 'Wishyura umugurisha ubwawe, kandi ikibazo cyose kijyanye n’igurishwa gikemurwa hagati yanyu mwembi.' },
     ],
     checks: {
       eyebrow: 'Gumana ubugenzuzi',
@@ -959,7 +959,7 @@ const fr = {
         { title: 'Nous ne percevons pas de paiements', desc: 'Il n’y a ni paiement, ni passerelle de paiement, ni séquestre dans l’application ou le site. Acheteurs, vendeurs et loueurs décident du paiement directement, à leurs propres risques.' },
         { title: 'Nous ne laissons pas les vendeurs publier', desc: 'Un vendeur soumet une voiture. Seule l’équipe Sawa peut transformer une soumission en annonce, et uniquement après que la voiture est passée par un centre.' },
         { title: 'Nous ne cachons pas ce que nous trouvons', desc: 'Chaque annonce en ligne s’appuie sur un rapport en 150 points. Un score faible ou un défaut critique figure sur l’annonce, jamais retiré.' },
-        { title: 'Nous ne gérons pas les contrats des utilisateurs', desc: 'Nous ne confirmons pas la vente ou la location, ne détenons pas d’acompte, ne rédigeons pas le contrat des parties, ne traitons pas le transfert de propriété et ne tranchons pas un litige de transaction externe.' },
+        { title: 'Nous ne gérons pas les contrats des utilisateurs', desc: 'Nous ne confirmons pas la vente ou la location, ne conservons aucun acompte, ne rédigeons pas votre contrat, ne transférons pas la propriété et ne tranchons pas les désaccords entre vous et l’autre personne.' },
       ],
     },
     centers: {
@@ -1000,7 +1000,7 @@ const fr = {
     },
     usersControl: {
       title: 'Ce que les utilisateurs contrôlent',
-      body: 'Les visites, les vérifications indépendantes, la négociation, le contrat, le paiement, l’acompte, le transfert de propriété, la livraison, la prise en charge, la restitution, l’assurance et tout litige externe.',
+      body: 'Visites, contrôles indépendants, négociation, contrat, paiement, acompte, transfert de propriété, livraison, prise en charge, restitution, assurance, et tout désaccord sur la transaction.',
     },
   },
 
@@ -1087,7 +1087,7 @@ const fr = {
       { title: 'Contactez le vendeur', desc: 'Utilisez le chat de l’application, le téléphone ou WhatsApp lorsque le vendeur vérifié a activé ce canal.' },
       { title: 'Inspectez et vérifiez', desc: 'Organisez votre propre visite ou une inspection complémentaire et vérifiez le véhicule, le VIN, les documents originaux et la propriété de façon indépendante.' },
       { title: 'Convenez de conditions écrites', desc: 'Acheteur et vendeur décident directement du prix, du mode de paiement, de la livraison, du transfert de propriété et du contrat écrit.' },
-      { title: 'Concluez la transaction de façon indépendante', desc: 'Sawa Cars ne reçoit ni ne détient l’argent de l’achat et n’est pas partie au contrat ou au litige qui en résulte.' },
+      { title: 'Concluez la transaction de façon indépendante', desc: 'Vous payez le vendeur directement, et tout problème lié à la vente se règle entre vous deux.' },
     ],
     checks: {
       eyebrow: 'Gardez le contrôle',
@@ -1417,7 +1417,7 @@ const sw = {
         { title: 'Hatuchukui malipo', desc: 'Hakuna malipo, lango la malipo wala udhamini wa pesa katika programu au tovuti. Wanunuzi, wauzaji na watoa kodi huamua malipo moja kwa moja kwa hatari yao wenyewe.' },
         { title: 'Hatuwaruhusu wauzaji kuchapisha', desc: 'Muuzaji anawasilisha gari. Ni timu ya Sawa pekee inayoweza kugeuza wasilisho kuwa tangazo, na tu baada ya gari kuwa limefika kituoni.' },
         { title: 'Hatufichi tulichokiona', desc: 'Kila tangazo lililo hewani lina ripoti ya vipengele 150. Alama ya chini au kasoro kubwa huonyeshwa kwenye tangazo, haiondolewi.' },
-        { title: 'Hatusimamii mikataba ya watumiaji', desc: 'Hatuthibitishi mauzo au kodi, hatushiki amana, hatuandiki mkataba wa pande husika, hatushughulikii uhamishaji wa umiliki wala hatuamui mgogoro wa muamala wa nje.' },
+        { title: 'Hatusimamii mikataba ya watumiaji', desc: 'Hatuthibitishi mauzo au ukodishaji, hatushiki amana, hatuandiki mkataba wako, hatuhamishi umiliki wala hatusuluhishi kutoelewana kati yako na upande mwingine.' },
       ],
     },
     centers: {
@@ -1458,7 +1458,7 @@ const sw = {
     },
     usersControl: {
       title: 'Kile watumiaji wanachodhibiti',
-      body: 'Kutazama, ukaguzi wa kujitegemea, majadiliano, mkataba, malipo, amana, uhamishaji wa umiliki, uwasilishaji, uchukuaji, urejeshaji, bima na mgogoro wowote wa nje.',
+      body: 'Kuangalia gari, ukaguzi huru, mazungumzo, mkataba, malipo, amana, uhamishaji wa umiliki, utoaji, uchukuaji, urejeshaji, bima, na kutoelewana kokote kuhusu mpango.',
     },
   },
 
@@ -1545,7 +1545,7 @@ const sw = {
       { title: 'Wasiliana na muuzaji', desc: 'Tumia gumzo la ndani ya programu, simu au WhatsApp pale muuzaji aliyethibitishwa amewasha njia hiyo.' },
       { title: 'Kagua na thibitisha', desc: 'Panga kutazama kwako mwenyewe au ukaguzi wa ziada na kagua gari, VIN, nyaraka za asili na umiliki kwa kujitegemea.' },
       { title: 'Kubaliana masharti yaliyoandikwa', desc: 'Mnunuzi na muuzaji huamua bei, njia ya malipo, uwasilishaji, uhamishaji wa umiliki na mkataba ulioandikwa moja kwa moja.' },
-      { title: 'Kamilisha muamala kwa kujitegemea', desc: 'Sawa Cars haipokei wala kushika pesa za ununuzi na si sehemu ya mkataba au mgogoro utokanao.' },
+      { title: 'Kamilisha muamala kwa kujitegemea', desc: 'Unamlipa muuzaji moja kwa moja, na tatizo lolote kuhusu mauzo hutatuliwa kati yenu wawili.' },
     ],
     checks: {
       eyebrow: 'Baki na udhibiti',
@@ -1875,7 +1875,7 @@ const ko = {
         { title: '결제를 받지 않습니다', desc: '앱이나 웹사이트에 결제, 결제 게이트웨이, 에스크로가 없습니다. 구매자, 판매자, 렌트 제공자가 자신의 책임 아래 직접 결제를 결정합니다.' },
         { title: '판매자가 직접 게시하도록 두지 않습니다', desc: '판매자는 차량을 제출합니다. 제출을 매물로 바꿀 수 있는 것은 Sawa 팀뿐이며, 차량이 센터를 거친 뒤에만 가능합니다.' },
         { title: '발견한 내용을 숨기지 않습니다', desc: '공개된 모든 매물에는 150개 항목 보고서가 있습니다. 낮은 점수나 중대한 결함도 매물에 그대로 표시되며 삭제하지 않습니다.' },
-        { title: '이용자 계약을 관리하지 않습니다', desc: '저희는 판매나 렌트를 확정하지 않고, 보증금을 보관하지 않으며, 당사자 간 계약서를 작성하지 않고, 소유권 이전을 처리하지 않으며, 외부 거래 분쟁을 판정하지 않습니다.' },
+        { title: '이용자 계약을 관리하지 않습니다', desc: '판매나 임대를 확정하지 않으며, 보증금을 보관하거나 계약서를 작성하거나 명의를 이전하거나 상대방과의 이견을 해결하지 않습니다.' },
       ],
     },
     centers: {
@@ -1916,7 +1916,7 @@ const ko = {
     },
     usersControl: {
       title: '이용자가 통제하는 것',
-      body: '시승, 독립적인 확인, 협상, 계약, 결제, 보증금, 소유권 이전, 인도, 인수, 반납, 보험, 그리고 모든 외부 분쟁.',
+      body: '차량 확인, 독립 점검, 협상, 계약, 결제, 보증금, 명의 이전, 인도, 인수, 반납, 보험, 그리고 거래에 관한 모든 이견.',
     },
   },
 
@@ -2003,7 +2003,7 @@ const ko = {
       { title: '판매자에게 연락', desc: '인증 판매자가 해당 수단을 활성화한 경우 앱 내 채팅, 전화 또는 WhatsApp을 사용하세요.' },
       { title: '검사 및 확인', desc: '직접 시승이나 추가 검사를 마련하고 차량, VIN, 원본 서류, 소유권을 독립적으로 확인하세요.' },
       { title: '서면 조건 합의', desc: '구매자와 판매자가 가격, 결제 방법, 인도, 소유권 이전, 서면 계약을 직접 결정합니다.' },
-      { title: '거래를 독립적으로 완료', desc: 'Sawa Cars는 구매 대금을 받거나 보관하지 않으며 그로 인한 계약이나 분쟁의 당사자가 아닙니다.' },
+      { title: '거래를 독립적으로 완료', desc: '대금은 판매자에게 직접 지급하며, 거래에 관한 문제는 두 분이 직접 해결합니다.' },
     ],
     checks: {
       eyebrow: '주도권을 유지하세요',
@@ -2333,7 +2333,7 @@ const zh = {
         { title: '我们不经手付款', desc: '应用和网站中没有结算、支付网关或资金托管。买家、卖家和租车提供方自行决定并直接完成付款，风险自负。' },
         { title: '我们不让卖家自行发布', desc: '卖家提交车辆信息。只有 Sawa 团队才能将提交内容转化为正式信息,而且只在车辆通过检测中心后才可以。' },
         { title: '我们不隐瞒检测发现', desc: '每条在售车源都有 150 项检测报告支撑。低分或严重缺陷都会在车源上如实显示，绝不删除。' },
-        { title: '我们不管理用户之间的合同', desc: '我们不确认买卖或租赁,不代管押金,不起草双方合同,不办理所有权过户,也不裁决外部交易纠纷。' },
+        { title: '我们不管理用户之间的合同', desc: '我们不确认买卖或租赁，不保管定金，不代写合同，不办理过户，也不处理您与对方之间的分歧。' },
       ],
     },
     centers: {
@@ -2374,7 +2374,7 @@ const zh = {
     },
     usersControl: {
       title: '用户把控的部分',
-      body: '试车、独立核实、议价、合同、付款、押金、所有权过户、交付、提车、归还、保险,以及所有外部纠纷。',
+      body: '看车、独立检查、议价、合同、付款、定金、过户、交车、取车、还车、保险，以及与交易有关的任何分歧。',
     },
   },
 
@@ -2461,7 +2461,7 @@ const zh = {
       { title: '联系卖家', desc: '如果已认证卖家启用了相应渠道,可使用应用内聊天、电话或 WhatsApp 联系。' },
       { title: '检查并核实', desc: '自行安排试车或进一步检测,独立核实车辆、车架号（VIN）、原始证件及所有权。' },
       { title: '约定书面条款', desc: '买卖双方直接决定价格、付款方式、交付、所有权过户及书面合同。' },
-      { title: '独立完成交易', desc: 'Sawa Cars 不接收或持有购车款项,也不是由此产生的合同或纠纷的一方。' },
+      { title: '独立完成交易', desc: '您直接向卖家付款，交易中的任何问题由双方自行解决。' },
     ],
     checks: {
       eyebrow: '掌握主动权',

@@ -276,7 +276,6 @@ export function Header({ user, showRent = false }: { user: User | null; showRent
                   <Button href="/signup" variant="secondary" fullWidth>{t('common.createAccount')}</Button>
                 </>
               )}
-              <Button href="/sell" fullWidth>{t('common.sellYourCar')}</Button>
               <Button href="/download" variant="ghost" fullWidth>{t('common.getApp')}</Button>
 
               <div className="flex items-center justify-between pt-1">
