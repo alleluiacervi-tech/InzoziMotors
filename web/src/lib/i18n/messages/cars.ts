@@ -32,6 +32,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       failed: 'Could not save this alert. Try again.',
     },
     browse: {
+      headingUnder: 'Cars under {{amount}} for sale in Kigali',
       eyebrow: 'The marketplace',
       introDescription: 'Every car inspected on the same 150 points. Buyers never pay a fee.',
       searchLabel: 'Search cars for sale',
@@ -337,6 +338,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       failed: 'Ntibyashobotse kubika iri menyesha. Ongera ugerageze.',
     },
     browse: {
+      headingUnder: 'Imodoka ziri munsi ya {{amount}} zigurishwa i Kigali',
       eyebrow: 'Isoko',
       introDescription: 'Buri modoka isuzumwa ku ngingo 150 zimwe. Abaguzi ntabwo bishyura.',
       searchLabel: 'Shakisha imodoka zigurishwa',
@@ -642,6 +644,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       failed: 'Impossible d’enregistrer cette alerte. Réessayez.',
     },
     browse: {
+      headingUnder: 'Voitures à moins de {{amount}} à vendre à Kigali',
       eyebrow: 'Le marché',
       introDescription: 'Chaque voiture inspectée sur les mêmes 150 points. Les acheteurs ne paient jamais de frais.',
       searchLabel: 'Rechercher des voitures à vendre',
@@ -947,6 +950,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       failed: 'Imeshindwa kuhifadhi arifa hii. Jaribu tena.',
     },
     browse: {
+      headingUnder: 'Magari chini ya {{amount}} yanayouzwa Kigali',
       eyebrow: 'Soko',
       introDescription: 'Kila gari hukaguliwa kwa pointi 150 zile zile. Wanunuzi hawalipi ada.',
       searchLabel: 'Tafuta magari yanayouzwa',
@@ -1252,6 +1256,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       failed: '알림을 저장하지 못했습니다. 다시 시도해 주세요.',
     },
     browse: {
+      headingUnder: '키갈리에서 판매 중인 {{amount}} 이하 차량',
       eyebrow: '마켓플레이스',
       introDescription: '모든 차량이 동일한 150개 항목으로 검사됩니다. 구매자는 수수료를 내지 않습니다.',
       searchLabel: '판매 차량 검색',
@@ -1557,6 +1562,7 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       failed: '无法保存此提醒，请重试。',
     },
     browse: {
+      headingUnder: '基加利在售 {{amount}} 以下车辆',
       eyebrow: '市场',
       introDescription: '每辆车都经过相同的150项检测。买家永远无需付费。',
       searchLabel: '搜索在售车辆',

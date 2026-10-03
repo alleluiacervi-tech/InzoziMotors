@@ -7,6 +7,7 @@ import { budgetHref, type InventorySummary } from '@/lib/inventory'
 import { getServerT } from '@/lib/i18n/server'
 import type { InspectionReport } from '@/lib/types'
 import { displayMake } from '@/lib/vehicle-names'
+import { makeSlug } from '@/components/marketplace/query'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The front door: one sentence, one search, one piece of evidence.
@@ -39,7 +40,7 @@ export async function Hero({
   // panel would also produce.
   const shortcuts: { label: string; href: string }[] = inventory.makes
     .slice(0, 3)
-    .map((m) => ({ label: displayMake(m.value), href: `/cars?make=${encodeURIComponent(m.value)}` }))
+    .map((m) => ({ label: displayMake(m.value), href: `/cars/make/${makeSlug(m.value)}` }))
   const firstBand = inventory.budgets.find((b) => b.count > 0 && b.max != null)
   if (firstBand) {
     shortcuts.push({

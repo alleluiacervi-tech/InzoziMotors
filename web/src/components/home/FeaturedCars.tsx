@@ -5,6 +5,7 @@ import { formatMoney } from '@/lib/business'
 import { budgetHref, type InventorySummary } from '@/lib/inventory'
 import type { Car, FeaturedPlacement } from '@/lib/types'
 import { displayMake } from '@/lib/vehicle-names'
+import { makeSlug } from '@/components/marketplace/query'
 import { getServerT } from '@/lib/i18n/server'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,7 +109,7 @@ export async function FeaturedCars({
           <nav aria-label={t('home.front.stock.all')} className="-mx-5 mt-8 sm:mx-0">
             <ul className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1 sm:flex-wrap sm:overflow-visible sm:px-0">
               {inventory.makes.slice(0, 6).map((m) => (
-                <Filter key={m.value} href={`/cars?make=${encodeURIComponent(m.value)}`} label={displayMake(m.value)} count={m.count} />
+                <Filter key={m.value} href={`/cars/make/${makeSlug(m.value)}`} label={displayMake(m.value)} count={m.count} />
               ))}
               {bands.length ? <Divider /> : null}
               {bands.map((b) => (

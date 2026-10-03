@@ -1,5 +1,6 @@
 import { formatMoney } from '@/lib/business'
 import { displayMake } from '@/lib/vehicle-names'
+import { BUDGET_EDGES } from '@/lib/inventory'
 import type { CarQuery } from '@/lib/types'
 import type { TFunction } from '@/lib/i18n/dictionary'
 
@@ -245,6 +246,11 @@ export function browseHeading(t: TFunction, filters: Filters): string {
     !!filters.q && !filters.make && !filters.model && !filters.body_type &&
     !filters.fuel_type && !filters.drive_side
   if (onlyKeyword) return t('cars.browse.headingKeyword', { q: filters.q as string })
+  // A budget on its own names no kind of car, so it gets its own sentence too.
+  const active = FILTER_FIELDS.filter((field) => !!filters[field])
+  if (active.length === 1 && active[0] === 'max_price' && Number(filters.max_price) > 0) {
+    return t('cars.browse.headingUnder', { amount: formatMoney(Number(filters.max_price)) })
+  }
   return t('cars.browse.headingForSale', { subject: describeFilters(t, filters) })
 }
 
@@ -267,18 +273,56 @@ export function browseHeading(t: TFunction, filters: Filters): string {
 
 const INDEXABLE_FACETS: readonly FilterField[] = ['make', 'body_type', 'fuel_type']
 
+/** "Land Rover" → "land-rover". The landing URL's segment for a make, taken
+ *  from the display name so "Dongfeng Motor Corporation" and a later admin
+ *  rename to "Dongfeng" share one URL. */
+export function makeSlug(make: string): string {
+  return displayMake(make).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+}
+
+/** 15_000_000 → "15m". Only the homepage's budget edges get a landing URL. */
+export function budgetSlug(amount: number): string {
+  return `${Math.round(amount / 1_000_000)}m`
+}
+
+export function budgetFromSlug(slug: string): number | null {
+  const m = /^(\d{1,4})m$/.exec(slug)
+  if (!m) return null
+  const amount = Number(m[1]) * 1_000_000
+  return (BUDGET_EDGES as readonly number[]).includes(amount) ? amount : null
+}
+
+/**
+ * The clean landing URL for a view that has one: a single make
+ * (/cars/make/toyota) or a single budget edge (/cars/under/30m). Those pages
+ * render this same view, and are its canonical, so the query-string URL and
+ * the landing never compete in search.
+ */
+export function landingPath(filters: Filters): string | null {
+  const active = FILTER_FIELDS.filter((field) => !!filters[field])
+  if (active.length !== 1) return null
+  if (active[0] === 'make' && filters.make) return `/cars/make/${makeSlug(filters.make)}`
+  if (active[0] === 'max_price') {
+    const amount = Number(filters.max_price)
+    if ((BUDGET_EDGES as readonly number[]).includes(amount)) return `/cars/under/${budgetSlug(amount)}`
+  }
+  return null
+}
+
 export function browseIndexPolicy(
   filters: Filters,
   sort: SortValue,
   offset: number
 ): { canonical: string; index: boolean } {
   const active = FILTER_FIELDS.filter((field) => !!filters[field])
-  const canonical = buildBrowseHref(filters, { sort, offset })
+  const firstPage = offset === 0 && sort === DEFAULT_SORT
+  const landing = firstPage ? landingPath(filters) : null
+  const canonical = landing ?? buildBrowseHref(filters, { sort, offset })
 
   const indexable =
-    offset === 0 &&
-    sort === DEFAULT_SORT &&
+    firstPage &&
     (active.length === 0 ||
+      Boolean(landing) ||
       (active.length === 1 && INDEXABLE_FACETS.includes(active[0])))
 
   return { canonical, index: indexable }
