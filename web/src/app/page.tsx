@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Hero } from '@/components/home/Hero'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { Standard } from '@/components/home/Standard'
-import { Proof } from '@/components/home/Proof'
 import { ImportBand } from '@/components/home/ImportBand'
 import { SellStrip } from '@/components/home/SellStrip'
 import { cars, rentals } from '@/lib/api'
@@ -87,18 +86,18 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Six sections, each a screen or less on a phone, each showing a car
+      {/* Five sections, each a screen or less on a phone, each showing a car
           or moving someone toward one (docs/WEBSITE-REDESIGN-TODO.md, 2.2).
           1. The promise, one search, and the evidence: the best-scoring car
              in stock with its 150-point result. */}
       <Hero inventory={inventory} rentalCount={rentalFleet.length} report={report} />
 
       {/* 2. The yard. Operator placements lead the grid with their labels;
-             the hero's car is not repeated. */}
+             the grid is the marketplace's first eight, the hero's car
+             included, so the page shows the whole yard. */}
       <FeaturedCars
         cars={stock}
         placements={placements}
-        excludeId={inventory.best?.id}
         inventory={inventory}
         sold={sold}
       />
@@ -106,13 +105,12 @@ export default async function HomePage() {
       {/* 3. The standard every car is measured against: the one dark band. */}
       <Standard />
 
-      {/* 4. Who inspects, and where you can find them. */}
-      <Proof />
-
-      {/* 5. Import, the unfamiliar business, as a photograph. */}
+      {/* 4. Import, the unfamiliar business, as a photograph. The centres'
+             addresses are not repeated here: the footer prints them right
+             below, on every page. */}
       <ImportBand />
 
-      {/* 6. The only ask of sellers on this page. */}
+      {/* 5. The only ask of sellers on this page. */}
       <SellStrip makes={inventory.makes.map((m) => m.value)} />
 
       <script

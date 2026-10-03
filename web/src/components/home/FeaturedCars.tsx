@@ -17,12 +17,15 @@ import { getServerT } from '@/lib/i18n/server'
 // same Hyundai appeared three times in three screens. Placements now lead
 // this grid, each wearing its label in the card's top-right corner (a paid
 // one always reads "Sponsored"), and the stock fills the rest. The hero's car
-// is left out, so no car appears twice on the page.
+// stays in the grid (owner, 3 Oct 2026): the grid is the marketplace's first
+// eight, and with eight cars in stock leaving one out cost a whole row.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Nine fills three rows of three on a laptop and stays scannable on a phone. */
-const GRID_MAX = 9
-const PHONE_MAX = 4
+/** Eight, on every screen (owner's default, 3 Oct 2026): two rows of four on
+ *  a laptop, at the same card width as /cars, two columns on a tablet and
+ *  one on a phone. */
+const GRID_MAX = 8
+const ROW = 4
 
 function Filter({ href, label, count }: { href: string; label: string; count: number }) {
   return (
@@ -45,7 +48,6 @@ function Divider() {
 export async function FeaturedCars({
   cars,
   placements = [],
-  excludeId,
   inventory,
   sold = [],
 }: {
@@ -53,8 +55,6 @@ export async function FeaturedCars({
   cars: Car[]
   /** Operator placements in slot order; they lead the grid. */
   placements?: FeaturedPlacement[]
-  /** The hero's car, already on screen above. */
-  excludeId?: string
   inventory: InventorySummary
   /** Sold in the last 90 days; the row shows only with three or more. */
   sold?: SoldCar[]
@@ -68,7 +68,7 @@ export async function FeaturedCars({
       ? t('home.topDeals.hotDeal')
       : t('home.topDeals.featured')
 
-  const seen = new Set<string>(excludeId ? [excludeId] : [])
+  const seen = new Set<string>()
   const grid: { car: Car; tag?: string }[] = []
   for (const p of placements) {
     if (grid.length >= GRID_MAX || seen.has(p.id)) continue
@@ -81,8 +81,8 @@ export async function FeaturedCars({
     grid.push({ car })
   }
 
-  // Whole rows only on a laptop: seven cards in threes leave one stranded.
-  if (grid.length > 3) grid.length = Math.floor(grid.length / 3) * 3
+  // Whole rows only on a laptop: seven cards in fours leave three stranded.
+  if (grid.length > ROW) grid.length = Math.floor(grid.length / ROW) * ROW
 
   const bands = inventory.budgets.filter((b) => b.count > 0)
   const bandLabel = (b: (typeof bands)[number]) =>
@@ -129,12 +129,10 @@ export async function FeaturedCars({
 
         {grid.length ? (
           <>
-            <ul className="mt-8 grid items-stretch gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-8 grid items-stretch gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-4">
               {grid.map(({ car, tag }, i) => (
-                // A phone shows four, one per row; the rest are a tap away on
-                // /cars. Two columns and up show the full nine.
-                <li key={car.id} className={`h-full min-w-0 ${i >= PHONE_MAX ? 'hidden sm:block' : ''}`}>
-                  <CarCard car={car} tag={tag} priority={i < 3} />
+                <li key={car.id} className="h-full min-w-0">
+                  <CarCard car={car} tag={tag} priority={i < ROW} />
                 </li>
               ))}
             </ul>
