@@ -392,7 +392,7 @@ export default function VehicleIntelligenceCommandCenter() {
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Body Type</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Body type</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.bodyType || 'Sedan'}</p>
                   </div>
 
@@ -406,7 +406,7 @@ export default function VehicleIntelligenceCommandCenter() {
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Fuel Type</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Fuel type</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.fuelType || 'Petrol'}</p>
                   </div>
 
@@ -421,12 +421,12 @@ export default function VehicleIntelligenceCommandCenter() {
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Manufacturing Country</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Country of manufacture</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCountry || 'Japan'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Assembly City</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Assembly city</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCity || 'Toyota City'}</p>
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export default function VehicleIntelligenceCommandCenter() {
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="space-y-4 rounded-xl border border-line-soft bg-surface-alt/40 p-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-content">Claimed Listing Inputs</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-content">What the listing claims</h3>
                 
                 <div>
                   <label className="text-xs font-medium text-content-secondary">Make</label>
@@ -483,7 +483,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-content-secondary">Model Year</label>
+                  <label className="text-xs font-medium text-content-secondary">Model year</label>
                   <input
                     type="number"
                     value={listingClaim.year}
@@ -493,7 +493,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-content-secondary">Fuel Type</label>
+                  <label className="text-xs font-medium text-content-secondary">Fuel type</label>
                   <select
                     value={listingClaim.fuel_type}
                     onChange={(e) => setListingClaim({ ...listingClaim, fuel_type: e.target.value })}
@@ -552,7 +552,7 @@ export default function VehicleIntelligenceCommandCenter() {
             {diffResult && (
               <div className="mt-6 border-t border-line-soft pt-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-content">Diff Results</h3>
+                  <h3 className="text-sm font-bold text-content">Differences</h3>
                   <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
                     diffResult.hasDiscrepancies ? 'bg-warning-tint text-warning-text' : 'bg-success-tint text-success'
                   }`}>
@@ -664,7 +664,7 @@ export default function VehicleIntelligenceCommandCenter() {
           {resolvingSignal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
               <Card className="w-full max-w-lg p-6 shadow-2xl">
-                <h3 className="text-base font-extrabold text-content">Resolve Anomaly Signal</h3>
+                <h3 className="text-base font-extrabold text-content">Resolve warning sign</h3>
                 <p className="mt-1 text-xs text-content-muted">
                   Signal: <strong className="text-content">{resolvingSignal.title}</strong> on {resolvingSignal.vin_masked}
                 </p>
@@ -697,7 +697,7 @@ export default function VehicleIntelligenceCommandCenter() {
                       disabled={resolving || !resolutionNote.trim()}
                       className="rounded-xl bg-ink-900 px-5 py-2 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50"
                     >
-                      {resolving ? 'Recording...' : 'Confirm Resolution'}
+                      {resolving ? 'Recording...' : 'Confirm resolution'}
                     </button>
                   </div>
                 </form>
@@ -728,7 +728,7 @@ export default function VehicleIntelligenceCommandCenter() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-content-secondary">Event Category</label>
+              <label className="text-xs font-semibold text-content-secondary">Event category</label>
               <select
                 value={eventForm.eventType}
                 onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value })}
@@ -745,7 +745,7 @@ export default function VehicleIntelligenceCommandCenter() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-content-secondary">Event Date</label>
+              <label className="text-xs font-semibold text-content-secondary">Event date</label>
               <input
                 type="date"
                 value={eventForm.eventDate}
@@ -767,7 +767,7 @@ export default function VehicleIntelligenceCommandCenter() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="text-xs font-semibold text-content-secondary">Event Title</label>
+              <label className="text-xs font-semibold text-content-secondary">Event title</label>
               <input
                 value={eventForm.title}
                 onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}

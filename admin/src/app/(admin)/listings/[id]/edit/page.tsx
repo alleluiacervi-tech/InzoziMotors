@@ -220,7 +220,7 @@ export default function EditListingPage() {
 
         <form onSubmit={save} className="space-y-5">
           <div>
-            <label className={labelCls}>Listing Title *</label>
+            <label className={labelCls}>Title *</label>
             <input
               type="text"
               value={title}
@@ -320,7 +320,7 @@ export default function EditListingPage() {
               />
             </div>
             <div>
-              <label className={labelCls}>Drive Side</label>
+              <label className={labelCls}>Drive side</label>
               <select value={driveSide} onChange={(e) => setDriveSide(e.target.value)} className={inputCls}>
                 <option value="LHD">LHD (Rwanda standard)</option>
                 <option value="RHD">RHD (Japanese import)</option>
@@ -329,15 +329,15 @@ export default function EditListingPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <div><label className={labelCls}>Fuel Type</label><input value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol, Diesel, Hybrid…" className={inputCls} /></div>
+            <div><label className={labelCls}>Fuel type</label><input value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol, Diesel, Hybrid…" className={inputCls} /></div>
             <div><label className={labelCls}>Transmission</label><input value={transmission} onChange={(e) => setTransmission(e.target.value)} placeholder="Automatic, Manual…" className={inputCls} /></div>
-            <div><label className={labelCls}>Body Type</label><input value={bodyType} onChange={(e) => setBodyType(e.target.value)} placeholder="SUV, Sedan, Hatchback…" className={inputCls} /></div>
+            <div><label className={labelCls}>Body type</label><input value={bodyType} onChange={(e) => setBodyType(e.target.value)} placeholder="SUV, Sedan, Hatchback…" className={inputCls} /></div>
           </div>
 
           {/* VIN & Canonical Vehicle Registry Binding */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>VIN / Chassis Number</label>
+              <label className={labelCls}>VIN or chassis number</label>
               <input value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} className={inputCls} />
               <p className="mt-1 text-[11px] text-gray-400">Shown to buyers with most characters hidden.</p>
             </div>
@@ -373,13 +373,13 @@ export default function EditListingPage() {
 
           {/* Seller Assignment */}
           <div>
-            <label className={labelCls}>Assigned Seller Account ID</label>
+            <label className={labelCls}>Seller account ID</label>
             <input value={sellerId} onChange={(e) => setSellerId(e.target.value)} className={inputCls} />
             <p className="mt-1 text-[11px] text-gray-400">Reassignment requires an active, identity-verified seller account.</p>
           </div>
 
           <div>
-            <label className={labelCls}>Public Description</label>
+            <label className={labelCls}>Public description</label>
             <textarea
               rows={4}
               value={description}
@@ -389,13 +389,13 @@ export default function EditListingPage() {
           </div>
 
           <div>
-            <label className={labelCls}>Internal Review Notes (Admin Only)</label>
+            <label className={labelCls}>Internal notes (team only)</label>
             <textarea rows={3} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} className={inputCls} />
             <p className="mt-1 text-xs text-gray-400">Private operational remarks. Never visible to buyers.</p>
           </div>
 
           <div>
-            <label className={labelCls}>Image URLs (One per line)</label>
+            <label className={labelCls}>Image addresses, one per line</label>
             <textarea
               rows={3}
               value={images}
@@ -420,7 +420,7 @@ export default function EditListingPage() {
               disabled={saving}
               className="px-6 py-2.5 text-xs font-bold bg-ink-900 text-white rounded-xl hover:bg-ink-800 disabled:opacity-50 shadow-sm"
             >
-              {saving ? 'Saving…' : 'Save Changes'}
+              {saving ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         </form>

@@ -63,7 +63,7 @@ export default function LoginPage() {
             <LogoMark size={40} />
           </div>
           <h1 className="text-2xl font-bold text-white">Sawa Cars</h1>
-          <p className="text-white/60 text-sm mt-1">Admin Dashboard</p>
+          <p className="text-white/60 text-sm mt-1">Operations console</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface rounded-2xl p-8 shadow-xl">

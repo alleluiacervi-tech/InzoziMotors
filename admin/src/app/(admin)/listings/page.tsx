@@ -4,7 +4,7 @@ import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api, type Readiness } from '@/lib/api'
-import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney } from '@/components/ui'
+import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney, statusLabel } from '@/components/ui'
 import { useConfirm, useReason, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
 import { fmtInt } from '@/lib/format'
@@ -280,7 +280,7 @@ export default function ListingsPage() {
           href="/listings/new"
           className="px-4 py-2 text-sm font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light transition-colors"
         >
-          Create Listing
+          Create listing
         </Link>
         </div>
       </div>
@@ -298,11 +298,11 @@ export default function ListingsPage() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors capitalize ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
               statusFilter === s ? 'bg-ink-900 text-white' : 'bg-surface text-gray-600 border border-gray-200 hover:border-content-muted'
             }`}
           >
-            {STATUS_LABELS[s] || s.replace('_', ' ')}
+            {STATUS_LABELS[s] || statusLabel(s)}
             {s === statusFilter && total ? ` (${total})` : ''}
           </button>
         ))}

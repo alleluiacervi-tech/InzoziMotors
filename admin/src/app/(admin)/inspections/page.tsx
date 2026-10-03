@@ -271,7 +271,7 @@ export default function InspectionsPage() {
             onChange={(e) => setCenter(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
           >
-            <option value="all">All Centers</option>
+            <option value="all">All centers</option>
             {centers.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
           </select>
         </div>
@@ -367,7 +367,7 @@ export default function InspectionsPage() {
                   href={`/inspections/${insp.id}`}
                   className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                 >
-                  {insp.status === 'scheduled' ? 'Start Checklist' : 'Continue'}
+                  {insp.status === 'scheduled' ? 'Start checklist' : 'Continue'}
                 </Link>
               )}
               {insp.status === 'complete' && (
@@ -409,7 +409,7 @@ export default function InspectionsPage() {
                     </span>
                   ) : insp.submission_purpose === 'rental' ? (
                     // The vehicle was taken in for the rental fleet. Offering
-                    // Create Listing here is how a van intended for hire ends
+                    // Create listing here is how a van intended for hire ends
                     // up as a car for sale, or — more often — how an operator
                     // concludes the rental side simply does not work.
                     <Link
@@ -424,7 +424,7 @@ export default function InspectionsPage() {
                         href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
                         className="px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                       >
-                        Create Listing
+                        Create listing
                       </Link>
                       {insp.submission_purpose === 'both' ? (
                         <Link

@@ -12,7 +12,7 @@ import { useConfirm, useReason, useToast } from '@/components/feedback'
 // come from the server (`allowed_transitions`, the same table PATCH
 // /imports/:id/status enforces), so this can never offer one it will refuse.
 
-const label = (status: string) => status.replaceAll('_', ' ')
+import { statusLabel as label } from './ui'
 
 export function ImportStatusControls({ orderId, status, allowed = [], onChanged }: {
   orderId: string
@@ -57,7 +57,7 @@ export function ImportStatusControls({ orderId, status, allowed = [], onChanged 
           className={`rounded-xl px-4 py-2 text-label font-bold disabled:opacity-50 ${index === 0
             ? 'bg-ink-900 text-white'
             : 'border border-line text-content hover:bg-surface-alt'}`}>
-          {index === 0 ? `Advance to ${label(next)}` : `Skip to ${label(next)}`}
+          {index === 0 ? `Next: ${label(next)}` : `Skip to: ${label(next)}`}
         </button>
       ))}
       {cancellable ? (

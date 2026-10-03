@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { Card, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
+import { Card, ErrorState, LoadingState, PageHeader, Pill, statusLabel } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 import { fmtDateTime } from '@/lib/format'
 import { ImportStatusControls } from '@/components/ImportStatusControls'
@@ -64,8 +64,8 @@ export default function ImportOperationsPage({ params }: { params: Promise<{ id:
           </div>
         </div>
       </Card> : null}
-      <Card className="p-5"><div className="flex items-center justify-between"><h2 className="font-extrabold text-content">Agreement & money</h2><Pill status={order.status} label={order.status.replaceAll('_',' ')}/></div><p className="mt-3 text-2xl font-black text-content">{money(order.quoted_total_rwf)}</p>
-        <div className="mt-4 space-y-3">{order.payments.map((p:any)=><div key={p.id} className="rounded-xl border border-line-soft p-4"><div className="flex justify-between gap-3"><div><p className="font-bold text-content">{p.milestone.replaceAll('_',' ')}</p><p className="text-caption text-content-muted">Expected reference: <span className="font-mono">{p.reference}</span></p><p className="text-caption text-content-muted">{p.bank_reference?<>Buyer submitted: <span className="font-mono">{p.bank_reference}</span>{p.bank_reference!==p.reference?<span className="font-bold text-warning-text"> · does not match</span>:null}</>:'No bank reference submitted'}</p></div><div className="text-right"><p className="font-extrabold text-content">{money(p.amount_rwf)}</p><Pill status={p.status} label={p.status}/></div></div>
+      <Card className="p-5"><div className="flex items-center justify-between"><h2 className="font-extrabold text-content">Agreement & money</h2><Pill status={order.status}/></div><p className="mt-3 text-2xl font-black text-content">{money(order.quoted_total_rwf)}</p>
+        <div className="mt-4 space-y-3">{order.payments.map((p:any)=><div key={p.id} className="rounded-xl border border-line-soft p-4"><div className="flex justify-between gap-3"><div><p className="font-bold text-content">{statusLabel(p.milestone)}</p><p className="text-caption text-content-muted">Expected reference: <span className="font-mono">{p.reference}</span></p><p className="text-caption text-content-muted">{p.bank_reference?<>Buyer submitted: <span className="font-mono">{p.bank_reference}</span>{p.bank_reference!==p.reference?<span className="font-bold text-warning-text"> · does not match</span>:null}</>:'No bank reference submitted'}</p></div><div className="text-right"><p className="font-extrabold text-content">{money(p.amount_rwf)}</p><Pill status={p.status}/></div></div>
           {p.proof_url?<a href={`/api/backend/imports/${id}/payments/${p.id}/proof`} target="_blank" rel="noreferrer" className="mr-2 mt-3 inline-block rounded-xl border border-line px-4 py-2 text-caption font-bold text-content">View transfer proof</a>:null}
           {p.status==='submitted'?<button disabled={busy===p.id} onClick={()=>payment(p.id,'reviewed')} className="mt-3 rounded-xl bg-warning-tint px-4 py-2 text-caption font-bold text-warning-text">First finance review</button>:null}
           {p.status==='reviewed'?<button disabled={busy===p.id} onClick={()=>payment(p.id,'verified')} className="mt-3 rounded-xl bg-success px-4 py-2 text-caption font-bold text-white">Final bank verification</button>:null}

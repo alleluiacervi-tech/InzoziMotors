@@ -301,7 +301,7 @@ function ListingCreatorForm() {
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Listing Title *</label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
             <input
               type="text"
               required
@@ -439,7 +439,7 @@ function ListingCreatorForm() {
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Public Description</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Public description</label>
           <textarea
             rows={4}
             value={description}

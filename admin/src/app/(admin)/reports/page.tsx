@@ -5,7 +5,7 @@ import {
   api, type ApiError, type MessageReport, type ReportThreadMessage, type ReviewReport,
 } from '@/lib/api'
 import {
-  Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill,
+  Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill, statusLabel,
 } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
@@ -213,7 +213,7 @@ export default function ReportsPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-section font-extrabold text-content">{r.reason}</h2>
-                    <Pill status={r.status === 'open' ? 'open' : r.status === 'resolved' ? 'resolved' : 'cancelled'} label={r.status} />
+                    <Pill status={r.status === 'open' ? 'open' : r.status === 'resolved' ? 'resolved' : 'cancelled'} label={statusLabel(r.status)} />
                     {r.removed_at ? (
                       <span className="inline-flex items-center gap-1 rounded-pill bg-surface-alt px-2 py-0.5 text-caption font-semibold text-content-secondary">
                         <Icon name="check" size={11} />
@@ -271,7 +271,7 @@ export default function ReportsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-section font-extrabold text-content">{r.reason}</h2>
                     <Pill status={r.status === 'open' ? 'open' : r.status === 'resolved' ? 'resolved' : 'cancelled'}
-                      label={r.status} />
+                      label={statusLabel(r.status)} />
                     {r.reporter_has_blocked ? (
                       <span className="inline-flex items-center gap-1 rounded-pill bg-surface-alt px-2 py-0.5 text-caption font-semibold text-content-secondary">
                         <Icon name="lock" size={11} />

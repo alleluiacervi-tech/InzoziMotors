@@ -343,6 +343,44 @@ const PILL_TONES: Record<string, string> = {
 }
 
 /**
+ * Every status the API can send, in the words an operator would use.
+ * Pages used to print the raw code ("deposit review", "in transit",
+ * "agreement pending") or capitalise every word ("Waiting On You").
+ */
+const STATUS_WORDS: Record<string, string> = {
+  // submissions and listings
+  under_review: 'Under review', approved: 'Approved', scheduled: 'Booked', inspecting: 'Being inspected',
+  inspected: 'Inspected', live: 'Live', paused: 'Paused', sold: 'Sold', rejected: 'Rejected',
+  archived: 'Archived', draft: 'Draft', pending: 'Pending', needs_action: 'Waiting on you',
+  // inspections
+  in_progress: 'Being inspected', complete: 'Done', waived: 'Waived', cancelled: 'Cancelled',
+  // import orders
+  enquiry: 'Enquiry', quoted: 'Quoted', agreement_pending: 'Waiting for agreement',
+  deposit_due: 'Deposit due', deposit_review: 'Checking deposit', ordered: 'Ordered',
+  inspected_abroad: 'Inspected abroad', shipping_booked: 'Shipping booked', in_transit: 'In transit',
+  arrived: 'Arrived in Rwanda', kigali_inspection: 'Kigali inspection', balance_due: 'Balance due',
+  balance_review: 'Checking balance', customs_clearance: 'Customs clearance',
+  ready_for_handover: 'Ready to collect', completed: 'Completed',
+  // payments
+  submitted: 'Submitted', reviewed: 'Reviewed', verified: 'Verified', due: 'Due', paid: 'Paid',
+  // people
+  buyer: 'Buyer', seller: 'Seller', admin: 'Admin', showroom: 'Showroom', none: 'Not submitted',
+  active: 'Active', suspended: 'Suspended', closed: 'Closed',
+  // rentals and reports
+  new: 'New', contacted: 'Contacted', maintenance: 'Maintenance', retired: 'Retired',
+  pending_review: 'Pending review', open: 'Open', resolved: 'Resolved', upcoming: 'Upcoming',
+  confirmed: 'Confirmed',
+}
+
+/** "deposit_review" → "Checking deposit". Unknown codes are sentence-cased. */
+export function statusLabel(status: string | null | undefined): string {
+  if (!status) return '—'
+  if (STATUS_WORDS[status]) return STATUS_WORDS[status]
+  const words = status.replace(/_/g, ' ')
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+/**
  * Status, as a pill.
  *
  * The dot is not decoration. A tinted pill distinguishes eleven states by
@@ -361,7 +399,7 @@ export function Pill({ status, label }: { status: string; label?: string }) {
       }`}
     >
       <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70" />
-      {label ?? status.replace(/_/g, ' ')}
+      {label ?? statusLabel(status)}
     </span>
   )
 }

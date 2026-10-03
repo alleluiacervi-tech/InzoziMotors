@@ -654,9 +654,9 @@ export default function UsersPage() {
                   <td className="px-5 py-4"><div className="flex items-center gap-3">{u.avatar_url
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={u.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-line" /> : null}<div className="min-w-0"><p className="font-bold text-content">{u.business_name || u.name}</p><p className="text-caption text-content-muted">{u.business_name ? `${u.name} · ` : ''}{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>{u.whatsapp_phone ? <p className="text-caption text-content-muted">WhatsApp: {u.whatsapp_phone}</p> : null}{u.must_change_password ? <p className="mt-1 text-micro font-bold text-warning-text">Invitation awaiting activation</p> : null}</div></div></td>
-                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'showroom' : u.role} />{u.business_verified ? <Pill status="approved" label="business verified" /> : null}</div></td>
+                  <td className="px-4 py-4"><div className="space-y-1"><Pill status={u.role} label={u.seller_type === 'showroom' ? 'Showroom' : undefined} />{u.business_verified ? <Pill status="approved" label="Business verified" /> : null}</div></td>
                   <td className="px-4 py-4">
-                    <Pill status={u.id_verified} label={u.id_verified === 'none' || !u.id_verified ? 'not submitted' : u.id_verified} />
+                    <Pill status={u.id_verified || 'none'} label={u.id_verified === 'none' || !u.id_verified ? 'Not submitted' : undefined} />
                     {u.id_verified === 'approved' && u.id_verification_method ? (
                       <span className="mt-1 block text-caption text-content-muted" title={u.id_verification_note || undefined}>
                         {METHOD_LABELS[u.id_verification_method] || u.id_verification_method}
@@ -664,9 +664,11 @@ export default function UsersPage() {
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-4 py-4 font-bold text-content">{Number(u.trust_score || 0)}</td>
+                  {/* Trust means something only for a seller who has earned some; a
+                      bold 0 on every buyer was noise that hid the rows that matter. */}
+                  <td className="tnum px-4 py-4 text-content">{u.role === 'seller' && Number(u.trust_score) > 0 ? Number(u.trust_score) : <span className="text-content-muted">—</span>}</td>
                   <td className="px-4 py-4 text-content-secondary">{Number(u.completed_sales || 0)}</td>
-                  <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2"><Pill status={u.account_status === 'suspended' ? 'rejected' : 'approved'} label={u.account_status === 'suspended' ? 'suspended' : 'active'} />
+                  <td className="px-4 py-4"><div className="flex min-w-44 flex-col items-start gap-2">{u.account_status === 'suspended' ? <Pill status="rejected" label="Suspended" /> : null}
                     {u.role !== 'admin' ? (
                       <div className="flex items-center gap-2">
                         {/* One primary action on the row; the rest, and the

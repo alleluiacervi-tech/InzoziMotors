@@ -54,7 +54,7 @@ export default function ActivityPage() {
         <li key={item.id} className="px-5 py-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-content-secondary"><Icon name="clock" size={16} /></span>
-            <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-content">{item.summary}</p><Pill status={item.target_type} label={item.target_type} /></div>
+            <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-content">{item.summary}</p><Pill status={item.target_type} /></div>
               <p className="mt-1 text-caption text-content-muted">{item.actor_name || 'Former admin'}{item.actor_email ? ` · ${item.actor_email}` : ''}{item.target_id ? ` · ${item.target_id}` : ''}</p>
             </div>
             <time dateTime={item.created_at} className="shrink-0 text-caption text-content-muted">{fmtDateTime(item.created_at)}</time>

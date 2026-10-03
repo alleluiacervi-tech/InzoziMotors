@@ -3,7 +3,7 @@
 import { ExportLink } from '@/components/ExportLink'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
+import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill, statusLabel } from '@/components/ui'
 import Link from 'next/link'
 import { ImportStatusControls } from '@/components/ImportStatusControls'
 
@@ -40,7 +40,7 @@ export default function ImportsPage() {
       <label className="text-label font-semibold text-content">Pipeline stage
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="ml-3 h-10 rounded-xl border border-line bg-surface px-3 font-normal">
           <option value="">All stages</option>
-          {['enquiry','quoted','agreement_pending','deposit_due','deposit_review','ordered','inspected_abroad','shipping_booked','in_transit','arrived','kigali_inspection','balance_due','balance_review','customs_clearance','ready_for_handover','completed','cancelled'].map((s) => <option key={s} value={s}>{s.replaceAll('_',' ')}</option>)}
+          {['enquiry','quoted','agreement_pending','deposit_due','deposit_review','ordered','inspected_abroad','shipping_booked','in_transit','arrived','kigali_inspection','balance_due','balance_review','customs_clearance','ready_for_handover','completed','cancelled'].map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
       </label>
     </Card>
@@ -48,7 +48,7 @@ export default function ImportsPage() {
       <EmptyState icon="car" title="No import orders here" description="New customer import enquiries will appear in this pipeline." /> :
       <div className="space-y-4">{items.map((item) => <Card key={item.id} className="p-5">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-          <div><div className="flex flex-wrap items-center gap-2"><span className="text-caption font-bold text-content">{item.order_ref}</span><Pill status={item.status} label={item.status.replaceAll('_',' ')} /></div>
+          <div><div className="flex flex-wrap items-center gap-2"><span className="text-caption font-bold text-content">{item.order_ref}</span><Pill status={item.status} /></div>
             <h2 className="mt-2 text-lg font-extrabold text-content">{item.year || ''} {item.make} {item.model}</h2>
             <p className="mt-1 text-label text-content-muted">From {item.origin_country} · {item.buyer_name} · {item.buyer_email}</p>
           </div>

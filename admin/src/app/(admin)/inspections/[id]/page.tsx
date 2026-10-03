@@ -363,7 +363,7 @@ export default function InspectionDetailPage() {
             {criticalFailures.length > 0 && <span className="font-semibold text-amber-700">{criticalFailures.length} critical defect(s) disclosed for price negotiation</span>}
           </div>
         </div>
-        {insp.status === 'scheduled' && <button onClick={startInspection} disabled={saving} className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Starting…' : 'Start Physical Inspection'}</button>}
+        {insp.status === 'scheduled' && <button onClick={startInspection} disabled={saving} className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Starting…' : 'Start the inspection'}</button>}
       </div>
 
       {/* ─── Phase 1 — critical items, one at a time, always ────────────────── */}
