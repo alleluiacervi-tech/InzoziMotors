@@ -59,12 +59,12 @@ decoration. Nothing here changes the backend or the app.
 
 ## Phase 1 — Repair (no design decisions; losing customers today)
 
-- [ ] **1.1 Seller exit goes to the web flow.** In
+- [x] **1.1 Seller exit goes to the web flow.** *(Also: sign-up pre-selects "I want to sell" when `next` starts with `/sell` or `/dashboard/verify`, or `?role=seller`; the sell page's closing button now reads "Start selling" and goes to `/sell/submit`.)* In
       `web/src/components/tools/ValuationTool.tsx` (`NextSteps`), change the button `href`
       from `/download` to `/sell/submit`. `/sell/submit` already redirects signed-out users to
       `/signin?next=/sell/submit`. Done when: a signed-out user who completes a valuation and
       clicks the button lands on sign-in, then on the submit form; never on the app page.
-- [ ] **1.2 Rewrite the four "happens in the app" passages.** The web verification flow
+- [x] **1.2 Rewrite the four "happens in the app" passages.** *(Also rewritten: the sell page closer's body, the seller dashboard's verification notice, and the /download page's "ID verification" card, which claimed a phone was the only way.)* The web verification flow
       (`/dashboard/verify`, webcam + upload) and submission (`/sell/submit`) shipped 27 Sep 2026.
       Fix, in all six locales:
       - `messages/sell.ts` → `app.title`, `app.body1`, `app.body2`, and the `whereTitle` /
@@ -79,20 +79,20 @@ decoration. Nothing here changes the backend or the app.
         adds push notifications and a faster camera, nothing else.
       Done when: `grep -rn "in the app" web/src/lib/i18n/messages web/src/lib/site.ts` returns
       only lines that describe push notifications or the camera.
-- [ ] **1.3 Show "Sell your car" in the mobile header.** In
+- [x] **1.3 Show "Sell your car" in the mobile header.** In
       `web/src/components/layout/Header.tsx` the primary `Button href="/sell"` has
       `hidden sm:inline-flex`. Make it visible at every width (size `sm`, label may shorten to
       "Sell" below 400 px). Remove the header search icon (the hero and /cars have search).
       Done when: at 390 px the red Sell button is visible without opening the menu and the
       header never wraps to two lines.
-- [ ] **1.4 Hide Rent while the fleet is empty.** Rent currently appears in `NAV_LINKS`
+- [x] **1.4 Hide Rent while the fleet is empty.** Rent currently appears in `NAV_LINKS`
       (`lib/site.ts`), the hero tabs (`components/home/HeroSearch.tsx`, `MODES`) and the
       homepage "Three ways" card. Make all three conditional on a rental count ≥ 3 (the
       homepage already fetches `rentals.list()`; the header can read a count passed from the
       root layout). `/rentals` stays live and in the footer. Done when: with the production API
       (0 rentals) no Rent entry renders anywhere above the footer; with a mocked list of 3 it
       renders everywhere it did.
-- [ ] **1.5 Make and title hygiene.** Listing titles come from the database (`cars.title`, set
+- [x] **1.5 Make and title hygiene.** *(Code done 3 Oct: `web/src/lib/vehicle-names.ts`, not `business.ts`, because `business.ts` mirrors the app's logic and this is web-only display. Titles are cleaned once in `lib/api.ts`; make labels on chips, selects, headings and page titles use `displayMake`, while filter URLs keep the stored value because the API matches `make` exactly. Still to do by a person, below.)* Listing titles come from the database (`cars.title`, set
       at listing creation in the admin), so first fix the data: in the admin, rename the make
       "Dongfeng Motor Corporation" to "Dongfeng" (`vehicle_makes.aliases` can keep the long
       form), and retitle "2023 Land Rover Land Rover Range Rover P530 SE" to
@@ -100,12 +100,13 @@ decoration. Nothing here changes the backend or the app.
       `web/src/lib/business.ts` (`displayTitle(car)`) that strips a make repeated twice at the
       start of a title, and use it in `CarCard`, the listing `<h1>` and `Specimen`. Done when:
       no card on `/cars` shows a make twice and every make chip is a single brand word.
-- [ ] **1.6 Flag implausible odometers at publication.** Admin-side only, in the publication
+    - [ ] **1.5a (admin, a person)** Rename the make on the Dongfeng listing to "Dongfeng" and retitle the Range Rover listing to "2023 Range Rover P530 SE" in Admin → Listings. The site already displays both correctly; this fixes the stored data and the app, which does not use the web's display helpers.
+- [x] **1.6 Flag implausible odometers at publication.** *(Done in `backend/src/lib/publication-readiness.js` `contentWarnings`, with a second warning for a title that repeats its make, and tests in `backend/test/publication-warnings.test.js` that need no database. Also fixed a pre-existing crash: the low-score warning used `SCORE_MAX` without importing it.)* Admin-side only, in the publication
       readiness warnings (`backend/src/routes/cars.js`, `publicationReadiness`): warn (not
       block) when mileage < 500 km on a car older than one model year. This keeps "100 km,
       2022 Land Cruiser" from reaching the homepage unnoticed. Done when: the warning appears
       in the admin review for such a car and existing tests pass (`cd backend && npm test`).
-- [ ] **1.7 Language switcher without a flag.** `components/i18n/LanguageSwitcher.tsx`: drop the
+- [x] **1.7 Language switcher without a flag.** `components/i18n/LanguageSwitcher.tsx`: drop the
       flag emoji, show "EN", "RW", "FR", "SW", "KO", "ZH". Done when: no flag renders.
 
 ## Phase 2 — Restructure (information architecture and copy)
