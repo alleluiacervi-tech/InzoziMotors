@@ -90,20 +90,25 @@ const config: Config = {
       // Mobile's radius scale, plus web-scale values for full-bleed sections
       borderRadius: {
         sm: '8px',
-        md: '12px',
-        lg: '14px',
-        xl: '16px',
-        '2xl': '20px',
-        '3xl': '28px',
+        md: '10px',
+        lg: '12px',
+        xl: '14px',
+        '2xl': '16px',
+        '3xl': '24px',
         pill: '999px',
       },
 
       // Ported from shadows in src/theme/index.js — warm, low, realistic.
       // Web gets slightly wider spreads because pointer devices sit further back.
       boxShadow: {
-        card: '0 2px 8px rgba(26, 20, 19, 0.08)',
-        'card-lg': '0 8px 28px rgba(26, 20, 19, 0.10)',
-        float: '0 12px 40px rgba(26, 20, 19, 0.14)',
+        // Cards are held by their border, not by a shadow: `card` is a 1px
+        // contact shadow that only says "this sits on the page". Lift is
+        // earned — hover (`card-lg`) and genuinely floating panels (`float`)
+        // — and both are long, low and soft, like light from a showroom
+        // ceiling rather than a drop shadow under a sticker.
+        card: '0 1px 2px rgba(26, 20, 19, 0.05)',
+        'card-lg': '0 18px 40px -22px rgba(26, 20, 19, 0.30), 0 2px 6px rgba(26, 20, 19, 0.04)',
+        float: '0 40px 90px -40px rgba(26, 20, 19, 0.40), 0 4px 14px -6px rgba(26, 20, 19, 0.08)',
         brand: '0 4px 14px rgba(204, 5, 15, 0.28)',
         'brand-lg': '0 10px 34px rgba(204, 5, 15, 0.30)',
         inset: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
@@ -117,9 +122,13 @@ const config: Config = {
       // Display sizes for the marketing surfaces. Tight negative tracking is a
       // brand signature — it comes straight from typography.display in mobile.
       fontSize: {
-        'display-xl': ['clamp(2.75rem, 6vw, 5rem)', { lineHeight: '1.03', letterSpacing: '-0.035em' }],
-        'display': ['clamp(2.25rem, 4.5vw, 3.5rem)', { lineHeight: '1.06', letterSpacing: '-0.03em' }],
-        'headline': ['clamp(1.75rem, 3vw, 2.5rem)', { lineHeight: '1.12', letterSpacing: '-0.025em' }],
+        // `mega` is the homepage's one shout: Satoshi Black at poster size.
+        // Tracking tightens as the size grows, so the steps below it are not
+        // just smaller copies of it.
+        'mega': ['clamp(2.75rem, 7.6vw, 7rem)', { lineHeight: '0.94', letterSpacing: '-0.05em' }],
+        'display-xl': ['clamp(2.5rem, 5.6vw, 4.75rem)', { lineHeight: '1', letterSpacing: '-0.042em' }],
+        'display': ['clamp(2.125rem, 4.4vw, 3.5rem)', { lineHeight: '1.04', letterSpacing: '-0.035em' }],
+        'headline': ['clamp(1.75rem, 3.2vw, 2.625rem)', { lineHeight: '1.08', letterSpacing: '-0.03em' }],
         'title': ['clamp(1.25rem, 2vw, 1.5rem)', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
         // The lower half of the ladder. Arbitrary text-[Npx] values are banned
         // site-wide — every size below `title` is one of these four, and
@@ -131,7 +140,9 @@ const config: Config = {
         'price': ['1.3125rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }], //     21px — card prices
         'price-lg': ['2rem', { lineHeight: '1.15', letterSpacing: '-0.03em' }], //      32px — detail-page price
         'stat': ['1.75rem', { lineHeight: '1.15', letterSpacing: '-0.02em' }], //       28px — stat tiles
-        'body': ['0.9375rem', { lineHeight: '1.6' }], //                                15px — default copy
+        // 16px. Most visitors read this on a phone in daylight; 15px body
+        // copy was a desktop habit.
+        'body': ['1rem', { lineHeight: '1.6' }], //                                     16px — default copy
         // 16px, and it exists for exactly one reason: iOS Safari zooms the
         // whole viewport when a focused form control is set below 16px. Every
         // field on the site was at `body` (15px), so tapping the hero search
@@ -190,6 +201,13 @@ const config: Config = {
           from: { transform: 'scaleX(0)' },
           to: { transform: 'scaleX(1)' },
         },
+        // One tick of the 150-point ruler standing up. The ruler's ticks
+        // run this in sequence on first paint — the page's single
+        // orchestrated motion — and never again.
+        tick: {
+          from: { transform: 'scaleY(0)', opacity: '0' },
+          to: { transform: 'scaleY(1)', opacity: '1' },
+        },
         halo: {
           '0%': { transform: 'scale(1)', opacity: '0.55' },
           '70%, 100%': { transform: 'scale(2.6)', opacity: '0' },
@@ -204,6 +222,7 @@ const config: Config = {
         rise: 'rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both',
         halo: 'halo 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
         grow: 'grow 1.1s cubic-bezier(0.16, 1, 0.3, 1) both',
+        tick: 'tick 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
         shimmer: 'shimmer 1.6s infinite',
       },
     },

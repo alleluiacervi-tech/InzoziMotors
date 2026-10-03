@@ -1,28 +1,39 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Container, Icon, Section } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { getServerT } from '@/lib/i18n/server'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sawa runs three businesses and the front page used to show one. This band
-// names all three in the order people arrive with them, each led by a fact
-// rather than a photograph: how many cars can be bought, how many rented, and
-// where imports come from. Three columns divided by rules — not three cards —
-// because they are one choice, not three products.
+// Sawa runs three businesses; this band names all three in the order people
+// arrive with them. Buy and Rent are led by a live count — the strongest thing
+// either can say. Import is the unfamiliar one (a quote, an agreement, two
+// bank-transfer milestones), so it gets the photograph and the most room: a
+// car on a ship is the fastest way to say "from Japan, Korea or China".
+//
+// Unequal on purpose. Three identical tiles would claim the three are the
+// same size of decision; they are not.
 // ─────────────────────────────────────────────────────────────────────────────
+
+function Arrow({ tone }: { tone: 'paper' | 'photo' }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-transform duration-300 ease-brand group-hover:translate-x-1 ${
+        tone === 'photo' ? 'bg-white text-ink-900' : 'bg-content text-surface-page'
+      }`}
+    >
+      <Icon name="arrow-right" size={18} />
+    </span>
+  )
+}
 
 export async function ThreeWays({ saleCount, rentalCount }: { saleCount: number; rentalCount: number }) {
   const t = await getServerT()
 
-  const ways: {
-    key: 'buy' | 'rent' | 'import'
-    icon: IconName
-    figure: string
-    href: string
-  }[] = [
-    { key: 'buy', icon: 'car', figure: saleCount ? String(saleCount) : '', href: '/cars' },
-    { key: 'rent', icon: 'key', figure: rentalCount ? String(rentalCount) : '', href: '/rentals' },
-    { key: 'import', icon: 'compass', figure: 'JP / KR / CN', href: '/imports' },
+  const text: { key: 'buy' | 'rent'; icon: IconName; figure: number; href: string }[] = [
+    { key: 'buy', icon: 'car', figure: saleCount, href: '/cars' },
+    { key: 'rent', icon: 'key', figure: rentalCount, href: '/rentals' },
   ]
 
   return (
@@ -30,33 +41,62 @@ export async function ThreeWays({ saleCount, rentalCount }: { saleCount: number;
       <Container>
         <h2 className="max-w-2xl text-headline font-extrabold text-content">{t('home.front.ways.title')}</h2>
 
-        <ul className="mt-10 grid divide-y divide-line border-y border-line md:grid-cols-3 md:divide-x md:divide-y-0">
-          {ways.map((w) => (
-            <li key={w.key} className="min-w-0 py-8 md:px-8 md:first:pl-0 md:last:pr-0">
-              <div className="flex min-h-12 items-center justify-between gap-4">
-                {/* A count only when there is one; an empty fleet shows no
-                    number rather than a zero or a dash. */}
-                <span className="tnum text-display font-extrabold leading-none tracking-[-0.03em] text-content">
-                  {w.figure}
-                </span>
-                <Icon name={w.icon} size={22} className="text-content-muted" aria-hidden="true" />
-              </div>
-              <h3 className="mt-5 text-title font-extrabold text-content">
-                {t(`home.front.ways.${w.key}Title`)}
-              </h3>
-              <p className="mt-2 max-w-sm text-body leading-relaxed text-content-secondary">
-                {t(`home.front.ways.${w.key}Body`)}
-              </p>
+        <div className="mt-10 grid gap-4 lg:grid-cols-12 lg:gap-5">
+          <div className="grid gap-4 lg:col-span-7 lg:gap-5">
+            {text.map((w) => (
               <Link
+                key={w.key}
                 href={w.href}
-                className="-my-2 mt-4 inline-flex items-center gap-1.5 py-2 text-body font-bold text-brand hover:underline"
+                className="group flex min-w-0 flex-col justify-between gap-10 rounded-3xl border border-line bg-surface p-6 transition-[border-color,box-shadow] duration-300 ease-brand hover:border-content/40 hover:shadow-card-lg sm:p-8"
               >
-                {t(`home.front.ways.${w.key}Cta`)}
-                <Icon name="arrow-right" size={16} aria-hidden="true" />
+                <div className="flex items-start justify-between gap-6">
+                  {/* A count only when there is one: an empty fleet shows its
+                      icon rather than a zero. */}
+                  {w.figure > 0 ? (
+                    <span className="tnum text-display font-black leading-none text-content">{w.figure}</span>
+                  ) : (
+                    <Icon name={w.icon} size={28} className="text-content-muted" aria-hidden="true" />
+                  )}
+                  <Arrow tone="paper" />
+                </div>
+                <div className="max-w-lg">
+                  <h3 className="text-title font-extrabold text-content">{t(`home.front.ways.${w.key}Title`)}</h3>
+                  <p className="mt-2 text-body leading-relaxed text-content-secondary">{t(`home.front.ways.${w.key}Body`)}</p>
+                  <span className="mt-4 inline-block text-body font-bold text-content underline decoration-line decoration-2 underline-offset-[6px] group-hover:decoration-content">
+                    {t(`home.front.ways.${w.key}Cta`)}
+                  </span>
+                </div>
               </Link>
-            </li>
-          ))}
-        </ul>
+            ))}
+          </div>
+
+          <Link
+            href="/imports"
+            className="group relative isolate flex min-h-[26rem] min-w-0 flex-col justify-end overflow-hidden rounded-3xl bg-ink-900 p-6 text-white sm:p-8 lg:col-span-5"
+          >
+            <Image
+              src="/img/import-cargo-ship.jpg"
+              alt={t('home.land.photoImportAlt')}
+              fill
+              sizes="(min-width: 1024px) 40vw, 100vw"
+              className="-z-10 object-cover object-[50%_92%] transition-transform duration-700 ease-brand group-hover:scale-[1.03]"
+            />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-ink-900 via-ink-900/75 via-45% to-ink-900/10 lg:via-ink-900/50" />
+            <span className="mb-auto self-start rounded-pill bg-white/15 px-3 py-1.5 text-caption font-bold backdrop-blur-md">
+              {t('home.land.importOrigins')}
+            </span>
+            <div className="flex items-end justify-between gap-6">
+              <div className="max-w-md">
+                <h3 className="text-title font-extrabold">{t('home.front.ways.importTitle')}</h3>
+                <p className="mt-2 text-body leading-relaxed text-white/80">{t('home.front.ways.importBody')}</p>
+                <span className="mt-4 inline-block text-body font-bold underline decoration-white/40 decoration-2 underline-offset-[6px] group-hover:decoration-white">
+                  {t('home.front.ways.importCta')}
+                </span>
+              </div>
+              <Arrow tone="photo" />
+            </div>
+          </Link>
+        </div>
       </Container>
     </Section>
   )

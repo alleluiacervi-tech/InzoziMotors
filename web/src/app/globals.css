@@ -77,7 +77,7 @@
     --status-rejected: 185 28 28;    --status-rejected-bg: 254 242 242;
 
     /* Editorial vertical rhythm — section spacing tiers ------------------- */
-    --space-section: clamp(4rem, 9vw, 8rem);
+    --space-section: clamp(4rem, 8vw, 7rem);
     --space-block: clamp(2rem, 4vw, 3.5rem);
 
     /* Ambient light on ink surfaces. Two lamps, both almost invisible on their

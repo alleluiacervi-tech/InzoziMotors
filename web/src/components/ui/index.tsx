@@ -1,4 +1,5 @@
 import type { ElementType, HTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import Link from 'next/link'
 import { Icon, type IconName } from './Icon'
 
 // The primitive kit every page is assembled from. Keeping these few and strict
@@ -76,7 +77,7 @@ export function Eyebrow({
 }
 
 export function SectionHeading({
-  eyebrow, title, description, align = 'left', layout = 'stack', className = '',
+  eyebrow, title, description, align = 'left', layout = 'stack', action, className = '',
 }: {
   eyebrow?: string
   title: ReactNode
@@ -89,6 +90,8 @@ export function SectionHeading({
    * and the two children overlap, so `stack` stays the default.
    */
   layout?: 'stack' | 'split'
+  /** A quiet link set on the heading's baseline at the far edge — "See all". */
+  action?: ReactNode
   className?: string
 }) {
   // Centred headings stay a single stacked column — they are used for short
@@ -105,29 +108,55 @@ export function SectionHeading({
     )
   }
 
-  // A hairline across the full measure, then the title. In `split` the
-  // standfirst is set beside the title as the narrower of two unequal
-  // columns; below lg it always drops underneath.
+  // No rule above the title any more: a hairline over every heading is
+  // newspaper chrome, and on a page of photographs the white space already
+  // does that job. In `split` the standfirst is set beside the title as the
+  // narrower of two unequal columns; below lg it always drops underneath.
   const split = layout === 'split' && Boolean(description)
 
   return (
-    <div className={`border-t border-line pt-6 ${className}`}>
-      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-      <div className={split ? 'grid gap-x-12 gap-y-4 lg:grid-cols-12' : ''}>
+    <div className={`flex flex-wrap content-start items-end justify-between gap-x-8 gap-y-4 ${className}`}>
+      <div className={`min-w-0 ${split ? 'grid flex-1 gap-x-12 gap-y-4 lg:grid-cols-12' : 'max-w-3xl'}`}>
+        {eyebrow ? <Eyebrow className={split ? 'lg:col-span-12' : ''}>{eyebrow}</Eyebrow> : null}
         <h2 className={`text-headline font-extrabold text-content ${split ? 'lg:col-span-7' : ''}`}>
           {title}
         </h2>
         {description ? (
           <p
-            className={`max-w-prose text-title-sm leading-relaxed text-content-secondary ${
-              split ? 'lg:col-span-5 lg:pt-2' : 'mt-4'
+            className={`max-w-prose text-title-sm leading-relaxed text-pretty text-content-secondary ${
+              split ? 'lg:col-span-5 lg:self-end' : 'mt-3'
             }`}
           >
             {description}
           </p>
         ) : null}
       </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
+  )
+}
+
+/**
+ * The site's "See all" link: ink, not red — red is reserved for the page's
+ * one primary action and for prices, and a red link beside every heading
+ * spent it four times a screen. The arrow slides on hover to say "go".
+ */
+export function TextLink({
+  href, children, className = '',
+}: { href: string; children: ReactNode; className?: string }) {
+  return (
+    <Link
+      href={href}
+      className={`group -my-2 inline-flex items-center gap-1.5 py-2 text-body font-bold text-content underline decoration-line decoration-2 underline-offset-[6px] transition-colors hover:decoration-content ${className}`}
+    >
+      {children}
+      <Icon
+        name="arrow-right"
+        size={16}
+        aria-hidden="true"
+        className="transition-transform duration-300 ease-brand group-hover:translate-x-0.5"
+      />
+    </Link>
   )
 }
 
