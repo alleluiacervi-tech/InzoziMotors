@@ -8,8 +8,8 @@ const { requireUuid, paginate } = require('../middleware/validate');
 const { recordAdminAction } = require('../lib/admin-audit');
 const { sendAccountInvite, sendResetCode, mailEnabled } = require('../lib/mailer');
 const { ACCOUNT_KINDS, createInvitedAccount } = require('../lib/accounts');
-const { CHECKLIST_VERSION, PUBLISH_THRESHOLD } = require('../lib/inspection-policy');
 const { integrityFlags, integrityPriority } = require('../lib/inspection-integrity');
+const { validInspectionExists } = require('../lib/inspection-evidence');
 const {
   SETTING_KEY: DUTY_RATES_KEY,
   validateRates: validateDutyRates,
@@ -119,14 +119,10 @@ router.get('/action-center', requireAdmin, async (req, res) => {
                   WHERE c.status IN ('under_review','approved')
                      OR (c.status = 'live' AND (
                        u.id_verified <> 'approved' OR u.account_status <> 'active'
-                       OR NOT EXISTS (
-                         SELECT 1 FROM inspections i JOIN submissions s ON s.id=i.submission_id
-                         WHERE i.car_id=c.id AND s.seller_id=c.seller_id
-                           AND lower(s.make)=lower(c.make) AND lower(s.model)=lower(c.model) AND s.year=c.year
-                           AND i.status='complete' AND i.checklist_version='${CHECKLIST_VERSION}'
-                           AND i.passed=TRUE AND i.score >= ${PUBLISH_THRESHOLD}
-                           AND jsonb_array_length(COALESCE(i.critical_failures, '[]'::jsonb))=0
-                       )
+                       -- Same rule as the public catalogue: a live car with a
+                       -- disclosed low score or defect is not a risk, a live
+                       -- car with no valid inspection evidence is.
+                       OR NOT ${validInspectionExists('c')}
                        OR (COALESCE(cardinality(c.images),0) = 0
                            AND NOT EXISTS (SELECT 1 FROM car_photos p WHERE p.car_id=c.id))))
                   ORDER BY c.created_at ASC LIMIT 20`),
@@ -709,14 +705,7 @@ router.get('/listings', requireAdmin, paginate({ defaultLimit: 50, maxLimit: 200
               u.account_status AS seller_account_status,
               COALESCE(cardinality(c.images), 0)::int AS image_count,
               (SELECT COUNT(*)::int FROM car_photos p WHERE p.car_id = c.id) AS structured_photo_count,
-              EXISTS (
-                SELECT 1 FROM inspections i JOIN submissions s ON s.id = i.submission_id
-                WHERE i.car_id = c.id AND s.seller_id = c.seller_id
-                  AND lower(s.make) = lower(c.make) AND lower(s.model) = lower(c.model) AND s.year = c.year
-                  AND i.status = 'complete' AND i.checklist_version = '${CHECKLIST_VERSION}'
-                  AND i.passed = TRUE AND i.score >= ${PUBLISH_THRESHOLD}
-                  AND jsonb_array_length(COALESCE(i.critical_failures, '[]'::jsonb)) = 0
-              ) AS has_completed_inspection
+              ${validInspectionExists('c')} AS has_completed_inspection
        FROM cars c
        JOIN users u ON u.id = c.seller_id
        WHERE ${conditions.join(' AND ')}

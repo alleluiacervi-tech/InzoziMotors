@@ -1,0 +1,26 @@
+const { CHECKLIST_VERSION } = require('./inspection-policy');
+
+// The one SQL rule for "this car has valid inspection evidence" (CLAUDE.md §3.1).
+//
+// A complete inspection on the current checklist whose submission matches the
+// car on seller, make, model and year. It deliberately says nothing about the
+// score: since the transparency model (PR #106) a low score or a critical
+// defect is disclosed on the listing, not a reason to hold it back. Every query
+// that asks the question — the public catalogue, the admin queues — reads this
+// function, so the two can no longer disagree about the same car.
+function validInspectionExists(carAlias = 'c') {
+  return `EXISTS (
+    SELECT 1
+      FROM inspections evidence
+      JOIN submissions evidence_submission ON evidence_submission.id = evidence.submission_id
+     WHERE evidence.car_id = ${carAlias}.id
+       AND evidence_submission.seller_id = ${carAlias}.seller_id
+       AND lower(evidence_submission.make) = lower(${carAlias}.make)
+       AND lower(evidence_submission.model) = lower(${carAlias}.model)
+       AND evidence_submission.year = ${carAlias}.year
+       AND evidence.status = 'complete'
+       AND evidence.checklist_version = '${CHECKLIST_VERSION}'
+  )`;
+}
+
+module.exports = { validInspectionExists };
