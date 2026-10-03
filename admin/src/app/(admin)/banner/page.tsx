@@ -21,6 +21,8 @@ import {
   Card, PageHeader, EmptyState, ErrorState, LoadingState, Icon, fmtMoneyShort,
 } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
+import { MoneyInput } from '@/components/MoneyInput'
+import { fmtDate } from '@/lib/format'
 
 type Kind = 'editorial' | 'hot_deal' | 'sponsored'
 
@@ -159,7 +161,7 @@ export default function BannerPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold text-content">{row.headline || row.title}</p>
                   <p className="text-caption text-content-muted">
-                    {row.seller_name} · runs to {String(row.ends_at).slice(0, 10)}
+                    {row.seller_name} · runs to {fmtDate(row.ends_at)}
                     {row.inspection_score ? ` · ${row.inspection_score}/150` : ''}
                   </p>
                 </div>
@@ -170,7 +172,7 @@ export default function BannerPage() {
                 }`}>
                   {row.label}
                 </span>
-                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-brand">
+                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-content">
                   Open
                 </Link>
                 <button
@@ -204,13 +206,13 @@ export default function BannerPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold text-content">{row.headline || row.title}</p>
                   <p className="text-caption text-content-muted">
-                    {row.seller_name} · {String(row.starts_at).slice(0, 10)} to {String(row.ends_at).slice(0, 10)}
+                    {row.seller_name} · {fmtDate(row.starts_at)} to {fmtDate(row.ends_at)}
                   </p>
                 </div>
                 <span className="rounded-md bg-surface-alt px-2 py-1 text-caption font-bold text-content-secondary">
                   {row.sponsored ? 'Sponsored · ' : ''}{HIDDEN[row.hidden_reason] || row.hidden_reason}
                 </span>
-                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-brand">
+                <Link href={`/listings/${row.id}/edit`} className="text-label font-bold text-content">
                   Open
                 </Link>
                 <button
@@ -312,11 +314,11 @@ export default function BannerPage() {
           {/* Money exists only on the paid kind. Not disabled — absent, so
               there is nothing to fill in by accident on an editorial pick. */}
           {draft.kind === 'sponsored' ? (
-            <label className="text-label font-semibold text-content md:col-span-2">
-              Agreed amount (RWF)
-              <input
-                type="number" min={0} value={draft.amount}
-                onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+            <label htmlFor="banner-amount" className="text-label font-semibold text-content md:col-span-2">
+              Agreed amount
+              <MoneyInput
+                id="banner-amount" value={String(draft.amount ?? '')}
+                onChange={(digits) => setDraft({ ...draft, amount: digits })}
                 className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:outline-none"
               />
               <span className="mt-1 block text-caption font-normal text-content-muted">

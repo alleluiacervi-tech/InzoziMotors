@@ -5,7 +5,7 @@ import {
   api, type ApiError, type MessageReport, type ReportThreadMessage, type ReviewReport,
 } from '@/lib/api'
 import {
-  Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill,
+  Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill, statusLabel,
 } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
@@ -143,7 +143,7 @@ export default function ReportsPage() {
   return (
     <>
       <PageHeader
-        title="Reported content"
+        title="Reported chats"
         description="Reports from buyers and sellers, across chats and reviews. Resolved means you acted; dismissed means it was not abuse — both are kept, so a repeat offender is visible."
       />
 
@@ -155,7 +155,7 @@ export default function ReportsPage() {
             onClick={() => setSurface(s)}
             className={`inline-flex h-9 items-center rounded-xl px-4 text-label font-bold capitalize transition-colors ${
               surface === s
-                ? 'bg-brand text-brand-on'
+                ? 'bg-ink-900 text-white'
                 : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'
             }`}
           >
@@ -213,7 +213,7 @@ export default function ReportsPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-section font-extrabold text-content">{r.reason}</h2>
-                    <Pill status={r.status === 'open' ? 'open' : r.status === 'resolved' ? 'resolved' : 'cancelled'} label={r.status} />
+                    <Pill status={r.status === 'open' ? 'open' : r.status === 'resolved' ? 'resolved' : 'cancelled'} label={statusLabel(r.status)} />
                     {r.removed_at ? (
                       <span className="inline-flex items-center gap-1 rounded-pill bg-surface-alt px-2 py-0.5 text-caption font-semibold text-content-secondary">
                         <Icon name="check" size={11} />
@@ -271,7 +271,7 @@ export default function ReportsPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-section font-extrabold text-content">{r.reason}</h2>
                     <Pill status={r.status === 'open' ? 'open' : r.status === 'resolved' ? 'resolved' : 'cancelled'}
-                      label={r.status} />
+                      label={statusLabel(r.status)} />
                     {r.reporter_has_blocked ? (
                       <span className="inline-flex items-center gap-1 rounded-pill bg-surface-alt px-2 py-0.5 text-caption font-semibold text-content-secondary">
                         <Icon name="lock" size={11} />
@@ -349,7 +349,7 @@ export default function ReportsPage() {
               <button
                 type="button"
                 onClick={() => showThread(r.id)}
-                className="mt-3 inline-flex items-center gap-1.5 text-label font-semibold text-brand hover:underline"
+                className="mt-3 inline-flex items-center gap-1.5 text-label font-semibold text-content underline decoration-line underline-offset-4 hover:decoration-content"
               >
                 <Icon name={openThread === r.id ? 'chevron-up' : 'chevron-down'} size={14} />
                 {openThread === r.id ? 'Hide the conversation' : 'Read the conversation'}

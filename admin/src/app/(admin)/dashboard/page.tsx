@@ -273,7 +273,7 @@ export default function DashboardPage() {
   const waited = (hours: number) => (hours < 1 ? 'Just in' : `Waiting ${fmtDuration(hours)}`)
 
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader
         title="Action Center"
         description="Everything moving through the pipeline right now."
@@ -293,7 +293,7 @@ export default function DashboardPage() {
           three answer "how is the business moving" before any queue is opened,
           and they are the only figures on the page at the largest type tier. */}
       {trends || pace ? (
-        <div className="mb-6 grid gap-px overflow-hidden rounded-2xl border border-line bg-line-soft sm:grid-cols-3">
+        <div className="mb-6 grid max-lg:order-1 gap-px overflow-hidden rounded-2xl border border-line bg-line-soft sm:grid-cols-3">
           <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
             <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Live on the marketplace</span>
             <div className="flex items-end justify-between gap-4">
@@ -333,7 +333,7 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
             <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Recorded by Sawa</span>
             <div className="flex items-end justify-between gap-4">
-              <span className="text-stat-lg font-extrabold tabular-nums text-brand">
+              <span className="text-stat-lg font-extrabold tabular-nums text-content">
                 {money ? fmtMoneyShort(collected, money.currency) : '—'}
               </span>
             </div>
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                         <span className="mt-0.5 block truncate text-caption text-content-muted">{action.kind} · {action.detail}</span>
                       </span>
                       <span className="hidden shrink-0 self-center text-caption tabular-nums text-content-muted sm:block">{waited(action.age_hours)}</span>
-                      <span className="self-center text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={16} /></span>
+                      <span className="self-center text-content-muted transition-transform group-hover:translate-x-0.5 group-hover:text-content"><Icon name="chevron-right" size={16} /></span>
                     </Link>
                   </li>
                 ))}
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                   ? `Showing the ${visibleActions.length} most important of ${actions.summary.total}`
                   : `${visibleActions.length} waiting on you`}
               </span>
-              <span className="flex items-center gap-1.5 text-caption font-semibold text-content-muted">
+              <span className="hidden items-center lg:flex gap-1.5 text-caption font-semibold text-content-muted">
                 <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 text-micro">J</kbd>
                 <kbd className="rounded border border-line bg-surface px-1.5 py-0.5 text-micro">K</kbd>
                 to move
@@ -483,14 +483,14 @@ export default function DashboardPage() {
       {/* Operational counts — each one is a doorway, and now says which way it is moving */}
       {/* Backlogs. Live listings is not repeated here — it heads the page. Each
           movement names its period, so "↓2" can only mean one thing. */}
-      <div className="mb-7 grid gap-4 sm:grid-cols-3">
+      <div className="mb-7 grid max-lg:order-2 gap-4 sm:grid-cols-3">
         <StatCard label="Submissions awaiting review" value={s.pendingSubmissions} icon="document" href="/submissions" trend={trends?.pendingSubmissions} trendLabel="vs a week ago" sub="14 days of backlog, target 24 h each" />
         <StatCard label="Rental inquiries to answer" value={s.pendingInquiries} icon="calendar-clock" href="/rentals/inquiries" trend={trends?.pendingInquiries} trendLabel="vs a week ago" sub="14 days of backlog" />
         <StatCard label="Identity checks waiting" value={s.pendingIdVerifications} icon="id-card" href="/users?tab=verification" trend={trends?.pendingIdVerifications} trendLabel="vs a week ago" sub="Sellers cannot publish until checked" />
       </div>
 
       {/* Reporting tier — quiet material, but each chart now carries a comparison */}
-      <div className="mb-7 grid items-start gap-4 lg:grid-cols-2">
+      <div className="mb-7 grid max-lg:order-2 items-start gap-4 lg:grid-cols-2">
         <Card className="border-line-soft p-5 shadow-none">
           <div className="mb-1 flex items-baseline justify-between gap-3">
             <h2 className="text-label font-bold text-content">Asking value of listings marked sold</h2>
@@ -579,7 +579,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
+      <div className="grid max-lg:order-2 grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
         {/* Quick actions — a list, not four more tinted squircles */}
         <Card className="border-line-soft p-5 shadow-none">
           <h2 className="mb-3 text-label font-bold text-content">Start something</h2>
@@ -591,10 +591,10 @@ export default function DashboardPage() {
                 className="group flex items-center gap-3 border-b border-line-soft py-2.5 last:border-0"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-label font-bold text-content group-hover:text-brand">{label}</span>
+                  <span className="block text-label font-bold text-content group-hover:text-content">{label}</span>
                   <span className="mt-0.5 block text-caption text-content-muted">{sub}</span>
                 </span>
-                <span className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand"><Icon name="chevron-right" size={15} /></span>
+                <span className="text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-content"><Icon name="chevron-right" size={15} /></span>
               </Link>
             ))}
           </div>

@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { useConfirm, useToast } from '@/components/feedback'
+import { useConfirm, useReason, useToast } from '@/components/feedback'
 import { fmtMoney, formatRwfInput, parseRwfInput } from '@/components/ui'
 
 type Entitlement = {
@@ -62,6 +62,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
   })
   const toast = useToast()
   const ask = useConfirm()
+  const askReason = useReason()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -120,11 +121,18 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
   }
 
   async function revoke(row: Entitlement) {
-    const reason = window.prompt(`Why is ${row.user_name}'s access being withdrawn?`)
-    if (!reason?.trim() || reason.trim().length < 4) return
+    const reason = await askReason({
+      title: `Withdraw ${row.user_name}'s access to this report?`,
+      message: 'They can no longer open the report. The record of the access stays.',
+      audience: 'Kept in the activity history.',
+      confirmLabel: 'Withdraw access',
+      minLength: 4,
+      tone: 'danger',
+    })
+    if (!reason) return
     setBusy(true)
     try {
-      await api.revokeReportAccess(inspectionId, row.id, reason.trim())
+      await api.revokeReportAccess(inspectionId, row.id, reason)
       toast('Access withdrawn. The record stays.', 'success')
       await load()
     } catch (e: any) { toast(e.message, 'error') }
@@ -147,7 +155,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
         </div>
         {complete ? (
           <button type="button" onClick={() => setOpen(!open)}
-            className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-brand-on hover:bg-brand-light">
+            className="rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white hover:bg-ink-800">
             {open ? 'Cancel' : 'Give or sell a copy'}
           </button>
         ) : null}
@@ -188,7 +196,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
                 <input type="radio" name="grant-source" className="sr-only" checked={form.source === o.value}
                   onChange={() => setForm({ ...form, source: o.value })} />
                 <span className="block text-xs font-bold text-gray-900">{o.label}</span>
-                <span className="text-[11px] text-gray-500">{o.hint}</span>
+                <span className="text-caption text-gray-500">{o.hint}</span>
               </label>
             ))}
           </div>
@@ -221,7 +229,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
           ) : null}
 
           <button disabled={busy || !form.user_id}
-            className="rounded-lg bg-brand px-4 py-2.5 text-xs font-bold text-brand-on disabled:opacity-50">
+            className="rounded-lg bg-ink-900 px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">
             {busy ? 'Saving…' : form.source === 'purchased' ? 'Record the sale' : 'Grant access'}
           </button>
         </form>
@@ -236,15 +244,15 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
                 <p className="text-sm font-semibold text-gray-900">{row.user_name}
                   <span className="ml-2 text-xs font-normal text-gray-500">{row.user_email}</span>
                 </p>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-caption text-gray-500">
                   {SOURCE_LABEL[row.source] || row.source}
                   {row.amount_rwf ? ` · ${fmtMoney(Number(row.amount_rwf), 'RWF')}${row.method ? ` ${row.method.replace('_', ' ')}` : ''}` : ''}
                   {row.granted_by_name ? ` · by ${row.granted_by_name}` : ''}
                 </p>
-                {row.note ? <p className="mt-0.5 text-[11px] italic text-gray-500">{row.note}</p> : null}
+                {row.note ? <p className="mt-0.5 text-caption italic text-gray-500">{row.note}</p> : null}
               </div>
               <button type="button" onClick={() => revoke(row)} disabled={busy}
-                className="rounded-lg border border-danger-border px-2.5 py-1.5 text-[11px] font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">
+                className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">
                 Withdraw
               </button>
             </div>

@@ -71,7 +71,13 @@ router.get('/', requireAdmin, async (req, res) => {
   const conditions = [];
   const params = [];
 
-  if (status) { params.push(status); conditions.push(`i.status = $${params.length}`); }
+  // 'open' is everything still on the team's plate: booked, being done, and
+  // done but not yet turned into a listing (its submission still 'inspected').
+  // It is the console's default view, so nothing waiting hides behind a date.
+  if (status === 'open') {
+    conditions.push(`(i.status IN ('scheduled','in_progress')
+                      OR (i.status = 'complete' AND i.submission_id IS NOT NULL AND s.status = 'inspected'))`);
+  } else if (status) { params.push(status); conditions.push(`i.status = $${params.length}`); }
   if (center) { params.push(center); conditions.push(`lower(i.center) = lower($${params.length})`); }
   if (date)   { params.push(date);   conditions.push(`i.scheduled_on = $${params.length}::date`); }
 

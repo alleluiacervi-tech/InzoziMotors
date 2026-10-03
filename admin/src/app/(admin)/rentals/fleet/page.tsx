@@ -6,6 +6,7 @@ import { EmptyState, ErrorState, LoadingState, fmtMoney, formatRwfInput, parseRw
 import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
 import { fmtDate } from '@/lib/format'
+import { MoneyInput } from '@/components/MoneyInput'
 
 const EMPTY = {
   provider_id: '', title: '', make: '', model: '', year: '', daily_rate: '',
@@ -23,7 +24,7 @@ const number = (value: string) => value === '' ? undefined : Number.parseInt(val
 // attention, so it gets its own label and its own colour rather than sharing
 // the neutral grey the admin-created statuses use.
 const STATUS_LABEL: Record<string, string> = {
-  all: 'all', active: 'Active', maintenance: 'Maintenance', retired: 'Retired',
+  all: 'All', active: 'Active', maintenance: 'Maintenance', retired: 'Retired',
   pending_review: 'Pending review',
 }
 
@@ -301,7 +302,7 @@ export default function RentalFleetPage() {
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1">{['all', 'pending_review', 'active', 'maintenance', 'retired'].map((status) => (
-          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-brand text-brand-on' : 'border border-gray-200 bg-surface text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
+          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-ink-900 text-white' : 'border border-gray-200 bg-surface text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
         ))}</div>
         <button onClick={() => begin()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on">Add provider vehicle</button>
       </div>
@@ -310,8 +311,8 @@ export default function RentalFleetPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand/30 bg-brand/5 px-4 py-3">
           <p className="text-sm font-semibold text-gray-900">{selected.size} vehicle{selected.size === 1 ? '' : 's'} selected for renewal</p>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-brand">Clear</button>
-            <button type="button" onClick={bulkRenew} disabled={bulkRenewing} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
+            <button type="button" onClick={() => setSelected(new Set())} className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-xs font-semibold text-gray-600 hover:border-content-muted">Clear</button>
+            <button type="button" onClick={bulkRenew} disabled={bulkRenewing} className="rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50">
               {bulkRenewing ? 'Renewing…' : `Renew ${selected.size} for 30 days`}
             </button>
           </div>
@@ -351,7 +352,7 @@ export default function RentalFleetPage() {
                     : 'Listing paid'}
                 </span>
                 {car.subscription_ends_on ? (
-                  <span className="ml-1 font-medium">· to {String(car.subscription_ends_on).slice(0, 10)}</span>
+                  <span className="ml-1 font-medium">· to {fmtDate(String(car.subscription_ends_on).slice(0, 10))}</span>
                 ) : null}
               </div>
 
@@ -363,7 +364,7 @@ export default function RentalFleetPage() {
               {car.status === 'pending_review' ? (
                 <div className="mt-2 rounded-lg border border-line bg-info-tint px-3 py-2.5">
                   <p className="text-xs font-bold text-info">Provider-proposed — awaiting your review</p>
-                  <p className="mt-0.5 text-[11px] text-info">
+                  <p className="mt-0.5 text-caption text-info">
                     {car.provider_business_name || car.provider_name || 'The provider'} proposed this vehicle from
                     their own passing inspection. Check the inspection and images below, then approve it.
                   </p>
@@ -373,13 +374,13 @@ export default function RentalFleetPage() {
               {car.publishable ? (
                 <div className="mt-2 rounded-lg border border-warning-border bg-warning-tint px-3 py-2.5">
                   <p className="text-xs font-bold text-warning-text">Paid, but not on the public feed</p>
-                  <p className="mt-0.5 text-[11px] text-warning-text">
+                  <p className="mt-0.5 text-caption text-warning-text">
                     The subscription is live, but this vehicle is set to <strong>{car.status}</strong>, so
                     renters cannot see it. Recording a payment never publishes a car on its own — a vehicle
                     in the workshop should stay parked.
                   </p>
                   <button type="button" onClick={() => publish(car)} disabled={publishing === car.id}
-                    className="mt-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
+                    className="mt-2 rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50">
                     {publishing === car.id ? 'Publishing…' : 'Publish to the fleet'}
                   </button>
                 </div>
@@ -396,7 +397,7 @@ export default function RentalFleetPage() {
                     />
                     {car.status === 'pending_review' ? (
                       <button onClick={() => approveAndActivate(car)} disabled={renewing === car.id}
-                        className="whitespace-nowrap rounded-lg bg-brand px-3 py-2 text-xs font-bold text-brand-on hover:bg-brand-light disabled:opacity-50">
+                        className="whitespace-nowrap rounded-lg bg-ink-900 px-3 py-2 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50">
                         {renewing === car.id ? 'Activating…' : 'Approve & activate'}
                       </button>
                     ) : (
@@ -410,14 +411,14 @@ export default function RentalFleetPage() {
                       mirrors Listings' "Approve only" escape hatch. */}
                   {car.status === 'pending_review' ? (
                     <button type="button" onClick={() => renew(car)} disabled={renewing === car.id}
-                      className="mt-1.5 text-[11px] font-semibold text-content-muted underline underline-offset-2 hover:text-content disabled:opacity-50">
+                      className="mt-1.5 text-caption font-semibold text-content-muted underline underline-offset-2 hover:text-content disabled:opacity-50">
                       Just record the payment — decide about publishing later
                     </button>
                   ) : null}
                 </div>
               ) : null}
 
-              <button onClick={() => begin(car)} className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-brand">Edit inventory</button>
+              <button onClick={() => begin(car)} className="mt-3 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-content-muted">Edit inventory</button>
             </div>
           </article>
         ))}</div>
@@ -450,9 +451,9 @@ export default function RentalFleetPage() {
             <div><label className={label}>Model</label><input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={input} required /></div>
             <div><label className={label}>Year</label><input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className={input} required /></div>
             <div><label className={label}>Mileage (km)</label><input type="number" value={form.mileage} onChange={(e) => setForm({ ...form, mileage: e.target.value })} className={input} /></div>
-            <div><label className={label}>Provider daily rate (RWF)</label><input type="number" value={form.daily_rate} onChange={(e) => setForm({ ...form, daily_rate: e.target.value })} className={input} required /></div>
-            <div><label className={label}>Provider weekly rate (RWF)</label><input type="number" value={form.weekly_rate} onChange={(e) => setForm({ ...form, weekly_rate: e.target.value })} className={input} /></div>
-            <div><label className={label}>Provider-stated deposit</label><input type="number" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className={input} /></div>
+            <div><label htmlFor="fleet-daily_rate" className={label}>Provider daily rate</label><MoneyInput id="fleet-daily_rate" value={String(form.daily_rate ?? '')} onChange={(digits) => setForm({ ...form, daily_rate: digits })} className={input} required /></div>
+            <div><label htmlFor="fleet-weekly_rate" className={label}>Provider weekly rate</label><MoneyInput id="fleet-weekly_rate" value={String(form.weekly_rate ?? '')} onChange={(digits) => setForm({ ...form, weekly_rate: digits })} className={input} /></div>
+            <div><label htmlFor="fleet-deposit" className={label}>Provider-stated deposit</label><MoneyInput id="fleet-deposit" value={String(form.deposit ?? '')} onChange={(digits) => setForm({ ...form, deposit: digits })} className={input} /></div>
             <div><label className={label}>Minimum days</label><input type="number" min="1" value={form.min_days} onChange={(e) => setForm({ ...form, min_days: e.target.value })} className={input} /></div>
             <div className="sm:col-span-2"><label className={label}>Location</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={input} /></div>
             <div className="sm:col-span-2"><label className={label}>Image URLs, one per line</label><textarea rows={4} value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className={input} required /><p className="mt-1 text-xs text-gray-500">At least one HTTPS image is required while the vehicle is active; up to 40 are supported.</p></div>

@@ -105,15 +105,15 @@ export default function PipelinePage() {
   return (
     <div>
       <PageHeader
-        title="Pipeline"
+        title="Pipeline board"
         description="Every vehicle between a seller and a public listing, in the column of the step it is waiting for. Ours and oldest first. Open a car to see what is holding it, move it on, or take it off the board."
       />
 
       {loading ? <LoadingState /> : error ? <ErrorState error={error} onRetry={() => load()} /> : board ? (
           <>
             <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard icon="alert" label="Waiting on us" value={board.summary.waiting_on_us}
-                sub="ours to move, oldest first" tone={board.summary.waiting_on_us > 0 ? 'brand' : 'neutral'} />
+              <StatCard icon="alert" label="Vehicles waiting on us" value={board.summary.waiting_on_us}
+                sub="ID checks and imports are in the Action Center" tone={board.summary.waiting_on_us > 0 ? 'brand' : 'neutral'} />
               <StatCard icon="clock" label="Waiting on sellers" value={board.summary.waiting_on_seller}
                 sub="chased, not blocked" tone="warning" />
               <StatCard icon="close-circle" label="Blocked" value={board.summary.blocked}

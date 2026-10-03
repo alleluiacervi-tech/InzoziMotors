@@ -7,7 +7,7 @@ import { ReportAccess } from '@/components/ReportAccess'
 import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
-import { fmtDateTime } from '@/lib/format'
+import { fmtDate, fmtDateTime } from '@/lib/format'
 
 type Result = 'pass' | 'flag' | 'fail'
 type ChecklistItem = { id: string; label: string; critical: boolean }
@@ -252,13 +252,26 @@ export default function InspectionDetailPage() {
       <div
         key={item.id}
         onClick={() => !readOnly && setActiveId(item.id)}
-        className={`flex flex-col gap-3 px-5 py-3 transition-colors sm:flex-row sm:items-center sm:justify-between ${isActive ? 'bg-brand/5 ring-1 ring-inset ring-brand/30' : ''}`}
+        className={`flex flex-col gap-3 px-5 py-3 transition-colors sm:flex-row sm:items-center sm:justify-between ${isActive ? 'bg-surface-alt ring-1 ring-inset ring-content-muted/40' : ''}`}
       >
         <span className="flex-1 text-sm text-gray-700">
           {item.label}
-          {item.critical && <span className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-700">Critical</span>}
-          {isActive && !readOnly && <span className="ml-2 text-[10px] font-semibold uppercase text-brand">1 pass · 2 flag · 3 fail</span>}
+          {item.critical && <span className="ml-2 rounded bg-danger-tint px-1.5 py-0.5 text-caption font-bold text-danger-strong">Critical</span>}
+          {/* Keys only help a keyboard; a phone or tablet never sees the hint. */}
+          {isActive && !readOnly && <span className="ml-2 hidden text-caption font-semibold text-content-muted [@media(pointer:fine)]:inline">1 pass · 2 flag · 3 fail</span>}
         </span>
+        {readOnly ? (
+          // A finished inspection shows its verdict, not three buttons that
+          // look pressable and are not.
+          <span className={`inline-flex min-h-8 items-center self-start rounded-lg px-3 text-caption font-bold sm:self-auto ${
+            value === 'pass' ? 'bg-success-tint text-success-text'
+              : value === 'flag' ? 'bg-warning-tint text-warning-text'
+              : value === 'fail' ? 'bg-danger-tint text-danger-strong'
+              : 'bg-surface-alt text-content-muted'
+          }`}>
+            {value === 'pass' ? 'Pass' : value === 'flag' ? 'Flag' : value === 'fail' ? 'Fail' : 'Not rated'}
+          </span>
+        ) : (
         <div className="grid grid-cols-3 gap-1">
           {(['pass', 'flag', 'fail'] as const).map((option) => (
             <button
@@ -271,6 +284,7 @@ export default function InspectionDetailPage() {
             >{option}</button>
           ))}
         </div>
+        )}
       </div>
     )
   }
@@ -295,7 +309,7 @@ export default function InspectionDetailPage() {
       <div className="mb-6 rounded-xl border border-gray-100 bg-surface p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-bold text-gray-900">150-Point Inspection</h1>
+            <h1 className="text-lg font-bold text-gray-900">150-point inspection</h1>
             <p className="text-sm text-gray-500">
               {[insp.display_year ?? insp.year ?? insp.sub_year,
                 insp.display_make ?? insp.make ?? insp.sub_make,
@@ -304,7 +318,7 @@ export default function InspectionDetailPage() {
             {/* A walk-in has a customer and no seller; the header must not
                 assume one, and should say plainly that no listing follows. */}
             <p className="mt-0.5 text-xs text-gray-400">
-              {insp.scheduled_date} at {insp.scheduled_time} · {insp.kind === 'standalone' ? 'Customer' : 'Seller'}: {insp.party_name ?? insp.seller_name ?? '—'}
+              {fmtDate(String(insp.scheduled_on || insp.scheduled_date || '').slice(0, 10))}{insp.scheduled_time ? `, ${insp.scheduled_time}` : ''} · {insp.kind === 'standalone' ? 'Customer' : 'Seller'}: {insp.party_name ?? insp.seller_name ?? '—'}
             </p>
             {insp.kind === 'standalone' ? (
               <p className="mt-1 text-xs font-semibold text-gray-500">
@@ -330,7 +344,18 @@ export default function InspectionDetailPage() {
             </span>
             <span className={`font-semibold ${predictedPass ? 'text-green-600' : 'text-gray-700'}`}>Score: {score}/{definition.max_score}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full bg-brand transition-all" style={{ width: `${(counts.answered / definition.item_count) * 100}%` }} /></div>
+          <div className="h-2 overflow-hidden rounded-full bg-gray-100"><div
+            // Progress while recording; once every item is answered the bar
+            // takes the result's colour. It used to be solid red even for a
+            // 141/150 pass, which read as an alarm.
+            className={`h-full transition-all ${
+              counts.answered < definition.item_count ? 'bg-ink-900'
+                : criticalFailures.length ? 'bg-danger'
+                : score >= definition.passing_score ? 'bg-success'
+                : 'bg-warning'
+            }`}
+            style={{ width: `${(counts.answered / definition.item_count) * 100}%` }}
+          /></div>
           <div className="mt-2 flex flex-wrap gap-4 text-xs">
             <span className="text-green-600">✓ {counts.pass} Pass</span>
             <span className="text-amber-600">⚠ {counts.flag} Flag</span>
@@ -338,13 +363,13 @@ export default function InspectionDetailPage() {
             {criticalFailures.length > 0 && <span className="font-semibold text-amber-700">{criticalFailures.length} critical defect(s) disclosed for price negotiation</span>}
           </div>
         </div>
-        {insp.status === 'scheduled' && <button onClick={startInspection} disabled={saving} className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Starting…' : 'Start Physical Inspection'}</button>}
+        {insp.status === 'scheduled' && <button onClick={startInspection} disabled={saving} className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Starting…' : 'Start the inspection'}</button>}
       </div>
 
       {/* ─── Phase 1 — critical items, one at a time, always ────────────────── */}
       <div className="mb-6">
         <div className="mb-2 flex flex-wrap items-baseline gap-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-red-700">Phase 1 · Critical checks</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-content">Phase 1 · Critical checks</h2>
           <span className="text-xs text-gray-500">The checks that could hurt a buyer — engine, brakes, structure. Never bulk-filled; rate each one.</span>
         </div>
         <div className="space-y-4">
@@ -353,10 +378,10 @@ export default function InspectionDetailPage() {
             if (!items.length) return null
             const answered = items.filter((item) => results[item.id]).length
             return (
-              <section key={category.id} className="overflow-hidden rounded-xl border border-red-100 bg-surface shadow-sm">
-                <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-5 py-3">
-                  <h3 className="text-sm font-semibold text-red-800">{category.name}</h3>
-                  <span className="text-xs text-red-700">{answered}/{items.length} critical</span>
+              <section key={category.id} className="overflow-hidden rounded-xl border border-line-soft bg-surface shadow-sm">
+                <div className="flex items-center justify-between border-b border-line-soft bg-surface-alt px-5 py-3">
+                  <h3 className="text-sm font-semibold text-content">{category.name}</h3>
+                  <span className="tnum text-xs text-content-muted">{answered}/{items.length} critical</span>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {items.map((item) => renderItemRow(item))}

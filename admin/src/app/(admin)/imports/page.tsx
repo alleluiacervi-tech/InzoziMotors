@@ -3,8 +3,7 @@
 import { ExportLink } from '@/components/ExportLink'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
-import { useToast } from '@/components/feedback'
+import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill, statusLabel } from '@/components/ui'
 import Link from 'next/link'
 import { ImportStatusControls } from '@/components/ImportStatusControls'
 
@@ -16,7 +15,10 @@ type ImportRow = {
   created_at: string; delivery_estimate?: string
   allowed_transitions?: string[]
 }
-type QuoteDraft = { vehicle?: string; freight?: string; landed?: string; expires?: string; delivery?: string }
+
+// One column layout for the header and every row, so they line up.
+const ROW_GRID = 'grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,2.2fr)] gap-4'
+const ROW_GRID_LG = 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,2.2fr)]'
 
 const money = (value: number | string | undefined) =>
   `${new Intl.NumberFormat('en-RW').format(Number(value || 0))} RWF`
@@ -26,10 +28,6 @@ export default function ImportsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [status, setStatus] = useState('')
-  const [busy, setBusy] = useState<string | null>(null)
-  const [quote, setQuote] = useState<Record<string, QuoteDraft>>({})
-  const toast = useToast()
-  const quoteTotal=(draft:QuoteDraft={})=>Number(draft.vehicle||0)+Number(draft.freight||0)+Number(draft.landed||0)
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -39,51 +37,51 @@ export default function ImportsPage() {
   }, [status])
   useEffect(() => { load() }, [load])
 
-  async function issueQuote(item: ImportRow) {
-    const draft=quote[item.id]||{}
-    const line_items=[['Vehicle and supplier preparation',draft.vehicle],['Freight and insurance',draft.freight],['Import, customs and service costs',draft.landed]].map(([label,value])=>({label:String(label),amount_rwf:Number(value||0)})).filter(row=>row.amount_rwf>0)
-    const amount=quoteTotal(draft)
-    if (!Number.isSafeInteger(amount) || amount < 100000) { toast('Enter the complete landed price in RWF', 'error'); return }
-    setBusy(item.id)
-    try { await api.quoteImport(item.id, { quoted_total_rwf: amount,line_items,quote_expires_at:draft.expires||undefined,delivery_estimate:draft.delivery||undefined }); toast('Itemized quotation issued with two 50% milestones', 'success'); await load() }
-    catch (e: any) { toast(e.message, 'error') } finally { setBusy(null) }
-  }
 
   return <div>
-    <PageHeader title="Vehicle imports" description="One auditable pipeline from customer enquiry and 50% order payment to Kigali inspection, final balance and handover." action={<ExportLink dataset="imports" />} />
+    <PageHeader title="Import orders" description="Each order from enquiry to collection: an itemized quote, a signed agreement, two payments evidenced by bank-transfer proof, and an inspection in Kigali." action={<ExportLink dataset="imports" />} />
     <Card className="mb-5 p-4">
       <label className="text-label font-semibold text-content">Pipeline stage
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="ml-3 h-10 rounded-xl border border-line bg-surface px-3 font-normal">
           <option value="">All stages</option>
-          {['enquiry','quoted','agreement_pending','deposit_due','deposit_review','ordered','inspected_abroad','shipping_booked','in_transit','arrived','kigali_inspection','balance_due','balance_review','customs_clearance','ready_for_handover','completed','cancelled'].map((s) => <option key={s} value={s}>{s.replaceAll('_',' ')}</option>)}
+          {['enquiry','quoted','agreement_pending','deposit_due','deposit_review','ordered','inspected_abroad','shipping_booked','in_transit','arrived','kigali_inspection','balance_due','balance_review','customs_clearance','ready_for_handover','completed','cancelled'].map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
       </label>
     </Card>
     {error ? <ErrorState error={error} onRetry={load} /> : loading ? <LoadingState /> : !items.length ?
       <EmptyState icon="car" title="No import orders here" description="New customer import enquiries will appear in this pipeline." /> :
-      <div className="space-y-4">{items.map((item) => <Card key={item.id} className="p-5">
-        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-          <div><div className="flex flex-wrap items-center gap-2"><span className="text-caption font-bold text-brand">{item.order_ref}</span><Pill status={item.status} label={item.status.replaceAll('_',' ')} /></div>
-            <h2 className="mt-2 text-lg font-extrabold text-content">{item.year || ''} {item.make} {item.model}</h2>
-            <p className="mt-1 text-label text-content-muted">From {item.origin_country} · {item.buyer_name} · {item.buyer_email}</p>
-          </div>
-          <div className="text-left md:text-right"><p className="font-extrabold text-content">{item.quoted_total_rwf ? money(item.quoted_total_rwf) : 'Awaiting quotation'}</p><p className="text-caption text-content-muted">Verified paid: {money(item.paid_rwf)}</p>
-            {item.actual_cost_rwf != null && item.quoted_total_rwf ? (() => { const margin = Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf); return <p className={`text-caption font-bold ${margin >= 0 ? 'text-success-text' : 'text-danger-strong'}`}>Margin: {money(margin)}</p> })() : null}
-          </div>
+      <Card className="overflow-hidden">
+        <div aria-hidden className={`hidden ${ROW_GRID} border-b border-line-soft bg-surface-alt px-5 py-2.5 text-caption font-semibold text-content-muted lg:grid`}>
+          <span>Order</span><span>Buyer</span><span>Quote</span><span>Stage</span><span className="text-right">Next step</span>
         </div>
-        {item.status === 'enquiry' ? <div className="mt-4 border-t border-line-soft pt-4"><p className="mb-3 text-label font-bold text-content">Build an exact landed-price quotation</p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {[['vehicle','Vehicle & supplier (RWF)'],['freight','Freight & insurance (RWF)'],['landed','Import, customs & service (RWF)']].map(([key,label])=><input key={key} inputMode="numeric" value={(quote[item.id] as any)?.[key]||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],[key]:e.target.value.replace(/\D/g,'')}})} placeholder={label} className="h-11 rounded-xl border border-line px-3"/>)}
-          <input type="date" value={quote[item.id]?.expires||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],expires:e.target.value}})} aria-label="Quotation expiry" className="h-11 rounded-xl border border-line px-3"/>
-          <input value={quote[item.id]?.delivery||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],delivery:e.target.value}})} placeholder="Delivery estimate, e.g. 8–12 weeks" className="h-11 rounded-xl border border-line px-3"/>
-          <button onClick={() => issueQuote(item)} disabled={busy === item.id} className="rounded-xl bg-brand px-5 py-2.5 text-label font-bold text-brand-on disabled:opacity-50">Issue itemized 50/50 quotation</button>
-        </div><p className="mt-2 text-caption text-content-muted">Total: {money(quoteTotal(quote[item.id]))}</p>
-        </div> : null}
-        <div className="mt-4 flex flex-col gap-3 border-t border-line-soft pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <ImportStatusControls orderId={item.id} status={item.status}
-            allowed={(item.allowed_transitions || []).filter((next) => item.status !== 'enquiry' || next === 'cancelled')}
-            onChanged={load} />
-          <Link href={`/imports/${item.id}`} className="shrink-0 text-label font-bold text-brand">Open operations record →</Link>
-        </div>
-      </Card>)}</div>}
+        <ul className="divide-y divide-line-soft">{items.map((item) => {
+          const margin = item.actual_cost_rwf != null && item.quoted_total_rwf ? Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf) : null
+          return <li key={item.id} className="px-5 py-4">
+            <div className={`grid gap-x-4 gap-y-2 ${ROW_GRID_LG} lg:items-center`}>
+              <div className="min-w-0">
+                <Link href={`/imports/${item.id}`} className="font-semibold text-content hover:underline">{item.year || ''} {item.make} {item.model}</Link>
+                <p className="mt-0.5 text-label text-content-muted"><span className="tnum">{item.order_ref}</span> · from {item.origin_country}</p>
+              </div>
+              <div className="min-w-0 text-label text-content-secondary">
+                <span className="block truncate">{item.buyer_name}</span>
+                <span className="block truncate text-caption text-content-muted">{item.buyer_email}</span>
+              </div>
+              <div className="tnum text-label">
+                {item.quoted_total_rwf ? <span className="block font-semibold text-content">{money(item.quoted_total_rwf)}</span> : <span className="block text-content-muted">No quote yet</span>}
+                <span className="block text-caption text-content-muted">Paid {money(item.paid_rwf)}{margin != null ? <> · <span className={margin >= 0 ? 'text-success-text' : 'text-danger-strong'}>margin {money(margin)}</span></> : null}</span>
+              </div>
+              <div><Pill status={item.status} /></div>
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {item.status === 'enquiry' ? (
+                  <Link href={`/imports/${item.id}`} className="inline-flex h-9 items-center rounded-lg bg-ink-900 px-3 text-caption font-bold text-white hover:bg-ink-800">Build the quotation</Link>
+                ) : (
+                  <ImportStatusControls compact orderId={item.id} status={item.status} allowed={item.allowed_transitions || []} onChanged={load} />
+                )}
+                <Link href={`/imports/${item.id}`} className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-caption font-bold text-content hover:bg-surface-alt">Open</Link>
+              </div>
+            </div>
+          </li>
+        })}</ul>
+      </Card>}
   </div>
 }

@@ -241,8 +241,8 @@ test('an appointment that came and went is reported as missed, not as scheduled'
 
   // A `date` column arrives as a Date object; slicing its String() gives
   // "Fri Aug 2", which is neither a date nor obviously wrong on screen.
-  assert.match(stageOf(journey, 'booked').detail, /· \d{4}-\d{2}-\d{2}$/,
-    'the booked stage must format the raw date column, not slice Date.toString()');
+  assert.match(stageOf(journey, 'booked').detail, /· \d{1,2} [A-Z][a-z]{2,3} \d{4}$/,
+    'the booked stage must format the raw date column day-first, not slice Date.toString()');
 });
 
 // ─── Resolution from any direction, and the walk-in refusal ──────────────────

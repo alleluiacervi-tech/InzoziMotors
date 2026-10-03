@@ -4,7 +4,7 @@ import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api, type CenterRow } from '@/lib/api'
-import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney } from '@/components/ui'
+import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, fmtMoney, statusLabel } from '@/components/ui'
 import { useToast } from '@/components/feedback'
 import { useFocusRow } from '@/components/useFocusRow'
 import { fmtDate, fmtInt } from '@/lib/format'
@@ -29,6 +29,10 @@ const EMPTY_INTAKE = {
   new_name: '', new_email: '', new_phone: '',
   make: '', model: '', year: '', mileage: '', asking_price: '', notes: '',
 }
+
+// One column layout for the header and every row, so they line up.
+const ROW_GRID = 'grid-cols-[minmax(0,2.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.6fr)] gap-4'
+const ROW_GRID_LG = 'lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1.6fr)]'
 
 const STATUS_COLORS: Record<string, string> = {
   pending:      'bg-warning-tint text-warning-text',
@@ -229,13 +233,19 @@ export default function SubmissionsPage() {
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." action={<ExportLink dataset="submissions" />} />
-        <button type="button" onClick={() => { setIntake(intake ? null : { ...EMPTY_INTAKE }); setSellerQuery(''); setSellerHits([]) }}
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on hover:bg-brand-light">
-          {intake ? 'Cancel intake' : 'Take in a vehicle'}
-        </button>
-      </div>
+      <PageHeader
+        title="Submissions"
+        description="Oldest seller requests first. Every one gets an answer within 24 hours."
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportLink dataset="submissions" />
+            <button type="button" onClick={() => { setIntake(intake ? null : { ...EMPTY_INTAKE }); setSellerQuery(''); setSellerHits([]) }}
+              className="inline-flex h-11 items-center rounded-xl bg-brand px-4 text-label font-bold text-brand-on hover:bg-brand-bright">
+              {intake ? 'Cancel intake' : 'Take in a vehicle'}
+            </button>
+          </div>
+        }
+      />
 
       {intake ? (
         <Card className="mb-5 p-5">
@@ -346,7 +356,7 @@ export default function SubmissionsPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              tab === t ? 'bg-brand text-brand-on' : 'bg-surface text-gray-600 border border-gray-200 hover:border-brand'
+              tab === t ? 'bg-ink-900 text-white' : 'bg-surface text-gray-600 border border-gray-200 hover:border-content-muted'
             }`}
           >
             {STATUS_LABEL[t] || t}
@@ -361,42 +371,46 @@ export default function SubmissionsPage() {
       ) : visible.length === 0 ? (
         <EmptyState icon="document" title={items.length ? 'No submissions match' : 'Nothing in this queue'} description={items.length ? 'Try a different vehicle, seller, email, or ID.' : 'No submissions are sitting at this stage.'} />
       ) : (
-        <div className="space-y-4">
+        <Card className="overflow-hidden">
+          {/* Column names, shown where the row is laid out as columns. */}
+          <div aria-hidden className={`hidden ${ROW_GRID} border-b border-line-soft bg-surface-alt px-5 py-2.5 text-caption font-semibold text-content-muted lg:grid`}>
+            <span>Vehicle</span><span>Seller</span><span>Asking</span><span>Waiting</span><span className="text-right">Next step</span>
+          </div>
+          <ul className="divide-y divide-line-soft">
           {visible.map((sub) => {
             const waiting = age(sub)
             return (
-            <div key={sub.id} id={`row-${sub.id}`} className={`bg-surface rounded-xl border border-gray-100 shadow-sm p-5 ${focusProps(sub.id).className}`}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="font-semibold text-gray-900">
-                      {sub.year} {sub.make} {sub.model}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[sub.status] || 'bg-gray-100 text-gray-600'}`}>
-                      {STATUS_LABEL[sub.status] || sub.status.replace('_', ' ')}
+            <li key={sub.id} id={`row-${sub.id}`} className={`px-5 py-4 ${focusProps(sub.id).className}`}>
+              <div className={`grid gap-x-4 gap-y-2 ${ROW_GRID_LG} lg:items-center`}>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-content">{sub.year} {sub.make} {sub.model}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-caption font-medium ${STATUS_COLORS[sub.status] || 'bg-surface-alt text-content-muted'}`}>
+                      {STATUS_LABEL[sub.status] || statusLabel(sub.status)}
                     </span>
                     {sub.inspection_status === 'complete' ? (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${sub.inspection_passed ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-caption font-bold ${sub.inspection_passed ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>
                         {sub.inspection_score}/150{sub.inspection_passed ? '' : ' · defects disclosed'}
                       </span>
                     ) : null}
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${waiting.overdue ? 'bg-danger-tint text-danger-strong' : 'bg-surface-alt text-content-muted'}`}>{waiting.overdue ? 'Overdue · ' : ''}{waiting.label}</span>
                   </div>
-                  <p className="text-sm text-gray-500">{fmtInt(sub.mileage)} km · {sub.condition} · {sub.transmission}</p>
-                  <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {fmtDate(sub.submitted_at)}</p>
-                  {sub.asking_price && (
-                    <p className="text-sm font-medium text-brand mt-1">
-                      {fmtMoney(sub.asking_price, sub.currency)}
-                    </p>
-                  )}
-                  {sub.admin_notes && (
-                    <p className="text-xs text-gray-400 mt-1 italic">Note: {sub.admin_notes}</p>
+                  <p className="mt-0.5 text-label text-content-muted">{[sub.mileage != null ? `${fmtInt(sub.mileage)} km` : null, sub.condition, sub.transmission].filter(Boolean).join(' · ') || 'No details yet'}</p>
+                  {sub.admin_notes ? <p className="mt-1 text-caption italic text-content-muted">Note: {sub.admin_notes}</p> : null}
+                </div>
+                <div className="min-w-0 text-label text-content-secondary">
+                  <span className="block truncate">{sub.seller_name}</span>
+                  <span className="block text-caption text-content-muted">Sent {fmtDate(sub.submitted_at)}</span>
+                </div>
+                <div className="tnum text-label font-semibold text-content">{sub.asking_price ? fmtMoney(sub.asking_price, sub.currency) : <span className="font-normal text-content-muted">—</span>}</div>
+                <div>
+                  {/* A live or closed submission is not waiting on anyone. */}
+                  {['live', 'rejected', 'archived'].includes(sub.status) ? <span className="text-label text-content-muted">—</span> : (
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-caption font-bold ${waiting.overdue ? 'bg-danger-tint text-danger-strong' : 'bg-surface-alt text-content-muted'}`}>{waiting.overdue ? 'Overdue · ' : ''}{waiting.label}</span>
                   )}
                 </div>
-              </div>
 
               {/* Actions — every stage has its next step and a way out. */}
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 lg:justify-end">
                 {['under_review', 'approved', 'scheduled'].includes(sub.status) && (
                   <button
                     onClick={() => {
@@ -405,7 +419,7 @@ export default function SubmissionsPage() {
                       if (next && !schedDate) setSchedDate(nextBusinessDay())
                     }}
                     disabled={actionId === sub.id}
-                    className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50"
                   >
                     {sub.status === 'scheduled' ? 'Reschedule' : 'Schedule inspection'}
                   </button>
@@ -418,7 +432,7 @@ export default function SubmissionsPage() {
                 )}
                 {sub.status === 'inspected' && !sub.car_id && sub.inspection_id && (
                   <Link href={`/listings/new?submissionId=${sub.id}&inspectionId=${sub.inspection_id}`}
-                    className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light">
+                    className="px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800">
                     Create the listing
                   </Link>
                 )}
@@ -445,6 +459,7 @@ export default function SubmissionsPage() {
                     Reopen
                   </button>
                 )}
+              </div>
               </div>
 
               {/* Inline scheduling form — creates the inspection appointment */}
@@ -495,9 +510,9 @@ export default function SubmissionsPage() {
                       setShowScheduleFor(null)
                     }}
                     disabled={actionId === sub.id || !schedCenter}
-                    className="px-4 py-2 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50"
                   >
-                    Book Appointment
+                    Book the inspection
                   </button>
                 </div>
               )}
@@ -543,9 +558,10 @@ export default function SubmissionsPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </li>
           )})}
-        </div>
+          </ul>
+        </Card>
       )}
     </div>
   )

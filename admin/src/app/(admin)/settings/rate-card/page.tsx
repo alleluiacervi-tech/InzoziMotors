@@ -20,6 +20,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { Card, ErrorState, LoadingState, PageHeader } from '@/components/ui'
 import { useToast } from '@/components/feedback'
+import { MoneyInput } from '@/components/MoneyInput'
 
 const KEY = 'service_rates'
 
@@ -75,7 +76,7 @@ export default function ServiceRatesPage() {
   return (
     <div className="max-w-2xl">
       <PageHeader
-        title="Rate card"
+        title="Service prices"
         description="Prices for the lines Sawa already charges for. Editable here; the public pricing page and the inspection/subscription forms read the same numbers."
       />
 
@@ -97,12 +98,13 @@ export default function ServiceRatesPage() {
                 <span className="block text-label font-semibold text-content">{label}</span>
                 <span className="block text-caption text-content-muted">{hint}</span>
               </label>
-              <input
-                type="number" step="1" min="0" value={rates[key]} id={key}
-                onChange={(e) => setRates({ ...rates, [key]: Number(e.target.value) })}
-                className="h-11 w-32 rounded-xl border border-line bg-surface px-3 text-body tabular-nums focus:border-content-muted focus:outline-none"
-              />
-              <span className="text-label text-content-muted">RWF</span>
+              <div className="w-48">
+                <MoneyInput
+                  id={key} value={String(rates[key] ?? '')}
+                  onChange={(digits) => setRates({ ...rates, [key]: digits === '' ? 0 : Number(digits) })}
+                  className="h-11 w-full rounded-xl border border-line bg-surface px-3 text-body focus:border-content-muted focus:outline-none"
+                />
+              </div>
             </div>
           ))}
         </div>

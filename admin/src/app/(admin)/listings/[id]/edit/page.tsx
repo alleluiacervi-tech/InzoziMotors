@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
+import { MoneyInput } from '@/components/MoneyInput'
+import { useConfirm } from '@/components/feedback'
+import { fmtMoney } from '@/components/ui'
 
 const inputCls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand'
 const labelCls = 'block text-xs font-semibold text-gray-700 mb-1'
@@ -12,6 +15,7 @@ const labelCls = 'block text-xs font-semibold text-gray-700 mb-1'
 export default function EditListingPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const confirm = useConfirm()
 
   const [car, setCar]         = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -102,6 +106,19 @@ export default function EditListingPage() {
     const newMileage = parseInt(mileage, 10)
     if (!Number.isFinite(newMileage) || newMileage < 0) { setError('Mileage must be a non-negative number of km.'); return }
 
+    // A price that moves by more than half is far more often a missing or
+    // extra zero than a real renegotiation. It is still allowed, once the
+    // operator has seen both amounts side by side.
+    const oldPrice = Number(car.price)
+    if (oldPrice > 0 && newPrice !== oldPrice && Math.abs(newPrice - oldPrice) / oldPrice > 0.5) {
+      const ok = await confirm({
+        title: 'Change the price by more than half?',
+        message: `From ${fmtMoney(oldPrice, car.currency || 'RWF')} to ${fmtMoney(newPrice, currency)}. The change is kept in the public price history and buyers who saved this car are alerted.`,
+        confirmLabel: 'Save the new price',
+      })
+      if (!ok) return
+    }
+
     const payload: Record<string, any> = {}
     if (title.trim() !== (car.title || ''))               payload.title = title.trim()
     if (sellerId.trim() !== (car.seller_id || ''))        payload.seller_id = sellerId.trim()
@@ -145,7 +162,7 @@ export default function EditListingPage() {
       <div className="bg-surface rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-start justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
           <div>
-            <h1 className="text-xl font-extrabold text-gray-900">Edit Listing</h1>
+            <h1 className="text-xl font-extrabold text-gray-900">Edit listing</h1>
             <p className="text-xs text-gray-500 mt-0.5">
               {car.year} {car.make} {car.model} · <span className="capitalize font-semibold">{car.status}</span> · {car.views || 0} views
             </p>
@@ -163,10 +180,10 @@ export default function EditListingPage() {
         <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50/80 px-4 py-3.5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-bold text-gray-900 uppercase tracking-wide">Inspected Vehicle Ground Truth</p>
+              <p className="text-xs font-bold text-gray-900">Vehicle as inspected</p>
               <p className="mt-0.5 text-sm font-semibold text-gray-900">{[year, make, model].filter(Boolean).join(' ')}</p>
-              <p className="mt-1 text-[11px] text-gray-500 leading-relaxed">
-                Bound to the certified inspection. Correcting it updates the listing and inspected submission in one transaction.
+              <p className="mt-1 text-caption text-gray-500 leading-relaxed">
+                Taken from the inspection. Correcting it updates the listing and the submission together.
               </p>
             </div>
             <button
@@ -193,7 +210,7 @@ export default function EditListingPage() {
                 type="button"
                 onClick={correctIdentity}
                 disabled={saving || correctionReason.trim().length < 4}
-                className="rounded-xl bg-brand px-4 py-2 text-xs font-bold text-brand-on disabled:opacity-50 sm:col-span-4 hover:bg-brand-light"
+                className="rounded-xl bg-ink-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50 sm:col-span-4 hover:bg-ink-800"
               >
                 {saving ? 'Saving…' : 'Confirm & Save Identity Correction'}
               </button>
@@ -203,8 +220,8 @@ export default function EditListingPage() {
 
         <form onSubmit={save} className="space-y-5">
           <div>
-            <label className={labelCls}>Listing Title *</label>
-            <input
+            <label htmlFor="edit-title" className={labelCls}>Title *</label>
+            <input id="edit-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -216,43 +233,47 @@ export default function EditListingPage() {
           {/* Pricing & Multi-Currency Block */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-700">Listing Price *</label>
-                {/* Currency Segmented Toggle */}
-                <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
-                  <button
-                    type="button"
-                    onClick={() => setCurrency('RWF')}
-                    className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
-                      currency === 'RWF' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
-                    }`}
-                  >
-                    RWF
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrency('USD')}
-                    className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
-                      currency === 'USD' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
-                    }`}
-                  >
-                    USD ($)
-                  </button>
-                </div>
+              <div className="mb-1 flex items-center justify-between">
+                <label htmlFor="listing-price" className="text-xs font-semibold text-gray-700">Price *</label>
+                {/* Prices are francs (CLAUDE.md §3.7). The switch only appears on
+                    a legacy row still held in dollars, so it can be moved to RWF. */}
+                {car.currency === 'USD' ? (
+                  <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setCurrency('RWF')}
+                      className={`rounded-md px-2 py-0.5 text-caption font-bold transition-all ${
+                        currency === 'RWF' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
+                      }`}
+                    >
+                      RWF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrency('USD')}
+                      className={`rounded-md px-2 py-0.5 text-caption font-bold transition-all ${
+                        currency === 'USD' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
+                      }`}
+                    >
+                      USD (legacy)
+                    </button>
+                  </div>
+                ) : null}
               </div>
-              <input
-                type="number"
-                step={1}
+              <MoneyInput
+                id="listing-price"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder={currency === 'USD' ? 'e.g. 22000' : 'e.g. 28000000'}
+                onChange={setPrice}
+                currency={currency}
+                required
+                placeholder={currency === 'USD' ? '22,000' : '28,000,000'}
                 className={inputCls}
               />
             </div>
 
             <div>
-              <label className={labelCls}>Mileage (km) *</label>
-              <input
+              <label htmlFor="edit-mileage-km" className={labelCls}>Mileage (km) *</label>
+              <input id="edit-mileage-km"
                 type="number"
                 step={1}
                 value={mileage}
@@ -262,8 +283,8 @@ export default function EditListingPage() {
             </div>
 
             <div>
-              <label className={labelCls}>Location</label>
-              <input
+              <label htmlFor="edit-location" className={labelCls}>Location</label>
+              <input id="edit-location"
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
@@ -280,17 +301,17 @@ export default function EditListingPage() {
             <p className="font-bold mb-0.5">
               {priceChanged
                 ? `Price adjustment: ${car.currency || 'RWF'} ${Number(car.price).toLocaleString('en-GB')} → ${currency} ${Number(price || 0).toLocaleString('en-GB')}`
-                : 'Permanent Public Price History'}
+                : 'Price history is public'}
             </p>
-            <p className="text-[11px] leading-relaxed">
+            <p className="text-caption leading-relaxed">
               Price adjustments are permanently recorded to historical market intelligence charts and alert interested buyers.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Color</label>
-              <input
+              <label htmlFor="edit-color" className={labelCls}>Color</label>
+              <input id="edit-color"
                 type="text"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
@@ -299,8 +320,8 @@ export default function EditListingPage() {
               />
             </div>
             <div>
-              <label className={labelCls}>Drive Side</label>
-              <select value={driveSide} onChange={(e) => setDriveSide(e.target.value)} className={inputCls}>
+              <label htmlFor="edit-drive-side" className={labelCls}>Drive side</label>
+              <select id="edit-drive-side" value={driveSide} onChange={(e) => setDriveSide(e.target.value)} className={inputCls}>
                 <option value="LHD">LHD (Rwanda standard)</option>
                 <option value="RHD">RHD (Japanese import)</option>
               </select>
@@ -308,52 +329,58 @@ export default function EditListingPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <div><label className={labelCls}>Fuel Type</label><input value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol, Diesel, Hybrid…" className={inputCls} /></div>
-            <div><label className={labelCls}>Transmission</label><input value={transmission} onChange={(e) => setTransmission(e.target.value)} placeholder="Automatic, Manual…" className={inputCls} /></div>
-            <div><label className={labelCls}>Body Type</label><input value={bodyType} onChange={(e) => setBodyType(e.target.value)} placeholder="SUV, Sedan, Hatchback…" className={inputCls} /></div>
+            <div><label htmlFor="edit-fuel-type" className={labelCls}>Fuel type</label><input id="edit-fuel-type" value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol, Diesel, Hybrid…" className={inputCls} /></div>
+            <div><label htmlFor="edit-transmission" className={labelCls}>Transmission</label><input id="edit-transmission" value={transmission} onChange={(e) => setTransmission(e.target.value)} placeholder="Automatic, Manual…" className={inputCls} /></div>
+            <div><label htmlFor="edit-body-type" className={labelCls}>Body type</label><input id="edit-body-type" value={bodyType} onChange={(e) => setBodyType(e.target.value)} placeholder="SUV, Sedan, Hatchback…" className={inputCls} /></div>
           </div>
 
           {/* VIN & Canonical Vehicle Registry Binding */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>VIN / Chassis Number</label>
-              <input value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} className={inputCls} />
-              <p className="mt-1 text-[11px] text-gray-400">Normalizes automatically. Displayed publicly with zero-leak masking.</p>
+              <label htmlFor="edit-vin-or-chassis-number" className={labelCls}>VIN or chassis number</label>
+              <input id="edit-vin-or-chassis-number" value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} className={inputCls} />
+              <p className="mt-1 text-caption text-gray-400">Shown to buyers with most characters hidden.</p>
             </div>
 
-            <div>
+            {/* Rarely needed, and a raw ID: behind a disclosure so it does not
+                sit in the main form as if every listing needed one. */}
+            <details className="group" open={Boolean(vehicleId)}>
+              <summary className="mb-1 cursor-pointer list-none text-xs font-semibold text-gray-700 [&::-webkit-details-marker]:hidden">
+                Advanced: link to a vehicle record <span className="text-content-muted group-open:hidden">▸</span>
+              </summary>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-700">Canonical Vehicle Binding (UUID)</label>
+                <label htmlFor="listing-vehicle-id" className="text-xs font-semibold text-gray-700">Vehicle record ID</label>
                 {vehicleId ? (
-                  <span className="text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
-                    Linked to Registry
+                  <span className="text-caption font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                    Linked
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                    Unlinked
+                  <span className="text-caption font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                    Not linked
                   </span>
                 )}
               </div>
               <input
+                id="listing-vehicle-id"
                 value={vehicleId}
                 onChange={(e) => setVehicleId(e.target.value)}
                 placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
                 className={`${inputCls} font-mono text-xs`}
               />
-              <p className="mt-1 text-[11px] text-gray-400">Binds this marketplace listing to canonical vehicle specs & history.</p>
-            </div>
+              <p className="mt-1 text-caption text-gray-400">Connects the listing to the vehicle&apos;s history record.</p>
+            </details>
           </div>
 
           {/* Seller Assignment */}
           <div>
-            <label className={labelCls}>Assigned Seller Account ID</label>
-            <input value={sellerId} onChange={(e) => setSellerId(e.target.value)} className={inputCls} />
-            <p className="mt-1 text-[11px] text-gray-400">Reassignment requires an active, identity-verified seller account.</p>
+            <label htmlFor="edit-seller-account-id" className={labelCls}>Seller account ID</label>
+            <input id="edit-seller-account-id" value={sellerId} onChange={(e) => setSellerId(e.target.value)} className={inputCls} />
+            <p className="mt-1 text-caption text-gray-400">Reassignment requires an active, identity-verified seller account.</p>
           </div>
 
           <div>
-            <label className={labelCls}>Public Description</label>
-            <textarea
+            <label htmlFor="edit-public-description" className={labelCls}>Public description</label>
+            <textarea id="edit-public-description"
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -362,14 +389,14 @@ export default function EditListingPage() {
           </div>
 
           <div>
-            <label className={labelCls}>Internal Review Notes (Admin Only)</label>
-            <textarea rows={3} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} className={inputCls} />
+            <label htmlFor="edit-internal-notes-team-only" className={labelCls}>Internal notes (team only)</label>
+            <textarea id="edit-internal-notes-team-only" rows={3} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} className={inputCls} />
             <p className="mt-1 text-xs text-gray-400">Private operational remarks. Never visible to buyers.</p>
           </div>
 
           <div>
-            <label className={labelCls}>Image URLs (One per line)</label>
-            <textarea
+            <label htmlFor="edit-image-addresses-one-per-line" className={labelCls}>Image addresses, one per line</label>
+            <textarea id="edit-image-addresses-one-per-line"
               rows={3}
               value={images}
               onChange={(e) => setImages(e.target.value)}
@@ -391,9 +418,9 @@ export default function EditListingPage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 text-xs font-bold bg-brand text-brand-on rounded-xl hover:bg-brand-light disabled:opacity-50 shadow-sm"
+              className="px-6 py-2.5 text-xs font-bold bg-ink-900 text-white rounded-xl hover:bg-ink-800 disabled:opacity-50 shadow-sm"
             >
-              {saving ? 'Saving…' : 'Save Changes'}
+              {saving ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         </form>

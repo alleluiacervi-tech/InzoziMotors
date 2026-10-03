@@ -44,7 +44,7 @@ const BAR: Record<string, string> = {
 // the DEFAULT success and warning hues fail AA on their tints and are for icons
 // and graphics only. BAR above is a graphic, so it keeps the DEFAULTs.
 const TEXT: Record<string, string> = {
-  done: 'text-success-text', us: 'text-brand', seller: 'text-warning-text',
+  done: 'text-success-text', us: 'text-content', seller: 'text-warning-text',
   clock: 'text-content-muted', blocked: 'text-danger-strong', idle: 'text-content-muted',
 }
 
@@ -129,7 +129,7 @@ export function JourneyRail({
         </span>
       </header>
 
-      <ol className="flex gap-0 overflow-x-auto px-4 py-4">
+      <ol className="grid grid-cols-2 gap-y-4 px-4 py-4 sm:grid-cols-4 lg:flex lg:gap-0">
         {journey.stages.map((stage) => {
           const key = tone(stage)
           const age = stage.state === 'active' || stage.state === 'blocked' ? ageLabel(stage.age_hours) : null
@@ -150,7 +150,7 @@ export function JourneyRail({
           return (
             <li
               key={stage.key}
-              className="min-w-[8.5rem] flex-1 pr-2"
+              className="min-w-0 flex-1 pr-2 lg:min-w-[8.5rem]"
               aria-current={stage.key === journey.current_stage ? 'step' : undefined}
             >
               {/* Only reachable stages link anywhere — a locked stage has no
@@ -183,7 +183,7 @@ export function JourneyRail({
                 <span className="text-content">{blocker.label}</span>
                 {/* Every blocker is the shortest route out of itself. */}
                 {blocker.fix ? (
-                  <Link href={blocker.fix} className="ml-auto shrink-0 whitespace-nowrap text-caption font-bold text-brand hover:underline">
+                  <Link href={blocker.fix} className="ml-auto shrink-0 whitespace-nowrap text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
                     Fix this →
                   </Link>
                 ) : null}

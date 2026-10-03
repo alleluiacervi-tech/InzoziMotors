@@ -106,7 +106,7 @@ function Shell({
                 <Link href={`${t.href}?${query}`} aria-current={on ? 'page' : undefined}
                   className={`relative flex h-10 items-center gap-1.5 px-3 text-label font-bold transition-colors ${on ? 'text-content' : 'text-content-muted hover:text-content'}`}>
                   <Icon name={t.icon} size={15} />{t.label}
-                  {on ? <span aria-hidden className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-brand" /> : null}
+                  {on ? <span aria-hidden className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-ink-900" /> : null}
                 </Link>
               </li>
             )

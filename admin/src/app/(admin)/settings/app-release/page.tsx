@@ -92,7 +92,7 @@ export default function AppReleasePage() {
         title="App release"
         description="Which build people should be on, and whether new JavaScript is going out at all. Read by every app at launch."
       />
-      <Link href="/settings" className="text-label font-bold text-brand">← All settings</Link>
+      <Link href="/settings" className="text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">← All settings</Link>
 
       {problems.length ? (
         <Card className="mt-4 border-danger/40 bg-danger-tint p-4">

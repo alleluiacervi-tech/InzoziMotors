@@ -63,7 +63,7 @@ export default function LoginPage() {
             <LogoMark size={40} />
           </div>
           <h1 className="text-2xl font-bold text-white">Sawa Cars</h1>
-          <p className="text-white/60 text-sm mt-1">Admin Dashboard</p>
+          <p className="text-white/60 text-sm mt-1">Operations console</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface rounded-2xl p-8 shadow-xl">
@@ -77,8 +77,8 @@ export default function LoginPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
+              <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input id="login-email"
                 type="email"
                 required
                 value={email}
@@ -88,8 +88,8 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input
+              <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input id="login-password"
                 type="password"
                 required
                 value={password}

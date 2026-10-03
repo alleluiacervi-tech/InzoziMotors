@@ -22,9 +22,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, type CatalogImageryRow } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, StatCard } from '@/components/ui'
-import { useToast } from '@/components/feedback'
+import { useConfirm, useToast } from '@/components/feedback'
 
 type Tab = 'review' | 'none' | 'live' | 'all'
+
+/** A few hundred models rendered at once made the page slow to scroll and to search. */
+const PAGE = 48
 const TABS: { key: Tab; label: string }[] = [
   { key: 'review', label: 'Check studio images' },
   { key: 'none', label: 'No image yet' },
@@ -97,34 +100,34 @@ function ModelCard({ row, busy, onReview, onUpload, onRemove }: {
             {row.state === 'review' ? (
               <>
                 <button type="button" disabled={busy} onClick={() => onReview(row, 'approved')}
-                  className="rounded-lg bg-brand px-2.5 py-1.5 text-caption font-bold text-brand-on disabled:opacity-50">
+                  className="inline-flex h-9 items-center rounded-lg bg-ink-900 px-3 text-caption font-bold text-white disabled:opacity-50">
                   Right car — show it
                 </button>
                 <button type="button" disabled={busy} onClick={() => onReview(row, 'rejected')}
-                  className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+                  className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-caption font-bold text-content disabled:opacity-50">
                   Wrong car
                 </button>
               </>
             ) : null}
             {row.state === 'render' ? (
               <button type="button" disabled={busy} onClick={() => onReview(row, 'rejected')}
-                className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+                className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-caption font-bold text-content disabled:opacity-50">
                 Hide studio image
               </button>
             ) : null}
             {!official && row.render_status === 'found' && row.render_review === 'rejected' ? (
               <button type="button" disabled={busy} onClick={() => onReview(row, 'approved')}
-                className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+                className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-caption font-bold text-content disabled:opacity-50">
                 Show studio image
               </button>
             ) : null}
             <button type="button" disabled={busy} onClick={() => setUploading((v) => !v)}
-              className="rounded-lg border border-line px-2.5 py-1.5 text-caption font-bold text-content disabled:opacity-50">
+              className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-caption font-bold text-content disabled:opacity-50">
               {official ? 'Replace photo' : 'Upload official photo'}
             </button>
             {official ? (
               <button type="button" disabled={busy} onClick={() => onRemove(row)}
-                className="rounded-lg px-2.5 py-1.5 text-caption font-bold text-content-muted hover:bg-surface-alt disabled:opacity-50">
+                className="inline-flex h-9 items-center rounded-lg px-3 text-caption font-bold text-content-muted hover:bg-surface-alt disabled:opacity-50">
                 Remove
               </button>
             ) : null}
@@ -142,7 +145,7 @@ function ModelCard({ row, busy, onReview, onUpload, onRemove }: {
                   className="mt-1 h-9 w-full rounded-lg border border-line bg-surface px-2 text-caption font-normal text-content" />
               </label>
               <button type="button" onClick={save} disabled={busy || !file || source.trim().length < 4}
-                className="w-full rounded-lg bg-brand px-3 py-2 text-caption font-bold text-brand-on disabled:opacity-50">
+                className="w-full rounded-lg bg-ink-900 px-3 py-2 text-caption font-bold text-white disabled:opacity-50">
                 {busy ? 'Saving…' : 'Save official photo'}
               </button>
             </div>
@@ -163,7 +166,9 @@ export default function CatalogImagesPage() {
   const [resolving, setResolving] = useState(false)
   const [tab, setTab] = useState<Tab>('review')
   const [query, setQuery] = useState('')
+  const [shown, setShown] = useState(PAGE)
   const toast = useToast()
+  const confirm = useConfirm()
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -187,6 +192,7 @@ export default function CatalogImagesPage() {
       return !needle || `${row.make} ${row.model} ${row.body_type}`.toLowerCase().includes(needle)
     })
   }, [items, tab, query])
+  useEffect(() => setShown(PAGE), [tab, query])
 
   async function review(row: CatalogImageryRow, decision: 'approved' | 'rejected') {
     setBusyId(row.id)
@@ -211,7 +217,13 @@ export default function CatalogImagesPage() {
   }
 
   async function remove(row: CatalogImageryRow) {
-    if (!window.confirm(`Remove the photo of the ${row.make} ${row.model}? Its studio image (if approved) or the brand logo shows instead.`)) return
+    const ok = await confirm({
+      title: `Remove the ${row.make} ${row.model} photo?`,
+      message: 'Its approved studio image, or the brand mark, shows in its place. The photo can be uploaded again.',
+      confirmLabel: 'Remove photo',
+      tone: 'danger',
+    })
+    if (!ok) return
     setBusyId(row.id)
     try {
       await api.removeCatalogPhoto(row.id)
@@ -240,11 +252,11 @@ export default function CatalogImagesPage() {
   return (
     <div>
       <PageHeader
-        title="Import catalogue images"
+        title="Catalogue images"
         description="Official photos and checked studio images of every brand-new model buyers can import. Anything without one shows the brand's logo."
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon="camera" label="Official photos" value={summary.official} sub="uploaded with their source" tone="success" />
         <StatCard icon="images" label="Studio images live" value={summary.render} sub="checked by the team" tone="success" />
         <StatCard icon="eye" label="Waiting for your check" value={summary.review} sub="not shown until approved" tone={summary.review ? 'warning' : 'neutral'} />
@@ -282,7 +294,7 @@ export default function CatalogImagesPage() {
         <div className="flex flex-wrap gap-1" role="tablist">
           {TABS.map((t) => (
             <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
-              className={`rounded-lg px-3 py-1.5 text-caption font-bold transition-colors ${tab === t.key ? 'bg-brand text-brand-on' : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'}`}>
+              className={`h-9 rounded-lg px-3 text-caption font-bold transition-colors ${tab === t.key ? 'bg-ink-900 text-white' : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'}`}>
               {t.label} <span className="tabular-nums opacity-80">{counts[t.key]}</span>
             </button>
           ))}
@@ -305,12 +317,21 @@ export default function CatalogImagesPage() {
               : 'Try another tab or search.'} />
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {visible.map((row) => (
+            {visible.slice(0, shown).map((row) => (
               <ModelCard key={row.id} row={row} busy={busyId === row.id}
                 onReview={review} onUpload={upload} onRemove={remove} />
             ))}
           </ul>
         )}
+      {!loading && !error && visible.length > shown ? (
+        <div className="mt-5 flex flex-col items-center gap-2">
+          <p className="text-caption text-content-muted">Showing {shown} of {visible.length}</p>
+          <button type="button" onClick={() => setShown((n) => n + PAGE)}
+            className="h-11 rounded-xl border border-line bg-surface px-5 text-label font-bold text-content hover:bg-surface-alt">
+            Show {Math.min(PAGE, visible.length - shown)} more
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -140,9 +140,9 @@ export function PipelineDrawer({
                     <span className="text-content">{blocker.label}</span>
                     {/* Closing is done right here, not on another page. */}
                     {blocker.fix?.startsWith('/submissions') && canRemove ? (
-                      <button type="button" onClick={goToRemove} className="mt-1 block text-caption font-bold text-brand hover:underline">Remove it below ↓</button>
+                      <button type="button" onClick={goToRemove} className="mt-1 block text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">Remove it below ↓</button>
                     ) : blocker.fix ? (
-                      <Link href={blocker.fix} className="mt-1 block text-caption font-bold text-brand hover:underline">Do this →</Link>
+                      <Link href={blocker.fix} className="mt-1 block text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">Do this →</Link>
                     ) : null}
                   </li>
                 ))}
@@ -181,7 +181,7 @@ export function PipelineDrawer({
               {isPublic ? (
                 <p className="mt-1.5 text-label leading-relaxed text-content-secondary">
                   This car is a public listing ({journey.listing_status}). Pause it, mark it sold or remove it from{' '}
-                  <Link href={`/listings/${subject.car_id}/edit`} className="font-semibold text-brand hover:underline">the listing</Link>.
+                  <Link href={`/listings/${subject.car_id}/edit`} className="font-semibold text-content underline decoration-line underline-offset-4 hover:decoration-content">the listing</Link>.
                 </p>
               ) : (
                 <>

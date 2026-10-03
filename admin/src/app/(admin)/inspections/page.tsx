@@ -8,6 +8,7 @@ import { Card, EmptyState, ErrorState, LoadingState } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useToast, useConfirm } from '@/components/feedback'
 import { useFocusRow } from '@/components/useFocusRow'
+import { KIGALI, fmtWeekday } from '@/lib/format'
 
 const STATUS_COLORS: Record<string, string> = {
   scheduled:  'bg-info-tint text-info',
@@ -21,14 +22,46 @@ function todayISO() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
+/** Today in Kigali, as YYYY-MM-DD, whatever the laptop's own zone. */
+function kigaliDay(offsetDays = 0) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: KIGALI }).format(new Date(Date.now() + offsetDays * 864e5))
+}
+
+const STATUS_LABELS: Record<string, string> = { scheduled: 'Booked', in_progress: 'Being inspected', complete: 'Done' }
+
+/**
+ * The list grouped the way the day is worked: what is happening now, what
+ * slipped, each day ahead, then finished inspections still waiting for a
+ * listing. A flat list filtered to one date and one status used to open on
+ * "today, booked" and hide everything else that needed doing.
+ */
+function groupInspections(rows: any[]) {
+  const today = kigaliDay(0)
+  const tomorrow = kigaliDay(1)
+  const groups = new Map<string, { label: string; order: string; rows: any[] }>()
+  const put = (key: string, label: string, order: string, row: any) => {
+    if (!groups.has(key)) groups.set(key, { label, order, rows: [] })
+    groups.get(key)!.rows.push(row)
+  }
+  for (const row of rows) {
+    const day = String(row.scheduled_on || row.scheduled_date || '').slice(0, 10)
+    if (row.status === 'in_progress') put('now', 'Being inspected', '0', row)
+    else if (row.status === 'complete') put('done', 'Done, waiting for a listing', '9', row)
+    else if (!day) put('undated', 'Booked, no date recorded', '8', row)
+    else if (day < today) put('late', 'Booked earlier, not started', '1', row)
+    else put(day, day === today ? 'Today' : day === tomorrow ? 'Tomorrow' : fmtWeekday(day), `2-${day}`, row)
+  }
+  return [...groups.values()].sort((a, b) => a.order.localeCompare(b.order))
+}
+
 export default function InspectionsPage() {
   // Arrives here from an Action Center item; marks the row it named.
   const { focusProps } = useFocusRow()
   const toast = useToast()
   const confirm = useConfirm()
   const [center, setCenter]   = useState('all')
-  const [date, setDate]       = useState(todayISO())
-  const [status, setStatus]   = useState('scheduled')
+  const [date, setDate]       = useState('')
+  const [status, setStatus]   = useState('open')
   const [items, setItems]     = useState<any[]>([])
   const [centers, setCenters] = useState<CenterRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -238,19 +271,26 @@ export default function InspectionsPage() {
             onChange={(e) => setCenter(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
           >
-            <option value="all">All Centers</option>
+            <option value="all">All centers</option>
             {centers.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="inspections-filter-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-          <input
-            id="inspections-filter-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
-          />
+          <label htmlFor="inspections-filter-date" className="block text-xs font-medium text-gray-600 mb-1">Day</label>
+          <div className="flex items-center gap-2">
+            <input
+              id="inspections-filter-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+            {date ? (
+              <button type="button" onClick={() => setDate('')} className="text-label font-semibold text-content underline decoration-line underline-offset-4 hover:decoration-content">
+                Any day
+              </button>
+            ) : null}
+          </div>
         </div>
         <div>
           <label htmlFor="inspections-filter-status" className="block text-xs font-medium text-gray-600 mb-1">Status</label>
@@ -260,9 +300,10 @@ export default function InspectionsPage() {
             onChange={(e) => setStatus(e.target.value)}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
           >
-            <option value="scheduled">Scheduled</option>
-            <option value="in_progress">In Progress</option>
-            <option value="complete">Complete</option>
+            <option value="open">All open work</option>
+            <option value="scheduled">Booked</option>
+            <option value="in_progress">Being inspected</option>
+            <option value="complete">Done (all)</option>
           </select>
         </div>
       </div>
@@ -273,10 +314,23 @@ export default function InspectionsPage() {
       ) : loading ? (
         <LoadingState />
       ) : visible.length === 0 ? (
-        <EmptyState icon="settings" title="No inspections match" description="Try clearing the center, date or status filter." />
+        <EmptyState
+          icon="clipboard-check"
+          title={status === 'open' && !date && center === 'all' && !query ? 'Nothing open' : 'No inspections match'}
+          description={status === 'open' && !date && center === 'all' && !query
+            ? 'No inspection is booked, under way or waiting for a listing.'
+            : 'Try another center, day or status.'}
+        />
       ) : (
-        <div className="space-y-3">
-          {visible.map((insp) => (
+        <div className="space-y-6">
+          {groupInspections(visible).map((group) => (
+          <section key={group.label} aria-label={group.label}>
+          <h2 className="mb-2 flex items-baseline gap-2 text-label font-bold text-content">
+            {group.label}
+            <span className="tnum font-semibold text-content-muted">{group.rows.length}</span>
+          </h2>
+          <div className="space-y-3">
+          {group.rows.map((insp) => (
             <div key={insp.id} id={`row-${insp.id}`} className={`bg-surface rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4 ${focusProps(insp.id).className}`}>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -285,7 +339,7 @@ export default function InspectionsPage() {
                       .filter(Boolean).join(' ') || 'Vehicle not recorded'}
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[insp.status] || 'bg-gray-100 text-gray-600'}`}>
-                    {insp.status}
+                    {STATUS_LABELS[insp.status] ?? insp.status.replaceAll('_', ' ')}
                   </span>
                   {insp.kind === 'standalone' ? (
                     <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-600">
@@ -293,7 +347,11 @@ export default function InspectionsPage() {
                     </span>
                   ) : null}
                 </div>
-                <p className="text-xs text-gray-500">{insp.center} · {insp.scheduled_date} at {insp.scheduled_time}</p>
+                <p className="text-xs text-gray-500">
+                  {insp.center}
+                  {insp.scheduled_on || insp.scheduled_date ? ` · ${fmtWeekday(String(insp.scheduled_on || insp.scheduled_date).slice(0, 10))}` : ''}
+                  {insp.scheduled_time ? `, ${insp.scheduled_time}` : ''}
+                </p>
                 <p className="text-xs text-gray-500">
                   {insp.kind === 'standalone' ? 'Customer' : 'Seller'}: {insp.party_name ?? insp.seller_name ?? '—'}
                 </p>
@@ -307,9 +365,9 @@ export default function InspectionsPage() {
               {insp.status !== 'complete' && (
                 <Link
                   href={`/inspections/${insp.id}`}
-                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
+                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                 >
-                  {insp.status === 'scheduled' ? 'Start Checklist' : 'Continue'}
+                  {insp.status === 'scheduled' ? 'Start checklist' : 'Continue'}
                 </Link>
               )}
               {insp.status === 'complete' && (
@@ -351,12 +409,12 @@ export default function InspectionsPage() {
                     </span>
                   ) : insp.submission_purpose === 'rental' ? (
                     // The vehicle was taken in for the rental fleet. Offering
-                    // Create Listing here is how a van intended for hire ends
+                    // Create listing here is how a van intended for hire ends
                     // up as a car for sale, or — more often — how an operator
                     // concludes the rental side simply does not work.
                     <Link
                       href={`/rentals/fleet?inspectionId=${insp.id}`}
-                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
+                      className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                     >
                       Add to rental fleet
                     </Link>
@@ -364,9 +422,9 @@ export default function InspectionsPage() {
                     <div className="flex flex-shrink-0 flex-wrap justify-end gap-2">
                       <Link
                         href={`/listings/new?submissionId=${insp.submission_id}&inspectionId=${insp.id}`}
-                        className="px-3 py-1.5 text-xs font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light"
+                        className="px-3 py-1.5 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800"
                       >
-                        Create Listing
+                        Create listing
                       </Link>
                       {insp.submission_purpose === 'both' ? (
                         <Link
@@ -381,6 +439,9 @@ export default function InspectionsPage() {
                 </div>
               )}
             </div>
+          ))}
+          </div>
+          </section>
           ))}
         </div>
       )}

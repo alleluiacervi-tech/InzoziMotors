@@ -192,8 +192,8 @@ export default function VehicleIntelligenceCommandCenter() {
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
       {/* ── Top Header ──────────────────────────────────────────────────────── */}
       <PageHeader
-        title="Vehicle Intelligence & Registry"
-        description="Canonical ground truth, multi-provider decoders, listing discrepancy diffing, and anomaly signal streams."
+        title="Vehicle history"
+        description="Look a vehicle up by VIN or chassis number, compare a listing with its inspection, and see warning signs across listings."
       />
 
       {/* ── MAANG Segmented Tab Control ──────────────────────────────────────── */}
@@ -207,7 +207,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="search" className="h-4 w-4" />
-          VIN Decoder & Specs
+          Look up a VIN
         </button>
 
         <button
@@ -219,7 +219,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="filter" className="h-4 w-4" />
-          Discrepancy Diffing
+          Listing vs record
         </button>
 
         <button
@@ -231,9 +231,9 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="alert" className="h-4 w-4" />
-          Anomaly Signals
+          Warning signs
           {signals.length > 0 && (
-            <span className="ml-1 rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-extrabold text-white">
+            <span className="ml-1 rounded-full bg-danger px-1.5 py-0.5 text-caption font-extrabold text-white">
               {signals.length}
             </span>
           )}
@@ -248,7 +248,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="document" className="h-4 w-4" />
-          Provenance Ingestion
+          Add history
         </button>
 
         <button
@@ -260,7 +260,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="calendar" className="h-4 w-4" />
-          Inspection Archive
+          Past inspections
         </button>
       </div>
 
@@ -269,11 +269,12 @@ export default function VehicleIntelligenceCommandCenter() {
         <div className="space-y-6">
           <Card className="p-6">
             <div className="flex flex-col gap-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-content-secondary">
-                Enter ISO 3779 VIN or Japanese Domestic Chassis Number
+              <label htmlFor="vin-lookup" className="text-label font-semibold text-content">
+                VIN or chassis number
               </label>
               <div className="flex flex-wrap gap-3">
                 <input
+                  id="vin-lookup"
                   value={vinInput}
                   onChange={(e) => setVinInput(e.target.value.toUpperCase())}
                   placeholder="e.g. 4T1BF1FK5CU123456 or NZE121-1234567"
@@ -282,17 +283,17 @@ export default function VehicleIntelligenceCommandCenter() {
                 <button
                   disabled={decoding || !vinInput.trim()}
                   onClick={() => handleDecode()}
-                  className="flex items-center gap-2 rounded-xl bg-brand px-6 py-3 text-xs font-bold text-brand-on shadow-sm hover:bg-brand-bright disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl bg-ink-900 px-6 py-3 text-xs font-bold text-white shadow-sm hover:bg-ink-800 disabled:opacity-50"
                 >
                   {decoding ? (
                     <>
                       <Icon name="refresh" className="h-4 w-4 animate-spin" />
-                      Ingesting...
+                      Looking up…
                     </>
                   ) : (
                     <>
                       <Icon name="sparkles" className="h-4 w-4" />
-                      Decode & Ingest
+                      Look up
                     </>
                   )}
                 </button>
@@ -300,25 +301,25 @@ export default function VehicleIntelligenceCommandCenter() {
 
               {/* Sample Chips for Fast Testing */}
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-content-muted">
-                <span className="font-semibold">Quick Samples:</span>
+                <span className="font-semibold">Try an example:</span>
                 <button
                   type="button"
                   onClick={() => { setVinInput('NZE121-1234567'); handleDecode('NZE121-1234567') }}
-                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-[11px] text-content hover:bg-line-soft"
+                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-caption text-content hover:bg-line-soft"
                 >
                   Toyota Vitz / Corolla (JDM)
                 </button>
                 <button
                   type="button"
                   onClick={() => { setVinInput('4T1BF1FK5CU123456'); handleDecode('4T1BF1FK5CU123456') }}
-                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-[11px] text-content hover:bg-line-soft"
+                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-caption text-content hover:bg-line-soft"
                 >
                   Toyota Camry (USA ISO)
                 </button>
                 <button
                   type="button"
                   onClick={() => { setVinInput('WBA5A5C51FD123456'); handleDecode('WBA5A5C51FD123456') }}
-                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-[11px] text-content hover:bg-line-soft"
+                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-caption text-content hover:bg-line-soft"
                 >
                   BMW X5 (Germany ISO)
                 </button>
@@ -386,17 +387,17 @@ export default function VehicleIntelligenceCommandCenter() {
                 {/* High-Density Specs Grid */}
                 <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Trim / Grade</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Trim / Grade</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.trim || 'Standard'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Body Type</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Body type</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.bodyType || 'Sedan'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Displacement</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Displacement</p>
                     <p className="mt-1 text-sm font-bold text-content">
                       {decodeResult.normalizedSpecs?.engineDisplacementCc
                         ? `${decodeResult.normalizedSpecs?.engineDisplacementCc} cc`
@@ -405,27 +406,27 @@ export default function VehicleIntelligenceCommandCenter() {
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Fuel Type</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Fuel type</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.fuelType || 'Petrol'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Transmission</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Transmission</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.transmission || 'Automatic'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Drivetrain</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Drivetrain</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.drivetrain || 'FWD'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Manufacturing Country</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Country of manufacture</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCountry || 'Japan'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Assembly City</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Assembly city</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCity || 'Toyota City'}</p>
                   </div>
                 </div>
@@ -437,7 +438,7 @@ export default function VehicleIntelligenceCommandCenter() {
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(decodeResult.activeProviders || ['local_iso_decoder']).map((prov: string) => (
-                      <span key={prov} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1 font-mono text-[11px] text-content">
+                      <span key={prov} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1 font-mono text-caption text-content">
                         <span className="h-1.5 w-1.5 rounded-full bg-success" />
                         {prov}
                       </span>
@@ -454,14 +455,14 @@ export default function VehicleIntelligenceCommandCenter() {
       {activeTab === 'discrepancies' && (
         <div className="space-y-6">
           <Card className="p-6">
-            <h2 className="text-base font-extrabold text-content">Listing vs Verified Registry Discrepancy Diffing</h2>
+            <h2 className="text-base font-extrabold text-content">Compare a listing with its vehicle record</h2>
             <p className="mt-1 text-xs text-content-muted">
               Compare administrator-entered or seller-claimed listing values side-by-side against verified VIN factory ground truth.
             </p>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="space-y-4 rounded-xl border border-line-soft bg-surface-alt/40 p-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-content">Claimed Listing Inputs</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-content">What the listing claims</h3>
                 
                 <div>
                   <label className="text-xs font-medium text-content-secondary">Make</label>
@@ -482,7 +483,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-content-secondary">Model Year</label>
+                  <label className="text-xs font-medium text-content-secondary">Model year</label>
                   <input
                     type="number"
                     value={listingClaim.year}
@@ -492,7 +493,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-content-secondary">Fuel Type</label>
+                  <label className="text-xs font-medium text-content-secondary">Fuel type</label>
                   <select
                     value={listingClaim.fuel_type}
                     onChange={(e) => setListingClaim({ ...listingClaim, fuel_type: e.target.value })}
@@ -539,7 +540,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 <button
                   disabled={diffing || !decodeResult?.normalizedSpecs}
                   onClick={handleCompare}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-2.5 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 py-2.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50"
                 >
                   <Icon name="refresh" className="h-4 w-4" />
                   Run Discrepancy Diff Check
@@ -551,7 +552,7 @@ export default function VehicleIntelligenceCommandCenter() {
             {diffResult && (
               <div className="mt-6 border-t border-line-soft pt-5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-content">Diff Results</h3>
+                  <h3 className="text-sm font-bold text-content">Differences</h3>
                   <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
                     diffResult.hasDiscrepancies ? 'bg-warning-tint text-warning-text' : 'bg-success-tint text-success'
                   }`}>
@@ -628,7 +629,7 @@ export default function VehicleIntelligenceCommandCenter() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span
-                            className={`rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                            className={`rounded-md px-2 py-0.5 text-caption font-extrabold uppercase tracking-wide ${
                               signal.severity === 'critical'
                                 ? 'bg-danger text-white'
                                 : 'bg-warning text-white'
@@ -663,7 +664,7 @@ export default function VehicleIntelligenceCommandCenter() {
           {resolvingSignal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
               <Card className="w-full max-w-lg p-6 shadow-2xl">
-                <h3 className="text-base font-extrabold text-content">Resolve Anomaly Signal</h3>
+                <h3 className="text-base font-extrabold text-content">Resolve warning sign</h3>
                 <p className="mt-1 text-xs text-content-muted">
                   Signal: <strong className="text-content">{resolvingSignal.title}</strong> on {resolvingSignal.vin_masked}
                 </p>
@@ -694,9 +695,9 @@ export default function VehicleIntelligenceCommandCenter() {
                     <button
                       type="submit"
                       disabled={resolving || !resolutionNote.trim()}
-                      className="rounded-xl bg-brand px-5 py-2 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
+                      className="rounded-xl bg-ink-900 px-5 py-2 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50"
                     >
-                      {resolving ? 'Recording...' : 'Confirm Resolution'}
+                      {resolving ? 'Recording...' : 'Confirm resolution'}
                     </button>
                   </div>
                 </form>
@@ -727,7 +728,7 @@ export default function VehicleIntelligenceCommandCenter() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-content-secondary">Event Category</label>
+              <label className="text-xs font-semibold text-content-secondary">Event category</label>
               <select
                 value={eventForm.eventType}
                 onChange={(e) => setEventForm({ ...eventForm, eventType: e.target.value })}
@@ -744,7 +745,7 @@ export default function VehicleIntelligenceCommandCenter() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-content-secondary">Event Date</label>
+              <label className="text-xs font-semibold text-content-secondary">Event date</label>
               <input
                 type="date"
                 value={eventForm.eventDate}
@@ -766,7 +767,7 @@ export default function VehicleIntelligenceCommandCenter() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="text-xs font-semibold text-content-secondary">Event Title</label>
+              <label className="text-xs font-semibold text-content-secondary">Event title</label>
               <input
                 value={eventForm.title}
                 onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
@@ -790,7 +791,7 @@ export default function VehicleIntelligenceCommandCenter() {
               <button
                 type="submit"
                 disabled={recordingEvent || !eventForm.vehicleId}
-                className="flex items-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-ink-900 px-6 py-2.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50"
               >
                 <Icon name="plus" className="h-4 w-4" />
                 {recordingEvent ? 'Recording...' : 'Append Event to Ledger'}
@@ -816,7 +817,7 @@ export default function VehicleIntelligenceCommandCenter() {
               </label>
               <button
                 disabled={loadingHistory}
-                className="self-end rounded-xl bg-brand px-5 py-3 text-xs font-bold text-brand-on hover:bg-brand-bright disabled:opacity-50"
+                className="self-end rounded-xl bg-ink-900 px-5 py-3 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50"
               >
                 {loadingHistory ? 'Searching...' : 'Search Archive'}
               </button>
@@ -843,7 +844,7 @@ export default function VehicleIntelligenceCommandCenter() {
                         <p className="font-bold text-content">{i.center || 'Inspection Center'}</p>
                         <p className="text-content-muted">{i.scheduled_on} · Inspector: {i.inspector_name || 'Assigned'}</p>
                       </div>
-                      <span className="font-bold text-brand">{i.score}% Score</span>
+                      <span className="font-bold text-content">{i.score}% Score</span>
                     </div>
                   ))}
                 </div>

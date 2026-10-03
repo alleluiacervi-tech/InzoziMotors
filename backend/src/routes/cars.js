@@ -28,21 +28,9 @@ const router = express.Router();
 // SQL-level fail-closed filter for public paths. publicationReadiness
 // additionally recomputes the checklist in JavaScript before a state change;
 // this predicate prevents a stale or obviously inconsistent row from leaking
-// through catalogue, contact, save, history or messaging reads.
-function validInspectionExists(carAlias = 'c') {
-  return `EXISTS (
-    SELECT 1
-      FROM inspections evidence
-      JOIN submissions evidence_submission ON evidence_submission.id = evidence.submission_id
-     WHERE evidence.car_id = ${carAlias}.id
-       AND evidence_submission.seller_id = ${carAlias}.seller_id
-       AND lower(evidence_submission.make) = lower(${carAlias}.make)
-       AND lower(evidence_submission.model) = lower(${carAlias}.model)
-       AND evidence_submission.year = ${carAlias}.year
-       AND evidence.status = 'complete'
-       AND evidence.checklist_version = '${CHECKLIST_VERSION}'
-  )`;
-}
+// through catalogue, contact, save, history or messaging reads. It lives in
+// lib/inspection-evidence.js so the admin queues read the same rule.
+const { validInspectionExists } = require('../lib/inspection-evidence');
 
 // A listing's submission. The link is written from both sides at listing
 // creation (submissions.car_id and inspections.car_id) and older rows may hold
