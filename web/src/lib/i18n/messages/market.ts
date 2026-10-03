@@ -26,7 +26,7 @@ const en = {
     stockSummary: '{{count}} cars · {{brands}} brands',
     listingsEmpty: 'No cars for sale right now.',
     contactNote:
-      'To contact this seller, open one of their cars and use Contact seller. Sawa Cars is not a party to any deal between you.',
+      'To contact this seller, open one of their cars and use Contact seller. You deal with the seller directly.',
     reviewsTitle: 'Reviews ({{count}})',
     anonymousBuyer: 'Buyer',
     starsLabel: '{{count}} out of 5 stars',
@@ -140,7 +140,7 @@ const rw: typeof en = {
     stockSummary: 'Imodoka {{count}} · ibirango {{brands}}',
     listingsEmpty: 'Nta modoka zigurishwa ubu.',
     contactNote:
-      'Kugira ngo uvugane n’uyu mucuruzi, fungura imwe mu modoka ze ukoreshe Vugana n’umugurisha. Sawa Cars si uruhande mu masezerano yanyu.',
+      'Kugira ngo uvugane n’uyu mugurisha, fungura imwe mu modoka ze ukoreshe Vugana n’umugurisha. Uvugana n’umugurisha ubwawe.',
     reviewsTitle: 'Ibitekerezo ({{count}})',
     anonymousBuyer: 'Umuguzi',
     starsLabel: 'Inyenyeri {{count}} kuri 5',
@@ -254,7 +254,7 @@ const fr: typeof en = {
     stockSummary: '{{count}} voitures · {{brands}} marques',
     listingsEmpty: 'Aucune voiture à vendre pour le moment.',
     contactNote:
-      'Pour contacter ce vendeur, ouvrez l’une de ses voitures et utilisez Contacter le vendeur. Sawa Cars n’est partie à aucune transaction entre vous.',
+      'Pour contacter ce vendeur, ouvrez l’une de ses voitures et utilisez Contacter le vendeur. Vous traitez directement avec le vendeur.',
     reviewsTitle: 'Avis ({{count}})',
     anonymousBuyer: 'Acheteur',
     starsLabel: '{{count}} étoiles sur 5',
@@ -368,7 +368,7 @@ const sw: typeof en = {
     stockSummary: 'Magari {{count}} · chapa {{brands}}',
     listingsEmpty: 'Hakuna magari yanayouzwa kwa sasa.',
     contactNote:
-      'Ili kuwasiliana na muuzaji huyu, fungua moja ya magari yake na utumie Wasiliana na muuzaji. Sawa Cars si sehemu ya makubaliano yoyote kati yenu.',
+      'Ili kuwasiliana na muuzaji huyu, fungua mojawapo ya magari yake na utumie Wasiliana na muuzaji. Unashughulika na muuzaji moja kwa moja.',
     reviewsTitle: 'Maoni ({{count}})',
     anonymousBuyer: 'Mnunuzi',
     starsLabel: 'Nyota {{count}} kati ya 5',
@@ -481,7 +481,7 @@ const ko: typeof en = {
     brandListings: '판매 중인 {{make}}',
     stockSummary: '차량 {{count}}대 · 브랜드 {{brands}}개',
     listingsEmpty: '현재 판매 중인 차량이 없습니다.',
-    contactNote: '이 판매자에게 연락하려면 차량 중 하나를 열고 판매자에게 연락하기를 이용하세요. Sawa Cars는 거래 당사자가 아닙니다.',
+    contactNote: '이 판매자에게 연락하려면 판매자의 차량 중 하나를 열고 판매자에게 연락하기를 이용하세요. 거래는 판매자와 직접 진행합니다.',
     reviewsTitle: '리뷰 ({{count}})',
     anonymousBuyer: '구매자',
     starsLabel: '별 5개 중 {{count}}개',
@@ -594,7 +594,7 @@ const zh: typeof en = {
     brandListings: '在售 {{make}}',
     stockSummary: '{{count}} 辆车 · {{brands}} 个品牌',
     listingsEmpty: '目前没有在售车辆。',
-    contactNote: '如需联系此卖家，请打开其任一车源并使用“联系卖家”。Sawa Cars 不参与你们之间的任何交易。',
+    contactNote: '如需联系该卖家，请打开其任意一辆车并使用“联系卖家”。您将直接与卖家交易。',
     reviewsTitle: '评价（{{count}}）',
     anonymousBuyer: '买家',
     starsLabel: '5 星中的 {{count}} 星',

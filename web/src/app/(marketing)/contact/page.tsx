@@ -66,20 +66,20 @@ export default async function ContactPage() {
       />
 
       {/* ─── The number, front and centre ───────────────────────────────── */}
-      <Section tone="ink" className="!py-12 sm:!py-16">
+      <Section tone="alt" className="!py-12 sm:!py-16">
         <Container>
           <div className="flex flex-col items-center gap-8 lg:flex-row lg:justify-between">
             <div className="text-center lg:text-left">
-              <p className="text-micro font-bold text-white/60">
+              <p className="text-micro font-bold text-content-muted">
                 {t('marketing.contact.band.label')}
               </p>
               <a
                 href={`tel:+${CONTACT.phone}`}
-                className="mt-2 block text-headline font-extrabold text-white transition-colors hover:text-brand-bright"
+                className="tnum mt-2 block text-headline font-extrabold text-content transition-colors hover:text-brand"
               >
                 {CONTACT.phoneDisplay}
               </a>
-              <p className="mt-2 text-caption text-white/60">{LINE_HOURS}</p>
+              <p className="mt-2 text-caption text-content-secondary">{LINE_HOURS}</p>
             </div>
 
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
@@ -93,7 +93,7 @@ export default async function ContactPage() {
               </Button>
               <Button
                 href={`tel:+${CONTACT.phone}`}
-                variant="inverse"
+                variant="outline"
                 size="lg"
                 leadingIcon={<Icon name="phone" size={19} />}
               >
@@ -105,7 +105,7 @@ export default async function ContactPage() {
       </Section>
 
       {/* ─── Channels + composer ─────────────────────────────────────────── */}
-      <Section tone="surface">
+      <Section tone="page">
         <Container>
           <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
             <div className="min-w-0">
@@ -176,6 +176,7 @@ export default async function ContactPage() {
 
                 <Button
                   type="submit"
+                  variant="dark"
                   fullWidth
                   className="mt-6"
                   leadingIcon={<Icon name="whatsapp" size={19} />}
@@ -209,7 +210,7 @@ export default async function ContactPage() {
                 key={p.title}
                 className="rounded-2xl border border-line-soft bg-surface p-6 shadow-card"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-tint text-brand">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                   <Icon name={p.icon} size={19} />
                 </span>
                 <h3 className="mt-4 text-title-sm font-extrabold text-content">{p.title}</h3>

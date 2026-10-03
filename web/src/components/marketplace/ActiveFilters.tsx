@@ -45,7 +45,7 @@ export async function ActiveFilters({ filters, sort }: { filters: Filters; sort:
         <Link
           href={buildBrowseHref({}, { sort })}
           scroll={false}
-          className="rounded-pill px-2 py-1.5 text-caption font-bold text-brand underline-offset-4 hover:underline"
+          className="rounded-pill px-2 py-1.5 text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content"
         >
           {t('cars.activeFilters.clearAll')}
         </Link>

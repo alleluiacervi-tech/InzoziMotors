@@ -65,7 +65,13 @@ function ModelRow({ model, t, logoUrl }: {
   const official = model.images?.[0] || null
   const picture = official || model.render_url || null
   return (
-    <li className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface">
+    <li className="min-w-0">
+      {/* The whole card opens the request with this model filled in. A red
+          "Request this model" on every card repeated one action 200 times. */}
+      <Link
+        href={`/imports?${request.toString()}#request`}
+        className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface transition-[border-color,box-shadow] duration-300 ease-brand hover:border-line hover:shadow-card-lg"
+      >
       {/* White and contained: official cut-outs and studio images are shot on
           white, and cropping would cut the car's ends off. */}
       <div className="relative flex aspect-[16/10] items-center justify-center bg-white">
@@ -87,7 +93,7 @@ function ModelRow({ model, t, logoUrl }: {
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 p-4 sm:p-5">
         <div className="min-w-0">
           <p className="text-micro font-semibold text-content-muted">{model.make}</p>
-          <h3 className="mt-0.5 text-body font-extrabold text-content">
+          <h3 className="mt-0.5 text-body font-extrabold text-content group-hover:text-brand">
             {model.model}
             {model.trim ? <span className="font-semibold text-content-secondary"> {model.trim}</span> : null}
           </h3>
@@ -103,14 +109,8 @@ function ModelRow({ model, t, logoUrl }: {
             </p>
           ) : null}
         </div>
-        <Link
-          href={`/imports?${request.toString()}#request`}
-          className="-my-1 inline-flex items-center gap-1.5 py-1 text-caption font-bold text-brand hover:underline"
-        >
-          {t('imports.requestThis')}
-          <Icon name="arrow-right" size={14} aria-hidden="true" />
-        </Link>
       </div>
+      </Link>
     </li>
   )
 }
@@ -207,11 +207,64 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
         </Container>
       </div>
 
+      <Section tone="page" id="estimate">
+        <Container>
+          <h2 className="text-headline font-extrabold text-content">{t('imports.estimateTitle')}</h2>
+          <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.estimateLede')}</p>
+          {initialValueRwf && year ? (
+            <p className="mt-3 text-caption font-semibold text-content">
+              {t('imports.prefilled', { usd: formatUsdApprox(priceUsd), year })}
+            </p>
+          ) : null}
+          <div className="mt-8">
+            <DutyCalculator initialValueRwf={initialValueRwf} initialAgeYears={initialAgeYears} />
+          </div>
+        </Container>
+      </Section>
+
+      <Section tone="surface" id="request">
+        <Container>
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+            <div className="min-w-0 lg:col-span-5">
+              <h2 className="text-headline font-extrabold text-content">{t('imports.requestTitle')}</h2>
+              <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.requestLede')}</p>
+              {/* How money moves, stated once, beside the request it governs:
+                  quote, agreement, then two bank transfers with proof. */}
+              <div className="mt-8 border-t border-line pt-6">
+                <h3 className="text-title-sm font-extrabold text-content">{t('imports.payTitle')}</h3>
+                <p className="mt-2 max-w-prose text-body leading-relaxed text-content-secondary">{t('imports.payBody')}</p>
+              </div>
+            </div>
+            <div className="min-w-0 lg:col-span-7">
+              <div className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
+                {user ? (
+                  <RequestImportForm
+                    makes={[...new Set((makesRes?.items ?? []).map((m) => m.make))]}
+                    defaults={{ origin, make, model, year: year ? String(year) : undefined }}
+                  />
+                ) : (
+                  <div>
+                    <h3 className="text-title-sm font-extrabold text-content">{t('imports.signInTitle')}</h3>
+                    <p className="mt-2 text-body text-content-secondary">{t('imports.signInBody')}</p>
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <Button href={`/signin?next=${encodeURIComponent('/imports#request')}`}>{t('imports.signIn')}</Button>
+                      <Button href={`/signup?next=${encodeURIComponent('/imports#request')}`} variant="outline">
+                        {t('imports.createAccount')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Container>
+      </Section>
+
       {/* The process: a real sequence, so it is numbered. */}
-      <Section tone="surface">
+      <Section tone="page" id="process">
         <Container>
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-            <div className="min-w-0 lg:col-span-8">
+            <div className="min-w-0 lg:col-span-12">
               <h2 className="text-headline font-extrabold text-content">{t('imports.stepsTitle')}</h2>
               <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.stepsLede')}</p>
               <ol className="mt-8 grid gap-x-8 gap-y-7 sm:grid-cols-2">
@@ -237,13 +290,6 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
                 ))}
               </ol>
             </div>
-            <aside className="min-w-0 lg:col-span-4">
-              <div className="rounded-3xl bg-ink-900 p-6 text-white shadow-lift-ink sm:p-7 lg:sticky lg:top-[calc(var(--header-h)+24px)]">
-                <Icon name="cash" size={22} className="text-white/70" aria-hidden="true" />
-                <h2 className="mt-4 text-title font-extrabold">{t('imports.payTitle')}</h2>
-                <p className="mt-3 text-body leading-relaxed text-white/75">{t('imports.payBody')}</p>
-              </div>
-            </aside>
           </div>
         </Container>
       </Section>
@@ -251,7 +297,7 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
       {korea ? (
         // Every car for sale in South Korea, one click away. The makes with the
         // most cars lead; each is a link into the filtered search.
-        <Section tone="page" id="catalog">
+        <Section tone="surface" id="catalog">
           <Container>
             <h2 className="text-headline font-extrabold text-content">{t('imports.korea.teaserTitle')}</h2>
             <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.korea.teaserBody')}</p>
@@ -278,7 +324,7 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
         </Section>
       ) : (
         // The model catalogue: server-rendered and linkable (?origin= and ?make=).
-      <Section tone="page" id="catalog">
+      <Section tone="surface" id="catalog">
         <Container>
           <h2 className="text-headline font-extrabold text-content">{t('imports.catalogTitle')}</h2>
           <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.catalogLede')}</p>
@@ -321,6 +367,12 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
                 })}
               </ul>
 
+              <div className="mt-6">
+                <Button href="#request" variant="outline" trailingIcon={<Icon name="arrow-right" size={16} />}>
+                  {t('imports.ctaRequest')}
+                </Button>
+              </div>
+
               {models.length ? (
                 <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {models.map((m) => <ModelRow key={m.id} model={m} t={t} logoUrl={logoFor(m.make)} />)}
@@ -328,60 +380,13 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
               ) : null}
             </>
           ) : (
-            <p className="mt-8 rounded-2xl border border-line-soft bg-surface p-5 text-body text-content-secondary">
+            <p className="mt-8 max-w-prose border-t border-line pt-5 text-body text-content-secondary">
               {t('imports.catalogEmpty')}
             </p>
           )}
         </Container>
       </Section>
       )}
-
-      <Section tone="surface" id="estimate">
-        <Container>
-          <h2 className="text-headline font-extrabold text-content">{t('imports.estimateTitle')}</h2>
-          <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.estimateLede')}</p>
-          {initialValueRwf && year ? (
-            <p className="mt-3 text-caption font-semibold text-content">
-              {t('imports.prefilled', { usd: formatUsdApprox(priceUsd), year })}
-            </p>
-          ) : null}
-          <div className="mt-8">
-            <DutyCalculator initialValueRwf={initialValueRwf} initialAgeYears={initialAgeYears} />
-          </div>
-        </Container>
-      </Section>
-
-      <Section tone="page" id="request">
-        <Container>
-          <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-            <div className="min-w-0 lg:col-span-5">
-              <h2 className="text-headline font-extrabold text-content">{t('imports.requestTitle')}</h2>
-              <p className="mt-3 max-w-prose text-body text-content-secondary">{t('imports.requestLede')}</p>
-            </div>
-            <div className="min-w-0 lg:col-span-7">
-              <div className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
-                {user ? (
-                  <RequestImportForm
-                    makes={[...new Set((makesRes?.items ?? []).map((m) => m.make))]}
-                    defaults={{ origin, make, model, year: year ? String(year) : undefined }}
-                  />
-                ) : (
-                  <div>
-                    <h3 className="text-title-sm font-extrabold text-content">{t('imports.signInTitle')}</h3>
-                    <p className="mt-2 text-body text-content-secondary">{t('imports.signInBody')}</p>
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      <Button href={`/signin?next=${encodeURIComponent('/imports#request')}`}>{t('imports.signIn')}</Button>
-                      <Button href={`/signup?next=${encodeURIComponent('/imports#request')}`} variant="outline">
-                        {t('imports.createAccount')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
     </>
   )
 }

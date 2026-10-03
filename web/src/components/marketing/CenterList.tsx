@@ -22,12 +22,11 @@ export async function CenterList({ className = '' }: { className?: string }) {
   return (
     <>
     <JsonLd data={graph(...autoDealerNodes(centers))} />
-    <ul className={`grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
+    {/* Plain columns divided by hairlines, the pattern the standards band's
+        numbers use; no boxes around three addresses. */}
+    <ul className={`grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 ${className}`}>
       {centers.map((center) => (
-        <li
-          key={center.id}
-          className="rounded-2xl border border-line-soft bg-surface p-6 shadow-card"
-        >
+        <li key={center.id} className="min-w-0 border-t border-line pt-5">
           <h3 className="text-title-sm font-extrabold text-content">{center.name}</h3>
           <p className="mt-1 text-caption font-semibold text-content-muted">{center.area}</p>
 

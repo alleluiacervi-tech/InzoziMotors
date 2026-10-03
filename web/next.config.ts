@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
     // remotePatterns rather than unoptimized: this is a photo-led marketplace,
     // so resizing and AVIF/WebP negotiation are worth real money in LCP.
     formats: ['image/avif', 'image/webp'],
+    // Widths a car photo is actually drawn at. The defaults run to 3840 px,
+    // which no upload reaches, and add ~200 bytes per width to every card's
+    // srcset (WEBSITE-REDESIGN-TODO 3.14).
+    deviceSizes: [640, 828, 1080, 1280, 1920],
+    imageSizes: [64, 128, 256, 384],
     remotePatterns: [
       { protocol: 'https', hostname: '**.sawacars.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
@@ -25,6 +30,17 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'http', hostname: '10.0.2.2' },
     ],
+  },
+
+  // About and Marketplace safety merged into How Sawa works
+  // (docs/WEBSITE-REDESIGN-TODO.md, 2.11). Redirected here rather than in a
+  // page, because the root loading.tsx streams every route and a redirect
+  // thrown mid-stream degrades to a meta refresh with status 200.
+  async redirects() {
+    return [
+      { source: '/about', destination: '/how-it-works#why', permanent: true },
+      { source: '/promise', destination: '/how-it-works#controls', permanent: true },
+    ]
   },
 
   async headers() {

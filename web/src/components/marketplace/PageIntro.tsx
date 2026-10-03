@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { Container, Icon } from '@/components/ui'
-import { getServerT } from '@/lib/i18n/server'
+import { Container } from '@/components/ui'
 
 /**
  * The workspace opening for /cars and /rentals: the site's own paper, compact,
@@ -31,7 +30,6 @@ export async function PageIntro({
   search?: ReactNode
   aside?: ReactNode
 }) {
-  const t = await getServerT()
   return (
     <div className="border-b border-line-soft bg-surface-page">
       <Container className="pb-6 pt-6 sm:pb-8 sm:pt-10">
@@ -43,23 +41,6 @@ export async function PageIntro({
                 {description}
               </p>
             ) : null}
-            {/* The marketplace's terms in three phrases. Hidden on a phone,
-                where each card and the listing page carry them and the space
-                belongs to the cars. */}
-            <ul className="mt-4 hidden flex-wrap gap-x-6 gap-y-2 text-caption font-semibold text-content-secondary sm:flex">
-              <li className="inline-flex items-center gap-1.5">
-                <Icon name="shield-check" size={15} className="text-content-muted" aria-hidden="true" />
-                {t('cars.pageIntro.inspection')}
-              </li>
-              <li className="inline-flex items-center gap-1.5">
-                <Icon name="check-circle" size={15} className="text-content-muted" aria-hidden="true" />
-                {t('cars.pageIntro.approved')}
-              </li>
-              <li className="inline-flex items-center gap-1.5">
-                <Icon name="user" size={15} className="text-content-muted" aria-hidden="true" />
-                {t('cars.pageIntro.contact')}
-              </li>
-            </ul>
           </div>
           {aside ? <div className="shrink-0">{aside}</div> : null}
         </div>

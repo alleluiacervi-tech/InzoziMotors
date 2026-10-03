@@ -18,7 +18,7 @@
 // as the key itself and warns in development, so a missing scope is loud.
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fill, lookup, type Messages, type TFunction } from './translate'
+import { fill, lookup, mergeMessages, type Messages, type TFunction } from './translate'
 import {
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
@@ -96,7 +96,9 @@ export function MessagesScope({ messages, children }: { messages: Messages; chil
   const parent = useContext(LocaleContext)
   const value = useMemo<LocaleContextValue | null>(() => {
     if (!parent) return null
-    const merged = { ...parent.messages, ...messages }
+    // Deep, so a narrow scope ('home.front') adds to a wider one instead of
+    // replacing it.
+    const merged = mergeMessages(parent.messages, messages) as Messages
     return { ...parent, messages: merged, t: makeT(merged) }
   }, [parent, messages])
   if (!value) return <>{children}</>

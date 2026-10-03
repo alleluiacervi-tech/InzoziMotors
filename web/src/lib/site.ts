@@ -126,12 +126,6 @@ export const CENTERS = [
   },
 ] as const
 
-// Three verbs and the trust page. Kept deliberately short — a marketplace nav
-// that grows becomes a portal nav, and portals read as classifieds. /promise
-// stays reachable from the footer and every trust surface.
-// The three businesses first, in the order people arrive with them, then the
-// tools and the explanation. Selling is not here because it is the header's
-// one primary button (Header.tsx) — listing it twice made it look optional.
 /**
  * Rent is only promoted (nav, homepage search tabs, homepage cards) once the
  * fleet has this many cars. An empty business in the primary navigation tells
@@ -141,12 +135,17 @@ export const CENTERS = [
 export const RENT_MIN_FLEET = 3
 export const rentPromoted = (fleetSize: number) => fleetSize >= RENT_MIN_FLEET
 
+// The businesses in the order people arrive with them, then the one page that
+// explains Sawa. Rent is listed but filtered out by the header until the fleet
+// is worth promoting (rentPromoted, above). Tools is not here: valuation lives
+// on Sell, duty on Import, finance on every listing; /tools stays reachable
+// from those pages and the footer. Four or five words, never a portal.
 export const NAV_LINKS = [
   { href: '/cars', label: 'Buy' },
   { href: '/rentals', label: 'Rent' },
+  { href: '/sell', label: 'Sell' },
   { href: '/imports', label: 'Import' },
-  { href: '/tools', label: 'Tools' },
-  { href: '/how-it-works', label: 'How it works' },
+  { href: '/how-it-works', label: 'How Sawa works' },
 ] as const
 
 export const FOOTER_LINKS = [
@@ -164,9 +163,8 @@ export const FOOTER_LINKS = [
   {
     heading: 'Company',
     links: [
-      { href: '/about', label: 'About Sawa Cars' },
-      { href: '/promise', label: 'Marketplace safety' },
-      { href: '/how-it-works', label: 'How buying works' },
+      { href: '/how-it-works', label: 'How Sawa works' },
+      { href: '/how-it-works#buying', label: 'How buying works' },
       { href: '/contact', label: 'Contact & centers' },
     ],
   },
@@ -242,18 +240,18 @@ export const BUYING_STEPS = [
   },
   {
     title: 'Complete the deal independently',
-    desc: 'Sawa Cars does not receive or hold the purchase money and is not a party to the resulting contract or dispute.',
+    desc: 'You pay the seller directly, and any problem with the deal is settled between the two of you.',
   },
 ] as const
 
-/** Seller journey — mirrors the pipeline in CLAUDE.md and SellerDashboardScreen. */
+/** Seller journey in five steps — the one count used on every page
+ *  (docs/WEBSITE-REDESIGN-TODO.md, D4); mirrors marketing.howItWorks.sellingSteps. */
 export const SELLING_STEPS = [
-  { title: 'Submit your car', desc: 'Tell us the make, model, mileage and your asking price. We suggest a range from real comparable sales.' },
-  { title: 'Book your inspection', desc: 'Pick a center and a slot. Bring the car and your service records.' },
-  { title: 'We inspect and review', desc: 'Our team records the inspection and adds a clear, truthful image gallery. There is no fixed angle count.' },
-  { title: 'Complete seller verification', desc: 'Before publication, our team must approve your one-time identity check and activate your seller account.' },
-  { title: 'An admin publishes it', desc: 'Publication is gated by seller verification, inspection completion and a valid gallery. You keep control of the price.' },
-  { title: 'You manage buyer enquiries', desc: 'Talk, negotiate and agree any sale directly. Sawa Cars is not a party to your contract or payment.' },
+  { title: 'Submit your car', desc: 'Make, model, mileage and your asking price, then a one-time ID check. Both work here on the website or in the app.' },
+  { title: 'Book the inspection', desc: 'Pick a centre and a time, and bring the car and its documents. A Sawa mechanic runs the 150 checks.' },
+  { title: 'We publish it', desc: 'Our team adds the photos and publishes the listing with its full report. Only Sawa staff can publish.' },
+  { title: 'Buyers contact you', desc: 'Through in-app messages, or by phone and WhatsApp if you allow it. You keep control of the price.' },
+  { title: 'You agree the sale directly', desc: 'Price, payment, transfer and handover are agreed between you and the buyer.' },
 ] as const
 
 export const FAQS = [
@@ -280,7 +278,7 @@ export const FAQS = [
   {
     id: 'cost',
     q: 'What does it cost to sell?',
-    a: 'Any commercial service or listing charges are communicated separately by Sawa Cars and are not collected through a buyer–seller payment gateway. A vehicle transaction itself is always between the users.',
+    a: 'One charge: the 150-point inspection, paid at the centre (the current price is on the Sell page). Listing your car, buyer messages and the valuation are free, and Sawa Cars never takes a share of the sale.',
   },
   {
     id: 'reserve',

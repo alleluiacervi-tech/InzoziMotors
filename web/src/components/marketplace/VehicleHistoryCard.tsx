@@ -87,7 +87,7 @@ export async function VehicleHistoryCard({ history }: { history: VehicleHistory 
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-line-soft p-5 sm:p-6">
-        <p className="text-caption font-bold text-brand">{t('cars.history.eyebrow')}</p>
+        <p className="text-caption font-bold text-content-muted">{t('cars.history.eyebrow')}</p>
         <h2 className="mt-2 text-title font-extrabold text-content">{t('cars.history.title')}</h2>
         <p className="mt-2 text-caption leading-relaxed text-content-secondary">
           {t('cars.history.intro')}

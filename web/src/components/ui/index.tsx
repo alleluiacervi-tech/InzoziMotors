@@ -55,7 +55,7 @@ export function Section({
  * the only sanctioned margin.
  */
 export function Eyebrow({
-  children, tone = 'brand', className = '',
+  children, tone = 'muted', className = '',
 }: {
   children: ReactNode
   tone?: 'brand' | 'invert' | 'muted'
@@ -402,4 +402,3 @@ export function LiveRegion({ children }: { children: ReactNode }) {
 export { Icon }
 export type { IconName }
 export { Button } from './Button'
-export { ThemeToggle } from './ThemeToggle'

@@ -109,14 +109,7 @@ const config: Config = {
         card: '0 1px 2px rgba(26, 20, 19, 0.05)',
         'card-lg': '0 18px 40px -22px rgba(26, 20, 19, 0.30), 0 2px 6px rgba(26, 20, 19, 0.04)',
         float: '0 40px 90px -40px rgba(26, 20, 19, 0.40), 0 4px 14px -6px rgba(26, 20, 19, 0.08)',
-        brand: '0 4px 14px rgba(204, 5, 15, 0.28)',
-        'brand-lg': '0 10px 34px rgba(204, 5, 15, 0.30)',
         inset: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
-        // For panels that sit ON a photograph or on ink: a warm shadow is
-        // invisible there, so this one is near-black and deep, and carries a
-        // top inset highlight so the panel has an edge catching the light.
-        'lift-ink':
-          '0 24px 60px -18px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.10)',
       },
 
       // Display sizes for the marketing surfaces. Tight negative tracking is a
@@ -171,10 +164,6 @@ const config: Config = {
       },
 
       keyframes: {
-        kenburns: {
-          from: { transform: 'scale(1.08)' },
-          to: { transform: 'scale(1)' },
-        },
         'fade-up': {
           from: { opacity: '0', transform: 'translateY(14px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
@@ -186,43 +175,10 @@ const config: Config = {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
-        // The hero photograph's arrival: it rises and settles rather than
-        // fading in place, which reads as a panel being set down.
-        rise: {
-          from: { opacity: '0', transform: 'translateY(28px) scale(0.985)' },
-          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
-        },
-        // The live-inventory dot. Two rings, one animation — a halo that
-        // expands and dissolves, so "live" is legible without a label.
-        // The certificate's category bars filling once, left to right: the
-        // homepage's single orchestrated motion. Transform-only, so it never
-        // shifts layout.
-        grow: {
-          from: { transform: 'scaleX(0)' },
-          to: { transform: 'scaleX(1)' },
-        },
-        // One tick of the 150-point ruler standing up. The ruler's ticks
-        // run this in sequence on first paint — the page's single
-        // orchestrated motion — and never again.
-        tick: {
-          from: { transform: 'scaleY(0)', opacity: '0' },
-          to: { transform: 'scaleY(1)', opacity: '1' },
-        },
-        halo: {
-          '0%': { transform: 'scale(1)', opacity: '0.55' },
-          '70%, 100%': { transform: 'scale(2.6)', opacity: '0' },
-        },
       },
       animation: {
         'fade-up': 'fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
-        // The hero's almost-imperceptible push-in: 22s, ends and stays. Slow
-        // enough that nobody can point at it; the page just feels alive.
-        'kenburns': 'kenburns 22s cubic-bezier(0.25, 0.1, 0.25, 1) both',
         'fade-in': 'fade-in 0.5s ease both',
-        rise: 'rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both',
-        halo: 'halo 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
-        grow: 'grow 1.1s cubic-bezier(0.16, 1, 0.3, 1) both',
-        tick: 'tick 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
         shimmer: 'shimmer 1.6s infinite',
       },
     },

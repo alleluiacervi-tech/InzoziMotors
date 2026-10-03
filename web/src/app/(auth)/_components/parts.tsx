@@ -31,7 +31,7 @@ export function AuthSwitch({
   return (
     <p className="mt-7 text-center text-caption text-content-secondary">
       {prompt}{' '}
-      <Link href={href} className="font-bold text-brand transition-colors hover:text-brand-deep">
+      <Link href={href} className="font-bold text-content underline decoration-line underline-offset-4 transition-colors hover:decoration-content">
         {label}
       </Link>
     </p>
@@ -49,7 +49,7 @@ export async function OneAccountNote({ className = '' }: { className?: string })
       <Icon name="phone" size={15} className="mt-px" />
       <span>
         {t('auth.oneAccount.text')}{' '}
-        <Link href="/download" className="font-bold text-brand transition-colors hover:text-brand-deep">
+        <Link href="/download" className="font-bold text-content underline decoration-line underline-offset-4 transition-colors hover:decoration-content">
           {t('auth.oneAccount.appLink')}
         </Link>
         .

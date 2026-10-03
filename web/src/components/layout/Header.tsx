@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
-import { Button, Icon, ThemeToggle } from '@/components/ui'
+import { Button, Icon } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
 import { useT } from '@/lib/i18n/context'
 import { CONTACT, NAV_LINKS } from '@/lib/site'
@@ -28,8 +28,8 @@ import type { User } from '@/lib/types'
  */
 // Nav labels come from NAV_LINKS (hrefs) but are translated by key.
 const NAV_KEY: Record<string, string> = {
-  '/cars': 'nav.buy', '/rentals': 'nav.rent', '/imports': 'nav.imports',
-  '/tools': 'nav.tools', '/how-it-works': 'nav.howItWorks',
+  '/cars': 'nav.buy', '/rentals': 'nav.rent', '/sell': 'nav.sell',
+  '/imports': 'nav.imports', '/how-it-works': 'nav.howItWorks',
 }
 
 export function Header({ user, showRent = false }: { user: User | null; showRent?: boolean }) {
@@ -179,8 +179,6 @@ export function Header({ user, showRent = false }: { user: User | null; showRent
             <LanguageSwitcher tone="light" />
           </div>
 
-          <ThemeToggle className="text-content" />
-
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -276,17 +274,11 @@ export function Header({ user, showRent = false }: { user: User | null; showRent
                   <Button href="/signup" variant="secondary" fullWidth>{t('common.createAccount')}</Button>
                 </>
               )}
-              <Button href="/sell" fullWidth>{t('common.sellYourCar')}</Button>
               <Button href="/download" variant="ghost" fullWidth>{t('common.getApp')}</Button>
 
               <div className="flex items-center justify-between pt-1">
                 <span className="text-caption font-semibold text-content-secondary">{t('common.language')}</span>
                 <LanguageSwitcher tone="light" />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-caption font-semibold text-content-secondary">{t('common.appearance')}</span>
-                <ThemeToggle className="text-content" />
               </div>
             </div>
           </nav>

@@ -33,10 +33,10 @@ export default async function PricingPage() {
 
   return (
     <>
-      <Section tone="surface" className="pb-10 pt-12 sm:pb-14 sm:pt-20">
+      <Section tone="page" className="pb-10 pt-10 sm:pb-14 sm:pt-16">
         <Container>
           <div className="max-w-3xl">
-            <p className="mb-4 text-caption font-bold text-brand">{t('tools.pricingPage.heroEyebrow')}</p>
+            <p className="mb-4 text-caption font-bold text-content-muted">{t('tools.pricingPage.heroEyebrow')}</p>
             <h1 className="text-display font-extrabold text-content">{t('tools.pricingPage.heroTitle')}</h1>
             <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">{t('tools.pricingPage.heroLede')}</p>
           </div>

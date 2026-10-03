@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
-import { formatKm, formatMoney, getCertTier, isDemoListing, listedAgo, marketPosition, priceDrop } from '@/lib/business'
+import { formatKm, formatMoney, getCertTier, isDemoListing, listedAgo, marketPosition, monthlyEstimate, priceDrop } from '@/lib/business'
 import { Price } from '@/components/Price'
 import { ScoreRing } from '@/components/brand/ScoreRing'
 import type { Car } from '@/lib/types'
@@ -22,15 +22,24 @@ const FALLBACK_IMAGE =
 // Grids go 1 → 2 → 3 → 4 columns (sm, lg, xl). Four across at desktop width
 // keeps a card near 310px, which is what a buyer scanning a yard wants: a
 // 420px card showed one row per screen on a laptop.
+/** Photos the card's hover preview can show (CardPhotoFlick's MAX_PREVIEW; a
+ *  client module's constant cannot be imported here as a value). Only these
+ *  are sent: every URL is serialised into the page once per card. */
+const PHOTO_PREVIEW = 4
+
 const GRID_SIZES = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw'
 
 export async function CarCard({
-  car, priority = false, layout = 'grid',
+  car, priority = false, layout = 'grid', tag,
 }: {
   car: Car
   /** Set on the first row so the LCP image is not lazy-loaded. */
   priority?: boolean
   layout?: 'grid' | 'row'
+  /** A placement's label ("Featured", "Sponsored"). Takes the top-right
+   *  corner; a price drop still shows on the detail page. A paid placement
+   *  must always say so. */
+  tag?: string
 }) {
   const t = await getServerT()
   const tier = getCertTier(car)
@@ -48,10 +57,7 @@ export async function CarCard({
   return (
     <Link
       href={`/cars/${car.id}`}
-      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card
-                  transition-[border-color,box-shadow] duration-300 ease-brand
-                  hover:border-line hover:shadow-card-lg
-                  ${isRow ? 'sm:flex-row' : ''}`}
+      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card transition-[border-color,box-shadow] duration-300 ease-brand hover:border-line hover:shadow-card-lg${isRow ? ' sm:flex-row' : ''}`}
     >
       <div
         // 4/3 rather than 16/10: the photograph is what a car is bought on, and
@@ -66,7 +72,7 @@ export async function CarCard({
             profiles would otherwise crop into a door. */}
         {(car.images?.length ?? 0) >= 2 ? (
           <CardPhotoFlick
-            images={car.images!}
+            images={car.images!.slice(0, PHOTO_PREVIEW)}
             alt={photoAlt}
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : GRID_SIZES}
             priority={priority}
@@ -90,10 +96,12 @@ export async function CarCard({
             a fact a buyer can compare across two cars without first learning
             what "Certified+" means in our vocabulary. The tier word survives on
             the detail page, where there is room to explain it.
-            Top-right is reserved for a price drop and nothing else — "new" and
-            "high demand" could fire alongside it, and three chips stacked in
-            one corner is how a listing starts to look like an advert instead of
-            a record. Both still render on the detail page. */}
+            Top-right holds one thing: a placement's label when the card is an
+            operator placement (a paid one always says "Sponsored"), otherwise
+            a price drop. "New" and "high demand" could fire alongside it, and
+            three chips stacked in one corner is how a listing starts to look
+            like an advert instead of a record. All of them still render on
+            the detail page. */}
         <div className="absolute left-3 top-3 flex max-w-[62%]">
           {demo ? (
             <Badge tone="preview" className="max-w-full truncate">
@@ -115,7 +123,13 @@ export async function CarCard({
             </Badge>
           ) : null}
         </div>
-        {drop > 0 ? (
+        {tag ? (
+          <div className="absolute right-3 top-3">
+            <span className="inline-flex items-center rounded-pill bg-surface/95 px-2.5 py-1 text-micro font-bold leading-none text-content shadow-card backdrop-blur-sm">
+              {tag}
+            </span>
+          </div>
+        ) : drop > 0 ? (
           <div className="absolute right-3 top-3">
             <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge>
           </div>
@@ -162,6 +176,13 @@ export async function CarCard({
         {/* One component, one conversion: francs are the price, the dollar
             figure beside them is an approximation at the live rate. */}
         <Price amountRwf={car.price} inline className="mt-3" />
+        {/* What buyers here compare: the monthly figure. Same helper and
+            terms as the listing page's "estimated finance" line. */}
+        {car.price > 0 ? (
+          <p className="tnum mt-1 text-caption text-content-secondary">
+            {t('cars.card.monthlyEst', { amount: formatMoney(monthlyEstimate(car.price)) })}
+          </p>
+        ) : null}
 
         {isRow && car.description ? (
           <p className="mt-3 line-clamp-2 text-body leading-relaxed text-content-secondary">

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ApiError, cars as carsApi } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
-import { BUYING_STEPS, SITE } from '@/lib/site'
+import { BUYING_STEPS, CONTACT, SITE } from '@/lib/site'
 import { breadcrumbNode, graph, offerAvailability, organizationNode, ORG_ID } from '@/lib/seo'
 import { CAR_STATUS_LABEL, FINANCE_TERMS, formatKm, formatMoneyExact, formatMoney, getCertTier, isDemoListing, isHighDemand, isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop } from '@/lib/business'
 import type { Car } from '@/lib/types'
@@ -14,7 +14,6 @@ import { CarCard } from '@/components/marketplace/CarCard'
 import { Gallery } from '@/components/marketplace/Gallery'
 import { InspectionReportCard } from '@/components/marketplace/InspectionReportCard'
 import { ScoreRing } from '@/components/brand/ScoreRing'
-import { OpenInAppButton } from '@/components/marketplace/OpenInAppButton'
 import { Sparkline } from '@/components/marketplace/Sparkline'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { VehicleHistoryCard } from '@/components/marketplace/VehicleHistoryCard'
@@ -205,7 +204,7 @@ export default async function CarDetailPage({ params }: PageProps) {
       </Container>
 
       <Container className="pb-16 pt-6 sm:pb-24">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14">
           {/* Explicit placement so the price and CTA sit directly under the
               gallery on a phone, instead of below every report on the page. */}
           <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
@@ -283,7 +282,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     <span className="block text-caption font-bold text-content">
                       {t('cars.detail.scoreChip')} {car.inspection_score}/150
                     </span>
-                    <span className="block text-micro font-semibold text-brand group-hover:underline">
+                    <span className="block text-micro font-semibold text-content-secondary underline decoration-line underline-offset-4 group-hover:decoration-content">
                       {t('cars.detail.seeReport')}
                     </span>
                   </span>
@@ -295,18 +294,13 @@ export default async function CarDetailPage({ params }: PageProps) {
           <aside id="purchase-panel" className="scroll-mt-24 lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="relative overflow-hidden rounded-3xl border-line bg-surface p-6 shadow-float sm:p-7">
-                <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-                <p className="mb-3 text-micro font-bold text-content-muted">{t('cars.detail.purchaseOverview')}</p>
+                                <p className="mb-3 text-micro font-bold text-content-muted">{t('cars.detail.purchaseOverview')}</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
                 <Price amountRwf={car.price} size="detail" />
                 <p className="mt-2 text-caption text-content-secondary">
                   {t('cars.detail.monthlyFinance', { amount: formatMoney(monthly) })}
                 </p>
-                {/* Where the dollar line above comes from. A converted figure
-                    without its rate and its date is how the old hardcoded 1300
-                    drifted 12% from reality unnoticed. */}
-                <RateNote className="mt-3" />
 
                 {market && car.market_avg ? (
                   <p
@@ -361,9 +355,28 @@ export default async function CarDetailPage({ params }: PageProps) {
                       >
                         {t('cars.detail.signInToContact')}
                       </Button>
+                      {/* No account yet: ask Sawa, on Sawa's own line, never the
+                          seller's. The seller's number stays behind sign-in and
+                          the terms acknowledgement (invariant 3). */}
+                      {CONTACT.whatsappVerified ? (
+                        <Button
+                          href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(
+                            t('cars.detail.askSawaMessage', { title: car.title, url: `${SITE.url}/cars/${car.id}` })
+                          )}`}
+                          target="_blank"
+                          variant="outline"
+                          fullWidth
+                          // The label is long in every language; let it wrap
+                          // rather than widen the column past a phone screen.
+                          className="h-auto min-h-12 !whitespace-normal py-3 text-center"
+                          leadingIcon={<Icon name="whatsapp" size={18} className="shrink-0" />}
+                        >
+                          {t('cars.detail.askSawa')}
+                        </Button>
+                      ) : null}
                       <p className="text-micro leading-relaxed text-content-muted">
                         {t('cars.detail.contactGate')}{' '}
-                        <Link href="/how-it-works" className="font-bold text-brand hover:underline">
+                        <Link href="/how-it-works#buying" className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
                           {t('cars.detail.seeHowBuying')}
                         </Link>
                         .
@@ -371,13 +384,10 @@ export default async function CarDetailPage({ params }: PageProps) {
                     </div>
                   )}
 
-                  <div className="mt-4 space-y-2">
-                    <OpenInAppButton path={`cars/${car.id}`} variant="ghost" fullWidth />
-                  </div>
-
-                  <p className="mt-4 flex items-start gap-1.5 text-micro font-semibold text-content-secondary">
-                    <Icon name="shield" size={14} className="mt-px shrink-0" />
-                    {t('cars.detail.trustLine')}
+                  {/* The page's one statement of the direct-deal rule, beside
+                      the action it governs. */}
+                  <p className="mt-4 text-caption leading-relaxed text-content-secondary">
+                    {t('common.directDeal')}
                   </p>
                 </div>
 
@@ -411,7 +421,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                       })}
                     </p>
                     <p className="mt-3 text-caption">
-                      <Link href="/tools/import-duty" className="font-bold text-brand hover:underline">
+                      <Link href="/tools/import-duty" className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
                         {t('cars.detail.estimateDuty')}
                       </Link>
                     </p>
@@ -419,16 +429,14 @@ export default async function CarDetailPage({ params }: PageProps) {
                 </details>
               </Card>
 
-              <p className="mt-4 flex items-start gap-2 px-1 text-micro leading-relaxed text-content-muted">
-                <Icon name="location" size={14} className="mt-0.5" />
-                {t('cars.detail.arrangeViewing')}
-              </p>
+              {/* Where the dollar figure comes from: rate and date, once, as a
+                  footnote. A converted price without them is how the old
+                  hardcoded 1300 drifted 12% from reality unnoticed. */}
+              <RateNote className="mt-4 px-1" />
             </div>
           </aside>
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
-            <DecisionSummary car={car} report={report} history={vehicleHistory} />
-
             <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">
                 {t('cars.detail.specification')}
@@ -448,21 +456,6 @@ export default async function CarDetailPage({ params }: PageProps) {
               </section>
             ) : null}
 
-            {/* The provenance claim, stated exactly once on this page — three
-                facts above the report they produced. */}
-            <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-line-soft bg-surface-alt px-5 py-4">
-              {[
-                t('cars.detail.provInspected'),
-                t('cars.detail.provPhotographed'),
-                t('cars.detail.provPublished'),
-              ].map((fact) => (
-                <p key={fact} className="flex items-center gap-1.5 text-caption font-semibold text-content-secondary">
-                  <Icon name="check-circle" size={15} className="text-success" />
-                  {fact}
-                </p>
-              ))}
-            </div>
-
             <div id="inspection" className="scroll-mt-28">
               <InspectionReportCard report={report} />
             </div>
@@ -472,21 +465,6 @@ export default async function CarDetailPage({ params }: PageProps) {
                 {t('cars.detail.reportPendingBody')}
               </Alert>
             ) : null}
-
-            {/* Marketplace role, between the evidence and the history. */}
-            <Card className="p-5 sm:p-6">
-              <h2 className="text-title-sm font-extrabold text-content">
-                {t('cars.detail.roleTitle')}
-              </h2>
-              <p className="mt-2 max-w-prose text-body leading-relaxed text-content-secondary">
-                {t('cars.detail.roleBody')}
-              </p>
-              <p className="mt-3 text-caption">
-                <Link href="/legal/terms" className="font-bold text-brand hover:underline">
-                  {t('cars.detail.readTerms')}
-                </Link>
-              </p>
-            </Card>
 
             <VehicleHistoryCard history={vehicleHistory} />
 
@@ -521,7 +499,7 @@ export default async function CarDetailPage({ params }: PageProps) {
           <Container>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-caption font-bold text-brand">{t('cars.detail.similarEyebrow')}</p>
+                <p className="text-caption font-bold text-content-muted">{t('cars.detail.similarEyebrow')}</p>
                 <h2 className="mt-2 text-headline font-extrabold text-content">
                   {t('cars.detail.similarTitle', { make: car.make })}
                 </h2>
@@ -565,72 +543,6 @@ export default async function CarDetailPage({ params }: PageProps) {
   )
 }
 
-async function DecisionSummary({ car, report, history }: { car: Car; report: Awaited<ReturnType<typeof carsApi.inspectionReport>> | null; history: Awaited<ReturnType<typeof carsApi.history>> | null }) {
-  const t = await getServerT()
-  const documentChecks = history
-    ? [history.rra_duty_paid, history.registration, history.service_history, history.insurance_valid]
-    : []
-  const verifiedDocuments = documentChecks.filter((value) => value === 'pass').length
-  const documentIssues = documentChecks.filter((value) => value === 'flag' || value === 'fail').length
-  const sellerVerified = car.seller_id_verified === 'approved'
-
-  const signals = [
-    {
-      icon: report ? (report.passed ? 'shield-check' : 'alert') : 'clock',
-      label: t('cars.detail.signalInspection'),
-      value: report ? t('cars.detail.inspectionRecorded', { score: report.score }) : car.inspected ? t('cars.detail.reportBeingPrepared') : t('cars.detail.notYetPublished'),
-      tone: report ? (report.passed ? 'text-success' : 'text-warning-text') : 'text-content-muted',
-    },
-    {
-      icon: documentIssues ? 'alert' : verifiedDocuments ? 'check-circle' : 'minus',
-      label: t('cars.detail.signalPaperwork'),
-      value: documentIssues ? t(documentIssues === 1 ? 'cars.detail.itemNeedsAttention' : 'cars.detail.itemsNeedAttention', { count: documentIssues }) : verifiedDocuments ? t('cars.detail.checksVerified', { count: verifiedDocuments }) : t('cars.detail.noEvidenceYet'),
-      tone: documentIssues ? 'text-warning-text' : verifiedDocuments ? 'text-success' : 'text-content-muted',
-    },
-    {
-      icon: sellerVerified ? 'shield-check' : 'user',
-      label: t('cars.detail.signalSeller'),
-      value: sellerVerified ? t('cars.detail.identityVerified') : t('cars.detail.verificationUnavailable'),
-      tone: sellerVerified ? 'text-success' : 'text-content-muted',
-    },
-    {
-      icon: 'check-circle',
-      label: t('cars.detail.signalTransaction'),
-      value: t('cars.detail.directAgreement'),
-      tone: 'text-content-secondary',
-    },
-  ] as const
-
-  return (
-    <section aria-labelledby="decision-heading" className="overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">
-      <div className="border-b border-line-soft px-5 py-4 sm:px-7">
-        <p className="text-caption font-bold text-brand">{t('cars.detail.decisionEyebrow')}</p>
-        <h2 id="decision-heading" className="mt-2 text-title font-extrabold text-content">{t('cars.detail.decisionTitle')}</h2>
-        <p className="mt-1 text-caption text-content-muted">{t('cars.detail.decisionNote')}</p>
-      </div>
-      <dl className="grid sm:grid-cols-2">
-        {signals.map((signal, index) => (
-          // A <dl> group may hold only <dt>/<dd>, so the icon rides inside
-          // the term and is placed against the group's padding instead of
-          // sitting in a wrapper <div> of its own.
-          <div key={signal.label} className={`relative border-b border-line-soft py-4 pl-[3.25rem] pr-5 last:border-b-0 sm:pl-[3.75rem] sm:pr-7 ${index < 2 ? 'sm:border-b' : 'sm:border-b-0'} ${index % 2 === 0 ? 'sm:border-r sm:border-line-soft' : ''}`}>
-            <dt className="text-micro font-bold text-content-muted">
-              <Icon name={signal.icon} size={19} className={`absolute left-5 top-[1.1rem] sm:left-7 ${signal.tone}`} aria-hidden="true" />
-              {signal.label}
-            </dt>
-            <dd className="mt-1 text-caption font-bold text-content">{signal.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  )
-}
-
-// ─── Seller ──────────────────────────────────────────────────────────────────
-
-// The marque, directly above the key specs: the operator-uploaded logo when
-// there is one, the brand's initials otherwise, and a way into every car of
-// that make. The app draws the same bar (VehicleDetailScreen).
 async function BrandBar({ car }: { car: Car }) {
   if (!car.make) return null
   const [t, logoFor] = await Promise.all([getServerT(), getLogoLookup()])
@@ -708,7 +620,7 @@ async function SellerCard({ car }: { car: Car }) {
       <p className="mt-3">
         <Link
           href={`/sellers/${car.seller_id}`}
-          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content"
         >
           {showroom ? t('cars.detail.visitShowroom') : t('market.profile.viewProfile')}
           <Icon name="arrow-right" size={15} />

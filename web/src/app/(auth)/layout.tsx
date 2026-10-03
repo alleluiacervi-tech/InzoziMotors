@@ -49,11 +49,10 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
   return (
     <div className="bg-surface-page">
       {/* Phones are the majority in Rwanda, and below lg the ink aside
-          disappears — this compact band keeps the brand on the page instead of
-          leaving a bare form. It is the mobile page's one ink moment. */}
-      <div className="flex items-center gap-3 bg-ink-900 px-5 py-5 lg:hidden">
-        <LogoMark size={30} />
-        <p className="text-caption font-semibold text-white/60">
+          disappears — this compact line keeps the brand's promise on the page
+          instead of leaving a bare form. On paper, like every page opening. */}
+      <div className="border-b border-line-soft px-5 py-3 lg:hidden">
+        <p className="text-caption font-semibold text-content-secondary">
           {t('auth.layout.mobileTagline')}
         </p>
       </div>
@@ -68,7 +67,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
         <aside className="hidden rounded-3xl bg-ink-900 p-10 text-white shadow-float lg:flex lg:flex-col xl:p-12">
           <LogoMark size={48} />
 
-          <p className="mt-8 text-caption font-bold text-brand-light">
+          <p className="mt-8 text-caption font-bold text-white/60">
             {t('auth.layout.eyebrow')}
           </p>
           <h2 className="mt-3 max-w-sm text-headline font-extrabold">
@@ -93,7 +92,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
 
           <p className="mt-9 text-caption text-white/70">
             <Link
-              href="/promise"
+              href="/how-it-works#controls"
               className="font-bold text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
             >
               {t('auth.layout.readSafety')}

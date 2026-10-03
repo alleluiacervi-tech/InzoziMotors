@@ -43,18 +43,18 @@ decoration. Nothing here changes the backend or the app.
 
 ## Decisions needed from the owner (answer here, then proceed)
 
-- [ ] **D1** Rent: is it a 2026 business? If not, it leaves the nav, hero tabs and homepage now
+- [ ] **D1** *(Default applied: Rent hidden until the fleet has 3 cars.)* Rent: is it a 2026 business? If not, it leaves the nav, hero tabs and homepage now
       (Phase 1 assumes **yes, remove while the fleet is empty**; it returns automatically when
       `GET /rentals` has 3+ cars, see task 1.4).
-- [ ] **D2** Dark theme: keep as OS-following only (toggle removed), or remove entirely? Default
+- [ ] **D2** *(Default applied: tokens kept, toggle removed, follows the OS.)* Dark theme: keep as OS-following only (toggle removed), or remove entirely? Default
       if unanswered: keep tokens, remove the toggle (task 3.6).
 - [ ] **D3** Photographs of a centre, an inspector at work, and the team: available? Needed for
       tasks 3.8 and 2.3. Until then those sections use the existing `web/public/img/*.jpg`.
-- [ ] **D4** Canonical seller step count: five or six? Default: **five** (Submit, Inspect,
+- [ ] **D4** *(Default applied: five steps, used on How Sawa works, the dashboard and the sell flow.)* Canonical seller step count: five or six? Default: **five** (Submit, Inspect,
       Publish, Enquiries, Sell), used on every page (task 2.7).
 - [ ] **D5** May buyers without an account ask Sawa about a listing on WhatsApp (routes to the
       Sawa line, not the seller)? Default: **yes** (task 3.10).
-- [ ] **D6** Will the Korean catalogue (`catalog_public`) be on before this ships? Changes the
+- [ ] **D6** *(Assumed no, its shipped state. The import page already switches to the Korean catalogue by itself when `catalog_public` is on.)* Will the Korean catalogue (`catalog_public`) be on before this ships? Changes the
       import page order (task 2.9).
 
 ## Phase 1 — Repair (no design decisions; losing customers today)
@@ -100,7 +100,7 @@ decoration. Nothing here changes the backend or the app.
       `web/src/lib/business.ts` (`displayTitle(car)`) that strips a make repeated twice at the
       start of a title, and use it in `CarCard`, the listing `<h1>` and `Specimen`. Done when:
       no card on `/cars` shows a make twice and every make chip is a single brand word.
-    - [ ] **1.5a (admin, a person)** Rename the make on the Dongfeng listing to "Dongfeng" and retitle the Range Rover listing to "2023 Range Rover P530 SE" in Admin → Listings. The site already displays both correctly; this fixes the stored data and the app, which does not use the web's display helpers.
+    - [ ] **1.5a (admin, a person)** Rename the make on the Dongfeng listing to "Dongfeng" and retitle the Range Rover listing to "2023 Range Rover P530 SE" in Admin → Listings. The site already displays both correctly; this fixes the stored data and the app, which does not use the web's display helpers. Also: "KIA Sorento 2024" is recorded as a 2022 car; one of the two is wrong.
 - [x] **1.6 Flag implausible odometers at publication.** *(Done in `backend/src/lib/publication-readiness.js` `contentWarnings`, with a second warning for a title that repeats its make, and tests in `backend/test/publication-warnings.test.js` that need no database. Also fixed a pre-existing crash: the low-score warning used `SCORE_MAX` without importing it.)* Admin-side only, in the publication
       readiness warnings (`backend/src/routes/cars.js`, `publicationReadiness`): warn (not
       block) when mileage < 500 km on a car older than one model year. This keeps "100 km,
@@ -111,57 +111,57 @@ decoration. Nothing here changes the backend or the app.
 
 ## Phase 2 — Restructure (information architecture and copy)
 
-- [ ] **2.1 Nav to four items.** `NAV_LINKS` in `lib/site.ts` becomes Buy `/cars`, Sell
+- [x] **2.1 Nav to four items.** `NAV_LINKS` in `lib/site.ts` becomes Buy `/cars`, Sell
       `/sell`, Import `/imports`, How Sawa works `/how-it-works`. Tools leaves the nav (page
       stays, linked from Sell, Import and the footer). Update `NAV_KEY` in `Header.tsx` and
       `nav.*` keys in `messages/ui.ts`/dictionary. Done when: header and mobile drawer show
       four links; `/tools` still loads.
-- [ ] **2.2 Homepage to five sections.** In `web/src/app/page.tsx` the order becomes:
+- [x] **2.2 Homepage to five sections.** *(Done. On a phone the content above the footer is 5,630px, down from about 9,800px; the footer adds 1,687px and is Phase 3's to tighten. The first car card is at 1,524px. Four cards on a phone, whole rows of three on a laptop.)* In `web/src/app/page.tsx` the order becomes:
       1. `Hero` (task 2.3), 2. `FeaturedCars` (stock, task 2.4), 3. `Standard` (task 2.5),
       4. Proof (task 2.6), 5. Sell strip (task 2.6). Delete the imports of `TopDeals`,
       `ThreeWays`, the FAQ block and `FinalCta` from the homepage (keep the components for
       `/featured` and other pages; delete `ThreeWays.tsx` and `FinalCta.tsx` if nothing else
       uses them). Done when: mobile homepage is under 6,000 px tall at 390 px and the first
       car card is reachable within two swipes.
-- [ ] **2.3 Hero cut for the phone.** `components/home/Hero.tsx` and `HeroSearch.tsx`:
+- [x] **2.3 Hero cut for the phone.** `components/home/Hero.tsx` and `HeroSearch.tsx`:
       lede to one sentence (≤ 14 words); on mobile show only the Make select and the budget
       chips plus the button; the Model field and Import panel appear from `sm` up. Remove the
       trust-link row ("Verified sellers · Direct contact") and replace it with the one
       disclaimer sentence under the search. The specimen (right column) follows directly under
       the form on mobile. Done when: at 390 px the headline, form and the top of the specimen
       car fit in 844 px.
-- [ ] **2.4 Stock section as the main event.** `components/home/FeaturedCars.tsx`: title
+- [x] **2.4 Stock section as the main event.** *(Done. The hero's car is excluded from the grid, so no car appears twice; placements carry Featured / Sponsored / Hot deal in the card's top-right.)* `components/home/FeaturedCars.tsx`: title
       "{count} inspected cars in stock", chips, then the grid at `sm:grid-cols-2 lg:grid-cols-3`
       (not four), showing up to 9 cars and a "See all cars" link. Placements from
       `cars.featured()` are merged into this grid with a small "Featured" / "Sponsored" label
       inside the card's top-right corner instead of a separate section. Done when: no car id
       appears twice on the homepage.
-- [ ] **2.5 One dark band, flat.** `components/home/Standard.tsx`: keep the headline, the
+- [x] **2.5 One dark band, flat.** `components/home/Standard.tsx`: keep the headline, the
       three numbers (150 / 105 / 49) and the full-width ruler; remove the photo figure, the
       four-item "controls" list and the second link. Remove the `ambient-ink grain` classes
       (flat `bg-ink-900`). Done when: the band is one screen on desktop and under 1.5 screens on
       mobile.
-- [ ] **2.6 Proof + Sell strip (new, small).** New `components/home/Proof.tsx`: one photo
+- [x] **2.6 Proof + Sell strip (new, small).** *(Done with one deliberate change: Proof has no photograph. `public/img/CREDITS.md` says the workshop photos are licensed stock that must never be presented as Sawa's centres or staff, and beside "Inspected by people you can visit" any photo would be. The three real centres are the section's content until D3 delivers real photos.)* New `components/home/Proof.tsx`: one photo
       (`/img/inspector-wheel-arch.jpg` until D3), one sentence ("Every car is inspected by a
       Sawa mechanic at one of three Kigali centres"), the three centre names with hours from
       `getDisplayCenters()`. New `components/home/SellStrip.tsx`: one line ("What is your car
       worth?"), a Make + Year inline form posting to `/sell#valuation` (GET params the
       ValuationTool pre-fills), one button. Done when: both render server-side with no client JS
       beyond the form.
-- [ ] **2.7 One disclaimer per page.** Remove the duplicates and keep exactly one, next to the
+- [x] **2.7 One disclaimer per page.** *(Done for home, listing, sell (under the valuation result) and import ("How you pay" beside the request). The contact and rental-inquiry consent checkboxes keep their wording: they record acknowledgement of the terms.)* Remove the duplicates and keep exactly one, next to the
       decision: hero (home), beside the contact button (listing page), beside the valuation
       result (sell), beside the request form (import). Remove: `cars/[id]/page.tsx` the
       "A verified listing, not a managed transaction" card and the "Transaction model" row;
       `DecisionSummary` entirely (task 2.8); the sell page's black `noCheckoutBold` bar;
       `PageIntro`'s three-phrase trust row. Footer keeps its one line. Done when: each page
       contains the sentence from §0 once (grep the rendered HTML for "never holds").
-- [ ] **2.8 Listing page trims.** `web/src/app/cars/[id]/page.tsx`: delete `DecisionSummary`;
+- [x] **2.8 Listing page trims.** `web/src/app/cars/[id]/page.tsx`: delete `DecisionSummary`;
       move `InspectionReportCard` to sit directly after the `SpecGrid` section; remove the
       "Open in the app" button from the sidebar; move the exchange-rate note (`RateNote`) into a
       `title` tooltip on the USD figure or a single footnote line. Keep the sticky mobile bar.
       Done when: desktop page order is gallery → title → specification → inspection report →
       paperwork → seller → next steps → similar cars.
-- [ ] **2.9 Sell page order.** `web/src/app/sell/page.tsx`: hero + valuation; "What we do for
+- [x] **2.9 Sell page order.** *(Done. The inspection fee is read live from the rate card (`GET /settings/rate-card`), not hard-coded.)* `web/src/app/sell/page.tsx`: hero + valuation; "What we do for
       you" with three items (inspect, photograph, publish with the report); a "What it costs"
       block showing the walk-in inspection fee from `/tools/pricing` copy (RWF 15,000) and a
       red "Book an inspection" button to `/sell/submit`; centres; the four seller FAQs. Delete
@@ -169,7 +169,7 @@ decoration. Nothing here changes the backend or the app.
       footer only). Use the step count from D4 everywhere: `PipelineModules.LISTING_PIPELINE`,
       `site.ts SELLING_STEPS`, `messages/marketing.ts sellingSteps`, About `pipeline.stages`.
       Done when: `/sell` has at most five sections and one red button per screen.
-- [ ] **2.10 Import page order.** `web/src/app/imports/page.tsx`: duty estimate (the
+- [x] **2.10 Import page order.** *(Done, with one gap: the duty estimate needs a price typed in, so a visitor sees the calculator, not a francs figure, on arrival. Showing an example price would be a made-up number, so it does not.)* `web/src/app/imports/page.tsx`: duty estimate (the
       `DutyCalculator`, pre-filled from `?year&price_usd`) first, request form second, the
       8-step process third, catalogue last with one line at its top: "Prices are quoted on
       request; every model below can be sourced." Remove the per-card "Request this model"
@@ -177,19 +177,19 @@ decoration. Nothing here changes the backend or the app.
       `/imports?make=…#request`). If D6 is yes, the Korean catalogue takes the catalogue slot and
       the old model grid is hidden. Done when: a visitor sees a francs figure before scrolling
       past one screen on desktop.
-- [ ] **2.11 Merge About and Marketplace safety into How Sawa works.**
+- [x] **2.11 Merge About and Marketplace safety into How Sawa works.** *(Done. /about and /promise answer 308 from `next.config.ts`; a redirect inside the page degraded to a 200 meta refresh because the root `loading.tsx` streams. Also corrected About's "cars below our threshold are not published", false since PR #106. The FAQ moved here from the homepage.)*
       `web/src/app/(marketing)/how-it-works/page.tsx` becomes: why we exist (About's three
       paragraphs), the 150-point standard (ruler + numbers), who verifies what (the five
       controls as a plain list, no cards), what we never do (About's four items), buying steps,
       selling steps, centres. `/about` and `/promise` become `redirect('/how-it-works#...')`
       pages; update `FOOTER_LINKS`, `sitemap.ts`, and internal links (`grep -rn "/promise\|/about"
       web/src`). Done when: no public page repeats the five controls, and old URLs redirect.
-- [ ] **2.12 Button discipline.** One `variant="primary"` button per viewport-height on every
+- [x] **2.12 Button discipline.** *(Done. Every public page audited at 1440px. The /rentals filter chip stays red as an active state. The phone menu's duplicate red "Sell your car" is gone.)* One `variant="primary"` button per viewport-height on every
       page. Everything else is `outline`, `secondary` or `TextLink`. Audit with
       `grep -n "Button" web/src/app/page.tsx web/src/app/sell/page.tsx` and the rendered
       pages. Done when: a screenshot of each page at 1440 px shows at most one red button per
       1,000 px of height (the header's Sell button excepted).
-- [ ] **2.13 Plain-language register.** Replace legal phrasing on marketing and decision
+- [x] **2.13 Plain-language register.** Replace legal phrasing on marketing and decision
       surfaces ("not a party to the resulting contract or dispute", "does not accept, hold or
       route user transaction funds") with the §0 sentence or "You deal with the seller
       directly." Legal pages (`/legal/*`) keep legal wording. Done when: the words "party",
@@ -197,68 +197,68 @@ decoration. Nothing here changes the backend or the app.
 
 ## Phase 3 — Polish (visual system, consistency, growth)
 
-- [ ] **3.1 One hero register.** Every page opens on `bg-surface-page` with a black
+- [x] **3.1 One hero register.** *(Done: PageHeader, sell hero, tools hub and subpages, download, contact and the auth layout open on paper.)* Every page opens on `bg-surface-page` with a black
       `text-display` headline and a one-line lede: convert the Sell and Tools heroes (ink +
       red radial gradient) and the `PageHeader` component (white strip) to the pattern
       `PageIntro` uses. Delete the inline `bg-[radial-gradient(...)]` divs. Done when: no page's
       first 600 px is dark or white; all are paper.
-- [ ] **3.2 Retire decoration.** In `globals.css` delete `.ambient-ink`, `.grain`,
+- [x] **3.2 Retire decoration.** *(Done: ambient/grain/grid/lamp classes, stagger, kenburns, rise, halo and Reveal are gone.)* In `globals.css` delete `.ambient-ink`, `.grain`,
       `.blueprint-grid`, `.ambient-paper`, `.grid-paper`; in `tailwind.config.ts` delete the
       `kenburns` keyframe/animation and the `brand` / `brand-lg` shadows; remove the `stagger`
       utility and every `Reveal` wrapper (`components/ui/Reveal.tsx`, used by
       `PipelineModules`) so content is visible on load. Keep `fade-up` for the mobile drawer
       only. Done when: `grep -rn "ambient-\|grain\|stagger\|Reveal\|kenburns" web/src` is
       empty except the drawer.
-- [ ] **3.3 Red only for price, score ring, one button.** Remove `text-brand` from eyebrows
+- [x] **3.3 Red only for price, score ring, one button.** *(Done: Eyebrow defaults to muted, red gradient bars removed, inline links are ink with an underline. Also fixed the `font-extraboldst` typo on activate.)* Remove `text-brand` from eyebrows
       (`Eyebrow` default tone becomes `muted`), from the 1 px top bar on cards (`sell` and
       `rentals` pages), from icon tiles (`bg-brand-tint text-brand` on `/promise` cards, now
       merged away) and from in-copy links on marketing pages (links are ink, underlined).
       Done when: at 1440 px each page has red only on prices, the score ring, the primary
       button and the certified badge.
-- [ ] **3.4 Ruler only at full width.** `components/brand/CheckRuler.tsx` is used in
+- [x] **3.4 Ruler only at full width.** *(Done, slightly differently: the hero specimen and the listing report show the large score only, because the ruler beside the number repeated it. The ruler now lives only in Standard.)* `components/brand/CheckRuler.tsx` is used in
       `Specimen` (40 px) and the listing report card (small). Replace both with the
       `ScoreRing` + large number; the ruler remains only in `Standard` (96 px, labelled).
       Done when: no ruler renders narrower than 600 px.
-- [ ] **3.5 Fewer boxes.** On How Sawa works, Sell and Import, replace bordered `Card`
+- [x] **3.5 Fewer boxes.** *(Done: CenterList and the sell page use hairline columns instead of cards.)* On How Sawa works, Sell and Import, replace bordered `Card`
       grids with plain columns separated by hairlines (`border-t border-line-soft pt-5`), the
       pattern `Standard`'s stat row uses. Icon tiles go. Done when: these pages use `Card`
       only for forms and the valuation result.
-- [ ] **3.6 Theme toggle.** Per D2: remove `ThemeToggle` from the header and drawer
+- [x] **3.6 Theme toggle.** *(Done with the D2 default: toggle removed from header, drawer and dashboard; the site follows the OS and clears the old `sawa-theme` key.)* Per D2: remove `ThemeToggle` from the header and drawer
       (`Header.tsx` lines with `<ThemeToggle`), keep the inline theme script following
       `prefers-color-scheme`. If D2 says "remove entirely", also delete the `.dark` block in
       `globals.css`, `darkMode: 'class'`, and the `sawa-theme` localStorage read. Done when:
       no toggle renders and both themes (or the one theme) pass a visual check.
-- [ ] **3.7 Monthly price on cards.** In `CarCard.tsx`, under the price, add
+- [x] **3.7 Monthly price on cards.** *(Done.)* In `CarCard.tsx`, under the price, add
       `~{formatMoney(monthlyEstimate(car.price))}/mo` using the existing helper in
       `lib/business.ts` and the `cars.card.monthlyEst` key. Done when: every card shows a monthly
       figure consistent with the listing page's.
-- [ ] **3.8 Proof photography.** When D3 delivers images, place them in `web/public/img/`
+- [ ] **3.8 Proof photography.** *(Blocked on D3. Nothing to do until real photographs exist.)* When D3 delivers images, place them in `web/public/img/`
       (add credits to `CREDITS.md`), use one in `Proof.tsx` and one in How Sawa works. Strip
       EXIF before committing. Done when: both pages show a real Sawa photograph with alt text.
-- [ ] **3.9 Recently sold row.** Backend already records `sold_at`. Add
+- [x] **3.9 Recently sold row.** *(Done: new `GET /cars/recently-sold` (sold in 90 days, eligible seller, valid inspection; tests in `backend/test/recently-sold.test.js`). The row sits inside the stock section so the homepage keeps five sections, and stays hidden until the backend is deployed.)* Backend already records `sold_at`. Add
       `GET /cars?status=sold&limit=6` support if absent (check `routes/cars.js` status filter
       and `PUBLIC_CAR_COLUMNS`), then a "Recently sold" row under the stock grid showing title,
       score and "Sold" (no price if the owner prefers; default show the asking price). Done
       when: the row renders only when at least 3 sold cars exist in the last 90 days.
-- [ ] **3.10 WhatsApp fallback on listings (D5).** On `cars/[id]/page.tsx` for signed-out
+- [x] **3.10 WhatsApp fallback on listings (D5).** *(Done. Also fixed a 320 px horizontal overflow on the listing page.)* On `cars/[id]/page.tsx` for signed-out
       visitors, under "Sign in to contact seller", add an outline button "Ask Sawa about this
       car on WhatsApp" linking to `https://wa.me/{CONTACT.whatsapp}?text=` with the listing URL
       pre-filled. It goes to Sawa's line, never the seller's. Done when: the link opens WhatsApp
       with the car title and URL in the message.
-- [ ] **3.11 Saved-search promotion.** On `/cars` empty and low-result states and on the stock
+- [x] **3.11 Saved-search promotion.** *(Done as an inline "Save this search" under the active filters (server action, `saved.createSearch`). The signed-in path was not exercised here because it writes to production.)* On `/cars` empty and low-result states and on the stock
       section, add one line: "Tell me when a {make} under {budget} arrives" linking to
       `/dashboard/saved` (signed in) or `/signup?next=/dashboard/saved`. Done when: the link
       carries the current filters as query params the saved-search form can read.
-- [ ] **3.12 Make and budget landing pages.** Add `/cars/make/[make]` and
+- [x] **3.12 Make and budget landing pages.** *(Done: slugs come from the display make (so a corporate-name rename keeps the URL); `/cars?make=` and `/cars?max_price=<edge>` canonicalise to the landing pages; sitemap and homepage links use them; unknown slugs 404.)* Add `/cars/make/[make]` and
       `/cars/under/[amount]` routes that render the `/cars` page with the filter preset, a
       distinct `<h1>` and canonical, and list them in `sitemap.ts` for makes with ≥ 1 live car
       and for each `BUDGET_EDGES` value with ≥ 1 car. Done when: `/sitemap.xml` lists them and
       each page's `<title>` differs.
-- [ ] **3.13 Android message.** On `/download` and in the footer's store block, while
+- [x] **3.13 Android message.** *(Done. Also rewrote the download page lead, which still implied Android was available.)* On `/download` and in the footer's store block, while
       `APP.androidLive` is false, show "On Android, use sawacars.com. Everything works in the
       browser." instead of only "Coming soon". Done when: the sentence renders and disappears
       when `androidLive` flips.
-- [ ] **3.14 Page weight.** Homepage HTML is ~449 KB. Check what dominates (RSC payload of
+- [ ] **3.14 Page weight.** *(Partly done: 313 KB to 239 KB on a production build of this branch (main serves 442 KB); 70 KB to 53 KB gzipped. What is left is mostly the nine stock cards, each sent twice (HTML and RSC payload, inherent to the App Router), plus the root not-found tree Next ships with every page. Reaching 200 KB needs a product call: show six cards on the homepage instead of nine (about 25 KB).)* Homepage HTML is ~449 KB. Check what dominates (RSC payload of
       the 100-car stock fetch, the i18n catalogue, inline SVG ticks). Pass only the fields
       cards need from `getStock()` to client components, and cap the hero's `modelsByMake` to
       makes in stock. Target under 200 KB. Done when: `curl -s https://sawacars.com | wc -c`

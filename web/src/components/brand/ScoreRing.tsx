@@ -37,6 +37,9 @@ export function ScoreRing({
   const tickOut = r + w / 2 + 1
   const cx = size / 2
   const light = tone === 'light'
+  // Two decimals is sub-pixel at any size drawn; the full float was ~70 bytes
+  // of noise per ring, in the HTML and again in the RSC payload.
+  const px = (n: number) => Math.round(n * 100) / 100
 
   return (
     <span
@@ -52,14 +55,14 @@ export function ScoreRing({
         />
         <circle
           cx={cx} cy={cx} r={r} fill="none" strokeWidth={w} strokeLinecap="round"
-          strokeDasharray={`${filled} ${c}`}
+          strokeDasharray={`${px(filled)} ${px(c)}`}
           className="stroke-brand"
         />
       </svg>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" className="absolute inset-0">
         <line
-          x1={cx + tickIn * Math.cos(angle)} y1={cx + tickIn * Math.sin(angle)}
-          x2={cx + tickOut * Math.cos(angle)} y2={cx + tickOut * Math.sin(angle)}
+          x1={px(cx + tickIn * Math.cos(angle))} y1={px(cx + tickIn * Math.sin(angle))}
+          x2={px(cx + tickOut * Math.cos(angle))} y2={px(cx + tickOut * Math.sin(angle))}
           strokeWidth={Math.max(1.25, w / 2.5)}
           className={light ? 'stroke-white/70' : 'stroke-content'}
         />

@@ -26,7 +26,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     cost: {
       q: 'What does it cost to sell?',
-      a: 'Any commercial service or listing charges are communicated separately by Sawa Cars and are not collected through a buyer–seller payment gateway. A vehicle transaction itself is always between the users.',
+      a: 'One charge: the 150-point inspection, paid at the centre (the current price is on the Sell page). Listing your car, buyer messages and the valuation are free, and Sawa Cars never takes a share of the sale.',
     },
     reserve: {
       q: 'Does contacting a seller reserve a car?',
@@ -60,7 +60,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     cost: {
       q: 'Kugurisha bihenda bite?',
-      a: 'Amafaranga yose ya serivisi cyangwa ay’itangazo amenyeshwa ukwayo na Sawa Cars kandi ntakusanywa binyuze mu buryo bw’ubwishyu hagati y’umuguzi n’umugurisha. Ubucuruzi bw’imodoka ubwabwo buhora hagati y’abakoresha.',
+      a: 'Amafaranga amwe gusa: isuzuma ry’ingingo 150, ryishyurwa ku kigo (igiciro kiri ku ipaji yo Kugurisha). Gushyira imodoka ku isoko, ubutumwa bw’abaguzi n’isuzuma ry’agaciro ni ubuntu, kandi Sawa Cars ntifata umugabane ku igurishwa.',
     },
     reserve: {
       q: 'Ese kuvugana n’umugurisha bibika imodoka?',
@@ -94,7 +94,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     cost: {
       q: 'Combien coûte la vente ?',
-      a: 'Les éventuels frais de service ou de mise en ligne sont communiqués séparément par Sawa Cars et ne sont pas prélevés via une passerelle de paiement acheteur–vendeur. La transaction du véhicule elle-même se fait toujours entre les utilisateurs.',
+      a: 'Un seul frais : l’inspection en 150 points, payée au centre (le tarif actuel figure sur la page Vendre). L’annonce, les messages des acheteurs et l’estimation sont gratuits, et Sawa Cars ne prend jamais de part sur la vente.',
     },
     reserve: {
       q: 'Contacter un vendeur réserve-t-il une voiture ?',
@@ -128,7 +128,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     cost: {
       q: 'Kuuza kunagharimu kiasi gani?',
-      a: 'Gharama zozote za huduma au za tangazo huwasilishwa kando na Sawa Cars na hazikusanywi kupitia mfumo wa malipo kati ya mnunuzi na muuzaji. Muamala wa gari wenyewe daima uko kati ya watumiaji.',
+      a: 'Ada moja tu: ukaguzi wa vipengele 150, unaolipwa kituoni (bei ya sasa iko kwenye ukurasa wa Kuuza). Kutangaza gari lako, ujumbe wa wanunuzi na makadirio ni bure, na Sawa Cars haichukui sehemu yoyote ya mauzo.',
     },
     reserve: {
       q: 'Je, kuwasiliana na muuzaji kunahifadhi gari?',
@@ -162,7 +162,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     cost: {
       q: '판매 비용은 얼마인가요?',
-      a: '상업 서비스나 등록 수수료가 있다면 Sawa Cars가 별도로 안내하며, 구매자–판매자 결제 게이트웨이를 통해 징수하지 않습니다. 차량 거래 자체는 항상 이용자 간에 이루어집니다.',
+      a: '비용은 150개 항목 검사 한 가지이며 센터에서 결제합니다(현재 요금은 판매 페이지에 있습니다). 매물 등록, 구매자 메시지, 시세 평가는 무료이며 Sawa Cars는 판매 대금에서 어떤 몫도 가져가지 않습니다.',
     },
     reserve: {
       q: '판매자에게 연락하면 차량이 예약되나요?',
@@ -196,7 +196,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     cost: {
       q: '出售车辆需要支付什么费用？',
-      a: '任何商业服务或发布费用均由 Sawa Cars 单独告知，且不通过买卖双方之间的支付通道收取。车辆交易本身始终发生在用户之间。',
+      a: '只有一项费用：150 项检测，在中心支付（当前价格见“出售”页面）。发布车源、买家消息和估价均免费，Sawa Cars 从不从成交款中抽成。',
     },
     reserve: {
       q: '联系卖家是否会预留车辆？',

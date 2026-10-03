@@ -15,6 +15,7 @@ type Messages = Record<string, unknown>
 
 const en = {
   common: {
+    directDeal: 'You and the seller agree the price and pay each other directly. Sawa Cars never holds the money.',
     buy: 'Buy',
     rent: 'Rent',
     sell: 'Sell',
@@ -40,7 +41,7 @@ const en = {
     tools: 'Tools',
     rent: 'Rent',
     imports: 'Import',
-    howItWorks: 'How it works',
+    howItWorks: 'How Sawa works',
     browseCertified: 'Browse certified cars',
   },
   footer: {
@@ -67,7 +68,8 @@ const en = {
       '/tools/import-duty': 'Import duty calculator',
       '/about': 'About Sawa Cars',
       '/promise': 'Marketplace safety',
-      '/how-it-works': 'How buying works',
+      '/how-it-works': 'How Sawa works',
+      '/how-it-works#buying': 'How buying works',
       '/contact': 'Contact & centers',
       '/signin': 'Sign in',
       '/signup': 'Create account',
@@ -83,6 +85,7 @@ const en = {
 
 const rw = {
   common: {
+    directDeal: 'Wowe n’umugurisha mwumvikana ku giciro kandi mukishyurana ubwanyu. Sawa Cars ntibika amafaranga na rimwe.',
     buy: 'Gura',
     rent: 'Kodesha',
     sell: 'Gurisha',
@@ -108,7 +111,7 @@ const rw = {
     tools: 'Ibikoresho',
     rent: 'Kodesha',
     imports: 'Gutumiza',
-    howItWorks: 'Uko bikorwa',
+    howItWorks: 'Uko Sawa ikora',
     browseCertified: 'Reba imodoka zemewe',
   },
   footer: {
@@ -135,7 +138,8 @@ const rw = {
       '/tools/import-duty': 'Kubara umusoro wo gutumiza',
       '/about': 'Ibyerekeye Sawa Cars',
       '/promise': 'Umutekano w’isoko',
-      '/how-it-works': 'Uko kugura bikorwa',
+      '/how-it-works': 'Uko Sawa ikora',
+      '/how-it-works#buying': 'Uko kugura bikorwa',
       '/contact': 'Twandikire & ibigo',
       '/signin': 'Injira',
       '/signup': 'Fungura konti',
@@ -151,6 +155,7 @@ const rw = {
 
 const fr = {
   common: {
+    directDeal: 'Vous et le vendeur fixez le prix et vous payez directement. Sawa Cars ne détient jamais l’argent.',
     buy: 'Acheter',
     rent: 'Louer',
     sell: 'Vendre',
@@ -176,7 +181,7 @@ const fr = {
     tools: 'Outils',
     rent: 'Louer',
     imports: 'Importer',
-    howItWorks: 'Comment ça marche',
+    howItWorks: 'Comment fonctionne Sawa',
     browseCertified: 'Voir les voitures certifiées',
   },
   footer: {
@@ -203,7 +208,8 @@ const fr = {
       '/tools/import-duty': "Calculateur de droits d'importation",
       '/about': 'À propos de Sawa Cars',
       '/promise': 'Sécurité du marché',
-      '/how-it-works': "Comment se déroule l'achat",
+      '/how-it-works': 'Comment fonctionne Sawa',
+      '/how-it-works#buying': "Comment se déroule l'achat",
       '/contact': 'Contact et centres',
       '/signin': 'Se connecter',
       '/signup': 'Créer un compte',
@@ -219,6 +225,7 @@ const fr = {
 
 const sw = {
   common: {
+    directDeal: 'Wewe na muuzaji mnakubaliana bei na kulipana moja kwa moja. Sawa Cars haishiki pesa kamwe.',
     buy: 'Nunua',
     rent: 'Kukodisha',
     sell: 'Uza',
@@ -244,7 +251,7 @@ const sw = {
     tools: 'Zana',
     rent: 'Kodi',
     imports: 'Agiza',
-    howItWorks: 'Jinsi inavyofanya kazi',
+    howItWorks: 'Jinsi Sawa inavyofanya kazi',
     browseCertified: 'Angalia magari yaliyothibitishwa',
   },
   footer: {
@@ -271,7 +278,8 @@ const sw = {
       '/tools/import-duty': 'Kikokotoo cha ushuru wa kuagiza',
       '/about': 'Kuhusu Sawa Cars',
       '/promise': 'Usalama wa soko',
-      '/how-it-works': 'Jinsi ununuzi unavyofanya kazi',
+      '/how-it-works': 'Jinsi Sawa inavyofanya kazi',
+      '/how-it-works#buying': 'Jinsi ununuzi unavyofanya kazi',
       '/contact': 'Mawasiliano na vituo',
       '/signin': 'Ingia',
       '/signup': 'Fungua akaunti',
@@ -287,6 +295,7 @@ const sw = {
 
 const ko = {
   common: {
+    directDeal: '가격은 판매자와 직접 합의하고 대금도 직접 주고받습니다. Sawa Cars는 돈을 보관하지 않습니다.',
     buy: '구매',
     rent: '렌트',
     sell: '판매',
@@ -312,7 +321,7 @@ const ko = {
     tools: '도구',
     rent: '렌트',
     imports: '수입',
-    howItWorks: '이용 방법',
+    howItWorks: 'Sawa 이용 방법',
     browseCertified: '인증 차량 둘러보기',
   },
   footer: {
@@ -339,7 +348,8 @@ const ko = {
       '/tools/import-duty': '수입 관세 계산기',
       '/about': 'Sawa Cars 소개',
       '/promise': '마켓플레이스 안전',
-      '/how-it-works': '구매 방법',
+      '/how-it-works': 'Sawa 이용 방법',
+      '/how-it-works#buying': '구매 방법',
       '/contact': '연락처 및 센터',
       '/signin': '로그인',
       '/signup': '계정 만들기',
@@ -355,6 +365,7 @@ const ko = {
 
 const zh = {
   common: {
+    directDeal: '价格由您与卖家直接商定，款项也直接支付给对方。Sawa Cars 从不经手任何款项。',
     buy: '购买',
     rent: '租车',
     sell: '出售',
@@ -380,7 +391,7 @@ const zh = {
     tools: '工具',
     rent: '租车',
     imports: '进口',
-    howItWorks: '使用说明',
+    howItWorks: 'Sawa 如何运作',
     browseCertified: '浏览已认证车辆',
   },
   footer: {
@@ -407,7 +418,8 @@ const zh = {
       '/tools/import-duty': '进口关税计算器',
       '/about': '关于 Sawa Cars',
       '/promise': '市场安全',
-      '/how-it-works': '购车方法',
+      '/how-it-works': 'Sawa 如何运作',
+      '/how-it-works#buying': '购车方法',
       '/contact': '联系方式与中心',
       '/signin': '登录',
       '/signup': '创建账户',
@@ -455,15 +467,23 @@ export function getT(locale: unknown): TFunction {
 }
 
 /**
- * The slice of the catalogue a client subtree needs: the named top-level
- * namespaces, each already merged over English so the browser never has to
- * know a fallback exists. Server-only by construction — it reads DICTIONARY.
+ * The slice of the catalogue a client subtree needs: the named namespaces,
+ * each already merged over English so the browser never has to know a
+ * fallback exists. A namespace may be a dotted path ('home.front') when the
+ * client needs one branch of a large namespace; it arrives nested the same
+ * way, so keys are written in full either way. Server-only by construction —
+ * it reads DICTIONARY.
  */
 export function messagesFor(locale: unknown, namespaces: readonly string[]): Messages {
   const code = normalizeLocale(locale)
   const out: Messages = {}
   for (const ns of namespaces) {
-    out[ns] = mergeMessages(DICTIONARY[DEFAULT_LOCALE][ns], DICTIONARY[code][ns])
+    const path = ns.split('.')
+    const branch = (dict: Messages) =>
+      path.reduce<unknown>((node, key) => (node && typeof node === 'object' ? (node as Messages)[key] : undefined), dict)
+    let target = out
+    for (const key of path.slice(0, -1)) target = (target[key] ??= {}) as Messages
+    target[path[path.length - 1]] = mergeMessages(branch(DICTIONARY[DEFAULT_LOCALE]), branch(DICTIONARY[code]))
   }
   return out
 }

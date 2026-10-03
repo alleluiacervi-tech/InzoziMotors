@@ -337,6 +337,40 @@ router.get('/featured', async (req, res) => {
   }
 });
 
+// GET /cars/recently-sold — the website's "Recently sold" row.
+//
+// Proof that cars actually change hands here, so it shows only what the detail
+// page would show for the same car: sold, a seller who still passes the
+// eligibility rules, and valid inspection evidence. A link from this row can
+// therefore never land on a 404. The window is fixed at 90 days; the client
+// decides whether three is enough to bother showing the row.
+const RECENTLY_SOLD_MAX = 12;
+const RECENTLY_SOLD_COLUMNS = [
+  'id', 'title', 'make', 'model', 'year', 'mileage', 'price', 'currency',
+  'images', 'inspection_score', 'sold_at',
+];
+router.get('/recently-sold', async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 6, 1), RECENTLY_SOLD_MAX);
+  try {
+    const { rows } = await pool.query(
+      `SELECT ${publicCarSelect('c', RECENTLY_SOLD_COLUMNS)}, ${inspectionPassedSelect('c')}
+         FROM cars c
+         JOIN users u ON u.id = c.seller_id
+        WHERE c.status = 'sold'
+          AND c.sold_at > NOW() - INTERVAL '90 days'
+          AND ${SELLER_IS_ELIGIBLE}
+          AND ${validInspectionExists('c')}
+        ORDER BY c.sold_at DESC
+        LIMIT $1`,
+      [limit]
+    );
+    res.json(rows);
+  } catch (err) {
+    log.error('recently sold feed error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /cars/feature/placements — admin: every placement that has not ended,
 // including the ones buyers cannot see.
 //

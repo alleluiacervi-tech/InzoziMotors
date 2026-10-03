@@ -29,7 +29,7 @@ export default async function DirectDealNoticePage() {
     { id: 'user-role', heading: t('marketing.guarantee.userRole.heading'), body: list('marketing.guarantee.userRole.items', 5) },
     { id: 'safety', heading: t('marketing.guarantee.safety.heading'), body: <><p>{t('marketing.guarantee.safety.p1')}</p><p>{t('marketing.guarantee.safety.p2')}</p></> },
     { id: 'law', heading: t('marketing.guarantee.law.heading'), body: <p>{t('marketing.guarantee.law.p')}</p> },
-    { id: 'related', heading: t('marketing.guarantee.related.heading'), body: <ul><li><Link href="/legal/terms">{t('marketing.guarantee.related.terms')}</Link></li><li><Link href="/how-it-works">{t('marketing.guarantee.related.how')}</Link></li><li><Link href="/promise">{t('marketing.guarantee.related.promise')}</Link></li></ul> },
+    { id: 'related', heading: t('marketing.guarantee.related.heading'), body: <ul><li><Link href="/legal/terms">{t('marketing.guarantee.related.terms')}</Link></li><li><Link href="/how-it-works">{t('marketing.guarantee.related.how')}</Link></li><li><Link href="/how-it-works#controls">{t('marketing.guarantee.related.promise')}</Link></li></ul> },
   ]
 
   return <LegalPage title={t('marketing.guarantee.page.title')} lede={t('marketing.guarantee.page.lede')} sections={SECTIONS} />

@@ -212,7 +212,7 @@ export default async function RentalsPage({ searchParams }: PageProps) {
         <Container>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
             <div>
-              <p className="text-caption font-bold text-brand">{t('rentals.providerFeaturesEyebrow')}</p>
+              <p className="text-caption font-bold text-content-muted">{t('rentals.providerFeaturesEyebrow')}</p>
               <h2 className="mt-2 text-headline font-extrabold text-content">
                  {t('rentals.providerFeaturesTitle')}
               </h2>
@@ -232,14 +232,13 @@ export default async function RentalsPage({ searchParams }: PageProps) {
             </div>
 
             <Card className="relative h-fit overflow-hidden rounded-3xl border-line p-7 shadow-float">
-              <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-              <h3 className="text-title font-extrabold text-content">{t('rentals.howItWorks.title')}</h3>
+                            <h3 className="text-title font-extrabold text-content">{t('rentals.howItWorks.title')}</h3>
               <ol className="mt-5 space-y-5">
                 {(['browse', 'inquire', 'confirm'] as const).map((step, i) => (
                   <li key={step} className="flex gap-3">
                     <span
                       aria-hidden
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-caption font-extrabold text-brand"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-alt text-caption font-extrabold text-content"
                     >
                       {i + 1}
                     </span>

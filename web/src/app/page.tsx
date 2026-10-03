@@ -1,19 +1,13 @@
 import type { Metadata } from 'next'
-import { Container, Section, TextLink } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
-import { Showrooms } from '@/components/home/Showrooms'
-import { TopDeals } from '@/components/home/TopDeals'
-import { ThreeWays } from '@/components/home/ThreeWays'
 import { Standard } from '@/components/home/Standard'
-import { FinalCta } from '@/components/home/FinalCta'
-import { FaqAccordion } from '@/components/marketing/FaqAccordion'
+import { Proof } from '@/components/home/Proof'
+import { SellStrip } from '@/components/home/SellStrip'
 import { cars, rentals } from '@/lib/api'
-import { FAQS } from '@/lib/site'
 import { graph, organizationNode, websiteNode } from '@/lib/seo'
-import { getServerT } from '@/lib/i18n/server'
 import { summarizeInventory } from '@/lib/inventory'
-import type { Car, FeaturedPlacement, InspectionReport, RentalCar } from '@/lib/types'
+import type { Car, FeaturedPlacement, InspectionReport, RentalCar, SoldCar } from '@/lib/types'
 
 // The homepage is a Server Component so the live inventory below the fold is in
 // the HTML a crawler receives, not fetched afterwards by the browser.
@@ -51,6 +45,15 @@ async function getPlacements(): Promise<FeaturedPlacement[]> {
   }
 }
 
+/** Sold in the last 90 days, for the row under the stock grid. */
+async function getRecentlySold(): Promise<SoldCar[]> {
+  try {
+    return await cars.recentlySold(6)
+  } catch {
+    return []
+  }
+}
+
 async function getRentals(): Promise<RentalCar[]> {
   try {
     return await rentals.list()
@@ -71,51 +74,42 @@ async function getReport(carId: string | undefined): Promise<InspectionReport | 
 }
 
 export default async function HomePage() {
-  const [stock, placements, rentalFleet] = await Promise.all([getStock(), getPlacements(), getRentals()])
+  const [stock, placements, rentalFleet, sold] = await Promise.all([
+    getStock(),
+    getPlacements(),
+    getRentals(),
+    getRecentlySold(),
+  ])
   const inventory = summarizeInventory(stock)
   const report = await getReport(inventory.best?.id)
-  const t = await getServerT()
   const organizationLd = graph(organizationNode(), websiteNode())
 
   return (
     <>
-      {/* The promise, one search across the three businesses, and the
-          evidence: the best-scoring car in stock with its 150-point result. */}
+      {/* Five sections, each a screen or less on a phone, each showing a car
+          or moving someone toward one (docs/WEBSITE-REDESIGN-TODO.md, 2.2).
+          1. The promise, one search, and the evidence: the best-scoring car
+             in stock with its 150-point result. */}
       <Hero inventory={inventory} rentalCount={rentalFleet.length} report={report} />
 
-      {/* Operator placements, then the yard: its count, its shape as one row
-          of filters, and the newest inspected cars. */}
-      <TopDeals placements={placements} />
-      <FeaturedCars cars={stock.slice(0, 8)} inventory={inventory} />
+      {/* 2. The yard. Operator placements lead the grid with their labels;
+             the hero's car is not repeated. */}
+      <FeaturedCars
+        cars={stock}
+        placements={placements}
+        excludeId={inventory.best?.id}
+        inventory={inventory}
+        sold={sold}
+      />
 
-      {/* The standard every car is measured against, drawn at full width. */}
+      {/* 3. The standard every car is measured against: the one dark band. */}
       <Standard />
 
-      <ThreeWays saleCount={inventory.total} rentalCount={rentalFleet.length} />
+      {/* 4. Who inspects, and where you can find them. */}
+      <Proof />
 
-      {/* Verified showrooms and the brands each one has in stock. */}
-      <Showrooms />
-
-      {/* Five of the eight; the full set lives on /how-it-works. */}
-      <Section tone="page">
-        <Container>
-          <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-            <div className="min-w-0 lg:col-span-4">
-              <div className="lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
-                <h2 className="text-headline font-extrabold text-content">{t('home.faq.title')}</h2>
-                <div className="mt-5">
-                  <TextLink href="/how-it-works">{t('home.howItWorks.link')}</TextLink>
-                </div>
-              </div>
-            </div>
-            <div className="min-w-0 lg:col-span-8">
-              <FaqAccordion items={FAQS.slice(0, 5)} structuredData />
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      <FinalCta />
+      {/* 5. The only ask of sellers on this page. */}
+      <SellStrip makes={inventory.makes.map((m) => m.value)} />
 
       <script
         type="application/ld+json"

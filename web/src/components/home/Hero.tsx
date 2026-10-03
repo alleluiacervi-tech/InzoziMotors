@@ -1,6 +1,4 @@
 import Link from 'next/link'
-import { Icon } from '@/components/ui'
-import type { IconName } from '@/components/ui'
 import { I18nScope } from '@/components/i18n/I18nScope'
 import { HeroSearch } from './HeroSearch'
 import { Specimen } from './Specimen'
@@ -9,14 +7,15 @@ import { budgetHref, type InventorySummary } from '@/lib/inventory'
 import { getServerT } from '@/lib/i18n/server'
 import type { InspectionReport } from '@/lib/types'
 import { displayMake } from '@/lib/vehicle-names'
+import { makeSlug } from '@/components/marketplace/query'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The front door: one sentence, one search, one piece of evidence.
 //
 // LEFT: the promise at poster size — know the car before you meet the seller —
-// then Buy / Rent / Import as one control (HeroSearch), the shortcuts buyers
-// here actually take, and what Sawa is not (the deal is between the parties;
-// CLAUDE.md requires every surface to say so).
+// then Buy / Rent / Import as one control (HeroSearch), the one line on what
+// Sawa is not (the deal is between the parties; CLAUDE.md requires every
+// surface to say so, once), and the shortcuts buyers here actually take.
 //
 // RIGHT: the Specimen — the best-scoring car in stock with its real 150-point
 // result. The hero used to carry a workshop photograph and a stock count; the
@@ -24,10 +23,6 @@ import { displayMake } from '@/lib/vehicle-names'
 // where one is made.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const TRUST: { icon: IconName; key: string; href: string }[] = [
-  { icon: 'user', key: 'home.hero.trust.sellers', href: '/promise' },
-  { icon: 'mail', key: 'home.hero.trust.contact', href: '/how-it-works' },
-]
 
 export async function Hero({
   inventory,
@@ -45,7 +40,7 @@ export async function Hero({
   // panel would also produce.
   const shortcuts: { label: string; href: string }[] = inventory.makes
     .slice(0, 3)
-    .map((m) => ({ label: displayMake(m.value), href: `/cars?make=${encodeURIComponent(m.value)}` }))
+    .map((m) => ({ label: displayMake(m.value), href: `/cars/make/${makeSlug(m.value)}` }))
   const firstBand = inventory.budgets.find((b) => b.count > 0 && b.max != null)
   if (firstBand) {
     shortcuts.push({
@@ -76,7 +71,7 @@ export async function Hero({
             {t('home.land.lede')}
           </p>
 
-          <I18nScope ns={['home']}>
+          <I18nScope ns={['home.front']}>
             <HeroSearch
               makes={inventory.makes}
               modelsByMake={inventory.modelsByMake}
@@ -84,14 +79,20 @@ export async function Hero({
             />
           </I18nScope>
 
+          {/* The page's one statement of the direct-deal rule (CLAUDE.md),
+              where the decision to search is made. */}
+          <p className="mt-4 max-w-2xl text-caption leading-relaxed text-content-secondary">
+            {t('common.directDeal')}
+          </p>
+
           {shortcuts.length ? (
-            <div className="mt-5 flex flex-wrap items-center gap-2">
-              <span className="mr-1 text-caption font-semibold text-content-muted">{t('home.front.popular')}</span>
+            <div className="no-scrollbar -mx-5 mt-5 flex items-center gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+              <span className="mr-1 shrink-0 text-caption font-semibold text-content-muted">{t('home.front.popular')}</span>
               {shortcuts.map((s) => (
                 <Link
                   key={s.href}
                   href={s.href}
-                  className="inline-flex h-10 items-center rounded-pill border border-line bg-surface px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content hover:text-content"
+                  className="inline-flex h-10 shrink-0 items-center rounded-pill border border-line bg-surface px-4 text-caption font-bold text-content-secondary transition-colors hover:border-content hover:text-content"
                 >
                   {s.label}
                 </Link>
@@ -99,22 +100,9 @@ export async function Hero({
             </div>
           ) : null}
 
-          <ul className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
-            {TRUST.map((item) => (
-              <li key={item.key} className="flex items-center gap-2 text-caption font-semibold text-content-secondary">
-                <Icon name={item.icon} size={15} className="shrink-0 text-content-muted" aria-hidden="true" />
-                <Link
-                  href={item.href}
-                  className="-my-2 py-2 underline decoration-line underline-offset-4 transition-colors hover:decoration-content"
-                >
-                  {t(item.key)}
-                </Link>
-              </li>
-            ))}
-          </ul>
         </div>
 
-        <div className="min-w-0 animate-rise lg:col-span-5">
+        <div className="min-w-0 lg:col-span-5">
           <Specimen car={inventory.best} report={report} />
         </div>
       </div>

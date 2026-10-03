@@ -66,49 +66,42 @@ export default async function ToolsPage() {
       }),
       breadcrumbNode([{ name: 'Home', path: '/' }, { name: 'Car tools', path: '/tools' }])
     )} />
-    <Section tone="ink" className="relative isolate overflow-hidden pt-14 sm:pt-20">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_82%_12%,rgba(204,5,15,0.28),transparent_32%),radial-gradient(circle_at_10%_90%,rgba(255,255,255,0.08),transparent_28%)]" />
+    {/* On the site's paper like every other page: a heading, then the four
+        tools as plain columns divided by hairlines. */}
+    <Section tone="page" className="!pt-10 sm:!pt-16">
       <Container>
         <div className="max-w-3xl">
-          <p className="mb-4 text-caption font-bold text-white/55">{t('tools.hub.eyebrow')}</p>
-          <h1 className="text-display-xl font-extrabold text-white">
+          <p className="mb-4 text-caption font-bold text-content-muted">{t('tools.hub.eyebrow')}</p>
+          <h1 className="text-display font-extrabold text-content">
             {t('tools.hub.title')}
           </h1>
-          <p className="mt-5 text-title-sm leading-relaxed text-white/70">
+          <p className="mt-5 text-title-sm leading-relaxed text-content-secondary">
             {t('tools.hub.lede')}
           </p>
         </div>
 
-        <div className="stagger mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2">
           {TOOLS.map((tool) => (
-            <Link
-              key={tool.href}
-              href={tool.href}
-              className="group flex flex-col rounded-3xl border border-line-soft bg-surface p-7 text-content shadow-float
-                         transition-all duration-500 ease-brand
-                         hover:-translate-y-1.5 hover:border-white/30"
-            >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
-                <Icon name={tool.icon} size={22} />
-              </span>
-              <p className="mt-4 text-micro font-bold text-content-muted">
-                {t(tool.metaKey)}
-              </p>
-              <h2 className="mt-1.5 text-title-sm font-extrabold text-content">{t(tool.titleKey)}</h2>
-              <p className="mt-2 flex-1 text-caption leading-relaxed text-content-secondary">
-                {t(tool.bodyKey)}
-              </p>
-              <span className="mt-5 inline-flex items-center gap-1.5 text-caption font-bold text-brand">
-                {t('tools.hub.open')}
-                <Icon
-                  name="arrow-right"
-                  size={16}
-                  className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"
-                />
-              </span>
-            </Link>
+            <li key={tool.href} className="min-w-0 border-t border-line pt-6">
+              <Link href={tool.href} className="group block">
+                <p className="text-micro font-bold text-content-muted">{t(tool.metaKey)}</p>
+                <h2 className="mt-1.5 text-title font-extrabold text-content group-hover:underline group-hover:decoration-2 group-hover:underline-offset-[6px]">
+                  {t(tool.titleKey)}
+                </h2>
+                <p className="mt-2 max-w-prose text-body leading-relaxed text-content-secondary">{t(tool.bodyKey)}</p>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-body font-bold text-content">
+                  {t('tools.hub.open')}
+                  <Icon
+                    name="arrow-right"
+                    size={16}
+                    aria-hidden="true"
+                    className="transition-transform duration-200 ease-brand group-hover:translate-x-0.5"
+                  />
+                </span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </Container>
     </Section>
     </>

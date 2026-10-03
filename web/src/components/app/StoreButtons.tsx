@@ -98,7 +98,8 @@ export function StoreButtons({
       : 'border-line-soft bg-surface-alt text-content-muted cursor-default'
 
   return (
-    <div className={`flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 ${className}`}>
+    <div className={className}>
+    <div className="flex flex-col items-start gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
       {stores.map((store) => {
         const inner = (
           <>
@@ -136,6 +137,13 @@ export function StoreButtons({
           </span>
         )
       })}
+    </div>
+    {/* Until the Play listing exists the website is the Android app, and
+        "coming soon" alone leaves an Android visitor with nowhere to go. Goes
+        away by itself when APP.androidLive flips. */}
+    {!APP.androidLive ? (
+      <p className={`mt-3 text-caption ${mutedText}`}>{t('store.androidWeb')}</p>
+    ) : null}
     </div>
   )
 }

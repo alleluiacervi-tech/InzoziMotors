@@ -22,7 +22,17 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       altReal: '{{title}} — photographed at a Sawa inspection center',
     },
     openInApp: 'Open in the app',
+    saveSearch: {
+      prompt: 'Tell me when new {{subject}} are listed',
+      promptBudget: 'Tell me when new {{subject}} under {{amount}} are listed',
+      turnOn: 'Turn on alerts',
+      signIn: 'Sign in for alerts',
+      saved: 'Alert on. We’ll tell you when one is listed.',
+      manage: 'Manage alerts',
+      failed: 'Could not save this alert. Try again.',
+    },
     browse: {
+      headingUnder: 'Cars under {{amount}} for sale in Kigali',
       eyebrow: 'The marketplace',
       introDescription: 'Every car inspected on the same 150 points. Buyers never pay a fee.',
       searchLabel: 'Search cars for sale',
@@ -148,6 +158,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Bought locally',
     },
     detail: {
+      askSawa: 'Ask Sawa about this car on WhatsApp',
+      askSawaMessage: 'Hello Sawa Cars, I have a question about the {{title}}: {{url}}',
       metaUnavailable: 'Car unavailable',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} in Kigali. Inspection information and verified-seller contact available on Sawa Cars.',
@@ -316,7 +328,17 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       altReal: '{{title}} — yafatiwe amafoto mu kigo cy’isuzuma cya Sawa',
     },
     openInApp: 'Fungura muri porogaramu',
+    saveSearch: {
+      prompt: 'Mbwira igihe hashyizweho {{subject}} nshya',
+      promptBudget: 'Mbwira igihe hashyizweho {{subject}} nshya ziri munsi ya {{amount}}',
+      turnOn: 'Fungura imenyesha',
+      signIn: 'Injira ubone imenyesha',
+      saved: 'Imenyesha ryafunguwe. Tuzakubwira igihe imwe ishyizweho.',
+      manage: 'Gucunga imenyesha',
+      failed: 'Ntibyashobotse kubika iri menyesha. Ongera ugerageze.',
+    },
     browse: {
+      headingUnder: 'Imodoka ziri munsi ya {{amount}} zigurishwa i Kigali',
       eyebrow: 'Isoko',
       introDescription: 'Buri modoka isuzumwa ku ngingo 150 zimwe. Abaguzi ntabwo bishyura.',
       searchLabel: 'Shakisha imodoka zigurishwa',
@@ -442,6 +464,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Byaguriwe mu gihugu',
     },
     detail: {
+      askSawa: 'Baza Sawa kuri iyi modoka kuri WhatsApp',
+      askSawaMessage: 'Muraho Sawa Cars, mfite ikibazo kuri {{title}}: {{url}}',
       metaUnavailable: 'Imodoka ntiboneka',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} i Kigali. Amakuru y’isuzuma n’ukuvugana n’umugurisha wemejwe biraboneka kuri Sawa Cars.',
@@ -610,7 +634,17 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       altReal: '{{title}} — photographiée dans un centre d’inspection Sawa',
     },
     openInApp: 'Ouvrir dans l’application',
+    saveSearch: {
+      prompt: 'Prévenez-moi quand de nouvelles {{subject}} sont publiées',
+      promptBudget: 'Prévenez-moi quand de nouvelles {{subject}} à moins de {{amount}} sont publiées',
+      turnOn: 'Activer les alertes',
+      signIn: 'Se connecter pour les alertes',
+      saved: 'Alerte activée. Nous vous préviendrons dès qu’une annonce paraît.',
+      manage: 'Gérer les alertes',
+      failed: 'Impossible d’enregistrer cette alerte. Réessayez.',
+    },
     browse: {
+      headingUnder: 'Voitures à moins de {{amount}} à vendre à Kigali',
       eyebrow: 'Le marché',
       introDescription: 'Chaque voiture inspectée sur les mêmes 150 points. Les acheteurs ne paient jamais de frais.',
       searchLabel: 'Rechercher des voitures à vendre',
@@ -736,6 +770,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Acheté localement',
     },
     detail: {
+      askSawa: 'Demander à Sawa sur WhatsApp',
+      askSawaMessage: 'Bonjour Sawa Cars, j’ai une question sur la {{title}} : {{url}}',
       metaUnavailable: 'Voiture indisponible',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} à Kigali. Informations d’inspection et contact de vendeur vérifié disponibles sur Sawa Cars.',
@@ -904,7 +940,17 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       altReal: '{{title}} — ilipigwa picha katika kituo cha ukaguzi cha Sawa',
     },
     openInApp: 'Fungua katika programu',
+    saveSearch: {
+      prompt: 'Niarifu {{subject}} mpya zinapotangazwa',
+      promptBudget: 'Niarifu {{subject}} mpya chini ya {{amount}} zinapotangazwa',
+      turnOn: 'Washa arifa',
+      signIn: 'Ingia upate arifa',
+      saved: 'Arifa imewashwa. Tutakujulisha moja likitangazwa.',
+      manage: 'Simamia arifa',
+      failed: 'Imeshindwa kuhifadhi arifa hii. Jaribu tena.',
+    },
     browse: {
+      headingUnder: 'Magari chini ya {{amount}} yanayouzwa Kigali',
       eyebrow: 'Soko',
       introDescription: 'Kila gari hukaguliwa kwa pointi 150 zile zile. Wanunuzi hawalipi ada.',
       searchLabel: 'Tafuta magari yanayouzwa',
@@ -1030,6 +1076,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Imenunuliwa hapa nchini',
     },
     detail: {
+      askSawa: 'Uliza Sawa kuhusu gari hili kwenye WhatsApp',
+      askSawaMessage: 'Habari Sawa Cars, nina swali kuhusu {{title}}: {{url}}',
       metaUnavailable: 'Gari halipatikani',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} Kigali. Taarifa za ukaguzi na mawasiliano ya muuzaji aliyethibitishwa yanapatikana kwenye Sawa Cars.',
@@ -1198,7 +1246,17 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       altReal: '{{title}} — Sawa 검사 센터에서 촬영',
     },
     openInApp: '앱에서 열기',
+    saveSearch: {
+      prompt: '새 {{subject}} 매물이 등록되면 알려 주세요',
+      promptBudget: '{{amount}} 이하의 새 {{subject}} 매물이 등록되면 알려 주세요',
+      turnOn: '알림 켜기',
+      signIn: '로그인하고 알림 받기',
+      saved: '알림이 켜졌습니다. 매물이 등록되면 알려 드립니다.',
+      manage: '알림 관리',
+      failed: '알림을 저장하지 못했습니다. 다시 시도해 주세요.',
+    },
     browse: {
+      headingUnder: '키갈리에서 판매 중인 {{amount}} 이하 차량',
       eyebrow: '마켓플레이스',
       introDescription: '모든 차량이 동일한 150개 항목으로 검사됩니다. 구매자는 수수료를 내지 않습니다.',
       searchLabel: '판매 차량 검색',
@@ -1324,6 +1382,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: '현지 구매',
     },
     detail: {
+      askSawa: 'WhatsApp로 Sawa에 이 차량 문의하기',
+      askSawaMessage: '안녕하세요 Sawa Cars, {{title}} 차량에 대해 문의드립니다: {{url}}',
       metaUnavailable: '차량을 이용할 수 없습니다',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. 키갈리 {{price}}. 검사 정보와 인증 판매자 연락처를 Sawa Cars에서 확인할 수 있습니다.',
@@ -1492,7 +1552,17 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       altReal: '{{title}} — 拍摄于 Sawa 检测中心',
     },
     openInApp: '在应用中打开',
+    saveSearch: {
+      prompt: '有新的{{subject}}上架时通知我',
+      promptBudget: '有低于 {{amount}} 的新{{subject}}上架时通知我',
+      turnOn: '开启提醒',
+      signIn: '登录以接收提醒',
+      saved: '提醒已开启。有车源上架时我们会通知您。',
+      manage: '管理提醒',
+      failed: '无法保存此提醒，请重试。',
+    },
     browse: {
+      headingUnder: '基加利在售 {{amount}} 以下车辆',
       eyebrow: '市场',
       introDescription: '每辆车都经过相同的150项检测。买家永远无需付费。',
       searchLabel: '搜索在售车辆',
@@ -1618,6 +1688,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: '本地购买',
     },
     detail: {
+      askSawa: '通过 WhatsApp 向 Sawa 咨询此车',
+      askSawaMessage: '您好 Sawa Cars，我想咨询这辆 {{title}}：{{url}}',
       metaUnavailable: '车辆已下架',
       metaDescriptionInspected:
         '{{title}} — {{facts}}。基加利 {{price}}。检测信息及已认证卖家联系方式可在 Sawa Cars 查看。',

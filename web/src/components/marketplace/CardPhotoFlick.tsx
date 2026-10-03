@@ -12,6 +12,8 @@ import { useRef, useState } from 'react'
 // Renders as a plain image when the listing has fewer than 2 photos — the
 // interaction only exists where the data backs it.
 
+/** Frames the card can show. CarCard passes no more than this (its
+ *  PHOTO_PREVIEW): every URL is serialised into the page for each card. */
 const MAX_PREVIEW = 4
 
 export function CardPhotoFlick({

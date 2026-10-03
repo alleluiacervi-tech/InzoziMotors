@@ -74,7 +74,7 @@ export function SignInForm({ next, defaultEmail }: { next: string; defaultEmail:
         <p className="mt-2 text-right">
           <Link
             href={forgotHref}
-            className="text-caption font-bold text-brand transition-colors hover:text-brand-deep"
+            className="text-caption font-bold text-content underline decoration-line underline-offset-4 transition-colors hover:decoration-content"
           >
             {t('auth.signin.forgot')}
           </Link>

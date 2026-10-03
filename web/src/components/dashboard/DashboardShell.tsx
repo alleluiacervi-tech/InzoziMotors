@@ -7,7 +7,7 @@ import { signOutAction } from '@/app/actions/auth'
 import { Logo, LogoMark } from '@/components/brand/Logo'
 import { DashboardNav, isActive } from '@/components/dashboard/DashboardNav'
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
-import { Badge, Icon, ThemeToggle, type IconName } from '@/components/ui'
+import { Badge, Icon, type IconName } from '@/components/ui'
 import { useT } from '@/lib/i18n/context'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,7 +117,6 @@ function Utilities({ isAdmin }: { isAdmin: boolean }) {
       ) : null}
       <div className="flex items-center justify-between gap-2 px-1 pt-1">
         <LanguageSwitcher tone="light" />
-        <ThemeToggle className="text-content" />
       </div>
     </div>
   )

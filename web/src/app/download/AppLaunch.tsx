@@ -99,7 +99,7 @@ export function AppLaunch({
               <button
                 type="button"
                 onClick={() => openInApp(to)}
-                className="inline-flex min-h-[44px] items-center text-caption font-bold text-brand underline underline-offset-4"
+                className="inline-flex min-h-[44px] items-center text-caption font-bold text-content underline decoration-line underline-offset-4"
               >
                 {t('auth.download.tryAgain')}
               </button>
@@ -107,7 +107,7 @@ export function AppLaunch({
             {webFallback ? (
               <Link
                 href={webFallback}
-                className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand underline underline-offset-4"
+                className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-content underline decoration-line underline-offset-4"
               >
                 {t('auth.download.continueWeb')}
                 <Icon name="arrow-right" size={15} />
