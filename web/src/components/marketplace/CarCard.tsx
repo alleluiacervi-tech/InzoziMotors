@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
 import { CardPhotoFlick } from './CardPhotoFlick'
-import { formatKm, formatMoney, getCertTier, isDemoListing, listedAgo, marketPosition, priceDrop } from '@/lib/business'
+import { formatKm, formatMoney, getCertTier, isDemoListing, listedAgo, marketPosition, monthlyEstimate, priceDrop } from '@/lib/business'
 import { Price } from '@/components/Price'
 import { ScoreRing } from '@/components/brand/ScoreRing'
 import type { Car } from '@/lib/types'
@@ -174,6 +174,13 @@ export async function CarCard({
         {/* One component, one conversion: francs are the price, the dollar
             figure beside them is an approximation at the live rate. */}
         <Price amountRwf={car.price} inline className="mt-3" />
+        {/* What buyers here compare: the monthly figure. Same helper and
+            terms as the listing page's "estimated finance" line. */}
+        {car.price > 0 ? (
+          <p className="tnum mt-1 text-caption text-content-secondary">
+            {t('cars.card.monthlyEst', { amount: formatMoney(monthlyEstimate(car.price)) })}
+          </p>
+        ) : null}
 
         {isRow && car.description ? (
           <p className="mt-3 line-clamp-2 text-body leading-relaxed text-content-secondary">
