@@ -15,6 +15,9 @@ import { Pagination } from '@/components/marketplace/Pagination'
 import { SortSelect } from '@/components/marketplace/SortSelect'
 import { buildFacets, EMPTY_FACETS } from '@/components/marketplace/facets'
 import { getServerT } from '@/lib/i18n/server'
+import { getCurrentUser } from '@/lib/session'
+import { SaveSearchPrompt } from '@/components/marketplace/SaveSearchPrompt'
+import { canSaveSearch, saveSearchLabel } from '@/components/marketplace/save-search'
 import {
   browseHeading,
   describeFilters,
@@ -81,7 +84,7 @@ async function BrowseResults({
   // degraded state below — never the route error boundary. "No cars matched"
   // and "we couldn't reach the marketplace" are different truths, so the
   // primary call records WHICH one happened rather than collapsing both to [].
-  const [primary, facetSource] = await Promise.all([
+  const [primary, facetSource, user] = await Promise.all([
     carsApi.list(toCarQuery(filters, sort, offset)).then(
       (rows) => ({ rows, reachable: true }),
       (err: unknown) => {
@@ -93,6 +96,7 @@ async function BrowseResults({
     // still perfectly usable — it just falls back to the keyword and range
     // fields, so a facet outage never takes browse down with it.
     carsApi.list({ limit: 100 }).catch(() => [] as Car[]),
+    getCurrentUser(),
   ])
 
   const t = await getServerT()
@@ -150,6 +154,19 @@ async function BrowseResults({
         <div className="mt-4">
           <ActiveFilters filters={filters} sort={sort} />
         </div>
+
+        {/* A filtered view is a question a buyer may ask again next week:
+            offer it as an alert (the same saved search the app creates). */}
+        {!apiDown && canSaveSearch(filters) ? (
+          <div className="mt-4">
+            <SaveSearchPrompt
+              label={saveSearchLabel(t, filters)}
+              filters={filters}
+              signedIn={Boolean(user)}
+              returnTo={buildBrowseHref(filters, { sort })}
+            />
+          </div>
+        ) : null}
 
         {apiDown ? (
           <EmptyState
