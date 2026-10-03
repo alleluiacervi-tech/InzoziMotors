@@ -21,6 +21,7 @@ import {
   Card, PageHeader, EmptyState, ErrorState, LoadingState, Icon, fmtMoneyShort,
 } from '@/components/ui'
 import { useConfirm, useToast } from '@/components/feedback'
+import { MoneyInput } from '@/components/MoneyInput'
 
 type Kind = 'editorial' | 'hot_deal' | 'sponsored'
 
@@ -312,11 +313,11 @@ export default function BannerPage() {
           {/* Money exists only on the paid kind. Not disabled — absent, so
               there is nothing to fill in by accident on an editorial pick. */}
           {draft.kind === 'sponsored' ? (
-            <label className="text-label font-semibold text-content md:col-span-2">
-              Agreed amount (RWF)
-              <input
-                type="number" min={0} value={draft.amount}
-                onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+            <label htmlFor="banner-amount" className="text-label font-semibold text-content md:col-span-2">
+              Agreed amount
+              <MoneyInput
+                id="banner-amount" value={String(draft.amount ?? '')}
+                onChange={(digits) => setDraft({ ...draft, amount: digits })}
                 className="mt-1.5 h-11 w-full rounded-xl border border-line bg-surface px-3 font-normal focus:outline-none"
               />
               <span className="mt-1 block text-caption font-normal text-content-muted">

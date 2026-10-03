@@ -6,6 +6,7 @@ import { EmptyState, ErrorState, LoadingState, fmtMoney, formatRwfInput, parseRw
 import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
 import { fmtDate } from '@/lib/format'
+import { MoneyInput } from '@/components/MoneyInput'
 
 const EMPTY = {
   provider_id: '', title: '', make: '', model: '', year: '', daily_rate: '',
@@ -450,9 +451,9 @@ export default function RentalFleetPage() {
             <div><label className={label}>Model</label><input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={input} required /></div>
             <div><label className={label}>Year</label><input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className={input} required /></div>
             <div><label className={label}>Mileage (km)</label><input type="number" value={form.mileage} onChange={(e) => setForm({ ...form, mileage: e.target.value })} className={input} /></div>
-            <div><label className={label}>Provider daily rate (RWF)</label><input type="number" value={form.daily_rate} onChange={(e) => setForm({ ...form, daily_rate: e.target.value })} className={input} required /></div>
-            <div><label className={label}>Provider weekly rate (RWF)</label><input type="number" value={form.weekly_rate} onChange={(e) => setForm({ ...form, weekly_rate: e.target.value })} className={input} /></div>
-            <div><label className={label}>Provider-stated deposit</label><input type="number" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: e.target.value })} className={input} /></div>
+            <div><label htmlFor="fleet-daily_rate" className={label}>Provider daily rate</label><MoneyInput id="fleet-daily_rate" value={String(form.daily_rate ?? '')} onChange={(digits) => setForm({ ...form, daily_rate: digits })} className={input} required /></div>
+            <div><label htmlFor="fleet-weekly_rate" className={label}>Provider weekly rate</label><MoneyInput id="fleet-weekly_rate" value={String(form.weekly_rate ?? '')} onChange={(digits) => setForm({ ...form, weekly_rate: digits })} className={input} /></div>
+            <div><label htmlFor="fleet-deposit" className={label}>Provider-stated deposit</label><MoneyInput id="fleet-deposit" value={String(form.deposit ?? '')} onChange={(digits) => setForm({ ...form, deposit: digits })} className={input} /></div>
             <div><label className={label}>Minimum days</label><input type="number" min="1" value={form.min_days} onChange={(e) => setForm({ ...form, min_days: e.target.value })} className={input} /></div>
             <div className="sm:col-span-2"><label className={label}>Location</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={input} /></div>
             <div className="sm:col-span-2"><label className={label}>Image URLs, one per line</label><textarea rows={4} value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className={input} required /><p className="mt-1 text-xs text-gray-500">At least one HTTPS image is required while the vehicle is active; up to 40 are supported.</p></div>

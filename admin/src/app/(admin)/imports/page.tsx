@@ -4,7 +4,6 @@ import { ExportLink } from '@/components/ExportLink'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill } from '@/components/ui'
-import { useToast } from '@/components/feedback'
 import Link from 'next/link'
 import { ImportStatusControls } from '@/components/ImportStatusControls'
 
@@ -16,7 +15,6 @@ type ImportRow = {
   created_at: string; delivery_estimate?: string
   allowed_transitions?: string[]
 }
-type QuoteDraft = { vehicle?: string; freight?: string; landed?: string; expires?: string; delivery?: string }
 
 const money = (value: number | string | undefined) =>
   `${new Intl.NumberFormat('en-RW').format(Number(value || 0))} RWF`
@@ -26,10 +24,6 @@ export default function ImportsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [status, setStatus] = useState('')
-  const [busy, setBusy] = useState<string | null>(null)
-  const [quote, setQuote] = useState<Record<string, QuoteDraft>>({})
-  const toast = useToast()
-  const quoteTotal=(draft:QuoteDraft={})=>Number(draft.vehicle||0)+Number(draft.freight||0)+Number(draft.landed||0)
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -39,15 +33,6 @@ export default function ImportsPage() {
   }, [status])
   useEffect(() => { load() }, [load])
 
-  async function issueQuote(item: ImportRow) {
-    const draft=quote[item.id]||{}
-    const line_items=[['Vehicle and supplier preparation',draft.vehicle],['Freight and insurance',draft.freight],['Import, customs and service costs',draft.landed]].map(([label,value])=>({label:String(label),amount_rwf:Number(value||0)})).filter(row=>row.amount_rwf>0)
-    const amount=quoteTotal(draft)
-    if (!Number.isSafeInteger(amount) || amount < 100000) { toast('Enter the complete landed price in RWF', 'error'); return }
-    setBusy(item.id)
-    try { await api.quoteImport(item.id, { quoted_total_rwf: amount,line_items,quote_expires_at:draft.expires||undefined,delivery_estimate:draft.delivery||undefined }); toast('Itemized quotation issued with two 50% milestones', 'success'); await load() }
-    catch (e: any) { toast(e.message, 'error') } finally { setBusy(null) }
-  }
 
   return <div>
     <PageHeader title="Vehicle imports" description="One auditable pipeline from customer enquiry and 50% order payment to Kigali inspection, final balance and handover." action={<ExportLink dataset="imports" />} />
@@ -71,12 +56,9 @@ export default function ImportsPage() {
             {item.actual_cost_rwf != null && item.quoted_total_rwf ? (() => { const margin = Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf); return <p className={`text-caption font-bold ${margin >= 0 ? 'text-success-text' : 'text-danger-strong'}`}>Margin: {money(margin)}</p> })() : null}
           </div>
         </div>
-        {item.status === 'enquiry' ? <div className="mt-4 border-t border-line-soft pt-4"><p className="mb-3 text-label font-bold text-content">Build an exact landed-price quotation</p><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {[['vehicle','Vehicle & supplier (RWF)'],['freight','Freight & insurance (RWF)'],['landed','Import, customs & service (RWF)']].map(([key,label])=><input key={key} inputMode="numeric" value={(quote[item.id] as any)?.[key]||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],[key]:e.target.value.replace(/\D/g,'')}})} placeholder={label} className="h-11 rounded-xl border border-line px-3"/>)}
-          <input type="date" value={quote[item.id]?.expires||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],expires:e.target.value}})} aria-label="Quotation expiry" className="h-11 rounded-xl border border-line px-3"/>
-          <input value={quote[item.id]?.delivery||''} onChange={(e)=>setQuote({...quote,[item.id]:{...quote[item.id],delivery:e.target.value}})} placeholder="Delivery estimate, e.g. 8–12 weeks" className="h-11 rounded-xl border border-line px-3"/>
-          <button onClick={() => issueQuote(item)} disabled={busy === item.id} className="rounded-xl bg-brand px-5 py-2.5 text-label font-bold text-brand-on disabled:opacity-50">Issue itemized 50/50 quotation</button>
-        </div><p className="mt-2 text-caption text-content-muted">Total: {money(quoteTotal(quote[item.id]))}</p>
+        {item.status === 'enquiry' ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-warning-tint px-4 py-3">
+          <p className="text-label font-semibold text-warning-text">Waiting for a landed-price quotation</p>
+          <Link href={`/imports/${item.id}`} className="text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">Build the quotation</Link>
         </div> : null}
         <div className="mt-4 flex flex-col gap-3 border-t border-line-soft pt-4 sm:flex-row sm:items-center sm:justify-between">
           <ImportStatusControls orderId={item.id} status={item.status}

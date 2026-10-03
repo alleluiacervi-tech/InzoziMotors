@@ -7,6 +7,8 @@ import { Card, ErrorState, LoadingState, PageHeader, Pill } from '@/components/u
 import { useToast } from '@/components/feedback'
 import { fmtDateTime } from '@/lib/format'
 import { ImportStatusControls } from '@/components/ImportStatusControls'
+import { ImportQuoteForm } from '@/components/ImportQuoteForm'
+import { MoneyInput } from '@/components/MoneyInput'
 
 const money = (v: unknown) => `${new Intl.NumberFormat('en-RW').format(Number(v || 0))} RWF`
 
@@ -36,6 +38,12 @@ export default function ImportOperationsPage({ params }: { params: Promise<{ id:
       allowed={(order.allowed_transitions || []).filter((next: string) => order.status !== 'enquiry' || next === 'cancelled')}
       onChanged={load} /></div>
     <div className="grid gap-5 xl:grid-cols-2">
+      {/* The quotation is the one thing an enquiry is waiting for, so it leads. */}
+      {order.status === 'enquiry' ? <Card className="p-5 xl:col-span-2">
+        <h2 className="font-extrabold text-content">Landed-price quotation</h2>
+        <p className="mb-4 mt-1 text-caption text-content-muted">Every cost to put the car in Kigali, itemized. The buyer pays it in two halves, each evidenced by bank-transfer proof.</p>
+        <ImportQuoteForm orderId={id} orderRef={order.order_ref} onIssued={load} />
+      </Card> : null}
       {/* A request for a specific Korean car: what the customer asked for, frozen the day they
           asked. The live listing may have changed or sold since; this record has not. */}
       {order.listing_snapshot ? <Card className="p-5 xl:col-span-2">
@@ -71,7 +79,7 @@ export default function ImportOperationsPage({ params }: { params: Promise<{ id:
           <div><p className="text-caption font-bold text-content-muted">Quoted to buyer</p><p className="mt-1 text-lg font-extrabold text-content">{money(order.quoted_total_rwf)}</p></div>
           <div className="text-right"><p className="text-caption font-bold text-content-muted">Margin</p><p className={`mt-1 text-lg font-extrabold ${order.actual_cost_rwf==null?'text-content-muted':(Number(order.quoted_total_rwf||0)-Number(order.actual_cost_rwf))>=0?'text-success':'text-danger-strong'}`}>{order.actual_cost_rwf==null?'—':money(Number(order.quoted_total_rwf||0)-Number(order.actual_cost_rwf))}</p></div>
         </div>
-        <form onSubmit={saveCost} className="mt-4 grid gap-3"><label className="text-caption font-bold text-content">Actual cost (RWF)<input inputMode="numeric" value={cost} onChange={e=>setCost(e.target.value.replace(/[^\d]/g,''))} placeholder="e.g. 24000000" className="mt-1 h-10 w-full rounded-xl border border-line px-3 font-normal tabular-nums"/></label>
+        <form onSubmit={saveCost} className="mt-4 grid gap-3"><div><label htmlFor="actual-cost" className="text-caption font-bold text-content">Actual cost</label><div className="mt-1"><MoneyInput id="actual-cost" value={cost} onChange={setCost} placeholder="24,000,000" className="h-10 w-full rounded-xl border border-line px-3 font-normal"/></div></div>
           <label className="text-caption font-bold text-content">Note (optional)<input value={costNote} onChange={e=>setCostNote(e.target.value)} placeholder="Vehicle 24M, freight 4M, duty 2M" className="mt-1 h-10 w-full rounded-xl border border-line px-3 font-normal"/></label>
           <button disabled={busy==='cost'} className="rounded-xl bg-ink-900 px-4 py-2.5 text-label font-bold text-white">Save cost</button>
         </form>

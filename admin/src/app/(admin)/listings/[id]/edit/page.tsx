@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
+import { MoneyInput } from '@/components/MoneyInput'
+import { useConfirm } from '@/components/feedback'
+import { fmtMoney } from '@/components/ui'
 
 const inputCls = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand'
 const labelCls = 'block text-xs font-semibold text-gray-700 mb-1'
@@ -12,6 +15,7 @@ const labelCls = 'block text-xs font-semibold text-gray-700 mb-1'
 export default function EditListingPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const confirm = useConfirm()
 
   const [car, setCar]         = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -101,6 +105,19 @@ export default function EditListingPage() {
     }
     const newMileage = parseInt(mileage, 10)
     if (!Number.isFinite(newMileage) || newMileage < 0) { setError('Mileage must be a non-negative number of km.'); return }
+
+    // A price that moves by more than half is far more often a missing or
+    // extra zero than a real renegotiation. It is still allowed, once the
+    // operator has seen both amounts side by side.
+    const oldPrice = Number(car.price)
+    if (oldPrice > 0 && newPrice !== oldPrice && Math.abs(newPrice - oldPrice) / oldPrice > 0.5) {
+      const ok = await confirm({
+        title: 'Change the price by more than half?',
+        message: `From ${fmtMoney(oldPrice, car.currency || 'RWF')} to ${fmtMoney(newPrice, currency)}. The change is kept in the public price history and buyers who saved this car are alerted.`,
+        confirmLabel: 'Save the new price',
+      })
+      if (!ok) return
+    }
 
     const payload: Record<string, any> = {}
     if (title.trim() !== (car.title || ''))               payload.title = title.trim()
@@ -216,36 +233,40 @@ export default function EditListingPage() {
           {/* Pricing & Multi-Currency Block */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-700">Listing Price *</label>
-                {/* Currency Segmented Toggle */}
-                <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
-                  <button
-                    type="button"
-                    onClick={() => setCurrency('RWF')}
-                    className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
-                      currency === 'RWF' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
-                    }`}
-                  >
-                    RWF
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrency('USD')}
-                    className={`px-2 py-0.5 text-[11px] font-bold rounded-md transition-all ${
-                      currency === 'USD' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
-                    }`}
-                  >
-                    USD ($)
-                  </button>
-                </div>
+              <div className="mb-1 flex items-center justify-between">
+                <label htmlFor="listing-price" className="text-xs font-semibold text-gray-700">Price *</label>
+                {/* Prices are francs (CLAUDE.md §3.7). The switch only appears on
+                    a legacy row still held in dollars, so it can be moved to RWF. */}
+                {car.currency === 'USD' ? (
+                  <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setCurrency('RWF')}
+                      className={`rounded-md px-2 py-0.5 text-caption font-bold transition-all ${
+                        currency === 'RWF' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
+                      }`}
+                    >
+                      RWF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrency('USD')}
+                      className={`rounded-md px-2 py-0.5 text-caption font-bold transition-all ${
+                        currency === 'USD' ? 'bg-ink-900 text-white shadow-xs' : 'text-gray-600 hover:text-black'
+                      }`}
+                    >
+                      USD (legacy)
+                    </button>
+                  </div>
+                ) : null}
               </div>
-              <input
-                type="number"
-                step={1}
+              <MoneyInput
+                id="listing-price"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder={currency === 'USD' ? 'e.g. 22000' : 'e.g. 28000000'}
+                onChange={setPrice}
+                currency={currency}
+                required
+                placeholder={currency === 'USD' ? '22,000' : '28,000,000'}
                 className={inputCls}
               />
             </div>
