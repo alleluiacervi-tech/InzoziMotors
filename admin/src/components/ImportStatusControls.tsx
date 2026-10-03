@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { api } from '@/lib/api'
-import { useConfirm, useToast } from '@/components/feedback'
+import { useConfirm, useReason, useToast } from '@/components/feedback'
 
 // Every move an import order can make from where it is, and a way to stop it.
 //
@@ -22,6 +22,7 @@ export function ImportStatusControls({ orderId, status, allowed = [], onChanged 
 }) {
   const [busy, setBusy] = useState(false)
   const ask = useConfirm()
+  const askReason = useReason()
   const toast = useToast()
   const forward = allowed.filter((s) => s !== 'cancelled')
   const cancellable = allowed.includes('cancelled')
@@ -36,16 +37,16 @@ export function ImportStatusControls({ orderId, status, allowed = [], onChanged 
   }
 
   async function cancel() {
-    const ok = await ask({
+    const reason = await askReason({
       title: 'Cancel this import order?',
-      message: 'It leaves the pipeline and the buyer is told. Any verified payment stays on record — refunds are arranged outside the platform.',
+      message: 'It leaves the pipeline and the buyer is told. Any verified payment stays on record; refunds are arranged outside the platform.',
+      audience: 'The buyer sees this reason, word for word.',
+      placeholder: 'The exporter sold the car before the deposit arrived.',
       confirmLabel: 'Cancel order',
       tone: 'danger',
     })
-    if (!ok) return
-    const reason = window.prompt('Why is the order being cancelled? (the buyer sees this)')
-    if (!reason?.trim()) return
-    await move('cancelled', `Order cancelled: ${reason.trim()}`)
+    if (!reason) return
+    await move('cancelled', `Order cancelled: ${reason}`)
   }
 
   if (!forward.length && !cancellable) return null

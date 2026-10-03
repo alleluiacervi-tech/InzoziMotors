@@ -45,9 +45,24 @@ type ConfirmOptions = {
 /** One button on a toast, e.g. Undo. Clicking it runs `onClick` and closes the toast. */
 type ToastAction = { label: string; onClick: () => void }
 
+type ReasonOptions = {
+  title: string
+  /** What happens once the reason is given. */
+  message?: string
+  /** Who reads the reason, said plainly ("The buyer sees this"). */
+  audience: string
+  confirmLabel: string
+  /** Fewer characters than this cannot be submitted. */
+  minLength?: number
+  placeholder?: string
+  tone?: 'primary' | 'danger'
+}
+
 type FeedbackApi = {
   toast: (message: string, tone?: ToastTone, action?: ToastAction) => void
   confirm: (options: ConfirmOptions) => Promise<boolean>
+  /** Asks for a written reason. Resolves to the trimmed text, or null if cancelled. */
+  reason: (options: ReasonOptions) => Promise<string | null>
 }
 
 const FeedbackContext = createContext<FeedbackApi | null>(null)
@@ -62,6 +77,12 @@ export function useConfirm(): FeedbackApi['confirm'] {
   const ctx = useContext(FeedbackContext)
   if (!ctx) throw new Error('useConfirm must be used inside <FeedbackProvider>')
   return ctx.confirm
+}
+
+export function useReason(): FeedbackApi['reason'] {
+  const ctx = useContext(FeedbackContext)
+  if (!ctx) throw new Error('useReason must be used inside <FeedbackProvider>')
+  return ctx.reason
 }
 
 // ─── Toast stack ─────────────────────────────────────────────────────────────
@@ -191,6 +212,79 @@ function ConfirmDialog({ pending, answer }: { pending: PendingConfirm; answer: (
   )
 }
 
+// ─── Reason dialog ───────────────────────────────────────────────────────────
+// Replaces window.prompt(): one unstyled line with no minimum and no hint of
+// who would read it, used for text a buyer or seller receives.
+
+type PendingReason = { options: ReasonOptions; resolve: (answer: string | null) => void }
+
+function ReasonDialog({ pending, answer }: { pending: PendingReason; answer: (text: string | null) => void }) {
+  const { title, message, audience, confirmLabel, minLength = 10, placeholder, tone = 'primary' } = pending.options
+  const [text, setText] = useState('')
+  const areaRef = useRef<HTMLTextAreaElement>(null)
+  const trimmed = text.trim()
+  const short = trimmed.length < minLength
+
+  useEffect(() => {
+    areaRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') answer(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [answer])
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 p-4 sm:items-center" onClick={() => answer(null)}>
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reason-title"
+        aria-describedby="reason-audience"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => { e.preventDefault(); if (!short) answer(trimmed) }}
+        className="w-full max-w-md rounded-2xl border border-line-soft bg-surface p-5 shadow-card-lg"
+      >
+        <p id="reason-title" className="text-body font-bold text-content">{title}</p>
+        {message ? <p className="mt-1.5 text-label leading-relaxed text-content-secondary">{message}</p> : null}
+        <label htmlFor="reason-text" className="mt-4 block text-label font-semibold text-content">Reason</label>
+        <p id="reason-audience" className="mt-0.5 text-caption text-content-muted">{audience}</p>
+        <textarea
+          id="reason-text"
+          ref={areaRef}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !short) answer(trimmed) }}
+          rows={4}
+          maxLength={500}
+          placeholder={placeholder}
+          aria-describedby="reason-audience reason-count"
+          className="mt-2 w-full resize-y rounded-xl border border-line bg-surface p-3 text-body text-content focus:border-content-muted focus:outline-none"
+        />
+        <p id="reason-count" className="mt-1 text-caption text-content-muted">
+          {short ? `At least ${minLength} characters (${trimmed.length} so far)` : `${trimmed.length} / 500`}
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => answer(null)}
+            className="inline-flex h-10 items-center rounded-xl border border-line bg-surface px-4 text-label font-semibold text-content-secondary transition-colors hover:border-content-muted hover:text-content"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={short}
+            className={`inline-flex h-10 items-center rounded-xl px-4 text-label font-semibold text-white transition-colors disabled:opacity-40 ${
+              tone === 'danger' ? 'bg-danger-strong hover:bg-danger-strong/90' : 'bg-ink-900 hover:bg-ink-800'
+            }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 let nextToastId = 1
@@ -198,6 +292,7 @@ let nextToastId = 1
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [pending, setPending] = useState<PendingConfirm | null>(null)
+  const [pendingReason, setPendingReason] = useState<PendingReason | null>(null)
 
   const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -229,11 +324,28 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const reason = useCallback((options: ReasonOptions) => {
+    return new Promise<string | null>((resolve) => {
+      setPendingReason((prev) => {
+        prev?.resolve(null)
+        return { options, resolve }
+      })
+    })
+  }, [])
+
+  const answerReason = useCallback((text: string | null) => {
+    setPendingReason((prev) => {
+      prev?.resolve(text)
+      return null
+    })
+  }, [])
+
   return (
-    <FeedbackContext.Provider value={{ toast, confirm }}>
+    <FeedbackContext.Provider value={{ toast, confirm, reason }}>
       {children}
       <ToastStack toasts={toasts} dismiss={dismiss} />
       {pending ? <ConfirmDialog pending={pending} answer={answer} /> : null}
+      {pendingReason ? <ReasonDialog pending={pendingReason} answer={answerReason} /> : null}
     </FeedbackContext.Provider>
   )
 }

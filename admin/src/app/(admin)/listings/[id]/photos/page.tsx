@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { api, type Readiness } from '@/lib/api'
 import { PlateMasker } from '@/components/PlateMasker'
 import { Icon } from '@/components/ui'
-import { useToast } from '@/components/feedback'
+import { useConfirm, useToast } from '@/components/feedback'
 
 export default function CarPhotosPage() {
   const { id } = useParams<{ id: string }>()
@@ -26,6 +26,7 @@ export default function CarPhotosPage() {
   // gallery was sufficient while publication refused it.
   const [readiness, setReadiness] = useState<Readiness | null>(null)
   const toast = useToast()
+  const confirm = useConfirm()
 
   async function loadCar() {
     try {
@@ -109,7 +110,13 @@ export default function CarPhotosPage() {
   }
 
   async function removePhoto(photoId: string) {
-    if (!window.confirm('Remove this photo from the listing?')) return
+    const ok = await confirm({
+      title: 'Remove this photo from the listing?',
+      message: 'It disappears from the public gallery straight away.',
+      confirmLabel: 'Remove photo',
+      tone: 'danger',
+    })
+    if (!ok) return
     try {
       setGallery(await api.deleteCarPhoto(id, photoId))
       toast('Photo removed.', 'success')

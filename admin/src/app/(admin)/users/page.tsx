@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill } from '@/components/ui'
 import ListingCap from '@/components/ListingCap'
-import { useConfirm, useToast } from '@/components/feedback'
+import { useConfirm, useReason, useToast } from '@/components/feedback'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useFocusRow } from '@/components/useFocusRow'
 import { fmtDate } from '@/lib/format'
@@ -109,6 +109,7 @@ export default function UsersPage() {
     user: UserRow; method: string; note: string; reference: string
   }>(null)
   const ask = useConfirm()
+  const askReason = useReason()
   const toast = useToast()
 
   // The edit modal keeps its own draft of the editable fields, but a cap is not
@@ -261,15 +262,22 @@ export default function UsersPage() {
     const suspending = user.account_status !== 'suspended'
     let reason: string | undefined
     if (suspending) {
-      reason = window.prompt(`Why are you suspending ${user.name}'s account? This reason is retained in the audit log.`)?.trim()
+      reason = (await askReason({
+        title: `Suspend ${user.name}?`,
+        message: 'The account is signed out on every device and cannot use the platform until restored.',
+        audience: 'Kept in the activity history.',
+        confirmLabel: 'Suspend account',
+        tone: 'danger',
+      })) ?? undefined
       if (!reason) return
+    } else {
+      const ok = await ask({
+        title: `Restore ${user.name}?`,
+        message: 'The account will be able to sign in again.',
+        confirmLabel: 'Restore account',
+      })
+      if (!ok) return
     }
-    const ok = await ask({
-      title: suspending ? `Suspend ${user.name}?` : `Restore ${user.name}?`,
-      message: suspending ? 'The account will be signed out on every device and cannot use the platform until restored.' : 'The account will be able to sign in again.',
-      confirmLabel: suspending ? 'Suspend account' : 'Restore account', tone: suspending ? 'danger' : 'primary',
-    })
-    if (!ok) return
     setActionId(`access-${user.id}`)
     try {
       await api.setUserAccess(user.id, suspending ? 'suspend' : 'restore', reason)

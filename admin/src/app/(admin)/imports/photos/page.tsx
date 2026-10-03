@@ -22,7 +22,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, type CatalogImageryRow } from '@/lib/api'
 import { Card, EmptyState, ErrorState, Icon, LoadingState, PageHeader, StatCard } from '@/components/ui'
-import { useToast } from '@/components/feedback'
+import { useConfirm, useToast } from '@/components/feedback'
 
 type Tab = 'review' | 'none' | 'live' | 'all'
 const TABS: { key: Tab; label: string }[] = [
@@ -164,6 +164,7 @@ export default function CatalogImagesPage() {
   const [tab, setTab] = useState<Tab>('review')
   const [query, setQuery] = useState('')
   const toast = useToast()
+  const confirm = useConfirm()
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -211,7 +212,13 @@ export default function CatalogImagesPage() {
   }
 
   async function remove(row: CatalogImageryRow) {
-    if (!window.confirm(`Remove the photo of the ${row.make} ${row.model}? Its studio image (if approved) or the brand logo shows instead.`)) return
+    const ok = await confirm({
+      title: `Remove the ${row.make} ${row.model} photo?`,
+      message: 'Its approved studio image, or the brand mark, shows in its place. The photo can be uploaded again.',
+      confirmLabel: 'Remove photo',
+      tone: 'danger',
+    })
+    if (!ok) return
     setBusyId(row.id)
     try {
       await api.removeCatalogPhoto(row.id)

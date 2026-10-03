@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { useConfirm, useToast } from '@/components/feedback'
+import { useConfirm, useReason, useToast } from '@/components/feedback'
 import { fmtMoney, formatRwfInput, parseRwfInput } from '@/components/ui'
 
 type Entitlement = {
@@ -62,6 +62,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
   })
   const toast = useToast()
   const ask = useConfirm()
+  const askReason = useReason()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -120,11 +121,18 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
   }
 
   async function revoke(row: Entitlement) {
-    const reason = window.prompt(`Why is ${row.user_name}'s access being withdrawn?`)
-    if (!reason?.trim() || reason.trim().length < 4) return
+    const reason = await askReason({
+      title: `Withdraw ${row.user_name}'s access to this report?`,
+      message: 'They can no longer open the report. The record of the access stays.',
+      audience: 'Kept in the activity history.',
+      confirmLabel: 'Withdraw access',
+      minLength: 4,
+      tone: 'danger',
+    })
+    if (!reason) return
     setBusy(true)
     try {
-      await api.revokeReportAccess(inspectionId, row.id, reason.trim())
+      await api.revokeReportAccess(inspectionId, row.id, reason)
       toast('Access withdrawn. The record stays.', 'success')
       await load()
     } catch (e: any) { toast(e.message, 'error') }

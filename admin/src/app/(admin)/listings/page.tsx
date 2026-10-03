@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api, type Readiness } from '@/lib/api'
 import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney } from '@/components/ui'
-import { useConfirm, useToast } from '@/components/feedback'
+import { useConfirm, useReason, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
 import { fmtInt } from '@/lib/format'
 
@@ -58,6 +58,7 @@ export default function ListingsPage() {
   const [error, setError]             = useState<unknown>(null)
   const [actionId, setActionId]         = useState<string | null>(null)
   const ask = useConfirm()
+  const askReason = useReason()
   const toast = useToast()
   const [query, setQuery] = useState('')
   // Readiness used to be fetched only when the operator pressed "see what's
@@ -208,11 +209,16 @@ export default function ListingsPage() {
       tone: 'danger',
     })
     if (!ok) return
-    const reason = window.prompt('Why is this listing being deleted? (recorded in the activity log)')
-    if (!reason?.trim()) return
+    const reason = await askReason({
+      title: 'Why is it being deleted?',
+      audience: 'Kept in the activity history with the full listing.',
+      confirmLabel: 'Delete permanently',
+      tone: 'danger',
+    })
+    if (!reason) return
     setActionId(car.id)
     try {
-      await api.deleteListingPermanently(car.id, reason.trim())
+      await api.deleteListingPermanently(car.id, reason)
       toast(`${car.year} ${car.make} ${car.model} deleted`, 'success')
       load(statusFilter, query)
     } catch (e: any) {
@@ -413,7 +419,16 @@ export default function ListingsPage() {
                     </button>
                   ) : null}
                   {car.status === 'under_review' && (
-                    <button onClick={() => { const reason = window.prompt('Why is this listing rejected?'); if (reason?.trim()) updateStatus(car.id, 'rejected', reason.trim()) }} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-red-50 text-red-700 rounded-lg disabled:opacity-50">Reject</button>
+                    <button onClick={async () => {
+                      const reason = await askReason({
+                        title: `Reject the ${car.year} ${car.make} ${car.model}?`,
+                        message: 'It does not go public. The seller can fix what is wrong and submit again.',
+                        audience: 'Stored on the listing, where the seller can read it, and in the activity history.',
+                        confirmLabel: 'Reject listing',
+                        tone: 'danger',
+                      })
+                      if (reason) updateStatus(car.id, 'rejected', reason)
+                    }} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-red-50 text-red-700 rounded-lg disabled:opacity-50">Reject</button>
                   )}
                   {car.status === 'live' && (
                     <button
@@ -443,8 +458,13 @@ export default function ListingsPage() {
                           tone: 'danger',
                         })
                         if (ok) {
-                          const reason = window.prompt('Record the reason for archiving this listing:')
-                          if (reason?.trim()) updateStatus(car.id, 'archived', reason.trim())
+                          const reason = await askReason({
+                            title: 'Why is it being removed?',
+                            audience: 'Stored on the listing, where the seller can read it, and in the activity history.',
+                            confirmLabel: 'Remove listing',
+                            tone: 'danger',
+                          })
+                          if (reason) updateStatus(car.id, 'archived', reason)
                         }
                       }}
                       disabled={actionId === car.id}
