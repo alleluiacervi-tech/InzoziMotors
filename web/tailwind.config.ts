@@ -175,13 +175,6 @@ const config: Config = {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
-        // The certificate's category bars filling once, left to right: the
-        // homepage's single orchestrated motion. Transform-only, so it never
-        // shifts layout.
-        grow: {
-          from: { transform: 'scaleX(0)' },
-          to: { transform: 'scaleX(1)' },
-        },
         // One tick of the 150-point ruler standing up. The ruler's ticks
         // run this in sequence on first paint — the page's single
         // orchestrated motion — and never again.
@@ -193,7 +186,6 @@ const config: Config = {
       animation: {
         'fade-up': 'fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
         'fade-in': 'fade-in 0.5s ease both',
-        grow: 'grow 1.1s cubic-bezier(0.16, 1, 0.3, 1) both',
         tick: 'tick 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
         shimmer: 'shimmer 1.6s infinite',
       },

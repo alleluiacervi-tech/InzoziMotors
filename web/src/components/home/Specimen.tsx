@@ -1,61 +1,59 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Icon } from '@/components/ui'
-import { CheckRuler, type RulerGroup } from '@/components/brand/CheckRuler'
 import { Price } from '@/components/Price'
 import { formatKm, isDemoListing } from '@/lib/business'
-import { CATEGORIES, CRITICAL_ITEMS, SCORE_MAX } from '@/lib/inspection-policy'
+import { CRITICAL_ITEMS, PASS_THRESHOLD, SCORE_MAX } from '@/lib/inspection-policy'
 import { getLocale, getServerT } from '@/lib/i18n/server'
 import type { Car, InspectionReport } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// The hero's evidence: one real car from stock and its real inspection, drawn
-// as the 150-point ruler. Every marketplace opens on a clean car; this one
-// opens on a car AND the report a buyer reads before calling its seller —
-// which is the whole product, shown instead of described.
+// The hero's evidence: one real car from stock and its real inspection
+// result. Every marketplace opens on a clean car; this one opens on a car AND
+// the score a buyer reads before calling its seller — which is the whole
+// product, shown instead of described.
 //
 // Three honest states:
-//   report   the car's category scores → a result ruler and "N of 150 passed".
-//   car only the report did not load → the score alone, and the checklist's
-//            shape as a standard ruler (never a made-up per-category result).
-//   nothing  an empty yard or an unreachable API → the checklist itself.
+//   report   the score, the ring, "N of 150 checks passed" and critical status.
+//   car only the report did not load → the score alone (never a made-up
+//            per-category result).
+//   nothing  an empty yard or an unreachable API → the standard's three numbers.
+// The 150-tick ruler is drawn only at full width (home/Standard.tsx).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function Specimen({ car, report }: { car: Car | null; report: InspectionReport | null }) {
   const t = await getServerT()
   const locale = await getLocale()
 
-  const standard: RulerGroup[] = CATEGORIES.map((c) => ({
-    key: c.key,
-    label: t(`home.inspection.category.${c.key}`),
-    max: c.points,
-    critical: c.critical,
-  }))
 
   if (!car) {
     return (
       <article className="rounded-3xl bg-surface p-6 shadow-float ring-1 ring-line sm:p-8">
         <p className="text-caption font-bold text-content-muted">{t('home.inspection.eyebrow')}</p>
         <p className="mt-2 text-title font-extrabold text-content">{t('home.land.standardTitle')}</p>
-        <CheckRuler
-          groups={standard}
-          mode="standard"
-          height={56}
-          className="mt-8"
-          label={t('home.land.rulerStandard', { critical: CRITICAL_ITEMS })}
-        />
+        {/* No car to show: the standard as its three numbers. The ruler is
+            drawn only at full width (the homepage band), never squeezed. */}
+        <dl className="mt-8 grid grid-cols-3 gap-4">
+          {[
+            { figure: SCORE_MAX, key: 'statItems' },
+            { figure: PASS_THRESHOLD, key: 'statPass' },
+            { figure: CRITICAL_ITEMS, key: 'statCritical' },
+          ].map((s) => (
+            <div key={s.key} className="min-w-0 border-t border-line pt-3">
+              <dt className="sr-only">{t(`home.land.${s.key}`)}</dt>
+              <dd>
+                <span className="tnum block text-headline font-black leading-none text-content">{s.figure}</span>
+                <span className="mt-1.5 block text-micro leading-snug text-content-muted">{t(`home.land.${s.key}`)}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
       </article>
     )
   }
 
   const categories = report?.category_scores ?? []
-  const result: RulerGroup[] = categories.map((cat) => ({
-    key: cat.id,
-    label: t(`home.inspection.category.${cat.id}`),
-    max: cat.max_points,
-    earned: cat.earned,
-  }))
-  const hasResult = result.length > 0
+  const hasResult = categories.length > 0
   const earned = categories.reduce((n, c) => n + c.earned, 0)
   const total = categories.reduce((n, c) => n + c.max_points, 0) || SCORE_MAX
   const score = report?.score ?? car.inspection_score ?? null
@@ -120,20 +118,11 @@ export async function Specimen({ car, report }: { car: Car | null; report: Inspe
           ) : null}
         </div>
 
-        <CheckRuler
-          groups={hasResult ? result : standard}
-          mode={hasResult ? 'result' : 'standard'}
-          height={40}
-          className="mt-6"
-          label={
-            hasResult
-              ? t('home.land.rulerResult', { earned, total })
-              : t('home.land.rulerStandard', { critical: CRITICAL_ITEMS })
-          }
-        />
-
+        {/* No 150-tick ruler here: at card width the ticks merged into a
+            barcode. The large score above carries it; the ruler is drawn only
+            at full width (home/Standard.tsx). */}
         {hasResult ? (
-          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption font-semibold">
+          <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-caption font-semibold">
             <span className="tnum text-content">{t('home.land.checks', { earned, total })}</span>
             {criticalFailures === 0 ? (
               <span className="inline-flex items-center gap-1.5 text-success-text">

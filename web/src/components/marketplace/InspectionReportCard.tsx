@@ -1,5 +1,4 @@
 import { Badge, Card, Icon } from '@/components/ui'
-import { CheckRuler } from '@/components/brand/CheckRuler'
 import { formatDate, inspectionGrade } from '@/lib/business'
 import type { InspectionReport } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
@@ -38,8 +37,8 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
           {t('cars.report.title')}
         </h2>
 
-        <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-3">
-          <p className="flex items-baseline gap-1.5">
+        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <p className="flex items-baseline gap-1.5" aria-label={t('cars.report.scoreAria', { score: summary.score, max: SCORE_MAX })}>
             <span className={`text-4xl font-extrabold tracking-[-0.03em] ${tone.text}`}>
               {summary.score}
             </span>
@@ -54,18 +53,6 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
           </p>
         </div>
 
-        {/* The homepage's ruler, for this car: one tick per checklist item,
-            missed items short and amber at the end of their category. */}
-        {categories.length ? (
-          <CheckRuler
-            groups={categories.map((c) => ({ key: c.id, label: c.name, max: c.max_points, earned: c.earned }))}
-            mode="result"
-            height={40}
-            animate={false}
-            className="mt-6"
-            label={t('cars.report.scoreAria', { score: summary.score, max: SCORE_MAX })}
-          />
-        ) : null}
 
         <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-caption font-semibold">
           <span className="inline-flex items-center gap-1.5 text-success-text">
