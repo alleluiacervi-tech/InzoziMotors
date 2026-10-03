@@ -27,13 +27,11 @@ const STATIC_ROUTES: { path: string; changeFrequency: Freq; priority: number }[]
   { path: '/imports', changeFrequency: 'weekly', priority: 0.8 },
   { path: '/sell', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/how-it-works', changeFrequency: 'monthly', priority: 0.7 },
-  { path: '/promise', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/tools', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/tools/valuation', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/tools/import-duty', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/tools/finance', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/contact', changeFrequency: 'monthly', priority: 0.6 },
-  { path: '/about', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/download', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/legal/guarantee', changeFrequency: 'yearly', priority: 0.4 },
   // /signin and /signup are deliberately absent: both set robots noindex, and

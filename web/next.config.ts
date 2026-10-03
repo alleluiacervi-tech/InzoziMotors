@@ -27,6 +27,17 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // About and Marketplace safety merged into How Sawa works
+  // (docs/WEBSITE-REDESIGN-TODO.md, 2.11). Redirected here rather than in a
+  // page, because the root loading.tsx streams every route and a redirect
+  // thrown mid-stream degrades to a meta refresh with status 200.
+  async redirects() {
+    return [
+      { source: '/about', destination: '/how-it-works#why', permanent: true },
+      { source: '/promise', destination: '/how-it-works#controls', permanent: true },
+    ]
+  },
+
   async headers() {
     // Camera access is blocked site-wide by default (W1 in
     // docs/WEB-PARITY-PLAN.md) and opened only on the routes that actually

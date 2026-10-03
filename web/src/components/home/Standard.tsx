@@ -13,7 +13,7 @@ import { getServerT } from '@/lib/i18n/server'
 // The one ink band on the page.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function Standard() {
+export async function Standard({ id, showLink = true }: { id?: string; showLink?: boolean } = {}) {
   const t = await getServerT()
 
   const groups: RulerGroup[] = CATEGORIES.map((c) => ({
@@ -36,7 +36,7 @@ export async function Standard() {
   // carry it. No photograph, no lamps or grain, no list of controls (those
   // live on How Sawa works).
   return (
-    <section className="bg-ink-900 text-white" style={{ paddingBlock: 'var(--space-section)' }}>
+    <section id={id} className="scroll-mt-[var(--header-h)] bg-ink-900 text-white" style={{ paddingBlock: 'var(--space-section)' }}>
       <Container>
         <div className="grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
           <div className="min-w-0 lg:col-span-7">
@@ -81,6 +81,7 @@ export async function Standard() {
           </ul>
         </div>
 
+        {showLink ? (
         <p className="mt-12">
           <Link
             href="/how-it-works#standard"
@@ -90,6 +91,7 @@ export async function Standard() {
             <Icon name="arrow-right" size={16} aria-hidden="true" className="transition-transform duration-300 ease-brand group-hover:translate-x-0.5" />
           </Link>
         </p>
+        ) : null}
       </Container>
     </section>
   )

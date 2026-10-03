@@ -235,7 +235,7 @@ export default async function DownloadPage({
               {t('auth.download.inkBody')}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button href="/promise">{t('auth.download.readSafety')}</Button>
+              <Button href="/how-it-works#controls">{t('auth.download.readSafety')}</Button>
               <Button href="/how-it-works" variant="inverse" trailingIcon={<Icon name="arrow-right" size={17} />}>
                 {t('auth.download.howBuying')}
               </Button>

@@ -163,9 +163,8 @@ export const FOOTER_LINKS = [
   {
     heading: 'Company',
     links: [
-      { href: '/about', label: 'About Sawa Cars' },
-      { href: '/promise', label: 'Marketplace safety' },
-      { href: '/how-it-works', label: 'How buying works' },
+      { href: '/how-it-works', label: 'How Sawa works' },
+      { href: '/how-it-works#buying', label: 'How buying works' },
       { href: '/contact', label: 'Contact & centers' },
     ],
   },
@@ -245,14 +244,14 @@ export const BUYING_STEPS = [
   },
 ] as const
 
-/** Seller journey — mirrors the pipeline in CLAUDE.md and SellerDashboardScreen. */
+/** Seller journey in five steps — the one count used on every page
+ *  (docs/WEBSITE-REDESIGN-TODO.md, D4); mirrors marketing.howItWorks.sellingSteps. */
 export const SELLING_STEPS = [
-  { title: 'Submit your car', desc: 'Tell us the make, model, mileage and your asking price. We suggest a range from real comparable sales.' },
-  { title: 'Book your inspection', desc: 'Pick a center and a slot. Bring the car and your service records.' },
-  { title: 'We inspect and review', desc: 'Our team records the inspection and adds a clear, truthful image gallery. There is no fixed angle count.' },
-  { title: 'Complete seller verification', desc: 'Before publication, our team must approve your one-time identity check and activate your seller account.' },
-  { title: 'An admin publishes it', desc: 'Publication is gated by seller verification, inspection completion and a valid gallery. You keep control of the price.' },
-  { title: 'You manage buyer enquiries', desc: 'Talk, negotiate and agree any sale directly. Sawa Cars is not a party to your contract or payment.' },
+  { title: 'Submit your car', desc: 'Make, model, mileage and your asking price, then a one-time ID check. Both work here on the website or in the app.' },
+  { title: 'Book the inspection', desc: 'Pick a centre and a time, and bring the car and its documents. A Sawa mechanic runs the 150 checks.' },
+  { title: 'We publish it', desc: 'Our team adds the photos and publishes the listing with its full report. Only Sawa staff can publish.' },
+  { title: 'Buyers contact you', desc: 'Through in-app messages, or by phone and WhatsApp if you allow it. You keep control of the price.' },
+  { title: 'You agree the sale directly', desc: 'Price, payment, transfer and handover are agreed between you and the buyer.' },
 ] as const
 
 export const FAQS = [

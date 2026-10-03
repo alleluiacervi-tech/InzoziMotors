@@ -31,7 +31,7 @@ const ELSEWHERE: { href: string; label: string; description: string; icon: IconN
     icon: 'document',
   },
   {
-    href: '/promise',
+    href: '/how-it-works#controls',
     label: 'Marketplace safety',
     description: 'The controls and limits behind verified listings.',
     icon: 'shield-check',

@@ -93,7 +93,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
 
           <p className="mt-9 text-caption text-white/70">
             <Link
-              href="/promise"
+              href="/how-it-works#controls"
               className="font-bold text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white"
             >
               {t('auth.layout.readSafety')}
