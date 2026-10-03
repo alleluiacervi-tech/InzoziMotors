@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { api, signOut, getApiStatus, onApiStatus, type ApiStatus } from '@/lib/api'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
 import { FeedbackProvider } from '@/components/feedback'
@@ -426,7 +425,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             ) : null}
           </div>
-          <ThemeToggle />
           <ApiStatusBadge />
         </header>
 

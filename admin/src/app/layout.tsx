@@ -27,16 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={satoshi.variable} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        {/* Runs before the first pixel: a stored choice wins, otherwise the
-            operating system decides. Doing this in <body> rather than in a
-            component is the only way to avoid a white flash. */}
+        {/* The console is light only, like the public website (owner's
+            decision A2, Oct 2026). The dark tokens stay in globals.css, unused.
+            This clears the choice the old theme switch stored. */}
         <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "try{var t=localStorage.getItem('sawa-admin-theme');" +
-              "var d=t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches);" +
-              "document.documentElement.classList.toggle('dark',d);}catch(e){}",
-          }}
+          dangerouslySetInnerHTML={{ __html: "try{localStorage.removeItem('sawa-admin-theme');}catch(e){}" }}
         />
         {children}
       </body>
