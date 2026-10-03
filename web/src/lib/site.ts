@@ -126,12 +126,6 @@ export const CENTERS = [
   },
 ] as const
 
-// Three verbs and the trust page. Kept deliberately short — a marketplace nav
-// that grows becomes a portal nav, and portals read as classifieds. /promise
-// stays reachable from the footer and every trust surface.
-// The three businesses first, in the order people arrive with them, then the
-// tools and the explanation. Selling is not here because it is the header's
-// one primary button (Header.tsx) — listing it twice made it look optional.
 /**
  * Rent is only promoted (nav, homepage search tabs, homepage cards) once the
  * fleet has this many cars. An empty business in the primary navigation tells
@@ -141,12 +135,17 @@ export const CENTERS = [
 export const RENT_MIN_FLEET = 3
 export const rentPromoted = (fleetSize: number) => fleetSize >= RENT_MIN_FLEET
 
+// The businesses in the order people arrive with them, then the one page that
+// explains Sawa. Rent is listed but filtered out by the header until the fleet
+// is worth promoting (rentPromoted, above). Tools is not here: valuation lives
+// on Sell, duty on Import, finance on every listing; /tools stays reachable
+// from those pages and the footer. Four or five words, never a portal.
 export const NAV_LINKS = [
   { href: '/cars', label: 'Buy' },
   { href: '/rentals', label: 'Rent' },
+  { href: '/sell', label: 'Sell' },
   { href: '/imports', label: 'Import' },
-  { href: '/tools', label: 'Tools' },
-  { href: '/how-it-works', label: 'How it works' },
+  { href: '/how-it-works', label: 'How Sawa works' },
 ] as const
 
 export const FOOTER_LINKS = [

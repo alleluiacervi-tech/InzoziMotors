@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { Container, Icon } from '@/components/ui'
 import { CheckRuler, type RulerGroup } from '@/components/brand/CheckRuler'
@@ -11,12 +10,8 @@ import { getServerT } from '@/lib/i18n/server'
 // this is the rule every car is measured against, and it replaces a bar chart
 // of seven categories that said the same thing less exactly.
 //
-// The one ink band on the page. The photograph beside the copy is licensed
-// stock (public/img/CREDITS.md), so its alt text describes what it shows and
-// claims nothing about Sawa's centres or staff.
+// The one ink band on the page.
 // ─────────────────────────────────────────────────────────────────────────────
-
-const CONTROLS = ['independent', 'evidence', 'publication', 'direct'] as const
 
 export async function Standard() {
   const t = await getServerT()
@@ -37,46 +32,34 @@ export async function Standard() {
     { figure: String(CRITICAL_ITEMS), key: 'statCritical' },
   ]
 
+  // The homepage's one dark band, and it is flat: the ruler and three numbers
+  // carry it. No photograph, no lamps or grain, no list of controls (those
+  // live on How Sawa works).
   return (
-    <section
-      className="ambient-ink grain relative isolate overflow-hidden bg-ink-900 text-white"
-      style={{ paddingBlock: 'var(--space-section)' }}
-    >
-      <Container className="relative">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+    <section className="bg-ink-900 text-white" style={{ paddingBlock: 'var(--space-section)' }}>
+      <Container>
+        <div className="grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
           <div className="min-w-0 lg:col-span-7">
             <h2 className="max-w-[16ch] text-display font-black text-balance">{t('home.land.standardTitle')}</h2>
             <p className="mt-6 max-w-[38rem] text-title-sm leading-relaxed text-pretty text-white/70">
               {t('home.land.standardBody', { critical: CRITICAL_ITEMS })}
             </p>
-
-            <dl className="mt-10 grid grid-cols-3 gap-4 sm:gap-8">
-              {stats.map((s) => (
-                <div key={s.key} className="min-w-0 border-t border-white/15 pt-4">
-                  <dt className="sr-only">{t(`home.land.${s.key}`)}</dt>
-                  <dd>
-                    <span className="tnum block text-display font-black leading-none">{s.figure}</span>
-                    <span className="mt-2 block text-caption leading-snug text-white/60">{t(`home.land.${s.key}`)}</span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
           </div>
 
-          <figure className="relative m-0 hidden min-w-0 lg:col-span-5 lg:block">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-3xl ring-1 ring-white/10">
-              <Image
-                src="/img/inspector-wheel-arch.jpg"
-                alt={t('home.land.photoInspectorAlt')}
-                fill
-                sizes="(min-width: 1024px) 40vw, 0px"
-                className="object-cover object-[50%_40%]"
-              />
-            </div>
-          </figure>
+          <dl className="grid min-w-0 grid-cols-3 gap-4 sm:gap-8 lg:col-span-5">
+            {stats.map((s) => (
+              <div key={s.key} className="min-w-0 border-t border-white/15 pt-4">
+                <dt className="sr-only">{t(`home.land.${s.key}`)}</dt>
+                <dd>
+                  <span className="tnum block text-display font-black leading-none">{s.figure}</span>
+                  <span className="mt-2 block text-caption leading-snug text-white/60">{t(`home.land.${s.key}`)}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
 
-        <div className="mt-16 lg:mt-20">
+        <div className="mt-14 lg:mt-16">
           <CheckRuler
             groups={groups}
             mode="standard"
@@ -98,28 +81,13 @@ export async function Standard() {
           </ul>
         </div>
 
-        <ul className="mt-16 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4">
-          {CONTROLS.map((key) => (
-            <li key={key} className="min-w-0 border-t border-white/15 pt-5">
-              <h3 className="text-body font-extrabold">{t(`home.trust.ledger.${key}.claim`)}</h3>
-              <p className="mt-2 text-caption leading-relaxed text-white/60">{t(`home.trust.ledger.${key}.proof`)}</p>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-12 flex flex-wrap gap-x-8 gap-y-2 text-body">
+        <p className="mt-12">
           <Link
-            href="/how-it-works"
-            className="group -my-2 inline-flex items-center gap-1.5 py-2 font-bold text-white underline decoration-white/30 decoration-2 underline-offset-[6px] transition-colors hover:decoration-white"
+            href="/how-it-works#standard"
+            className="group -my-2 inline-flex items-center gap-1.5 py-2 text-body font-bold text-white underline decoration-white/30 decoration-2 underline-offset-[6px] transition-colors hover:decoration-white"
           >
             {t('home.inspection.link')}
             <Icon name="arrow-right" size={16} aria-hidden="true" className="transition-transform duration-300 ease-brand group-hover:translate-x-0.5" />
-          </Link>
-          <Link
-            href="/promise"
-            className="-my-2 inline-flex items-center py-2 font-bold text-white/70 underline decoration-white/20 decoration-2 underline-offset-[6px] transition-colors hover:text-white hover:decoration-white"
-          >
-            {t('home.trust.link')}
           </Link>
         </p>
       </Container>

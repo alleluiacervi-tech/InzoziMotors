@@ -59,7 +59,10 @@ export function HeroSearch({
 
   return (
     <div className="mt-8 w-full max-w-2xl rounded-3xl border border-line-soft bg-surface p-2 shadow-float">
-      <div role="tablist" aria-label={t('home.front.tabsLabel')} className={`grid ${modes.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-2xl bg-surface-alt p-1`}>
+      {/* On a phone the hero is a car search and nothing else: the tab bar
+          (and with it Import and Rent, both one tap away in the menu) starts
+          at sm, so the form and the first car fit on one screen. */}
+      <div role="tablist" aria-label={t('home.front.tabsLabel')} className={`hidden sm:grid ${modes.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-1 rounded-2xl bg-surface-alt p-1`}>
         {modes.map((m, i) => (
           <button
             key={m}
@@ -97,7 +100,7 @@ export function HeroSearch({
           method="get"
           // The `hidden` attribute alone loses to a display utility, so the
           // visibility class is toggled with it.
-          className={`${mode === 'buy' ? 'grid' : 'hidden'} grid-cols-2 gap-3 p-3 pt-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end`}
+          className={`${mode === 'buy' ? 'grid' : 'hidden'} grid-cols-2 gap-3 p-3 pt-2 sm:pt-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end`}
         >
           <div className="min-w-0">
             <label htmlFor={`${id}-make`} className={label}>{t('home.front.make')}</label>
@@ -110,7 +113,7 @@ export function HeroSearch({
               ))}
             </select>
           </div>
-          <div className="min-w-0">
+          <div className="hidden min-w-0 sm:block">
             <label htmlFor={`${id}-model`} className={label}>{t('home.front.model')}</label>
             <input
               id={`${id}-model`}
@@ -124,7 +127,7 @@ export function HeroSearch({
               {models.map((m) => <option key={m} value={m} />)}
             </datalist>
           </div>
-          <div className="col-span-2 min-w-0 sm:col-span-1">
+          <div className="min-w-0">
             <label htmlFor={`${id}-budget`} className={label}>{t('home.front.budget')}</label>
             <select id={`${id}-budget`} name="max_price" defaultValue="" className={field}>
               <option value="">{t('home.front.anyBudget')}</option>

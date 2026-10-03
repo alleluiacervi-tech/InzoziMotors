@@ -25,12 +25,16 @@ const FALLBACK_IMAGE =
 const GRID_SIZES = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw'
 
 export async function CarCard({
-  car, priority = false, layout = 'grid',
+  car, priority = false, layout = 'grid', tag,
 }: {
   car: Car
   /** Set on the first row so the LCP image is not lazy-loaded. */
   priority?: boolean
   layout?: 'grid' | 'row'
+  /** A placement's label ("Featured", "Sponsored"). Takes the top-right
+   *  corner; a price drop still shows on the detail page. A paid placement
+   *  must always say so. */
+  tag?: string
 }) {
   const t = await getServerT()
   const tier = getCertTier(car)
@@ -90,10 +94,12 @@ export async function CarCard({
             a fact a buyer can compare across two cars without first learning
             what "Certified+" means in our vocabulary. The tier word survives on
             the detail page, where there is room to explain it.
-            Top-right is reserved for a price drop and nothing else — "new" and
-            "high demand" could fire alongside it, and three chips stacked in
-            one corner is how a listing starts to look like an advert instead of
-            a record. Both still render on the detail page. */}
+            Top-right holds one thing: a placement's label when the card is an
+            operator placement (a paid one always says "Sponsored"), otherwise
+            a price drop. "New" and "high demand" could fire alongside it, and
+            three chips stacked in one corner is how a listing starts to look
+            like an advert instead of a record. All of them still render on
+            the detail page. */}
         <div className="absolute left-3 top-3 flex max-w-[62%]">
           {demo ? (
             <Badge tone="preview" className="max-w-full truncate">
@@ -115,7 +121,13 @@ export async function CarCard({
             </Badge>
           ) : null}
         </div>
-        {drop > 0 ? (
+        {tag ? (
+          <div className="absolute right-3 top-3">
+            <span className="inline-flex items-center rounded-pill bg-surface/95 px-2.5 py-1 text-micro font-bold leading-none text-content shadow-card backdrop-blur-sm">
+              {tag}
+            </span>
+          </div>
+        ) : drop > 0 ? (
           <div className="absolute right-3 top-3">
             <Badge tone="warning" icon="trending-down">{t('cars.card.priceDrop')}</Badge>
           </div>

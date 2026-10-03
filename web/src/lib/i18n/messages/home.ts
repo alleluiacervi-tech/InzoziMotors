@@ -79,6 +79,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       emptyAction: 'Browse all cars',
     },
     topDeals: {
+      featured: 'Featured',
       eyebrow: 'Top deals',
       title: 'Picked by our team this week',
       description: 'Chosen from inspected cars. Paid placements say so.',
@@ -217,11 +218,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Every listing publishes its report like this one: each category’s points, and whether anything critical failed.',
     },
     land: {
+      proof: {
+        title: 'Inspected by people you can visit',
+        body: 'Every car is inspected by a Sawa mechanic at one of our {{count}} Kigali centres.',
+        link: 'Visit a centre',
+      },
+      sellStrip: {
+        title: 'What is your car worth?',
+        body: 'A free estimate from cars listed and sold in Kigali. No account needed.',
+        make: 'Make',
+        year: 'Year',
+        cta: 'Get a valuation',
+      },
       importOrigins: 'Japan, Korea, China',
       photoInspectorAlt: 'An inspector checks a car\'s wheel arch while its owner looks on',
       photoImportAlt: 'Cars and vans lined up on the deck of a cargo ship',
       headline: 'Know the car before you meet the seller.',
-      lede: 'Every car on Sawa Cars is inspected on 150 points at our Kigali centres and published with its report. Read the evidence, then deal with the seller directly.',
+      lede: 'Every car inspected on 150 points in Kigali, with the full report published.',
       checks: '{{earned}} of {{total}} checks passed',
       rulerResult: 'Inspection result: {{earned}} of {{total}} checks passed',
       rulerStandard: 'The 150-point checklist in seven categories, {{critical}} of them critical',
@@ -312,6 +325,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       emptyAction: 'Reba imodoka zose',
     },
     topDeals: {
+      featured: 'Byatoranyijwe',
       eyebrow: 'Ibiciro byiza',
       title: 'Byatoranyijwe n’ikipe yacu iyi cyumweru',
       description:
@@ -452,11 +466,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Buri modoka itangaza raporo yayo nk’iyi: amanota ya buri cyiciro, n’uko hari ikintu gikomeye cyananiranye.',
     },
     land: {
+      proof: {
+        title: 'Isuzumwa n’abantu ushobora gusura',
+        body: 'Buri modoka isuzumwa n’umukanishi wa Sawa muri kimwe mu bigo byacu {{count}} i Kigali.',
+        link: 'Sura ikigo',
+      },
+      sellStrip: {
+        title: 'Imodoka yawe ifite agaciro kangana iki?',
+        body: 'Igereranya ry’ubuntu rishingiye ku modoka zashyizwe ku isoko n’izagurishijwe i Kigali. Nta konti ikenewe.',
+        make: 'Ubwoko',
+        year: 'Umwaka',
+        cta: 'Menya agaciro',
+      },
       importOrigins: 'Ubuyapani, Koreya, Ubushinwa',
       photoInspectorAlt: 'Umugenzuzi asuzuma igice cy’ipine cy’imodoka nyirayo areba',
       photoImportAlt: 'Imodoka zitondekanye ku bwato butwara imizigo',
       headline: 'Menya imodoka mbere yo guhura n’umugurisha.',
-      lede: 'Buri modoka kuri Sawa Cars isuzumwa ku ngingo 150 mu bigo byacu i Kigali, igatangazwa hamwe na raporo yayo. Soma ibimenyetso, hanyuma uvugane n’umugurisha ubwawe.',
+      lede: 'Buri modoka isuzumwa ku ngingo 150 i Kigali, raporo yuzuye igatangazwa.',
       checks: 'Ingingo {{earned}} kuri {{total}} zatsinze',
       rulerResult: 'Ibisubizo by’isuzuma: ingingo {{earned}} kuri {{total}} zatsinze',
       rulerStandard: 'Urutonde rw’ingingo 150 mu byiciro birindwi, {{critical}} muri zo ni iz’ingenzi',
@@ -547,6 +573,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       emptyAction: 'Voir toutes les voitures',
     },
     topDeals: {
+      featured: 'En vedette',
       eyebrow: 'Meilleures offres',
       title: 'Sélectionnées par notre équipe cette semaine',
       description:
@@ -687,11 +714,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Chaque annonce publie son rapport comme celui-ci : les points de chaque catégorie, et si un point critique a échoué.',
     },
     land: {
+      proof: {
+        title: 'Inspectée par des gens que vous pouvez rencontrer',
+        body: 'Chaque voiture est inspectée par un mécanicien Sawa dans l’un de nos {{count}} centres de Kigali.',
+        link: 'Visiter un centre',
+      },
+      sellStrip: {
+        title: 'Combien vaut votre voiture ?',
+        body: 'Une estimation gratuite fondée sur les voitures annoncées et vendues à Kigali. Sans compte.',
+        make: 'Marque',
+        year: 'Année',
+        cta: 'Obtenir une estimation',
+      },
       importOrigins: 'Japon, Corée, Chine',
       photoInspectorAlt: 'Un inspecteur examine le passage de roue d’une voiture sous le regard de sa propriétaire',
       photoImportAlt: 'Des voitures et des fourgons alignés sur le pont d’un cargo',
       headline: 'Connaissez la voiture avant de rencontrer le vendeur.',
-      lede: 'Chaque voiture sur Sawa Cars est inspectée sur 150 points dans nos centres de Kigali et publiée avec son rapport. Lisez les preuves, puis traitez directement avec le vendeur.',
+      lede: 'Chaque voiture inspectée sur 150 points à Kigali, rapport complet publié.',
       checks: '{{earned}} contrôles réussis sur {{total}}',
       rulerResult: 'Résultat d’inspection : {{earned}} contrôles réussis sur {{total}}',
       rulerStandard: 'La liste de 150 points en sept catégories, dont {{critical}} critiques',
@@ -782,6 +821,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       emptyAction: 'Angalia magari yote',
     },
     topDeals: {
+      featured: 'Iliyochaguliwa',
       eyebrow: 'Ofa bora',
       title: 'Yaliyochaguliwa na timu yetu wiki hii',
       description:
@@ -922,11 +962,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Kila tangazo huchapisha ripoti yake kama hii: alama za kila kundi, na kama kuna kitu muhimu kilishindwa.',
     },
     land: {
+      proof: {
+        title: 'Hukaguliwa na watu unaoweza kuwatembelea',
+        body: 'Kila gari hukaguliwa na fundi wa Sawa katika mojawapo ya vituo vyetu {{count}} jijini Kigali.',
+        link: 'Tembelea kituo',
+      },
+      sellStrip: {
+        title: 'Gari lako lina thamani gani?',
+        body: 'Makadirio ya bure kutoka kwa magari yaliyotangazwa na kuuzwa Kigali. Huhitaji akaunti.',
+        make: 'Aina',
+        year: 'Mwaka',
+        cta: 'Pata makadirio',
+      },
       importOrigins: 'Japani, Korea, China',
       photoInspectorAlt: 'Mkaguzi anakagua upinde wa gurudumu la gari huku mmiliki akitazama',
       photoImportAlt: 'Magari yamepangwa kwenye sitaha ya meli ya mizigo',
       headline: 'Lijue gari kabla ya kukutana na muuzaji.',
-      lede: 'Kila gari kwenye Sawa Cars hukaguliwa kwa vipengele 150 katika vituo vyetu vya Kigali na kuchapishwa pamoja na ripoti yake. Soma ushahidi, kisha shughulika na muuzaji moja kwa moja.',
+      lede: 'Kila gari hukaguliwa kwa vipengele 150 jijini Kigali, na ripoti kamili huchapishwa.',
       checks: 'Vipengele {{earned}} kati ya {{total}} vimepita',
       rulerResult: 'Matokeo ya ukaguzi: vipengele {{earned}} kati ya {{total}} vimepita',
       rulerStandard: 'Orodha ya vipengele 150 katika makundi saba, {{critical}} kati yake ni muhimu sana',
@@ -1017,6 +1069,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       emptyAction: '모든 차량 둘러보기',
     },
     topDeals: {
+      featured: '추천',
       eyebrow: '주요 매물',
       title: '이번 주 저희 팀이 선정했습니다',
       description: '검사를 마친 차량 중에서 골랐습니다. 유료 게시는 그렇게 표시됩니다.',
@@ -1156,11 +1209,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: '모든 매물은 이와 같이 보고서를 공개합니다: 항목별 점수와 치명적 결함 여부.',
     },
     land: {
+      proof: {
+        title: '직접 찾아갈 수 있는 사람들이 검사합니다',
+        body: '모든 차량은 키갈리의 Sawa 센터 {{count}}곳 중 한 곳에서 Sawa 정비사가 검사합니다.',
+        link: '센터 방문하기',
+      },
+      sellStrip: {
+        title: '내 차의 가치는 얼마일까요?',
+        body: '키갈리에 등록되고 판매된 차량을 기준으로 한 무료 시세입니다. 계정이 필요 없습니다.',
+        make: '제조사',
+        year: '연식',
+        cta: '시세 확인하기',
+      },
       importOrigins: '일본, 한국, 중국',
       photoInspectorAlt: '검사원이 차량 휠 아치를 점검하고 차주가 지켜보는 모습',
       photoImportAlt: '화물선 갑판에 줄지어 선 승용차와 밴',
       headline: '판매자를 만나기 전에 차를 먼저 아세요.',
-      lede: 'Sawa Cars의 모든 차량은 키갈리 센터에서 150개 항목을 검사받고 보고서와 함께 게시됩니다. 근거를 확인한 뒤 판매자와 직접 거래하세요.',
+      lede: '모든 차량은 키갈리에서 150개 항목 검사를 받고, 전체 보고서가 공개됩니다.',
       checks: '{{total}}개 중 {{earned}}개 항목 합격',
       rulerResult: '검사 결과: {{total}}개 중 {{earned}}개 항목 합격',
       rulerStandard: '7개 범주의 150개 점검 항목, 그중 {{critical}}개는 중대 항목',
@@ -1251,6 +1316,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       emptyAction: '浏览所有车辆',
     },
     topDeals: {
+      featured: '精选',
       eyebrow: '精选优惠',
       title: '本周由我们团队精选',
       description: '从已检测车辆中挑选。付费推广会注明。',
@@ -1390,11 +1456,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: '每个车源都会像这样公开报告：各类别得分，以及是否有严重项目未通过。',
     },
     land: {
+      proof: {
+        title: '由您可以当面拜访的人检测',
+        body: '每辆车都由 Sawa 技师在我们位于基加利的 {{count}} 个中心之一进行检测。',
+        link: '参观中心',
+      },
+      sellStrip: {
+        title: '您的车值多少钱？',
+        body: '基于基加利在售及已售车辆的免费估价，无需注册账户。',
+        make: '品牌',
+        year: '年份',
+        cta: '获取估价',
+      },
       importOrigins: '日本、韩国、中国',
       photoInspectorAlt: '检测员检查汽车轮拱，车主在一旁观看',
       photoImportAlt: '货船甲板上排列整齐的轿车和面包车',
       headline: '见卖家之前，先了解这辆车。',
-      lede: 'Sawa Cars 上的每辆车都在我们的基加利中心接受 150 项检测，并连同检测报告一起发布。先看证据，再直接与卖家交易。',
+      lede: '每辆车都在基加利经过 150 项检测，并公开完整报告。',
       checks: '{{total}} 项检查中通过 {{earned}} 项',
       rulerResult: '检测结果：{{total}} 项中通过 {{earned}} 项',
       rulerStandard: '150 项检查清单，分为七类，其中 {{critical}} 项为关键项',

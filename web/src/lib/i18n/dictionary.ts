@@ -15,6 +15,7 @@ type Messages = Record<string, unknown>
 
 const en = {
   common: {
+    directDeal: 'You and the seller agree the price and pay each other directly. Sawa Cars never holds the money.',
     buy: 'Buy',
     rent: 'Rent',
     sell: 'Sell',
@@ -40,7 +41,7 @@ const en = {
     tools: 'Tools',
     rent: 'Rent',
     imports: 'Import',
-    howItWorks: 'How it works',
+    howItWorks: 'How Sawa works',
     browseCertified: 'Browse certified cars',
   },
   footer: {
@@ -83,6 +84,7 @@ const en = {
 
 const rw = {
   common: {
+    directDeal: 'Wowe n’umugurisha mwumvikana ku giciro kandi mukishyurana ubwanyu. Sawa Cars ntibika amafaranga na rimwe.',
     buy: 'Gura',
     rent: 'Kodesha',
     sell: 'Gurisha',
@@ -108,7 +110,7 @@ const rw = {
     tools: 'Ibikoresho',
     rent: 'Kodesha',
     imports: 'Gutumiza',
-    howItWorks: 'Uko bikorwa',
+    howItWorks: 'Uko Sawa ikora',
     browseCertified: 'Reba imodoka zemewe',
   },
   footer: {
@@ -151,6 +153,7 @@ const rw = {
 
 const fr = {
   common: {
+    directDeal: 'Vous et le vendeur fixez le prix et vous payez directement. Sawa Cars ne détient jamais l’argent.',
     buy: 'Acheter',
     rent: 'Louer',
     sell: 'Vendre',
@@ -176,7 +179,7 @@ const fr = {
     tools: 'Outils',
     rent: 'Louer',
     imports: 'Importer',
-    howItWorks: 'Comment ça marche',
+    howItWorks: 'Comment fonctionne Sawa',
     browseCertified: 'Voir les voitures certifiées',
   },
   footer: {
@@ -219,6 +222,7 @@ const fr = {
 
 const sw = {
   common: {
+    directDeal: 'Wewe na muuzaji mnakubaliana bei na kulipana moja kwa moja. Sawa Cars haishiki pesa kamwe.',
     buy: 'Nunua',
     rent: 'Kukodisha',
     sell: 'Uza',
@@ -244,7 +248,7 @@ const sw = {
     tools: 'Zana',
     rent: 'Kodi',
     imports: 'Agiza',
-    howItWorks: 'Jinsi inavyofanya kazi',
+    howItWorks: 'Jinsi Sawa inavyofanya kazi',
     browseCertified: 'Angalia magari yaliyothibitishwa',
   },
   footer: {
@@ -287,6 +291,7 @@ const sw = {
 
 const ko = {
   common: {
+    directDeal: '가격은 판매자와 직접 합의하고 대금도 직접 주고받습니다. Sawa Cars는 돈을 보관하지 않습니다.',
     buy: '구매',
     rent: '렌트',
     sell: '판매',
@@ -312,7 +317,7 @@ const ko = {
     tools: '도구',
     rent: '렌트',
     imports: '수입',
-    howItWorks: '이용 방법',
+    howItWorks: 'Sawa 이용 방법',
     browseCertified: '인증 차량 둘러보기',
   },
   footer: {
@@ -355,6 +360,7 @@ const ko = {
 
 const zh = {
   common: {
+    directDeal: '价格由您与卖家直接商定，款项也直接支付给对方。Sawa Cars 从不经手任何款项。',
     buy: '购买',
     rent: '租车',
     sell: '出售',
@@ -380,7 +386,7 @@ const zh = {
     tools: '工具',
     rent: '租车',
     imports: '进口',
-    howItWorks: '使用说明',
+    howItWorks: 'Sawa 如何运作',
     browseCertified: '浏览已认证车辆',
   },
   footer: {

@@ -78,7 +78,16 @@ async function catalogueMakes(): Promise<string[]> {
   }
 }
 
-export default async function SellPage() {
+export default async function SellPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const params = await searchParams
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.trim() ?? ''
+  // The homepage's sell strip submits make and year here; anything else is ignored.
+  const initialMake = one(params.make).slice(0, 40)
+  const initialYear = /^\d{4}$/.test(one(params.year)) ? one(params.year) : ''
   const t = await getServerT()
   const makes = await catalogueMakes()
   const centers = await getDisplayCenters()
@@ -138,7 +147,7 @@ export default async function SellPage() {
                 {t('sell.hero.freeValuation')}
               </h2>
               <div className="mt-4">
-                <ValuationTool makes={makes} currentYear={currentYear} />
+                <ValuationTool makes={makes} currentYear={currentYear} initialMake={initialMake} initialYear={initialYear} />
               </div>
             </Card>
           </div>

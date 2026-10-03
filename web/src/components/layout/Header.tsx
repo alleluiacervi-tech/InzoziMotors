@@ -28,8 +28,8 @@ import type { User } from '@/lib/types'
  */
 // Nav labels come from NAV_LINKS (hrefs) but are translated by key.
 const NAV_KEY: Record<string, string> = {
-  '/cars': 'nav.buy', '/rentals': 'nav.rent', '/imports': 'nav.imports',
-  '/tools': 'nav.tools', '/how-it-works': 'nav.howItWorks',
+  '/cars': 'nav.buy', '/rentals': 'nav.rent', '/sell': 'nav.sell',
+  '/imports': 'nav.imports', '/how-it-works': 'nav.howItWorks',
 }
 
 export function Header({ user, showRent = false }: { user: User | null; showRent?: boolean }) {

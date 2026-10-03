@@ -32,18 +32,23 @@ const MILEAGE_REFERENCE = 60000
 export function ValuationTool({
   makes,
   currentYear,
+  initialMake = '',
+  initialYear = '',
 }: {
   /** Makes actually present in the live catalogue — the makes the estimate can
    *  find comparables for. Empty when the API is unreachable. */
   makes: string[]
   /** Passed from the server so the year hint cannot drift between render passes. */
   currentYear: number
+  /** Pre-filled from ?make=&year= (the homepage's sell strip posts here). */
+  initialMake?: string
+  initialYear?: string
 }) {
   const t = useT()
   const [state, formAction, pending] = useActionState(estimateValuationAction, INITIAL)
 
-  const [make, setMake] = useState('')
-  const [year, setYear] = useState('')
+  const [make, setMake] = useState(initialMake)
+  const [year, setYear] = useState(initialYear)
   const [mileage, setMileage] = useState('')
 
   const fieldErrors = state.status === 'invalid' ? state.fieldErrors : {}
