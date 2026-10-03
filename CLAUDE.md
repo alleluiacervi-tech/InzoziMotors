@@ -199,8 +199,8 @@ Enforced in code and locked in `platform_settings` (rows are `editable = FALSE`;
 Single source of truth for the checklist: `backend/src/lib/inspection-policy.js`
 — 150 one-point items across 7 categories; it **throws at require-time** if the
 counts don't reconcile. Its public-facing transcription is
-`web/src/lib/inspection-policy.ts` (the ScoreRing and the 150-tick `CheckRuler`
-on the homepage and every listing's report), which
+`web/src/lib/inspection-policy.ts` (the ScoreRing on every card and the 150-tick
+`CheckRuler` in the homepage's standard section), which
 throws on import the same way, so a bad edit is a failed build rather than a
 wrong number on the homepage.
 

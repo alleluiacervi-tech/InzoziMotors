@@ -46,7 +46,7 @@ decoration. Nothing here changes the backend or the app.
 - [ ] **D1** *(Default applied: Rent hidden until the fleet has 3 cars.)* Rent: is it a 2026 business? If not, it leaves the nav, hero tabs and homepage now
       (Phase 1 assumes **yes, remove while the fleet is empty**; it returns automatically when
       `GET /rentals` has 3+ cars, see task 1.4).
-- [ ] **D2** Dark theme: keep as OS-following only (toggle removed), or remove entirely? Default
+- [ ] **D2** *(Default applied: tokens kept, toggle removed, follows the OS.)* Dark theme: keep as OS-following only (toggle removed), or remove entirely? Default
       if unanswered: keep tokens, remove the toggle (task 3.6).
 - [ ] **D3** Photographs of a centre, an inspector at work, and the team: available? Needed for
       tasks 3.8 and 2.3. Until then those sections use the existing `web/public/img/*.jpg`.
@@ -197,68 +197,68 @@ decoration. Nothing here changes the backend or the app.
 
 ## Phase 3 — Polish (visual system, consistency, growth)
 
-- [ ] **3.1 One hero register.** Every page opens on `bg-surface-page` with a black
+- [x] **3.1 One hero register.** *(Done: PageHeader, sell hero, tools hub and subpages, download, contact and the auth layout open on paper.)* Every page opens on `bg-surface-page` with a black
       `text-display` headline and a one-line lede: convert the Sell and Tools heroes (ink +
       red radial gradient) and the `PageHeader` component (white strip) to the pattern
       `PageIntro` uses. Delete the inline `bg-[radial-gradient(...)]` divs. Done when: no page's
       first 600 px is dark or white; all are paper.
-- [ ] **3.2 Retire decoration.** In `globals.css` delete `.ambient-ink`, `.grain`,
+- [x] **3.2 Retire decoration.** *(Done: ambient/grain/grid/lamp classes, stagger, kenburns, rise, halo and Reveal are gone.)* In `globals.css` delete `.ambient-ink`, `.grain`,
       `.blueprint-grid`, `.ambient-paper`, `.grid-paper`; in `tailwind.config.ts` delete the
       `kenburns` keyframe/animation and the `brand` / `brand-lg` shadows; remove the `stagger`
       utility and every `Reveal` wrapper (`components/ui/Reveal.tsx`, used by
       `PipelineModules`) so content is visible on load. Keep `fade-up` for the mobile drawer
       only. Done when: `grep -rn "ambient-\|grain\|stagger\|Reveal\|kenburns" web/src` is
       empty except the drawer.
-- [ ] **3.3 Red only for price, score ring, one button.** Remove `text-brand` from eyebrows
+- [x] **3.3 Red only for price, score ring, one button.** *(Done: Eyebrow defaults to muted, red gradient bars removed, inline links are ink with an underline. Also fixed the `font-extraboldst` typo on activate.)* Remove `text-brand` from eyebrows
       (`Eyebrow` default tone becomes `muted`), from the 1 px top bar on cards (`sell` and
       `rentals` pages), from icon tiles (`bg-brand-tint text-brand` on `/promise` cards, now
       merged away) and from in-copy links on marketing pages (links are ink, underlined).
       Done when: at 1440 px each page has red only on prices, the score ring, the primary
       button and the certified badge.
-- [ ] **3.4 Ruler only at full width.** `components/brand/CheckRuler.tsx` is used in
+- [x] **3.4 Ruler only at full width.** *(Done, slightly differently: the hero specimen and the listing report show the large score only, because the ruler beside the number repeated it. The ruler now lives only in Standard.)* `components/brand/CheckRuler.tsx` is used in
       `Specimen` (40 px) and the listing report card (small). Replace both with the
       `ScoreRing` + large number; the ruler remains only in `Standard` (96 px, labelled).
       Done when: no ruler renders narrower than 600 px.
-- [ ] **3.5 Fewer boxes.** On How Sawa works, Sell and Import, replace bordered `Card`
+- [x] **3.5 Fewer boxes.** *(Done: CenterList and the sell page use hairline columns instead of cards.)* On How Sawa works, Sell and Import, replace bordered `Card`
       grids with plain columns separated by hairlines (`border-t border-line-soft pt-5`), the
       pattern `Standard`'s stat row uses. Icon tiles go. Done when: these pages use `Card`
       only for forms and the valuation result.
-- [ ] **3.6 Theme toggle.** Per D2: remove `ThemeToggle` from the header and drawer
+- [x] **3.6 Theme toggle.** *(Done with the D2 default: toggle removed from header, drawer and dashboard; the site follows the OS and clears the old `sawa-theme` key.)* Per D2: remove `ThemeToggle` from the header and drawer
       (`Header.tsx` lines with `<ThemeToggle`), keep the inline theme script following
       `prefers-color-scheme`. If D2 says "remove entirely", also delete the `.dark` block in
       `globals.css`, `darkMode: 'class'`, and the `sawa-theme` localStorage read. Done when:
       no toggle renders and both themes (or the one theme) pass a visual check.
-- [ ] **3.7 Monthly price on cards.** In `CarCard.tsx`, under the price, add
+- [x] **3.7 Monthly price on cards.** *(Done.)* In `CarCard.tsx`, under the price, add
       `~{formatMoney(monthlyEstimate(car.price))}/mo` using the existing helper in
       `lib/business.ts` and the `cars.card.monthlyEst` key. Done when: every card shows a monthly
       figure consistent with the listing page's.
-- [ ] **3.8 Proof photography.** When D3 delivers images, place them in `web/public/img/`
+- [ ] **3.8 Proof photography.** *(Blocked on D3. Nothing to do until real photographs exist.)* When D3 delivers images, place them in `web/public/img/`
       (add credits to `CREDITS.md`), use one in `Proof.tsx` and one in How Sawa works. Strip
       EXIF before committing. Done when: both pages show a real Sawa photograph with alt text.
-- [ ] **3.9 Recently sold row.** Backend already records `sold_at`. Add
+- [x] **3.9 Recently sold row.** *(Done: new `GET /cars/recently-sold` (sold in 90 days, eligible seller, valid inspection; tests in `backend/test/recently-sold.test.js`). The row sits inside the stock section so the homepage keeps five sections, and stays hidden until the backend is deployed.)* Backend already records `sold_at`. Add
       `GET /cars?status=sold&limit=6` support if absent (check `routes/cars.js` status filter
       and `PUBLIC_CAR_COLUMNS`), then a "Recently sold" row under the stock grid showing title,
       score and "Sold" (no price if the owner prefers; default show the asking price). Done
       when: the row renders only when at least 3 sold cars exist in the last 90 days.
-- [ ] **3.10 WhatsApp fallback on listings (D5).** On `cars/[id]/page.tsx` for signed-out
+- [x] **3.10 WhatsApp fallback on listings (D5).** *(Done. Also fixed a 320 px horizontal overflow on the listing page.)* On `cars/[id]/page.tsx` for signed-out
       visitors, under "Sign in to contact seller", add an outline button "Ask Sawa about this
       car on WhatsApp" linking to `https://wa.me/{CONTACT.whatsapp}?text=` with the listing URL
       pre-filled. It goes to Sawa's line, never the seller's. Done when: the link opens WhatsApp
       with the car title and URL in the message.
-- [ ] **3.11 Saved-search promotion.** On `/cars` empty and low-result states and on the stock
+- [x] **3.11 Saved-search promotion.** *(Done as an inline "Save this search" under the active filters (server action, `saved.createSearch`). The signed-in path was not exercised here because it writes to production.)* On `/cars` empty and low-result states and on the stock
       section, add one line: "Tell me when a {make} under {budget} arrives" linking to
       `/dashboard/saved` (signed in) or `/signup?next=/dashboard/saved`. Done when: the link
       carries the current filters as query params the saved-search form can read.
-- [ ] **3.12 Make and budget landing pages.** Add `/cars/make/[make]` and
+- [x] **3.12 Make and budget landing pages.** *(Done: slugs come from the display make (so a corporate-name rename keeps the URL); `/cars?make=` and `/cars?max_price=<edge>` canonicalise to the landing pages; sitemap and homepage links use them; unknown slugs 404.)* Add `/cars/make/[make]` and
       `/cars/under/[amount]` routes that render the `/cars` page with the filter preset, a
       distinct `<h1>` and canonical, and list them in `sitemap.ts` for makes with ≥ 1 live car
       and for each `BUDGET_EDGES` value with ≥ 1 car. Done when: `/sitemap.xml` lists them and
       each page's `<title>` differs.
-- [ ] **3.13 Android message.** On `/download` and in the footer's store block, while
+- [x] **3.13 Android message.** *(Done. Also rewrote the download page lead, which still implied Android was available.)* On `/download` and in the footer's store block, while
       `APP.androidLive` is false, show "On Android, use sawacars.com. Everything works in the
       browser." instead of only "Coming soon". Done when: the sentence renders and disappears
       when `androidLive` flips.
-- [ ] **3.14 Page weight.** Homepage HTML is ~449 KB. Check what dominates (RSC payload of
+- [ ] **3.14 Page weight.** *(Partly done: 313 KB to 239 KB on a production build of this branch (main serves 442 KB); 70 KB to 53 KB gzipped. What is left is mostly the nine stock cards, each sent twice (HTML and RSC payload, inherent to the App Router), plus the root not-found tree Next ships with every page. Reaching 200 KB needs a product call: show six cards on the homepage instead of nine (about 25 KB).)* Homepage HTML is ~449 KB. Check what dominates (RSC payload of
       the 100-car stock fetch, the i18n catalogue, inline SVG ticks). Pass only the fields
       cards need from `getStock()` to client components, and cap the hero's `modelsByMake` to
       makes in stock. Target under 200 KB. Done when: `curl -s https://sawacars.com | wc -c`
