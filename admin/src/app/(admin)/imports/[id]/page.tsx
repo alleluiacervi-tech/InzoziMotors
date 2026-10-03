@@ -32,7 +32,7 @@ export default function ImportOperationsPage({ params }: { params: Promise<{ id:
   const generated=(kind:string,subjectId?:string)=>order?.generated_documents?.find((d:any)=>d.kind===kind&&(!subjectId||d.subject_id===subjectId))
   if(error)return <ErrorState error={error} onRetry={load}/>
   if(!order)return <LoadingState/>
-  return <div><Link href="/imports" className="mb-4 inline-block text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">← Import pipeline</Link><PageHeader title={`${order.year||''} ${order.make} ${order.model}`} description={`${order.order_ref} · ${order.buyer_name} · ${order.origin_country}`}/>
+  return <div><Link href="/imports" className="mb-4 inline-block text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">← Import orders</Link><PageHeader title={`${order.year||''} ${order.make} ${order.model}`} description={`${order.order_ref} · ${order.buyer_name} · ${order.origin_country}`}/>
     {/* Every move this order can make from here, and a way to stop it. */}
     <div className="mb-5"><ImportStatusControls orderId={id} status={order.status}
       allowed={(order.allowed_transitions || []).filter((next: string) => order.status !== 'enquiry' || next === 'cancelled')}

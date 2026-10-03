@@ -36,22 +36,30 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/submissions', icon: 'document', label: 'Submissions' },
       { href: '/inspections', icon: 'clipboard-check', label: 'Inspections' },
       { href: '/listings', icon: 'car', label: 'Listings' },
-      { href: '/imports', icon: 'ship', label: 'Vehicle imports' },
       // One item while renting is inquiry-only and the fleet is small
       // (decision A5); inquiries and inventory are tabs on the page.
       { href: '/rentals', icon: 'calendar-clock', label: 'Rentals' },
+      // A vehicle tool, so it sits with the vehicles rather than with people.
+      { href: '/vehicles', icon: 'file-search', label: 'Vehicle history' },
     ],
   },
   {
-    title: 'Insights',
+    // Everything about importing in one place: the orders, the Korean
+    // catalogue they come from, and the catalogue's images.
+    title: 'Imports',
     items: [
-      { href: '/insights', icon: 'layout-dashboard', label: 'Business overview' },
-      { href: '/insights/funnels', icon: 'funnel', label: 'Funnels' },
-      { href: '/insights/inventory', icon: 'warehouse', label: 'Inventory' },
-      { href: '/insights/quality', icon: 'badge-check', label: 'Inspection quality' },
-      { href: '/insights/centers', icon: 'building', label: 'Center performance' },
+      { href: '/imports', icon: 'ship', label: 'Import orders' },
+      { href: '/imports/korea', icon: 'search', label: 'Korean catalogue' },
+      { href: '/imports/photos', icon: 'images', label: 'Catalogue images' },
+    ],
+  },
+  {
+    // The six Insights views are tabs on one page (they carry the date
+    // window between them), so the menu names the page once.
+    title: 'Business',
+    items: [
+      { href: '/insights', icon: 'layout-dashboard', label: 'Insights' },
       { href: '/revenue', icon: 'receipt', label: 'Revenue' },
-      { href: '/insights/reports', icon: 'file-spreadsheet', label: 'Reports & exports' },
     ],
   },
   {
@@ -60,7 +68,6 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/users', icon: 'id-card', label: 'Users & ID checks' },
       { href: '/reports', icon: 'flag', label: 'Reported chats' },
       { href: '/account-closures', icon: 'user-x', label: 'Account closures' },
-      { href: '/vehicles', icon: 'file-search', label: 'Vehicle history' },
     ],
   },
   {
@@ -69,8 +76,6 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/settings', icon: 'settings', label: 'Platform settings' },
       { href: '/brands', icon: 'tag', label: 'Brands' },
       { href: '/banner', icon: 'megaphone', label: 'Home banner' },
-      { href: '/imports/korea', icon: 'ship', label: 'Korean catalogue' },
-      { href: '/imports/photos', icon: 'images', label: 'Catalogue images' },
       { href: '/centers', icon: 'location', label: 'Inspection centers' },
     ],
   },
@@ -217,7 +222,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     pathname === href || (href !== '/dashboard' && pathname.startsWith(`${href}/`))
   const current = ALL_ITEMS.filter((n) => matches(n.href)).sort((a, b) => b.href.length - a.href.length)[0]
   const activeHref = current?.href
-  // Twenty-six destinations across five groups: the page title alone does not
+  // Twenty-one destinations across six groups: the page title alone does not
   // say where you are. The group name does, and it costs one line.
   const currentGroup = NAV_GROUPS.find((g) => g.items.some((n) => n.href === activeHref))?.title
 
@@ -286,7 +291,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             `aria-current` carries the same fact for a screen reader, which
             colour alone never does. */}
         {/* `nav-fade` dissolves the last few pixels of the scroll area into the
-            ink. Twenty-six destinations do not fit a laptop's rail, and without
+            ink. Twenty-one destinations do not fit a laptop's rail, and without
             it the list simply stopped mid-row against the user footer — which
             reads as a clipping bug rather than as "there is more below". */}
         <nav className="rail-scroll nav-fade relative z-10 min-h-0 flex-1 overflow-y-auto px-3 py-4">
@@ -309,7 +314,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       aria-current={active ? 'page' : undefined}
                       onClick={() => setSidebarOpen(false)}
                       className={`
-                        group relative flex h-9 items-center gap-3 rounded-lg pl-4 pr-2.5 text-label font-semibold transition-colors
+                        group relative flex h-11 items-center gap-3 rounded-lg pl-4 pr-2.5 text-label font-semibold transition-colors lg:h-9
                         ${active ? 'bg-white/[0.07] text-white' : 'text-white/60 hover:bg-white/[0.04] hover:text-white'}
                       `}
                     >

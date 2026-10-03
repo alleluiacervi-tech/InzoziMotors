@@ -118,7 +118,7 @@ export default function KoreanCatalogPage() {
 
   return (
     <div className="max-w-5xl">
-      <Link href="/imports" className="mb-4 inline-block text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">← Import pipeline</Link>
+      <Link href="/imports" className="mb-4 inline-block text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">← Import orders</Link>
       <PageHeader title="Korean catalogue" description="Every used car for sale in South Korea, mirrored from the Encar data provider so customers can search them on the website and in the app." />
 
       {status.stale ? (

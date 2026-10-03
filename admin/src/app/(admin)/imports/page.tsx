@@ -35,7 +35,7 @@ export default function ImportsPage() {
 
 
   return <div>
-    <PageHeader title="Vehicle imports" description="One auditable pipeline from customer enquiry and 50% order payment to Kigali inspection, final balance and handover." action={<ExportLink dataset="imports" />} />
+    <PageHeader title="Import orders" description="Each order from enquiry to collection: an itemized quote, a signed agreement, two payments evidenced by bank-transfer proof, and an inspection in Kigali." action={<ExportLink dataset="imports" />} />
     <Card className="mb-5 p-4">
       <label className="text-label font-semibold text-content">Pipeline stage
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="ml-3 h-10 rounded-xl border border-line bg-surface px-3 font-normal">
