@@ -352,7 +352,7 @@ export default function RentalFleetPage() {
                     : 'Listing paid'}
                 </span>
                 {car.subscription_ends_on ? (
-                  <span className="ml-1 font-medium">· to {String(car.subscription_ends_on).slice(0, 10)}</span>
+                  <span className="ml-1 font-medium">· to {fmtDate(String(car.subscription_ends_on).slice(0, 10))}</span>
                 ) : null}
               </div>
 
@@ -364,7 +364,7 @@ export default function RentalFleetPage() {
               {car.status === 'pending_review' ? (
                 <div className="mt-2 rounded-lg border border-line bg-info-tint px-3 py-2.5">
                   <p className="text-xs font-bold text-info">Provider-proposed — awaiting your review</p>
-                  <p className="mt-0.5 text-[11px] text-info">
+                  <p className="mt-0.5 text-caption text-info">
                     {car.provider_business_name || car.provider_name || 'The provider'} proposed this vehicle from
                     their own passing inspection. Check the inspection and images below, then approve it.
                   </p>
@@ -374,7 +374,7 @@ export default function RentalFleetPage() {
               {car.publishable ? (
                 <div className="mt-2 rounded-lg border border-warning-border bg-warning-tint px-3 py-2.5">
                   <p className="text-xs font-bold text-warning-text">Paid, but not on the public feed</p>
-                  <p className="mt-0.5 text-[11px] text-warning-text">
+                  <p className="mt-0.5 text-caption text-warning-text">
                     The subscription is live, but this vehicle is set to <strong>{car.status}</strong>, so
                     renters cannot see it. Recording a payment never publishes a car on its own — a vehicle
                     in the workshop should stay parked.
@@ -411,7 +411,7 @@ export default function RentalFleetPage() {
                       mirrors Listings' "Approve only" escape hatch. */}
                   {car.status === 'pending_review' ? (
                     <button type="button" onClick={() => renew(car)} disabled={renewing === car.id}
-                      className="mt-1.5 text-[11px] font-semibold text-content-muted underline underline-offset-2 hover:text-content disabled:opacity-50">
+                      className="mt-1.5 text-caption font-semibold text-content-muted underline underline-offset-2 hover:text-content disabled:opacity-50">
                       Just record the payment — decide about publishing later
                     </button>
                   ) : null}

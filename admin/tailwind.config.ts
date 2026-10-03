@@ -185,7 +185,7 @@ const config: Config = {
         'body': ['0.875rem', { lineHeight: '1.55' }],                               // 14px — default copy, table cells
         'label': ['0.8125rem', { lineHeight: '1.45' }],                             // 13px — field labels, row meta
         'caption': ['0.75rem', { lineHeight: '1.45' }],                             // 12px — pills, dense meta
-        'micro': ['0.6875rem', { lineHeight: '1.4', letterSpacing: '0.04em' }],     // 11px — sidebar sub-text
+        'micro': ['0.75rem', { lineHeight: '1.4', letterSpacing: '0.04em' }],       // 12px — the floor; was 11px (admin audit, finding 17)
       },
       boxShadow: {
         card: '0 2px 8px rgba(26, 20, 19, 0.06)',

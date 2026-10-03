@@ -182,7 +182,7 @@ export default function EditListingPage() {
             <div>
               <p className="text-xs font-bold text-gray-900">Vehicle as inspected</p>
               <p className="mt-0.5 text-sm font-semibold text-gray-900">{[year, make, model].filter(Boolean).join(' ')}</p>
-              <p className="mt-1 text-[11px] text-gray-500 leading-relaxed">
+              <p className="mt-1 text-caption text-gray-500 leading-relaxed">
                 Taken from the inspection. Correcting it updates the listing and the submission together.
               </p>
             </div>
@@ -220,8 +220,8 @@ export default function EditListingPage() {
 
         <form onSubmit={save} className="space-y-5">
           <div>
-            <label className={labelCls}>Title *</label>
-            <input
+            <label htmlFor="edit-title" className={labelCls}>Title *</label>
+            <input id="edit-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -272,8 +272,8 @@ export default function EditListingPage() {
             </div>
 
             <div>
-              <label className={labelCls}>Mileage (km) *</label>
-              <input
+              <label htmlFor="edit-mileage-km" className={labelCls}>Mileage (km) *</label>
+              <input id="edit-mileage-km"
                 type="number"
                 step={1}
                 value={mileage}
@@ -283,8 +283,8 @@ export default function EditListingPage() {
             </div>
 
             <div>
-              <label className={labelCls}>Location</label>
-              <input
+              <label htmlFor="edit-location" className={labelCls}>Location</label>
+              <input id="edit-location"
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
@@ -303,15 +303,15 @@ export default function EditListingPage() {
                 ? `Price adjustment: ${car.currency || 'RWF'} ${Number(car.price).toLocaleString('en-GB')} → ${currency} ${Number(price || 0).toLocaleString('en-GB')}`
                 : 'Price history is public'}
             </p>
-            <p className="text-[11px] leading-relaxed">
+            <p className="text-caption leading-relaxed">
               Price adjustments are permanently recorded to historical market intelligence charts and alert interested buyers.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Color</label>
-              <input
+              <label htmlFor="edit-color" className={labelCls}>Color</label>
+              <input id="edit-color"
                 type="text"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
@@ -320,8 +320,8 @@ export default function EditListingPage() {
               />
             </div>
             <div>
-              <label className={labelCls}>Drive side</label>
-              <select value={driveSide} onChange={(e) => setDriveSide(e.target.value)} className={inputCls}>
+              <label htmlFor="edit-drive-side" className={labelCls}>Drive side</label>
+              <select id="edit-drive-side" value={driveSide} onChange={(e) => setDriveSide(e.target.value)} className={inputCls}>
                 <option value="LHD">LHD (Rwanda standard)</option>
                 <option value="RHD">RHD (Japanese import)</option>
               </select>
@@ -329,17 +329,17 @@ export default function EditListingPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <div><label className={labelCls}>Fuel type</label><input value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol, Diesel, Hybrid…" className={inputCls} /></div>
-            <div><label className={labelCls}>Transmission</label><input value={transmission} onChange={(e) => setTransmission(e.target.value)} placeholder="Automatic, Manual…" className={inputCls} /></div>
-            <div><label className={labelCls}>Body type</label><input value={bodyType} onChange={(e) => setBodyType(e.target.value)} placeholder="SUV, Sedan, Hatchback…" className={inputCls} /></div>
+            <div><label htmlFor="edit-fuel-type" className={labelCls}>Fuel type</label><input id="edit-fuel-type" value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol, Diesel, Hybrid…" className={inputCls} /></div>
+            <div><label htmlFor="edit-transmission" className={labelCls}>Transmission</label><input id="edit-transmission" value={transmission} onChange={(e) => setTransmission(e.target.value)} placeholder="Automatic, Manual…" className={inputCls} /></div>
+            <div><label htmlFor="edit-body-type" className={labelCls}>Body type</label><input id="edit-body-type" value={bodyType} onChange={(e) => setBodyType(e.target.value)} placeholder="SUV, Sedan, Hatchback…" className={inputCls} /></div>
           </div>
 
           {/* VIN & Canonical Vehicle Registry Binding */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>VIN or chassis number</label>
-              <input value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} className={inputCls} />
-              <p className="mt-1 text-[11px] text-gray-400">Shown to buyers with most characters hidden.</p>
+              <label htmlFor="edit-vin-or-chassis-number" className={labelCls}>VIN or chassis number</label>
+              <input id="edit-vin-or-chassis-number" value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} className={inputCls} />
+              <p className="mt-1 text-caption text-gray-400">Shown to buyers with most characters hidden.</p>
             </div>
 
             {/* Rarely needed, and a raw ID: behind a disclosure so it does not
@@ -351,11 +351,11 @@ export default function EditListingPage() {
               <div className="flex items-center justify-between mb-1">
                 <label htmlFor="listing-vehicle-id" className="text-xs font-semibold text-gray-700">Vehicle record ID</label>
                 {vehicleId ? (
-                  <span className="text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                  <span className="text-caption font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
                     Linked
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                  <span className="text-caption font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                     Not linked
                   </span>
                 )}
@@ -367,20 +367,20 @@ export default function EditListingPage() {
                 placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
                 className={`${inputCls} font-mono text-xs`}
               />
-              <p className="mt-1 text-[11px] text-gray-400">Connects the listing to the vehicle&apos;s history record.</p>
+              <p className="mt-1 text-caption text-gray-400">Connects the listing to the vehicle&apos;s history record.</p>
             </details>
           </div>
 
           {/* Seller Assignment */}
           <div>
-            <label className={labelCls}>Seller account ID</label>
-            <input value={sellerId} onChange={(e) => setSellerId(e.target.value)} className={inputCls} />
-            <p className="mt-1 text-[11px] text-gray-400">Reassignment requires an active, identity-verified seller account.</p>
+            <label htmlFor="edit-seller-account-id" className={labelCls}>Seller account ID</label>
+            <input id="edit-seller-account-id" value={sellerId} onChange={(e) => setSellerId(e.target.value)} className={inputCls} />
+            <p className="mt-1 text-caption text-gray-400">Reassignment requires an active, identity-verified seller account.</p>
           </div>
 
           <div>
-            <label className={labelCls}>Public description</label>
-            <textarea
+            <label htmlFor="edit-public-description" className={labelCls}>Public description</label>
+            <textarea id="edit-public-description"
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -389,14 +389,14 @@ export default function EditListingPage() {
           </div>
 
           <div>
-            <label className={labelCls}>Internal notes (team only)</label>
-            <textarea rows={3} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} className={inputCls} />
+            <label htmlFor="edit-internal-notes-team-only" className={labelCls}>Internal notes (team only)</label>
+            <textarea id="edit-internal-notes-team-only" rows={3} value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)} className={inputCls} />
             <p className="mt-1 text-xs text-gray-400">Private operational remarks. Never visible to buyers.</p>
           </div>
 
           <div>
-            <label className={labelCls}>Image addresses, one per line</label>
-            <textarea
+            <label htmlFor="edit-image-addresses-one-per-line" className={labelCls}>Image addresses, one per line</label>
+            <textarea id="edit-image-addresses-one-per-line"
               rows={3}
               value={images}
               onChange={(e) => setImages(e.target.value)}

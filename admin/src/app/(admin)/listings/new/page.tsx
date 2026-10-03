@@ -288,7 +288,7 @@ function ListingCreatorForm() {
                             <span className="block truncate text-xs text-gray-500">{u.email}</span>
                           </span>
                           {u.id_verified === 'approved' && (
-                            <span className="shrink-0 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                            <span className="shrink-0 rounded-full bg-green-50 px-2 py-0.5 text-caption font-bold text-green-700">
                               ID verified
                             </span>
                           )}
@@ -301,8 +301,8 @@ function ListingCreatorForm() {
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
-            <input
+            <label htmlFor="new-title" className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
+            <input id="new-title"
               type="text"
               required
               value={title}
@@ -331,7 +331,7 @@ function ListingCreatorForm() {
             <p className="mt-1 text-sm font-semibold text-gray-900">
               {[year, make, model].filter(Boolean).join(' ') || 'Select the inspection above'}
             </p>
-            <p className="mt-1 text-[11px] text-gray-500">
+            <p className="mt-1 text-caption text-gray-500">
               This is what was inspected, so it is what the listing must say. To correct it,
               open the listing after creating it and use <strong>Correct vehicle details</strong>,
               which changes the submission too so the two never disagree.
@@ -342,8 +342,8 @@ function ListingCreatorForm() {
         {/* Specs */}
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Mileage (km) *</label>
-            <input
+            <label htmlFor="new-mileage-km" className="block text-xs font-semibold text-gray-700 mb-1">Mileage (km) *</label>
+            <input id="new-mileage-km"
               type="number"
               required
               value={mileage}
@@ -353,8 +353,8 @@ function ListingCreatorForm() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Transmission *</label>
-            <select
+            <label htmlFor="new-transmission" className="block text-xs font-semibold text-gray-700 mb-1">Transmission *</label>
+            <select id="new-transmission"
               value={transmission}
               onChange={(e) => setTransmission(e.target.value)}
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
@@ -375,8 +375,8 @@ function ListingCreatorForm() {
               options={BODY_TYPES} placeholder="e.g. Wagon, Minibus, Convertible" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Drive Side *</label>
-            <select
+            <label htmlFor="new-drive-side" className="block text-xs font-semibold text-gray-700 mb-1">Drive Side *</label>
+            <select id="new-drive-side"
               value={driveSide}
               onChange={(e) => setDriveSide(e.target.value)}
               className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand"
@@ -386,8 +386,8 @@ function ListingCreatorForm() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Color</label>
-            <input
+            <label htmlFor="new-color" className="block text-xs font-semibold text-gray-700 mb-1">Color</label>
+            <input id="new-color"
               type="text"
               value={color}
               onChange={(e) => setColor(e.target.value)}
@@ -411,8 +411,8 @@ function ListingCreatorForm() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Location *</label>
-            <input
+            <label htmlFor="new-location" className="block text-xs font-semibold text-gray-700 mb-1">Location *</label>
+            <input id="new-location"
               type="text"
               required
               value={location}
@@ -422,8 +422,8 @@ function ListingCreatorForm() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">VIN / Chassis No.</label>
-            <input
+            <label htmlFor="new-vin-chassis-no" className="block text-xs font-semibold text-gray-700 mb-1">VIN / Chassis No.</label>
+            <input id="new-vin-chassis-no"
               type="text"
               value={vin}
               onChange={(e) => setVin(e.target.value)}
@@ -439,8 +439,8 @@ function ListingCreatorForm() {
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Public description</label>
-          <textarea
+          <label htmlFor="new-public-description" className="block text-xs font-semibold text-gray-700 mb-1">Public description</label>
+          <textarea id="new-public-description"
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}

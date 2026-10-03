@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Card, fmtMoney, parseRwfInput, formatRwfInput } from '@/components/ui'
 import { useToast, useConfirm } from '@/components/feedback'
+import { fmtDate } from '@/lib/format'
 
 const METHODS = [
   ['cash', 'Cash'],
@@ -101,7 +102,7 @@ export function InspectionFee({ inspectionId, fee, onChange }: {
             <p className="mt-0.5 text-label text-content-muted">
               {String(fee.method || '').replace('_', ' ')}
               {fee.reference ? ` · ${fee.reference}` : ''}
-              {fee.collected_at ? ` · ${new Date(fee.collected_at).toLocaleDateString('en-RW', { dateStyle: 'medium' })}` : ''}
+              {fee.collected_at ? ` · ${fmtDate(fee.collected_at)}` : ''}
             </p>
           </div>
           <button type="button" onClick={() => setVoiding((open) => !open)} disabled={busy}

@@ -36,7 +36,7 @@ function ContentWarnings({ items }: { items?: string[] }) {
   if (!items?.length) return null
   return (
     <div className="mt-3 rounded-lg border border-warning-tint bg-warning-tint p-2.5">
-      <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-warning-text">
+      <p className="text-caption font-bold uppercase tracking-[0.06em] text-warning-text">
         Worth fixing before a buyer reads it
       </p>
       <ul className="mt-1.5 space-y-1">
@@ -348,7 +348,7 @@ export default function ListingsPage() {
                 <p className="text-xs text-gray-500">{fmtInt(car.mileage)} km · {car.location}</p>
                 <p className="text-sm font-bold text-content mt-1">{fmtMoney(car.price, car.currency)}</p>
                 <p className="text-xs text-content-muted">{car.views || 0} views</p>
-                <div className="mt-3 grid grid-cols-3 gap-1 text-center text-[11px]">
+                <div className="mt-3 grid grid-cols-3 gap-1 text-center text-caption">
                   <span className={`rounded-md px-1 py-1 ${car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? 'bg-success-tint text-success-text' : 'bg-danger-tint text-danger-strong'}`}>Seller</span>
                   <span className={`rounded-md px-1 py-1 ${car.has_completed_inspection ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>Inspection</span>
                   <span className={`rounded-md px-1 py-1 ${Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>Gallery</span>
@@ -504,7 +504,7 @@ export default function ListingsPage() {
                             </li>
                           ))}
                         </ul>
-                        <p className="mt-2 text-[11px] text-content-muted">
+                        <p className="mt-2 text-caption text-content-muted">
                           {(readiness[car.id] as Readiness).photo_count} of {(readiness[car.id] as Readiness).min_photos} required photo
                           {(readiness[car.id] as Readiness).min_photos === 1 ? '' : 's'} uploaded.
                         </p>

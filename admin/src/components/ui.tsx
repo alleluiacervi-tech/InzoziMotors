@@ -544,8 +544,9 @@ export function BarChart({
   compareLabel?: string
 }) {
   const max = Math.max(...data.map((d) => d.value), 0)
+  // Empty is one quiet line, not a chart-sized panel announcing nothing.
   if (!data.length || max === 0) {
-    return <EmptyState icon="chart" title={emptyLabel} description="This chart fills in as real activity is recorded." />
+    return <p className="py-4 text-label text-content-muted">{emptyLabel}. It fills in as activity is recorded.</p>
   }
   const plot = height - 40
 

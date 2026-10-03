@@ -233,7 +233,7 @@ export default function VehicleIntelligenceCommandCenter() {
           <Icon name="alert" className="h-4 w-4" />
           Warning signs
           {signals.length > 0 && (
-            <span className="ml-1 rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-extrabold text-white">
+            <span className="ml-1 rounded-full bg-danger px-1.5 py-0.5 text-caption font-extrabold text-white">
               {signals.length}
             </span>
           )}
@@ -305,21 +305,21 @@ export default function VehicleIntelligenceCommandCenter() {
                 <button
                   type="button"
                   onClick={() => { setVinInput('NZE121-1234567'); handleDecode('NZE121-1234567') }}
-                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-[11px] text-content hover:bg-line-soft"
+                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-caption text-content hover:bg-line-soft"
                 >
                   Toyota Vitz / Corolla (JDM)
                 </button>
                 <button
                   type="button"
                   onClick={() => { setVinInput('4T1BF1FK5CU123456'); handleDecode('4T1BF1FK5CU123456') }}
-                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-[11px] text-content hover:bg-line-soft"
+                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-caption text-content hover:bg-line-soft"
                 >
                   Toyota Camry (USA ISO)
                 </button>
                 <button
                   type="button"
                   onClick={() => { setVinInput('WBA5A5C51FD123456'); handleDecode('WBA5A5C51FD123456') }}
-                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-[11px] text-content hover:bg-line-soft"
+                  className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-caption text-content hover:bg-line-soft"
                 >
                   BMW X5 (Germany ISO)
                 </button>
@@ -387,17 +387,17 @@ export default function VehicleIntelligenceCommandCenter() {
                 {/* High-Density Specs Grid */}
                 <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Trim / Grade</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Trim / Grade</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.trim || 'Standard'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Body type</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Body type</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.bodyType || 'Sedan'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Displacement</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Displacement</p>
                     <p className="mt-1 text-sm font-bold text-content">
                       {decodeResult.normalizedSpecs?.engineDisplacementCc
                         ? `${decodeResult.normalizedSpecs?.engineDisplacementCc} cc`
@@ -406,27 +406,27 @@ export default function VehicleIntelligenceCommandCenter() {
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Fuel type</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Fuel type</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.fuelType || 'Petrol'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Transmission</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Transmission</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.transmission || 'Automatic'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Drivetrain</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Drivetrain</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.drivetrain || 'FWD'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Country of manufacture</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Country of manufacture</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCountry || 'Japan'}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-content-muted">Assembly city</p>
+                    <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Assembly city</p>
                     <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCity || 'Toyota City'}</p>
                   </div>
                 </div>
@@ -438,7 +438,7 @@ export default function VehicleIntelligenceCommandCenter() {
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(decodeResult.activeProviders || ['local_iso_decoder']).map((prov: string) => (
-                      <span key={prov} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1 font-mono text-[11px] text-content">
+                      <span key={prov} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1 font-mono text-caption text-content">
                         <span className="h-1.5 w-1.5 rounded-full bg-success" />
                         {prov}
                       </span>
@@ -629,7 +629,7 @@ export default function VehicleIntelligenceCommandCenter() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span
-                            className={`rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                            className={`rounded-md px-2 py-0.5 text-caption font-extrabold uppercase tracking-wide ${
                               signal.severity === 'critical'
                                 ? 'bg-danger text-white'
                                 : 'bg-warning text-white'

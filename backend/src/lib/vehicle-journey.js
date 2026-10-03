@@ -49,6 +49,14 @@ function isoDay(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
 }
 
+/** "1 Oct 2026": day first, as Rwanda writes a date and as the admin console
+ *  prints every other one. Read at noon UTC so no zone moves the day. */
+const DAY_FORMAT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Kigali' });
+function displayDay(value) {
+  const day = isoDay(value);
+  return day ? DAY_FORMAT.format(new Date(`${day}T12:00:00Z`)) : null;
+}
+
 /** Midnight-to-midnight in Kigali, so "the appointment was yesterday" means what
  *  an operator means by it rather than what UTC happens to say at 01:00. */
 function daysPast(value) {
@@ -172,7 +180,7 @@ function bookingStage(submission, inspection) {
   if (submission.status === 'rejected') return { state: 'locked', actor: 'none', detail: 'Submission was rejected', blockers: [] };
   if (inspection && inspection.scheduled_on) {
     return { state: 'done', actor: 'none', at: inspection.scheduled_at || inspection.scheduled_on,
-      detail: `${inspection.center} · ${inspection.scheduled_date || isoDay(inspection.scheduled_on)}`, blockers: [] };
+      detail: `${inspection.center} · ${displayDay(inspection.scheduled_on) || inspection.scheduled_date}`, blockers: [] };
   }
   return { state: 'active', actor: 'us', at: submission.submitted_at, detail: 'No inspection booked',
     blockers: [{ label: 'Book an inspection slot for this vehicle', fix: `/submissions?focus=${submission.id}` }] };
@@ -212,7 +220,7 @@ function inspectionStage(inspection) {
       blockers: [{ label: 'The appointment passed and the checklist was never started. Rebook it or record what happened.', fix: `/inspections/${inspection.id}` }] };
   }
   return { state: 'active', actor: 'clock', at: inspection.scheduled_at || inspection.scheduled_on,
-    detail: overdue === 0 ? 'Due today' : `${inspection.scheduled_date || isoDay(inspection.scheduled_on)}`,
+    detail: overdue === 0 ? 'Due today' : `${displayDay(inspection.scheduled_on) || inspection.scheduled_date}`,
     blockers: [] };
 }
 

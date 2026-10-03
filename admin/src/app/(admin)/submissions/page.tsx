@@ -388,7 +388,7 @@ export default function SubmissionsPage() {
                     ) : null}
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${waiting.overdue ? 'bg-danger-tint text-danger-strong' : 'bg-surface-alt text-content-muted'}`}>{waiting.overdue ? 'Overdue · ' : ''}{waiting.label}</span>
                   </div>
-                  <p className="text-sm text-gray-500">{fmtInt(sub.mileage)} km · {sub.condition} · {sub.transmission}</p>
+                  <p className="text-sm text-gray-500">{[sub.mileage != null ? `${fmtInt(sub.mileage)} km` : null, sub.condition, sub.transmission].filter(Boolean).join(' · ') || 'No details yet'}</p>
                   <p className="text-sm text-gray-500">Seller: {sub.seller_name} · {fmtDate(sub.submitted_at)}</p>
                   {sub.asking_price && (
                     <p className="text-sm font-medium text-content mt-1">

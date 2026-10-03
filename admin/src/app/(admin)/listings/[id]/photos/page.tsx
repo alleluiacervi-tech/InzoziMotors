@@ -152,7 +152,7 @@ export default function CarPhotosPage() {
       {car.status === 'live' ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-xs font-bold text-amber-900">This listing is live on the website and in the app.</p>
-          <p className="mt-1 text-[11px] text-amber-800">
+          <p className="mt-1 text-caption text-amber-800">
             Adding, removing or re-covering a photo takes effect immediately for buyers.
             The gallery cannot be taken below {minPhotos} photo{minPhotos === 1 ? '' : 's'} while the listing is public — remove the listing from the public feed first if you need to strip it back.
           </p>
@@ -211,33 +211,33 @@ export default function CarPhotosPage() {
                         unreviewed photo is the one thing an operator must not
                         have to go looking for. */}
                     {photo.plate_state !== 'masked' && photo.plate_state !== 'none' ? (
-                      <span className="absolute left-1 top-1 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      <span className="absolute left-1 top-1 rounded bg-red-600 px-1.5 py-0.5 text-caption font-bold text-white">
                         Plate not checked
                       </span>
                     ) : photo.plate_state === 'masked' ? (
-                      <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-caption font-bold text-white">
                         Plate hidden
                       </span>
                     ) : null}
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="flex flex-col items-center gap-2">
-                        <span className="text-white text-[10px] font-bold">{photo.is_cover ? 'Cover photo' : 'Gallery photo'}</span>
+                        <span className="text-white text-caption font-bold">{photo.is_cover ? 'Cover photo' : 'Gallery photo'}</span>
                         <div className="flex flex-wrap justify-center gap-2">
                           {photo.can_mask === false ? (
                             // Offering a button that cannot succeed is worse
                             // than offering none: the operator presses it,
                             // reads a failure, and tries again.
                             <span title="This photo is held on external media storage. Plate masking rewrites the image file, which requires photos stored on the Sawa server."
-                              className="rounded bg-gray-200 px-2 py-1 text-[10px] font-bold text-gray-600">
+                              className="rounded bg-gray-200 px-2 py-1 text-caption font-bold text-gray-600">
                               Masking unavailable
                             </span>
                           ) : (
-                            <button type="button" onClick={() => setMasking(photo)} className="rounded bg-brand px-2 py-1 text-[10px] font-bold text-brand-on">
+                            <button type="button" onClick={() => setMasking(photo)} className="rounded bg-brand px-2 py-1 text-caption font-bold text-brand-on">
                               {photo.plate_state === 'masked' ? 'Move cover' : 'Hide plate'}
                             </button>
                           )}
-                          {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-surface px-2 py-1 text-[10px] font-bold text-gray-800">Make cover</button>}
-                          <button type="button" onClick={() => removePhoto(photo.id)} className="rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white">Remove</button>
+                          {!photo.is_cover && <button type="button" onClick={() => makeCover(photo.id)} className="rounded bg-surface px-2 py-1 text-caption font-bold text-gray-800">Make cover</button>}
+                          <button type="button" onClick={() => removePhoto(photo.id)} className="rounded bg-red-600 px-2 py-1 text-caption font-bold text-white">Remove</button>
                         </div>
                       </div>
                     </div>
@@ -264,7 +264,7 @@ export default function CarPhotosPage() {
                 ? `${currentCount} photo${currentCount === 1 ? '' : 's'} ready`
                 : `${currentCount} of ${minPhotos} required photo${minPhotos === 1 ? '' : 's'}`}
             </p>
-            <p className="mt-1 text-[11px]">
+            <p className="mt-1 text-caption">
               {galleryMeetsMinimum
                 ? 'The gallery meets the configured minimum.'
                 : `Upload ${minPhotos - currentCount} more photo${minPhotos - currentCount === 1 ? '' : 's'} to make publication possible.`}
@@ -278,7 +278,7 @@ export default function CarPhotosPage() {
               <p className="text-xs font-bold text-gray-900">Also required before publication</p>
               <ul className="mt-1.5 space-y-1">
                 {readiness.missing.map((item) => (
-                  <li key={item} className="flex gap-2 text-[11px] text-gray-600">
+                  <li key={item} className="flex gap-2 text-caption text-gray-600">
                     <span aria-hidden>•</span><span>{item}</span>
                   </li>
                 ))}

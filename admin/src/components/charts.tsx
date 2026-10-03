@@ -347,6 +347,12 @@ export function LineChart({
     return Array.from({ length: count }, (_, k) => Math.round((k / (count - 1)) * (n - 1)))
   }, [n, width])
 
+  // A window where nothing happened draws a flat line at zero across the
+  // whole frame; one sentence says the same thing in a line of space.
+  if (n > 0 && series.every((s) => s.values.every((v) => !v))) {
+    return <p className="py-4 text-label text-content-muted">Nothing recorded in this window{series.length > 1 ? ' or the one before it' : ''}.</p>
+  }
+
   const path = (vals: number[]) => vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
   const primary = series.find((s) => s.tone !== 'prev')
 
@@ -385,12 +391,12 @@ export function LineChart({
           {ticks.map((t) => (
             <g key={t}>
               <line x1={PAD.l} x2={width - PAD.r} y1={y(t)} y2={y(t)} stroke="rgb(var(--line-soft))" strokeWidth="1" />
-              <text x={PAD.l - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-content-muted text-[11px] tnum">{format(t)}</text>
+              <text x={PAD.l - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-content-muted text-caption tnum">{format(t)}</text>
             </g>
           ))}
           {xTicks.map((i) => (
             <text key={i} x={x(i)} y={height - 8} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}
-              className="fill-content-muted text-[11px]">{fmtDayMonth(dates[i])}</text>
+              className="fill-content-muted text-caption">{fmtDayMonth(dates[i])}</text>
           ))}
           {primary && n > 1 ? (
             <path d={`${path(primary.values)} L${x(n - 1)},${y(0)} L${x(0)},${y(0)} Z`} fill={toneRgb(primary.tone as Tone, 0.08)} />

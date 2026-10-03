@@ -196,7 +196,7 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
                 <input type="radio" name="grant-source" className="sr-only" checked={form.source === o.value}
                   onChange={() => setForm({ ...form, source: o.value })} />
                 <span className="block text-xs font-bold text-gray-900">{o.label}</span>
-                <span className="text-[11px] text-gray-500">{o.hint}</span>
+                <span className="text-caption text-gray-500">{o.hint}</span>
               </label>
             ))}
           </div>
@@ -244,15 +244,15 @@ export function ReportAccess({ inspectionId, complete }: { inspectionId: string;
                 <p className="text-sm font-semibold text-gray-900">{row.user_name}
                   <span className="ml-2 text-xs font-normal text-gray-500">{row.user_email}</span>
                 </p>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-caption text-gray-500">
                   {SOURCE_LABEL[row.source] || row.source}
                   {row.amount_rwf ? ` · ${fmtMoney(Number(row.amount_rwf), 'RWF')}${row.method ? ` ${row.method.replace('_', ' ')}` : ''}` : ''}
                   {row.granted_by_name ? ` · by ${row.granted_by_name}` : ''}
                 </p>
-                {row.note ? <p className="mt-0.5 text-[11px] italic text-gray-500">{row.note}</p> : null}
+                {row.note ? <p className="mt-0.5 text-caption italic text-gray-500">{row.note}</p> : null}
               </div>
               <button type="button" onClick={() => revoke(row)} disabled={busy}
-                className="rounded-lg border border-danger-border px-2.5 py-1.5 text-[11px] font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">
+                className="rounded-lg border border-danger-border px-2.5 py-1.5 text-caption font-bold text-danger-strong hover:bg-danger-tint disabled:opacity-50">
                 Withdraw
               </button>
             </div>

@@ -7,7 +7,7 @@ import { ReportAccess } from '@/components/ReportAccess'
 import { JourneyRail } from '@/components/JourneyRail'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/feedback'
-import { fmtDateTime } from '@/lib/format'
+import { fmtDate, fmtDateTime } from '@/lib/format'
 
 type Result = 'pass' | 'flag' | 'fail'
 type ChecklistItem = { id: string; label: string; critical: boolean }
@@ -318,7 +318,7 @@ export default function InspectionDetailPage() {
             {/* A walk-in has a customer and no seller; the header must not
                 assume one, and should say plainly that no listing follows. */}
             <p className="mt-0.5 text-xs text-gray-400">
-              {insp.scheduled_date} at {insp.scheduled_time} · {insp.kind === 'standalone' ? 'Customer' : 'Seller'}: {insp.party_name ?? insp.seller_name ?? '—'}
+              {fmtDate(String(insp.scheduled_on || insp.scheduled_date || '').slice(0, 10))}{insp.scheduled_time ? `, ${insp.scheduled_time}` : ''} · {insp.kind === 'standalone' ? 'Customer' : 'Seller'}: {insp.party_name ?? insp.seller_name ?? '—'}
             </p>
             {insp.kind === 'standalone' ? (
               <p className="mt-1 text-xs font-semibold text-gray-500">
