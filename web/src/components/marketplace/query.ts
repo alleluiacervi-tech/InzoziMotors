@@ -1,4 +1,5 @@
 import { formatMoney } from '@/lib/business'
+import { displayMake } from '@/lib/vehicle-names'
 import type { CarQuery } from '@/lib/types'
 import type { TFunction } from '@/lib/i18n/dictionary'
 
@@ -203,6 +204,8 @@ export function chipLabel(t: TFunction, field: FilterField, value: string): stri
       return t('cars.chip.orNewer', { year: value })
     case 'max_year':
       return t('cars.chip.orOlder', { year: value })
+    case 'make':
+      return displayMake(value)
     default:
       return value
   }
@@ -218,7 +221,7 @@ function pluralise(word: string): string {
  */
 export function describeFilters(t: TFunction, filters: Filters): string {
   const parts: string[] = []
-  if (filters.make) parts.push(filters.make)
+  if (filters.make) parts.push(displayMake(filters.make))
   if (filters.model) parts.push(filters.model)
   if (filters.body_type) parts.push(pluralise(filters.body_type))
   if (!parts.length && filters.fuel_type) parts.push(pluralise(filters.fuel_type))

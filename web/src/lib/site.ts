@@ -132,6 +132,15 @@ export const CENTERS = [
 // The three businesses first, in the order people arrive with them, then the
 // tools and the explanation. Selling is not here because it is the header's
 // one primary button (Header.tsx) — listing it twice made it look optional.
+/**
+ * Rent is only promoted (nav, homepage search tabs, homepage cards) once the
+ * fleet has this many cars. An empty business in the primary navigation tells
+ * a first-time visitor the site is unfinished. /rentals itself stays live and
+ * linked from the footer, so nothing 404s and providers can still be found.
+ */
+export const RENT_MIN_FLEET = 3
+export const rentPromoted = (fleetSize: number) => fleetSize >= RENT_MIN_FLEET
+
 export const NAV_LINKS = [
   { href: '/cars', label: 'Buy' },
   { href: '/rentals', label: 'Rent' },

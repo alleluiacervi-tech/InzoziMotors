@@ -5,6 +5,7 @@ import type {
   Message, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Showroom, Submission, TrustScore, User,
   Valuation, VehicleHistory, VehicleMake,
 } from './types'
+import { withCleanTitle } from './vehicle-names'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // One HTTP client for the whole site, speaking the same REST contract as the
@@ -196,7 +197,7 @@ export const cars = {
     request<Car[]>(`/cars${qs(query as Record<string, unknown>)}`, {
       revalidate: CATALOGUE_REVALIDATE,
       tags: ['cars'],
-    }),
+    }).then((rows) => rows.map(withCleanTitle)),
 
   /** The cars an operator placed at the top of the marketplace, in slot order.
    *  The app has rendered these since the banner work; the website was still
@@ -207,10 +208,10 @@ export const cars = {
     request<FeaturedPlacement[]>(`/cars/featured?limit=${limit}`, {
       revalidate: CATALOGUE_REVALIDATE,
       tags: ['cars', 'featured'],
-    }),
+    }).then((rows) => rows.map(withCleanTitle)),
 
   get: (id: string) =>
-    request<Car>(`/cars/${id}`, { revalidate: CATALOGUE_REVALIDATE, tags: ['cars', `car:${id}`] }),
+    request<Car>(`/cars/${id}`, { revalidate: CATALOGUE_REVALIDATE, tags: ['cars', `car:${id}`] }).then(withCleanTitle),
 
   history: (id: string) =>
     request<VehicleHistory>(`/cars/${id}/history`, { revalidate: CATALOGUE_REVALIDATE }),
@@ -229,8 +230,11 @@ export const cars = {
 }
 
 export const rentals = {
-  list: () => request<RentalCar[]>('/rentals', { revalidate: CATALOGUE_REVALIDATE, tags: ['rentals'] }),
-  get: (id: string) => request<RentalCar>(`/rentals/${id}`, { revalidate: CATALOGUE_REVALIDATE }),
+  list: () =>
+    request<RentalCar[]>('/rentals', { revalidate: CATALOGUE_REVALIDATE, tags: ['rentals'] })
+      .then((rows) => rows.map(withCleanTitle)),
+  get: (id: string) =>
+    request<RentalCar>(`/rentals/${id}`, { revalidate: CATALOGUE_REVALIDATE }).then(withCleanTitle),
   inspectionReport: (id: string) =>
     request<InspectionReport>(`/inspections/report/rental/${id}`, { revalidate: CATALOGUE_REVALIDATE }),
   inquire: (token: string, id: string, body: { start_date?: string; days?: number; pickup_location?: string; message?: string; preferred_channel: 'in_app' | 'phone' | 'whatsapp'; acknowledge: boolean }) =>

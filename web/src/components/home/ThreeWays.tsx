@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Container, Icon, Section } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { getServerT } from '@/lib/i18n/server'
+import { rentPromoted } from '@/lib/site'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sawa runs three businesses; this band names all three in the order people
@@ -31,10 +32,12 @@ function Arrow({ tone }: { tone: 'paper' | 'photo' }) {
 export async function ThreeWays({ saleCount, rentalCount }: { saleCount: number; rentalCount: number }) {
   const t = await getServerT()
 
-  const text: { key: 'buy' | 'rent'; icon: IconName; figure: number; href: string }[] = [
+  const ways: { key: 'buy' | 'rent'; icon: IconName; figure: number; href: string }[] = [
     { key: 'buy', icon: 'car', figure: saleCount, href: '/cars' },
     { key: 'rent', icon: 'key', figure: rentalCount, href: '/rentals' },
   ]
+  // Rent appears only once the fleet is worth a card (lib/site.ts).
+  const text = ways.filter((w) => w.key !== 'rent' || rentPromoted(rentalCount))
 
   return (
     <Section tone="page">
