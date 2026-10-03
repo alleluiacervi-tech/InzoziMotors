@@ -17,7 +17,7 @@ export async function ImportBand() {
   const t = await getServerT()
 
   return (
-    <Section tone="page" className="!pt-0">
+    <Section tone="page">
       <Container>
         <Link
           href="/imports"

@@ -116,7 +116,7 @@ decoration. Nothing here changes the backend or the app.
       stays, linked from Sell, Import and the footer). Update `NAV_KEY` in `Header.tsx` and
       `nav.*` keys in `messages/ui.ts`/dictionary. Done when: header and mobile drawer show
       four links; `/tools` still loads.
-- [x] **2.2 Homepage to five sections.** *(Owner, 3 Oct 2026: the Import photo card comes back as a sixth section, `ImportBand`, after the centres.) (Done. On a phone the content above the footer is 5,630px, down from about 9,800px; the footer adds 1,687px and is Phase 3's to tighten. The first car card is at 1,524px. Four cards on a phone, whole rows of three on a laptop.)* In `web/src/app/page.tsx` the order becomes:
+- [x] **2.2 Homepage to five sections.** *(Owner, 3 Oct 2026: the Import photo card is back as `ImportBand`, and Proof is gone, so still five sections: hero, stock, standard, import, sell strip.) (Done. On a phone the content above the footer is 5,630px, down from about 9,800px; the footer adds 1,687px and is Phase 3's to tighten. The first car card is at 1,524px. Four cards on a phone, whole rows of three on a laptop.)* In `web/src/app/page.tsx` the order becomes:
       1. `Hero` (task 2.3), 2. `FeaturedCars` (stock, task 2.4), 3. `Standard` (task 2.5),
       4. Proof (task 2.6), 5. Sell strip (task 2.6). Delete the imports of `TopDeals`,
       `ThreeWays`, the FAQ block and `FinalCta` from the homepage (keep the components for
@@ -130,7 +130,7 @@ decoration. Nothing here changes the backend or the app.
       disclaimer sentence under the search. The specimen (right column) follows directly under
       the form on mobile. Done when: at 390 px the headline, form and the top of the specimen
       car fit in 844 px.
-- [x] **2.4 Stock section as the main event.** *(Done. The hero's car is excluded from the grid, so no car appears twice; placements carry Featured / Sponsored / Hot deal in the card's top-right.)* `components/home/FeaturedCars.tsx`: title
+- [x] **2.4 Stock section as the main event.** *(Owner, 3 Oct 2026: eight cars on every width, two rows of four on a laptop at the same card width as /cars, the hero's car included; it was nine, four on a phone, hero's car excluded.) (Done. The hero's car is excluded from the grid, so no car appears twice; placements carry Featured / Sponsored / Hot deal in the card's top-right.)* `components/home/FeaturedCars.tsx`: title
       "{count} inspected cars in stock", chips, then the grid at `sm:grid-cols-2 lg:grid-cols-3`
       (not four), showing up to 9 cars and a "See all cars" link. Placements from
       `cars.featured()` are merged into this grid with a small "Featured" / "Sponsored" label
@@ -141,7 +141,7 @@ decoration. Nothing here changes the backend or the app.
       four-item "controls" list and the second link. Remove the `ambient-ink grain` classes
       (flat `bg-ink-900`). Done when: the band is one screen on desktop and under 1.5 screens on
       mobile.
-- [x] **2.6 Proof + Sell strip (new, small).** *(Done with one deliberate change: Proof has no photograph. `public/img/CREDITS.md` says the workshop photos are licensed stock that must never be presented as Sawa's centres or staff, and beside "Inspected by people you can visit" any photo would be. The three real centres are the section's content until D3 delivers real photos.)* New `components/home/Proof.tsx`: one photo
+- [x] **2.6 Proof + Sell strip (new, small).** *(Owner, 3 Oct 2026: Proof removed; its centre list repeated the footer's "Visit us" a screen apart.) (Done with one deliberate change: Proof has no photograph. `public/img/CREDITS.md` says the workshop photos are licensed stock that must never be presented as Sawa's centres or staff, and beside "Inspected by people you can visit" any photo would be. The three real centres are the section's content until D3 delivers real photos.)* New `components/home/Proof.tsx`: one photo
       (`/img/inspector-wheel-arch.jpg` until D3), one sentence ("Every car is inspected by a
       Sawa mechanic at one of three Kigali centres"), the three centre names with hours from
       `getDisplayCenters()`. New `components/home/SellStrip.tsx`: one line ("What is your car
@@ -268,6 +268,6 @@ decoration. Nothing here changes the backend or the app.
 
 - Every page: paper opening, one red button per screen, one disclaimer, visible on load,
   readable at 390 px with the primary action in reach.
-- Homepage: six sections (five plus the Import photo card), a car on the first screen, nothing promoted that is empty.
+- Homepage: five sections, a car on the first screen, nothing promoted that is empty.
 - Seller: valuation → book on the web, never a forced app download.
 - The invariants in `CLAUDE.md` §3 and §4 untouched.

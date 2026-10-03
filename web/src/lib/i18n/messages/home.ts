@@ -225,11 +225,6 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Every listing publishes its report like this one: each category’s points, and whether anything critical failed.',
     },
     land: {
-      proof: {
-        title: 'Inspected by people you can visit',
-        body: 'Every car is inspected by a Sawa mechanic at one of our {{count}} Kigali centres.',
-        link: 'Visit a centre',
-      },
       sellStrip: {
         title: 'What is your car worth?',
         body: 'A free estimate from cars listed and sold in Kigali. No account needed.',
@@ -480,11 +475,6 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Buri modoka itangaza raporo yayo nk’iyi: amanota ya buri cyiciro, n’uko hari ikintu gikomeye cyananiranye.',
     },
     land: {
-      proof: {
-        title: 'Isuzumwa n’abantu ushobora gusura',
-        body: 'Buri modoka isuzumwa n’umukanishi wa Sawa muri kimwe mu bigo byacu {{count}} i Kigali.',
-        link: 'Sura ikigo',
-      },
       sellStrip: {
         title: 'Imodoka yawe ifite agaciro kangana iki?',
         body: 'Igereranya ry’ubuntu rishingiye ku modoka zashyizwe ku isoko n’izagurishijwe i Kigali. Nta konti ikenewe.',
@@ -735,11 +725,6 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Chaque annonce publie son rapport comme celui-ci : les points de chaque catégorie, et si un point critique a échoué.',
     },
     land: {
-      proof: {
-        title: 'Inspectée par des gens que vous pouvez rencontrer',
-        body: 'Chaque voiture est inspectée par un mécanicien Sawa dans l’un de nos {{count}} centres de Kigali.',
-        link: 'Visiter un centre',
-      },
       sellStrip: {
         title: 'Combien vaut votre voiture ?',
         body: 'Une estimation gratuite fondée sur les voitures annoncées et vendues à Kigali. Sans compte.',
@@ -990,11 +975,6 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: 'Kila tangazo huchapisha ripoti yake kama hii: alama za kila kundi, na kama kuna kitu muhimu kilishindwa.',
     },
     land: {
-      proof: {
-        title: 'Hukaguliwa na watu unaoweza kuwatembelea',
-        body: 'Kila gari hukaguliwa na fundi wa Sawa katika mojawapo ya vituo vyetu {{count}} jijini Kigali.',
-        link: 'Tembelea kituo',
-      },
       sellStrip: {
         title: 'Gari lako lina thamani gani?',
         body: 'Makadirio ya bure kutoka kwa magari yaliyotangazwa na kuuzwa Kigali. Huhitaji akaunti.',
@@ -1244,11 +1224,6 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: '모든 매물은 이와 같이 보고서를 공개합니다: 항목별 점수와 치명적 결함 여부.',
     },
     land: {
-      proof: {
-        title: '직접 찾아갈 수 있는 사람들이 검사합니다',
-        body: '모든 차량은 키갈리의 Sawa 센터 {{count}}곳 중 한 곳에서 Sawa 정비사가 검사합니다.',
-        link: '센터 방문하기',
-      },
       sellStrip: {
         title: '내 차의 가치는 얼마일까요?',
         body: '키갈리에 등록되고 판매된 차량을 기준으로 한 무료 시세입니다. 계정이 필요 없습니다.',
@@ -1498,11 +1473,6 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportLede: '每个车源都会像这样公开报告：各类别得分，以及是否有严重项目未通过。',
     },
     land: {
-      proof: {
-        title: '由您可以当面拜访的人检测',
-        body: '每辆车都由 Sawa 技师在我们位于基加利的 {{count}} 个中心之一进行检测。',
-        link: '参观中心',
-      },
       sellStrip: {
         title: '您的车值多少钱？',
         body: '基于基加利在售及已售车辆的免费估价，无需注册账户。',
