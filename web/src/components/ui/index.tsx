@@ -402,4 +402,3 @@ export function LiveRegion({ children }: { children: ReactNode }) {
 export { Icon }
 export type { IconName }
 export { Button } from './Button'
-export { ThemeToggle } from './ThemeToggle'

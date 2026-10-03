@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
-import { Button, Icon, ThemeToggle } from '@/components/ui'
+import { Button, Icon } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
 import { useT } from '@/lib/i18n/context'
 import { CONTACT, NAV_LINKS } from '@/lib/site'
@@ -179,8 +179,6 @@ export function Header({ user, showRent = false }: { user: User | null; showRent
             <LanguageSwitcher tone="light" />
           </div>
 
-          <ThemeToggle className="text-content" />
-
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -281,11 +279,6 @@ export function Header({ user, showRent = false }: { user: User | null; showRent
               <div className="flex items-center justify-between pt-1">
                 <span className="text-caption font-semibold text-content-secondary">{t('common.language')}</span>
                 <LanguageSwitcher tone="light" />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-caption font-semibold text-content-secondary">{t('common.appearance')}</span>
-                <ThemeToggle className="text-content" />
               </div>
             </div>
           </nav>
