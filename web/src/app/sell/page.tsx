@@ -2,9 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ValuationTool } from '@/components/tools/ValuationTool'
 import {
-  Badge,
   Button,
-  Card,
   Container,
   Icon,
   Section,
@@ -14,7 +12,7 @@ import {
 import { cars, rateCard } from '@/lib/api'
 import { formatMoneyExact } from '@/lib/business'
 import { FAQS, SITE } from '@/lib/site'
-import { getDisplayCenters } from '@/lib/centers'
+import { CenterList } from '@/components/marketing/CenterList'
 import { JsonLd } from '@/components/JsonLd'
 import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 import { getServerT } from '@/lib/i18n/server'
@@ -85,7 +83,6 @@ export default async function SellPage({
   const initialYear = /^\d{4}$/.test(one(params.year)) ? one(params.year) : ''
   const t = await getServerT()
   const makes = await catalogueMakes()
-  const centers = await getDisplayCenters()
   const rates = await rateCard.get()
   const currentYear = new Date().getFullYear()
   const sellerFaqs = FAQS.filter((faq) => SELLER_QUESTIONS.includes(faq.q))
@@ -215,21 +212,7 @@ export default async function SellPage({
             description={t('sell.centers.description')}
           />
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {centers.map((center) => (
-              <Card key={center.id} className="p-6">
-                <h3 className="text-title-sm font-extrabold text-content">{center.name}</h3>
-                <p className="mt-3 flex items-start gap-2.5 text-caption leading-relaxed text-content-secondary">
-                  <Icon name="location" size={17} className="mt-0.5 text-content-muted" />
-                  {center.address}
-                </p>
-                <p className="mt-2 flex items-start gap-2.5 text-caption leading-relaxed text-content-secondary">
-                  <Icon name="clock" size={17} className="mt-0.5 text-content-muted" />
-                  {center.hours}
-                </p>
-              </Card>
-            ))}
-          </div>
+          <CenterList className="mt-10" />
         </Container>
       </Section>
 

@@ -380,7 +380,7 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
               ) : null}
             </>
           ) : (
-            <p className="mt-8 rounded-2xl border border-line-soft bg-surface p-5 text-body text-content-secondary">
+            <p className="mt-8 max-w-prose border-t border-line pt-5 text-body text-content-secondary">
               {t('imports.catalogEmpty')}
             </p>
           )}
