@@ -199,7 +199,7 @@ const en = {
     metaCategoryValue: 'Vehicles',
     metaWorks: 'Works with',
     lead:
-      'The same marketplace and the same account. The app adds what only works on a phone: camera capture for verification, and alerts when a price moves.',
+      'The same marketplace and the same account. The app adds alerts on your lock screen when a price moves or a seller replies, and a quicker camera for your ID check.',
     onlyEyebrow: 'Only in the app',
     onlyTitle: 'What the app adds',
     onlyDescription:
@@ -445,7 +445,7 @@ const rw = {
     metaCategoryValue: 'Ibinyabiziga',
     metaWorks: 'Ikorana na',
     lead:
-      'Isoko rimwe ryemewe na konti imwe, hamwe n’ibice byumvikana gusa kuri telefone: akazi ka kamera ko kwemeza, n’imenyesha ako kanya igiciro cyahindutse.',
+      'Isoko rimwe na konti imwe. Porogaramu yongeraho imenyesha kuri telefoni igihe igiciro gihindutse cyangwa umugurisha asubije, na kamera yihuta yo kugenzura indangamuntu.',
     onlyEyebrow: 'Muri porogaramu gusa',
     onlyTitle: 'Ibyo porogaramu yongeraho',
     onlyDescription:
@@ -694,7 +694,7 @@ const fr = {
     metaCategoryValue: 'Véhicules',
     metaWorks: 'Compatible avec',
     lead:
-      'Le même marché certifié et le même compte, avec les parties qui n’ont de sens que sur un téléphone : le travail à la caméra pour la vérification, et des alertes dès qu’un prix change.',
+      'Le même marché et le même compte. L’application ajoute des alertes sur l’écran verrouillé quand un prix change ou qu’un vendeur répond, et un appareil photo plus rapide pour la vérification d’identité.',
     onlyEyebrow: 'Uniquement dans l’application',
     onlyTitle: 'Ce que l’application ajoute',
     onlyDescription:
@@ -940,7 +940,7 @@ const sw = {
     metaCategoryValue: 'Magari',
     metaWorks: 'Hufanya kazi na',
     lead:
-      'Soko lile lile lililothibitishwa na akaunti ile ile, pamoja na sehemu ambazo zinaeleweka tu kwenye simu: kazi ya kamera kwa uthibitisho, na arifa mara tu bei inapobadilika.',
+      'Soko lilelile na akaunti ileile. Programu huongeza arifa kwenye skrini bei inapobadilika au muuzaji anapojibu, na kamera ya haraka zaidi kwa ukaguzi wa kitambulisho.',
     onlyEyebrow: 'Katika programu tu',
     onlyTitle: 'Kile programu inachoongeza',
     onlyDescription:
@@ -1186,7 +1186,7 @@ const ko = {
     metaCategoryValue: '차량',
     metaWorks: '지원 기기',
     lead:
-      '동일한 인증 마켓플레이스와 동일한 계정에, 휴대폰에서만 의미가 있는 기능이 더해집니다: 인증을 위한 카메라 작업과 가격이 변동되는 즉시 오는 알림.',
+      '같은 마켓플레이스, 같은 계정입니다. 앱은 가격이 바뀌거나 판매자가 답장하면 잠금 화면 알림을 보내고, 신원 확인용 카메라를 더 빠르게 제공합니다.',
     onlyEyebrow: '앱에서만',
     onlyTitle: '앱이 더해주는 것',
     onlyDescription:
@@ -1432,7 +1432,7 @@ const zh = {
     metaCategoryValue: '车辆',
     metaWorks: '适用系统',
     lead:
-      '同一个认证市场，同一个账户，加上只有手机上才有意义的部分：用于核验的拍摄操作，以及价格变动时的即时提醒。',
+      '同样的市场，同一个账户。应用会在价格变动或卖家回复时在锁屏推送提醒，身份核验拍照也更快捷。',
     onlyEyebrow: '仅限应用内',
     onlyTitle: '应用带来的额外功能',
     onlyDescription:
