@@ -112,7 +112,7 @@ export default async function DownloadPage({
 
   return (
     <>
-      <Section tone="surface">
+      <Section tone="page">
         <Container>
           <div className="max-w-2xl">
             <Eyebrow>{t('auth.download.eyebrow')}</Eyebrow>

@@ -49,11 +49,10 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
   return (
     <div className="bg-surface-page">
       {/* Phones are the majority in Rwanda, and below lg the ink aside
-          disappears — this compact band keeps the brand on the page instead of
-          leaving a bare form. It is the mobile page's one ink moment. */}
-      <div className="flex items-center gap-3 bg-ink-900 px-5 py-5 lg:hidden">
-        <LogoMark size={30} />
-        <p className="text-caption font-semibold text-white/60">
+          disappears — this compact line keeps the brand's promise on the page
+          instead of leaving a bare form. On paper, like every page opening. */}
+      <div className="border-b border-line-soft px-5 py-3 lg:hidden">
+        <p className="text-caption font-semibold text-content-secondary">
           {t('auth.layout.mobileTagline')}
         </p>
       </div>

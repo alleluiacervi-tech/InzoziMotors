@@ -102,17 +102,16 @@ export default async function SellPage({
         }),
         breadcrumbNode([{ name: 'Home', path: '/' }, { name: 'Sell your car', path: '/sell' }])
       )} />
-      {/* ─── Hero — the valuation IS the hero ─────────────────────────────── */}
-      <Section tone="ink" id="valuation" className="relative isolate overflow-hidden pb-14 pt-14 sm:pb-20 sm:pt-20">
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_12%_15%,rgba(204,5,15,0.30),transparent_32%),radial-gradient(circle_at_88%_85%,rgba(255,255,255,0.08),transparent_28%)]" />
+      {/* ─── Hero — the valuation IS the hero, on the site's paper ───────── */}
+      <Section tone="page" id="valuation" className="border-b border-line-soft !pb-14 !pt-10 sm:!pb-20 sm:!pt-16">
         <Container>
           <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
-              <p className="mb-4 text-caption font-bold text-white/55">{t('sell.hero.eyebrow')}</p>
-              <h1 className="text-display-xl font-extrabold text-white">
+              <p className="mb-4 text-caption font-bold text-content-muted">{t('sell.hero.eyebrow')}</p>
+              <h1 className="text-display font-extrabold text-content">
                 {t('sell.hero.title')}
               </h1>
-              <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-white/70">
+              <p className="mt-5 max-w-prose text-title-sm leading-relaxed text-content-secondary">
                 {t('sell.hero.subtitle')}
               </p>
 
@@ -123,29 +122,29 @@ export default async function SellPage({
                   t('sell.hero.bullet3'),
                 ].map((line) => (
                   <li key={line} className="flex gap-3">
-                    <Icon name="check-circle" size={20} className="mt-0.5 shrink-0 text-white" />
-                    <span className="text-body leading-relaxed text-white/85">{line}</span>
+                    <Icon name="check-circle" size={20} className="mt-0.5 shrink-0 text-content-muted" />
+                    <span className="text-body leading-relaxed text-content-secondary">{line}</span>
                   </li>
                 ))}
               </ul>
 
-              <p className="mt-6 text-caption text-white/55">
-                <Link href="#cost" className="font-bold text-white hover:underline">
+              <p className="mt-6 text-caption text-content-muted">
+                <Link href="#cost" className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
                   {t('sell.hero.seeCost')}
                 </Link>{' '}
                 {t('sell.hero.costNote')}
               </p>
             </div>
 
-            <Card className="relative overflow-hidden rounded-3xl border-white/10 p-6 shadow-float sm:p-8">
-              <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
+            {/* The tool draws its own form and result cards; no box around them. */}
+            <div className="min-w-0">
               <h2 className="text-caption font-bold text-content-muted">
                 {t('sell.hero.freeValuation')}
               </h2>
               <div className="mt-4">
                 <ValuationTool makes={makes} currentYear={currentYear} initialMake={initialMake} initialYear={initialYear} />
               </div>
-            </Card>
+            </div>
           </div>
         </Container>
       </Section>
