@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Container, Icon, Section } from '@/components/ui'
+import { Container, Section, SectionHeading, TextLink } from '@/components/ui'
 import { CarCard } from '@/components/marketplace/CarCard'
 import type { FeaturedPlacement } from '@/lib/types'
 import { formatMoney } from '@/lib/business'
@@ -35,24 +35,39 @@ export async function TopDeals({ placements }: { placements: FeaturedPlacement[]
   if (!placements.length) return null
   const t = await getServerT()
 
+  const heading = (
+    <SectionHeading
+      title={t('home.topDeals.title')}
+      description={t('home.topDeals.description')}
+      action={<TextLink href="/featured">{t('home.topDeals.seeAll')}</TextLink>}
+    />
+  )
+
+  // One or two picks in a four-column grid left most of the row empty — the
+  // section looked unfinished every week the team placed two cars. With two
+  // or fewer, the heading takes the left third and the cards the rest.
+  if (placements.length <= 2) {
+    return (
+      <Section tone="page">
+        <Container>
+          <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
+            <div className="min-w-0 lg:col-span-4 lg:pt-8">{heading}</div>
+            <div className="min-w-0 lg:col-span-8">
+              <PlacementGrid placements={placements} />
+            </div>
+          </div>
+        </Container>
+      </Section>
+    )
+  }
+
   return (
     <Section tone="page">
       <Container>
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div className="min-w-0 max-w-2xl">
-            <h2 className="text-headline font-extrabold text-content">{t('home.topDeals.title')}</h2>
-            <p className="mt-2 text-body text-content-secondary">{t('home.topDeals.description')}</p>
-          </div>
-          <Link
-            href="/featured"
-            className="-my-2 inline-flex items-center gap-1.5 py-2 text-body font-bold text-brand hover:underline"
-          >
-            {t('home.topDeals.seeAll')}
-            <Icon name="arrow-right" size={16} />
-          </Link>
+        {heading}
+        <div className="mt-8">
+          <PlacementGrid placements={placements} />
         </div>
-
-        <PlacementGrid placements={placements} />
       </Container>
     </Section>
   )
@@ -64,7 +79,11 @@ export async function PlacementGrid({ placements }: { placements: FeaturedPlacem
   const locale = await getLocale()
 
   return (
-    <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div
+      className={`grid items-stretch gap-x-5 gap-y-8 sm:grid-cols-2 ${
+        placements.length >= 4 ? 'lg:grid-cols-3 xl:grid-cols-4' : placements.length === 3 ? 'lg:grid-cols-3' : ''
+      }`}
+    >
       {placements.map((placement, i) => {
         // Editorial picks carry no badge; the section title already says a
         // person chose them. A paid slot always says so, quietly.
@@ -87,7 +106,7 @@ export async function PlacementGrid({ placements }: { placements: FeaturedPlacem
                 cards in a row aligned when only some of them are labelled. */}
             <p className="mb-2 flex h-6 items-center">
               {label ? (
-                <span className="rounded-md bg-surface-alt px-2 py-0.5 text-micro font-semibold uppercase tracking-wide text-content-muted">
+                <span className="rounded-md bg-surface-alt px-2 py-0.5 text-micro font-bold text-content-secondary">
                   {label}
                 </span>
               ) : null}

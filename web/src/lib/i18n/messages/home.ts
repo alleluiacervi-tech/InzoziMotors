@@ -20,9 +20,9 @@ export const home: Record<Locale, Record<string, unknown>> = {
       },
       criticalCount: '{{count}} critical',
       ruleScore:
-        'Each item is one point, so a car is scored out of {{total}}. A listing needs {{threshold}} to be published.',
+        'Each item is one point, so a car is scored out of {{total}}. {{threshold}} or more with no critical failure earns a pass.',
       ruleCritical:
-        '{{critical}} items are critical. One failure blocks publication at any score.',
+        '{{critical}} items are critical. A car that misses one is still listed, with the failure shown on its report.',
       link: 'Read the full inspection standard',
     },
     hero: {
@@ -81,7 +81,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     topDeals: {
       eyebrow: 'Top deals',
       title: 'Picked by our team this week',
-      description: 'Chosen from cars that passed the 150-point inspection. Paid placements say so.',
+      description: 'Chosen from inspected cars. Paid placements say so.',
       viewAll: 'View all cars',
       seeAll: 'See all',
       sponsored: 'Sponsored',
@@ -147,7 +147,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     },
     finalCta: {
       headline:
-        'Every car here passed the same 150-point inspection. There is no uninspected tier.',
+        'Every car here went through the same 150-point inspection. There is no uninspected tier.',
       browse: 'Browse certified cars',
       sell: 'Sell your car',
       body: 'Review the listing evidence, contact the verified seller, then inspect, negotiate and document your own agreement. Sawa Cars never takes custody of the transaction funds.',
@@ -184,7 +184,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         noCritical: 'No critical failures',
         inspected: 'Inspected {{date}}',
         view: 'View this car',
-        bar: 'Publication bar: {{threshold}}',
+        bar: 'Pass mark: {{threshold}}',
       },
       stock: {
         title: '{{count}} inspected cars in stock',
@@ -216,6 +216,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportTitle: 'A real report, from a car in stock',
       reportLede: 'Every listing publishes its report like this one: each category’s points, and whether anything critical failed.',
     },
+    land: {
+      importOrigins: 'Japan, Korea, China',
+      photoInspectorAlt: 'An inspector checks a car\'s wheel arch while its owner looks on',
+      photoImportAlt: 'Cars and vans lined up on the deck of a cargo ship',
+      headline: 'Know the car before you meet the seller.',
+      lede: 'Every car on Sawa Cars is inspected on 150 points at our Kigali centres and published with its report. Read the evidence, then deal with the seller directly.',
+      checks: '{{earned}} of {{total}} checks passed',
+      rulerResult: 'Inspection result: {{earned}} of {{total}} checks passed',
+      rulerStandard: 'The 150-point checklist in seven categories, {{critical}} of them critical',
+      standardTitle: 'One standard. 150 checks. Every car.',
+      standardBody: 'Each tick is one item an inspector checks by hand at a Sawa centre. The tall ones are the {{critical}} critical items. Every car is published with its result, so a missed item is something you see before you call, not after.',
+      statItems: 'items, one point each',
+      statPass: 'or more with no critical failure earns a pass',
+      statCritical: 'critical items, shown on the report if one fails',
+      metaPoints: '{{points}} points',
+      metaCritical: '{{points}} points, {{critical}} critical',
+    },
     faq: { eyebrow: 'Questions', title: 'Before you commit' },
   },
 
@@ -236,9 +253,9 @@ export const home: Record<Locale, Record<string, unknown>> = {
       },
       criticalCount: '{{count}} by’ingenzi',
       ruleScore:
-        'Buri kintu ni inota rimwe, bityo imodoka ipimwa kuri {{total}}. Itangazo risaba {{threshold}} kugira ngo ritangazwe.',
+        'Buri kintu ni inota rimwe, bityo imodoka ipimwa kuri {{total}}. {{threshold}} cyangwa birenga, nta kintu cy’ingenzi kitatsinze, ni ugutsinda.',
       ruleCritical:
-        'Ibintu {{critical}} ni by’ingenzi. Kimwe kidatsinze kibuza gutangaza uko amanota ari.',
+        'Ibintu {{critical}} ni iby’ingenzi. Imodoka itatsinze kimwe muri byo iratangazwa, ikibazo kikagaragara kuri raporo yayo.',
       link: 'Soma urwego rw’isuzuma rwuzuye',
     },
     hero: {
@@ -298,7 +315,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       eyebrow: 'Ibiciro byiza',
       title: 'Byatoranyijwe n’ikipe yacu iyi cyumweru',
       description:
-        'Zatoranyijwe mu modoka zatsinze isuzuma ry’ingingo 150. Ahishyuriwe harabivuga.',
+        'Zatoranyijwe mu modoka zasuzumwe. Izishyuriwe kwamamazwa ziravugwa.',
       viewAll: 'Reba imodoka zose',
       seeAll: 'Reba zose',
       sponsored: 'Yishyuriwe',
@@ -365,7 +382,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     },
     finalCta: {
       headline:
-        'Buri modoka hano yatsinze isuzuma rimwe ry’ingingo 150. Nta rwego rw’imodoka zitasuzumwe rihari.',
+        'Buri modoka hano yanyuze mu isuzuma rimwe ry’ingingo 150. Nta modoka itasuzumwe.',
       browse: 'Reba imodoka zemewe',
       sell: 'Gurisha imodoka yawe',
       body: 'Reba ibimenyetso by’itangazo, uvugane n’umugurisha wemejwe, hanyuma usuzume, uganire kandi wandike isezerano ryawe bwite. Sawa Cars ntibika na rimwe amafaranga y’ubucuruzi.',
@@ -402,7 +419,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         noCritical: 'Nta kosa rikomeye',
         inspected: 'Yasuzumwe {{date}}',
         view: 'Reba iyi modoka',
-        bar: 'Igipimo cyo gutangaza: {{threshold}}',
+        bar: 'Amanota yo gutsinda: {{threshold}}',
       },
       stock: {
         title: 'Imodoka {{count}} zasuzumwe zirahari',
@@ -434,6 +451,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportTitle: 'Raporo nyayo y’imodoka iri ku isoko',
       reportLede: 'Buri modoka itangaza raporo yayo nk’iyi: amanota ya buri cyiciro, n’uko hari ikintu gikomeye cyananiranye.',
     },
+    land: {
+      importOrigins: 'Ubuyapani, Koreya, Ubushinwa',
+      photoInspectorAlt: 'Umugenzuzi asuzuma igice cy’ipine cy’imodoka nyirayo areba',
+      photoImportAlt: 'Imodoka zitondekanye ku bwato butwara imizigo',
+      headline: 'Menya imodoka mbere yo guhura n’umugurisha.',
+      lede: 'Buri modoka kuri Sawa Cars isuzumwa ku ngingo 150 mu bigo byacu i Kigali, igatangazwa hamwe na raporo yayo. Soma ibimenyetso, hanyuma uvugane n’umugurisha ubwawe.',
+      checks: 'Ingingo {{earned}} kuri {{total}} zatsinze',
+      rulerResult: 'Ibisubizo by’isuzuma: ingingo {{earned}} kuri {{total}} zatsinze',
+      rulerStandard: 'Urutonde rw’ingingo 150 mu byiciro birindwi, {{critical}} muri zo ni iz’ingenzi',
+      standardTitle: 'Igipimo kimwe. Ingingo 150. Buri modoka.',
+      standardBody: 'Buri kamenyetso ni ingingo imwe umugenzuzi asuzuma n’intoki mu kigo cya Sawa. Ibirebire ni ingingo {{critical}} z’ingenzi. Buri modoka itangazwa hamwe n’ibisubizo byayo, bityo ingingo itatsinze uyibona mbere yo guhamagara, si nyuma.',
+      statItems: 'ingingo, buri imwe ni inota rimwe',
+      statPass: 'cyangwa birenga, nta ngingo y’ingenzi itatsinze, ni ugutsinda',
+      statCritical: 'ingingo z’ingenzi, zigaragazwa kuri raporo iyo imwe itatsinze',
+      metaPoints: 'amanota {{points}}',
+      metaCritical: 'amanota {{points}}, {{critical}} z’ingenzi',
+    },
     faq: { eyebrow: 'Ibibazo', title: 'Mbere yo kwiyemeza' },
   },
 
@@ -454,9 +488,9 @@ export const home: Record<Locale, Record<string, unknown>> = {
       },
       criticalCount: '{{count}} critiques',
       ruleScore:
-        'Chaque point vaut un point, la voiture est donc notée sur {{total}}. Une annonce doit atteindre {{threshold}} pour être publiée.',
+        'Chaque élément vaut un point, la voiture est donc notée sur {{total}}. {{threshold}} ou plus, sans échec critique, vaut une réussite.',
       ruleCritical:
-        '{{critical}} points sont critiques. Un seul échec bloque la publication, quelle que soit la note.',
+        '{{critical}} éléments sont critiques. Une voiture qui en manque un reste publiée, avec l’échec affiché sur son rapport.',
       link: 'Lire la norme d’inspection complète',
     },
     hero: {
@@ -516,7 +550,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       eyebrow: 'Meilleures offres',
       title: 'Sélectionnées par notre équipe cette semaine',
       description:
-        'Choisies parmi les voitures ayant réussi l’inspection en 150 points. Les placements payants sont signalés.',
+        'Choisies parmi les voitures inspectées. Les placements payants sont signalés.',
       viewAll: 'Voir toutes les voitures',
       seeAll: 'Tout voir',
       sponsored: 'Sponsorisé',
@@ -583,7 +617,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     },
     finalCta: {
       headline:
-        'Chaque voiture ici a réussi la même inspection en 150 points. Il n’existe aucune catégorie non inspectée.',
+        'Chaque voiture ici est passée par la même inspection de 150 points. Aucune n’est publiée sans inspection.',
       browse: 'Voir les voitures certifiées',
       sell: 'Vendre votre voiture',
       body: 'Examinez les preuves de l’annonce, contactez le vendeur vérifié, puis inspectez, négociez et documentez vous-même votre accord. Sawa Cars ne prend jamais en charge les fonds de la transaction.',
@@ -620,7 +654,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         noCritical: 'Aucun défaut critique',
         inspected: 'Inspectée le {{date}}',
         view: 'Voir cette voiture',
-        bar: 'Seuil de publication : {{threshold}}',
+        bar: 'Seuil de réussite : {{threshold}}',
       },
       stock: {
         title: '{{count}} voitures inspectées en stock',
@@ -652,6 +686,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportTitle: 'Un vrai rapport, d’une voiture en stock',
       reportLede: 'Chaque annonce publie son rapport comme celui-ci : les points de chaque catégorie, et si un point critique a échoué.',
     },
+    land: {
+      importOrigins: 'Japon, Corée, Chine',
+      photoInspectorAlt: 'Un inspecteur examine le passage de roue d’une voiture sous le regard de sa propriétaire',
+      photoImportAlt: 'Des voitures et des fourgons alignés sur le pont d’un cargo',
+      headline: 'Connaissez la voiture avant de rencontrer le vendeur.',
+      lede: 'Chaque voiture sur Sawa Cars est inspectée sur 150 points dans nos centres de Kigali et publiée avec son rapport. Lisez les preuves, puis traitez directement avec le vendeur.',
+      checks: '{{earned}} contrôles réussis sur {{total}}',
+      rulerResult: 'Résultat d’inspection : {{earned}} contrôles réussis sur {{total}}',
+      rulerStandard: 'La liste de 150 points en sept catégories, dont {{critical}} critiques',
+      standardTitle: 'Une norme. 150 contrôles. Chaque voiture.',
+      standardBody: 'Chaque trait est un élément qu’un inspecteur vérifie à la main dans un centre Sawa. Les plus hauts sont les {{critical}} éléments critiques. Chaque voiture est publiée avec son résultat : un élément manqué se voit avant d’appeler, pas après.',
+      statItems: 'éléments, un point chacun',
+      statPass: 'ou plus, sans échec critique, vaut une réussite',
+      statCritical: 'éléments critiques, affichés sur le rapport en cas d’échec',
+      metaPoints: '{{points}} points',
+      metaCritical: '{{points}} points, {{critical}} critiques',
+    },
     faq: { eyebrow: 'Questions', title: 'Avant de vous engager' },
   },
 
@@ -672,9 +723,9 @@ export const home: Record<Locale, Record<string, unknown>> = {
       },
       criticalCount: '{{count}} muhimu',
       ruleScore:
-        'Kila kipengele ni pointi moja, hivyo gari hupimwa kwa {{total}}. Tangazo linahitaji {{threshold}} kuchapishwa.',
+        'Kila kipengele ni pointi moja, hivyo gari hupimwa kwa {{total}}. {{threshold}} au zaidi, bila kushindwa kwa kipengele muhimu, ni kufaulu.',
       ruleCritical:
-        'Vipengele {{critical}} ni muhimu sana. Kushindwa kimoja kuzuia uchapishaji bila kujali alama.',
+        'Vipengele {{critical}} ni muhimu sana. Gari linalokosa kimoja bado huchapishwa, na kushindwa huko huonyeshwa kwenye ripoti yake.',
       link: 'Soma kiwango kamili cha ukaguzi',
     },
     hero: {
@@ -734,7 +785,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
       eyebrow: 'Ofa bora',
       title: 'Yaliyochaguliwa na timu yetu wiki hii',
       description:
-        'Yalichaguliwa kutoka magari yaliyofaulu ukaguzi wa pointi 150. Nafasi zilizolipiwa zinaonyeshwa hivyo.',
+        'Yamechaguliwa kutoka magari yaliyokaguliwa. Matangazo ya kulipiwa yanasema hivyo.',
       viewAll: 'Angalia magari yote',
       seeAll: 'Tazama yote',
       sponsored: 'Imefadhiliwa',
@@ -801,7 +852,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     },
     finalCta: {
       headline:
-        'Kila gari hapa limefaulu ukaguzi ule ule wa pointi 150. Hakuna kiwango cha magari yasiyokaguliwa.',
+        'Kila gari hapa limepitia ukaguzi uleule wa vipengele 150. Hakuna daraja lisilokaguliwa.',
       browse: 'Angalia magari yaliyothibitishwa',
       sell: 'Uza gari lako',
       body: 'Kagua ushahidi wa tangazo, wasiliana na muuzaji aliyethibitishwa, kisha kagua, jadili na uandike makubaliano yako mwenyewe. Sawa Cars kamwe haishiki fedha za muamala.',
@@ -838,7 +889,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         noCritical: 'Hakuna kasoro kubwa',
         inspected: 'Ilikaguliwa {{date}}',
         view: 'Tazama gari hili',
-        bar: 'Kiwango cha kuchapisha: {{threshold}}',
+        bar: 'Alama ya kufaulu: {{threshold}}',
       },
       stock: {
         title: 'Magari {{count}} yaliyokaguliwa yapo',
@@ -870,6 +921,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportTitle: 'Ripoti halisi ya gari lililopo',
       reportLede: 'Kila tangazo huchapisha ripoti yake kama hii: alama za kila kundi, na kama kuna kitu muhimu kilishindwa.',
     },
+    land: {
+      importOrigins: 'Japani, Korea, China',
+      photoInspectorAlt: 'Mkaguzi anakagua upinde wa gurudumu la gari huku mmiliki akitazama',
+      photoImportAlt: 'Magari yamepangwa kwenye sitaha ya meli ya mizigo',
+      headline: 'Lijue gari kabla ya kukutana na muuzaji.',
+      lede: 'Kila gari kwenye Sawa Cars hukaguliwa kwa vipengele 150 katika vituo vyetu vya Kigali na kuchapishwa pamoja na ripoti yake. Soma ushahidi, kisha shughulika na muuzaji moja kwa moja.',
+      checks: 'Vipengele {{earned}} kati ya {{total}} vimepita',
+      rulerResult: 'Matokeo ya ukaguzi: vipengele {{earned}} kati ya {{total}} vimepita',
+      rulerStandard: 'Orodha ya vipengele 150 katika makundi saba, {{critical}} kati yake ni muhimu sana',
+      standardTitle: 'Kiwango kimoja. Ukaguzi 150. Kila gari.',
+      standardBody: 'Kila alama ni kipengele kimoja ambacho mkaguzi hukagua kwa mkono katika kituo cha Sawa. Alama ndefu ni vipengele {{critical}} muhimu sana. Kila gari huchapishwa pamoja na matokeo yake, hivyo kipengele kilichokosekana unakiona kabla ya kupiga simu, si baadaye.',
+      statItems: 'vipengele, pointi moja kila kimoja',
+      statPass: 'au zaidi, bila kushindwa kwa kipengele muhimu, ni kufaulu',
+      statCritical: 'vipengele muhimu sana, huonyeshwa kwenye ripoti kimoja kikishindwa',
+      metaPoints: 'pointi {{points}}',
+      metaCritical: 'pointi {{points}}, {{critical}} muhimu',
+    },
     faq: { eyebrow: 'Maswali', title: 'Kabla ya kujitolea' },
   },
 
@@ -890,9 +958,9 @@ export const home: Record<Locale, Record<string, unknown>> = {
       },
       criticalCount: '중대 {{count}}건',
       ruleScore:
-        '항목당 1점이므로 차량은 {{total}}점 만점으로 채점됩니다. 매물 게시에는 {{threshold}}점이 필요합니다.',
+        '항목당 1점이므로 차량은 {{total}}점 만점으로 채점됩니다. 중대 항목 불합격 없이 {{threshold}}점 이상이면 합격입니다.',
       ruleCritical:
-        '{{critical}}개 항목은 중대 항목입니다. 하나만 불합격해도 점수와 무관하게 게시가 차단됩니다.',
+        '{{critical}}개 항목은 중대 항목입니다. 그중 하나를 통과하지 못해도 매물은 게시되며, 불합격 내용이 보고서에 표시됩니다.',
       link: '전체 점검 기준 보기',
     },
     hero: {
@@ -951,7 +1019,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     topDeals: {
       eyebrow: '주요 매물',
       title: '이번 주 저희 팀이 선정했습니다',
-      description: '150개 항목 검사를 통과한 차량 중에서 선정했습니다. 유료 노출은 표시됩니다.',
+      description: '검사를 마친 차량 중에서 골랐습니다. 유료 게시는 그렇게 표시됩니다.',
       viewAll: '모든 차량 보기',
       seeAll: '전체 보기',
       sponsored: '광고',
@@ -1018,7 +1086,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     },
     finalCta: {
       headline:
-        '여기 있는 모든 차량은 동일한 150개 항목 검사를 통과했습니다. 미검사 등급은 없습니다.',
+        '이곳의 모든 차량은 동일한 150개 항목 검사를 거쳤습니다. 검사받지 않은 등급은 없습니다.',
       browse: '인증 차량 둘러보기',
       sell: '내 차량 판매',
       body: '매물 증빙을 검토하고 인증된 판매자에게 연락한 뒤, 직접 점검·협상하고 합의 내용을 문서로 남기세요. Sawa Cars는 결코 거래 자금을 보관하지 않습니다.',
@@ -1055,7 +1123,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         noCritical: '치명적 결함 없음',
         inspected: '{{date}} 검사',
         view: '이 차량 보기',
-        bar: '게시 기준: {{threshold}}',
+        bar: '합격 기준: {{threshold}}',
       },
       stock: {
         title: '검사 완료 재고 {{count}}대',
@@ -1087,6 +1155,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       reportTitle: '판매 중인 차량의 실제 보고서',
       reportLede: '모든 매물은 이와 같이 보고서를 공개합니다: 항목별 점수와 치명적 결함 여부.',
     },
+    land: {
+      importOrigins: '일본, 한국, 중국',
+      photoInspectorAlt: '검사원이 차량 휠 아치를 점검하고 차주가 지켜보는 모습',
+      photoImportAlt: '화물선 갑판에 줄지어 선 승용차와 밴',
+      headline: '판매자를 만나기 전에 차를 먼저 아세요.',
+      lede: 'Sawa Cars의 모든 차량은 키갈리 센터에서 150개 항목을 검사받고 보고서와 함께 게시됩니다. 근거를 확인한 뒤 판매자와 직접 거래하세요.',
+      checks: '{{total}}개 중 {{earned}}개 항목 합격',
+      rulerResult: '검사 결과: {{total}}개 중 {{earned}}개 항목 합격',
+      rulerStandard: '7개 범주의 150개 점검 항목, 그중 {{critical}}개는 중대 항목',
+      standardTitle: '하나의 기준. 150개 항목. 모든 차량.',
+      standardBody: '눈금 하나는 Sawa 센터의 검사원이 직접 점검하는 항목 하나입니다. 긴 눈금은 {{critical}}개의 중대 항목입니다. 모든 차량이 결과와 함께 게시되므로, 불합격 항목은 연락하기 전에 확인할 수 있습니다.',
+      statItems: '개 항목, 항목당 1점',
+      statPass: '점 이상, 중대 항목 불합격이 없으면 합격',
+      statCritical: '개 중대 항목, 불합격 시 보고서에 표시',
+      metaPoints: '{{points}}점',
+      metaCritical: '{{points}}점, 중대 {{critical}}개',
+    },
     faq: { eyebrow: '질문', title: '결정하기 전에' },
   },
 
@@ -1107,9 +1192,9 @@ export const home: Record<Locale, Record<string, unknown>> = {
       },
       criticalCount: '{{count}} 项关键',
       ruleScore:
-        '每项计 1 分，因此车辆满分为 {{total}} 分。房源需达到 {{threshold}} 分方可发布。',
+        '每项计 1 分，因此车辆满分为 {{total}} 分。达到 {{threshold}} 分及以上且无关键项不合格即为合格。',
       ruleCritical:
-        '其中 {{critical}} 项为关键项。任一项不合格，无论总分多少均不得发布。',
+        '其中 {{critical}} 项为关键项。有一项不合格的车辆仍会发布，并在报告中显示该不合格项。',
       link: '阅读完整检测标准',
     },
     hero: {
@@ -1168,7 +1253,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     topDeals: {
       eyebrow: '精选优惠',
       title: '本周由我们团队精选',
-      description: '从通过150项检测的车辆中挑选。付费展示位会明确标注。',
+      description: '从已检测车辆中挑选。付费推广会注明。',
       viewAll: '查看所有车辆',
       seeAll: '查看全部',
       sponsored: '推广',
@@ -1235,7 +1320,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
     },
     finalCta: {
       headline:
-        '这里的每一辆车都通过了同样的150项检测，没有未经检测的等级。',
+        '这里的每辆车都经过同样的 150 项检测。没有未经检测的车辆。',
       browse: '浏览认证车辆',
       sell: '出售您的车辆',
       body: '查看车源证据，联系已验证的卖家，然后自行检测、协商并记录您的协议。Sawa Cars 绝不持有交易资金。',
@@ -1272,7 +1357,7 @@ export const home: Record<Locale, Record<string, unknown>> = {
         noCritical: '无严重缺陷',
         inspected: '{{date}} 检测',
         view: '查看此车',
-        bar: '发布门槛：{{threshold}}',
+        bar: '合格线：{{threshold}}',
       },
       stock: {
         title: '{{count}} 辆已检测车辆在售',
@@ -1303,6 +1388,23 @@ export const home: Record<Locale, Record<string, unknown>> = {
       stockCardOne: '辆已检测车辆正在出售',
       reportTitle: '一份真实报告，来自在售车辆',
       reportLede: '每个车源都会像这样公开报告：各类别得分，以及是否有严重项目未通过。',
+    },
+    land: {
+      importOrigins: '日本、韩国、中国',
+      photoInspectorAlt: '检测员检查汽车轮拱，车主在一旁观看',
+      photoImportAlt: '货船甲板上排列整齐的轿车和面包车',
+      headline: '见卖家之前，先了解这辆车。',
+      lede: 'Sawa Cars 上的每辆车都在我们的基加利中心接受 150 项检测，并连同检测报告一起发布。先看证据，再直接与卖家交易。',
+      checks: '{{total}} 项检查中通过 {{earned}} 项',
+      rulerResult: '检测结果：{{total}} 项中通过 {{earned}} 项',
+      rulerStandard: '150 项检查清单，分为七类，其中 {{critical}} 项为关键项',
+      standardTitle: '一个标准。150 项检查。每一辆车。',
+      standardBody: '每一道刻度代表检测员在 Sawa 中心亲手检查的一项。较高的刻度是 {{critical}} 个关键项。每辆车都连同检测结果一起发布，因此未通过的项目您在联系卖家之前就能看到。',
+      statItems: '项，每项 1 分',
+      statPass: '分及以上且无关键项不合格即为合格',
+      statCritical: '个关键项，不合格时显示在报告上',
+      metaPoints: '{{points}} 分',
+      metaCritical: '{{points}} 分，{{critical}} 个关键项',
     },
     faq: { eyebrow: '常见问题', title: '在您决定之前' },
   },

@@ -1,4 +1,5 @@
 import { Badge, Card, Icon } from '@/components/ui'
+import { CheckRuler } from '@/components/brand/CheckRuler'
 import { formatDate, inspectionGrade } from '@/lib/business'
 import type { InspectionReport } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
@@ -14,10 +15,10 @@ import { SCORE_MAX, summariseReport } from './inspection'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GRADE_TONE = {
-  A: { bar: 'bg-success', text: 'text-success-text' },
-  B: { bar: 'bg-success', text: 'text-success-text' },
-  C: { bar: 'bg-warning', text: 'text-warning-text' },
-  D: { bar: 'bg-danger', text: 'text-danger' },
+  A: { text: 'text-success-text' },
+  B: { text: 'text-success-text' },
+  C: { text: 'text-warning-text' },
+  D: { text: 'text-danger' },
 } as const
 
 export async function InspectionReportCard({ report }: { report: InspectionReport | null }) {
@@ -27,7 +28,7 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
 
   const grade = inspectionGrade(summary.score)
   const tone = GRADE_TONE[grade]
-  const percent = Math.max(0, Math.min(100, Math.round((summary.score / SCORE_MAX) * 100)))
+  const categories = report.category_scores ?? []
 
   return (
     <Card className="overflow-hidden">
@@ -53,13 +54,18 @@ export async function InspectionReportCard({ report }: { report: InspectionRepor
           </p>
         </div>
 
-        <div
-          className="mt-4 h-2 overflow-hidden rounded-pill bg-surface-alt"
-          role="img"
-          aria-label={t('cars.report.scoreAria', { score: summary.score, max: SCORE_MAX })}
-        >
-          <div className={`h-full rounded-pill ${tone.bar}`} style={{ width: `${percent}%` }} />
-        </div>
+        {/* The homepage's ruler, for this car: one tick per checklist item,
+            missed items short and amber at the end of their category. */}
+        {categories.length ? (
+          <CheckRuler
+            groups={categories.map((c) => ({ key: c.id, label: c.name, max: c.max_points, earned: c.earned }))}
+            mode="result"
+            height={40}
+            animate={false}
+            className="mt-6"
+            label={t('cars.report.scoreAria', { score: summary.score, max: SCORE_MAX })}
+          />
+        ) : null}
 
         <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-caption font-semibold">
           <span className="inline-flex items-center gap-1.5 text-success-text">

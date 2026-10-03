@@ -42,18 +42,17 @@ export async function FaqAccordion({
 
   return (
     <>
-      <div className="divide-y divide-line-soft overflow-hidden rounded-3xl border border-line-soft bg-surface shadow-card">
+      {/* Rules, not a card: a list of questions reads as a list. */}
+      <div className="divide-y divide-line border-y border-line">
         {resolved.map((item) => (
           <details key={item.key} className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-5 px-5 py-5 text-body font-extrabold text-content transition-colors hover:bg-surface-alt sm:px-8 [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-title-sm font-extrabold text-content transition-colors hover:text-content-secondary [&::-webkit-details-marker]:hidden">
               {item.q}
-              <Icon
-                name="chevron-down"
-                size={18}
-                className="shrink-0 text-content-muted transition-transform duration-300 ease-brand group-open:rotate-180"
-              />
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line text-content transition-[transform,background-color] duration-300 ease-brand group-open:rotate-45 group-open:bg-surface-alt">
+                <Icon name="plus" size={16} aria-hidden="true" />
+              </span>
             </summary>
-            <p className="max-w-prose px-5 pb-6 text-body leading-relaxed text-content-secondary sm:px-8">
+            <p className="max-w-prose pb-7 pr-12 text-body leading-relaxed text-content-secondary">
               {item.a}
             </p>
           </details>

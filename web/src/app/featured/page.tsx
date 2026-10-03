@@ -44,7 +44,9 @@ export default async function FeaturedPage() {
         </div>
 
         {placements.length ? (
-          <PlacementGrid placements={placements} />
+          <div className="mt-8">
+            <PlacementGrid placements={placements} />
+          </div>
         ) : (
           <Card className="mt-10">
             <EmptyState

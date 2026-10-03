@@ -18,7 +18,9 @@ export interface InspectionCategory {
   key: string
   /** Points the category contributes — one point per checklist item. */
   points: number
-  /** Of those, how many are critical: one failure blocks publication. */
+  /** Of those, how many are critical. A failure no longer blocks
+   *  publication (the transparency model, PR #106): it denies the pass grade
+   *  and is shown on the listing's report. */
   critical: number
 }
 

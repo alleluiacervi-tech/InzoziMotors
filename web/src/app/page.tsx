@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
-import { Container, Section, SectionHeading } from '@/components/ui'
+import { Container, Section, TextLink } from '@/components/ui'
 import { Hero } from '@/components/home/Hero'
-import { StockBand } from '@/components/home/StockBand'
 import { FeaturedCars } from '@/components/home/FeaturedCars'
 import { Showrooms } from '@/components/home/Showrooms'
 import { TopDeals } from '@/components/home/TopDeals'
 import { ThreeWays } from '@/components/home/ThreeWays'
-import { InspectionStory } from '@/components/home/InspectionStory'
+import { Standard } from '@/components/home/Standard'
 import { FinalCta } from '@/components/home/FinalCta'
 import { FaqAccordion } from '@/components/marketing/FaqAccordion'
 import { cars, rentals } from '@/lib/api'
@@ -80,32 +79,38 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* One claim, one search across the three businesses, and the
-          inspection photograph with the live stock count. */}
-      <Hero inventory={inventory} rentalCount={rentalFleet.length} />
+      {/* The promise, one search across the three businesses, and the
+          evidence: the best-scoring car in stock with its 150-point result. */}
+      <Hero inventory={inventory} rentalCount={rentalFleet.length} report={report} />
 
-      {/* The yard's shape — makes, budgets, body types — each with its count. */}
-      <StockBand inventory={inventory} />
-
-      {/* Operator placements, then the newest inspected cars. */}
+      {/* Operator placements, then the yard: its count, its shape as one row
+          of filters, and the newest inspected cars. */}
       <TopDeals placements={placements} />
-      <FeaturedCars cars={stock.slice(0, 8)} />
+      <FeaturedCars cars={stock.slice(0, 8)} inventory={inventory} />
+
+      {/* The standard every car is measured against, drawn at full width. */}
+      <Standard />
+
+      <ThreeWays saleCount={inventory.total} rentalCount={rentalFleet.length} />
 
       {/* Verified showrooms and the brands each one has in stock. */}
       <Showrooms />
 
-      <ThreeWays saleCount={inventory.total} rentalCount={rentalFleet.length} />
-
-      {/* The case for the inspection, made once — with one real report from
-          the best-scoring car in stock. */}
-      <InspectionStory car={inventory.best} report={report} />
-
       {/* Five of the eight; the full set lives on /how-it-works. */}
       <Section tone="page">
         <Container>
-          <SectionHeading title={t('home.faq.title')} />
-          <div className="mt-10">
-            <FaqAccordion items={FAQS.slice(0, 5)} structuredData />
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+            <div className="min-w-0 lg:col-span-4">
+              <div className="lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
+                <h2 className="text-headline font-extrabold text-content">{t('home.faq.title')}</h2>
+                <div className="mt-5">
+                  <TextLink href="/how-it-works">{t('home.howItWorks.link')}</TextLink>
+                </div>
+              </div>
+            </div>
+            <div className="min-w-0 lg:col-span-8">
+              <FaqAccordion items={FAQS.slice(0, 5)} structuredData />
+            </div>
           </div>
         </Container>
       </Section>
