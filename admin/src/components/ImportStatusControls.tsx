@@ -14,11 +14,14 @@ import { useConfirm, useReason, useToast } from '@/components/feedback'
 
 import { statusLabel as label } from './ui'
 
-export function ImportStatusControls({ orderId, status, allowed = [], onChanged }: {
+export function ImportStatusControls({ orderId, status, allowed = [], onChanged, compact = false }: {
   orderId: string
   status: string
   allowed?: string[]
   onChanged: () => void | Promise<void>
+  /** In a list row: only the next step. Skipping and cancelling live on the
+   *  order's own page, where the whole record is in view. */
+  compact?: boolean
 }) {
   const [busy, setBusy] = useState(false)
   const ask = useConfirm()
@@ -50,6 +53,15 @@ export function ImportStatusControls({ orderId, status, allowed = [], onChanged 
   }
 
   if (!forward.length && !cancellable) return null
+  if (compact) {
+    if (!forward.length) return null
+    return (
+      <button type="button" disabled={busy} onClick={() => move(forward[0])}
+        className="inline-flex h-9 items-center rounded-lg bg-ink-900 px-3 text-caption font-bold text-white hover:bg-ink-800 disabled:opacity-50">
+        Next: {label(forward[0])}
+      </button>
+    )
+  }
   return (
     <div className="flex flex-wrap gap-2">
       {forward.map((next, index) => (

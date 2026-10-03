@@ -4,7 +4,7 @@ import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api, type Readiness } from '@/lib/api'
-import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney, statusLabel } from '@/components/ui'
+import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney, statusLabel, Card } from '@/components/ui'
 import { useConfirm, useReason, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
 import { fmtInt } from '@/lib/format'
@@ -319,17 +319,21 @@ export default function ListingsPage() {
             : statusFilter === NEEDS_ACTION ? 'Every submitted vehicle has been decided. New submissions appear here once their inspection is complete — check Submissions and Inspections for vehicles still earlier in the process.'
             : `Nothing on the floor with status “${statusFilter}”.`} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        // Rows with a small thumbnail rather than photo cards: three 360 px
+        // cards a row showed nine cars a screen; rows show about five times
+        // that, and the photo is still there to recognise the car by.
+        <Card className="overflow-hidden">
+          <ul className="divide-y divide-line-soft">
           {visible.map((car) => (
-            <div key={car.id} className="bg-surface rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <li key={car.id} className="flex gap-4 p-4">
               {/* Thumbnail */}
               {car.images?.[0] ? (
-                <img src={car.images[0]} alt={car.model} className="w-full h-36 object-contain bg-gray-100 p-1.5" />
+                <img src={car.images[0]} alt="" className="h-12 w-16 shrink-0 rounded-lg bg-gray-100 sm:h-16 sm:w-24 object-contain p-1" />
               ) : (
-                <div className="w-full h-36 bg-gray-100 flex items-center justify-center text-gray-300"><Icon name="car" size={32} /></div>
+                <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-300"><Icon name="car" size={24} /></div>
               )}
 
-              <div className="p-4">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between mb-1 gap-2">
                   <span className="font-semibold text-gray-900 text-sm truncate">{car.year} {car.make} {car.model}</span>
                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -345,21 +349,21 @@ export default function ListingsPage() {
                     <Pill status={car.status} />
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">{fmtInt(car.mileage)} km · {car.location}</p>
-                <p className="text-sm font-bold text-content mt-1">{fmtMoney(car.price, car.currency)}</p>
-                <p className="text-xs text-content-muted">{car.views || 0} views</p>
-                <div className="mt-3 grid grid-cols-3 gap-1 text-center text-caption">
+                <p className="text-sm font-bold text-content">{fmtMoney(car.price, car.currency)}</p>
+                <p className="text-xs text-content-muted">{[`${fmtInt(car.mileage)} km`, car.location, `${car.views || 0} views`].filter(Boolean).join(' · ')}</p>
+                <div className="mt-2 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div className="inline-grid w-fit grid-cols-3 gap-1 text-center text-caption">
                   <span className={`rounded-md px-1 py-1 ${car.seller_id_verified === 'approved' && car.seller_account_status === 'active' ? 'bg-success-tint text-success-text' : 'bg-danger-tint text-danger-strong'}`}>Seller</span>
                   <span className={`rounded-md px-1 py-1 ${car.has_completed_inspection ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>Inspection</span>
                   <span className={`rounded-md px-1 py-1 ${Math.max(car.image_count || 0, car.structured_photo_count || 0) > 0 ? 'bg-success-tint text-success-text' : 'bg-warning-tint text-warning-text'}`}>Gallery</span>
                 </div>
 
                 {/* Actions */}
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {car.status !== 'sold' && (
                     <Link
                       href={`/listings/${car.id}/edit`}
-                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                     >
                       Edit
                     </Link>
@@ -367,7 +371,7 @@ export default function ListingsPage() {
                   {car.status !== 'sold' && (
                     <Link
                       href={`/listings/${car.id}/photos`}
-                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                     >
                       Photos ({car.images?.length || 0})
                     </Link>
@@ -376,7 +380,7 @@ export default function ListingsPage() {
                     <button
                       onClick={() => feature(car.id)}
                       disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
                       Feature
                     </button>
@@ -385,7 +389,7 @@ export default function ListingsPage() {
                     <button
                       onClick={() => updateStatus(car.id, 'paused')}
                       disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >Pause</button>
                   )}
                   {['approved', 'paused'].includes(car.status) && (
@@ -396,24 +400,24 @@ export default function ListingsPage() {
                       }}
                       disabled={actionId === car.id || !mayPublish(car)}
                       title={mayPublish(car) ? undefined : 'Something below is still required before this can be published.'}
-                      className="px-2 py-1 text-xs font-medium bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50"
                     >Publish</button>
                   )}
                   {car.status === 'under_review' && mayPublish(car) ? (
                     <>
-                      <button onClick={() => approveAndPublish(car)} disabled={actionId === car.id} className="px-2 py-1 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50">
+                      <button onClick={() => approveAndPublish(car)} disabled={actionId === car.id} className="inline-flex h-9 items-center px-3 text-xs font-semibold bg-ink-900 text-white rounded-lg hover:bg-ink-800 disabled:opacity-50">
                         {actionId === car.id ? 'Publishing…' : 'Approve & publish'}
                       </button>
                       {/* Kept for the case where the decision to publish is
                           someone else's, or is not for today. */}
-                      <button onClick={() => updateStatus(car.id, 'approved')} disabled={actionId === car.id} title="Record the approval now and publish later. The listing moves to the Approved filter." className="px-2 py-1 text-xs font-medium bg-info-tint text-info rounded-lg disabled:opacity-50">Approve only</button>
+                      <button onClick={() => updateStatus(car.id, 'approved')} disabled={actionId === car.id} title="Record the approval now and publish later. The listing moves to the Approved filter." className="inline-flex h-9 items-center px-3 text-xs font-medium bg-info-tint text-info rounded-lg disabled:opacity-50">Approve only</button>
                     </>
                   ) : car.status === 'under_review' ? (
                     <button
                       type="button"
                       onClick={() => checkReadiness(car.id)}
                       disabled={readiness[car.id] === 'loading'}
-                      className="px-2 py-1 text-xs font-semibold text-warning-text underline underline-offset-2 hover:text-content disabled:opacity-50"
+                      className="inline-flex h-9 items-center px-3 text-xs font-semibold text-warning-text underline underline-offset-2 hover:text-content disabled:opacity-50"
                     >
                       {readiness[car.id] === 'loading' ? 'Checking…' : readiness[car.id] ? 'Re-check' : "See what's missing"}
                     </button>
@@ -428,22 +432,22 @@ export default function ListingsPage() {
                         tone: 'danger',
                       })
                       if (reason) updateStatus(car.id, 'rejected', reason)
-                    }} disabled={actionId === car.id} className="px-2 py-1 text-xs font-medium bg-red-50 text-red-700 rounded-lg disabled:opacity-50">Reject</button>
+                    }} disabled={actionId === car.id} className="inline-flex h-9 items-center px-3 text-xs font-medium bg-red-50 text-red-700 rounded-lg disabled:opacity-50">Reject</button>
                   )}
                   {car.status === 'live' && (
                     <button
                       onClick={() => updateStatus(car.id, 'sold')}
                       disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
                     >
-                      Mark Sold
+                      Mark sold
                     </button>
                   )}
                   {car.status === 'archived' && (
                     <button
                       onClick={() => deletePermanently(car)}
                       disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
                     >
                       {actionId === car.id ? 'Deleting…' : 'Delete permanently'}
                     </button>
@@ -468,11 +472,12 @@ export default function ListingsPage() {
                         }
                       }}
                       disabled={actionId === car.id}
-                      className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                      className="inline-flex h-9 items-center px-3 text-xs font-medium bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
                     >
                       Remove
                     </button>
                   )}
+                </div>
                 </div>
 
                 {/* The server's own verdict, verbatim. Previously the operator
@@ -514,9 +519,10 @@ export default function ListingsPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+          </ul>
+        </Card>
       )}
     </div>
   )

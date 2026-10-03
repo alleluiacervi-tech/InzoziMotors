@@ -16,6 +16,10 @@ type ImportRow = {
   allowed_transitions?: string[]
 }
 
+// One column layout for the header and every row, so they line up.
+const ROW_GRID = 'grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,2.2fr)] gap-4'
+const ROW_GRID_LG = 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,2.2fr)]'
+
 const money = (value: number | string | undefined) =>
   `${new Intl.NumberFormat('en-RW').format(Number(value || 0))} RWF`
 
@@ -46,26 +50,38 @@ export default function ImportsPage() {
     </Card>
     {error ? <ErrorState error={error} onRetry={load} /> : loading ? <LoadingState /> : !items.length ?
       <EmptyState icon="car" title="No import orders here" description="New customer import enquiries will appear in this pipeline." /> :
-      <div className="space-y-4">{items.map((item) => <Card key={item.id} className="p-5">
-        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-          <div><div className="flex flex-wrap items-center gap-2"><span className="text-caption font-bold text-content">{item.order_ref}</span><Pill status={item.status} /></div>
-            <h2 className="mt-2 text-lg font-extrabold text-content">{item.year || ''} {item.make} {item.model}</h2>
-            <p className="mt-1 text-label text-content-muted">From {item.origin_country} · {item.buyer_name} · {item.buyer_email}</p>
-          </div>
-          <div className="text-left md:text-right"><p className="font-extrabold text-content">{item.quoted_total_rwf ? money(item.quoted_total_rwf) : 'Awaiting quotation'}</p><p className="text-caption text-content-muted">Verified paid: {money(item.paid_rwf)}</p>
-            {item.actual_cost_rwf != null && item.quoted_total_rwf ? (() => { const margin = Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf); return <p className={`text-caption font-bold ${margin >= 0 ? 'text-success-text' : 'text-danger-strong'}`}>Margin: {money(margin)}</p> })() : null}
-          </div>
+      <Card className="overflow-hidden">
+        <div aria-hidden className={`hidden ${ROW_GRID} border-b border-line-soft bg-surface-alt px-5 py-2.5 text-caption font-semibold text-content-muted lg:grid`}>
+          <span>Order</span><span>Buyer</span><span>Quote</span><span>Stage</span><span className="text-right">Next step</span>
         </div>
-        {item.status === 'enquiry' ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-warning-tint px-4 py-3">
-          <p className="text-label font-semibold text-warning-text">Waiting for a landed-price quotation</p>
-          <Link href={`/imports/${item.id}`} className="text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">Build the quotation</Link>
-        </div> : null}
-        <div className="mt-4 flex flex-col gap-3 border-t border-line-soft pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <ImportStatusControls orderId={item.id} status={item.status}
-            allowed={(item.allowed_transitions || []).filter((next) => item.status !== 'enquiry' || next === 'cancelled')}
-            onChanged={load} />
-          <Link href={`/imports/${item.id}`} className="shrink-0 text-label font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">Open order</Link>
-        </div>
-      </Card>)}</div>}
+        <ul className="divide-y divide-line-soft">{items.map((item) => {
+          const margin = item.actual_cost_rwf != null && item.quoted_total_rwf ? Number(item.quoted_total_rwf) - Number(item.actual_cost_rwf) : null
+          return <li key={item.id} className="px-5 py-4">
+            <div className={`grid gap-x-4 gap-y-2 ${ROW_GRID_LG} lg:items-center`}>
+              <div className="min-w-0">
+                <Link href={`/imports/${item.id}`} className="font-semibold text-content hover:underline">{item.year || ''} {item.make} {item.model}</Link>
+                <p className="mt-0.5 text-label text-content-muted"><span className="tnum">{item.order_ref}</span> · from {item.origin_country}</p>
+              </div>
+              <div className="min-w-0 text-label text-content-secondary">
+                <span className="block truncate">{item.buyer_name}</span>
+                <span className="block truncate text-caption text-content-muted">{item.buyer_email}</span>
+              </div>
+              <div className="tnum text-label">
+                {item.quoted_total_rwf ? <span className="block font-semibold text-content">{money(item.quoted_total_rwf)}</span> : <span className="block text-content-muted">No quote yet</span>}
+                <span className="block text-caption text-content-muted">Paid {money(item.paid_rwf)}{margin != null ? <> · <span className={margin >= 0 ? 'text-success-text' : 'text-danger-strong'}>margin {money(margin)}</span></> : null}</span>
+              </div>
+              <div><Pill status={item.status} /></div>
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {item.status === 'enquiry' ? (
+                  <Link href={`/imports/${item.id}`} className="inline-flex h-9 items-center rounded-lg bg-ink-900 px-3 text-caption font-bold text-white hover:bg-ink-800">Build the quotation</Link>
+                ) : (
+                  <ImportStatusControls compact orderId={item.id} status={item.status} allowed={item.allowed_transitions || []} onChanged={load} />
+                )}
+                <Link href={`/imports/${item.id}`} className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-caption font-bold text-content hover:bg-surface-alt">Open</Link>
+              </div>
+            </div>
+          </li>
+        })}</ul>
+      </Card>}
   </div>
 }
