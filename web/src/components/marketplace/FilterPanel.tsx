@@ -2,6 +2,7 @@
 
 import { useId, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { displayMake } from '@/lib/vehicle-names'
 import { Button, Icon, Input, Select } from '@/components/ui'
 import { useT } from '@/lib/i18n/context'
 import { withSelected, type Facets } from './facets'
@@ -103,6 +104,7 @@ export function FilterPanel({
         label={t('cars.filter.make')}
         value={filters.make}
         options={withSelected(facets.makes, filters.make)}
+        optionLabel={displayMake}
         anyLabel={t('cars.filter.anyMake')}
       />
 
@@ -260,6 +262,7 @@ function SelectField({
   value,
   options,
   anyLabel,
+  optionLabel = (option: string) => option,
 }: {
   id: string
   name: string
@@ -267,6 +270,8 @@ function SelectField({
   value?: string
   options: string[]
   anyLabel: string
+  /** Display text for an option; the submitted value is always the option. */
+  optionLabel?: (option: string) => string
 }) {
   if (!options.length) return null
   return (
@@ -278,7 +283,7 @@ function SelectField({
         <option value="">{anyLabel}</option>
         {options.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {optionLabel(option)}
           </option>
         ))}
       </Select>

@@ -1,10 +1,10 @@
 'use client'
 
-// Language switcher — a flag-led dropdown.
+// Language switcher — the language code, then the language in its own name.
 //
-// The flag emoji renders on most mobile browsers and macOS; where it does not
-// (Windows), the language code carries the meaning, so the button always shows
-// the code too. Selecting a language writes the cookie and refreshes the page's
+// No flags: a flag names a country, not a language (Rwandan English is not
+// British, Kiswahili is not only Kenyan), and Windows draws no flag glyphs at
+// all. Selecting a language writes the cookie and refreshes the page's
 // server-rendered strings (see LanguageProvider).
 import { useEffect, useRef, useState } from 'react'
 import { LANGUAGES } from '@/lib/i18n/config'
@@ -51,9 +51,6 @@ export function LanguageSwitcher({ tone = 'light' }: { tone?: 'light' | 'dark' }
         aria-expanded={open}
         aria-label={t('common.language')}
       >
-        <span aria-hidden className="text-[15px] leading-none">
-          {current.flag}
-        </span>
         <span className="uppercase tracking-wide">{current.code}</span>
         <Icon name="chevron-down" size={14} />
       </button>
@@ -80,9 +77,6 @@ export function LanguageSwitcher({ tone = 'light' }: { tone?: 'light' | 'dark' }
                   selected ? 'bg-surface-alt' : ''
                 }`}
               >
-                <span aria-hidden className="text-lg leading-none">
-                  {lang.flag}
-                </span>
                 <span className="flex-1">
                   <span className="block text-caption font-semibold text-content">
                     {lang.nativeLabel}

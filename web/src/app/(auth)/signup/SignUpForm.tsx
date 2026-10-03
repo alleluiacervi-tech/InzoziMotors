@@ -75,7 +75,7 @@ const COUNTRY_CODES = [
   { code: '+234', flag: '🇳🇬', name: 'Nigeria (+234)' },
 ]
 
-export function SignUpForm({ next }: { next: string }) {
+export function SignUpForm({ next, defaultRole = 'buyer' }: { next: string; defaultRole?: 'buyer' | 'seller' }) {
   const t = useT()
   const [state, formAction] = useActionState<AuthState, FormData>(signUpAction, null)
   const fieldErrors = state?.fieldErrors ?? {}
@@ -167,13 +167,14 @@ export function SignUpForm({ next }: { next: string }) {
             icon="search"
             title={t('auth.signup.buyerTitle')}
             desc={t('auth.signup.buyerDesc')}
-            defaultChecked
+            defaultChecked={defaultRole === 'buyer'}
           />
           <RoleCard
             value="seller"
             icon="key"
             title={t('auth.signup.sellerTitle')}
             desc={t('auth.signup.sellerDesc')}
+            defaultChecked={defaultRole === 'seller'}
           />
         </div>
         <p className="mt-3 flex gap-2 text-micro leading-relaxed text-content-muted">

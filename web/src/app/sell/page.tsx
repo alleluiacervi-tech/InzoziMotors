@@ -250,7 +250,7 @@ export default async function SellPage() {
               </h3>
               <ul className="mt-5 space-y-3.5">
                 {[
-                  { where: t('sell.app.whereApp'), what: t('sell.app.step1') },
+                  { where: t('sell.app.whereBoth'), what: t('sell.app.step1') },
                   { where: t('sell.app.whereWeb'), what: t('sell.app.step2') },
                   { where: t('sell.app.whereBoth'), what: t('sell.app.step3') },
                   { where: t('sell.app.whereBoth'), what: t('sell.app.step4') },
@@ -345,7 +345,7 @@ export default async function SellPage() {
             <Button href="#valuation" size="lg">
               {t('sell.close.valueMy')}
             </Button>
-            <Button href="/download" variant="inverse" size="lg">
+            <Button href="/sell/submit" variant="inverse" size="lg">
               {t('sell.close.getApp')}
             </Button>
           </>

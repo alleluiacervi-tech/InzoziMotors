@@ -255,7 +255,7 @@ const en = {
     estimateNote:
       'This is a market estimate, not an offer. The final asking price is yours — we confirm it with you after the 150-point inspection, when we know the car’s real condition.',
     submitBtn: 'Submit this car for inspection',
-    submissionHint: 'Submission starts with a one-time ID check, which happens in the app.',
+    submissionHint: 'Submission starts with a one-time ID check, which you can do here or in the app.',
     orWhatsApp: 'Or message us on WhatsApp',
   },
 
@@ -532,7 +532,7 @@ const rw = {
     estimateNote:
       'Iri ni isuzuma ry’isoko, atari icyifuzo. Igiciro cya nyuma gisabwa ni icyawe — tukigemura nawe nyuma y’isuzuma ry’ingingo 150, igihe tuzi imiterere nyayo y’imodoka.',
     submitBtn: 'Tanga iyi modoka isuzumwe',
-    submissionHint: 'Gutanga bitangirana n’igenzura ry’indangamuntu rimwe gusa, ribera muri porogaramu.',
+    submissionHint: 'Gutanga bitangirana n’igenzura ry’indangamuntu rimwe gusa, ushobora gukorera hano cyangwa muri porogaramu.',
     orWhatsApp: 'Cyangwa utwandikire kuri WhatsApp',
   },
 
@@ -809,7 +809,7 @@ const fr = {
     estimateNote:
       'Ceci est une estimation de marché, pas une offre. Le prix de vente final vous appartient — nous le confirmons avec vous après l’inspection en 150 points, quand nous connaissons l’état réel de la voiture.',
     submitBtn: 'Soumettre cette voiture à l’inspection',
-    submissionHint: 'La soumission commence par une vérification d’identité unique, qui se fait dans l’application.',
+    submissionHint: 'La soumission commence par une vérification d’identité unique, à faire ici ou dans l’application.',
     orWhatsApp: 'Ou écrivez-nous sur WhatsApp',
   },
 
@@ -1086,7 +1086,7 @@ const sw = {
     estimateNote:
       'Hili ni kadirio la soko, si ofa. Bei ya mwisho inayoombwa ni yako — tunaithibitisha nawe baada ya ukaguzi wa pointi 150, tunapojua hali halisi ya gari.',
     submitBtn: 'Wasilisha gari hili kwa ukaguzi',
-    submissionHint: 'Uwasilishaji huanza na uthibitisho wa utambulisho wa mara moja, unaofanyika ndani ya programu.',
+    submissionHint: 'Uwasilishaji huanza na uthibitisho wa utambulisho wa mara moja, unaoweza kuufanya hapa au ndani ya programu.',
     orWhatsApp: 'Au tuandikie kwa WhatsApp',
   },
 
@@ -1363,7 +1363,7 @@ const ko = {
     estimateNote:
       '이것은 제안이 아니라 시장 추정치입니다. 최종 호가는 당신의 것입니다 — 150포인트 점검 후 차량의 실제 상태를 파악했을 때 당신과 함께 확정합니다.',
     submitBtn: '이 차량 점검 신청하기',
-    submissionHint: '신청은 앱에서 이루어지는 일회성 신원 확인으로 시작됩니다.',
+    submissionHint: '신청은 일회성 신원 확인으로 시작되며, 여기 또는 앱에서 진행할 수 있습니다.',
     orWhatsApp: '아니면 WhatsApp으로 문의하세요',
   },
 
@@ -1640,7 +1640,7 @@ const zh = {
     estimateNote:
       '这是市场估算，并非报价。最终要价由您决定——我们会在150项检测后、了解车辆真实状况时与您确认。',
     submitBtn: '提交此车辆进行检测',
-    submissionHint: '提交流程从一次性身份核验开始，该步骤在应用中完成。',
+    submissionHint: '提交流程从一次性身份核验开始，可在此处或应用中完成。',
     orWhatsApp: '或通过 WhatsApp 联系我们',
   },
 

@@ -4,12 +4,12 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SiteChrome } from '@/components/layout/SiteChrome'
 import { getCurrentUser } from '@/lib/session'
-import { duty, fx } from '@/lib/api'
+import { duty, fx, rentals } from '@/lib/api'
 import { setDutyRates, setRwfRate } from '@/lib/business'
 import { DutySync } from '@/components/DutySync'
 import { FxSync } from '@/components/FxSync'
 import { CurrencyProvider } from '@/components/CurrencyProvider'
-import { SITE } from '@/lib/site'
+import { SITE, rentPromoted } from '@/lib/site'
 import { getLocale } from '@/lib/i18n/server'
 import { LanguageProvider } from '@/lib/i18n/context'
 import { messagesFor } from '@/lib/i18n/dictionary'
@@ -116,6 +116,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const dutyRates = await duty.rates()
   setDutyRates(dutyRates)
 
+  // Whether Rent belongs in the navigation. Same cached request the homepage
+  // and /rentals make, so this costs nothing extra; an unreachable API hides
+  // Rent rather than failing the page.
+  const showRent = rentPromoted((await rentals.list().catch(() => [])).length)
+
   // The visitor's language, from the cookie the switcher writes. Drives
   // <html lang> and seeds the client provider so the first paint is already
   // translated — no flash of English.
@@ -157,7 +162,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             reload. */}
         <CurrencyProvider initial={rate}>
           <LanguageProvider initialLocale={locale} messages={messagesFor(locale, CHROME_NAMESPACES)}>
-            <SiteChrome><Header user={user} /></SiteChrome>
+            <SiteChrome><Header user={user} showRent={showRent} /></SiteChrome>
             <main id="main" className="flex-1">
               {children}
             </main>

@@ -223,7 +223,7 @@ function NextSteps() {
   return (
     <div className="space-y-3 border-t border-line-soft pt-5">
       <Button
-        href="/download"
+        href="/sell/submit"
         fullWidth
         className={WRAPPING_LABEL}
         trailingIcon={<Icon name="arrow-right" size={18} />}

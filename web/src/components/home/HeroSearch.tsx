@@ -5,6 +5,8 @@ import { Button, Icon } from '@/components/ui'
 import { formatMoney } from '@/lib/business'
 import { BUDGET_EDGES, type CountedValue } from '@/lib/inventory'
 import { useT } from '@/lib/i18n/context'
+import { rentPromoted } from '@/lib/site'
+import { displayMake } from '@/lib/vehicle-names'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The front door's one control: Buy, Rent or Import, each a real GET form.
@@ -37,6 +39,9 @@ export function HeroSearch({
 }) {
   const t = useT()
   const id = useId()
+  // Rent is a tab only once there is a fleet worth searching (lib/site.ts).
+  const showRent = rentPromoted(rentalCount)
+  const modes = showRent ? MODES : MODES.filter((m) => m !== 'rent')
   const [mode, setMode] = useState<Mode>('buy')
   const [make, setMake] = useState('')
   const tabs = useRef<(HTMLButtonElement | null)[]>([])
@@ -47,15 +52,15 @@ export function HeroSearch({
     const next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null
     if (next == null) return
     e.preventDefault()
-    const j = (next + MODES.length) % MODES.length
-    setMode(MODES[j])
+    const j = (next + modes.length) % modes.length
+    setMode(modes[j])
     tabs.current[j]?.focus()
   }
 
   return (
     <div className="mt-8 w-full max-w-2xl rounded-3xl border border-line-soft bg-surface p-2 shadow-float">
-      <div role="tablist" aria-label={t('home.front.tabsLabel')} className="grid grid-cols-3 gap-1 rounded-2xl bg-surface-alt p-1">
-        {MODES.map((m, i) => (
+      <div role="tablist" aria-label={t('home.front.tabsLabel')} className={`grid ${modes.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-2xl bg-surface-alt p-1`}>
+        {modes.map((m, i) => (
           <button
             key={m}
             ref={(el) => { tabs.current[i] = el }}
@@ -100,7 +105,7 @@ export function HeroSearch({
               <option value="">{t('home.front.anyMake')}</option>
               {makes.map((m) => (
                 <option key={m.value} value={m.value}>
-                  {m.value} ({m.count})
+                  {displayMake(m.value)} ({m.count})
                 </option>
               ))}
             </select>
@@ -137,6 +142,7 @@ export function HeroSearch({
       </div>
 
       {/* RENT */}
+      {showRent ? (
       <div
         role="tabpanel"
         id={`${id}-panel-rent`}
@@ -156,6 +162,7 @@ export function HeroSearch({
           {t('home.front.rentCta')}
         </Button>
       </div>
+      ) : null}
 
       {/* IMPORT */}
       <div

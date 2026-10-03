@@ -32,7 +32,7 @@ const NAV_KEY: Record<string, string> = {
   '/tools': 'nav.tools', '/how-it-works': 'nav.howItWorks',
 }
 
-export function Header({ user }: { user: User | null }) {
+export function Header({ user, showRent = false }: { user: User | null; showRent?: boolean }) {
   const t = useT()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -65,6 +65,8 @@ export function Header({ user }: { user: User | null }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  const navLinks = NAV_LINKS.filter((link) => showRent || link.href !== '/rentals')
+
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href))
 
@@ -79,7 +81,7 @@ export function Header({ user }: { user: User | null }) {
       ? 'text-content after:bg-brand'
       : 'text-content-secondary after:bg-transparent hover:text-content')
 
-  // Quiet header furniture: WhatsApp, search, hamburger.
+  // Quiet header furniture: WhatsApp and the hamburger.
   const quiet = 'text-content-secondary hover:bg-surface-alt hover:text-content'
 
   return (
@@ -99,7 +101,7 @@ export function Header({ user }: { user: User | null }) {
 
         <nav aria-label="Primary" className="ml-4 hidden lg:block">
           <ul className="flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
@@ -127,14 +129,6 @@ export function Header({ user }: { user: User | null }) {
               {CONTACT.whatsappDisplay}
             </a>
           ) : null}
-
-          <Link
-            href="/cars#search"
-            aria-label={t('common.search')}
-            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${quiet}`}
-          >
-            <Icon name="search" size={20} />
-          </Link>
 
           {user?.role === 'admin' ? (
             <Button
@@ -173,8 +167,12 @@ export function Header({ user }: { user: User | null }) {
               button is the other side of the market: getting a car listed.
               The app link lives in the menu and footer until the stores are
               live (APP.storesLive in lib/site.ts). */}
-          <Button href="/sell" size="sm" className="hidden sm:inline-flex">
-            {t('common.sellYourCar')}
+          {/* Visible at every width: on a phone, the device most visitors
+              use, this used to live only inside the menu. Below 400px the
+              label shortens so the bar never wraps. */}
+          <Button href="/sell" size="sm" className="px-3.5 min-[400px]:px-4">
+            <span className="min-[400px]:hidden">{t('nav.sell')}</span>
+            <span className="hidden min-[400px]:inline">{t('common.sellYourCar')}</span>
           </Button>
 
           <div className="hidden sm:block">
@@ -212,7 +210,7 @@ export function Header({ user }: { user: User | null }) {
             className="relative max-h-full overflow-y-auto rounded-b-3xl border-b border-line bg-surface px-5 pb-8 pt-4 shadow-float"
           >
             <ul className="space-y-1">
-              {NAV_LINKS.map((link, i) => (
+              {navLinks.map((link, i) => (
                 <li
                   key={link.href}
                   className="animate-fade-up [animation-fill-mode:backwards]"
@@ -239,7 +237,7 @@ export function Header({ user }: { user: User | null }) {
             {CONTACT.whatsappVerified ? (
               <div
                 className="mt-5 grid grid-cols-2 gap-2 animate-fade-up [animation-fill-mode:backwards]"
-                style={{ animationDelay: `${NAV_LINKS.length * 40}ms` }}
+                style={{ animationDelay: `${navLinks.length * 40}ms` }}
               >
                 <a
                   href={`https://wa.me/${CONTACT.whatsapp}`}
@@ -261,7 +259,7 @@ export function Header({ user }: { user: User | null }) {
 
             <div
               className="mt-5 space-y-3 border-t border-line-soft pt-5 animate-fade-up [animation-fill-mode:backwards]"
-              style={{ animationDelay: `${(NAV_LINKS.length + 1) * 40}ms` }}
+              style={{ animationDelay: `${(navLinks.length + 1) * 40}ms` }}
             >
               {user?.role === 'admin' ? (
                 <Button href="/admin-portal" prefetch={false} variant="secondary" fullWidth>

@@ -34,7 +34,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     appOrWeb: {
       q: 'Do I need the mobile app, or can I do everything on the web?',
-      a: 'Browsing, inspection information, saved cars, direct seller contact and your account work on the web. The app adds camera capture, push notifications and a more convenient messaging experience.',
+      a: 'Everything works on the web: browsing, inspection reports, saved cars, messages, ID verification, submitting a car and your account. The app adds push notifications and a faster camera.',
     },
     areas: {
       q: 'Which areas do you cover?',
@@ -68,7 +68,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     appOrWeb: {
       q: 'Ese nkeneye porogaramu ya telefoni, cyangwa nshobora gukora byose ku rubuga?',
-      a: 'Gushakisha, amakuru y’isuzuma, imodoka wabitse, kuvugana n’umugurisha ku buryo butaziguye na konti yawe bikorera ku rubuga. Porogaramu yongeraho gufata amafoto na kamera, imenyesha, n’uburyo bworoshye bwo kohererezanya ubutumwa.',
+      a: 'Byose bikorera ku rubuga: gushakisha, raporo z’isuzuma, imodoka wabitse, ubutumwa, kwemeza umwirondoro, gutanga imodoka na konti yawe. Porogaramu yongeraho imenyesha na kamera yihuta.',
     },
     areas: {
       q: 'Ni ahihe mukorera?',
@@ -102,7 +102,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     appOrWeb: {
       q: 'Ai-je besoin de l’application mobile, ou puis-je tout faire sur le web ?',
-      a: 'La navigation, les informations d’inspection, les voitures enregistrées, le contact direct avec le vendeur et votre compte fonctionnent sur le web. L’application ajoute la capture par appareil photo, les notifications et une messagerie plus pratique.',
+      a: 'Tout fonctionne sur le web : la navigation, les rapports d’inspection, les voitures enregistrées, la messagerie, la vérification d’identité, la soumission d’une voiture et votre compte. L’application ajoute les notifications push et un appareil photo plus rapide.',
     },
     areas: {
       q: 'Quelles zones couvrez-vous ?',
@@ -136,7 +136,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     appOrWeb: {
       q: 'Je, ninahitaji programu ya simu, au ninaweza kufanya kila kitu kwenye wavuti?',
-      a: 'Kuvinjari, taarifa za ukaguzi, magari yaliyohifadhiwa, mawasiliano ya moja kwa moja na muuzaji na akaunti yako hufanya kazi kwenye wavuti. Programu huongeza upigaji picha kwa kamera, arifa, na uzoefu rahisi zaidi wa ujumbe.',
+      a: 'Kila kitu hufanya kazi kwenye wavuti: kuvinjari, ripoti za ukaguzi, magari yaliyohifadhiwa, ujumbe, uthibitishaji wa utambulisho, kuwasilisha gari na akaunti yako. Programu huongeza arifa za papo hapo na kamera ya haraka zaidi.',
     },
     areas: {
       q: 'Mnahudumia maeneo gani?',
@@ -170,7 +170,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     appOrWeb: {
       q: '모바일 앱이 필요한가요, 아니면 웹에서 모두 가능한가요?',
-      a: '둘러보기, 검사 정보, 저장한 차량, 판매자 직접 연락, 계정 이용은 웹에서 가능합니다. 앱은 카메라 촬영, 푸시 알림, 더 편리한 메시지 경험을 더해 줍니다.',
+      a: '모든 기능을 웹에서 이용할 수 있습니다: 둘러보기, 검사 보고서, 저장한 차량, 메시지, 신원 확인, 차량 접수, 계정. 앱은 푸시 알림과 더 빠른 카메라를 더해 줍니다.',
     },
     areas: {
       q: '어느 지역을 다루나요?',
@@ -204,7 +204,7 @@ export const faq: Record<Locale, Record<string, unknown>> = {
     },
     appOrWeb: {
       q: '我需要使用手机应用吗，还是可以在网页上完成所有操作？',
-      a: '浏览车辆、检测信息、收藏车辆、直接联系卖家以及您的账户功能均可在网页上使用。应用额外提供拍照、推送通知以及更便捷的消息体验。',
+      a: '所有功能均可在网页上使用：浏览车辆、检测报告、收藏车辆、消息、身份验证、提交车辆以及您的账户。应用额外提供推送通知和更快捷的拍照。',
     },
     areas: {
       q: '你们的服务覆盖哪些区域？',

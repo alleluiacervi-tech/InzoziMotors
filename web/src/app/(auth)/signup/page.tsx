@@ -19,6 +19,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SignUpPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
   const next = safePath(first(params.next))
+  // Someone who came here to sell (the valuation's "Submit this car", the
+  // sell page, /sell/submit's sign-in bounce) starts with "I want to sell"
+  // chosen, so they do not create a buyer account they then cannot use.
+  const defaultRole =
+    first(params.role) === 'seller' || next.startsWith('/sell') || next.startsWith('/dashboard/verify')
+      ? 'seller'
+      : 'buyer'
   const t = await getServerT()
 
   const user = await getCurrentUser()
@@ -30,7 +37,7 @@ export default async function SignUpPage({ searchParams }: { searchParams: Searc
         {t('auth.signup.subtitle')}
       </AuthHeading>
 
-      <SignUpForm next={next} />
+      <SignUpForm next={next} defaultRole={defaultRole} />
 
       {/* Carry `next` across the switch.
           The contact panel sends people here with ?next=/cars/<id>, and the form

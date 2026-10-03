@@ -83,7 +83,7 @@ const en = {
     sellerTitle: 'I want to sell',
     sellerDesc: 'Submit your car for inspection and let our team list it.',
     sellerNote:
-      'Selling needs a one-time ID check, and that step happens in the Sawa Cars app — a browser cannot capture your ID and selfie. Everything after it, from submitting the car to booking the inspection, works here. You can switch to selling at any time.',
+      'Selling needs a one-time ID check: a photo of your ID and a selfie, taken with your phone or laptop camera right here on the website. After that you submit the car and book the inspection here too. You can switch to selling at any time.',
     submit: 'Create account',
     submitting: 'Creating your account…',
     termsPrefix: 'By creating an account you agree to our',
@@ -204,9 +204,9 @@ const en = {
     onlyTitle: 'What the app adds',
     onlyDescription:
       'Three things the browser cannot do well. Everything else on this page works either way.',
-    appOnly1Title: 'ID verification in one sitting',
+    appOnly1Title: 'A quicker ID check',
     appOnly1Body:
-      'Photograph your national ID and take the verification selfie without leaving the screen. That check is what keeps every listing on Sawa Cars real, and a phone camera is the only sensible way to do it.',
+      'Photograph your national ID and take the verification selfie with the phone’s own camera in one sitting. The website runs the same check; the app is just quicker on a phone.',
     appOnly2Title: 'Photos with your submission',
     appOnly2Body:
       'Capture clear reference photos while submitting. The admin gallery supports a flexible set of truthful vehicle images rather than a fixed angle checklist.',
@@ -329,7 +329,7 @@ const rw = {
     sellerTitle: 'Ndashaka kugurisha',
     sellerDesc: 'Tanga imodoka yawe kugira ngo isuzumwe hanyuma itsinda ryacu riyitangaze.',
     sellerNote:
-      'Kugurisha bisaba kugenzura indangamuntu inshuro imwe, kandi icyo gikorwa kiba muri porogaramu ya Sawa Cars — mushakisha ntashobora gufata indangamuntu yawe n’ifoto yawe. Ibindi byose bikurikira, kuva ku gutanga imodoka kugeza ku gutumiza isuzuma, bikorwa hano. Ushobora guhindukira ukagurisha igihe cyose.',
+      'Kugurisha bisaba igenzura ry’indangamuntu rimwe gusa: ifoto y’indangamuntu yawe na selfie, bifatwa na kamera ya telefoni cyangwa mudasobwa yawe hano ku rubuga. Nyuma yaho utanga imodoka kandi ugafata umwanya w’isuzuma hano nanone. Ushobora guhindukira ukagurisha igihe icyo ari cyo cyose.',
     submit: 'Fungura konti',
     submitting: 'Kurema konti yawe…',
     termsPrefix: 'Mu gufungura konti wemera',
@@ -450,9 +450,9 @@ const rw = {
     onlyTitle: 'Ibyo porogaramu yongeraho',
     onlyDescription:
       'Ibintu bitatu mushakisha atabasha gukora neza. Ibindi byose kuri iyi paji bikorera uko byaba biri kose.',
-    appOnly1Title: 'Kwemeza indangamuntu mu kanya kamwe',
+    appOnly1Title: 'Igenzura ry’indangamuntu ryihuse',
     appOnly1Body:
-      'Fata ifoto y’indangamuntu yawe ufate n’ifoto yo kwemeza utava ku kabari. Iryo genzura ni ryo rituma buri tangazo kuri Sawa Cars riba nyaryo, kandi kamera ya telefone ni yo nzira yonyine ifite ishingiro yo kubikora.',
+      'Fata ifoto y’indangamuntu yawe na selfie yo kwemeza ukoresheje kamera ya telefoni mu kanya kamwe. Urubuga rukora igenzura rimwe; porogaramu irihuta gusa kuri telefoni.',
     appOnly2Title: 'Amafoto hamwe n’icyo utanze',
     appOnly2Body:
       'Fata amafoto y’ingenzi asobanutse mu gihe utanga. Igitabo cy’amafoto cy’ubuyobozi kwemera amafoto y’imodoka y’ukuri ahinduka aho gukurikiza urutonde rw’impande zihamye.',
@@ -576,7 +576,7 @@ const fr = {
     sellerTitle: 'Je veux vendre',
     sellerDesc: 'Soumettez votre voiture pour inspection et laissez notre équipe la publier.',
     sellerNote:
-      'La vente nécessite une vérification d’identité unique, et cette étape se fait dans l’application Sawa Cars — un navigateur ne peut pas capturer votre pièce d’identité et votre selfie. Tout le reste, de la soumission de la voiture à la réservation de l’inspection, se fait ici. Vous pouvez passer à la vente à tout moment.',
+      'La vente nécessite une vérification d’identité unique : une photo de votre pièce d’identité et un selfie, pris avec la caméra de votre téléphone ou de votre ordinateur, directement sur le site. Ensuite, vous soumettez la voiture et réservez l’inspection ici aussi. Vous pouvez passer à la vente à tout moment.',
     submit: 'Créer un compte',
     submitting: 'Création de votre compte…',
     termsPrefix: 'En créant un compte, vous acceptez nos',
@@ -699,9 +699,9 @@ const fr = {
     onlyTitle: 'Ce que l’application ajoute',
     onlyDescription:
       'Trois choses que le navigateur ne fait pas bien. Tout le reste de cette page fonctionne des deux façons.',
-    appOnly1Title: 'Vérification d’identité en une seule fois',
+    appOnly1Title: 'Une vérification d’identité plus rapide',
     appOnly1Body:
-      'Photographiez votre pièce d’identité nationale et prenez le selfie de vérification sans quitter l’écran. Ce contrôle est ce qui garde chaque annonce sur Sawa Cars réelle, et l’appareil photo d’un téléphone est le seul moyen sensé de le faire.',
+      'Photographiez votre carte nationale d’identité et prenez le selfie de vérification avec l’appareil photo du téléphone, en une seule fois. Le site fait la même vérification ; l’application est simplement plus rapide sur un téléphone.',
     appOnly2Title: 'Des photos avec votre soumission',
     appOnly2Body:
       'Capturez des photos de référence claires pendant la soumission. La galerie d’administration prend en charge un ensemble flexible d’images fidèles du véhicule plutôt qu’une liste d’angles fixes.',
@@ -824,7 +824,7 @@ const sw = {
     sellerTitle: 'Nataka kuuza',
     sellerDesc: 'Wasilisha gari lako kwa ukaguzi na uache timu yetu ilitangaze.',
     sellerNote:
-      'Kuuza kunahitaji uthibitisho wa kitambulisho mara moja, na hatua hiyo hufanyika katika programu ya Sawa Cars — kivinjari hakiwezi kunasa kitambulisho chako na picha yako ya selfie. Kila kitu kingine baada yake, kuanzia kuwasilisha gari hadi kuweka miadi ya ukaguzi, hufanyika hapa. Unaweza kubadilika kuuza wakati wowote.',
+      'Kuuza kunahitaji ukaguzi wa utambulisho wa mara moja: picha ya kitambulisho chako na selfie, zinazopigwa kwa kamera ya simu au kompyuta yako hapa hapa kwenye wavuti. Baada ya hapo unawasilisha gari na kuweka nafasi ya ukaguzi hapa pia. Unaweza kubadili kuwa muuzaji wakati wowote.',
     submit: 'Fungua akaunti',
     submitting: 'Inafungua akaunti yako…',
     termsPrefix: 'Kwa kufungua akaunti unakubali',
@@ -945,9 +945,9 @@ const sw = {
     onlyTitle: 'Kile programu inachoongeza',
     onlyDescription:
       'Mambo matatu ambayo kivinjari hakiwezi kufanya vizuri. Kila kitu kingine kwenye ukurasa huu hufanya kazi kwa njia yoyote.',
-    appOnly1Title: 'Uthibitisho wa kitambulisho kwa mara moja',
+    appOnly1Title: 'Ukaguzi wa kitambulisho wa haraka zaidi',
     appOnly1Body:
-      'Piga picha ya kitambulisho chako cha taifa na upige selfie ya uthibitisho bila kuondoka kwenye skrini. Ukaguzi huo ndio unaofanya kila tangazo kwenye Sawa Cars kuwa halisi, na kamera ya simu ndiyo njia pekee yenye maana ya kufanya hivyo.',
+      'Piga picha ya kitambulisho chako cha taifa na selfie ya uthibitisho kwa kamera ya simu kwa mara moja. Wavuti hufanya ukaguzi uleule; programu ni ya haraka zaidi tu kwenye simu.',
     appOnly2Title: 'Picha pamoja na uwasilishaji wako',
     appOnly2Body:
       'Nasa picha za marejeleo zilizo wazi wakati wa kuwasilisha. Nyumba ya sanaa ya msimamizi inaruhusu seti rahisi ya picha za kweli za gari badala ya orodha ngumu ya pembe.',
@@ -1070,7 +1070,7 @@ const ko = {
     sellerTitle: '판매하려 합니다',
     sellerDesc: '차량을 검사에 제출하면 저희 팀이 매물로 등록해 드립니다.',
     sellerNote:
-      '판매에는 일회성 신분 확인이 필요하며, 이 단계는 Sawa Cars 앱에서 이루어집니다 — 브라우저로는 신분증과 셀피를 촬영할 수 없습니다. 차량 제출부터 검사 예약까지 그 이후의 모든 것은 여기에서 가능합니다. 언제든지 판매로 전환할 수 있습니다.',
+      '판매하려면 일회성 신원 확인이 필요합니다: 이 웹사이트에서 휴대폰이나 노트북 카메라로 신분증 사진과 셀피를 촬영합니다. 그 후 차량 접수와 검사 예약도 여기에서 할 수 있습니다. 언제든지 판매로 전환할 수 있습니다.',
     submit: '계정 만들기',
     submitting: '계정 생성 중…',
     termsPrefix: '계정을 만들면 다음에 동의하게 됩니다:',
@@ -1191,9 +1191,9 @@ const ko = {
     onlyTitle: '앱이 더해주는 것',
     onlyDescription:
       '브라우저가 잘 하지 못하는 세 가지. 이 페이지의 나머지 모든 것은 어느 쪽으로든 동작합니다.',
-    appOnly1Title: '한 번에 끝내는 신분 인증',
+    appOnly1Title: '더 빠른 신원 확인',
     appOnly1Body:
-      '화면을 벗어나지 않고 주민등록증을 촬영하고 인증 셀피를 찍으세요. 이 확인이 Sawa Cars의 모든 매물을 진짜로 유지하며, 휴대폰 카메라가 이를 수행하는 유일하게 합리적인 방법입니다.',
+      '휴대폰 카메라로 국가 신분증과 인증 셀피를 한 번에 촬영하세요. 웹사이트에서도 같은 확인을 할 수 있으며, 앱은 휴대폰에서 조금 더 빠를 뿐입니다.',
     appOnly2Title: '제출과 함께 사진 촬영',
     appOnly2Body:
       '제출하는 동안 선명한 참고 사진을 촬영하세요. 관리자 갤러리는 고정된 각도 체크리스트 대신 진실한 차량 이미지의 유연한 구성을 지원합니다.',
@@ -1316,7 +1316,7 @@ const zh = {
     sellerTitle: '我要卖车',
     sellerDesc: '提交车辆进行检测，交由我们的团队发布。',
     sellerNote:
-      '卖车需要一次性身份核验，该步骤在 Sawa Cars 应用中完成——浏览器无法拍摄您的证件和自拍照。此后从提交车辆到预约检测的所有步骤都可以在这里完成。您可以随时切换为卖家身份。',
+      '出售车辆需要完成一次性身份核验：直接在本网站用手机或电脑摄像头拍摄身份证照片和一张自拍照。之后同样可在此提交车辆并预约检测。您可以随时切换为卖家。',
     submit: '创建账户',
     submitting: '正在创建您的账户…',
     termsPrefix: '创建账户即表示您同意我们的',
@@ -1437,9 +1437,9 @@ const zh = {
     onlyTitle: '应用带来的额外功能',
     onlyDescription:
       '浏览器难以妥善实现的三件事。本页面其他内容在两者上都同样可用。',
-    appOnly1Title: '一次性完成身份核验',
+    appOnly1Title: '更快捷的身份核验',
     appOnly1Body:
-      '无需离开屏幕，即可拍摄您的身份证并完成核验自拍。这项检查正是保证 Sawa Cars 每条信息真实性的关键，而手机摄像头是完成这一操作的唯一合理方式。',
+      '用手机自带的摄像头一次性拍摄身份证和核验自拍。网站可完成同样的核验，应用只是在手机上更快捷。',
     appOnly2Title: '提交时同步拍照',
     appOnly2Body:
       '提交车辆时拍摄清晰的参考照片。管理端相册支持灵活的真实车辆图片组合，而非固定角度的清单要求。',
