@@ -101,7 +101,7 @@ export async function Hero({
 
         </div>
 
-        <div className="min-w-0 animate-rise lg:col-span-5">
+        <div className="min-w-0 lg:col-span-5">
           <Specimen car={inventory.best} report={report} />
         </div>
       </div>
