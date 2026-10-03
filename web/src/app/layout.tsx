@@ -141,15 +141,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script
           dangerouslySetInnerHTML={{
             __html:
-              // Theme, resolved before the first pixel is painted, from the
-              // device setting alone: there is no toggle on the site any more
-              // (docs/WEBSITE-REDESIGN-TODO.md, D2). A choice stored by the old
-              // toggle is cleared so nobody is stuck in a theme they cannot
-              // change. Running in <body> rather than a component is the only
-              // way to avoid a white flash for a dark-mode visitor.
-              "try{localStorage.removeItem('sawa-theme');}catch(e){}" +
-              "try{var d=matchMedia('(prefers-color-scheme: dark)').matches;" +
-              "document.documentElement.classList.toggle('dark',d);}catch(e){}",
+              // The site is light for everyone, whatever the device's setting
+              // (owner's decision on D2, docs/WEBSITE-REDESIGN-TODO.md). The
+              // dark tokens in globals.css stay, unused, so this is reversible
+              // in one line. All that is left to do here is clear the choice
+              // the old theme toggle stored.
+              "try{localStorage.removeItem('sawa-theme');}catch(e){}",
           }}
         />
         <a href="#main" className="skip-link">
