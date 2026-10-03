@@ -229,13 +229,19 @@ export default function SubmissionsPage() {
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="Submissions" description="Review the oldest seller requests first and keep the 24-hour response promise visible." action={<ExportLink dataset="submissions" />} />
-        <button type="button" onClick={() => { setIntake(intake ? null : { ...EMPTY_INTAKE }); setSellerQuery(''); setSellerHits([]) }}
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on hover:bg-brand-light">
-          {intake ? 'Cancel intake' : 'Take in a vehicle'}
-        </button>
-      </div>
+      <PageHeader
+        title="Submissions"
+        description="Oldest seller requests first. Every one gets an answer within 24 hours."
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportLink dataset="submissions" />
+            <button type="button" onClick={() => { setIntake(intake ? null : { ...EMPTY_INTAKE }); setSellerQuery(''); setSellerHits([]) }}
+              className="inline-flex h-11 items-center rounded-xl bg-brand px-4 text-label font-bold text-brand-on hover:bg-brand-bright">
+              {intake ? 'Cancel intake' : 'Take in a vehicle'}
+            </button>
+          </div>
+        }
+      />
 
       {intake ? (
         <Card className="mb-5 p-5">

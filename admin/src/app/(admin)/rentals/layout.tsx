@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { PageHeader } from '@/components/ui'
 
 const SUB_NAV = [
   { href: '/rentals/inquiries', label: 'Inquiries' },
-  { href: '/rentals/fleet',     label: 'Provider inventory' },
+  { href: '/rentals/fleet',     label: 'Inventory' },
 ]
 
 export default function RentalsLayout({ children }: { children: React.ReactNode }) {
@@ -13,17 +14,17 @@ export default function RentalsLayout({ children }: { children: React.ReactNode 
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Rental marketplace</h1>
-          <p className="mt-1 text-xs text-gray-500">Providers confirm availability, terms and payment directly with renters.</p>
-        </div>
-        <div className="flex gap-1">
+      <PageHeader
+        title="Rentals"
+        description="Inquiries only: providers confirm availability, terms and payment directly with renters."
+        action={
+        <nav aria-label="Rentals" className="flex gap-1">
           {SUB_NAV.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              aria-current={pathname === href ? 'page' : undefined}
+              className={`inline-flex h-10 items-center rounded-lg px-4 text-label font-semibold transition-colors ${
                 pathname === href
                   ? 'bg-ink-900 text-white'
                   : 'bg-surface text-gray-600 border border-gray-200 hover:border-content-muted'
@@ -32,8 +33,9 @@ export default function RentalsLayout({ children }: { children: React.ReactNode 
               {label}
             </Link>
           ))}
-        </div>
-      </div>
+        </nav>
+        }
+      />
       {children}
     </div>
   )

@@ -37,14 +37,15 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/inspections', icon: 'clipboard-check', label: 'Inspections' },
       { href: '/listings', icon: 'car', label: 'Listings' },
       { href: '/imports', icon: 'ship', label: 'Vehicle imports' },
-      { href: '/rentals/inquiries', icon: 'calendar-clock', label: 'Rental inquiries' },
-      { href: '/rentals/fleet', icon: 'key', label: 'Rental inventory' },
+      // One item while renting is inquiry-only and the fleet is small
+      // (decision A5); inquiries and inventory are tabs on the page.
+      { href: '/rentals', icon: 'calendar-clock', label: 'Rentals' },
     ],
   },
   {
     title: 'Insights',
     items: [
-      { href: '/insights', icon: 'layout-dashboard', label: 'Overview' },
+      { href: '/insights', icon: 'layout-dashboard', label: 'Business overview' },
       { href: '/insights/funnels', icon: 'funnel', label: 'Funnels' },
       { href: '/insights/inventory', icon: 'warehouse', label: 'Inventory' },
       { href: '/insights/quality', icon: 'badge-check', label: 'Inspection quality' },
@@ -58,7 +59,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
     items: [
       { href: '/users', icon: 'id-card', label: 'Users & ID checks' },
       { href: '/reports', icon: 'flag', label: 'Reported chats' },
-      { href: '/account-closures', icon: 'user-x', label: 'Closures' },
+      { href: '/account-closures', icon: 'user-x', label: 'Account closures' },
       { href: '/vehicles', icon: 'file-search', label: 'Vehicle history' },
     ],
   },
@@ -70,7 +71,7 @@ const NAV_GROUPS: { title: string; items: { href: string; icon: IconName; label:
       { href: '/banner', icon: 'megaphone', label: 'Home banner' },
       { href: '/imports/korea', icon: 'ship', label: 'Korean catalogue' },
       { href: '/imports/photos', icon: 'images', label: 'Catalogue images' },
-      { href: '/centers', icon: 'location', label: 'Center setup' },
+      { href: '/centers', icon: 'location', label: 'Inspection centers' },
     ],
   },
 ]
@@ -391,16 +392,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Icon name="menu" size={20} />
           </button>
-          <div className="min-w-0">
-            {currentGroup ? (
-              <p className="truncate text-micro font-bold uppercase tracking-[0.14em] text-content-muted">
-                {currentGroup}
-              </p>
-            ) : null}
-            <p className="truncate text-section font-bold leading-tight text-content">
-              {current?.label ?? ''}
+          {/* Where you are, as a breadcrumb. The page's own heading is the
+              title; this bar used to print it a second time, larger. */}
+          <nav aria-label="Breadcrumb" className="min-w-0">
+            <p className="truncate text-label text-content-muted">
+              {currentGroup ? <>{currentGroup}<span aria-hidden className="mx-1.5 text-line">/</span></> : null}
+              <span className="font-semibold text-content">{current?.label ?? ''}</span>
             </p>
-          </div>
+          </nav>
           <div className="relative ml-auto hidden w-full max-w-md md:block">
             <label className="relative block">
               <span className="sr-only">Search users, listings, submissions and rentals</span>

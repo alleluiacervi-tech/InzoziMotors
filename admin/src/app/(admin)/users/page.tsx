@@ -372,17 +372,18 @@ export default function UsersPage() {
   return (
     <div>
       <PageHeader
-        title="Users & identity"
+        title="Users & ID checks"
         description="Find accounts, understand trust at a glance, and review seller identity documents."
-        action={<ExportLink dataset="users" />}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportLink dataset="users" />
+            <button type="button" onClick={() => setShowroomOpen((v) => !v)}
+              className="inline-flex h-11 items-center rounded-xl bg-brand px-4 text-label font-bold text-brand-on hover:bg-brand-bright">
+              {showroomOpen ? 'Close form' : 'Create an account'}
+            </button>
+          </div>
+        }
       />
-
-      <div className="mb-5 flex justify-end">
-        <button type="button" onClick={() => setShowroomOpen((v) => !v)}
-          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on hover:bg-brand-bright">
-          {showroomOpen ? 'Close form' : 'Create an account'}
-        </button>
-      </div>
 
       {/* Only appears when the invite email failed. The link is a one-use
           credential, so the API returns it in that case alone. */}

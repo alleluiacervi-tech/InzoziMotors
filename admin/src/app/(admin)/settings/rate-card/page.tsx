@@ -76,7 +76,7 @@ export default function ServiceRatesPage() {
   return (
     <div className="max-w-2xl">
       <PageHeader
-        title="Rate card"
+        title="Service prices"
         description="Prices for the lines Sawa already charges for. Editable here; the public pricing page and the inspection/subscription forms read the same numbers."
       />
 

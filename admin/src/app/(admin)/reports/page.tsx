@@ -143,7 +143,7 @@ export default function ReportsPage() {
   return (
     <>
       <PageHeader
-        title="Reported content"
+        title="Reported chats"
         description="Reports from buyers and sellers, across chats and reviews. Resolved means you acted; dismissed means it was not abuse — both are kept, so a repeat offender is visible."
       />
 

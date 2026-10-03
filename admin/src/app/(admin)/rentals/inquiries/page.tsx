@@ -126,7 +126,7 @@ export default function RentalInquiriesPage() {
         <span className="order-last ml-auto"><ExportLink dataset="rental_inquiries" /></span>
         {TABS.map((status) => (
           <button key={status} onClick={() => setTab(status)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${tab === status ? 'bg-brand text-brand-on' : 'border border-gray-200 bg-surface text-gray-600'}`}>
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${tab === status ? 'bg-ink-900 text-white' : 'border border-gray-200 bg-surface text-gray-600'}`}>
             {status}
           </button>
         ))}

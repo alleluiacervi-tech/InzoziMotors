@@ -192,8 +192,8 @@ export default function VehicleIntelligenceCommandCenter() {
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
       {/* ── Top Header ──────────────────────────────────────────────────────── */}
       <PageHeader
-        title="Vehicle Intelligence & Registry"
-        description="Canonical ground truth, multi-provider decoders, listing discrepancy diffing, and anomaly signal streams."
+        title="Vehicle history"
+        description="Look a vehicle up by VIN or chassis number, compare a listing with its inspection, and see warning signs across listings."
       />
 
       {/* ── MAANG Segmented Tab Control ──────────────────────────────────────── */}
@@ -207,7 +207,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="search" className="h-4 w-4" />
-          VIN Decoder & Specs
+          Look up a VIN
         </button>
 
         <button
@@ -219,7 +219,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="filter" className="h-4 w-4" />
-          Discrepancy Diffing
+          Listing vs record
         </button>
 
         <button
@@ -231,7 +231,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="alert" className="h-4 w-4" />
-          Anomaly Signals
+          Warning signs
           {signals.length > 0 && (
             <span className="ml-1 rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-extrabold text-white">
               {signals.length}
@@ -248,7 +248,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="document" className="h-4 w-4" />
-          Provenance Ingestion
+          Add history
         </button>
 
         <button
@@ -260,7 +260,7 @@ export default function VehicleIntelligenceCommandCenter() {
           }`}
         >
           <Icon name="calendar" className="h-4 w-4" />
-          Inspection Archive
+          Past inspections
         </button>
       </div>
 
@@ -269,11 +269,12 @@ export default function VehicleIntelligenceCommandCenter() {
         <div className="space-y-6">
           <Card className="p-6">
             <div className="flex flex-col gap-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-content-secondary">
-                Enter ISO 3779 VIN or Japanese Domestic Chassis Number
+              <label htmlFor="vin-lookup" className="text-label font-semibold text-content">
+                VIN or chassis number
               </label>
               <div className="flex flex-wrap gap-3">
                 <input
+                  id="vin-lookup"
                   value={vinInput}
                   onChange={(e) => setVinInput(e.target.value.toUpperCase())}
                   placeholder="e.g. 4T1BF1FK5CU123456 or NZE121-1234567"
@@ -287,12 +288,12 @@ export default function VehicleIntelligenceCommandCenter() {
                   {decoding ? (
                     <>
                       <Icon name="refresh" className="h-4 w-4 animate-spin" />
-                      Ingesting...
+                      Looking up…
                     </>
                   ) : (
                     <>
                       <Icon name="sparkles" className="h-4 w-4" />
-                      Decode & Ingest
+                      Look up
                     </>
                   )}
                 </button>
@@ -300,7 +301,7 @@ export default function VehicleIntelligenceCommandCenter() {
 
               {/* Sample Chips for Fast Testing */}
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-content-muted">
-                <span className="font-semibold">Quick Samples:</span>
+                <span className="font-semibold">Try an example:</span>
                 <button
                   type="button"
                   onClick={() => { setVinInput('NZE121-1234567'); handleDecode('NZE121-1234567') }}
@@ -454,7 +455,7 @@ export default function VehicleIntelligenceCommandCenter() {
       {activeTab === 'discrepancies' && (
         <div className="space-y-6">
           <Card className="p-6">
-            <h2 className="text-base font-extrabold text-content">Listing vs Verified Registry Discrepancy Diffing</h2>
+            <h2 className="text-base font-extrabold text-content">Compare a listing with its vehicle record</h2>
             <p className="mt-1 text-xs text-content-muted">
               Compare administrator-entered or seller-claimed listing values side-by-side against verified VIN factory ground truth.
             </p>

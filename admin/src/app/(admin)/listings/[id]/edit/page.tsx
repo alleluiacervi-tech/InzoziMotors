@@ -162,7 +162,7 @@ export default function EditListingPage() {
       <div className="bg-surface rounded-2xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-start justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
           <div>
-            <h1 className="text-xl font-extrabold text-gray-900">Edit Listing</h1>
+            <h1 className="text-xl font-extrabold text-gray-900">Edit listing</h1>
             <p className="text-xs text-gray-500 mt-0.5">
               {car.year} {car.make} {car.model} · <span className="capitalize font-semibold">{car.status}</span> · {car.views || 0} views
             </p>
@@ -180,10 +180,10 @@ export default function EditListingPage() {
         <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50/80 px-4 py-3.5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-bold text-gray-900 uppercase tracking-wide">Inspected Vehicle Ground Truth</p>
+              <p className="text-xs font-bold text-gray-900">Vehicle as inspected</p>
               <p className="mt-0.5 text-sm font-semibold text-gray-900">{[year, make, model].filter(Boolean).join(' ')}</p>
               <p className="mt-1 text-[11px] text-gray-500 leading-relaxed">
-                Bound to the certified inspection. Correcting it updates the listing and inspected submission in one transaction.
+                Taken from the inspection. Correcting it updates the listing and the submission together.
               </p>
             </div>
             <button
@@ -301,7 +301,7 @@ export default function EditListingPage() {
             <p className="font-bold mb-0.5">
               {priceChanged
                 ? `Price adjustment: ${car.currency || 'RWF'} ${Number(car.price).toLocaleString('en-GB')} → ${currency} ${Number(price || 0).toLocaleString('en-GB')}`
-                : 'Permanent Public Price History'}
+                : 'Price history is public'}
             </p>
             <p className="text-[11px] leading-relaxed">
               Price adjustments are permanently recorded to historical market intelligence charts and alert interested buyers.
@@ -339,30 +339,36 @@ export default function EditListingPage() {
             <div>
               <label className={labelCls}>VIN / Chassis Number</label>
               <input value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} className={inputCls} />
-              <p className="mt-1 text-[11px] text-gray-400">Normalizes automatically. Displayed publicly with zero-leak masking.</p>
+              <p className="mt-1 text-[11px] text-gray-400">Shown to buyers with most characters hidden.</p>
             </div>
 
-            <div>
+            {/* Rarely needed, and a raw ID: behind a disclosure so it does not
+                sit in the main form as if every listing needed one. */}
+            <details className="group" open={Boolean(vehicleId)}>
+              <summary className="mb-1 cursor-pointer list-none text-xs font-semibold text-gray-700 [&::-webkit-details-marker]:hidden">
+                Advanced: link to a vehicle record <span className="text-content-muted group-open:hidden">▸</span>
+              </summary>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-700">Canonical Vehicle Binding (UUID)</label>
+                <label htmlFor="listing-vehicle-id" className="text-xs font-semibold text-gray-700">Vehicle record ID</label>
                 {vehicleId ? (
                   <span className="text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
-                    Linked to Registry
+                    Linked
                   </span>
                 ) : (
                   <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                    Unlinked
+                    Not linked
                   </span>
                 )}
               </div>
               <input
+                id="listing-vehicle-id"
                 value={vehicleId}
                 onChange={(e) => setVehicleId(e.target.value)}
                 placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
                 className={`${inputCls} font-mono text-xs`}
               />
-              <p className="mt-1 text-[11px] text-gray-400">Binds this marketplace listing to canonical vehicle specs & history.</p>
-            </div>
+              <p className="mt-1 text-[11px] text-gray-400">Connects the listing to the vehicle&apos;s history record.</p>
+            </details>
           </div>
 
           {/* Seller Assignment */}

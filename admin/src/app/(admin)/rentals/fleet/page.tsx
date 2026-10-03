@@ -24,7 +24,7 @@ const number = (value: string) => value === '' ? undefined : Number.parseInt(val
 // attention, so it gets its own label and its own colour rather than sharing
 // the neutral grey the admin-created statuses use.
 const STATUS_LABEL: Record<string, string> = {
-  all: 'all', active: 'Active', maintenance: 'Maintenance', retired: 'Retired',
+  all: 'All', active: 'Active', maintenance: 'Maintenance', retired: 'Retired',
   pending_review: 'Pending review',
 }
 
@@ -302,7 +302,7 @@ export default function RentalFleetPage() {
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1">{['all', 'pending_review', 'active', 'maintenance', 'retired'].map((status) => (
-          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-brand text-brand-on' : 'border border-gray-200 bg-surface text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
+          <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-ink-900 text-white' : 'border border-gray-200 bg-surface text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
         ))}</div>
         <button onClick={() => begin()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on">Add provider vehicle</button>
       </div>

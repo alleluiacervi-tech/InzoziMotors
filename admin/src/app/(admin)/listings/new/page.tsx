@@ -238,7 +238,7 @@ function ListingCreatorForm() {
 
   return (
     <div className="max-w-2xl bg-surface rounded-xl border border-gray-100 shadow-sm p-6">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Create Car Listing</h1>
+      <h1 className="text-xl font-bold text-gray-900 mb-6">Create a listing</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Core details */}

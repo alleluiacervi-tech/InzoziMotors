@@ -247,7 +247,7 @@ export default function CatalogImagesPage() {
   return (
     <div>
       <PageHeader
-        title="Import catalogue images"
+        title="Catalogue images"
         description="Official photos and checked studio images of every brand-new model buyers can import. Anything without one shows the brand's logo."
       />
 
@@ -289,7 +289,7 @@ export default function CatalogImagesPage() {
         <div className="flex flex-wrap gap-1" role="tablist">
           {TABS.map((t) => (
             <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)}
-              className={`rounded-lg px-3 py-1.5 text-caption font-bold transition-colors ${tab === t.key ? 'bg-brand text-brand-on' : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'}`}>
+              className={`rounded-lg px-3 py-1.5 text-caption font-bold transition-colors ${tab === t.key ? 'bg-ink-900 text-white' : 'border border-line bg-surface text-content-secondary hover:bg-surface-alt'}`}>
               {t.label} <span className="tabular-nums opacity-80">{counts[t.key]}</span>
             </button>
           ))}

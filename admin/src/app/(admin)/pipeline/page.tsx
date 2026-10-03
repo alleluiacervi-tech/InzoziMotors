@@ -105,7 +105,7 @@ export default function PipelinePage() {
   return (
     <div>
       <PageHeader
-        title="Pipeline"
+        title="Pipeline board"
         description="Every vehicle between a seller and a public listing, in the column of the step it is waiting for. Ours and oldest first. Open a car to see what is holding it, move it on, or take it off the board."
       />
 

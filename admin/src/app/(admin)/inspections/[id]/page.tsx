@@ -309,7 +309,7 @@ export default function InspectionDetailPage() {
       <div className="mb-6 rounded-xl border border-gray-100 bg-surface p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-bold text-gray-900">150-Point Inspection</h1>
+            <h1 className="text-lg font-bold text-gray-900">150-point inspection</h1>
             <p className="text-sm text-gray-500">
               {[insp.display_year ?? insp.year ?? insp.sub_year,
                 insp.display_make ?? insp.make ?? insp.sub_make,
