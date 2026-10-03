@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
     // remotePatterns rather than unoptimized: this is a photo-led marketplace,
     // so resizing and AVIF/WebP negotiation are worth real money in LCP.
     formats: ['image/avif', 'image/webp'],
+    // Widths a car photo is actually drawn at. The defaults run to 3840 px,
+    // which no upload reaches, and add ~200 bytes per width to every card's
+    // srcset (WEBSITE-REDESIGN-TODO 3.14).
+    deviceSizes: [640, 828, 1080, 1280, 1920],
+    imageSizes: [64, 128, 256, 384],
     remotePatterns: [
       { protocol: 'https', hostname: '**.sawacars.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },

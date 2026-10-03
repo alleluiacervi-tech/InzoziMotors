@@ -66,7 +66,6 @@ export async function Standard({ id, showLink = true }: { id?: string; showLink?
             tone="ink"
             height={96}
             labels
-            animate={false}
             label={t('home.land.rulerStandard', { critical: CRITICAL_ITEMS })}
           />
           {/* The category names do not fit under a 15-tick group on a phone,

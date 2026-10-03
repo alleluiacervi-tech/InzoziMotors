@@ -175,18 +175,10 @@ const config: Config = {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
-        // One tick of the 150-point ruler standing up. The ruler's ticks
-        // run this in sequence on first paint — the page's single
-        // orchestrated motion — and never again.
-        tick: {
-          from: { transform: 'scaleY(0)', opacity: '0' },
-          to: { transform: 'scaleY(1)', opacity: '1' },
-        },
       },
       animation: {
         'fade-up': 'fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
         'fade-in': 'fade-in 0.5s ease both',
-        tick: 'tick 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
         shimmer: 'shimmer 1.6s infinite',
       },
     },

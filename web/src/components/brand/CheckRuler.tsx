@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react'
-
 // ─────────────────────────────────────────────────────────────────────────────
 // The 150-point ruler — the site's signature.
 //
@@ -14,9 +12,10 @@ import type { CSSProperties } from 'react'
 //             A category's critical items are spread evenly across it, because
 //             the count is exact and the order is not something a buyer reads.
 //
-// Pure markup, no client JS, so it is in the HTML a crawler receives. On first
-// paint the ticks stand up left to right in one 1.1s pass — the page's single
-// orchestrated motion — and `prefers-reduced-motion` skips it (globals.css).
+// Pure markup, no client JS, so it is in the HTML a crawler receives. It does
+// not move: the stand-up animation went with the rest of the decorative motion.
+// Each tick is one short class (`.ruler-tick`, globals.css) because there are
+// 150 of them and every byte is paid for twice, in the HTML and the RSC payload.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface RulerGroup {
@@ -64,7 +63,6 @@ export function CheckRuler({
   tone = 'paper',
   height = 44,
   labels = false,
-  animate = true,
   label,
   className = '',
 }: {
@@ -76,13 +74,11 @@ export function CheckRuler({
   /** Category names under each group, from md up (too narrow on a phone —
    *  callers that need them there render their own legend). */
   labels?: boolean
-  animate?: boolean
   /** Accessible summary; the ticks themselves are hidden from assistive tech. */
   label: string
   className?: string
 }) {
   const c = TONES[tone]
-  let index = 0
 
   return (
     <div role="img" aria-label={label} className={`flex items-start gap-[clamp(5px,0.9vw,12px)] ${className}`}>
@@ -92,7 +88,6 @@ export function CheckRuler({
           <div key={g.key} className="min-w-0" style={{ flex: `${g.max} 1 0%` }}>
             <div className="relative flex items-end justify-between" style={{ height }} aria-hidden="true">
               {Array.from({ length: g.max }, (_, i) => {
-                const n = index++
                 let cls: string
                 let h: number
                 if (mode === 'result') {
@@ -104,15 +99,14 @@ export function CheckRuler({
                   cls = crit ? c.full : c.quiet
                   h = crit ? 1 : 0.5
                 }
-                const style: CSSProperties = { height: `${h * 100}%` }
-                if (animate) style.animationDelay = `${120 + n * 4}ms`
+                // The standard's two heights are classes; only a result's
+                // in-between heights need an inline style.
+                const heightClass = h === 1 ? 'h-full' : h === 0.5 ? 'h-1/2' : ''
                 return (
                   <span
                     key={i}
-                    className={`block w-px origin-bottom rounded-full sm:w-[2px] ${cls} ${
-                      animate ? 'animate-tick motion-reduce:animate-none' : ''
-                    }`}
-                    style={style}
+                    className={`ruler-tick ${heightClass} ${cls}`}
+                    style={heightClass ? undefined : { height: `${h * 100}%` }}
                   />
                 )
               })}

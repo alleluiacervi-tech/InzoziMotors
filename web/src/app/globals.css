@@ -181,6 +181,13 @@
 }
 
 @layer components {
+  /* One tick of the 150-point ruler (components/brand/CheckRuler.tsx). A class
+     rather than utilities because the ruler draws 150 of them: the long
+     utility string, repeated, was ~15 KB of the homepage. */
+  .ruler-tick {
+    @apply block w-px rounded-full sm:w-[2px];
+  }
+
   /* Skip link — first tab stop on every page */
   .skip-link {
     @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]

@@ -71,7 +71,7 @@ export async function Hero({
             {t('home.land.lede')}
           </p>
 
-          <I18nScope ns={['home']}>
+          <I18nScope ns={['home.front']}>
             <HeroSearch
               makes={inventory.makes}
               modelsByMake={inventory.modelsByMake}

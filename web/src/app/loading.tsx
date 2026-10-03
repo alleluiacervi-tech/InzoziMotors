@@ -8,7 +8,7 @@ export default function Loading() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center" role="status" aria-label="Loading">
       <span className="animate-[spin_1.1s_cubic-bezier(0.45,0.05,0.55,0.95)_infinite]">
-        <LogoMark size={44} id="routeLoadingMark" />
+        <LogoMark size={44} />
       </span>
     </div>
   )

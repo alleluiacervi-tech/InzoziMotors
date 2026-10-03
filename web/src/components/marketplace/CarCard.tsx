@@ -22,6 +22,11 @@ const FALLBACK_IMAGE =
 // Grids go 1 → 2 → 3 → 4 columns (sm, lg, xl). Four across at desktop width
 // keeps a card near 310px, which is what a buyer scanning a yard wants: a
 // 420px card showed one row per screen on a laptop.
+/** Photos the card's hover preview can show (CardPhotoFlick's MAX_PREVIEW; a
+ *  client module's constant cannot be imported here as a value). Only these
+ *  are sent: every URL is serialised into the page once per card. */
+const PHOTO_PREVIEW = 4
+
 const GRID_SIZES = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw'
 
 export async function CarCard({
@@ -52,10 +57,7 @@ export async function CarCard({
   return (
     <Link
       href={`/cars/${car.id}`}
-      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card
-                  transition-[border-color,box-shadow] duration-300 ease-brand
-                  hover:border-line hover:shadow-card-lg
-                  ${isRow ? 'sm:flex-row' : ''}`}
+      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-line-soft bg-surface shadow-card transition-[border-color,box-shadow] duration-300 ease-brand hover:border-line hover:shadow-card-lg${isRow ? ' sm:flex-row' : ''}`}
     >
       <div
         // 4/3 rather than 16/10: the photograph is what a car is bought on, and
@@ -70,7 +72,7 @@ export async function CarCard({
             profiles would otherwise crop into a door. */}
         {(car.images?.length ?? 0) >= 2 ? (
           <CardPhotoFlick
-            images={car.images!}
+            images={car.images!.slice(0, PHOTO_PREVIEW)}
             alt={photoAlt}
             sizes={isRow ? '(max-width: 640px) 100vw, 288px' : GRID_SIZES}
             priority={priority}

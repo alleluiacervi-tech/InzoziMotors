@@ -467,15 +467,23 @@ export function getT(locale: unknown): TFunction {
 }
 
 /**
- * The slice of the catalogue a client subtree needs: the named top-level
- * namespaces, each already merged over English so the browser never has to
- * know a fallback exists. Server-only by construction — it reads DICTIONARY.
+ * The slice of the catalogue a client subtree needs: the named namespaces,
+ * each already merged over English so the browser never has to know a
+ * fallback exists. A namespace may be a dotted path ('home.front') when the
+ * client needs one branch of a large namespace; it arrives nested the same
+ * way, so keys are written in full either way. Server-only by construction —
+ * it reads DICTIONARY.
  */
 export function messagesFor(locale: unknown, namespaces: readonly string[]): Messages {
   const code = normalizeLocale(locale)
   const out: Messages = {}
   for (const ns of namespaces) {
-    out[ns] = mergeMessages(DICTIONARY[DEFAULT_LOCALE][ns], DICTIONARY[code][ns])
+    const path = ns.split('.')
+    const branch = (dict: Messages) =>
+      path.reduce<unknown>((node, key) => (node && typeof node === 'object' ? (node as Messages)[key] : undefined), dict)
+    let target = out
+    for (const key of path.slice(0, -1)) target = (target[key] ??= {}) as Messages
+    target[path[path.length - 1]] = mergeMessages(branch(DICTIONARY[DEFAULT_LOCALE]), branch(DICTIONARY[code]))
   }
   return out
 }
