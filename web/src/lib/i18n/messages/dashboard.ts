@@ -386,7 +386,7 @@ const en = {
       'Where each of your cars has reached. Only the Sawa team publishes listings, and only after the 150-point inspection and the photo shoot — that is what makes every car on the marketplace real.',
     verifyTitle: 'Complete identity verification before publication',
     verifyBody:
-      'You may submit a car and book its inspection now. Before an administrator can publish it or enable your contact details, complete the one-time check in the app. It needs a photo of your national ID and a selfie. Nothing else on your account is affected.',
+      'You may submit a car and book its inspection now. Before an administrator can publish it or enable your contact details, complete the one-time identity check, here on the website or in the app. It needs a photo of your national ID and a selfie. Nothing else on your account is affected.',
     howSellingWorks: 'How selling works',
     pipelineHeading: 'In the pipeline',
     carCountOne: '{{count}} car',
@@ -866,7 +866,7 @@ const rw: typeof en = {
       'Aho buri modoka yawe igeze. Ni ikipe ya Sawa gusa itangaza amatangazo, kandi gusa nyuma y’isuzuma ry’ingingo 150 no gufata amafoto — ni cyo gituma buri modoka ku isoko iba nyayo.',
     verifyTitle: 'Uzuza kwemeza umwirondoro mbere yo gutangaza',
     verifyBody:
-      'Ushobora gutanga imodoka no kubuka isuzuma ryayo nonaha. Mbere yuko umuyobozi ashobora kuyitangaza cyangwa gushyiraho amakuru yawe yo kuvugana butaziguye, uzuza isuzuma rikorwa rimwe muri porogaramu ya Sawa Cars: ifoto y’indangamuntu yawe na selfie. Nta kindi kuri konti yawe kigira ingaruka.',
+      'Ushobora gutanga imodoka no kubuka isuzuma ryayo nonaha. Mbere y’uko umuyobozi ashobora kuyitangaza cyangwa gushyiraho amakuru yawe yo kuvugana, uzuza igenzura ry’umwirondoro rimwe gusa, hano ku rubuga cyangwa muri porogaramu. Bisaba ifoto y’indangamuntu yawe na selfie. Nta kindi kuri konti yawe gihinduka.',
     howSellingWorks: 'Uko kugurisha bikorwa',
     pipelineHeading: 'Mu nzira',
     carCountOne: 'imodoka {{count}}',
@@ -1346,7 +1346,7 @@ const fr: typeof en = {
       'Où en est chacune de vos voitures. Seule l’équipe Sawa publie les annonces, et seulement après l’inspection en 150 points et la séance photo — c’est ce qui rend chaque voiture du marché réelle.',
     verifyTitle: 'Terminez la vérification d’identité avant publication',
     verifyBody:
-      'Vous pouvez soumettre une voiture et réserver son inspection dès maintenant. Avant qu’un administrateur puisse la publier ou activer vos coordonnées de contact directes, terminez la vérification unique dans l’application Sawa Cars : une photo de votre carte d’identité nationale et un selfie. Rien d’autre sur votre compte n’est affecté.',
+      'Vous pouvez soumettre une voiture et réserver son inspection dès maintenant. Avant qu’un administrateur puisse la publier ou activer vos coordonnées, effectuez la vérification d’identité unique, ici sur le site ou dans l’application. Elle demande une photo de votre carte nationale d’identité et un selfie. Rien d’autre sur votre compte n’est modifié.',
     howSellingWorks: 'Comment fonctionne la vente',
     pipelineHeading: 'En cours de traitement',
     carCountOne: '{{count}} voiture',
@@ -1826,7 +1826,7 @@ const sw: typeof en = {
       'Mahali kila gari lako lilipofikia. Ni timu ya Sawa pekee inayochapisha matangazo, na tu baada ya ukaguzi wa vipengele 150 na kupiga picha — ndiyo kinachofanya kila gari sokoni kuwa halisi.',
     verifyTitle: 'Kamilisha uthibitisho wa utambulisho kabla ya kuchapisha',
     verifyBody:
-      'Unaweza kuwasilisha gari na kuhifadhi ukaguzi wake sasa. Kabla msimamizi hajaweza kulichapisha au kuwezesha maelezo yako ya mawasiliano ya moja kwa moja, kamilisha ukaguzi wa mara moja katika programu ya Sawa Cars: picha ya kitambulisho chako cha taifa na selfie. Hakuna kingine kwenye akaunti yako kinachoathiriwa.',
+      'Unaweza kuwasilisha gari na kuhifadhi ukaguzi wake sasa. Kabla msimamizi hajaweza kulichapisha au kuwezesha maelezo yako ya mawasiliano, kamilisha ukaguzi wa utambulisho wa mara moja, hapa kwenye wavuti au ndani ya programu. Unahitaji picha ya kitambulisho chako cha taifa na selfie. Hakuna kingine kwenye akaunti yako kinachoathirika.',
     howSellingWorks: 'Jinsi kuuza kunavyofanya kazi',
     pipelineHeading: 'Katika mtiririko',
     carCountOne: 'gari {{count}}',
@@ -2305,7 +2305,7 @@ const ko: typeof en = {
       '각 차량의 진행 상황입니다. 매물은 Sawa 팀만 게시하며, 150개 항목 검사와 사진 촬영을 마친 후에만 게시합니다 — 이것이 마켓플레이스의 모든 차량을 실제로 만드는 요소입니다.',
     verifyTitle: '게시 전에 신원 확인을 완료하세요',
     verifyBody:
-      '지금 차량을 제출하고 검사를 예약할 수 있습니다. 관리자가 게시하거나 직접 연락처를 활성화하려면, Sawa Cars 앱에서 일회성 확인을 완료하세요: 국가 신분증 사진과 셀피가 필요합니다. 계정의 다른 부분은 영향을 받지 않습니다.',
+      '지금 차량을 제출하고 검사를 예약할 수 있습니다. 관리자가 게시하거나 직접 연락처를 활성화하기 전에, 이 웹사이트 또는 앱에서 일회성 신원 확인을 완료하세요. 국가 신분증 사진과 셀피가 필요합니다. 계정의 다른 부분에는 영향이 없습니다.',
     howSellingWorks: '판매 방법',
     pipelineHeading: '진행 중',
     carCountOne: '{{count}}대',
@@ -2783,7 +2783,7 @@ const zh: typeof en = {
       '每辆车的处理进度。信息仅由 Sawa 团队发布，且必须在完成150项检测和拍照之后——这正是让市场上每辆车都真实可信的关键。',
     verifyTitle: '发布前请先完成身份验证',
     verifyBody:
-      '您现在就可以提交车辆并预约检测。若要让管理员发布信息或启用直接联系方式，请在 Sawa Cars 应用中完成一次性验证：需要国民身份证照片和自拍照。账户的其他部分不受影响。',
+      '您现在就可以提交车辆并预约检测。若要让管理员发布信息或启用直接联系方式，请在本网站或应用中完成一次性身份核验。需要提供国民身份证照片和一张自拍照。账户的其他内容不受影响。',
     howSellingWorks: '了解出售流程',
     pipelineHeading: '进行中',
     carCountOne: '{{count}}辆',

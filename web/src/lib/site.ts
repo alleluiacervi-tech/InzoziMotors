@@ -281,7 +281,7 @@ export const FAQS = [
   {
     id: 'appOrWeb',
     q: 'Do I need the mobile app, or can I do everything on the web?',
-    a: 'Browsing, inspection information, saved cars, direct seller contact and your account work on the web. The app adds camera capture, push notifications and a more convenient messaging experience.',
+    a: 'Everything works on the web: browsing, inspection reports, saved cars, messages, ID verification, submitting a car and your account. The app adds push notifications and a faster camera.',
   },
   {
     id: 'areas',

@@ -81,9 +81,9 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     },
     app: {
       eyebrow: 'Before you start',
-      title: 'One step has to happen in the app',
+      title: 'Everything works on the web',
       body1:
-        'You can submit the car first. Before the listing or your contact details go public, you complete a one-time identity check. It needs a photo of your national ID, front and back, plus a selfie. The capture happens in the app and is approved once.',
+        'Submit the car, then complete a one-time identity check before the listing or your contact details go public: a photo of your national ID, front and back, plus a selfie. Take them with your phone or laptop camera right here, or in the app. Our team approves it once.',
       body2:
         'It is also the reason there are no fake listings on Sawa Cars. Every seller on this marketplace is a verified person, checked by our team.',
       whereTitle: 'Where each step happens',
@@ -111,8 +111,8 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     close: {
       headline: 'Find out what it is worth first',
       valueMy: 'Value my car',
-      getApp: 'Get the app to submit',
-      body: 'The valuation costs nothing and commits you to nothing. If the number works, verify your ID in the app and book an inspection at the center nearest you.',
+      getApp: 'Start selling',
+      body: 'The valuation costs nothing and commits you to nothing. If the number works, verify your ID and book an inspection at the center nearest you, here on the website.',
     },
   },
 
@@ -194,9 +194,9 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     },
     app: {
       eyebrow: 'Mbere yo gutangira',
-      title: 'Intambwe imwe igomba kubera muri porogaramu',
+      title: 'Byose bikorera ku rubuga',
       body1:
-        'Ushobora gutanga imodoka mbere. Mbere y’uko itangazo cyangwa amakuru yawe yo kuvugana biba ku mugaragaro, uzuza isuzuma ry’umwirondoro rimwe gusa: ifoto y’indangamuntu yawe, imbere n’inyuma, na selfie. Bifatirwa muri porogaramu ya Sawa Cars, bimara nk’iminota ibiri, kandi bisaba kwemezwa rimwe gusa.',
+        'Tanga imodoka, hanyuma wuzuze isuzuma ry’umwirondoro rimwe gusa mbere y’uko itangazo cyangwa amakuru yawe yo kuvugana biba ku mugaragaro: ifoto y’indangamuntu yawe, imbere n’inyuma, na selfie. Bifate na kamera ya telefoni cyangwa mudasobwa yawe hano, cyangwa muri porogaramu. Ikipe yacu ibyemeza rimwe gusa.',
       body2:
         'Ni na yo mpamvu nta matangazo y’ibinyoma abaho kuri Sawa Cars. Buri mugurisha kuri iri soko ni umuntu wemejwe, wagenzuwe n’ikipe yacu.',
       whereTitle: 'Aho buri ntambwe ibera',
@@ -224,8 +224,8 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     close: {
       headline: 'Banza umenye agaciro kayo',
       valueMy: 'Menya agaciro k’imodoka yanjye',
-      getApp: 'Kura porogaramu utange',
-      body: 'Isuzuma ry’agaciro nta kigura kandi nta cyo rigusaba. Niba umubare ukwiye, emeza indangamuntu yawe muri porogaramu kandi ufate igihe cy’isuzuma mu kigo kiri hafi yawe.',
+      getApp: 'Tangira kugurisha',
+      body: 'Isuzuma ry’agaciro nta kigura kandi nta cyo rigusaba. Niba umubare ukwiye, emeza indangamuntu yawe kandi ufate igihe cy’isuzuma ku kigo kiri hafi yawe, hano ku rubuga.',
     },
   },
 
@@ -307,9 +307,9 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     },
     app: {
       eyebrow: 'Avant de commencer',
-      title: 'Une étape doit se faire dans l’application',
+      title: 'Tout fonctionne sur le web',
       body1:
-        'Vous pouvez d’abord soumettre la voiture. Avant que l’annonce ou vos coordonnées directes puissent devenir publiques, effectuez une vérification d’identité unique : une photo de votre carte nationale d’identité, recto et verso, et un selfie. La capture se fait dans l’app Sawa Cars, prend environ deux minutes et ne doit être approuvée qu’une seule fois.',
+        'Soumettez la voiture, puis effectuez une vérification d’identité unique avant que l’annonce ou vos coordonnées ne deviennent publiques : une photo de votre carte nationale d’identité, recto et verso, et un selfie. Prenez-les ici avec la caméra de votre téléphone ou de votre ordinateur, ou dans l’application. Notre équipe l’approuve une seule fois.',
       body2:
         'C’est aussi pourquoi il n’y a pas de fausses annonces sur Sawa Cars. Chaque vendeur de ce marché est une personne vérifiée, contrôlée par notre équipe.',
       whereTitle: 'Où se déroule chaque étape',
@@ -337,8 +337,8 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     close: {
       headline: 'Découvrez d’abord sa valeur',
       valueMy: 'Estimer ma voiture',
-      getApp: 'Obtenir l’app pour soumettre',
-      body: 'L’estimation ne coûte rien et ne vous engage à rien. Si le montant convient, vérifiez votre identité dans l’app et réservez une inspection au centre le plus proche.',
+      getApp: 'Commencer à vendre',
+      body: 'L’estimation ne coûte rien et ne vous engage à rien. Si le montant convient, vérifiez votre identité et réservez une inspection au centre le plus proche, directement sur le site.',
     },
   },
 
@@ -420,9 +420,9 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     },
     app: {
       eyebrow: 'Kabla ya kuanza',
-      title: 'Hatua moja lazima ifanyike kwenye programu',
+      title: 'Kila kitu hufanya kazi kwenye wavuti',
       body1:
-        'Unaweza kuwasilisha gari kwanza. Kabla tangazo au maelezo yako ya moja kwa moja hayajaweza kuwa hadharani, kamilisha ukaguzi wa utambulisho wa mara moja: picha ya kitambulisho chako cha taifa, mbele na nyuma, na selfie. Kupiga hufanyika ndani ya programu ya Sawa Cars, huchukua kama dakika mbili, na huhitaji kuidhinishwa mara moja tu.',
+        'Wasilisha gari, kisha kamilisha ukaguzi wa utambulisho wa mara moja kabla tangazo au maelezo yako ya mawasiliano hayajawa hadharani: picha ya kitambulisho chako cha taifa, mbele na nyuma, na selfie. Zipige hapa kwa kamera ya simu au kompyuta yako, au ndani ya programu. Timu yetu huiidhinisha mara moja tu.',
       body2:
         'Ndiyo pia sababu hakuna matangazo bandia kwenye Sawa Cars. Kila muuzaji kwenye soko hili ni mtu aliyethibitishwa, aliyekaguliwa na timu yetu.',
       whereTitle: 'Mahali kila hatua hufanyika',
@@ -450,8 +450,8 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     close: {
       headline: 'Gundua thamani yake kwanza',
       valueMy: 'Kadiria gari langu',
-      getApp: 'Pata programu ili kuwasilisha',
-      body: 'Ukadiriaji haugharimu chochote na haukulazimishi chochote. Ikiwa namba inafaa, thibitisha kitambulisho chako kwenye programu na uweke miadi ya ukaguzi katika kituo kilicho karibu nawe.',
+      getApp: 'Anza kuuza',
+      body: 'Ukadiriaji haugharimu chochote na haukulazimishi chochote. Ikiwa namba inafaa, thibitisha kitambulisho chako na uweke miadi ya ukaguzi kwenye kituo kilicho karibu nawe, hapa kwenye wavuti.',
     },
   },
 
@@ -533,9 +533,9 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     },
     app: {
       eyebrow: '시작하기 전에',
-      title: '한 단계는 앱에서 진행해야 합니다',
+      title: '모든 과정이 웹에서 가능합니다',
       body1:
-        '차량을 먼저 접수할 수 있습니다. 매물이나 직접 연락처가 공개되기 전에 일회성 신원 확인을 완료하세요: 국가 신분증 앞뒷면 사진과 셀피. Sawa Cars 앱에서 촬영하며 약 2분이 걸리고, 한 번만 승인받으면 됩니다.',
+        '차량을 접수한 뒤, 매물이나 연락처가 공개되기 전에 일회성 신원 확인을 완료하세요: 국가 신분증 앞뒷면 사진과 셀피. 여기에서 휴대폰이나 노트북 카메라로 촬영하거나 앱에서 진행할 수 있습니다. 저희 팀이 한 번만 승인합니다.',
       body2:
         '이것이 Sawa Cars에 허위 매물이 없는 이유이기도 합니다. 이 마켓플레이스의 모든 판매자는 저희 팀이 확인한 인증된 사람입니다.',
       whereTitle: '각 단계가 이루어지는 곳',
@@ -563,8 +563,8 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     close: {
       headline: '먼저 가치를 확인하세요',
       valueMy: '내 차 시세 평가',
-      getApp: '접수하려면 앱 받기',
-      body: '시세 평가는 무료이며 어떤 의무도 없습니다. 금액이 맞으면 앱에서 신원을 인증하고 가장 가까운 센터에서 검사를 예약하세요.',
+      getApp: '판매 시작하기',
+      body: '시세 평가는 무료이며 어떤 의무도 없습니다. 금액이 맞으면 이 웹사이트에서 신원을 인증하고 가장 가까운 센터에 검사를 예약하세요.',
     },
   },
 
@@ -646,9 +646,9 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     },
     app: {
       eyebrow: '开始之前',
-      title: '有一个步骤必须在应用内完成',
+      title: '所有步骤都可在网页上完成',
       body1:
-        '您可以先提交车辆信息。在车源或您的直接联系方式公开之前，需完成一次性身份验证：拍摄国民身份证正反面照片及一张自拍照。该操作在 Sawa Cars 应用内完成，大约需要两分钟，且只需批准一次。',
+        '先提交车辆，然后在车源或您的联系方式公开之前完成一次性身份验证：国民身份证正反面照片及一张自拍照。您可以在此使用手机或电脑摄像头拍摄，也可以在应用内完成。我们的团队只需审批一次。',
       body2:
         '这也是 Sawa Cars 上没有虚假车源的原因。这个市场上的每一位卖家，都是经过我们团队核实的真实身份用户。',
       whereTitle: '每个步骤在哪里完成',
@@ -676,8 +676,8 @@ export const sell: Record<Locale, Record<string, unknown>> = {
     close: {
       headline: '先了解它的价值',
       valueMy: '为我的车估价',
-      getApp: '获取应用以提交车辆',
-      body: '估价不收取任何费用，也不构成任何承诺。如果价格合适，请在应用内验证您的身份，并在离您最近的中心预约检测。',
+      getApp: '开始出售',
+      body: '估价不收取任何费用，也不构成任何承诺。如果价格合适，可直接在本网站验证身份，并预约离您最近的中心进行检测。',
     },
   },
 }
