@@ -14,6 +14,7 @@
 const {
   CHECKLIST_VERSION,
   PUBLISH_THRESHOLD,
+  SCORE_MAX,
   evaluateChecklist,
 } = require('./inspection-policy');
 const { describeVin } = require('./vin');
@@ -33,6 +34,13 @@ const { loadMakes, resolveMake, makesMentionedIn } = require('./vehicle-makes');
 // which is a prominent banner and not a lock.
 const PASTED_CHAT = /\b(AI Mode|You said:|ChatGPT said|as an AI|I'm sorry, (?:but )?I)/i;
 const MIN_DESCRIPTION = 40;
+// A used car more than a model year old with almost nothing on the clock is
+// either a typo (a missing zero) or a claim a buyer will want explained. The
+// homepage once led with a 2022 Land Cruiser at 100 km; on an inspection
+// marketplace that reads as a data error before it reads as a bargain.
+const LOW_MILEAGE_KM = 500;
+
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function contentWarnings(car, makes = []) {
   const warnings = [];
@@ -66,6 +74,20 @@ function contentWarnings(car, makes = []) {
   }
   if (/\s{2,}/.test(title)) {
     warnings.push('The title has a double space — usually a missing make or model.');
+  }
+  if (make && new RegExp(`\\b${escapeRegExp(make)}\\s+${escapeRegExp(make)}\\b`, 'i').test(title)) {
+    warnings.push(`The title says ${make} twice. Write it once: year, make, model, trim.`);
+  }
+
+  const mileage = Number(car.mileage);
+  const year = Number(car.year);
+  const thisYear = new Date().getFullYear();
+  if (car.mileage != null && car.mileage !== '' && Number.isFinite(mileage) && Number.isInteger(year)
+      && year < thisYear - 1 && mileage < LOW_MILEAGE_KM) {
+    warnings.push(
+      `${mileage.toLocaleString('en-US')} km on a ${year} car. Check the odometer reading `
+      + '(a missing zero?) or say why in the description before this goes public.'
+    );
   }
 
   // The listing's own words disagreeing with its own `make` column.
@@ -104,7 +126,7 @@ function contentWarnings(car, makes = []) {
 async function publicationReadiness(client, carId) {
   const { rows } = await client.query(
     `SELECT c.id, c.title, c.make, c.model, c.year, c.price, c.seller_id,
-            c.description, c.vin,
+            c.description, c.vin, c.mileage,
             u.role, u.id_verified, u.account_status, u.deleted_at,
             u.seller_type, u.business_verified,
             COALESCE(cardinality(c.images), 0)::int AS legacy_photo_count,
