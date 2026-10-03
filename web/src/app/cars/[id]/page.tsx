@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ApiError, cars as carsApi } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
-import { BUYING_STEPS, SITE } from '@/lib/site'
+import { BUYING_STEPS, CONTACT, SITE } from '@/lib/site'
 import { breadcrumbNode, graph, offerAvailability, organizationNode, ORG_ID } from '@/lib/seo'
 import { CAR_STATUS_LABEL, FINANCE_TERMS, formatKm, formatMoneyExact, formatMoney, getCertTier, isDemoListing, isHighDemand, isNewListing, listedAgo, marketPosition, monthlyEstimate, priceDrop } from '@/lib/business'
 import type { Car } from '@/lib/types'
@@ -204,7 +204,7 @@ export default async function CarDetailPage({ params }: PageProps) {
       </Container>
 
       <Container className="pb-16 pt-6 sm:pb-24">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_392px] lg:gap-14">
           {/* Explicit placement so the price and CTA sit directly under the
               gallery on a phone, instead of below every report on the page. */}
           <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
@@ -355,6 +355,25 @@ export default async function CarDetailPage({ params }: PageProps) {
                       >
                         {t('cars.detail.signInToContact')}
                       </Button>
+                      {/* No account yet: ask Sawa, on Sawa's own line, never the
+                          seller's. The seller's number stays behind sign-in and
+                          the terms acknowledgement (invariant 3). */}
+                      {CONTACT.whatsappVerified ? (
+                        <Button
+                          href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(
+                            t('cars.detail.askSawaMessage', { title: car.title, url: `${SITE.url}/cars/${car.id}` })
+                          )}`}
+                          target="_blank"
+                          variant="outline"
+                          fullWidth
+                          // The label is long in every language; let it wrap
+                          // rather than widen the column past a phone screen.
+                          className="h-auto min-h-12 !whitespace-normal py-3 text-center"
+                          leadingIcon={<Icon name="whatsapp" size={18} className="shrink-0" />}
+                        >
+                          {t('cars.detail.askSawa')}
+                        </Button>
+                      ) : null}
                       <p className="text-micro leading-relaxed text-content-muted">
                         {t('cars.detail.contactGate')}{' '}
                         <Link href="/how-it-works#buying" className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">

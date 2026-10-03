@@ -148,6 +148,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Bought locally',
     },
     detail: {
+      askSawa: 'Ask Sawa about this car on WhatsApp',
+      askSawaMessage: 'Hello Sawa Cars, I have a question about the {{title}}: {{url}}',
       metaUnavailable: 'Car unavailable',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} in Kigali. Inspection information and verified-seller contact available on Sawa Cars.',
@@ -442,6 +444,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Byaguriwe mu gihugu',
     },
     detail: {
+      askSawa: 'Baza Sawa kuri iyi modoka kuri WhatsApp',
+      askSawaMessage: 'Muraho Sawa Cars, mfite ikibazo kuri {{title}}: {{url}}',
       metaUnavailable: 'Imodoka ntiboneka',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} i Kigali. Amakuru y’isuzuma n’ukuvugana n’umugurisha wemejwe biraboneka kuri Sawa Cars.',
@@ -736,6 +740,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Acheté localement',
     },
     detail: {
+      askSawa: 'Demander à Sawa sur WhatsApp',
+      askSawaMessage: 'Bonjour Sawa Cars, j’ai une question sur la {{title}} : {{url}}',
       metaUnavailable: 'Voiture indisponible',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} à Kigali. Informations d’inspection et contact de vendeur vérifié disponibles sur Sawa Cars.',
@@ -1030,6 +1036,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: 'Imenunuliwa hapa nchini',
     },
     detail: {
+      askSawa: 'Uliza Sawa kuhusu gari hili kwenye WhatsApp',
+      askSawaMessage: 'Habari Sawa Cars, nina swali kuhusu {{title}}: {{url}}',
       metaUnavailable: 'Gari halipatikani',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. {{price}} Kigali. Taarifa za ukaguzi na mawasiliano ya muuzaji aliyethibitishwa yanapatikana kwenye Sawa Cars.',
@@ -1324,6 +1332,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: '현지 구매',
     },
     detail: {
+      askSawa: 'WhatsApp로 Sawa에 이 차량 문의하기',
+      askSawaMessage: '안녕하세요 Sawa Cars, {{title}} 차량에 대해 문의드립니다: {{url}}',
       metaUnavailable: '차량을 이용할 수 없습니다',
       metaDescriptionInspected:
         '{{title}} — {{facts}}. 키갈리 {{price}}. 검사 정보와 인증 판매자 연락처를 Sawa Cars에서 확인할 수 있습니다.',
@@ -1618,6 +1628,8 @@ export const cars: Record<Locale, Record<string, unknown>> = {
       boughtLocally: '本地购买',
     },
     detail: {
+      askSawa: '通过 WhatsApp 向 Sawa 咨询此车',
+      askSawaMessage: '您好 Sawa Cars，我想咨询这辆 {{title}}：{{url}}',
       metaUnavailable: '车辆已下架',
       metaDescriptionInspected:
         '{{title}} — {{facts}}。基加利 {{price}}。检测信息及已认证卖家联系方式可在 Sawa Cars 查看。',
