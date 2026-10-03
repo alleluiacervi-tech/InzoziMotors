@@ -241,7 +241,7 @@ function NextSteps() {
           href={`https://wa.me/${CONTACT.whatsapp}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-bold text-brand hover:underline"
+          className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content"
         >
           {t('tools.valuationTool.orWhatsApp')}
         </a>

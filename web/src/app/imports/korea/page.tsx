@@ -151,7 +151,7 @@ export default async function KoreaPage({ searchParams }: { searchParams: Search
             </div>
             <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-4">
               <Button type="submit">{t('imports.korea.apply')}</Button>
-              {hasFilters ? <Link href="/imports/korea" className="text-caption font-bold text-brand hover:underline">{t('imports.korea.clear')}</Link> : null}
+              {hasFilters ? <Link href="/imports/korea" className="text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">{t('imports.korea.clear')}</Link> : null}
             </div>
           </form>
 

@@ -210,7 +210,7 @@ export default async function ContactPage() {
                 key={p.title}
                 className="rounded-2xl border border-line-soft bg-surface p-6 shadow-card"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-tint text-brand">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-alt text-content-secondary">
                   <Icon name={p.icon} size={19} />
                 </span>
                 <h3 className="mt-4 text-title-sm font-extrabold text-content">{p.title}</h3>

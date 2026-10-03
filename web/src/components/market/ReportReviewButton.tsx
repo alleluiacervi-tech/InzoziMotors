@@ -56,7 +56,7 @@ export function ReportReviewButton({ reviewId, author }: { reviewId: string; aut
       <p className="mt-1 text-micro text-content-muted">{t('market.report.body')}</p>
       {outcome === 'signIn' ? (
         <p className="mt-3 text-caption">
-          <Link href={`/signin?next=${encodeURIComponent(pathname)}`} className="font-bold text-brand underline underline-offset-2">
+          <Link href={`/signin?next=${encodeURIComponent(pathname)}`} className="font-bold text-content underline underline-offset-2">
             {t('market.report.signIn')}
           </Link>
         </p>

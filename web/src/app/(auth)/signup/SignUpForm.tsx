@@ -189,11 +189,11 @@ export function SignUpForm({ next, defaultRole = 'buyer' }: { next: string; defa
 
       <p className="text-center text-micro leading-relaxed text-content-muted">
         {t('auth.signup.termsPrefix')}{' '}
-        <Link href="/legal/terms" className="font-bold text-brand transition-colors hover:text-brand-deep">
+        <Link href="/legal/terms" className="font-bold text-content underline decoration-line underline-offset-4 transition-colors hover:decoration-content">
           {t('auth.signup.termsLink')}
         </Link>{' '}
         {t('auth.signup.termsAnd')}{' '}
-        <Link href="/legal/privacy" className="font-bold text-brand transition-colors hover:text-brand-deep">
+        <Link href="/legal/privacy" className="font-bold text-content underline decoration-line underline-offset-4 transition-colors hover:decoration-content">
           {t('auth.signup.privacyLink')}
         </Link>
         .

@@ -282,7 +282,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                     <span className="block text-caption font-bold text-content">
                       {t('cars.detail.scoreChip')} {car.inspection_score}/150
                     </span>
-                    <span className="block text-micro font-semibold text-brand group-hover:underline">
+                    <span className="block text-micro font-semibold text-content-secondary underline decoration-line underline-offset-4 group-hover:decoration-content">
                       {t('cars.detail.seeReport')}
                     </span>
                   </span>
@@ -294,8 +294,7 @@ export default async function CarDetailPage({ params }: PageProps) {
           <aside id="purchase-panel" className="scroll-mt-24 lg:col-start-2 lg:row-start-1 lg:row-span-2">
             <div className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
               <Card className="relative overflow-hidden rounded-3xl border-line bg-surface p-6 shadow-float sm:p-7">
-                <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand via-brand-bright to-brand-deep" />
-                <p className="mb-3 text-micro font-bold text-content-muted">{t('cars.detail.purchaseOverview')}</p>
+                                <p className="mb-3 text-micro font-bold text-content-muted">{t('cars.detail.purchaseOverview')}</p>
                 {/* Zone 1 — price. The market sentence shows its work: amount
                     and sample size, never a bare percentage in a pill. */}
                 <Price amountRwf={car.price} size="detail" />
@@ -358,7 +357,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                       </Button>
                       <p className="text-micro leading-relaxed text-content-muted">
                         {t('cars.detail.contactGate')}{' '}
-                        <Link href="/how-it-works" className="font-bold text-brand hover:underline">
+                        <Link href="/how-it-works#buying" className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
                           {t('cars.detail.seeHowBuying')}
                         </Link>
                         .
@@ -403,7 +402,7 @@ export default async function CarDetailPage({ params }: PageProps) {
                       })}
                     </p>
                     <p className="mt-3 text-caption">
-                      <Link href="/tools/import-duty" className="font-bold text-brand hover:underline">
+                      <Link href="/tools/import-duty" className="font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content">
                         {t('cars.detail.estimateDuty')}
                       </Link>
                     </p>
@@ -481,7 +480,7 @@ export default async function CarDetailPage({ params }: PageProps) {
           <Container>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-caption font-bold text-brand">{t('cars.detail.similarEyebrow')}</p>
+                <p className="text-caption font-bold text-content-muted">{t('cars.detail.similarEyebrow')}</p>
                 <h2 className="mt-2 text-headline font-extrabold text-content">
                   {t('cars.detail.similarTitle', { make: car.make })}
                 </h2>
@@ -602,7 +601,7 @@ async function SellerCard({ car }: { car: Car }) {
       <p className="mt-3">
         <Link
           href={`/sellers/${car.seller_id}`}
-          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-brand hover:underline"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-caption font-bold text-content underline decoration-line underline-offset-4 hover:decoration-content"
         >
           {showroom ? t('cars.detail.visitShowroom') : t('market.profile.viewProfile')}
           <Icon name="arrow-right" size={15} />

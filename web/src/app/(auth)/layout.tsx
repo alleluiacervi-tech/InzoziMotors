@@ -67,7 +67,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
         <aside className="hidden rounded-3xl bg-ink-900 p-10 text-white shadow-float lg:flex lg:flex-col xl:p-12">
           <LogoMark size={48} />
 
-          <p className="mt-8 text-caption font-bold text-brand-light">
+          <p className="mt-8 text-caption font-bold text-white/60">
             {t('auth.layout.eyebrow')}
           </p>
           <h2 className="mt-3 max-w-sm text-headline font-extrabold">

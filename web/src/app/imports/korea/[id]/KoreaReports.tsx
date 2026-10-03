@@ -48,7 +48,7 @@ function Inspection({ data }: { data: KoreaInspection }) {
       {data.inspected_on ? <p className="mt-2 text-caption text-content-secondary">{t('imports.korea.inspectedOn', { date: data.inspected_on })}</p> : null}
       {more.length ? (
         <details className="mt-3">
-          <summary className="cursor-pointer text-caption font-bold text-brand">{t('imports.korea.moreDetails')}</summary>
+          <summary className="cursor-pointer text-caption font-bold text-content underline decoration-line underline-offset-4">{t('imports.korea.moreDetails')}</summary>
           <dl className="mt-2">{more.map(([k, v], i) => <Row key={`${k}-${i}`} label={k} value={v} />)}</dl>
         </details>
       ) : null}

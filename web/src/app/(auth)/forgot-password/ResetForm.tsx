@@ -87,7 +87,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
 
           <p className="text-center text-caption text-content-secondary">
             {t('auth.forgot.remembered')}{' '}
-            <Link href="/signin" className="font-bold text-brand transition-colors hover:text-brand-deep">
+            <Link href="/signin" className="font-bold text-content underline decoration-line underline-offset-4 transition-colors hover:decoration-content">
               {t('auth.forgot.backToSignIn')}
             </Link>
           </p>
@@ -157,7 +157,7 @@ export function ResetForm({ defaultEmail }: { defaultEmail: string }) {
               type="submit"
               name="intent"
               value="resend"
-              className="min-h-[44px] font-bold text-brand transition-colors hover:text-brand-deep"
+              className="min-h-[44px] font-bold text-content underline decoration-line underline-offset-4 transition-colors hover:decoration-content"
             >
               {t('auth.forgot.resend')}
             </button>

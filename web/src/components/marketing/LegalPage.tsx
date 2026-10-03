@@ -27,7 +27,7 @@ export function Prose({ children, className = '' }: { children: ReactNode; class
     <div
       className={`max-w-prose text-body leading-relaxed text-content-secondary
         [&>*+*]:mt-4
-        [&_a]:font-bold [&_a]:text-brand [&_a]:underline [&_a]:underline-offset-2
+        [&_a]:font-bold [&_a]:text-content [&_a]:underline [&_a]:underline-offset-2
         [&_h3]:mt-7 [&_h3]:text-body [&_h3]:font-extrabold [&_h3]:text-content
         [&_li]:relative [&_li]:pl-5
         [&_li]:before:absolute [&_li]:before:left-0 [&_li]:before:top-[0.62em] [&_li]:before:h-[5px] [&_li]:before:w-[5px] [&_li]:before:rounded-pill [&_li]:before:bg-content-muted [&_li]:before:content-['']

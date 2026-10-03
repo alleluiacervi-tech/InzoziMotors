@@ -55,7 +55,7 @@ export function Section({
  * the only sanctioned margin.
  */
 export function Eyebrow({
-  children, tone = 'brand', className = '',
+  children, tone = 'muted', className = '',
 }: {
   children: ReactNode
   tone?: 'brand' | 'invert' | 'muted'
