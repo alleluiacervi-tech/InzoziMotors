@@ -46,7 +46,7 @@ decoration. Nothing here changes the backend or the app.
 - [ ] **D1** *(Default applied: Rent hidden until the fleet has 3 cars.)* Rent: is it a 2026 business? If not, it leaves the nav, hero tabs and homepage now
       (Phase 1 assumes **yes, remove while the fleet is empty**; it returns automatically when
       `GET /rentals` has 3+ cars, see task 1.4).
-- [ ] **D2** *(Default applied: tokens kept, toggle removed, follows the OS.)* Dark theme: keep as OS-following only (toggle removed), or remove entirely? Default
+- [x] **D2** *(Answered 3 Oct 2026: light for everyone, whatever the device setting. The `.dark` tokens stay in globals.css, unused, so it is reversible in `layout.tsx`'s inline script.)* Dark theme: keep as OS-following only (toggle removed), or remove entirely? Default
       if unanswered: keep tokens, remove the toggle (task 3.6).
 - [ ] **D3** Photographs of a centre, an inspector at work, and the team: available? Needed for
       tasks 3.8 and 2.3. Until then those sections use the existing `web/public/img/*.jpg`.
@@ -223,7 +223,7 @@ decoration. Nothing here changes the backend or the app.
       grids with plain columns separated by hairlines (`border-t border-line-soft pt-5`), the
       pattern `Standard`'s stat row uses. Icon tiles go. Done when: these pages use `Card`
       only for forms and the valuation result.
-- [x] **3.6 Theme toggle.** *(Done with the D2 default: toggle removed from header, drawer and dashboard; the site follows the OS and clears the old `sawa-theme` key.)* Per D2: remove `ThemeToggle` from the header and drawer
+- [x] **3.6 Theme toggle.** *(Done with the D2 default: toggle removed from header, drawer and dashboard; the site clears the old `sawa-theme` key. Since D2 was answered it no longer follows the OS: always light.)* Per D2: remove `ThemeToggle` from the header and drawer
       (`Header.tsx` lines with `<ThemeToggle`), keep the inline theme script following
       `prefers-color-scheme`. If D2 says "remove entirely", also delete the `.dark` block in
       `globals.css`, `darkMode: 'class'`, and the `sawa-theme` localStorage read. Done when:
