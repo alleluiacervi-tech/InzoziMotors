@@ -129,7 +129,7 @@ export function JourneyRail({
         </span>
       </header>
 
-      <ol className="flex gap-0 overflow-x-auto px-4 py-4">
+      <ol className="grid grid-cols-2 gap-y-4 px-4 py-4 sm:grid-cols-4 lg:flex lg:gap-0">
         {journey.stages.map((stage) => {
           const key = tone(stage)
           const age = stage.state === 'active' || stage.state === 'blocked' ? ageLabel(stage.age_hours) : null
@@ -150,7 +150,7 @@ export function JourneyRail({
           return (
             <li
               key={stage.key}
-              className="min-w-[8.5rem] flex-1 pr-2"
+              className="min-w-0 flex-1 pr-2 lg:min-w-[8.5rem]"
               aria-current={stage.key === journey.current_stage ? 'step' : undefined}
             >
               {/* Only reachable stages link anywhere — a locked stage has no
