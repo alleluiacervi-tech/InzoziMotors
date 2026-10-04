@@ -7,9 +7,11 @@
 
    Every colour in this console resolves through one of these variables, as an
    unprefixed "R G B" triplet so Tailwind's /opacity modifiers keep working.
-   The neutrals match the website's Editorial Showroom palette exactly, so an
-   operator moving between admin.sawacars.com and the public site sees one
-   product rather than two.
+   The neutrals are cool slate rather than the website's warm stone. The public
+   site is a showroom and wants warmth; this is a tool people read all day, and
+   a cool, low-chroma ground keeps status colour and Signal Red the only things
+   on the screen with a hue. Red stays the one accent: primary actions, the
+   active page, money that needs attention.
 
    Dark is not an inversion. Signal Red lightens to #FF5A61 because #CC050F
    only reaches 2.2:1 on a dark ground, and the gray ramp reverses end for end
@@ -25,9 +27,9 @@
   --brand-tint: 253 235 236;
   --on-brand: 255 255 255;
 
-  --ink-900: 20 17 15;
-  --ink-800: 36 31 29;
-  --ink-700: 56 48 44;
+  --ink-900: 15 23 42;          /* #0F172A slate */
+  --ink-800: 30 41 59;
+  --ink-700: 51 65 85;
 
   --success: 22 163 74;   --success-tint: 234 246 238;  --success-text: 22 101 52;
   --warning: 217 119 6;   --warning-tint: 254 243 199;  --warning-text: 180 83 9;
@@ -35,20 +37,20 @@
   --info: 29 78 216;      --info-tint: 239 246 255;
 
   --surface: 255 255 255;
-  --surface-alt: 242 239 234;
-  --surface-page: 251 250 248;
+  --surface-alt: 241 245 249;   /* #F1F5F9 */
+  --surface-page: 246 248 251;  /* #F6F8FB */
 
-  --line: 227 221 213;
-  --line-soft: 239 234 227;
+  --line: 226 232 240;          /* #E2E8F0 */
+  --line-soft: 236 240 245;
 
-  --content: 20 17 15;
-  --content-secondary: 61 55 51;
-  --content-muted: 110 102 96;
+  --content: 15 23 42;          /* #0F172A, 17.8:1 on white */
+  --content-secondary: 51 65 85;  /* #334155, 10.4:1 */
+  --content-muted: 90 104 125;  /* #5A687D, 5.2:1 even on surface-alt */
 
-  --gray-50: 251 250 248;   --gray-100: 242 239 234;  --gray-200: 239 234 227;
-  --gray-300: 227 221 213;  --gray-400: 156 147 139;  --gray-500: 110 102 96;
-  --gray-600: 88 80 75;     --gray-700: 61 55 51;     --gray-800: 36 31 29;
-  --gray-900: 20 17 15;
+  --gray-50: 246 248 251;   --gray-100: 241 245 249;  --gray-200: 236 240 245;
+  --gray-300: 226 232 240;  --gray-400: 148 163 184;  --gray-500: 90 104 125;
+  --gray-600: 71 85 105;    --gray-700: 51 65 85;     --gray-800: 30 41 59;
+  --gray-900: 15 23 42;
 
   /* The semantic ramps, remapped the same way gray is — and for the same
      reason. About sixty class usages across this console are still written in
@@ -87,7 +89,7 @@
   --data-3: 237 161 0;      /* #EDA100 amber */
   --data-4: 74 58 167;      /* #4A3AA7 violet */
   --data-5: 232 123 164;    /* #E87BA4 magenta */
-  --data-prev: 214 208 200; /* #D6D0C8 the previous period, behind the current */
+  --data-prev: 203 213 225; /* #CBD5E1 the previous period, behind the current */
   /* One hue, light to dark, for ordered steps (funnels, bands). */
   --ramp-1: 134 182 239;  --ramp-2: 85 152 231;  --ramp-3: 42 120 214;
   --ramp-4: 28 92 173;    --ramp-5: 16 66 129;
@@ -216,7 +218,7 @@ body {
   z-index: 100;
   transform: translateY(-200%);
   border-radius: 0.75rem;
-  background: #1b1313;
+  background: rgb(var(--ink-900));
   color: white;
   padding: 0.75rem 1rem;
   font-weight: 700;
@@ -242,8 +244,8 @@ body {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(120% 34% at 0% 0%, rgb(204 5 15 / 0.16), transparent 66%),
-    radial-gradient(90% 26% at 100% 4%, rgb(120 150 210 / 0.08), transparent 70%);
+    radial-gradient(120% 30% at 0% 0%, rgb(204 5 15 / 0.10), transparent 66%),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.02), transparent 40%);
 }
 
 /* The rail scrolls 26 destinations on a laptop. A 14px scrollbar in the middle

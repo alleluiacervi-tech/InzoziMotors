@@ -4,7 +4,7 @@ import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api, type Readiness } from '@/lib/api'
-import { EmptyState, ErrorState, Icon, LoadingState, Pill, fmtMoney, statusLabel, Card } from '@/components/ui'
+import { EmptyState, ErrorState, Icon, LoadingState, PageHeader, Pill, fmtMoney, statusLabel, Card } from '@/components/ui'
 import { useConfirm, useReason, useToast } from '@/components/feedback'
 import { QueueSearch } from '@/components/QueueSearch'
 import { fmtInt } from '@/lib/format'
@@ -267,23 +267,19 @@ export default function ListingsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Listings</h1>
-          {statusFilter === NEEDS_ACTION ? (
-            <p className="mt-0.5 text-xs text-content-muted">Vehicles whose next step is an approval or a publication by you. Oldest first.</p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-        <ExportLink dataset="listings" />
-        <Link
-          href="/listings/new"
-          className="px-4 py-2 text-sm font-semibold bg-brand text-brand-on rounded-lg hover:bg-brand-light transition-colors"
-        >
-          Create listing
-        </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Listings"
+        description={statusFilter === NEEDS_ACTION ? 'Vehicles whose next step is an approval or a publication by you. Oldest first.' : 'Every listing in this status, newest first.'}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportLink dataset="listings" />
+            <Link href="/listings/new" className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on shadow-card transition-colors hover:bg-brand-deep">
+              <Icon name="plus" size={16} />
+              Create listing
+            </Link>
+          </div>
+        }
+      />
       <QueueSearch value={query} onChange={setQuery} resultCount={total} placeholder="Search vehicle, seller, location, VIN, or listing ID" />
       {total > visible.length ? (
         <div className="-mt-3 mb-4 rounded-lg border border-line-soft bg-surface-alt px-4 py-2.5 text-caption text-content-secondary">

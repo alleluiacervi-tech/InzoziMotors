@@ -7,6 +7,7 @@ import { api, signOut, getApiStatus, onApiStatus, type ApiStatus } from '@/lib/a
 import { LogoMark } from '@/components/Logo'
 import { Icon, type IconName } from '@/components/Icon'
 import { FeedbackProvider } from '@/components/feedback'
+import { PageIconContext } from '@/components/page-icon'
 
 // Grouped navigation — the shape of the working day, not a flat list.
 //
@@ -329,7 +330,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </span>
                       <span className="min-w-0 flex-1 truncate">{label}</span>
                       {badge > 0 && (
-                        <span className="tnum ml-auto min-w-5 shrink-0 rounded-full bg-ink-900 px-1.5 py-0.5 text-center text-micro font-bold text-white">
+                        <span className="tnum ml-auto min-w-5 shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-center text-micro font-bold text-white">
                           {badge}
                           <span className="sr-only"> waiting</span>
                         </span>
@@ -447,7 +448,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             One word contains every such descendant, including any a future
             page adds. */}
         <main id="admin-main" tabIndex={-1} className="relative flex-1 p-4 lg:overflow-y-auto lg:p-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
+          <div className="mx-auto max-w-7xl"><PageIconContext.Provider value={current?.icon}>{children}</PageIconContext.Provider></div>
         </main>
       </div>
     </div>

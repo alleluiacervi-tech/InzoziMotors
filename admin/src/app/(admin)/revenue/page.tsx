@@ -103,11 +103,11 @@ export default function RevenuePage() {
       />
 
       <section className="mb-7 grid gap-4 sm:grid-cols-3">
-        <KpiTile label="This month so far" value={fmtMoneyShort(currentMonthTotal, 'RWF')} current={currentMonthTotal} periodLabel="" compare={false}
+        <KpiTile icon="calendar" label="This month so far" value={fmtMoneyShort(currentMonthTotal, 'RWF')} current={currentMonthTotal} periodLabel="" compare={false}
           hint={`${fmtMoney(currentMonthTotal, 'RWF')} from ${currentMonthCount} paid entr${currentMonthCount === 1 ? 'y' : 'ies'}`} />
-        <KpiTile label={`Last month (${fmtMonth(`${lastMonth()}-01`)})`} value={fmtMoneyShort(lastMonthTotal, 'RWF')} current={lastMonthTotal} periodLabel="" compare={false}
+        <KpiTile icon="history" label={`Last month (${fmtMonth(`${lastMonth()}-01`)})`} value={fmtMoneyShort(lastMonthTotal, 'RWF')} current={lastMonthTotal} periodLabel="" compare={false}
           hint={fmtMoney(lastMonthTotal, 'RWF')} />
-        <KpiTile label="All time" value={fmtMoneyShort(allTimeTotal, 'RWF')} current={allTimeTotal} periodLabel="" compare={false}
+        <KpiTile icon="receipt" label="All time" value={fmtMoneyShort(allTimeTotal, 'RWF')} current={allTimeTotal} periodLabel="" compare={false}
           hint={`${rwfTypes.length} priced line${rwfTypes.length === 1 ? '' : 's'} · in RWF`} />
       </section>
 

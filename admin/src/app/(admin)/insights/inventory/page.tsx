@@ -6,6 +6,7 @@
 // window applies to price drops, days on market and marked-sold value.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { IconName } from '@/components/Icon'
 import Link from 'next/link'
 import { api, type InsightsInventory, type RangeQuery } from '@/lib/api'
 import { fmtMoney, fmtMoneyShort } from '@/components/ui'
@@ -38,16 +39,16 @@ function Inventory({ range }: { range: RangeQuery }) {
 }
 
 function Body({ d }: { d: InsightsInventory }) {
-  const kpi = (label: string, value: string, hint?: string, href?: string) => (
-    <KpiTile label={label} value={value} current={0} periodLabel="" compare={false} hint={hint} href={href} />
+  const kpi = (icon: IconName, label: string, value: string, hint?: string, href?: string) => (
+    <KpiTile icon={icon} label={label} value={value} current={0} periodLabel="" compare={false} hint={hint} href={href} />
   )
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {kpi('Live listings', fmtInt(d.live_total), 'Public right now', '/listings')}
-        {kpi('Gone quiet', fmtInt(d.stale.length), 'Live over 14 days with no save or contact request in the last 14')}
-        {kpi('Median days on market', d.median_days_on_market == null ? '—' : `${d.median_days_on_market} d`, 'Publication to marked sold, for listings sold in the window')}
-        {kpi('Price reductions', fmtInt(d.price_drops), 'Listings whose price went down in the window')}
+        {kpi('car', 'Live listings', fmtInt(d.live_total), 'Public right now', '/listings')}
+        {kpi('eye-off', 'Gone quiet', fmtInt(d.stale.length), 'Live over 14 days with no save or contact request in the last 14')}
+        {kpi('timer', 'Median days on market', d.median_days_on_market == null ? '—' : `${d.median_days_on_market} d`, 'Publication to marked sold, for listings sold in the window')}
+        {kpi('trending-down', 'Price reductions', fmtInt(d.price_drops), 'Listings whose price went down in the window')}
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
@@ -90,7 +91,7 @@ function Body({ d }: { d: InsightsInventory }) {
 
       <SectionTitle hint="Reported by sellers when they mark a listing sold. It is not a verified sale price and it is never Sawa revenue: Sawa is not a party to any sale.">Seller-reported outcomes</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {kpi('Asking value of listings marked sold', fmtMoneyShort(d.sold_asking_value_rwf, 'RWF'), `${fmtMoney(d.sold_asking_value_rwf, 'RWF')} in asking prices, in the window`)}
+        {kpi('tag', 'Asking value of listings marked sold', fmtMoneyShort(d.sold_asking_value_rwf, 'RWF'), `${fmtMoney(d.sold_asking_value_rwf, 'RWF')} in asking prices, in the window`)}
       </div>
     </>
   )
