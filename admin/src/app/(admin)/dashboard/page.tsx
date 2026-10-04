@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { api, type ActionCenterItem, type ActionCenterResponse, type InsightsFunnels } from '@/lib/api'
 import {
   Card, StatCard, PageHeader, EmptyState, BarChart, Icon, Delta, Sparkline,
-  LoadingState, Skeleton, fmtMoneyShort, type IconName, type Trend,
+  LoadingState, Skeleton, IconTile, kindIcon, fmtMoneyShort, type IconName, type TileTone, type Trend,
 } from '@/components/ui'
 import { fmtDateTime, fmtDayMonth, fmtDuration } from '@/lib/format'
 
@@ -77,10 +77,10 @@ const FUNNEL_LABELS: Record<string, string> = {
 }
 
 const QUICK_ACTIONS: { href: string; label: string; sub: string; icon: IconName }[] = [
-  { href: '/listings/new', label: 'Create a listing', sub: 'Starts from a passed inspection', icon: 'plus' },
+  { href: '/listings/new', label: 'Create a listing', sub: 'Starts from a passed inspection', icon: 'car' },
   { href: '/submissions', label: 'Take in a vehicle', sub: 'Files the submission for a walk-in seller', icon: 'document' },
-  { href: '/inspections', label: 'Book an inspection', sub: 'Listing or standalone walk-in', icon: 'settings' },
-  { href: '/users', label: 'Verify an identity', sub: 'Sellers cannot publish until you do', icon: 'user' },
+  { href: '/inspections', label: 'Book an inspection', sub: 'Listing or standalone walk-in', icon: 'clipboard-check' },
+  { href: '/users', label: 'Verify an identity', sub: 'Sellers cannot publish until you do', icon: 'id-card' },
 ]
 
 // ─── Service levels ──────────────────────────────────────────────────────────
@@ -103,10 +103,10 @@ function slaText(item: ActionCenterItem, now: number): string {
   return state === 'overdue' ? 'Act now' : state === 'due' ? 'Needs a decision' : 'When convenient'
 }
 
-const SLA_STYLE: Record<SlaState, { badge: string; rule: string; icon: IconName }> = {
-  overdue: { badge: 'bg-danger-tint text-danger-strong', rule: 'bg-danger-strong', icon: 'timer' },
-  due: { badge: 'bg-warning-tint text-warning-text', rule: 'bg-warning', icon: 'clock' },
-  ok: { badge: 'bg-surface-alt text-content-secondary', rule: 'bg-line', icon: 'check-circle' },
+const SLA_STYLE: Record<SlaState, { badge: string; tile: TileTone; icon: IconName }> = {
+  overdue: { badge: 'bg-danger-tint text-danger-strong', tile: 'danger', icon: 'timer' },
+  due: { badge: 'bg-warning-tint text-warning-text', tile: 'warning', icon: 'clock' },
+  ok: { badge: 'bg-surface-alt text-content-secondary', tile: 'muted', icon: 'check-circle' },
 }
 
 export default function DashboardPage() {
@@ -295,7 +295,7 @@ export default function DashboardPage() {
       {trends || pace ? (
         <div className="mb-6 grid max-lg:order-1 gap-px overflow-hidden rounded-2xl border border-line bg-line-soft sm:grid-cols-3">
           <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
-            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Live on the marketplace</span>
+            <span className="flex items-center gap-2 text-micro font-bold uppercase tracking-[0.1em] text-content-muted"><Icon name="car" size={14} />Live on the marketplace</span>
             <div className="flex items-end justify-between gap-4">
               <div className="flex items-baseline gap-2.5">
                 <span className="text-stat-lg font-extrabold tabular-nums text-content">{s.liveListings}</span>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
               bank transfer. What is merely owed or claimed sits underneath,
               counted separately. */}
           <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
-            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Recorded by Sawa</span>
+            <span className="flex items-center gap-2 text-micro font-bold uppercase tracking-[0.1em] text-content-muted"><Icon name="receipt" size={14} />Recorded by Sawa</span>
             <div className="flex items-end justify-between gap-4">
               <span className="text-stat-lg font-extrabold tabular-nums text-content">
                 {money ? fmtMoneyShort(collected, money.currency) : '—'}
@@ -347,7 +347,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-col gap-2.5 bg-surface px-6 py-5">
-            <span className="text-micro font-bold uppercase tracking-[0.1em] text-content-muted">Submission to published</span>
+            <span className="flex items-center gap-2 text-micro font-bold uppercase tracking-[0.1em] text-content-muted"><Icon name="timer" size={14} />Submission to published</span>
             <div className="flex items-end justify-between gap-4">
               <div className="flex items-baseline gap-2.5">
                 <span className="text-stat-lg font-extrabold tabular-nums text-content">
@@ -434,12 +434,12 @@ export default function DashboardPage() {
                     <Link
                       href={action.href}
                       onMouseEnter={() => setCursor(index)}
-                      className={`group flex items-stretch gap-3.5 border-t border-line-soft px-6 py-3.5 transition-colors ${cursor === index ? 'bg-surface-alt' : 'hover:bg-surface-alt'}`}
+                      className={`group flex items-center gap-3.5 border-t border-line-soft px-4 py-3.5 transition-colors sm:px-6 ${cursor === index ? 'bg-surface-alt' : 'hover:bg-surface-alt'}`}
                     >
-                      {/* Waiting time, made pre-attentive. The old priority dot
-                          repeated what the badge beside it already said; this
-                          carries the one thing nothing else showed. */}
-                      <span className={`w-[3px] shrink-0 rounded-full ${SLA_STYLE[slaState(action)].rule}`} aria-hidden />
+                      {/* What it is, by glyph, and how late it is, by tone: a
+                          scan down the column answers both before a word is
+                          read. The badge beside the title says it in words. */}
+                      <IconTile icon={kindIcon(action.kind)} tone={SLA_STYLE[slaState(action)].tile} className="max-sm:h-9 max-sm:w-9" />
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
                           <span className="truncate text-label font-bold text-content">{action.title}</span>
@@ -580,16 +580,17 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid max-lg:order-2 grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[1fr_1.2fr]">
-        {/* Quick actions — a list, not four more tinted squircles */}
+        {/* Quick actions — a list, each row led by its page's glyph in a neutral tile */}
         <Card className="border-line-soft p-5 shadow-none">
           <h2 className="mb-3 text-label font-bold text-content">Start something</h2>
           <div className="flex flex-col">
-            {QUICK_ACTIONS.map(({ href, label, sub }) => (
+            {QUICK_ACTIONS.map(({ href, label, sub, icon }) => (
               <Link
                 key={href}
                 href={href}
                 className="group flex items-center gap-3 border-b border-line-soft py-2.5 last:border-0"
               >
+                <IconTile icon={icon} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-label font-bold text-content group-hover:text-content">{label}</span>
                   <span className="mt-0.5 block text-caption text-content-muted">{sub}</span>
@@ -606,18 +607,14 @@ export default function DashboardPage() {
             <span className="text-caption text-content-muted">across the whole workflow</span>
           </div>
           {activity.length ? (
-            <ul className="border-l border-line-soft pl-0">
+            <ul>
               {activity.slice(0, 6).map((item, index) => (
-                <li key={`${item.kind}-${item.happened_at}-${index}`} className="relative">
-                  <Link href={item.href} className="flex items-baseline gap-3 py-2.5 pl-4">
-                    {/* Ink, not brand red: "this one is the most recent" is
-                        information, and red on this product means money, a
-                        primary action or something blocking. Size and weight
-                        carry the emphasis instead. */}
-                    <span
-                      className={`absolute top-4 rounded-full border-2 border-surface ${index === 0 ? '-left-[5px] h-[7px] w-[7px] bg-ink-900' : '-left-1 h-[5px] w-[5px] bg-gray-400'}`}
-                      aria-hidden
-                    />
+                <li key={`${item.kind}-${item.happened_at}-${index}`} className="border-b border-line-soft last:border-0">
+                  <Link href={item.href} className="flex items-center gap-3 py-2.5">
+                    {/* Muted tiles, never red: this is a record of what
+                        happened, and red on this product means money, a
+                        primary action or something blocking. */}
+                    <IconTile icon={kindIcon(item.kind)} size="sm" tone="muted" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-label font-semibold text-content">{item.title}</span>
                       <span className="block truncate text-caption text-content-muted">{item.kind} · {item.detail.replaceAll('_', ' ')}</span>

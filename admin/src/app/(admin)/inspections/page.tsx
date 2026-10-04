@@ -4,7 +4,7 @@ import { ExportLink } from '@/components/ExportLink'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api, type CenterRow } from '@/lib/api'
-import { Card, EmptyState, ErrorState, LoadingState } from '@/components/ui'
+import { Card, EmptyState, ErrorState, LoadingState, PageHeader } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
 import { useToast, useConfirm } from '@/components/feedback'
 import { useFocusRow } from '@/components/useFocusRow'
@@ -185,16 +185,18 @@ export default function InspectionsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-gray-900">Inspections</h1>
-        <div className="flex flex-wrap items-center gap-2">
-        <ExportLink dataset="inspections" />
-        <button type="button" onClick={() => setWalkInOpen((open) => !open)}
-          className="rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on hover:bg-brand-bright">
-          {walkInOpen ? 'Close form' : 'Book a walk-in inspection'}
-        </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Inspections"
+        description="Every booked and running inspection, by day. The 150-point record is evidence; publishing is a separate decision."
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportLink dataset="inspections" />
+            <button type="button" onClick={() => setWalkInOpen((open) => !open)} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-label font-bold text-brand-on shadow-card transition-colors hover:bg-brand-deep">
+              {walkInOpen ? 'Close form' : 'Book a walk-in inspection'}
+            </button>
+          </div>
+        }
+      />
 
       {walkInOpen ? (
         <Card className="mb-6 p-5">

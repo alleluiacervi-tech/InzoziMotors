@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import { MoneyInput } from '@/components/MoneyInput'
 import { useToast } from '@/components/feedback'
 import { SelectOrType } from '@/components/SelectOrType'
+import { PageHeader } from '@/components/ui'
 
 // The common answers, not the only permitted ones — each of these fields offers
 // an "Other" that reveals a text box. The old lists were four items long, so an
@@ -58,11 +59,10 @@ function InspectionPicker() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-xl font-bold text-gray-900">Create a listing</h1>
-      <p className="mt-2 text-sm text-gray-500">
-        Pick the completed inspection this listing is for. That link is what lets the
-        listing be published later — it cannot be added afterwards.
-      </p>
+      <PageHeader
+        title="Create a listing"
+        description="Pick the completed inspection this listing is for. That link is what lets the listing be published later — it cannot be added afterwards."
+      />
 
       {rows.length === 0 ? (
         <div className="mt-6 rounded-xl border border-gray-100 bg-surface p-6 shadow-sm">

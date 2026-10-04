@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { PageHeader, LoadingState, ErrorState } from './ui'
+import { PageHeader, LoadingState, ErrorState, IconTile } from './ui'
 import { RangeControl } from './charts'
 import { Icon, type IconName } from './Icon'
 import { useInsightsRange } from './useInsightsRange'
@@ -160,11 +160,14 @@ export function Windowed<T>({ state, children, rows = 6 }: {
   return <div className={state.loading ? 'opacity-60 transition-opacity' : 'transition-opacity'} aria-busy={state.loading}>{children(state.data)}</div>
 }
 
-export function SectionTitle({ children, hint }: { children: ReactNode; hint?: string }) {
+export function SectionTitle({ children, hint, icon }: { children: ReactNode; hint?: string; icon?: IconName }) {
   return (
-    <div className="mb-3 mt-8 first:mt-0">
-      <h2 className="text-section font-extrabold text-content">{children}</h2>
-      {hint ? <p className="mt-0.5 text-caption text-content-muted">{hint}</p> : null}
+    <div className="mb-3 mt-8 flex items-center gap-3 first:mt-0">
+      {icon ? <IconTile icon={icon} size="sm" tone="raised" /> : null}
+      <div className="min-w-0">
+        <h2 className="text-section font-extrabold text-content">{children}</h2>
+        {hint ? <p className="mt-0.5 text-caption text-content-muted">{hint}</p> : null}
+      </div>
     </div>
   )
 }

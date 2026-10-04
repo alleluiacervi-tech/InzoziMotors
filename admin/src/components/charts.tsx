@@ -21,7 +21,8 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
+import { IconTile } from './ui'
 import { fmtDayMonth, fmtInt, fmtWeekday } from '@/lib/format'
 
 export type Tone = 1 | 2 | 3 | 4 | 5
@@ -123,9 +124,11 @@ function MiniLines({ current, previous }: { current: number[]; previous?: number
 
 export function KpiTile({
   label, value, current, previous, goodDirection = 'up', periodLabel, compare = true,
-  series, previousSeries, href, hint,
+  series, previousSeries, href, hint, icon,
 }: {
   label: string
+  /** The object being counted, in a neutral tile at the top right. */
+  icon?: IconName
   /** The formatted headline. */
   value: string
   current: number
@@ -140,7 +143,10 @@ export function KpiTile({
 }) {
   const body = (
     <div className="flex h-full flex-col gap-2.5 p-4 sm:p-5">
-      <p className="text-label font-semibold text-content-muted">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 pt-1.5 text-label font-semibold text-content-muted">{label}</p>
+        {icon ? <IconTile icon={icon} size="sm" className="max-sm:hidden" /> : null}
+      </div>
       <p className="tnum text-stat font-extrabold leading-none text-content">{value}</p>
       {compare ? (
         <PeriodDelta current={current} previous={previous} goodDirection={goodDirection} periodLabel={periodLabel} />

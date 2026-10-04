@@ -1,9 +1,9 @@
 import type { Config } from 'tailwindcss'
 
-// Brand system — the SAME tokens as web/tailwind.config.ts and the mobile app
-// (Signal Red, warm charcoal inks, warm neutrals). The admin previously ran the
-// pre-rebrand forest-green palette; an internal tool still represents the brand
-// to the people who run the business every day.
+// Brand system — the same Signal Red as web/tailwind.config.ts and the mobile
+// app, on cool slate neutrals (see globals.css for why the console differs).
+// The admin previously ran the pre-rebrand forest-green palette; an internal
+// tool still represents the brand to the people who run the business every day.
 const config: Config = {
   darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],
@@ -188,8 +188,12 @@ const config: Config = {
         'micro': ['0.75rem', { lineHeight: '1.4', letterSpacing: '0.04em' }],       // 12px — the floor; was 11px (admin audit, finding 17)
       },
       boxShadow: {
-        card: '0 2px 8px rgba(26, 20, 19, 0.06)',
-        'card-lg': '0 8px 28px rgba(26, 20, 19, 0.10)',
+        // Crisp, not soft: a hairline of shadow under a 1px border reads as a
+        // surface; a wide blur reads as a marketing card.
+        card: '0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.04)',
+        'card-lg': '0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px -6px rgba(15, 23, 42, 0.10)',
+        // An icon tile's own lift, so a white tile still reads on a white card.
+        tile: '0 1px 2px rgba(15, 23, 42, 0.06), inset 0 0 0 1px rgba(15, 23, 42, 0.06)',
       },
     },
   },

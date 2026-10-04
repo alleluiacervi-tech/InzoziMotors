@@ -9,7 +9,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { api, downloadUrl, type InsightsDay, type InsightsOverview, type RangeQuery } from '@/lib/api'
-import { fmtMoney, fmtMoneyShort, Icon, type IconName } from '@/components/ui'
+import { fmtMoney, fmtMoneyShort, Icon, IconTile, type IconName } from '@/components/ui'
 import { BarList, ChartFrame, DownloadLink, KpiTile, LineChart, pctChange } from '@/components/charts'
 import {
   CHANNEL_LABEL, InsightsShell, LINE_LABEL, METHOD_LABEL, SectionTitle, Windowed, useWindowed, windowText,
@@ -80,7 +80,7 @@ function OverviewBody({ data, compare, periodLabel, query }: { data: InsightsOve
   const totalPrev = chart.p.values.reduce((a, b) => a + b, 0)
   const change = pctChange(totalCur, totalPrev)
 
-  const tile = (label: string, key: keyof typeof cur, opts: { money?: boolean; spark?: SeriesKey; href?: string; hint?: string; good?: 'up' | 'down'; pct?: boolean } = {}) => {
+  const tile = (label: string, key: keyof typeof cur, opts: { money?: boolean; spark?: SeriesKey; href?: string; hint?: string; good?: 'up' | 'down'; pct?: boolean; icon?: IconName } = {}) => {
     const c = Number(cur[key] ?? 0)
     const p = prev[key] == null ? null : Number(prev[key])
     return (
@@ -96,6 +96,7 @@ function OverviewBody({ data, compare, periodLabel, query }: { data: InsightsOve
         previousSeries={opts.spark ? sparkPrev(opts.spark) : undefined}
         href={opts.href}
         hint={opts.hint}
+        icon={opts.icon}
       />
     )
   }
@@ -110,10 +111,10 @@ function OverviewBody({ data, compare, periodLabel, query }: { data: InsightsOve
       </p>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {tile('Revenue collected', 'revenue_rwf', { money: true, spark: 'revenue_rwf', href: `/revenue`, hint: fmtMoney(cur.revenue_rwf, 'RWF') })}
-        {tile('Listings published', 'published', { spark: 'published', href: '/listings' })}
-        {tile('Contact requests', 'contacts', { spark: 'contacts', hint: 'Seller details shared with signed-in buyers' })}
-        {tile('Submissions received', 'submissions', { spark: 'submissions', href: '/submissions' })}
+        {tile('Revenue collected', 'revenue_rwf', { icon: 'receipt', money: true, spark: 'revenue_rwf', href: `/revenue`, hint: fmtMoney(cur.revenue_rwf, 'RWF') })}
+        {tile('Listings published', 'published', { icon: 'car', spark: 'published', href: '/listings' })}
+        {tile('Contact requests', 'contacts', { icon: 'phone', spark: 'contacts', hint: 'Seller details shared with signed-in buyers' })}
+        {tile('Submissions received', 'submissions', { icon: 'document', spark: 'submissions', href: '/submissions' })}
       </div>
 
       <ChartFrame
@@ -154,22 +155,22 @@ function OverviewBody({ data, compare, periodLabel, query }: { data: InsightsOve
         />
       </ChartFrame>
 
-      <SectionTitle hint="Vehicles moving from submission to a live listing.">Supply</SectionTitle>
+      <SectionTitle icon="kanban" hint="Vehicles moving from submission to a live listing.">Supply</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {tile('Reviewed within 24 hours', 'review_sla_rate', { pct: true, hint: `${fmtInt(cur.reviewed)} submissions reviewed` })}
-        {tile('Inspections completed', 'inspections_completed', { href: '/insights/quality?' + query, hint: `Pass rate ${pctText(cur.pass_rate)}` })}
-        {tile('Median days to live', 'median_days_to_live', { good: 'down', hint: 'From submission to publication, for listings published in the window' })}
-        {tile('Listings marked sold', 'marked_sold', { hint: 'Reported by the seller. Sawa is not a party to the sale.' })}
+        {tile('Inspections completed', 'inspections_completed', { icon: 'clipboard-check', href: '/insights/quality?' + query, hint: `Pass rate ${pctText(cur.pass_rate)}` })}
+        {tile('Median days to live', 'median_days_to_live', { icon: 'timer', good: 'down', hint: 'From submission to publication, for listings published in the window' })}
+        {tile('Listings marked sold', 'marked_sold', { icon: 'tag', hint: 'Reported by the seller. Sawa is not a party to the sale.' })}
       </div>
 
-      <SectionTitle hint="People finding, saving and asking about vehicles.">Demand</SectionTitle>
+      <SectionTitle icon="users" hint="People finding, saving and asking about vehicles.">Demand</SectionTitle>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {tile('Saves', 'saves', { spark: 'saves' })}
-        {tile('New buyers', 'new_buyers', { href: '/users' })}
-        {tile('New sellers', 'new_sellers', { href: '/users' })}
+        {tile('Saves', 'saves', { icon: 'heart', spark: 'saves' })}
+        {tile('New buyers', 'new_buyers', { icon: 'users', href: '/users' })}
+        {tile('New sellers', 'new_sellers', { icon: 'user', href: '/users' })}
         <KpiTile label="Rental and import enquiries" value={fmtInt(cur.rental_inquiries + cur.import_enquiries)}
           current={cur.rental_inquiries + cur.import_enquiries} previous={prev.rental_inquiries + prev.import_enquiries}
-          periodLabel={periodLabel} compare={compare}
+          periodLabel={periodLabel} compare={compare} icon="calendar-clock"
           hint={`${fmtInt(cur.rental_inquiries)} rental · ${fmtInt(cur.import_enquiries)} import`} />
       </div>
 
@@ -188,7 +189,7 @@ function OverviewBody({ data, compare, periodLabel, query }: { data: InsightsOve
         </ChartFrame>
       </div>
 
-      <SectionTitle hint="Live counts, not limited to the window.">Right now</SectionTitle>
+      <SectionTitle icon="clock" hint="Live counts, not limited to the window.">Right now</SectionTitle>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <NowCard icon="car" label="Live listings" value={data.snapshot.live_inventory} href="/listings" />
         <NowCard icon="document" label="Submissions awaiting review" value={data.snapshot.awaiting_review} href="/submissions"
@@ -203,7 +204,7 @@ function OverviewBody({ data, compare, periodLabel, query }: { data: InsightsOve
 function NowCard({ icon, label, value, href, alert }: { icon: IconName; label: string; value: number; href: string; alert?: string }) {
   return (
     <Link href={href} className="flex items-center gap-4 rounded-2xl border border-line-soft bg-surface p-4 shadow-card transition-colors hover:border-line">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-alt text-content-secondary"><Icon name={icon} size={18} /></span>
+      <IconTile icon={icon} />
       <span className="min-w-0">
         <span className="tnum block text-section font-extrabold text-content">{fmtInt(value)}</span>
         <span className="block truncate text-caption text-content-muted">{label}</span>

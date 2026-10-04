@@ -7,6 +7,7 @@
 // across many inspections is worth a look — real cars vary.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { IconName } from '@/components/Icon'
 import { api, type InsightsQuality, type RangeQuery } from '@/lib/api'
 import { BarList, ChartFrame, ColumnChart, DataTable, KpiTile } from '@/components/charts'
 import { InsightsShell, Windowed, useWindowed } from '@/components/InsightsShell'
@@ -29,16 +30,16 @@ function Quality({ range }: { range: RangeQuery }) {
 }
 
 function Body({ d }: { d: InsightsQuality }) {
-  const kpi = (label: string, value: string, hint?: string, href?: string) => (
-    <KpiTile label={label} value={value} current={0} periodLabel="" compare={false} hint={hint} href={href} />
+  const kpi = (icon: IconName, label: string, value: string, hint?: string, href?: string) => (
+    <KpiTile icon={icon} label={label} value={value} current={0} periodLabel="" compare={false} hint={hint} href={href} />
   )
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {kpi('Inspections completed', fmtInt(d.completed), undefined, '/inspections')}
-        {kpi('Pass rate', d.pass_rate == null ? '—' : `${d.pass_rate}%`, `Passing needs ${d.publish_threshold} of ${d.score_max} and no critical failure`)}
-        {kpi('Average score', d.avg_score == null ? '—' : `${d.avg_score} / ${d.score_max}`)}
-        {kpi('With a critical failure', fmtInt(d.with_critical), `${fmtInt(d.submissions_rejected)} submissions were rejected at review in the same window`)}
+        {kpi('clipboard-check', 'Inspections completed', fmtInt(d.completed), undefined, '/inspections')}
+        {kpi('badge-check', 'Pass rate', d.pass_rate == null ? '—' : `${d.pass_rate}%`, `Passing needs ${d.publish_threshold} of ${d.score_max} and no critical failure`)}
+        {kpi('gauge', 'Average score', d.avg_score == null ? '—' : `${d.avg_score} / ${d.score_max}`)}
+        {kpi('alert', 'With a critical failure', fmtInt(d.with_critical), `${fmtInt(d.submissions_rejected)} submissions were rejected at review in the same window`)}
       </div>
 
       <div className="mt-5 grid items-start gap-5 xl:grid-cols-[2fr_3fr]">

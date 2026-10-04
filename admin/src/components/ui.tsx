@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
+import { usePageIcon } from './page-icon'
 
 // The admin's shared primitives — one card grammar, one stat tile, one status
 // pill, one page header, so twelve pages read as one professional tool.
@@ -85,17 +86,25 @@ export function fmtMoneyShort(n: number | null | undefined, currency: Currency |
  * this is, or how many records are behind it.
  */
 export function PageHeader({
-  title, description, eyebrow, action,
+  title, description, eyebrow, action, icon,
 }: {
   title: string
   description?: string
   eyebrow?: string
   action?: ReactNode
+  /** Defaults to the open sidebar row's glyph. `null` draws none. */
+  icon?: IconName | null
 }) {
+  const shellIcon = usePageIcon()
+  const glyph = icon === null ? undefined : icon ?? shellIcon
   return (
     <div className="mb-6 border-b border-line-soft pb-5 sm:mb-8">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-start gap-3.5 sm:gap-4">
+          {/* Ink, like the rail it was chosen from: the one dark mark on the
+              page, so the eye lands on where you are before what is there. */}
+          {glyph ? <IconTile icon={glyph} size="lg" tone="ink" className="mt-0.5 hidden sm:flex" /> : null}
+          <div className="min-w-0">
           {eyebrow ? (
             <p className="mb-1.5 text-micro font-bold uppercase tracking-[0.14em] text-content-muted">
               {eyebrow}
@@ -107,6 +116,7 @@ export function PageHeader({
               {description}
             </p>
           ) : null}
+          </div>
         </div>
         {/* max-w-full lets a row of actions wrap on a phone instead of
             pushing the page sideways; shrink-0 keeps it whole on a desktop. */}
@@ -114,6 +124,72 @@ export function PageHeader({
       </div>
     </div>
   )
+}
+
+// ─── Icon tile ───────────────────────────────────────────────────────────────
+// One treatment for every icon that names an object: a rounded square at one
+// of three sizes, in one of a few tones. The glyph says WHAT the thing is; the
+// tone says what STATE it is in, and is neutral unless it has one. A coloured
+// tile that only decorates teaches people to ignore the coloured tiles that
+// mean something.
+
+export type TileTone = 'neutral' | 'muted' | 'raised' | 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'ink'
+
+const TILE_TONES: Record<TileTone, string> = {
+  neutral: 'bg-surface-alt text-content-secondary',
+  muted: 'bg-surface-alt text-content-muted',
+  raised: 'bg-surface text-content-secondary shadow-tile',
+  brand: 'bg-brand-tint text-brand',
+  success: 'bg-success-tint text-success-text',
+  warning: 'bg-warning-tint text-warning-text',
+  danger: 'bg-danger-tint text-danger-strong',
+  info: 'bg-info-tint text-info',
+  ink: 'bg-ink-900 text-white',
+}
+
+const TILE_SIZES = {
+  sm: ['h-8 w-8 rounded-lg', 16],
+  md: ['h-10 w-10 rounded-xl', 18],
+  lg: ['h-11 w-11 rounded-xl', 20],
+} as const
+
+export function IconTile({
+  icon, tone = 'neutral', size = 'md', className = '',
+}: {
+  icon: IconName
+  tone?: TileTone
+  size?: keyof typeof TILE_SIZES
+  className?: string
+}) {
+  const [box, glyph] = TILE_SIZES[size]
+  return (
+    <span aria-hidden className={`flex shrink-0 items-center justify-center ${box} ${TILE_TONES[tone]} ${className}`}>
+      <Icon name={icon} size={glyph} />
+    </span>
+  )
+}
+
+/** The object an API row is about, as the glyph its sidebar page uses.
+ *  `kind` is the label the backend sends (Action Center, activity, search). */
+const KIND_ICONS: Record<string, IconName> = {
+  submission: 'document',
+  inspection: 'clipboard-check',
+  import: 'ship',
+  identity: 'id-card',
+  safety: 'flag',
+  listing: 'car',
+  'rental inquiry': 'calendar-clock',
+  'rental listing': 'calendar-clock',
+  account: 'user-x',
+  seller: 'user',
+  user: 'users',
+  payment: 'receipt',
+  fee: 'receipt',
+  'admin action': 'history',
+}
+
+export function kindIcon(kind: string | null | undefined): IconName {
+  return KIND_ICONS[(kind || '').toLowerCase()] ?? 'list-checks'
 }
 
 export function Card({ children, className = '', id }: { children: ReactNode; className?: string; id?: string }) {
@@ -134,19 +210,23 @@ export function Card({ children, className = '', id }: { children: ReactNode; cl
  * caveat without inventing another row.
  */
 export function CardHeader({
-  title, hint, action, as: Tag = 'h2', id,
+  title, hint, action, as: Tag = 'h2', id, icon,
 }: {
   title: string
   hint?: string
   action?: ReactNode
   as?: 'h2' | 'h3'
   id?: string
+  icon?: IconName
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-soft px-5 py-4">
-      <div className="min-w-0">
-        <Tag id={id} className="truncate text-label font-extrabold text-content">{title}</Tag>
-        {hint ? <p className="mt-0.5 truncate text-caption text-content-muted">{hint}</p> : null}
+      <div className="flex min-w-0 items-center gap-3">
+        {icon ? <IconTile icon={icon} size="sm" tone="neutral" /> : null}
+        <div className="min-w-0">
+          <Tag id={id} className="truncate text-label font-extrabold text-content">{title}</Tag>
+          {hint ? <p className="mt-0.5 truncate text-caption text-content-muted">{hint}</p> : null}
+        </div>
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>
@@ -265,23 +345,17 @@ export function StatCard({
   value: string | number
   sub?: string
   icon: IconName
-  tone?: 'neutral' | 'brand' | 'success' | 'warning' | 'info'
+  tone?: TileTone
   href?: string
   trend?: Trend
   /** What the delta is measured against ("vs a week ago"). A movement with no
    *  period beside it reads as a contradiction of the number next to it. */
   trendLabel?: string
 }) {
-  const tones = {
-    neutral: 'bg-surface-alt text-content-secondary',
-    brand: 'bg-brand-tint text-brand',
-    success: 'bg-success-tint text-success-text',
-    warning: 'bg-warning-tint text-warning-text',
-    info: 'bg-info-tint text-info',
-  }
-  // With a trend the icon becomes a quiet corner mark rather than a tinted
-  // block: four identical coloured squircles in a row were the loudest thing
-  // on the dashboard and the least informative.
+  // Every tile carries its object's glyph in the same neutral tile; colour is
+  // left to a tile whose `tone` says something (four identical coloured
+  // squircles in a row were once the loudest and least informative thing on
+  // the dashboard).
   //
   // Both variants share one geometry now — label row, then the number, then
   // the supporting line — so a row that mixes trended and untrended tiles has
@@ -291,10 +365,8 @@ export function StatCard({
   const body = (
     <div className="flex h-full flex-col gap-3 p-5">
       <div className="flex items-start justify-between gap-2">
-        <p className="truncate text-label font-semibold text-content-muted">{label}</p>
-        <span className={`shrink-0 ${trend ? 'text-gray-400' : `flex h-7 w-7 items-center justify-center rounded-lg ${tones[tone]}`}`}>
-          <Icon name={icon} size={trend ? 15 : 15} />
-        </span>
+        <p className="truncate pt-1.5 text-label font-semibold text-content-muted">{label}</p>
+        <IconTile icon={icon} tone={tone} size="sm" />
       </div>
 
       <div className="flex items-baseline gap-2">
@@ -415,9 +487,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center px-6 py-14 text-center">
-      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-alt text-content-muted">
-        <Icon name={icon} size={22} />
-      </span>
+      <IconTile icon={icon} size="lg" tone="muted" className="mb-4" />
       <p className="text-body font-bold text-content">{title}</p>
       {description ? <p className="mt-1 max-w-xs text-caption leading-relaxed text-content-muted">{description}</p> : null}
     </div>
