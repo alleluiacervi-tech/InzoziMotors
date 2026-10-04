@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/SafeImage'
 import Link from 'next/link'
 import { Icon } from '@/components/ui'
 import { Price } from '@/components/Price'

@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/SafeImage'
 import Link from 'next/link'
 import { Container, Icon } from '@/components/ui'
 import { CheckRuler, type RulerGroup } from '@/components/brand/CheckRuler'

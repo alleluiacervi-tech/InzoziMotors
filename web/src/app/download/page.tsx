@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
+import Image from '@/components/ui/SafeImage'
 import Link from 'next/link'
 import { Button, Card, Container, Eyebrow, Icon, Section, SectionHeading, type IconName } from '@/components/ui'
 import { getServerT } from '@/lib/i18n/server'

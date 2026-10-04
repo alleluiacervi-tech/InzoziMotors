@@ -20,7 +20,7 @@ const {
   evaluateChecklist,
 } = require('../lib/inspection-policy');
 const { publicationReadiness } = require('../lib/publication-readiness');
-const { maskVin } = require('../lib/vin-engine/validator');
+const { publicVin, vinForStorage } = require('../lib/vin-engine/validator');
 const { sellerDisplayName, sellerDisplayColumns } = require('../lib/seller-display');
 
 const router = express.Router();
@@ -447,9 +447,11 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
       // Masked, as on the listing itself (GET /cars/:id). This route is public
       // and used to return the full VIN of every live car to anyone. `vin`
       // stays as a key, masked, because installed app builds read it.
-      vin: car.vin ? maskVin(car.vin) : null,
-      vin_masked: car.vin ? maskVin(car.vin) : null,
-      vin_verified: docVerdict('d06') === 'pass',
+      // Only a real identifier is shown, and only a real one can be "verified":
+      // the inspector's d06 tick cannot vouch for a VIN that is not one.
+      vin: publicVin(car.vin).masked,
+      vin_masked: publicVin(car.vin).masked,
+      vin_verified: docVerdict('d06') === 'pass' && publicVin(car.vin).valid,
       make: car.make, model: car.model, year: car.year,
       drive_side: car.drive_side,
       import_origin: car.drive_side === 'RHD' ? 'Japan (typical for RHD)' : 'Unknown',
@@ -648,12 +650,14 @@ ${MARKET_LATERALS}
       for (const column of INTERNAL_CAR_COLUMNS) delete car[column];
 
       // Privacy Guardrail: Never expose raw VIN on public surfaces
-      car.vin_masked = maskVin(car.vin);
-      car.vin_verified = Boolean(car.vin && car.has_valid_inspection);
+      const shown = publicVin(car.vin);
+      car.vin_masked = shown.masked;
+      car.vin_verified = shown.valid && Boolean(car.has_valid_inspection);
       delete car.vin;
     } else {
-      car.vin_masked = maskVin(car.vin);
-      car.vin_verified = Boolean(car.vin && car.has_valid_inspection);
+      const shown = publicVin(car.vin);
+      car.vin_masked = shown.masked;
+      car.vin_verified = shown.valid && Boolean(car.has_valid_inspection);
     }
     car.seller_contact_available = available;
     car.direct_deal_notice = DIRECT_DEAL_NOTICE;
@@ -790,6 +794,8 @@ router.post('/', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: `${field} must be a non-negative number` });
     }
   }
+  const vinCheck = vinForStorage(vin);
+  if (!vinCheck.ok) return res.status(400).json({ error: vinCheck.error, code: 'INVALID_VIN' });
   try {
     // ID is checked in person at the inspection center; admin marks the seller
     // approved there. A listing cannot go live for an unverified seller.
@@ -858,7 +864,7 @@ router.post('/', requireAdmin, async (req, res) => {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,FALSE,NULL,'under_review')
          RETURNING *`,
         [seller_id, title, make, model, year, mileage, fuel_type, transmission,
-         body_type, color, price, location, drive_side, vin, description, images || []]
+         body_type, color, price, location, drive_side, vinCheck.value ?? null, description, images || []]
       );
       const created = rows[0];
       await client.query(
@@ -1089,6 +1095,9 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
   if (req.body.currency !== undefined && !['RWF', 'USD'].includes(req.body.currency)) {
     return res.status(400).json({ error: 'currency must be either RWF or USD' });
   }
+  const vinCheck = vinForStorage(req.body.vin);
+  if (!vinCheck.ok) return res.status(400).json({ error: vinCheck.error, code: 'INVALID_VIN' });
+  if (vinCheck.value !== undefined) req.body.vin = vinCheck.value;
   const updates = [];
   const params = [];
   for (const field of EDITABLE) {

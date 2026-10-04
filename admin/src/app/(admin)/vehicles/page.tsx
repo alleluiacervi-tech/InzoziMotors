@@ -6,6 +6,12 @@ import { Card, EmptyState, ErrorState, LoadingState, PageHeader, Pill } from '@/
 import { Icon } from '@/components/Icon'
 import { useToast } from '@/components/feedback'
 
+// A decoder that did not report a value shows this, never a plausible guess:
+// "Sedan" or "Toyota City" on an unknown car reads as verified data.
+const NOT_REPORTED = 'Not reported'
+
+type DecodeProvider = { id: string; name: string; success: boolean; error: string | null }
+
 type TabKey = 'decoder' | 'discrepancies' | 'signals' | 'events' | 'inspections'
 
 export default function VehicleIntelligenceCommandCenter() {
@@ -17,6 +23,7 @@ export default function VehicleIntelligenceCommandCenter() {
   const [decoding, setDecoding] = useState(false)
   const [decodeError, setDecodeError] = useState<string | null>(null)
   const [decodeResult, setDecodeResult] = useState<any | null>(null)
+  const providers: DecodeProvider[] = Array.isArray(decodeResult?.activeProviders) ? decodeResult.activeProviders : []
 
   // ── Discrepancy Diffing State ──────────────────────────────────────────────
   const [listingClaim, setListingClaim] = useState({
@@ -97,7 +104,7 @@ export default function VehicleIntelligenceCommandCenter() {
   }
 
   async function handleCompare() {
-    if (!decodeResult?.normalizedSpecs) {
+    if (!decodeResult?.specs) {
       toast('Please decode a vehicle first to compare against ground truth specs.', 'error')
       return
     }
@@ -111,7 +118,7 @@ export default function VehicleIntelligenceCommandCenter() {
         transmission: listingClaim.transmission,
         body_type: listingClaim.body_type,
       }
-      const res = await api.compareDiscrepancies(inputs, decodeResult.normalizedSpecs)
+      const res = await api.compareDiscrepancies(inputs, decodeResult.specs)
       setDiffResult(res)
       toast(`Compared specs: ${res.count} discrepancy detected.`, res.hasDiscrepancies ? 'info' : 'success')
     } catch (err: any) {
@@ -341,10 +348,10 @@ export default function VehicleIntelligenceCommandCenter() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xl font-extrabold text-content">
-                        {decodeResult.normalizedSpecs?.make} {decodeResult.normalizedSpecs?.model}
+                        {decodeResult.specs?.make} {decodeResult.specs?.model}
                       </span>
                       <span className="rounded-lg bg-surface-alt px-2.5 py-1 font-mono text-xs font-bold text-content">
-                        {decodeResult.normalizedSpecs?.year}
+                        {decodeResult.specs?.year}
                       </span>
                     </div>
                     <p className="mt-1 font-mono text-xs tracking-wider text-content-muted">
@@ -358,17 +365,20 @@ export default function VehicleIntelligenceCommandCenter() {
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold ${
                           decodeResult.vehicleIdentity?.checkDigitValid
-                            ? 'bg-success-tint text-success'
-                            : 'bg-danger-tint text-danger-strong'
+                            ? 'bg-success-tint text-success-text'
+                            : 'bg-warning-tint text-warning-text'
                         }`}
                       >
                         <Icon
                           name={decodeResult.vehicleIdentity?.checkDigitValid ? 'check-circle' : 'close-circle'}
                           className="h-4 w-4"
                         />
+                        {/* Many manufacturers outside North America do not use the
+                            ISO check digit, so a mismatch is a prompt to compare
+                            the VIN with the documents, not evidence of tampering. */}
                         {decodeResult.vehicleIdentity?.checkDigitValid
-                          ? 'Modulo 11 Authentic'
-                          : 'Tampered Check Digit'}
+                          ? 'Check digit valid'
+                          : 'Check digit does not match: compare with documents'}
                       </span>
                     )}
 
@@ -379,7 +389,7 @@ export default function VehicleIntelligenceCommandCenter() {
 
                     {/* Confidence */}
                     <span className="rounded-xl bg-surface-alt px-3 py-1.5 text-xs font-semibold text-content">
-                      Confidence: {Math.round((decodeResult.confidenceScore || 1) * 100)}%
+                      Confidence: {typeof decodeResult.confidenceScore === 'number' ? `${Math.round(decodeResult.confidenceScore * 100)}%` : NOT_REPORTED}
                     </span>
                   </div>
                 </div>
@@ -388,59 +398,62 @@ export default function VehicleIntelligenceCommandCenter() {
                 <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Trim / Grade</p>
-                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.trim || 'Standard'}</p>
+                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.specs?.trim || NOT_REPORTED}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Body type</p>
-                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.bodyType || 'Sedan'}</p>
+                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.specs?.bodyType || NOT_REPORTED}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Displacement</p>
                     <p className="mt-1 text-sm font-bold text-content">
-                      {decodeResult.normalizedSpecs?.engineDisplacementCc
-                        ? `${decodeResult.normalizedSpecs?.engineDisplacementCc} cc`
-                        : 'N/A'}
+                      {decodeResult.specs?.engineCc
+                        ? `${decodeResult.specs?.engineCc} cc`
+                        : NOT_REPORTED}
                     </p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Fuel type</p>
-                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.fuelType || 'Petrol'}</p>
+                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.specs?.fuelType || NOT_REPORTED}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Transmission</p>
-                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.transmission || 'Automatic'}</p>
+                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.specs?.transmission || NOT_REPORTED}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Drivetrain</p>
-                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.drivetrain || 'FWD'}</p>
+                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.specs?.drivetrain || NOT_REPORTED}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Country of manufacture</p>
-                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCountry || 'Japan'}</p>
+                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.specs?.plantCountry || NOT_REPORTED}</p>
                   </div>
 
                   <div className="rounded-xl bg-surface-alt/70 p-3.5">
                     <p className="text-caption font-bold uppercase tracking-wider text-content-muted">Assembly city</p>
-                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.normalizedSpecs?.plantCity || 'Toyota City'}</p>
+                    <p className="mt-1 text-sm font-bold text-content">{decodeResult.specs?.plantCity || NOT_REPORTED}</p>
                   </div>
                 </div>
 
                 {/* Multi-Provider Attributions */}
                 <div className="mt-6 border-t border-line-soft pt-4">
+                  {/* Each source as the API reports it. A feed with no contract
+                      configured is listed as such, never counted as a source. */}
                   <p className="text-xs font-semibold text-content-muted">
-                    Verified across {decodeResult.activeProviders?.length || 1} independent provider data stream(s):
+                    Answered by {providers.filter((p) => p.success).length} of {providers.length} data sources:
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {(decodeResult.activeProviders || ['local_iso_decoder']).map((prov: string) => (
-                      <span key={prov} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1 font-mono text-caption text-content">
-                        <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                        {prov}
+                    {providers.map((prov) => (
+                      <span key={prov.id} title={prov.error || undefined} className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1 text-caption text-content">
+                        <span className={`h-1.5 w-1.5 rounded-full ${prov.success ? 'bg-success' : 'bg-gray-400'}`} aria-hidden />
+                        {prov.name}
+                        {!prov.success ? <span className="text-content-muted">· {prov.error || 'no answer'}</span> : null}
                       </span>
                     ))}
                   </div>
@@ -510,23 +523,23 @@ export default function VehicleIntelligenceCommandCenter() {
               <div className="flex flex-col justify-between rounded-xl border border-line-soft bg-surface-alt/40 p-4">
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-content">Verified VIN Ground Truth</h3>
-                  {decodeResult?.normalizedSpecs ? (
+                  {decodeResult?.specs ? (
                     <div className="mt-4 space-y-2 text-xs">
                       <p className="flex justify-between border-b border-line-soft pb-1">
                         <span className="text-content-muted">Make:</span>
-                        <strong className="font-semibold text-content">{decodeResult.normalizedSpecs.make}</strong>
+                        <strong className="font-semibold text-content">{decodeResult.specs.make}</strong>
                       </p>
                       <p className="flex justify-between border-b border-line-soft pb-1">
                         <span className="text-content-muted">Model:</span>
-                        <strong className="font-semibold text-content">{decodeResult.normalizedSpecs.model}</strong>
+                        <strong className="font-semibold text-content">{decodeResult.specs.model}</strong>
                       </p>
                       <p className="flex justify-between border-b border-line-soft pb-1">
                         <span className="text-content-muted">Year:</span>
-                        <strong className="font-semibold text-content">{decodeResult.normalizedSpecs.year}</strong>
+                        <strong className="font-semibold text-content">{decodeResult.specs.year}</strong>
                       </p>
                       <p className="flex justify-between border-b border-line-soft pb-1">
                         <span className="text-content-muted">Fuel Type:</span>
-                        <strong className="font-semibold text-content">{decodeResult.normalizedSpecs.fuelType}</strong>
+                        <strong className="font-semibold text-content">{decodeResult.specs.fuelType}</strong>
                       </p>
                     </div>
                   ) : (
@@ -538,7 +551,7 @@ export default function VehicleIntelligenceCommandCenter() {
                 </div>
 
                 <button
-                  disabled={diffing || !decodeResult?.normalizedSpecs}
+                  disabled={diffing || !decodeResult?.specs}
                   onClick={handleCompare}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 py-2.5 text-xs font-bold text-white hover:bg-ink-800 disabled:opacity-50"
                 >

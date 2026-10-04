@@ -6,6 +6,7 @@
 
 const express = require('express');
 const { requireAdmin } = require('../middleware/auth');
+const { log } = require('../lib/log');
 const { orchestrator } = require('../lib/data-providers/pipeline-orchestrator');
 const { compareListingAgainstVerified } = require('../lib/vin-engine/anomaly-detector');
 const { serializeAdminVehicle } = require('../lib/vin-engine/serializers');
@@ -51,8 +52,8 @@ router.post('/decode-and-retrieve', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error('Error in decode-and-retrieve:', err);
-    res.status(500).json({ error: 'Failed to process vehicle identifier', message: err.message });
+    log.error('decode-and-retrieve error', { error: err.message });
+    res.status(500).json({ error: 'Failed to process vehicle identifier' });
   }
 });
 
@@ -104,7 +105,8 @@ router.get('/intelligence/:id', async (req, res) => {
 
     res.json(serializeAdminVehicle(vehicle, eventsRes.rows, signalsRes.rows, auditRes.rows));
   } catch (err) {
-    res.status(500).json({ error: 'Failed to load vehicle intelligence', message: err.message });
+    log.error('vehicle intelligence: failed to load vehicle intelligence', { error: err.message });
+    res.status(500).json({ error: 'Failed to load vehicle intelligence' });
   }
 });
 
@@ -139,7 +141,8 @@ router.post('/signals/:id/resolve', async (req, res) => {
 
     res.json({ success: true, resolvedSignal: rows[0] });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to resolve signal', message: err.message });
+    log.error('vehicle intelligence: failed to resolve signal', { error: err.message });
+    res.status(500).json({ error: 'Failed to resolve signal' });
   }
 });
 
@@ -166,7 +169,8 @@ router.get('/signals', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch anomaly signals', message: err.message });
+    log.error('vehicle intelligence: failed to fetch anomaly signals', { error: err.message });
+    res.status(500).json({ error: 'Failed to fetch anomaly signals' });
   }
 });
 
@@ -237,7 +241,8 @@ router.post('/:id/events', async (req, res) => {
 
     res.status(201).json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to record vehicle event', message: err.message });
+    log.error('vehicle intelligence: failed to record vehicle event', { error: err.message });
+    res.status(500).json({ error: 'Failed to record vehicle event' });
   }
 });
 
@@ -304,7 +309,8 @@ router.patch('/:id/specs', async (req, res) => {
 
     res.json({ success: true, vehicle: rows[0] });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update vehicle specifications', message: err.message });
+    log.error('vehicle intelligence: failed to update vehicle specifications', { error: err.message });
+    res.status(500).json({ error: 'Failed to update vehicle specifications' });
   }
 });
 
@@ -350,7 +356,8 @@ router.get('/registry', async (req, res) => {
 
     res.json({ items: rows, total, limit, offset });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to load vehicles registry', message: err.message });
+    log.error('vehicle intelligence: failed to load vehicles registry', { error: err.message });
+    res.status(500).json({ error: 'Failed to load vehicles registry' });
   }
 });
 

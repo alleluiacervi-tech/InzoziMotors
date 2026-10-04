@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import Image from '@/components/ui/SafeImage'
 import { useRef, useState } from 'react'
 
 // The card's image area, made flickable — our translation of a colour-swatch

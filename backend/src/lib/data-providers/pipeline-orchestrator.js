@@ -9,6 +9,11 @@ const LocalDecoderProvider = require('./local-decoder-provider');
 const NhtsaVpicProvider = require('./nhtsa-vpic-provider');
 const SawaInspectionProvider = require('./sawa-inspection-provider');
 const CommercialProviderAdapter = require('./commercial-adapter');
+// Text from outside sources (NHTSA alone describes an SUV in 54 characters) is
+// cut to the column it lands in, so a long label can never fail the whole save.
+// Widths match the schema (migration 0055 for the four spec columns).
+const clip = (value, max) => (value == null ? null : String(value).slice(0, max));
+
 let pool = null;
 try {
   pool = require('../../db');
@@ -42,9 +47,14 @@ class VehiclePipelineOrchestrator {
       };
     }
 
-    // 1. Run all data providers in parallel with timeout isolation
+    // 1. Run all data providers in parallel with timeout isolation. A
+    // commercial feed with no contract configured is not queried at all and is
+    // listed as not configured: it used to report success while returning
+    // nothing, and its "standby" note was saved against every vehicle.
+    const configured = this.providers.filter((p) => typeof p.isConfigured !== 'function' || p.isConfigured());
+    const unconfigured = this.providers.filter((p) => !configured.includes(p));
     const providerResults = await Promise.all(
-      this.providers.map((provider) => provider.safeFetch(vinContext, options.timeoutMs || 4000))
+      configured.map((provider) => provider.safeFetch(vinContext, options.timeoutMs || 4000))
     );
 
     // 2. Normalization & Specification Merging
@@ -84,6 +94,9 @@ class VehiclePipelineOrchestrator {
       for (const flag of qualityFlags) {
         allFlags.push({ ...flag, providerId: res.providerId });
       }
+    }
+    for (const provider of unconfigured) {
+      activeProviders.push({ id: provider.id, name: provider.name, success: false, error: 'Not configured' });
     }
 
     // Default required fields if missing
@@ -193,19 +206,19 @@ class VehiclePipelineOrchestrator {
         vehicleIdentity.vis,
         vehicleIdentity.checkDigit,
         vehicleIdentity.checkDigitValid,
-        specs.make,
-        specs.model,
+        clip(specs.make, 100),
+        clip(specs.model, 100),
         specs.year,
-        specs.trim || null,
-        specs.bodyType || null,
+        clip(specs.trim || null, 100),
+        clip(specs.bodyType || null, 120),
         specs.engineCc || null,
         specs.cylinders || null,
-        specs.engineDescription || null,
-        specs.fuelType || null,
-        specs.transmission || null,
-        specs.drivetrain || null,
-        specs.plantCountry || null,
-        specs.plantCity || null,
+        clip(specs.engineDescription || null, 100),
+        clip(specs.fuelType || null, 120),
+        clip(specs.transmission || null, 120),
+        clip(specs.drivetrain || null, 120),
+        clip(specs.plantCountry || null, 100),
+        clip(specs.plantCity || null, 100),
         verificationStatus,
         confidenceScore,
         JSON.stringify(signals),
@@ -226,21 +239,21 @@ class VehiclePipelineOrchestrator {
            ON CONFLICT DO NOTHING`,
           [
             vehicle.id,
-            ev.eventType,
+            clip(ev.eventType, 50),
             ev.eventDate,
             ev.eventTimestamp || null,
             ev.odometerKm || null,
             Boolean(ev.odometerVerified),
-            ev.providerId || 'pipeline',
-            ev.sourceType || 'automated_feed',
-            ev.sourceReference || null,
+            clip(ev.providerId || 'pipeline', 50),
+            clip(ev.sourceType || 'automated_feed', 50),
+            clip(ev.sourceReference || null, 150),
             ev.confidence || 1.0,
-            ev.title || 'Historical Event',
+            clip(ev.title || 'Historical Event', 200),
             ev.publicSummary || '',
             JSON.stringify(ev.internalDetails || {}),
             ev.isPublic !== false,
             Boolean(ev.hasAnomaly),
-            ev.anomalyDescription || null,
+            clip(ev.anomalyDescription || null, 255),
           ]
         );
       }
@@ -252,13 +265,17 @@ class VehiclePipelineOrchestrator {
              vehicle_id, signal_type, severity, title, public_message, internal_evidence
            ) VALUES ($1, $2, $3, $4, $5, $6)
            ON CONFLICT DO NOTHING`,
+          // Providers report { message, evidence } (base-provider.js); the
+          // anomaly detector reports { publicMessage, internalEvidence }. Both
+          // are accepted: reading only the second made every provider note a
+          // NOT NULL violation, and so every VIN lookup a 500.
           [
             vehicle.id,
-            sig.signalType,
-            sig.severity || 'info',
-            sig.title,
-            sig.publicMessage,
-            JSON.stringify(sig.internalEvidence || {}),
+            clip(sig.signalType, 60),
+            clip(sig.severity || 'info', 20),
+            clip(sig.title || sig.signalType, 150),
+            sig.publicMessage || sig.message || sig.title || sig.signalType,
+            JSON.stringify(sig.internalEvidence || sig.evidence || {}),
           ]
         );
       }

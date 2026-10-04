@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { REMOTE_IMAGE_PATTERNS } from './src/lib/image-hosts'
 
 // The API host is read at request time (not baked in) so one image can be
 // promoted between environments — same discipline as the mobile app's
@@ -23,13 +24,9 @@ const nextConfig: NextConfig = {
     // srcset (WEBSITE-REDESIGN-TODO 3.14).
     deviceSizes: [640, 828, 1080, 1280, 1920],
     imageSizes: [64, 128, 256, 384],
-    remotePatterns: [
-      { protocol: 'https', hostname: '**.sawacars.com' },
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
-      { protocol: 'http', hostname: 'localhost' },
-      { protocol: 'http', hostname: '10.0.2.2' },
-    ],
+    // One list, shared with SafeImage (src/lib/image-hosts.ts), so a photo
+    // the optimiser would refuse is drawn plainly instead of crashing a page.
+    remotePatterns: REMOTE_IMAGE_PATTERNS,
   },
 
   // About and Marketplace safety merged into How Sawa works
