@@ -659,8 +659,9 @@ function JsonLd({ car, images }: { car: Car; images: string[] }) {
   if (images.length) data.image = images.slice(0, 8)
   if (car.description) data.description = car.description
   if (car.color) data.color = car.color
-  // Privacy Guardrail: Never expose raw unmasked VIN in public SEO schema or search indexes
-  if (car.vin_masked || car.vin) data.vehicleIdentificationNumber = car.vin_masked || 'VIN Verified'
+  // No vehicleIdentificationNumber. The raw VIN is never public, and a masked
+  // one ("JTMBFREV***3456") or a label ("VIN Verified") is not a VIN: handing
+  // either to search engines as one would publish a false identifier.
   if (car.fuel_type) data.fuelType = car.fuel_type
   if (car.transmission) data.vehicleTransmission = car.transmission
   if (car.body_type) data.bodyType = car.body_type

@@ -17,7 +17,7 @@ const { badgeSvg, readQuad, maskPlate } = require('../lib/plate-badge');
 // stored URL can be mapped back to the file it came from.
 const UPLOAD_ROOT = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
 const { recordAdminAction } = require('../lib/admin-audit');
-const { maskVin } = require('../lib/vin-engine/validator');
+const { publicVin } = require('../lib/vin-engine/validator');
 const { notifyUser } = require('../lib/notify');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
 const { elapsedMinutes, integrityFlags } = require('../lib/inspection-integrity');
@@ -193,7 +193,7 @@ router.get('/report/:carId', requireUuid('carId'), async (req, res) => {
     const { vin, ...report } = rows[0];
     res.json({
       ...report,
-      vin_masked: vin ? maskVin(vin) : null,
+      vin_masked: publicVin(vin).masked,
       checklist_version: CHECKLIST_VERSION,
       max_score: 150,
       passing_score: PUBLISH_THRESHOLD,

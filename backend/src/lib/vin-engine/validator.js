@@ -157,7 +157,41 @@ function validateVehicleIdentifier(raw) {
   };
 }
 
+/**
+ * What a public surface may say about a stored VIN.
+ *
+ * A VIN that is not a real identifier ("VIN Hidden" pasted back from a masked
+ * screen, a few stray characters) used to be masked like a real one and shown
+ * beside "matches documents". Only a structurally valid ISO VIN or JDM chassis
+ * number is shown or counted as verified; anything else reads as not recorded.
+ */
+function publicVin(raw) {
+  const result = validateVehicleIdentifier(raw);
+  return result.valid ? { valid: true, masked: maskVin(result.normalized) } : { valid: false, masked: null };
+}
+
+/**
+ * Checks a VIN an admin is about to store. Empty means "not recorded" (null);
+ * anything else must be a real identifier.
+ * @returns {{ ok: true, value: string|null } | { ok: false, error: string }}
+ */
+function vinForStorage(raw) {
+  if (raw === undefined) return { ok: true, value: undefined };
+  if (raw === null || String(raw).trim() === '') return { ok: true, value: null };
+  const result = validateVehicleIdentifier(raw);
+  if (!result.valid) {
+    return {
+      ok: false,
+      error: `"${String(raw).trim().slice(0, 40)}" is not a VIN or chassis number. Enter the 17-character VIN, `
+        + 'or a Japanese chassis number such as NZE141-5028491, exactly as on the registration card. Leave it empty if unknown.',
+    };
+  }
+  return { ok: true, value: String(raw).trim().toUpperCase() };
+}
+
 module.exports = {
+  publicVin,
+  vinForStorage,
   normalizeVin,
   maskVin,
   validateCheckDigit,

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
+import Image from '@/components/ui/SafeImage'
 import Link from 'next/link'
 import { CompareClear, CompareRemove } from '@/components/market/CompareControls'
 import { Badge, Button, Card, Container, EmptyState } from '@/components/ui'

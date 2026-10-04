@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
+import Image from '@/components/ui/SafeImage'
 import Link from 'next/link'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { NextStep } from '@/components/dashboard/NextStep'

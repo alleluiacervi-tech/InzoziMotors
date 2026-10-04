@@ -64,7 +64,10 @@ export default function EditListingPage() {
         setLocation(data.location || '')
         setColor(data.color || '')
         setDriveSide(data.drive_side || 'LHD')
-        setVin(data.vin || data.vin_masked || '')
+        // The stored VIN only. Falling back to the masked display value put
+        // "VIN Hidden" in the box for a car with no VIN, and any later save, even
+        // a price change, wrote it into the record as if it were the VIN.
+        setVin(data.vin || '')
         setDescription(data.description || '')
         setReviewNotes(data.review_notes || '')
         setImages((data.images || []).join('\n'))

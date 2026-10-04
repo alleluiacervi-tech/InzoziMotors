@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from '@/components/ui/SafeImage'
 import Link from 'next/link'
 import { Container, Icon, Section } from '@/components/ui'
 import { getServerT } from '@/lib/i18n/server'
