@@ -41,7 +41,9 @@ function bearer(token: string) {
 }
 
 async function register(overrides: Record<string, unknown> = {}) {
-  const body = { name: 'E2E User', email: unique('e2e'), password: 'password123', role: 'buyer', ...overrides }
+  // A phone, as production requires: the dashboard sends an account without one
+  // to /signup/complete (the Google/Apple step).
+  const body = { name: 'E2E User', email: unique('e2e'), password: 'password123', role: 'buyer', phone: '+250788000100', ...overrides }
   const res = await call('/auth/register', { method: 'POST', body: JSON.stringify(body) })
   return { ...body, token: res.token as string, id: res.user.id as string }
 }

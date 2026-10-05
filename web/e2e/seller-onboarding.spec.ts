@@ -28,7 +28,7 @@ test('a new seller verifies, submits a car with a photo and books an inspection 
   const registered = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'E2E New Seller', email, password, role: 'seller' }),
+    body: JSON.stringify({ name: 'E2E New Seller', email, password, role: 'seller', phone: '+250788000101' }),
   })
   expect(registered.ok).toBeTruthy()
   const { token } = (await registered.json()) as { token: string }

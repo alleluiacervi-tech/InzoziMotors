@@ -41,6 +41,8 @@ const router = express.Router();
 const USER_FIELDS = `id, name, email, phone, role, id_verified, account_status, seller_type,
   business_name, business_verified, trust_score, avatar_url, token_version, created_at,
   purge_after, closed_at, deleted_at`;
+// The same columns, qualified for a query that joins users as `u`.
+const LINKED_USER_FIELDS = USER_FIELDS.split(',').map((f) => `u.${f.trim()}`).join(', ');
 
 const PHONE_RE = /^\+[1-9]\d{7,14}$/;
 
@@ -104,7 +106,7 @@ router.post('/:provider(google|apple)', async (req, res) => {
 
       // 1. An identity we already know.
       const linked = await client.query(
-        `SELECT u.${USER_FIELDS.split(',').map((f) => f.trim()).join(', u.')}
+        `SELECT ${LINKED_USER_FIELDS}
            FROM user_identities ui JOIN users u ON u.id = ui.user_id
           WHERE ui.provider = $1 AND ui.subject = $2
           FOR UPDATE OF u`,
