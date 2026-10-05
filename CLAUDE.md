@@ -349,7 +349,10 @@ its provider is configured (`GET /auth/oauth/providers`, the web's env, the app'
 decoded and trusted; a provider email joins an existing account only when the provider marks it
 verified; admins always use their password; a provider never supplies a phone or role, so a new
 account is shown *One last step* (`POST /auth/oauth/complete-profile`, once) right after
-sign-up, and only then: signing in with Google or Apple never asks for a phone. Password-less accounts close without a password, and closing revokes Apple's tokens
+sign-up, and only then: signing in with Google or Apple never asks for a phone. The website also
+offers **Google One Tap** (`components/auth/GoogleOneTap.tsx`, `api/auth/oauth/google/one-tap`) to
+signed-out visitors on public pages: nonce cookie spent on use, Origin checked, `auto_select` off,
+quiet on auth pages and for the browser session after a sign-out. Password-less accounts close without a password, and closing revokes Apple's tokens
 (guideline 5.1.1(v)). The app's native sign-in needs store build 1.0.9.
 
 **Vehicle record** (`GET /cars/:id/history` → `sawa_record`, `GET /cars/:id/model-safety`; web

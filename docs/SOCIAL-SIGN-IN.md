@@ -37,7 +37,18 @@ to do to switch it on.
 - **Website**: Google's server-side flow, authorization code + PKCE. State,
   nonce and verifier live in a 10-minute httpOnly SameSite=Lax cookie, and
   the session ends up in the same httpOnly `sawa_session` cookie as a password
-  sign-in. No provider SDK reaches the browser.
+  sign-in.
+- **Website, Google One Tap**: the account chooser Google draws in the corner
+  (a bottom sheet on a phone; the browser's own FedCM dialog where supported),
+  for a signed-out visitor on any public page. One tap signs in, or creates the
+  account and goes to *One last step*. `components/auth/GoogleOneTap.tsx` loads
+  Google's script; `api/auth/oauth/google/one-tap` hands out a nonce (httpOnly,
+  SameSite=Strict, scoped to that path, spent on use) and takes the ID token,
+  only from a sawacars.com page (Origin checked). Not shown on the sign-in,
+  sign-up, reset and activation pages, nor for the rest of a browser session
+  after an explicit sign-out (`sawa_signed_out`), so a shared laptop does not
+  offer the account straight back. `auto_select` is off: nobody is signed in
+  without a tap. Google remembers a dismissal and backs off for longer each time.
 - **App**: native sheets — `expo-apple-authentication` (iOS only) and
   `@react-native-google-signin/google-signin`. These are native modules, so they
   arrive in **store build 1.0.9**, never over the air.
@@ -56,7 +67,7 @@ Project → *APIs & Services*.
 2. **Credentials → Create OAuth client ID**, three times:
    | Type | Settings | Used by |
    |---|---|---|
-   | Web application | Authorised redirect URI `https://sawacars.com/api/auth/oauth/google/callback` | website; also the audience of the app's ID tokens |
+   | Web application | Authorised redirect URI `https://sawacars.com/api/auth/oauth/google/callback`; Authorised JavaScript origin `https://sawacars.com` (One Tap needs it) | website and One Tap; also the audience of the app's ID tokens |
    | iOS | Bundle ID `com.sawacars.app` | the iOS app's native sheet |
    | Android | Package `com.sawacars.apps`, SHA-1 of the **Play App Signing** key (Play Console → *Test and release → App integrity*). Add a second Android client with the upload key's SHA-1 for internal builds. | the Android app |
 
@@ -123,3 +134,4 @@ is baked into the build.
 | Sign-in works then "not available right now" | the API does not list that client id in `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_IDS` |
 | Android `DEVELOPER_ERROR` | the Android client's SHA-1 is not the key that signed this build |
 | App shows no Google button | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` not set when the build was made |
+| No One Tap card on sawacars.com | signed in already; signed out in this browser session (closes with the browser); dismissed recently (Google backs off); no Google account in the browser; or `https://sawacars.com` missing from the Web client's *Authorised JavaScript origins* |
