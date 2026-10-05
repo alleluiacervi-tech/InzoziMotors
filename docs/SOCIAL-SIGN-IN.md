@@ -56,7 +56,7 @@ Project → *APIs & Services*.
    |---|---|---|
    | Web application | Authorised redirect URI `https://sawacars.com/api/auth/oauth/google/callback` | website; also the audience of the app's ID tokens |
    | iOS | Bundle ID `com.sawacars.app` | the iOS app's native sheet |
-   | Android | Package `com.sawacars.android`, SHA-1 of the **Play App Signing** key (Play Console → *Test and release → App integrity*). Add a second Android client with the upload key's SHA-1 for internal builds. | the Android app |
+   | Android | Package `com.sawacars.apps`, SHA-1 of the **Play App Signing** key (Play Console → *Test and release → App integrity*). Add a second Android client with the upload key's SHA-1 for internal builds. | the Android app |
 
 ## 2. Apple (developer.apple.com, Team `5Z2LA9U639`)
 

@@ -139,8 +139,9 @@ export default ({ config }) => ({
       backgroundColor: '#CC050F',
     },
     // Differs from the iOS bundle id on purpose: com.sawacars.app is held by a
-    // personal Play account, so the company account publishes under this name.
-    package: 'com.sawacars.android',
+    // personal Play account, so the company's new Play Console account
+    // publishes under this name. Permanent once the first build is uploaded.
+    package: 'com.sawacars.apps',
     ...(GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
     permissions: [
       'CAMERA',

@@ -237,11 +237,11 @@ commission.
 
 | | |
 |---|---|
-| Bundle id / package | iOS `com.sawacars.app` · Android `com.sawacars.android` (company Play account; `com.sawacars.app` is stuck on a personal Play account that never got production access) |
+| Bundle id / package | iOS `com.sawacars.app` · Android `com.sawacars.apps` (the company's new Play Console account, from Oct 2026; `com.sawacars.app` is stuck on a personal Play account that never got production access; `com.sawacars.android` is retired) |
 | Slug / EAS project | `sawa-cars` / `f2c5d3f8-8777-4b97-96ec-1482d374a42a` (account `alleluiacervi`; moved from `alleluia_cervi` 25 Sep 2026 after the free build quota ran out) |
 | Version | `1.0.8` (`app.config.js`); build numbers are **remote** (`appVersionSource: remote`, auto-increment). `runtimeVersion` follows the app version, so bump it **only** for native changes: a bump strands every installed build from OTA updates |
 | Apple Team ID | `5Z2LA9U639` · ASC app id `6803097569` |
-| Android | target/compile SDK 36. `web/public/.well-known/assetlinks.json` still lists only the old `com.sawacars.app`; add `com.sawacars.android` with its Play App Signing SHA-256 once the first .aab is in the company Play Console (a real value only — `release:check` must stay green) |
+| Android | target/compile SDK 36. `web/public/.well-known/assetlinks.json` still lists only the old `com.sawacars.app`; add `com.sawacars.apps` with its Play App Signing SHA-256 once the first .aab is in the company Play Console (a real value only — `release:check` must stay green) |
 | OTA | EAS Update, `runtimeVersion: appVersion`, channel `production` via `.github/workflows/mobile-update.yml` |
 
 **Push notifications: code is real, delivery is not live yet.** `expo-notifications`
