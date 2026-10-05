@@ -14,7 +14,7 @@ import { SubmitButton } from '../_components/SubmitButton'
  * form serialisation and the styling all come from one control rather than a
  * div pretending to be one.
  */
-function RoleCard({
+export function RoleCard({
   value, icon, title, desc, defaultChecked,
 }: {
   value: 'buyer' | 'seller'
@@ -56,7 +56,7 @@ function RoleCard({
   )
 }
 
-const COUNTRY_CODES = [
+export const COUNTRY_CODES = [
   { code: '+250', flag: '🇷🇼', name: 'Rwanda (+250)' },
   { code: '+254', flag: '🇰🇪', name: 'Kenya (+254)' },
   { code: '+256', flag: '🇺🇬', name: 'Uganda (+256)' },

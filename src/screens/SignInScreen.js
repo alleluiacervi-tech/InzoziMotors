@@ -8,6 +8,7 @@ import { LogoMark } from '../components/Logo';
 import { useApp } from '../context/AppContext';
 import { colors, radius, fonts } from '../theme';
 import { showToast, showConfirm } from '../components/Feedback';
+import SocialAuthButtons from '../components/SocialAuthButtons';
 
 export default function SignInScreen({ navigation, route }) {
   const { loginUser, reopenAccount, t } = useApp();
@@ -67,7 +68,9 @@ export default function SignInScreen({ navigation, route }) {
         <Text style={styles.title}>{t('auth.signInTitle')}</Text>
         <Text style={styles.sub}>{t('auth.signInSub')}</Text>
 
-        <Text style={[styles.label, { marginTop: 26 }]}>{t('auth.email')}</Text>
+        <SocialAuthButtons navigation={navigation} />
+
+        <Text style={[styles.label, { marginTop: 22 }]}>{t('auth.email')}</Text>
         <TextInput
           style={[styles.input, errors.email && styles.inputError]}
           placeholder="you@email.com"

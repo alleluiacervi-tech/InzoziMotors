@@ -137,6 +137,7 @@ const en = {
     accountCreated: 'Account created {{date}}',
     notificationsHeading: 'Notifications',
     passwordHeading: 'Password',
+    signInWith: 'You sign in with {{providers}}, so there is no password to change. Your account is protected by that account’s own security.',
     deviceHeading: 'This device',
     deviceBody:
       'Signing out clears your session on this browser only. Your saved cars, inquiries and alerts stay exactly as they are.',
@@ -617,6 +618,7 @@ const rw: typeof en = {
     accountCreated: 'Konti yashyizweho {{date}}',
     notificationsHeading: 'Amatangazo',
     passwordHeading: 'Ijambo ry’ibanga',
+    signInWith: 'Winjira ukoresheje {{providers}}, bityo nta jambo ry’ibanga ryo guhindura. Konti yawe irinzwe n’umutekano wa konti y’icyo kigo.',
     deviceHeading: 'Iki gikoresho',
     deviceBody:
       'Gusohoka bikuraho igihe cyawe kuri iyi mushakisha gusa. Imodoka wabitse, ibibazo n’imenyesha bikomeza uko biri.',
@@ -1097,6 +1099,7 @@ const fr: typeof en = {
     accountCreated: 'Compte créé le {{date}}',
     notificationsHeading: 'Notifications',
     passwordHeading: 'Mot de passe',
+    signInWith: 'Vous vous connectez avec {{providers}} : il n’y a donc pas de mot de passe à modifier. Votre compte est protégé par la sécurité de ce compte.',
     deviceHeading: 'Cet appareil',
     deviceBody:
       'Se déconnecter n’efface votre session que sur ce navigateur. Vos voitures enregistrées, demandes et alertes restent inchangées.',
@@ -1577,6 +1580,7 @@ const sw: typeof en = {
     accountCreated: 'Akaunti iliundwa {{date}}',
     notificationsHeading: 'Arifa',
     passwordHeading: 'Nenosiri',
+    signInWith: 'Unaingia kwa kutumia {{providers}}, kwa hivyo hakuna nenosiri la kubadilisha. Akaunti yako inalindwa na usalama wa akaunti hiyo.',
     deviceHeading: 'Kifaa hiki',
     deviceBody:
       'Kuondoka kunafuta kipindi chako kwenye kivinjari hiki tu. Magari uliyohifadhi, maombi na arifa zinabaki kama zilivyo.',
@@ -2056,6 +2060,7 @@ const ko: typeof en = {
     accountCreated: '계정 생성일 {{date}}',
     notificationsHeading: '알림',
     passwordHeading: '비밀번호',
+    signInWith: '{{providers}}(으)로 로그인하므로 변경할 비밀번호가 없습니다. 계정은 해당 계정의 보안으로 보호됩니다.',
     deviceHeading: '이 기기',
     deviceBody:
       '로그아웃하면 이 브라우저의 세션만 종료됩니다. 저장한 차량, 문의, 알림은 그대로 유지됩니다.',
@@ -2535,6 +2540,7 @@ const zh: typeof en = {
     accountCreated: '账户创建于{{date}}',
     notificationsHeading: '通知',
     passwordHeading: '密码',
+    signInWith: '您使用 {{providers}} 登录，因此没有可更改的密码。您的账户受该账户自身的安全措施保护。',
     deviceHeading: '本设备',
     deviceBody:
       '退出登录只会结束此浏览器上的会话。您收藏的车辆、咨询及通知都会保留。',

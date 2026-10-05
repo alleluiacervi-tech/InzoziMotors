@@ -131,7 +131,9 @@ export async function deleteAccountAction(
 
   const fieldErrors: Record<string, string> = {}
   if (!reason) fieldErrors.reason = t('dashboard.validation.chooseReason')
-  if (!password) fieldErrors.password = t('dashboard.validation.enterPasswordConfirm')
+  // The server decides whether a password is required (it is unless the
+  // account was made with Google or Apple); this only spares a round trip.
+  if (!password && formData.get('no_password') !== '1') fieldErrors.password = t('dashboard.validation.enterPasswordConfirm')
   if (!acknowledged) fieldErrors.acknowledge = t('dashboard.validation.confirmUnderstand')
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 

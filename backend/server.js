@@ -260,6 +260,7 @@ app.use('/auth/accept-invite', authLimiter);
 // closing bumped token_version, so there is no session left to present. That
 // makes it a credential endpoint, and it is limited like one.
 app.use('/auth/reopen', authLimiter);
+app.use('/auth/oauth', authLimiter);
 app.use('/auth/forgot-password', resetLimiter);
 app.use('/auth/reset-password', resetLimiter);
 app.use('/messages', postOnly(writeLimiter));
@@ -279,6 +280,8 @@ const transactionFeatureRetired = (req, res, next) => {
 };
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
+// Google and Apple sign-in; ahead of /auth so its paths never fall through.
+app.use('/auth/oauth',      require('./src/routes/oauth'));
 app.use('/auth',            require('./src/routes/auth'));
 app.use('/cars',            require('./src/routes/cars'));
 app.use('/submissions',     require('./src/routes/submissions'));

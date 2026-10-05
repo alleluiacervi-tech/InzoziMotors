@@ -7,6 +7,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import SignInScreen from '../screens/SignInScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import VehicleDetailScreen from '../screens/VehicleDetailScreen';
 import SearchResultsScreen from '../screens/SearchResultsScreen';
 import FeaturedScreen from '../screens/FeaturedScreen';
@@ -75,6 +76,9 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       <Stack.Screen name="SignUp" component={SignUpScreen} />
       <Stack.Screen name="SignIn" component={SignInScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      {/* After a first Apple/Google sign-in. No swipe-back: the account exists,
+          and the phone number is what makes it usable. */}
+      <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="Main" component={TabNavigator} />
       <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
       <Stack.Screen name="SearchResults" component={SearchResultsScreen} />

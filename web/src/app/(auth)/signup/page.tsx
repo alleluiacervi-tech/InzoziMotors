@@ -5,6 +5,8 @@ import { getServerT } from '@/lib/i18n/server'
 import { AuthHeading, AuthSwitch, OneAccountNote } from '../_components/parts'
 import { first, safePath, type SearchParams } from '../_lib/params'
 import { SignUpForm } from './SignUpForm'
+import { OrDivider, SocialButtons } from '@/components/auth/SocialButtons'
+import { googleEnabled } from '@/lib/oauth'
 
 // Unlike /signin this is a page people search for, so it stays indexable.
 export async function generateMetadata(): Promise<Metadata> {
@@ -36,6 +38,15 @@ export default async function SignUpPage({ searchParams }: { searchParams: Searc
       <AuthHeading title={t('auth.signup.title')}>
         {t('auth.signup.subtitle')}
       </AuthHeading>
+
+      {/* The role travels with the provider sign-up and is confirmed on the
+          next step, so someone who came here to sell starts as a seller. */}
+      {googleEnabled() ? (
+        <>
+          <SocialButtons next={next} role={defaultRole} />
+          <OrDivider label={t('auth.social.orEmail')} />
+        </>
+      ) : null}
 
       <SignUpForm next={next} defaultRole={defaultRole} />
 

@@ -33,6 +33,33 @@ const en = {
       'One account, every platform. Your saved cars, saved searches, vehicle enquiries and submissions are the same here and in the',
     appLink: 'Sawa Cars app',
   },
+  social: {
+    google: 'Continue with Google',
+    reopenGoogle: 'Reopen with Google',
+    opening: 'Opening…',
+    orEmail: 'or use your email',
+    errors: {
+      cancelled: 'Sign-in was cancelled. Choose a way to continue whenever you are ready.',
+      expired: 'That sign-in took too long or was opened in another tab. Please try again.',
+      unavailable: 'That sign-in option is not available right now. Use your email, or try again later.',
+      email_in_use: 'An account already uses this email. Sign in with your email and password instead.',
+      email_required: 'Your account did not share an email address with us. Allow email access and try again, or sign up with your email.',
+      staff: 'Staff accounts sign in with their email and password.',
+      unavailable_account: 'This account cannot be signed into. Contact Sawa Cars if you think this is a mistake.',
+      purged: 'The thirty days have passed and this account has been erased. You are welcome to create a new one.',
+      failed: 'We could not complete that sign-in. Please try again.',
+    },
+  },
+  complete: {
+    metaTitle: 'Finish setting up',
+    title: 'One last step',
+    subtitle: 'Add the phone number we can reach you on, and tell us whether you are here to buy or to sell.',
+    phone: 'Phone number',
+    phoneHint: 'Used for your account and inspection bookings. It is never shown to anyone unless you choose to share it as a seller.',
+    submit: 'Continue',
+    submitting: 'Saving…',
+    signedInAs: 'Signed in as {{email}}',
+  },
   signin: {
     closed: {
       title: 'This account is closed',

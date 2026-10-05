@@ -100,6 +100,16 @@ services:
       SMTP_USER:           ${SMTP_USER:-}
       SMTP_PASS:           ${SMTP_PASS:-}
       MAIL_FROM:           ${MAIL_FROM:-Sawa Cars <no-reply@sawacars.com>}
+      # ── Sign in with Google / Apple (docs/SOCIAL-SIGN-IN.md) ───────────────
+      # Comma-separated audiences the API accepts in an ID token. Empty turns
+      # that provider off and every client hides its button.
+      GOOGLE_CLIENT_IDS:   ${GOOGLE_CLIENT_IDS:-}
+      APPLE_CLIENT_IDS:    ${APPLE_CLIENT_IDS:-}
+      # The Sign in with Apple key: lets the API revoke Apple's tokens when an
+      # account is closed (App Store guideline 5.1.1(v)).
+      APPLE_TEAM_ID:       ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID:        ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY:   ${APPLE_PRIVATE_KEY:-}
       LOG_LEVEL:           info
     ports:
       - "127.0.0.1:4000:3000"
@@ -170,6 +180,10 @@ services:
       # render path never leaves the host.
       API_URL: http://api:3000
       NEXT_PUBLIC_SITE_URL: https://sawacars.com
+      # Sign in with Google, server side only (docs/SOCIAL-SIGN-IN.md). The
+      # website offers Google only; Apple is in the app.
+      GOOGLE_CLIENT_ID:     ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     ports:
       - "127.0.0.1:4002:3002"
 

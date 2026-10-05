@@ -237,11 +237,11 @@ commission.
 
 | | |
 |---|---|
-| Bundle id / package | iOS `com.sawacars.app` · Android `com.sawacars.android` (company Play account; `com.sawacars.app` is stuck on a personal Play account that never got production access) |
+| Bundle id / package | iOS `com.sawacars.app` · Android `com.sawacars.apps` (the company's new Play Console account, from Oct 2026; `com.sawacars.app` is stuck on a personal Play account that never got production access; `com.sawacars.android` is retired) |
 | Slug / EAS project | `sawa-cars` / `f2c5d3f8-8777-4b97-96ec-1482d374a42a` (account `alleluiacervi`; moved from `alleluia_cervi` 25 Sep 2026 after the free build quota ran out) |
 | Version | `1.0.8` (`app.config.js`); build numbers are **remote** (`appVersionSource: remote`, auto-increment). `runtimeVersion` follows the app version, so bump it **only** for native changes: a bump strands every installed build from OTA updates |
 | Apple Team ID | `5Z2LA9U639` · ASC app id `6803097569` |
-| Android | target/compile SDK 36. `web/public/.well-known/assetlinks.json` still lists only the old `com.sawacars.app`; add `com.sawacars.android` with its Play App Signing SHA-256 once the first .aab is in the company Play Console (a real value only — `release:check` must stay green) |
+| Android | target/compile SDK 36. `web/public/.well-known/assetlinks.json` lists `com.sawacars.apps` with its EAS upload key (keystore created 5 Oct 2026; fingerprints in `docs/SOCIAL-SIGN-IN.md`); add the Play App Signing SHA-256 beside it once the first .aab is in the company Play Console (a real value only — `release:check` must stay green) |
 | OTA | EAS Update, `runtimeVersion: appVersion`, channel `production` via `.github/workflows/mobile-update.yml` |
 
 **Push notifications: code is real, delivery is not live yet.** `expo-notifications`
@@ -296,7 +296,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0055`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0056`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -339,6 +339,18 @@ that route's layout. Server components use `getServerT()` and see everything.
 
 **Price bands** live in one place, `web/src/lib/inventory.ts`
 (`BUDGET_EDGES`); the homepage search and stock band both read it.
+
+**Sign in with Google / Apple** (`docs/SOCIAL-SIGN-IN.md`; `backend/src/routes/oauth.js`,
+`lib/oauth.js`, `user_identities` from migration 0056). The app offers Google and Apple (Apple on
+iOS only); the website offers **Google only**, by decision (an account made with Apple in the app
+can set a password with *Forgot password* to use the website). Ships off: a button appears only when
+its provider is configured (`GET /auth/oauth/providers`, the web's env, the app's
+`EXPO_PUBLIC_GOOGLE_*`). Rules: ID tokens are verified against the provider's keys, never
+decoded and trusted; a provider email joins an existing account only when the provider marks it
+verified; admins always use their password; a provider never supplies a phone or role, so a new
+account is shown *One last step* (`POST /auth/oauth/complete-profile`, once) right after
+sign-up, and only then: signing in with Google or Apple never asks for a phone. Password-less accounts close without a password, and closing revokes Apple's tokens
+(guideline 5.1.1(v)). The app's native sign-in needs store build 1.0.9.
 
 **Account closure** (`src/lib/account-closure.js`) is immediate and needs no
 approval — Apple 5.1.1(v) requires deletion to *complete* in-app, so an operator

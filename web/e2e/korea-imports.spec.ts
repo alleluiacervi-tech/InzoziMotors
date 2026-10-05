@@ -80,7 +80,7 @@ test('search → open a Korean car → request it → the order keeps what was a
   const registered = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'E2E Korea Buyer', email, password: 'password123', role: 'buyer' }),
+    body: JSON.stringify({ name: 'E2E Korea Buyer', email, password: 'password123', role: 'buyer', phone: '+250788000102' }),
   })
   expect(registered.ok).toBeTruthy()
   await page.goto(`/signin?next=${encodeURIComponent(`/imports/korea/${ID}`)}`)

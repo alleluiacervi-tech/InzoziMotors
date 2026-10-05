@@ -122,3 +122,4 @@ const styles = StyleSheet.create({
     fontSize: 15, fontFamily: fonts.regular, color: colors.text,
   },
 });
+

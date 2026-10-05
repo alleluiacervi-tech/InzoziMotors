@@ -70,14 +70,16 @@ Merging `feature/app-update-1` publishes the over-the-air update by itself
 2. [ ] Upload the existing Android 1.0.7 `.aab` to Play and finish the listing
        (it will receive update 1 over the air).
 3. [ ] **Android push** — all of it is credentials:
-   - [ ] Firebase project → add Android app `com.sawacars.android` → download
+   - [ ] Firebase project → add Android app `com.sawacars.apps` → download
          `google-services.json`.
    - [ ] `eas env:create --name GOOGLE_SERVICES_JSON --type file --visibility secret --value ./google-services.json --environment production`
    - [ ] Firebase → Service accounts → generate a key → `eas credentials` →
          Android → Google Service Account Key for **FCM V1**.
-4. [ ] Play Console → App integrity → copy the **App signing SHA-256** and give
-       it to me. I add `com.sawacars.android` to `assetlinks.json`
-       (`release:check` refuses a placeholder).
+4. [ ] Play Console → App integrity → copy the **App signing SHA-1 and SHA-256**
+       and give them to me. `assetlinks.json` already lists `com.sawacars.apps`
+       with the upload key (EAS, 5 Oct 2026); I add the app signing SHA-256
+       beside it, and the SHA-1 becomes the second Google Android client
+       (docs/SOCIAL-SIGN-IN.md). `release:check` refuses a placeholder.
 5. [ ] Sentry (optional): create a React Native project; put the DSN in
        `eas.json` → `build.production.env.EXPO_PUBLIC_SENTRY_DSN` and in the
        update workflow env; add `SENTRY_ORG`, `SENTRY_PROJECT` and a

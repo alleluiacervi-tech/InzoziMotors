@@ -55,7 +55,7 @@ test('a closed account is offered a reopen at sign-in', async ({ page }) => {
   const reg = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'E2E Closer', email, password, role: 'buyer' }),
+    body: JSON.stringify({ name: 'E2E Closer', email, password, role: 'buyer', phone: '+250788000103' }),
   })
   const { token } = (await reg.json()) as { token: string }
   const closed = await fetch(`${API_URL}/auth/me`, {

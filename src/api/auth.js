@@ -20,6 +20,34 @@ export const auth = {
     return data;
   },
 
+  // Sign in or up with an ID token from Apple or Google (src/utils/socialAuth.js).
+  // The server verifies the token and answers exactly as /auth/login does,
+  // plus whether the account still needs a phone number and a role.
+  oauth: async (provider, payload) => {
+    const data = await api.post(`/auth/oauth/${provider}`, payload);
+    if (data.token) await setToken(data.token);
+    return data;
+  },
+
+  // Which providers the server will accept. Cheap and cached on the server for
+  // five minutes; a failure reads as "none", so no button promises a sign-in
+  // the server would refuse.
+  oauthProviders: async () => {
+    try {
+      return await api.get('/auth/oauth/providers');
+    } catch {
+      return { google: false, apple: false };
+    }
+  },
+
+  // Phone and buyer/seller for an account made with Apple or Google. Returns a
+  // fresh token, because the role travels inside it.
+  completeProfile: async (phone, role) => {
+    const data = await api.post('/auth/oauth/complete-profile', { phone, role });
+    if (data.token) await setToken(data.token);
+    return data;
+  },
+
   // Trade the current token for a fresh one, so the 30 days run from the last
   // visit rather than the last sign-in. Never throws: a failed renewal just
   // leaves the existing token to run out on its original date.

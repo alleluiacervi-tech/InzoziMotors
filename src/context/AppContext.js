@@ -1233,6 +1233,47 @@ export function AppProvider({ children }) {
     return user;
   }, [loadInitialData]);
 
+  // Apple or Google. `payload` comes from src/utils/socialAuth.js; the server
+  // verifies it. Errors propagate with their code (ACCOUNT_CLOSED,
+  // EMAIL_IN_USE, …) so the screen can answer each one properly. Resolves to
+  // whether the account still needs a phone number and a role.
+  const socialSignIn = useCallback(async (provider, payload, { role, reopen } = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authApi.oauth(provider, { ...payload, role, reopen: reopen || undefined });
+      // /auth/me adds what the sign-in answer leaves out (has_password decides
+      // whether closing the account asks for one). Best effort: the sign-in
+      // already succeeded, and a relaunch fetches it anyway.
+      const me = await authApi.getMe().catch(() => null);
+      const user = { ...data.user, ...(me || {}) };
+      setCurrentUser(withInitials(user));
+      setIsLoggedIn(true);
+      setJSON('cachedProfile', user);
+      await loadInitialData(user);
+      return { needsProfile: Boolean(data.needs_profile), isNew: Boolean(data.is_new) };
+    } catch (err) {
+      if (isNetworkError(err)) {
+        setBackendReachable(false);
+        const offline = new Error("We couldn't reach Sawa Cars. Check your connection and try again.");
+        offline.isNetworkError = true;
+        throw offline;
+      }
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadInitialData]);
+
+  // The step after a first Apple/Google sign-in. Once only, server-enforced.
+  const completeProfile = useCallback(async (phone, role) => {
+    const data = await authApi.completeProfile(phone, role);
+    const merged = { ...data.user, profile_complete: true };
+    setCurrentUser((prev) => withInitials({ ...prev, ...merged }));
+    setJSON('cachedProfile', merged);
+    return data.user;
+  }, []);
+
   const updateCurrentUserProfile = useCallback(async (fields) => {
     const updated = await authApi.updateProfile(fields);
     setCurrentUser(withInitials(updated));
@@ -1796,7 +1837,7 @@ export function AppProvider({ children }) {
     // Chat safety
     blockUser, reportConversation, getConversationMeta,
     // Authentication
-    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, reopenAccount, updateCurrentUserProfile, loading, error,
+    currentUser, isLoggedIn, loginUser, loginAsGuest, signUpUser, logoutUser, deleteAccount, reopenAccount, socialSignIn, completeProfile, updateCurrentUserProfile, loading, error,
     // Push preference (Settings toggle)
     setPushEnabled,
     // Connectivity — false once a read failed at the transport layer, so screens

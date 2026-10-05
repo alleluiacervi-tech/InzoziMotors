@@ -135,6 +135,9 @@ async function purgeAccount(client, userId) {
   await client.query('DELETE FROM device_tokens   WHERE user_id = $1', [user.id]);
   await client.query('DELETE FROM password_resets WHERE user_id = $1', [user.id]);
   await client.query('DELETE FROM notifications   WHERE user_id = $1', [user.id]);
+  // The Google/Apple link goes with the account, so the same person can sign
+  // up again with the same provider and get a fresh account, not this husk.
+  await client.query('DELETE FROM user_identities WHERE user_id = $1', [user.id]);
 
   await client.query(
     // The email is released for reuse but the column stays UNIQUE, so it is
