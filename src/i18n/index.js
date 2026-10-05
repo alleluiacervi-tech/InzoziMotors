@@ -100,6 +100,7 @@ export const TRANSLATIONS = {
       "validPhone": "Please enter a valid phone number with country code.",
       "social": {
         "google": "Continue with Google",
+        "apple": "Continue with Apple",
         "orEmail": "or use your email",
         "emailInUse": "An account already uses this email. Sign in with your email and password instead.",
         "emailRequired": "We need an email address to create your account. Allow it when asked, or sign up with your email.",

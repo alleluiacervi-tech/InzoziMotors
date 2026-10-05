@@ -63,7 +63,7 @@ export default function SignUpScreen({ navigation }) {
         <Text style={styles.title}>{t('auth.createTitle')}</Text>
         <Text style={styles.sub}>{t('auth.createSub')}</Text>
 
-        <SocialAuthButtons navigation={navigation} mode="signup" />
+        <SocialAuthButtons navigation={navigation} />
 
         <Text style={[styles.label, { marginTop: 22 }]}>{t('auth.fullName')}</Text>
         <TextInput
