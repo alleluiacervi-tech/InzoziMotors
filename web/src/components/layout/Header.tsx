@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Logo } from '@/components/brand/Logo'
 import { Button, Icon } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
+import { GoogleHeaderButton } from '@/components/auth/GoogleHeaderButton'
 import { useT } from '@/lib/i18n/context'
 import { CONTACT, NAV_LINKS } from '@/lib/site'
 import type { User } from '@/lib/types'
@@ -32,7 +33,16 @@ const NAV_KEY: Record<string, string> = {
   '/imports': 'nav.imports', '/how-it-works': 'nav.howItWorks',
 }
 
-export function Header({ user, showRent = false }: { user: User | null; showRent?: boolean }) {
+export function Header({
+  user,
+  showRent = false,
+  google = false,
+}: {
+  user: User | null
+  showRent?: boolean
+  /** Signed out, with Google sign-in configured: draw "Continue with Google". */
+  google?: boolean
+}) {
   const t = useT()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -153,14 +163,24 @@ export function Header({ user, showRent = false }: { user: User | null; showRent
               <span className="max-w-[10ch] truncate">{user.name.split(' ')[0]}</span>
             </Button>
           ) : (
-            <Button
-              href="/signin"
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex"
-            >
-              {t('common.signIn')}
-            </Button>
+            <>
+              <Button
+                href="/signin"
+                variant="ghost"
+                size="sm"
+                className="hidden sm:inline-flex"
+              >
+                {t('common.signIn')}
+              </Button>
+              {/* The dependable Google way in, wherever One Tap stays hidden:
+                  the G alone below lg, the full label where the bar has room. */}
+              {google ? (
+                <>
+                  <GoogleHeaderButton variant="icon" className="lg:hidden" />
+                  <GoogleHeaderButton variant="full" className="hidden lg:inline-flex" />
+                </>
+              ) : null}
+            </>
           )}
 
           {/* ONE primary action. Buying is the nav's first word, so the
@@ -270,6 +290,7 @@ export function Header({ user, showRent = false }: { user: User | null; showRent
                 </Button>
               ) : (
                 <>
+                  {google ? <GoogleHeaderButton variant="block" /> : null}
                   <Button href="/signin" variant="outline" fullWidth>{t('common.signIn')}</Button>
                   <Button href="/signup" variant="secondary" fullWidth>{t('common.createAccount')}</Button>
                 </>

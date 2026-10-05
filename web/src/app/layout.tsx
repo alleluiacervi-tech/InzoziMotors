@@ -168,7 +168,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             reload. */}
         <CurrencyProvider initial={rate}>
           <LanguageProvider initialLocale={locale} messages={messagesFor(locale, CHROME_NAMESPACES)}>
-            <SiteChrome><Header user={user} showRent={showRent} /></SiteChrome>
+            <SiteChrome><Header user={user} showRent={showRent} google={!user && googleEnabled()} /></SiteChrome>
             <main id="main" className="flex-1">
               {children}
             </main>
