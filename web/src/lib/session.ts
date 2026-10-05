@@ -43,6 +43,21 @@ export async function clearSession(): Promise<void> {
   store.delete(SESSION_COOKIE)
 }
 
+/** Set on an explicit sign-out and gone when the browser closes. While it is
+ *  there, Google One Tap does not offer the account straight back: on a shared
+ *  family laptop the next person at the keyboard should not see it. */
+export const QUIET_GOOGLE_COOKIE = 'sawa_signed_out'
+
+export async function quietGoogleForSession(): Promise<void> {
+  const store = await cookies()
+  store.set(QUIET_GOOGLE_COOKIE, '1', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  })
+}
+
 /**
  * The signed-in user, or null. Wrapped in React's `cache` so a layout, a page
  * and three components asking "who is this?" in one render produce ONE call to

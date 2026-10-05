@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { account, auth as authApi, ApiError } from '@/lib/api'
-import { clearSession, getToken, setSession } from '@/lib/session'
+import { clearSession, getToken, quietGoogleForSession, setSession } from '@/lib/session'
 import { sameOriginPath } from '@/lib/same-origin-path'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,6 +163,7 @@ export async function completeProfileAction(_prev: AuthState, formData: FormData
 
 export async function signOutAction(): Promise<void> {
   await clearSession()
+  await quietGoogleForSession()
   revalidatePath('/', 'layout')
   redirect('/')
 }

@@ -3,7 +3,10 @@ import localFont from 'next/font/local'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SiteChrome } from '@/components/layout/SiteChrome'
-import { getCurrentUser } from '@/lib/session'
+import { cookies } from 'next/headers'
+import { getCurrentUser, QUIET_GOOGLE_COOKIE } from '@/lib/session'
+import { googleConfig, googleEnabled } from '@/lib/oauth'
+import { GoogleOneTap } from '@/components/auth/GoogleOneTap'
 import { duty, fx, rentals } from '@/lib/api'
 import { setDutyRates, setRwfRate } from '@/lib/business'
 import { DutySync } from '@/components/DutySync'
@@ -126,6 +129,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // translated — no flash of English.
   const locale = await getLocale()
 
+  // Google One Tap, for a signed-out visitor only, and not straight after an
+  // explicit sign-out in this browser session (lib/session.ts).
+  const offerGoogle = !user && googleEnabled() && !(await cookies()).has(QUIET_GOOGLE_COOKIE)
+
   return (
     // The inline theme script below may add `dark` before React hydrates.
     // That difference is intentional (it prevents a white flash for a
@@ -166,6 +173,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {children}
             </main>
             <SiteChrome><Footer /></SiteChrome>
+            {offerGoogle ? <GoogleOneTap clientId={googleConfig().clientId} locale={locale} /> : null}
           </LanguageProvider>
         </CurrencyProvider>
       </body>

@@ -4,6 +4,7 @@ import type { Locale } from '../config'
 
 export const ui: Record<Locale, Record<string, unknown>> = {
   en: {
+    signingIn: 'Signing you in…',
     legalEyebrow: 'Legal',
     onThisPage: 'On this page',
     draftTitle: 'Draft — pending legal review',
