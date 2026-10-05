@@ -78,6 +78,7 @@ test('a first Google sign-in creates a password-less account that still needs a 
   const again = await api().post('/auth/oauth/google')
     .send({ id_token: idToken('google', { sub: subject, email }) }).expect(200);
   assert.equal(again.body.is_new, false);
+  assert.equal(again.body.needs_profile, false, 'signing in never asks for the phone');
   assert.equal(again.body.user.id, first.body.user.id, 'the same person reaches the same account');
 
   // A password login cannot open an account that has no password.

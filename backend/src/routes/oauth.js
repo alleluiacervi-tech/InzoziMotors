@@ -206,8 +206,9 @@ router.post('/:provider(google|apple)', async (req, res) => {
           is_new: isNew,
           // A provider gives us a name and an email, never a phone number, and
           // a person signing up with one has not chosen buyer or seller. The
-          // clients ask for both before going on.
-          needs_profile: !user.phone,
+          // clients ask for both right after sign-up, and only then: signing
+          // in never asks, even if that step was skipped.
+          needs_profile: isNew && !user.phone,
         },
         after: { isNew, user, appleClientId: identity.audience },
       };

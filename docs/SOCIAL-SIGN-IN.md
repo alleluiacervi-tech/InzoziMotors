@@ -21,9 +21,11 @@ to do to switch it on.
   (`user_identities`, migration 0056). An unverified email that matches an
   existing account is refused (`EMAIL_IN_USE`), never merged.
 - **What a provider cannot give, we ask once.** Google and Apple supply a name
-  and email, never a phone number or buyer/seller choice. A new account goes to
-  *One last step* (web `/signup/complete`, app `CompleteProfile`) before it can
-  use the dashboard. `POST /auth/oauth/complete-profile` works once only.
+  and email, never a phone number or buyer/seller choice. Right after sign-up,
+  a new account is shown *One last step* (web `/signup/complete`, app
+  `CompleteProfile`). **Signing in never asks for a phone**, even if that step
+  was skipped; the number can be added later in the profile.
+  `POST /auth/oauth/complete-profile` works once only.
 - **Same rules as a password.** Admins must use their password
   (`ADMIN_PASSWORD_ONLY`); suspended or deleted accounts are refused; a closed
   account inside its 30 days is offered *Reopen*, exactly as at password sign-in.

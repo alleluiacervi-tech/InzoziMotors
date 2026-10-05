@@ -46,9 +46,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // them back to /dashboard and loop forever. That route clears the cookie
   // first. See web/src/app/session/expired/route.ts.
   if (!user) redirect('/session/expired?next=/dashboard')
-  // A Google or Apple sign-up that stopped before adding a phone number comes
-  // back to that step rather than into a dashboard that assumes one.
-  if (!user.phone && user.role !== 'admin') redirect('/signup/complete?next=/dashboard')
 
   const [unread, messagesUnread] = await Promise.all([getUnreadCount(), getUnreadMessageCount()])
   const initial = user.name.trim().charAt(0).toUpperCase() || '?'
