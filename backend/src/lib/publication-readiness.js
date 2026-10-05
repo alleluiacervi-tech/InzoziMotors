@@ -19,6 +19,7 @@ const {
 } = require('./inspection-policy');
 const { describeVin } = require('./vin');
 const { loadMakes, resolveMake, makesMentionedIn } = require('./vehicle-makes');
+const { odometerReadings, assessReadings, declaredMismatch, odometerWarnings } = require('./odometer');
 
 // ─── Content quality ──────────────────────────────────────────────────────────
 // Advisory, never blocking. A buyer cannot audit the 150-point rigour behind a
@@ -193,6 +194,11 @@ async function publicationReadiness(client, carId) {
   } else if (evaluated && evaluated.score < PUBLISH_THRESHOLD) {
     baseWarnings.push(`Inspection scored ${evaluated.score}/${SCORE_MAX} — disclosed on listing for price negotiation`);
   }
+  // Mileage: Sawa's own readings against each other and against the listing.
+  // Warnings, like the inspection score: buyers see the readings either way.
+  const readings = await odometerReadings(client, { carId: car.id, vin: car.vin });
+  const latestHere = [...readings].reverse().find((reading) => reading.this_listing) || null;
+  baseWarnings.push(...odometerWarnings(assessReadings(readings), declaredMismatch(car.mileage, latestHere)));
   return {
     ready: missing.length === 0,
     missing: [...new Set(missing)],

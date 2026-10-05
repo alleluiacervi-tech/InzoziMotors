@@ -31,6 +31,8 @@ const router = express.Router();
 // through catalogue, contact, save, history or messaging reads. It lives in
 // lib/inspection-evidence.js so the admin queues read the same rule.
 const { validInspectionExists } = require('../lib/inspection-evidence');
+const { odometerReadings, assessReadings } = require('../lib/odometer');
+const { modelSafety } = require('../lib/model-safety');
 
 // A listing's submission. The link is written from both sides at listing
 // creation (submissions.car_id and inspections.car_id) and older rows may hold
@@ -409,7 +411,7 @@ router.get('/feature/placements', requireAdmin, async (req, res) => {
 router.get('/:id/history', requireUuid('id'), async (req, res) => {
   try {
     const carRes = await pool.query(
-      `SELECT c.vin, c.make, c.model, c.year, c.mileage, c.drive_side,
+      `SELECT c.id, c.vin, c.make, c.model, c.year, c.mileage, c.drive_side,
               c.fuel_type, c.created_at, c.listed_at, c.inspection_score, c.inspected,
               ${sellerDisplayName('u')} AS seller_name, u.completed_sales AS seller_sales,
               u.id_verified AS seller_id_verified
@@ -442,6 +444,7 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
       return res.status(404).json({ error: 'Vehicle history not found' });
     }
     const docVerdict = (itemId) => checklist[itemId] || 'unknown';
+    const sawaRecord = await sawaRecordFor(car);
 
     res.json({
       // Masked, as on the listing itself (GET /cars/:id). This route is public
@@ -469,9 +472,98 @@ router.get('/:id/history', requireUuid('id'), async (req, res) => {
         completed_sales: car.seller_sales,
       },
       accident_history: 'No insurance-partner data yet',
+      sawa_record: sawaRecord,
     });
   } catch (err) {
     log.error('history error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ─── The Sawa record ──────────────────────────────────────────────────────────
+// What Sawa itself witnessed about this vehicle, dated: this listing's own
+// steps, and the odometer readings inspectors recorded, including those from
+// earlier listings or walk-in checks of the same VIN. Earlier owners appear
+// only as a date and a reading — never their name, price or inspection score,
+// which they did not agree to publish (see routes/vehicle-history.js).
+async function sawaRecordFor(car) {
+  const [submitted, inspections, prices, readings] = await Promise.all([
+    pool.query(
+      `SELECT MIN(s.submitted_at) AS submitted_at
+         FROM inspections i JOIN submissions s ON s.id = i.submission_id
+        WHERE i.car_id = $1`,
+      [car.id]
+    ),
+    pool.query(
+      `SELECT completed_at, vehicle_mileage FROM inspections
+        WHERE car_id = $1 AND status = 'complete' AND completed_at IS NOT NULL
+        ORDER BY completed_at ASC`,
+      [car.id]
+    ),
+    pool.query('SELECT price, changed_at FROM price_history WHERE car_id = $1 ORDER BY changed_at ASC', [car.id]),
+    odometerReadings(pool, { carId: car.id, vin: car.vin }),
+  ]);
+
+  const events = [];
+  if (submitted.rows[0]?.submitted_at) events.push({ type: 'submitted', on: submitted.rows[0].submitted_at });
+  for (const row of inspections.rows) {
+    events.push({
+      type: 'inspected',
+      on: row.completed_at,
+      km: row.vehicle_mileage === null ? null : Number(row.vehicle_mileage),
+    });
+  }
+  for (const reading of readings) {
+    if (!reading.this_listing) events.push({ type: 'earlier_inspection', on: reading.on, km: reading.km });
+  }
+  if (car.listed_at) events.push({ type: 'listed', on: car.listed_at });
+  // price_history's first row is the listing price itself, not a change.
+  prices.rows.forEach((row, index) => {
+    if (index === 0) return;
+    const previous = Number(prices.rows[index - 1].price);
+    const price = Number(row.price);
+    if (price !== previous) events.push({ type: 'price_changed', on: row.changed_at, price, previous_price: previous });
+  });
+  events.sort((a, b) => new Date(a.on) - new Date(b.on));
+
+  const assessment = assessReadings(readings);
+  return {
+    events,
+    odometer: {
+      readings: readings.map(({ on, km, this_listing: thisListing }) => ({ on, km, this_listing: thisListing })),
+      consistent: assessment.consistent,
+      drops: assessment.drops.map(({ earlier_on, earlier_km, later_on, later_km }) => ({
+        earlier_on, earlier_km, later_on, later_km,
+      })),
+      declared_km: car.mileage === null ? null : Number(car.mileage),
+    },
+  };
+}
+
+// GET /cars/:id/model-safety — recalls, owner complaints and crash ratings for
+// this car's make, model and year, from NHTSA (lib/model-safety.js). About the
+// model, never this car. Its own route so a slow NHTSA can never hold up the
+// listing or its history; same visibility as the listing.
+router.get('/:id/model-safety', requireUuid('id'), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT c.make, c.model, c.year
+       FROM cars c
+       JOIN users u ON u.id = c.seller_id
+       WHERE c.id = $1 AND c.status = 'live'
+         AND u.role = 'seller' AND u.id_verified = 'approved'
+         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND (COALESCE(u.seller_type, 'individual') <> 'showroom' OR u.business_verified = TRUE)
+         AND ${validInspectionExists('c')}`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Car not found' });
+    const { make, model, year } = rows[0];
+    const safety = await modelSafety(pool, { make, model, year });
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json({ vehicle: { make, model, year }, ...safety });
+  } catch (err) {
+    log.error('model safety error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

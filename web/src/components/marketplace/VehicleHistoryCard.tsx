@@ -1,6 +1,6 @@
 import { Card, Icon, type IconName } from '@/components/ui'
-import { formatKm } from '@/lib/business'
-import type { VehicleHistory } from '@/lib/types'
+import { formatDate, formatKm, formatMoney } from '@/lib/business'
+import type { SawaRecord, SawaRecordEvent, VehicleHistory } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 import type { TFunction } from '@/lib/i18n/dictionary'
 
@@ -42,6 +42,111 @@ function documentRow(t: TFunction, label: string, verdict: string | null | undef
     tone,
     value: tone === 'pass' && whenPassed ? whenPassed : t(TONES[tone].fallbackKey),
   }
+}
+
+function eventLabel(t: TFunction, event: SawaRecordEvent): { title: string; detail: string | null } {
+  const km = event.km != null ? t('cars.record.kmRead', { km: formatKm(event.km) }) : null
+  switch (event.type) {
+    case 'submitted':
+      return { title: t('cars.record.submitted'), detail: null }
+    case 'inspected':
+      return { title: t('cars.record.inspected'), detail: km }
+    case 'earlier_inspection':
+      return { title: t('cars.record.earlierInspection'), detail: km }
+    case 'listed':
+      return { title: t('cars.record.listed'), detail: null }
+    case 'price_changed':
+      return {
+        title: t('cars.record.priceChanged', { price: formatMoney(event.price) }),
+        detail: event.previous_price != null ? t('cars.record.priceWas', { price: formatMoney(event.previous_price) }) : null,
+      }
+    default:
+      return { title: String(event.type), detail: null }
+  }
+}
+
+/** What Sawa itself witnessed: dated steps and the odometer as our inspector
+ *  read it. A drop is shown plainly, with both numbers, as a question to ask. */
+function SawaRecordSection({ record, t }: { record: SawaRecord; t: TFunction }) {
+  const { odometer, events } = record
+  if (!events.length && !odometer.readings.length) return null
+  const thisListing = [...odometer.readings].reverse().find((reading) => reading.this_listing)
+  const mismatch = thisListing && odometer.declared_km != null
+    && Math.abs(odometer.declared_km - thisListing.km) > Math.max(1000, Math.round(thisListing.km * 0.05))
+
+  return (
+    <section aria-labelledby="sawa-record" className="border-t border-line-soft p-5 sm:p-6">
+      <h3 id="sawa-record" className="text-body font-extrabold text-content">{t('cars.record.title')}</h3>
+      <p className="mt-1 text-caption leading-relaxed text-content-secondary">{t('cars.record.intro')}</p>
+
+      {odometer.consistent === false && odometer.drops.length ? (
+        <div role="status" className="mt-4 rounded-xl border border-warning/25 bg-warning-tint p-4">
+          <p className="flex items-center gap-2 text-caption font-extrabold text-warning-text">
+            <Icon name="alert" size={16} />
+            {t('cars.record.dropTitle')}
+          </p>
+          {odometer.drops.map((drop) => (
+            <p key={`${drop.earlier_on}-${drop.later_on}`} className="mt-2 text-caption leading-relaxed text-content">
+              {t('cars.record.drop', {
+                earlier: formatKm(drop.earlier_km),
+                earlierDate: formatDate(drop.earlier_on),
+                later: formatKm(drop.later_km),
+                laterDate: formatDate(drop.later_on),
+              })}
+            </p>
+          ))}
+          <p className="mt-2 text-caption leading-relaxed text-content-secondary">{t('cars.record.dropAsk')}</p>
+        </div>
+      ) : odometer.consistent === true ? (
+        <p className="mt-4 flex items-center gap-2 text-caption font-semibold text-success-text">
+          <Icon name="check-circle" size={15} />
+          {t('cars.record.consistent', { count: odometer.readings.length })}
+        </p>
+      ) : odometer.readings.length === 1 ? (
+        <p className="mt-4 flex items-center gap-2 text-caption font-semibold text-content-secondary">
+          <Icon name="gauge" size={15} />
+          {t('cars.record.oneReading', {
+            km: formatKm(odometer.readings[0].km),
+            date: formatDate(odometer.readings[0].on),
+          })}
+        </p>
+      ) : null}
+
+      {mismatch && thisListing ? (
+        <p className="mt-2 flex items-center gap-2 text-caption font-semibold text-warning-text">
+          <Icon name="alert" size={15} />
+          {t('cars.record.declared', { declared: formatKm(odometer.declared_km), read: formatKm(thisListing.km) })}
+        </p>
+      ) : null}
+
+      {events.length ? (
+        <ol className="mt-5 space-y-0">
+          {events.map((event, index) => {
+            const { title, detail } = eventLabel(t, event)
+            const last = index === events.length - 1
+            return (
+              <li key={`${event.type}-${event.on}-${index}`} className="relative flex gap-4 pb-4 last:pb-0">
+                {!last ? <span aria-hidden="true" className="absolute left-[5px] top-4 h-full w-px bg-line" /> : null}
+                <span
+                  aria-hidden="true"
+                  className={`relative mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full border-2 ${
+                    event.type === 'earlier_inspection' ? 'border-content-muted bg-surface' : 'border-content bg-content'
+                  }`}
+                />
+                <div className="min-w-0">
+                  <p className="text-caption font-bold text-content">{title}</p>
+                  <p className="text-micro text-content-muted">
+                    <time dateTime={event.on}>{formatDate(event.on)}</time>
+                    {detail ? <span> · {detail}</span> : null}
+                  </p>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      ) : null}
+    </section>
+  )
 }
 
 export async function VehicleHistoryCard({ history }: { history: VehicleHistory | null }) {
@@ -114,9 +219,12 @@ export async function VehicleHistoryCard({ history }: { history: VehicleHistory 
         })}
       </dl>
 
+      {history.sawa_record ? <SawaRecordSection record={history.sawa_record} t={t} /> : null}
+
       <div className="border-t border-line-soft bg-surface-alt/40 p-4 sm:p-5">
         <p className="text-caption leading-relaxed text-content-muted">
-          <strong className="font-semibold text-content-secondary">Data Coverage &amp; Standards:</strong> Vehicle history records are aggregated from verified inspection stations, customs filings, and manufacturer open databases. No relevant records were found in currently available data sources for accidents or open safety recalls. We do not claim this represents all events in the vehicle’s lifetime. Full VINs are kept private for owner security.
+          <strong className="font-semibold text-content-secondary">{t('cars.history.coverageTitle')}:</strong>{' '}
+          {t('cars.history.coverage')}
         </p>
       </div>
     </Card>

@@ -15,6 +15,11 @@ export const inspections = {
     return await api.get(`/cars/${carId}/history`);
   },
 
+  // NHTSA recalls, complaints and crash ratings for the car's MODEL.
+  getModelSafety: async (carId) => {
+    return await api.get(`/cars/${carId}/model-safety`);
+  },
+
   // Admin: the inspections queue, filterable by status / center / date
   list: async (params = {}) => {
     const query = new URLSearchParams(
@@ -40,10 +45,11 @@ export const inspections = {
     return await api.post(`/inspections/${id}/start`, {});
   },
 
-  complete: async (id, { checklistResults, notes }) => {
+  complete: async (id, { checklistResults, notes, odometerKm }) => {
     return await api.post(`/inspections/${id}/complete`, {
       checklist_results: checklistResults,
       notes,
+      odometer_km: odometerKm,
     });
   },
 

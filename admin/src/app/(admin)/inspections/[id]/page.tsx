@@ -26,6 +26,9 @@ export default function InspectionDetailPage() {
   const [loading, setLoading] = useState(true)
   const [results, setResults] = useState<Record<string, Result>>({})
   const [notes, setNotes] = useState('')
+  // What the inspector reads on the dashboard. Never prefilled from the
+  // seller's figure: a prefilled box gets confirmed, not read.
+  const [odometer, setOdometer] = useState('')
   const [saving, setSaving] = useState(false)
   // So a category's provenance line can say "you" instead of a bare uuid.
   const [meId, setMeId] = useState<string | null>(null)
@@ -230,13 +233,26 @@ export default function InspectionDetailPage() {
       toast('Start the inspection before completing it.', 'error')
       return
     }
+    const odometerKm = Number(odometer.replace(/[\s,]/g, ''))
+    if (!odometer.trim() || !Number.isInteger(odometerKm) || odometerKm < 0) {
+      toast('Enter the odometer reading in whole kilometres, as shown on the dashboard.', 'error')
+      return
+    }
     setSaving(true)
     try {
-      const completed = await api.completeInspection(id, { checklist_results: results, notes })
+      const completed = await api.completeInspection(id, { checklist_results: results, notes, odometer_km: odometerKm })
       toast(completed.passed
         ? `Inspection passed at ${completed.score}/150. Ready for publication.`
         : `Inspection recorded at ${completed.score}/150 with defect disclosures. Ready for transparent publication.`,
       'success')
+      const drop = completed.odometer_check?.drops?.[0]
+      if (drop) {
+        toast(
+          `Odometer went down: Sawa recorded ${Number(drop.earlier_km).toLocaleString('en-US')} km before, `
+          + `${Number(drop.later_km).toLocaleString('en-US')} km now. Ask the seller why before publishing.`,
+          'error',
+        )
+      }
       router.push('/inspections')
     } catch (error: any) { toast(error.message, 'error') }
     finally { setSaving(false) }
@@ -437,9 +453,32 @@ export default function InspectionDetailPage() {
       </div>
 
       <div className="mt-6 rounded-xl border border-gray-100 bg-surface p-5 shadow-sm">
+        <label htmlFor="odometer" className="mb-1 block text-sm font-medium text-gray-700">Odometer reading (km)</label>
+        {readOnly ? (
+          <p className="mb-5 text-sm font-semibold tabular-nums text-content">
+            {insp.vehicle_mileage != null ? `${Number(insp.vehicle_mileage).toLocaleString('en-US')} km` : 'Not recorded'}
+          </p>
+        ) : (
+          <>
+            <p className="mb-2 text-xs text-gray-500">
+              Read it off the dashboard; do not copy the listing.
+              {insp.display_mileage != null ? ` The seller declared ${Number(insp.display_mileage).toLocaleString('en-US')} km.` : ''}
+              {' '}Buyers see this reading, and a lower one than an earlier inspection is flagged.
+            </p>
+            <input
+              id="odometer"
+              inputMode="numeric"
+              autoComplete="off"
+              value={odometer}
+              onChange={(event) => setOdometer(event.target.value.replace(/[^\d,\s]/g, ''))}
+              placeholder="e.g. 84,250"
+              className="mb-5 h-11 w-full max-w-xs rounded-lg border border-gray-200 px-3 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </>
+        )}
         <label className="mb-2 block text-sm font-medium text-gray-700">Inspector notes (optional)</label>
         <textarea value={notes} onChange={(event) => setNotes(event.target.value)} disabled={readOnly} rows={4} className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand disabled:bg-gray-50" placeholder="Record observations and recommendations for the report…" />
-        {!readOnly && <button onClick={submit} disabled={saving || insp.status !== 'in_progress' || counts.answered !== definition.item_count} className="mt-4 w-full rounded-xl bg-brand py-3 font-semibold text-brand-on transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-50">{saving ? 'Submitting…' : 'Complete Inspection for Admin Review'}</button>}
+        {!readOnly && <button onClick={submit} disabled={saving || insp.status !== 'in_progress' || counts.answered !== definition.item_count || !odometer.trim()} className="mt-4 w-full rounded-xl bg-brand py-3 font-semibold text-brand-on transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-50">{saving ? 'Submitting…' : 'Complete Inspection for Admin Review'}</button>}
         <p className="mt-2 text-center text-xs text-gray-500">Completion records evidence only. Publication is a separate, audited admin decision.</p>
       </div>
     </div>

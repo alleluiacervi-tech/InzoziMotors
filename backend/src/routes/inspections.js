@@ -19,6 +19,9 @@ const UPLOAD_ROOT = process.env.UPLOAD_DIR || path.join(__dirname, '../../upload
 const { recordAdminAction } = require('../lib/admin-audit');
 const { publicVin } = require('../lib/vin-engine/validator');
 const { notifyUser } = require('../lib/notify');
+const {
+  parseOdometer, odometerReadings, assessReadings, odometerWarnings, MAX_KM,
+} = require('../lib/odometer');
 const { activeCenter, centerCapacityError, readSlot } = require('../lib/inspection-scheduling');
 const { elapsedMinutes, integrityFlags } = require('../lib/inspection-integrity');
 const { createInvitedAccount } = require('../lib/accounts');
@@ -1163,6 +1166,16 @@ router.patch('/:id/checklist', requireAdmin, requireUuid('id'), async (req, res)
 // POST /inspections/:id/complete — record checklist, weighted score, gated publish
 router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) => {
   const { checklist_results, notes } = req.body;
+  // What the inspector read on the dashboard (lib/odometer.js). Optional here
+  // so an installed staff build that predates the field can still complete;
+  // both inspection screens now ask for it.
+  const odometer = parseOdometer(req.body.odometer_km);
+  if (!odometer.ok) {
+    return res.status(400).json({
+      error: `Enter the odometer reading in whole kilometres (0 to ${MAX_KM.toLocaleString('en-US')}).`,
+      code: 'INVALID_ODOMETER',
+    });
+  }
   const evaluated = evaluateChecklist(checklist_results);
   if (!evaluated.valid) {
     return res.status(400).json({
@@ -1231,11 +1244,33 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       `UPDATE inspections
        SET checklist_results = $1, notes = $2, score = $3,
            status = 'complete', completed_at = NOW(), inspector_id = $4,
-           checklist_version = $5, passed = $6, critical_failures = $7::jsonb
+           checklist_version = $5, passed = $6, critical_failures = $7::jsonb,
+           vehicle_mileage = COALESCE($9, vehicle_mileage)
        WHERE id = $8`,
       [JSON.stringify(checklist_results), notes, score, req.user.id,
-       CHECKLIST_VERSION, evaluated.passed, JSON.stringify(evaluated.critical_failures), insp.id]
+       CHECKLIST_VERSION, evaluated.passed, JSON.stringify(evaluated.critical_failures), insp.id,
+       odometer.km]
     );
+
+    // The new reading against every earlier one for this vehicle. A drop is
+    // put in front of whoever reviews the listing now, not discovered by a
+    // buyer later.
+    let odometerCheck = null;
+    if (odometer.km !== null || insp.vehicle_mileage !== null) {
+      const vinRow = insp.car_id
+        ? await client.query('SELECT vin FROM cars WHERE id = $1', [insp.car_id])
+        : { rows: [{ vin: insp.vehicle_vin }] };
+      const readings = await odometerReadings(client, { carId: insp.car_id, vin: vinRow.rows[0]?.vin });
+      const assessment = assessReadings(readings);
+      const newDrops = assessment.drops.filter((drop) => drop.later_inspection_id === insp.id);
+      odometerCheck = { ...assessment, drops: newDrops };
+      if (newDrops.length && insp.car_id) {
+        await client.query(
+          `UPDATE cars SET review_notes = CONCAT_WS(E'\n', NULLIF(review_notes, ''), $2::text) WHERE id = $1`,
+          [insp.car_id, odometerWarnings({ drops: newDrops }, null).join('\n')]
+        );
+      }
+    }
 
     const passed = evaluated.passed;
 
@@ -1322,6 +1357,8 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
         critical_failures: evaluated.critical_failures.map((failure) => failure.id),
         kind: insp.kind, submission_id: insp.submission_id, car_id: insp.car_id,
         customer_user_id: insp.customer_user_id || undefined,
+        odometer_km: odometer.km ?? undefined,
+        odometer_dropped: odometerCheck?.drops?.length ? true : undefined,
       },
     });
 
@@ -1343,6 +1380,7 @@ router.post('/:id/complete', requireAdmin, requireUuid('id'), async (req, res) =
       integrity_flags: flags,
       published: false,
       ready_for_review: !!(insp.car_id && passed),
+      odometer_check: odometerCheck,
     });
   } catch (err) {
     await client.query('ROLLBACK');

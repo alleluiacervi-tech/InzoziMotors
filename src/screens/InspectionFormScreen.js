@@ -160,6 +160,11 @@ export default function InspectionFormScreen({ navigation, route }) {
 
   const [results, setResults] = useState({});
   const [notes, setNotes] = useState('');
+  // Read off the dashboard, never prefilled from the seller's figure: a
+  // prefilled box gets confirmed, not read.
+  const [odometer, setOdometer] = useState('');
+  const odometerKm = Number(odometer.replace(/[\s,]/g, ''));
+  const odometerValid = odometer.trim() !== '' && Number.isInteger(odometerKm) && odometerKm >= 0;
   const [expandedId, setExpandedId] = useState('engine');
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -242,6 +247,10 @@ export default function InspectionFormScreen({ navigation, route }) {
       showToast(`${totalItems - totalAnswered} check(s) still need a result. Every check is required.`, 'error');
       return;
     }
+    if (!odometerValid) {
+      showToast('Enter the odometer reading in whole kilometres, as shown on the dashboard.', 'error');
+      return;
+    }
     proceed();
   };
 
@@ -249,7 +258,15 @@ export default function InspectionFormScreen({ navigation, route }) {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const completed = await submitInspectionForm({ inspection, results, notes, score: totalScore });
+      const completed = await submitInspectionForm({ inspection, results, notes, score: totalScore, odometerKm });
+      const drop = completed?.odometer_check?.drops?.[0];
+      if (drop) {
+        showToast(
+          `Odometer went down: Sawa recorded ${Number(drop.earlier_km).toLocaleString('en-US')} km before, `
+          + `${Number(drop.later_km).toLocaleString('en-US')} km now. Ask the seller why before publishing.`,
+          'error',
+        );
+      }
       const targetCarId = completed?.car_id || inspection?.car_id;
       if (!targetCarId) {
         showToast('Inspection saved. Create or link the listing in the full admin console before uploading photos.', 'success');
@@ -358,6 +375,26 @@ export default function InspectionFormScreen({ navigation, route }) {
           ))}
         </View>
 
+        {/* Odometer, as read on the dashboard */}
+        <View style={styles.notesCard}>
+          <Text style={styles.notesLabel}>Odometer reading (km)</Text>
+          <Text style={styles.odoHint}>
+            Read it off the dashboard; do not copy the listing.
+            {inspection?.display_mileage != null ? ` The seller declared ${Number(inspection.display_mileage).toLocaleString('en-US')} km.` : ''}
+            {' '}Buyers see this reading.
+          </Text>
+          <TextInput
+            style={styles.odoInput}
+            value={odometer}
+            onChangeText={(text) => setOdometer(text.replace(/[^\d,\s]/g, ''))}
+            placeholder="e.g. 84,250"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="number-pad"
+            returnKeyType="done"
+            accessibilityLabel="Odometer reading in kilometres"
+          />
+        </View>
+
         {/* Mechanic notes */}
         <View style={styles.notesCard}>
           <Text style={styles.notesLabel}>Mechanic Notes</Text>
@@ -382,7 +419,7 @@ export default function InspectionFormScreen({ navigation, route }) {
           icon="document-text-outline"
           onPress={handleGenerate}
           loading={submitting}
-          disabled={submitting || loadingChecklist || totalItems === 0 || totalAnswered !== totalItems}
+          disabled={submitting || loadingChecklist || totalItems === 0 || totalAnswered !== totalItems || !odometerValid}
         />
         <Text style={styles.ctaSub}>
           Score: {totalScore}/{maxScore} · {pct}% · Ready for marketplace transparent publishing
@@ -530,6 +567,13 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   notesLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, marginBottom: 10 },
+  odoHint: { fontSize: 12, fontFamily: fonts.medium, color: colors.textSecondary, lineHeight: 17, marginTop: -4, marginBottom: 10 },
+  odoInput: {
+    borderWidth: 1.5, borderColor: colors.border,
+    borderRadius: radius.lg, paddingHorizontal: 12, height: 50,
+    fontSize: 17, fontFamily: fonts.bold, color: colors.textPrimary,
+    backgroundColor: colors.surfaceAlt,
+  },
   notesInput: {
     borderWidth: 1.5, borderColor: colors.border,
     borderRadius: radius.lg, padding: 12,

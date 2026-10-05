@@ -3,7 +3,7 @@ import type {
   AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement, SoldCar,
   InspectionCenter, InspectionReport,
   Message, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Showroom, Submission, TrustScore, User,
-  Valuation, VehicleHistory, VehicleMake,
+  Valuation, VehicleHistory, VehicleMake, ModelSafety,
 } from './types'
 import { withCleanTitle } from './vehicle-names'
 
@@ -222,6 +222,11 @@ export const cars = {
 
   history: (id: string) =>
     request<VehicleHistory>(`/cars/${id}/history`, { revalidate: CATALOGUE_REVALIDATE }),
+
+  /** NHTSA recalls, complaints and crash ratings for the car's model. Cached
+   *  a week on the API, so an hour here is plenty. */
+  modelSafety: (id: string) =>
+    request<ModelSafety>(`/cars/${id}/model-safety`, { revalidate: 3600 }),
 
   inspectionReport: (id: string) =>
     request<InspectionReport>(`/inspections/report/${id}`, { revalidate: CATALOGUE_REVALIDATE }),

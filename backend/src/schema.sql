@@ -1081,3 +1081,15 @@ CREATE TABLE IF NOT EXISTS catalog_image_candidates (
 );
 
 CREATE INDEX IF NOT EXISTS idx_catalog_image_candidates_catalog ON catalog_image_candidates (catalog_id, status);
+
+-- ─── Model safety cache (migration 0057) ─────────────────────────────────────
+-- NHTSA recalls, complaints and crash ratings per make + model + year, refreshed
+-- weekly by lib/model-safety.js. About the model, never an individual car.
+CREATE TABLE IF NOT EXISTS model_safety_cache (
+  make_key    TEXT NOT NULL,
+  model_key   TEXT NOT NULL,
+  year        INT  NOT NULL,
+  payload     JSONB NOT NULL,
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (make_key, model_key, year)
+);

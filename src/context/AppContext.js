@@ -1716,14 +1716,14 @@ export function AppProvider({ children }) {
 
   // --- Inspection Checklist Forms ---
 
-  const submitInspectionForm = useCallback(async ({ inspection, results, notes, score }) => {
+  const submitInspectionForm = useCallback(async ({ inspection, results, notes, score, odometerKm }) => {
     const key = inspection?.id || 'latest';
     setInspectionForms((prev) => ({ ...prev, [key]: { inspection, results, notes, score, submittedAt: new Date().toISOString() } }));
 
     if (!inspection?.id || (DEMO_MODE && !String(inspection.id).includes('-'))) {
       return { success: true, score, car_id: inspection?.car_id || null, demo: true };
     }
-    const completed = await inspectionsApi.complete(inspection.id, { checklistResults: results, notes });
+    const completed = await inspectionsApi.complete(inspection.id, { checklistResults: results, notes, odometerKm });
     setAdminInspections((current) => current.filter((item) => item.id !== inspection.id));
     return completed;
   }, []);

@@ -523,8 +523,8 @@ export default function VehicleDetailScreen({ navigation, route }) {
               <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.inspectionTitle}>{t('vehicleDetail.vehicleHistory')}</Text>
-              <Text style={[styles.inspectionSub, { color: colors.textMuted }]}>{t('vehicleDetail.historySub')}</Text>
+              <Text style={styles.inspectionTitle}>{t('vehicleDetail.vehicleRecord')}</Text>
+              <Text style={[styles.inspectionSub, { color: colors.textMuted }]}>{t('vehicleDetail.vehicleRecordSub')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
