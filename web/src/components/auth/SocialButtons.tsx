@@ -4,21 +4,16 @@ import { useState } from 'react'
 import { useT } from '@/lib/i18n/context'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// "Continue with Google" / "Continue with Apple".
+// "Continue with Google".
 //
-// Drawn to each company's own rules, because a sign-in button is a trust mark
-// and people recognise the real ones:
-//   Google — white, 1 px #747775 border, #1F1F1F label, the four-colour "G"
-//            (developers.google.com/identity/branding-guidelines)
-//   Apple  — black, white logo and label, same height and corner radius as its
-//            neighbour (Human Interface Guidelines, Sign in with Apple)
-// Both are plain links to the server route that starts the redirect flow: no
-// provider script loads on the page, nothing breaks without JavaScript, and
-// mobile browsers never meet a blocked popup. The only script here is the
-// "Opening…" state, so a slow redirect does not look like a dead button.
+// Drawn to Google's own branding rules, because a sign-in button is a trust
+// mark and people recognise the real one: white, 1 px #747775 border, #1F1F1F
+// label, the four-colour "G" (developers.google.com/identity/branding-guidelines).
+// A plain link to the server route that starts the redirect flow: no Google
+// script loads on the page, nothing breaks without JavaScript, and mobile
+// browsers never meet a blocked popup. The only script here is the "Opening…"
+// state, so a slow redirect does not look like a dead button.
 // ─────────────────────────────────────────────────────────────────────────────
-
-export type SocialProvider = 'google' | 'apple'
 
 function GoogleMark() {
   return (
@@ -31,79 +26,41 @@ function GoogleMark() {
   )
 }
 
-function AppleMark() {
-  return (
-    <svg width="17" height="20" viewBox="0 0 814 1000" aria-hidden="true" fill="currentColor">
-      <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57-155.5-127C46.7 790.7 0 663 0 541.8c0-194.4 126.4-297.5 250.8-297.5 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z" />
-    </svg>
-  )
-}
-
 function Spinner() {
   return <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
 }
 
 export function SocialButtons({
-  providers,
   next,
   role,
   reopen = false,
-  only,
 }: {
-  providers: Record<SocialProvider, boolean>
   next: string
   role?: 'buyer' | 'seller'
+  /** The closed-account panel: the same button, reopening on the way in. */
   reopen?: boolean
-  /** Draw just this provider (the reopen panel offers the one that was used). */
-  only?: SocialProvider
 }) {
   const t = useT()
-  const [pending, setPending] = useState<SocialProvider | null>(null)
+  const [pending, setPending] = useState(false)
 
-  const href = (provider: SocialProvider) => {
-    const params = new URLSearchParams({ next })
-    if (role) params.set('role', role)
-    if (reopen) params.set('reopen', '1')
-    return `/api/auth/oauth/${provider}/start?${params.toString()}`
-  }
-  const shown = (['apple', 'google'] as const).filter((p) => providers[p] && (!only || only === p))
-  if (!shown.length) return null
-
-  const base =
-    'flex h-12 w-full items-center justify-center gap-3 rounded-xl px-4 text-body font-semibold transition-[background-color,box-shadow,opacity] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 aria-disabled:pointer-events-none aria-disabled:opacity-70'
+  const params = new URLSearchParams({ next })
+  if (role) params.set('role', role)
+  if (reopen) params.set('reopen', '1')
 
   return (
-    <div className="space-y-3">
-      {shown.map((provider) =>
-        provider === 'google' ? (
-          <a
-            key="google"
-            href={href('google')}
-            onClick={() => setPending('google')}
-            aria-disabled={pending !== null}
-            className={`${base} border border-[#747775] bg-white text-[#1F1F1F] hover:bg-[#F8FAFF] hover:shadow-sm focus-visible:ring-[#4285F4]`}
-          >
-            {pending === 'google' ? <Spinner /> : <GoogleMark />}
-            <span>{pending === 'google' ? t('auth.social.opening') : t(reopen ? 'auth.social.reopenGoogle' : 'auth.social.google')}</span>
-          </a>
-        ) : (
-          <a
-            key="apple"
-            href={href('apple')}
-            onClick={() => setPending('apple')}
-            aria-disabled={pending !== null}
-            className={`${base} bg-black text-white hover:bg-[#1d1d1f] focus-visible:ring-black`}
-          >
-            {pending === 'apple' ? <Spinner /> : <AppleMark />}
-            <span>{pending === 'apple' ? t('auth.social.opening') : t(reopen ? 'auth.social.reopenApple' : 'auth.social.apple')}</span>
-          </a>
-        ),
-      )}
-    </div>
+    <a
+      href={`/api/auth/oauth/google/start?${params.toString()}`}
+      onClick={() => setPending(true)}
+      aria-disabled={pending}
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#747775] bg-white px-4 text-body font-semibold text-[#1F1F1F] transition-[background-color,box-shadow,opacity] duration-150 hover:bg-[#F8FAFF] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4] focus-visible:ring-offset-2 aria-disabled:pointer-events-none aria-disabled:opacity-70"
+    >
+      {pending ? <Spinner /> : <GoogleMark />}
+      <span>{pending ? t('auth.social.opening') : t(reopen ? 'auth.social.reopenGoogle' : 'auth.social.google')}</span>
+    </a>
   )
 }
 
-/** "or" between the provider buttons and the email form. */
+/** "or" between the Google button and the email form. */
 export function OrDivider({ label }: { label: string }) {
   return (
     <div className="my-7 flex items-center gap-4" role="separator" aria-label={label}>

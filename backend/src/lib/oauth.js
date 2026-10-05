@@ -19,8 +19,8 @@
 //
 // Configuration — all public identifiers, none of them secrets:
 //   GOOGLE_CLIENT_IDS   comma-separated OAuth client ids: web, iOS, Android
-//   APPLE_CLIENT_IDS    comma-separated: the iOS bundle id (native sign-in)
-//                       and the Services ID (website sign-in)
+//   APPLE_CLIENT_IDS    the iOS bundle id (the app's native sign-in; the
+//                       website offers Google only)
 // A provider with no client id configured is switched off: its route answers
 // 503 and GET /auth/oauth/providers reports it unavailable, so no client draws
 // a button that cannot work.

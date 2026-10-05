@@ -341,7 +341,9 @@ that route's layout. Server components use `getServerT()` and see everything.
 (`BUDGET_EDGES`); the homepage search and stock band both read it.
 
 **Sign in with Google / Apple** (`docs/SOCIAL-SIGN-IN.md`; `backend/src/routes/oauth.js`,
-`lib/oauth.js`, `user_identities` from migration 0056). Ships off: a button appears only when
+`lib/oauth.js`, `user_identities` from migration 0056). The app offers Google and Apple (Apple on
+iOS only); the website offers **Google only**, by decision (an account made with Apple in the app
+can set a password with *Forgot password* to use the website). Ships off: a button appears only when
 its provider is configured (`GET /auth/oauth/providers`, the web's env, the app's
 `EXPO_PUBLIC_GOOGLE_*`). Rules: ID tokens are verified against the provider's keys, never
 decoded and trusted; a provider email joins an existing account only when the provider marks it

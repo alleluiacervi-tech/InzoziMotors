@@ -7,7 +7,7 @@ import { first, safePath, type SearchParams } from '../_lib/params'
 import { SignInForm } from './SignInForm'
 import { Alert } from '@/components/ui'
 import { OrDivider, SocialButtons } from '@/components/auth/SocialButtons'
-import { enabledProviders } from '@/lib/oauth'
+import { googleEnabled } from '@/lib/oauth'
 
 const OAUTH_ERRORS = new Set([
   'cancelled', 'expired', 'unavailable', 'email_in_use', 'email_required', 'staff',
@@ -39,13 +39,12 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
   // Without this the user is dumped on a sign-in form with no idea why they
   // were signed out mid-session.
   const expired = first(params.expired) === '1'
-  const providers = enabledProviders()
+  const google = googleEnabled()
   const oauthError = first(params.oauth_error)
   const oauthMessage = OAUTH_ERRORS.has(oauthError) ? t(`auth.social.errors.${oauthError}`) : null
-  // Set by the Google/Apple callback when the account behind that sign-in is
-  // closed but still inside its thirty days: the way back is the same button.
-  const closedWith = first(params.closed)
-  const closedProvider = closedWith === 'google' || closedWith === 'apple' ? closedWith : null
+  // Set by the Google callback when the account behind that sign-in is closed
+  // but still inside its thirty days: the way back is the same button.
+  const closedWithGoogle = google && first(params.closed) === 'google'
 
   return (
     <>
@@ -62,7 +61,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
         </p>
       )}
 
-      {closedProvider ? (
+      {closedWithGoogle ? (
         <div className="space-y-5">
           <div className="rounded-2xl border border-line-soft bg-surface-alt p-5">
             <h2 className="text-title-sm font-extrabold text-content">{t('auth.signin.closed.title')}</h2>
@@ -73,7 +72,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
               </p>
             ) : null}
           </div>
-          <SocialButtons providers={providers} next={next} reopen only={closedProvider} />
+          <SocialButtons next={next} reopen />
         </div>
       ) : (
         <>
@@ -82,9 +81,9 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
               <Alert tone={oauthError === 'cancelled' ? 'info' : 'danger'}>{oauthMessage}</Alert>
             </div>
           ) : null}
-          {providers.google || providers.apple ? (
+          {google ? (
             <>
-              <SocialButtons providers={providers} next={next} />
+              <SocialButtons next={next} />
               <OrDivider label={t('auth.social.orEmail')} />
             </>
           ) : null}

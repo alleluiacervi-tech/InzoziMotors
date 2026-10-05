@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { googleConfig, redirectUri } from '@/lib/oauth'
+import { googleConfig, googleRedirectUri } from '@/lib/oauth'
 import { complete, failure, readState } from '@/lib/oauth-flow'
 
 // GET /api/auth/oauth/google/callback?code=&state=
@@ -7,12 +7,12 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams
   if (params.get('error')) {
     // access_denied: they closed the chooser or said no. Not an error to them.
-    return failure(params.get('error') === 'access_denied' ? 'cancelled' : 'failed', '/dashboard', 'google')
+    return failure(params.get('error') === 'access_denied' ? 'cancelled' : 'failed')
   }
-  const flow = readState(req, 'google', params.get('state'))
-  if (!flow || !flow.verifier) return failure('expired', '/dashboard', 'google')
+  const flow = readState(req, params.get('state'))
+  if (!flow) return failure('expired')
   const code = params.get('code')
-  if (!code) return failure('failed', flow.next, 'google')
+  if (!code) return failure('failed', flow.next)
 
   // The code is worth nothing without our client secret and the PKCE verifier
   // only this server holds, so an intercepted redirect cannot be replayed.
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: redirectUri('google'),
+        redirect_uri: googleRedirectUri(),
         grant_type: 'authorization_code',
         code_verifier: flow.verifier,
       }).toString(),
@@ -39,6 +39,6 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error('google code exchange error:', (err as Error).message)
   }
-  if (!idToken) return failure('failed', flow.next, 'google')
-  return complete('google', flow, { id_token: idToken })
+  if (!idToken) return failure('failed', flow.next)
+  return complete(flow, idToken)
 }

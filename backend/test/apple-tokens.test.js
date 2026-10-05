@@ -71,11 +71,11 @@ test('the code is exchanged with a client secret Apple will accept', () => withA
 test('revoke sends the refresh token, and a refusal or outage never throws', () => withApple(ENV, async () => {
   let fake = stubFetch(() => json(200, {}));
   try {
-    assert.equal(await appleTokens.revoke('com.sawacars.web', 'r-123'), true);
+    assert.equal(await appleTokens.revoke('com.sawacars.app', 'r-123'), true);
     assert.equal(fake.calls[0].url, 'https://appleid.apple.com/auth/revoke');
     assert.equal(fake.calls[0].form.token, 'r-123');
     assert.equal(fake.calls[0].form.token_type_hint, 'refresh_token');
-    assert.equal(fake.calls[0].form.client_id, 'com.sawacars.web');
+    assert.equal(fake.calls[0].form.client_id, 'com.sawacars.app');
   } finally { fake.restore(); }
 
   fake = stubFetch(() => json(400, { error: 'invalid_grant' }));

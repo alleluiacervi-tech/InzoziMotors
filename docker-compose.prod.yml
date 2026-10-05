@@ -180,10 +180,10 @@ services:
       # render path never leaves the host.
       API_URL: http://api:3000
       NEXT_PUBLIC_SITE_URL: https://sawacars.com
-      # Sign in with Google / Apple, server side only (docs/SOCIAL-SIGN-IN.md).
+      # Sign in with Google, server side only (docs/SOCIAL-SIGN-IN.md). The
+      # website offers Google only; Apple is in the app.
       GOOGLE_CLIENT_ID:     ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      APPLE_SERVICES_ID:    ${APPLE_SERVICES_ID:-}
     ports:
       - "127.0.0.1:4002:3002"
 

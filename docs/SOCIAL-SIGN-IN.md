@@ -1,7 +1,15 @@
 # Sign in with Google and Apple
 
-Sign in and sign up with Google or Apple, on sawacars.com and in the app. The
-code ships **off**: a button appears only once its provider is configured, so
+Where each option appears:
+
+| | Google | Apple |
+|---|---|---|
+| App, iPhone | yes | yes |
+| App, Android | yes | no (Apple's sheet is iOS-only) |
+| Website | yes | **no, by decision** |
+
+An account made with Apple in the app can still use the website: *Forgot
+password* on sawacars.com sets a password for it. The code ships **off**: a button appears only once its provider is configured, so
 nobody is shown a button that cannot work. This page is everything a person has
 to do to switch it on.
 
@@ -24,8 +32,8 @@ to do to switch it on.
   audience (the client ids below), expiry and nonce (`backend/src/lib/oauth.js`).
 - **Closing an account revokes Apple's tokens** (App Store guideline 5.1.1(v)),
   using the Sign in with Apple key (`backend/src/lib/apple-tokens.js`).
-- **Website**: server-side redirect flows. Google is authorization code + PKCE;
-  Apple is `form_post`. State and nonce live in a 10-minute httpOnly cookie, and
+- **Website**: Google's server-side flow, authorization code + PKCE. State,
+  nonce and verifier live in a 10-minute httpOnly SameSite=Lax cookie, and
   the session ends up in the same httpOnly `sawa_session` cookie as a password
   sign-in. No provider SDK reaches the browser.
 - **App**: native sheets — `expo-apple-authentication` (iOS only) and
@@ -54,13 +62,9 @@ Project → *APIs & Services*.
 
 1. **Identifiers → `com.sawacars.app`**: tick *Sign in with Apple* (primary App
    ID). The app already declares the entitlement (`ios.usesAppleSignIn`).
-2. **Identifiers → + → Services IDs**: identifier `com.sawacars.web`,
-   description *Sawa Cars*. Enable *Sign in with Apple* → Configure: primary
-   App ID `com.sawacars.app`, domain `sawacars.com`, return URL
-   `https://sawacars.com/api/auth/oauth/apple/callback`.
-3. **Keys → +**: tick *Sign in with Apple*, primary App ID `com.sawacars.app`.
+2. **Keys → +**: tick *Sign in with Apple*, primary App ID `com.sawacars.app`.
    Download the `.p8` (only once) and note its Key ID.
-4. **Services → Sign in with Apple for Email Communication**: register
+3. **Services → Sign in with Apple for Email Communication**: register
    `sawacars.com` and the sender `no-reply@sawacars.com`. Without this, mail to
    people who chose *Hide My Email* (`@privaterelay.appleid.com`) is dropped.
 
@@ -72,13 +76,12 @@ in EAS environment variables. Never commit them.
 | Variable | Where | Value |
 |---|---|---|
 | `GOOGLE_CLIENT_IDS` | backend | Web, iOS and Android client ids, comma-separated |
-| `APPLE_CLIENT_IDS` | backend | `com.sawacars.app,com.sawacars.web` |
+| `APPLE_CLIENT_IDS` | backend | `com.sawacars.app` |
 | `APPLE_TEAM_ID` | backend | `5Z2LA9U639` |
-| `APPLE_KEY_ID` | backend | the key's id from step 2.3 |
+| `APPLE_KEY_ID` | backend | the key's id from step 2.2 |
 | `APPLE_PRIVATE_KEY` | backend | the `.p8` contents on one line, newlines as `\n` |
 | `GOOGLE_CLIENT_ID` | web | the **Web** client id |
 | `GOOGLE_CLIENT_SECRET` | web | the Web client's secret |
-| `APPLE_SERVICES_ID` | web | `com.sawacars.web` |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | EAS (production) | the **Web** client id |
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | EAS (production) | the **iOS** client id (also sets the app's URL scheme) |
 
@@ -89,7 +92,7 @@ is baked into the build.
 ## 4. Check it
 
 - `curl https://api.sawacars.com/auth/oauth/providers` → `{"google":true,"apple":true}`.
-- sawacars.com/signin shows both buttons; a new Google account lands on
+- sawacars.com/signin shows *Continue with Google*; a new Google account lands on
   *One last step*, then the page it came from.
 - In the app (1.0.9, iPhone): *Continue with Apple* and *Continue with Google*
   on the sign-in and sign-up screens; Android shows Google only.
@@ -102,9 +105,8 @@ is baked into the build.
 | Symptom | Cause |
 |---|---|
 | No buttons anywhere | `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_IDS` empty on the API |
-| Website button missing | `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` or `APPLE_SERVICES_ID` missing on the web container |
+| Website button missing | `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` missing on the web container |
 | Google `redirect_uri_mismatch` | the Web client's redirect URI does not match exactly |
-| Apple `invalid_client` | Services ID return URL or domain wrong |
 | Sign-in works then "not available right now" | the API does not list that client id in `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_IDS` |
 | Android `DEVELOPER_ERROR` | the Android client's SHA-1 is not the key that signed this build |
 | App shows no Google button | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` not set when the build was made |

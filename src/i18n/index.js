@@ -101,7 +101,7 @@ export const TRANSLATIONS = {
       "social": {
         "google": "Continue with Google",
         "orEmail": "or use your email",
-        "emailInUse": "An account already uses this email. Sign in with your password, then you can use this button next time.",
+        "emailInUse": "An account already uses this email. Sign in with your email and password instead.",
         "emailRequired": "We need an email address to create your account. Allow it when asked, or sign up with your email.",
         "staff": "Team accounts sign in with their password.",
         "accountUnavailable": "This account is not available. Contact support if you think this is a mistake.",

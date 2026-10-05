@@ -35,16 +35,14 @@ const en = {
   },
   social: {
     google: 'Continue with Google',
-    apple: 'Continue with Apple',
     reopenGoogle: 'Reopen with Google',
-    reopenApple: 'Reopen with Apple',
     opening: 'Opening…',
     orEmail: 'or use your email',
     errors: {
       cancelled: 'Sign-in was cancelled. Choose a way to continue whenever you are ready.',
       expired: 'That sign-in took too long or was opened in another tab. Please try again.',
       unavailable: 'That sign-in option is not available right now. Use your email, or try again later.',
-      email_in_use: 'An account already uses this email. Sign in with your password, and the two will be joined.',
+      email_in_use: 'An account already uses this email. Sign in with your email and password instead.',
       email_required: 'Your account did not share an email address with us. Allow email access and try again, or sign up with your email.',
       staff: 'Staff accounts sign in with their email and password.',
       unavailable_account: 'This account cannot be signed into. Contact Sawa Cars if you think this is a mistake.',

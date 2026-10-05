@@ -10,7 +10,7 @@
 -- revoke the user's token when they delete their account (App Store Review
 -- Guideline 5.1.1(v)). The revoke call needs this token, obtained by exchanging
 -- the one-time authorization code at sign-in, and the revoke call must name the
--- client id (the app's bundle id, or the website's Services ID) the token was
+-- client id (the app's bundle id) the token was
 -- issued to. It is a credential: never returned by any route, cleared on
 -- revocation.
 CREATE TABLE IF NOT EXISTS user_identities (
