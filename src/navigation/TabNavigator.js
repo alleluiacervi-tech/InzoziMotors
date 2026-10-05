@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -115,7 +115,16 @@ function TabBar({ state, descriptors, navigation }) {
   );
 }
 
-export default function TabNavigator() {
+export default function TabNavigator({ navigation }) {
+  const { isLoggedIn, currentUser } = useApp();
+  // An Apple/Google account that never got its phone number (the app was
+  // closed on that step) is brought back to it. profile_complete comes only
+  // from GET /auth/me, so cached or demo profiles never trigger this.
+  const needsProfile = isLoggedIn && currentUser?.profile_complete === false && currentUser?.role !== 'admin';
+  useEffect(() => {
+    if (needsProfile) navigation.navigate('CompleteProfile', { role: currentUser?.role });
+  }, [needsProfile, navigation, currentUser?.role]);
+
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}

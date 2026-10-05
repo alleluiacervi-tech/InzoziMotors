@@ -97,7 +97,33 @@ export const TRANSLATIONS = {
       "signInToContinue": "Sign in to continue",
       "signInRequiredSub": "Saving cars and messaging sellers\nrequires an account.",
       "browseDemoAccount": "Browse with a demo account",
-      "validPhone": "Please enter a valid phone number with country code."
+      "validPhone": "Please enter a valid phone number with country code.",
+      "social": {
+        "google": "Continue with Google",
+        "orEmail": "or use your email",
+        "emailInUse": "An account already uses this email. Sign in with your password, then you can use this button next time.",
+        "emailRequired": "We need an email address to create your account. Allow it when asked, or sign up with your email.",
+        "staff": "Team accounts sign in with their password.",
+        "accountUnavailable": "This account is not available. Contact support if you think this is a mistake.",
+        "purged": "This account was closed and has been deleted.",
+        "unavailable": "This sign-in option is not available right now. Use your email instead.",
+        "playServices": "Google sign-in needs Google Play services on this phone. Use your email instead.",
+        "failed": "Could not sign you in. Please try again."
+      },
+      "complete": {
+        "title": "One last step",
+        "sub": "Add the phone number sellers and buyers can reach you on, and tell us how you will use Sawa Cars.",
+        "signedInAs": "Signed in as {{email}}",
+        "phoneHint": "Only shared with someone you contact, and only on the channels you allow.",
+        "roleLegend": "I am here to",
+        "buying": "Buy or rent",
+        "buyingSub": "Browse verified cars and message sellers.",
+        "selling": "Sell",
+        "sellingSub": "List a car after ID verification and inspection.",
+        "continue": "Continue",
+        "wrongAccount": "Not you?",
+        "signOut": "Sign out"
+      }
     },
     "buyingGuide": {
       "boundaryText": "Sawa Cars does not hold transaction funds, issue the users' contract, promise delivery, guarantee the vehicle or payment, process ownership transfer, or decide an external dispute.",

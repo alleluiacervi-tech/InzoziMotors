@@ -13,41 +13,24 @@ const { withTransaction } = require('../lib/tx');
 
 const router = express.Router();
 
-// How long a token stays valid. An ordinary account keeps the long lifetime —
-// signing a buyer out every day would be hostile for no security gain.
-//
-// An admin token is different in kind: it carries full pipeline control and
-// can read national ID documents. The admin dashboard already narrows its
-// COOKIE to 12 hours for exactly that reason, but the token inside that cookie
-// was minted for 30 days — so the limit only ever applied to the browser that
-// stored it. Anything that lifted the token out (a shared operations laptop, a
-// copied header, a stale terminal) held a valid admin credential for a month.
-// The token now expires with the session it belongs to, and signing in again
-// is cheap.
-const DEFAULT_TOKEN_TTL = process.env.JWT_EXPIRES_IN || '30d';
-const ADMIN_TOKEN_TTL = process.env.ADMIN_JWT_EXPIRES_IN || '12h';
+const { makeToken } = require('../lib/session-token');
+const appleTokens = require('../lib/apple-tokens');
 
-/** Unknown or absent role is treated as ordinary — never widen by accident. */
-function tokenTtl(user) {
-  return user?.role === 'admin' ? ADMIN_TOKEN_TTL : DEFAULT_TOKEN_TTL;
-}
-
-function makeToken(user) {
-  // name is in the payload so socket messages can carry sender_name.
-  // tv (token version) is what makes a session endable — middleware/auth.js
-  // compares it against users.token_version on every authenticated request, so
-  // bumping that column revokes every token issued before the bump.
-  return jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      name: user.name,
-      tv: user.token_version || 0,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: tokenTtl(user) }
-  );
+async function revokeAppleTokens(userId) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, apple_client_id, apple_refresh_token FROM user_identities
+        WHERE user_id = $1 AND provider = 'apple' AND apple_refresh_token IS NOT NULL`,
+      [userId]
+    );
+    for (const row of rows) {
+      if (await appleTokens.revoke(row.apple_client_id, row.apple_refresh_token)) {
+        await pool.query('UPDATE user_identities SET apple_refresh_token = NULL WHERE id = $1', [row.id]);
+      }
+    }
+  } catch (err) {
+    log.warn('apple revoke on closure failed', { error: err.message });
+  }
 }
 
 // Ends every existing session for a user and returns the new version, so the
@@ -383,12 +366,17 @@ router.get('/me', requireAuth, async (req, res) => {
               whatsapp_visible, contact_consent_at, role, id_verified, account_status,
               seller_type, business_name, business_verified, trust_score,
               response_rate, completed_sales, avatar_url, message_email_notifications,
-              marketplace_terms_accepted_at, marketplace_terms_version, created_at
+              marketplace_terms_accepted_at, marketplace_terms_version, created_at,
+              (password_hash IS NOT NULL) AS has_password,
+              ARRAY(SELECT provider FROM user_identities ui WHERE ui.user_id = users.id ORDER BY provider)
+                AS sign_in_providers
        FROM users WHERE id = $1`,
       [req.user.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'User not found' });
-    res.json(rows[0]);
+    // has_password tells the clients whether to ask for one before closing the
+    // account; an account made with Google or Apple has none to give.
+    res.json({ ...rows[0], profile_complete: Boolean(rows[0].phone) });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -584,6 +572,10 @@ router.delete('/me', requireAuth, async (req, res) => {
 
     if (result.status === 200 && result.notify) {
       sendAccountClosed(result.notify.email, result.notify.name, result.notify.until);
+      // Apple requires the app to revoke its Sign in with Apple tokens when an
+      // account is deleted (Guideline 5.1.1(v)). After the commit, never in its
+      // way: closure is complete whatever Apple answers.
+      revokeAppleTokens(req.user.id);
     }
     res.status(result.status).json(result.body);
   } catch (err) {

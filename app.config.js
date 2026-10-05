@@ -27,6 +27,18 @@ const GOOGLE_SERVICES_FILE = process.env.GOOGLE_SERVICES_JSON
 // See src/utils/sentry.js for how to switch it on.
 const SENTRY_ENABLED = Boolean(process.env.EXPO_PUBLIC_SENTRY_DSN);
 
+// Sign in with Google. The native module needs the iOS client's reversed id
+// as a URL scheme at build time, so its config plugin is added only when that
+// client id is known. Without it the build is unaffected and the app simply
+// draws no Google button (src/utils/socialAuth.js checks the same variable).
+// Set EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID and EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID on
+// EAS (plain-text visibility: they are public identifiers) — see
+// docs/SOCIAL-SIGN-IN.md.
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
+const GOOGLE_IOS_URL_SCHEME = GOOGLE_IOS_CLIENT_ID
+  ? `com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID.replace(/\.apps\.googleusercontent\.com$/, '')}`
+  : null;
+
 export default ({ config }) => ({
   ...config,
   name: 'Sawa Cars',
@@ -41,7 +53,7 @@ export default ({ config }) => ({
   // forged value rather than the binary's real one, so the app misreports its
   // own version. The build and the publish must agree on this number, and the
   // only way to guarantee that is for it not to be configurable.
-  version: '1.0.8',
+  version: '1.0.9',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
@@ -98,6 +110,9 @@ export default ({ config }) => ({
     // iPad layout bug a rejection basis. Opt in deliberately later, not by default.
     supportsTablet: false,
     bundleIdentifier: 'com.sawacars.app',
+    // The Sign in with Apple entitlement. App Store Review Guideline 4.8: an
+    // app offering Google sign-in must offer Sign in with Apple as well.
+    usesAppleSignIn: true,
     // Universal Links. Pairs with web/public/.well-known/apple-app-site-association,
     // whose appID placeholder must be replaced with the real Team ID before
     // these verify — until then iOS silently falls back to opening Safari.
@@ -226,6 +241,10 @@ export default ({ config }) => ({
         color: '#CC050F',
       },
     ],
+    'expo-apple-authentication',
+    ...(GOOGLE_IOS_URL_SCHEME
+      ? [['@react-native-google-signin/google-signin', { iosUrlScheme: GOOGLE_IOS_URL_SCHEME }]]
+      : []),
     ...(SENTRY_ENABLED
       ? [['@sentry/react-native/expo', {
           organization: process.env.SENTRY_ORG,

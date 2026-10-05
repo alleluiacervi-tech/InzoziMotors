@@ -112,7 +112,17 @@ export default async function ProfilePage() {
           <section aria-labelledby="password">
             <PanelHeading id="password" title={t('dashboard.profile.passwordHeading')} />
             <Card className="p-5 sm:p-6">
-              <PasswordForm />
+              {user.has_password === false ? (
+                // Made with Google or Apple: there is no password to change, and
+                // the provider's own security (2-step, passkeys) protects it.
+                <p className="text-caption leading-relaxed text-content-secondary">
+                  {t('dashboard.profile.signInWith', {
+                    providers: (user.sign_in_providers ?? []).map((p) => (p === 'google' ? 'Google' : 'Apple')).join(' & ') || 'Google',
+                  })}
+                </p>
+              ) : (
+                <PasswordForm />
+              )}
             </Card>
           </section>
 
@@ -133,7 +143,7 @@ export default async function ProfilePage() {
 
           <section aria-labelledby="delete-account">
             <PanelHeading id="delete-account" title={t('dashboard.profile.closeHeading')} />
-            <DeleteAccountForm reasons={closure?.reasons} recoveryDays={closure?.recovery_days} />
+            <DeleteAccountForm reasons={closure?.reasons} recoveryDays={closure?.recovery_days} hasPassword={user.has_password !== false} />
           </section>
         </div>
       </div>

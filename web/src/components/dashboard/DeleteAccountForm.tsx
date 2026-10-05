@@ -37,7 +37,11 @@ const FALLBACK_REASONS = [
 export function DeleteAccountForm({
   reasons = FALLBACK_REASONS,
   recoveryDays = 30,
+  hasPassword = true,
 }: {
+  /** False for an account made with Google or Apple: there is no password to
+   *  re-enter, and the reason plus the acknowledgement confirm the closure. */
+  hasPassword?: boolean
   /** Fetched server-side from /auth/closure-reasons so the options here are the
    *  ones the server's CHECK constraint will actually accept. */
   reasons?: { value: string; label: string }[]
@@ -117,22 +121,26 @@ export function DeleteAccountForm({
         />
       </Field>
 
-      <Field
-        label={t('dashboard.profile.delete.passwordLabel')}
-        htmlFor="delete-password"
-        error={state?.fieldErrors?.password}
-        className="mt-5"
-      >
-        <Input
-          id="delete-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          error={Boolean(state?.fieldErrors?.password)}
-          aria-describedby={state?.fieldErrors?.password ? 'delete-password-error' : undefined}
-        />
-      </Field>
+      {hasPassword ? (
+        <Field
+          label={t('dashboard.profile.delete.passwordLabel')}
+          htmlFor="delete-password"
+          error={state?.fieldErrors?.password}
+          className="mt-5"
+        >
+          <Input
+            id="delete-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            error={Boolean(state?.fieldErrors?.password)}
+            aria-describedby={state?.fieldErrors?.password ? 'delete-password-error' : undefined}
+          />
+        </Field>
+      ) : (
+        <input type="hidden" name="no_password" value="1" />
+      )}
 
       <div className="mt-4 flex items-start gap-3">
         <input

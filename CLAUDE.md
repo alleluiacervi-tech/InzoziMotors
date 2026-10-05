@@ -296,7 +296,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0055`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0056`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -339,6 +339,16 @@ that route's layout. Server components use `getServerT()` and see everything.
 
 **Price bands** live in one place, `web/src/lib/inventory.ts`
 (`BUDGET_EDGES`); the homepage search and stock band both read it.
+
+**Sign in with Google / Apple** (`docs/SOCIAL-SIGN-IN.md`; `backend/src/routes/oauth.js`,
+`lib/oauth.js`, `user_identities` from migration 0056). Ships off: a button appears only when
+its provider is configured (`GET /auth/oauth/providers`, the web's env, the app's
+`EXPO_PUBLIC_GOOGLE_*`). Rules: ID tokens are verified against the provider's keys, never
+decoded and trusted; a provider email joins an existing account only when the provider marks it
+verified; admins always use their password; a provider never supplies a phone or role, so a new
+account completes *One last step* (`POST /auth/oauth/complete-profile`, once) before the
+dashboard. Password-less accounts close without a password, and closing revokes Apple's tokens
+(guideline 5.1.1(v)). The app's native sign-in needs store build 1.0.9.
 
 **Account closure** (`src/lib/account-closure.js`) is immediate and needs no
 approval — Apple 5.1.1(v) requires deletion to *complete* in-app, so an operator

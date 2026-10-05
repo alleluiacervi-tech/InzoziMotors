@@ -263,6 +263,9 @@ export default function SettingsScreen({ navigation }) {
     return () => { alive = false; };
   }, []);
   const [password, setPassword] = useState('');
+  // An account opened with Google or Apple has no password to confirm with;
+  // unknown (an older cached profile) still asks, and the server decides.
+  const needsPassword = currentUser?.has_password !== false;
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
@@ -342,14 +345,14 @@ export default function SettingsScreen({ navigation }) {
       setDeleteError(t('settings.chooseReason'));
       return;
     }
-    if (!password) {
+    if (needsPassword && !password) {
       setDeleteError(t('settings.enterPassword'));
       return;
     }
     setDeleting(true);
     setDeleteError('');
     try {
-      const result = await deleteAccount(password, reason, note);
+      const result = await deleteAccount(needsPassword ? password : undefined, reason, note);
       setDeleteOpen(false);
       // The date, not "your account has been deleted". Somebody who closes by
       // mistake — or in anger, or on somebody else's phone — needs to leave
@@ -503,6 +506,7 @@ export default function SettingsScreen({ navigation }) {
               editable={!deleting}
             />
 
+            {needsPassword ? (
             <TextInput
               style={[styles.modalInput, !!deleteError && styles.modalInputError]}
               placeholder={t('settings.password')}
@@ -513,6 +517,7 @@ export default function SettingsScreen({ navigation }) {
               autoCapitalize="none"
               editable={!deleting}
             />
+            ) : null}
             {!!deleteError && <Text style={styles.modalError}>{deleteError}</Text>}
 
             <Pressable

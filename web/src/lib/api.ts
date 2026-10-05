@@ -365,6 +365,20 @@ export const auth = {
     request<{ user: User; token: string }>('/auth/accept-invite', {
       method: 'POST', body: JSON.stringify({ token, password }), cache: 'no-store',
     }),
+
+  /** Sign in or up with a provider's ID token (backend/src/routes/oauth.js).
+   *  The same route the apps use; the token is verified there, never here. */
+  oauth: (provider: 'google' | 'apple', body: {
+    id_token: string
+    nonce?: string
+    full_name?: string | null
+    authorization_code?: string | null
+    role?: 'buyer' | 'seller'
+    reopen?: boolean
+  }) =>
+    request<{ user: User; token: string; is_new: boolean; needs_profile: boolean }>(`/auth/oauth/${provider}`, {
+      method: 'POST', body: JSON.stringify(body), cache: 'no-store',
+    }),
 }
 
 // ─── Authenticated ───────────────────────────────────────────────────────────
@@ -406,6 +420,13 @@ export const account = {
       '/auth/closure-reasons',
       { revalidate: 3600 }
     ),
+
+  /** Phone (and buyer/seller) for an account made with Google or Apple, which
+   *  cannot supply either. Once only; returns a fresh token carrying the role. */
+  completeProfile: (token: string, phone: string, role: 'buyer' | 'seller') =>
+    request<{ user: User; token: string }>('/auth/oauth/complete-profile', {
+      token, method: 'POST', body: JSON.stringify({ phone, role }),
+    }),
 
   /** A 60-second, single-purpose credential for the realtime socket (D2 in
    *  docs/WEB-PARITY-PLAN.md) — never the session JWT itself. Minted fresh for

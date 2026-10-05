@@ -5,6 +5,14 @@ import { getServerT } from '@/lib/i18n/server'
 import { AuthHeading, AuthSwitch, OneAccountNote } from '../_components/parts'
 import { first, safePath, type SearchParams } from '../_lib/params'
 import { SignInForm } from './SignInForm'
+import { Alert } from '@/components/ui'
+import { OrDivider, SocialButtons } from '@/components/auth/SocialButtons'
+import { enabledProviders } from '@/lib/oauth'
+
+const OAUTH_ERRORS = new Set([
+  'cancelled', 'expired', 'unavailable', 'email_in_use', 'email_required', 'staff',
+  'unavailable_account', 'purged', 'failed',
+])
 
 // A utility page with nothing to rank for, and one that search engines would
 // otherwise crawl with a hundred `?next=` variants.
@@ -31,6 +39,13 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
   // Without this the user is dumped on a sign-in form with no idea why they
   // were signed out mid-session.
   const expired = first(params.expired) === '1'
+  const providers = enabledProviders()
+  const oauthError = first(params.oauth_error)
+  const oauthMessage = OAUTH_ERRORS.has(oauthError) ? t(`auth.social.errors.${oauthError}`) : null
+  // Set by the Google/Apple callback when the account behind that sign-in is
+  // closed but still inside its thirty days: the way back is the same button.
+  const closedWith = first(params.closed)
+  const closedProvider = closedWith === 'google' || closedWith === 'apple' ? closedWith : null
 
   return (
     <>
@@ -47,7 +62,35 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
         </p>
       )}
 
-      <SignInForm next={next} defaultEmail={first(params.email)} />
+      {closedProvider ? (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-line-soft bg-surface-alt p-5">
+            <h2 className="text-title-sm font-extrabold text-content">{t('auth.signin.closed.title')}</h2>
+            <p className="mt-2 text-caption leading-relaxed text-content-secondary">{t('auth.signin.closed.body')}</p>
+            {first(params.until) ? (
+              <p className="mt-2 text-caption font-bold text-content">
+                {t('auth.signin.closed.until', { date: first(params.until) })}
+              </p>
+            ) : null}
+          </div>
+          <SocialButtons providers={providers} next={next} reopen only={closedProvider} />
+        </div>
+      ) : (
+        <>
+          {oauthMessage ? (
+            <div className="mb-6">
+              <Alert tone={oauthError === 'cancelled' ? 'info' : 'danger'}>{oauthMessage}</Alert>
+            </div>
+          ) : null}
+          {providers.google || providers.apple ? (
+            <>
+              <SocialButtons providers={providers} next={next} />
+              <OrDivider label={t('auth.social.orEmail')} />
+            </>
+          ) : null}
+          <SignInForm next={next} defaultEmail={first(params.email)} />
+        </>
+      )}
 
       {/* Carry `next` across the switch.
           The contact panel sends people here with ?next=/cars/<id>, and the form

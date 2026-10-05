@@ -31,6 +31,12 @@ export interface User {
   message_email_notifications?: boolean
   seller_type?: string | null
   created_at: string
+  /** GET /auth/me only. False for an account made with Google or Apple. */
+  has_password?: boolean
+  /** GET /auth/me only. Providers linked to this account. */
+  sign_in_providers?: ('google' | 'apple')[]
+  /** GET /auth/me only. False until a phone number is on the account. */
+  profile_complete?: boolean
 }
 
 export type CarStatus =

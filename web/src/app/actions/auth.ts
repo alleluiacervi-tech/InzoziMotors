@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { auth as authApi, ApiError } from '@/lib/api'
-import { clearSession, setSession } from '@/lib/session'
+import { account, auth as authApi, ApiError } from '@/lib/api'
+import { clearSession, getToken, setSession } from '@/lib/session'
 import { sameOriginPath } from '@/lib/same-origin-path'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,6 +119,38 @@ export async function signUpAction(_prev: AuthState, formData: FormData): Promis
       if (err.status === 409) {
         return { fieldErrors: { email: 'That email already has an account. Sign in instead.' } }
       }
+      if (err.isNetworkError) return { error: 'We could not reach Sawa Cars. Please try again.' }
+      return { error: err.message }
+    }
+    return { error: 'Something went wrong. Please try again.' }
+  }
+
+  revalidatePath('/', 'layout')
+  redirect(next)
+}
+
+/** The step after a first Google/Apple sign-in: phone number and role. */
+export async function completeProfileAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const countryCode = String(formData.get('countryCode') || '+250').trim()
+  const rawPhone = String(formData.get('phone') || '').trim().replace(/[\s-]/g, '')
+  const role = formData.get('role') === 'seller' ? 'seller' : 'buyer'
+  const next = safeNext(formData.get('next'))
+  const cleanPhone = rawPhone.startsWith('+') ? rawPhone : `${countryCode}${rawPhone.replace(/^0+/, '')}`
+  if (!rawPhone || !/^\+[1-9]\d{7,14}$/.test(cleanPhone)) {
+    return { fieldErrors: { phone: 'Enter a valid phone number.' } }
+  }
+
+  const token = await getToken()
+  if (!token) redirect(`/signin?next=${encodeURIComponent(next)}`)
+  try {
+    // A fresh token comes back: the role travels inside it.
+    const result = await account.completeProfile(token, cleanPhone, role)
+    await setSession(result.token)
+  } catch (err) {
+    if (err instanceof ApiError) {
+      // Already complete (another tab finished first): nothing left to do here.
+      if (err.code === 'PROFILE_COMPLETE') redirect(next)
+      if (err.code === 'INVALID_PHONE') return { fieldErrors: { phone: 'Enter a valid phone number.' } }
       if (err.isNetworkError) return { error: 'We could not reach Sawa Cars. Please try again.' }
       return { error: err.message }
     }
