@@ -296,7 +296,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0056`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0057`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -351,6 +351,18 @@ verified; admins always use their password; a provider never supplies a phone or
 account is shown *One last step* (`POST /auth/oauth/complete-profile`, once) right after
 sign-up, and only then: signing in with Google or Apple never asks for a phone. Password-less accounts close without a password, and closing revokes Apple's tokens
 (guideline 5.1.1(v)). The app's native sign-in needs store build 1.0.9.
+
+**Vehicle record** (`GET /cars/:id/history` → `sawa_record`, `GET /cars/:id/model-safety`; web
+`VehicleHistoryCard` + `ModelSafetyCard`, app `VehicleHistoryScreen`). Free sources only:
+- **Odometer**: the inspector types the dashboard reading at completion (`odometer_km` →
+  `inspections.vehicle_mileage`; `lib/odometer.js`). Readings join across owners on the VIN key only
+  when `describeVin` is confident. A drop below an earlier reading, or a listing mileage far from the
+  reading, is a publication **warning** (never a block) and is shown to buyers with both numbers.
+- **Earlier owners** appear publicly as a date and a reading only: never a name, price or score.
+- **Model safety** is NHTSA (recalls, complaints, NCAP stars) cached a week in `model_safety_cache`
+  (`lib/model-safety.js`). About the model, never the car; US models only. Unknown or unmatched
+  models render nothing, and when NHTSA's index contradicts its query the figure is unknown, never 0.
+- No surface may claim RRA, Interpol, police, insurance or registry data: Sawa has none.
 
 **Account closure** (`src/lib/account-closure.js`) is immediate and needs no
 approval — Apple 5.1.1(v) requires deletion to *complete* in-app, so an operator

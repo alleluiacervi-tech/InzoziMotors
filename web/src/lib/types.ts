@@ -166,6 +166,66 @@ export interface VehicleHistory {
   inspected_at?: string | null
   seller: { name: string; id_verified: boolean; completed_sales: number }
   accident_history: string
+  /** What Sawa itself witnessed. Absent from an older API. */
+  sawa_record?: SawaRecord
+}
+
+export type SawaEventType = 'submitted' | 'inspected' | 'earlier_inspection' | 'listed' | 'price_changed'
+
+export interface SawaRecordEvent {
+  type: SawaEventType
+  on: string
+  /** Odometer read by the inspector (inspections only; null on older ones). */
+  km?: number | null
+  price?: number
+  previous_price?: number
+}
+
+export interface OdometerReading {
+  on: string
+  km: number
+  this_listing: boolean
+}
+
+export interface SawaRecord {
+  events: SawaRecordEvent[]
+  odometer: {
+    readings: OdometerReading[]
+    /** null with fewer than two readings: one reading contradicts nothing. */
+    consistent: boolean | null
+    drops: { earlier_on: string; earlier_km: number; later_on: string; later_km: number }[]
+    declared_km: number | null
+  }
+}
+
+/** GET /cars/:id/model-safety — NHTSA data about the MODEL, never this car. */
+export interface ModelSafety {
+  vehicle: { make: string; model: string; year: number }
+  status: 'covered' | 'not_covered' | 'unavailable'
+  source?: string
+  matched_model?: string
+  /** False when NHTSA contradicts itself: then no recall figure is shown. */
+  recalls_known?: boolean
+  recall_count?: number | null
+  recalls?: {
+    campaign: string
+    reported_on: string | null
+    component: string
+    summary: string
+    consequence: string
+    remedy: string
+  }[]
+  complaints?: {
+    total: number
+    top_components: { component: string; count: number }[]
+    crashes: number
+    fires: number
+    injuries: number
+    deaths: number
+  } | null
+  rating?: { min: number; max: number; variants: { description: string; overall: number }[] } | null
+  fetched_at?: string
+  stale?: boolean
 }
 
 export type ChecklistVerdict = 'pass' | 'flag' | 'fail'

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -17,6 +18,7 @@ import { ScoreRing } from '@/components/brand/ScoreRing'
 import { Sparkline } from '@/components/marketplace/Sparkline'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { VehicleHistoryCard } from '@/components/marketplace/VehicleHistoryCard'
+import { ModelSafetyCard } from '@/components/marketplace/ModelSafetyCard'
 import { RequestCarForm } from './RequestCarForm'
 import { CompareToggle } from '@/components/market/CompareControls'
 import { BrandMark } from '@/components/marketplace/BrandMark'
@@ -467,6 +469,13 @@ export default async function CarDetailPage({ params }: PageProps) {
             ) : null}
 
             <VehicleHistoryCard history={vehicleHistory} />
+
+            {/* Streams in after the page: NHTSA is cached a week, but a first
+                lookup must never hold up the listing. Empty when NHTSA does
+                not know this model, so no skeleton promises a card. */}
+            <Suspense fallback={null}>
+              <ModelSafetyCard carId={car.id} />
+            </Suspense>
 
             <SellerCard car={car} />
 
