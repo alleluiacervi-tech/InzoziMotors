@@ -8,7 +8,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const { DEFAULT_RULES, validateRules } = require('./normalize');
 
-const DEFAULT_FLAGS = Object.freeze({ sync_enabled: false, catalog_public: false });
+// market_public: the Korea market guide (lib/encar/market.js). On by default; it
+// shows nothing until ENCAR_API_KEY is set anyway.
+const DEFAULT_FLAGS = Object.freeze({ sync_enabled: false, catalog_public: false, market_public: true });
 
 async function loadSetting(db, key) {
   const { rows } = await db.query('SELECT value FROM platform_settings WHERE key = $1', [key]);

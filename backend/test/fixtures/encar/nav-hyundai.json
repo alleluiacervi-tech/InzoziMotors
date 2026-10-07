@@ -1,0 +1,92 @@
+{
+ "Count": 49562,
+ "iNav": {
+  "Nodes": [
+   {
+    "Name": "CarType",
+    "Facets": [
+     {
+      "Value": "A",
+      "Count": 49562,
+      "Refinements": {
+       "Nodes": [
+        {
+         "Name": "Manufacturer",
+         "Facets": [
+          {
+           "Value": "Hyundai",
+           "Count": 49562,
+           "Refinements": {
+            "Nodes": [
+             {
+              "Name": "ModelGroup",
+              "Facets": [
+               {
+                "Value": "Grandeur",
+                "DisplayValueEn": "Grandeur",
+                "Count": 9926
+               },
+               {
+                "Value": "Santafe",
+                "DisplayValueEn": "Santafe",
+                "Count": 5652
+               },
+               {
+                "Value": "Elantra",
+                "DisplayValueEn": "Elantra",
+                "Count": 5609
+               },
+               {
+                "Value": "Sonata",
+                "DisplayValueEn": "Sonata",
+                "Count": 4690
+               },
+               {
+                "Value": "Palisade",
+                "DisplayValueEn": "Palisade",
+                "Count": 3814
+               },
+               {
+                "Value": "Starex",
+                "DisplayValueEn": "Starex",
+                "Count": 3101
+               },
+               {
+                "Value": "Tucson",
+                "DisplayValueEn": "Tucson",
+                "Count": 3097
+               },
+               {
+                "Value": "Staria",
+                "DisplayValueEn": "Staria",
+                "Count": 1793
+               },
+               {
+                "Value": "Casper",
+                "DisplayValueEn": "Casper",
+                "Count": 1631
+               },
+               {
+                "Value": "Kona",
+                "DisplayValueEn": "Kona",
+                "Count": 1459
+               }
+              ]
+             }
+            ]
+           }
+          },
+          {
+           "Value": "Kia",
+           "Count": 49428
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -20,6 +20,7 @@ import { EmptyState } from '../components/StateViews';
 import { colors, radius, fonts, spacing, typography, shadows } from '../theme';
 import { importCatalogMakes, searchImportCatalog } from '../data/importCatalog';
 import { useApp } from '../context/AppContext';
+import useKoreaMarket from '../hooks/useKoreaMarket';
 
 const originKey = (country) => `importCatalog.origin_${String(country).replace(/ /g, '_')}`;
 
@@ -47,6 +48,7 @@ function BrandTile({ entry, logoUrl, onPress }) {
 
 export default function ImportBrandsScreen({ navigation }) {
   const { brandLogo, t } = useApp();
+  const koreaMarket = useKoreaMarket();
   const [query, setQuery] = useState('');
   const makes = useMemo(() => importCatalogMakes(), []);
 
@@ -114,6 +116,20 @@ export default function ImportBrandsScreen({ navigation }) {
             <Text style={styles.introText}>
               {t('importCatalog.brandsIntro')}
             </Text>
+            {koreaMarket.available ? (
+              <Pressable
+                style={({ pressed }) => [styles.marketCard, pressed && { opacity: 0.85 }]}
+                onPress={() => navigation.navigate('KoreaMarket')}
+                accessibilityRole="button"
+              >
+                <Ionicons name="stats-chart-outline" size={18} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.marketTitle}>{t('korea.market.homeTitle')}</Text>
+                  <Text style={styles.marketSub}>{t('korea.market.homeBody', { count: koreaMarket.total.toLocaleString('en-US') })}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
           </View>
         }
         ListFooterComponent={
@@ -154,6 +170,12 @@ export default function ImportBrandsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  marketCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, padding: 12,
+    borderRadius: radius.md, backgroundColor: colors.surfaceAlt,
+  },
+  marketTitle: { fontFamily: fonts.bold, fontSize: 13.5, color: colors.textPrimary },
+  marketSub: { marginTop: 2, fontFamily: fonts.regular, fontSize: 12, color: colors.textSecondary },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',

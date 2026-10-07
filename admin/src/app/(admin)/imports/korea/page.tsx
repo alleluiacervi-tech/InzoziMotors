@@ -95,6 +95,12 @@ export default function KoreanCatalogPage() {
     await save('encar_flags', { ...status.flags, catalog_public: next }, next ? 'The Korean catalogue is public' : 'The Korean catalogue is hidden')
   }
 
+  async function toggleMarket() {
+    if (!status) return
+    const next = status.flags.market_public === false
+    await save('encar_flags', { ...status.flags, market_public: next }, next ? 'The Korea market guide is public' : 'The Korea market guide is hidden')
+  }
+
   async function refresh(e: React.FormEvent) {
     e.preventDefault()
     const id = refreshId.trim()
@@ -153,6 +159,15 @@ export default function KoreanCatalogPage() {
                 <p className="text-caption text-content-muted">When on, customers see these cars instead of the old model catalogue.</p>
               </div>
               <Switch on={status.flags.catalog_public} label="Catalogue is public" disabled={busy === 'encar_flags'} onClick={togglePublic} />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-label font-semibold text-content">Korea market guide is public</p>
+                <p className="text-caption text-content-muted">
+                  Counts by make and model and recent asking prices, from the provider&apos;s free plan: at most 20 requests a day, each answer cached for a day or two. Works without the mirror.
+                </p>
+              </div>
+              <Switch on={status.flags.market_public !== false} label="Korea market guide is public" disabled={busy === 'encar_flags' || !status.configured.api_key} onClick={toggleMarket} />
             </div>
             {!status.configured.photo_prefix ? (
               <p className="rounded-xl bg-warning-tint px-3 py-2 text-caption text-warning-text">

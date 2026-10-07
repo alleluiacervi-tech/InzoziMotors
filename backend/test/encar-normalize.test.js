@@ -144,6 +144,8 @@ test('the two switches accept only booleans and only known names', () => {
   assert.ok(validateFlags({ sync_enabled: 'yes', catalog_public: false }).length);
   assert.ok(validateFlags({ sync_enabled: true }).length, 'both must be present');
   assert.ok(validateFlags({ sync_enabled: true, catalog_public: true, extra: 1 }).length);
+  assert.deepEqual(validateFlags({ sync_enabled: false, catalog_public: false, market_public: true }), []);
+  assert.ok(validateFlags({ sync_enabled: false, catalog_public: false, market_public: 'on' }).length);
   assert.ok(validateFlags(null).length);
 });
 

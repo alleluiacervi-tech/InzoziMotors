@@ -5,6 +5,7 @@ import { koreaCatalog, type KoreaFacets, type KoreaList } from '@/lib/api'
 import { getServerT } from '@/lib/i18n/server'
 import { KoreaCard } from './KoreaCard'
 import { KoreaMore } from './KoreaMore'
+import { KoreaMarketTeaser } from './market/Teaser'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /imports/korea — every used car for sale in South Korea.
@@ -79,6 +80,8 @@ export default async function KoreaPage({ searchParams }: { searchParams: Search
           <div className="mt-7">
             <Button href="/imports#request" size="lg">{t('imports.korea.unavailableCta')}</Button>
           </div>
+          {/* The free-plan market guide, while the full catalogue is off. */}
+          <KoreaMarketTeaser className="mt-14 border-t border-line-soft pt-10" />
         </Container>
       </Section>
     )

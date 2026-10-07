@@ -20,7 +20,7 @@ const BASE = '/api/backend'
 /** GET /admin/encar/status — what the sync has done and what governs it. */
 export type EncarStatus = {
   configured: { api_key: boolean; photo_prefix: boolean }
-  flags: { sync_enabled: boolean; catalog_public: boolean }
+  flags: { sync_enabled: boolean; catalog_public: boolean; market_public?: boolean }
   rules: Record<string, any>
   costs: any
   state: { baseline_started_at: string | null; baseline_completed_at: string | null; baseline_page: number; change_cursor: string | null; last_success_at: string | null; last_error: string | null; last_error_at: string | null; last_repair_at: string | null }

@@ -22,7 +22,8 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-const EXCLUDED = ['backend', 'web', 'admin'];
+// marketing/ holds the launch film, with its own node_modules (Playwright).
+const EXCLUDED = ['backend', 'web', 'admin', 'marketing'];
 
 const escaped = EXCLUDED.map((dir) =>
   path.join(__dirname, dir).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

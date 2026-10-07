@@ -1,0 +1,85 @@
+{
+ "Count": 197335,
+ "iNav": {
+  "Nodes": [
+   {
+    "Name": "CarType",
+    "Facets": [
+     {
+      "Value": "A",
+      "Count": 197335,
+      "Refinements": {
+       "Nodes": [
+        {
+         "Name": "Manufacturer",
+         "Facets": [
+          {
+           "Value": "Hyundai",
+           "DisplayValueEn": "Hyundai",
+           "Count": 49411
+          },
+          {
+           "Value": "Kia",
+           "DisplayValueEn": "Kia",
+           "Count": 49343
+          },
+          {
+           "Value": "Mercedes-Benz",
+           "DisplayValueEn": "Mercedes-Benz",
+           "Count": 16347
+          },
+          {
+           "Value": "BMW",
+           "DisplayValueEn": "BMW",
+           "Count": 15675
+          },
+          {
+           "Value": "Genesis",
+           "DisplayValueEn": "Genesis",
+           "Count": 11981
+          },
+          {
+           "Value": "KG_Mobility_Ssangyong",
+           "DisplayValueEn": "KG_Mobility_Ssangyong",
+           "Count": 9157
+          },
+          {
+           "Value": "ChevroletGMDaewoo",
+           "DisplayValueEn": "ChevroletGMDaewoo",
+           "Count": 8226
+          },
+          {
+           "Value": "Renault-KoreaSamsung",
+           "DisplayValueEn": "Renault-KoreaSamsung",
+           "Count": 6799
+          },
+          {
+           "Value": "Audi",
+           "DisplayValueEn": "Audi",
+           "Count": 4361
+          },
+          {
+           "Value": "Porsche",
+           "DisplayValueEn": "Porsche",
+           "Count": 2889
+          },
+          {
+           "Value": "Mini",
+           "DisplayValueEn": "Mini",
+           "Count": 2774
+          },
+          {
+           "Value": "Land Rover",
+           "DisplayValueEn": "Land Rover",
+           "Count": 2729
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

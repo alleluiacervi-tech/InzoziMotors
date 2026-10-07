@@ -1,0 +1,227 @@
+{
+  "generated_at": "2026-10-07T09:57:21.287Z",
+  "source": "https://api.sawacars.com/cars (public, GET only)",
+  "rules": {
+    "min_photo_width": 1400,
+    "never_shown": [
+      "seller names",
+      "phone numbers",
+      "plates (already masked by Sawa)",
+      "exact addresses"
+    ]
+  },
+  "cars": [
+    {
+      "id": "24165e41-b631-4a69-9ad3-630287c8a8f6",
+      "role": "hero",
+      "title": "2025 Volkswagen Bora",
+      "year": 2025,
+      "make": "Volkswagen",
+      "model": "Bora",
+      "price_rwf": 24000000,
+      "price_label": "24M RWF",
+      "mileage_km": 100,
+      "mileage_label": "100 km",
+      "fuel": "Electric",
+      "transmission": "Automatic",
+      "body": "Sedan",
+      "drive_side": "LHD",
+      "location": "Kigali",
+      "inspection_score": 150,
+      "standout": {
+        "label": "Mileage",
+        "value": "100 km"
+      },
+      "photos": [
+        {
+          "index": 0,
+          "url": "https://api.sawacars.com/uploads/cars/24165e41-b631-4a69-9ad3-630287c8a8f6/masked-e5aac00e-1dc8-4255-9336-95e6900b9d1b-1787839235091.jpg",
+          "file": "data/images/24165e41/0.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 3,
+          "url": "https://api.sawacars.com/uploads/cars/24165e41-b631-4a69-9ad3-630287c8a8f6/1787828062337-7pa5lr7rdqi.jpg",
+          "file": "data/images/24165e41/3.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 1,
+          "url": "https://api.sawacars.com/uploads/cars/24165e41-b631-4a69-9ad3-630287c8a8f6/masked-da5db8e9-85d8-4a4a-aed3-89c1f117affe-1787839192780.jpg",
+          "file": "data/images/24165e41/1.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 7,
+          "url": "https://api.sawacars.com/uploads/cars/24165e41-b631-4a69-9ad3-630287c8a8f6/1787828090947-z0n4wm73kl.jpg",
+          "file": "data/images/24165e41/7.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 4,
+          "url": "https://api.sawacars.com/uploads/cars/24165e41-b631-4a69-9ad3-630287c8a8f6/1787828069555-t59odpyl49.jpg",
+          "file": "data/images/24165e41/4.jpg",
+          "width": 1600,
+          "height": 1200
+        }
+      ]
+    },
+    {
+      "id": "8ce657a3-8b8f-4349-a18c-bf9050318f80",
+      "role": "feed",
+      "title": "2025 Denza N7 630 4WD",
+      "year": 2025,
+      "make": "Nissan",
+      "model": "Crossover SUV",
+      "price_rwf": 64500000,
+      "price_label": "64.5M RWF",
+      "mileage_km": 10,
+      "mileage_label": "10 km",
+      "fuel": "Hybrid",
+      "transmission": "Automatic",
+      "body": "SUV",
+      "drive_side": "LHD",
+      "location": "Kigali",
+      "inspection_score": 149,
+      "standout": {
+        "label": "Mileage",
+        "value": "10 km"
+      },
+      "photos": [
+        {
+          "index": 8,
+          "url": "https://api.sawacars.com/uploads/cars/8ce657a3-8b8f-4349-a18c-bf9050318f80/masked-6e537c76-760a-4463-a80f-9dafa4aa62fc-1787962005755.jpg",
+          "file": "data/images/8ce657a3/8.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 1,
+          "url": "https://api.sawacars.com/uploads/cars/8ce657a3-8b8f-4349-a18c-bf9050318f80/1787961827505-xfnlrhg8pss.jpg",
+          "file": "data/images/8ce657a3/1.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 0,
+          "url": "https://api.sawacars.com/uploads/cars/8ce657a3-8b8f-4349-a18c-bf9050318f80/masked-c2e7dba9-2792-47f2-b842-c193ed2abf64-1787961876663.jpg",
+          "file": "data/images/8ce657a3/0.jpg",
+          "width": 1600,
+          "height": 1200
+        }
+      ],
+      "note": "Listing make/model fields say 'Nissan Crossover SUV'; title and photos are a Denza N7. The film uses the listing title, which is what the app and website display."
+    },
+    {
+      "id": "6cf09008-ea56-48f6-adea-c4b07d3063ad",
+      "role": "feed",
+      "title": "2022 Dongfeng",
+      "year": 2022,
+      "make": "Dongfeng Motor Corporation",
+      "model": "E70 PRO",
+      "price_rwf": 23000000,
+      "price_label": "23M RWF",
+      "mileage_km": 7000,
+      "mileage_label": "7,000 km",
+      "fuel": "Petrol",
+      "transmission": "Automatic",
+      "body": "Sedan",
+      "drive_side": "LHD",
+      "location": "Kigali",
+      "inspection_score": 147,
+      "standout": {
+        "label": "Mileage",
+        "value": "7,000 km"
+      },
+      "photos": [
+        {
+          "index": 2,
+          "url": "https://api.sawacars.com/uploads/cars/6cf09008-ea56-48f6-adea-c4b07d3063ad/masked-735d21a7-00ee-449d-a3b4-72895fe115eb-1787990226646.jpg",
+          "file": "data/images/6cf09008/2.jpg",
+          "width": 1601,
+          "height": 1200
+        },
+        {
+          "index": 1,
+          "url": "https://api.sawacars.com/uploads/cars/6cf09008-ea56-48f6-adea-c4b07d3063ad/masked-729a194d-e02a-48eb-b070-3a66945373c7-1787990187072.jpg",
+          "file": "data/images/6cf09008/1.jpg",
+          "width": 1601,
+          "height": 1200
+        }
+      ],
+      "note": "Listing fuel says Petrol; the standout detail shown is mileage, not fuel."
+    },
+    {
+      "id": "aad7d301-fd6a-4cae-aa50-16dfc4885d0c",
+      "role": "feed",
+      "title": "2023 Qin Plus",
+      "year": 2023,
+      "make": "Hyundai",
+      "model": "Qin Plus",
+      "price_rwf": 17000000,
+      "price_label": "17M RWF",
+      "mileage_km": 520,
+      "mileage_label": "520 km",
+      "fuel": "Electric",
+      "transmission": "Automatic",
+      "body": "Sedan",
+      "drive_side": "LHD",
+      "location": "Kigali",
+      "inspection_score": 142,
+      "standout": {
+        "label": "Mileage",
+        "value": "520 km"
+      },
+      "photos": [
+        {
+          "index": 1,
+          "url": "https://api.sawacars.com/uploads/cars/aad7d301-fd6a-4cae-aa50-16dfc4885d0c/masked-d9a78d09-a772-4111-81d9-6cad615a07f8-1787918481205.jpg",
+          "file": "data/images/aad7d301/1.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 6,
+          "url": "https://api.sawacars.com/uploads/cars/aad7d301-fd6a-4cae-aa50-16dfc4885d0c/masked-f32593de-e9c7-4295-8b61-b38ba8ea67a1-1787918560037.jpg",
+          "file": "data/images/aad7d301/6.jpg",
+          "width": 1600,
+          "height": 1200
+        },
+        {
+          "index": 0,
+          "url": "https://api.sawacars.com/uploads/cars/aad7d301-fd6a-4cae-aa50-16dfc4885d0c/masked-2134e7f0-6478-4884-9800-3f93eb043370-1787918426501.jpg",
+          "file": "data/images/aad7d301/0.jpg",
+          "width": 1600,
+          "height": 1200
+        }
+      ],
+      "note": "Listing make field says 'Hyundai'; title and photos are a BYD Qin Plus. The film uses the listing title, which is what the app and website display."
+    }
+  ],
+  "excluded": [
+    {
+      "id": "c68af6ab-dcd7-460b-bb81-844f9a0fad3d",
+      "title": "2018 Hyundai Kona",
+      "reason": "Largest photo 1100×450; would need upscaling"
+    },
+    {
+      "id": "396c1f62-cb6d-4c14-90d6-5486c73f04d1",
+      "title": "2023 Land Rover Land Rover Range Rover P530 SE",
+      "reason": "Largest photo 960×722; would need upscaling"
+    },
+    {
+      "id": "274dd337-e4da-4d39-9148-bf733ed58bc0",
+      "title": "2022 Toyota Land Cruiser",
+      "reason": "Largest photo 500×333; would need upscaling"
+    },
+    {
+      "id": "ab58f918-88b8-4817-9b9b-e438d25f3ce4",
+      "title": "KIA Sorento 2024",
+      "reason": "Largest photo 736×552; would need upscaling"
+    }
+  ]
+}

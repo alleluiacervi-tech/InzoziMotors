@@ -15,6 +15,7 @@
 backend/
 web/
 admin/
+marketing/
 
 # ── Dependencies and build output ──
 node_modules/

@@ -15,4 +15,11 @@ export default {
   facets: (make) => api.get(`/imports/korea/facets${query({ make })}`),
   get: (id) => api.get(`/imports/korea/${encodeURIComponent(id)}`),
   reports: (id) => api.get(`/imports/korea/${encodeURIComponent(id)}/reports`),
+
+  // The Korea market guide (backend lib/encar/market.js): counts by make and
+  // model, and recent asking prices, from the provider's free plan. Works
+  // while the mirror above is off.
+  market: () => api.get('/imports/korea/market'),
+  marketMake: (make) => api.get(`/imports/korea/market/${encodeURIComponent(make)}`),
+  marketModel: (make, model) => api.get(`/imports/korea/market/${encodeURIComponent(make)}/${encodeURIComponent(model)}`),
 };
