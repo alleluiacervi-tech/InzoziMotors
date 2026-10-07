@@ -106,6 +106,14 @@ the provider key or production data (see the status block below). Rules that mus
   loads the catalogue, then applies the provider's change feed; the API reads only our tables
   (`encar_listings`, `encar_detail_cache`, `encar_sync_state`, `encar_sync_runs`, `encar_usage`;
   migration 0052). It never calls the provider per search.
+- **The one exception is the Korea market guide** (`lib/encar/market.js`, `/imports/korea/market…` on the
+  API and web, app `KoreaMarketScreen`), built for the provider's **free plan** (25 requests a day, no
+  photos): counts by make and model and the asking prices of the 20 latest listings per model. Each answer
+  is cached in `encar_market_cache` (migration 0058) for 24–48 h; a hard daily budget
+  (`ENCAR_MARKET_DAILY_MAX`, default 20) is reserved atomically before each request; past it, or on a
+  provider error, the last answer is served marked stale. Only makes and models the provider itself lists
+  are ever asked about. On when `ENCAR_API_KEY` is set, unless `encar_flags.market_public` is false (Admin →
+  Korea). It shows Korean asking prices only: no landed cost, no photos, never "certified".
 - **Storage never grows unbounded**: only cars for sale now (sold ones deleted), photo *addresses*
   never files, reports cached 24 h in an UNLOGGED table, row ceiling (default 250k), rows rewritten
   only on a shown-field change, `ops/backup.sh` excludes `encar_*` data.
@@ -296,7 +304,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0057`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0058`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.

@@ -7,13 +7,17 @@ const { loadFlags, loadSetting } = require('../lib/encar/store');
 const { photoUrl } = require('../lib/encar/normalize');
 const client = require('../lib/encar/shared-client');
 const { createDetail } = require('../lib/encar/detail');
+const { createMarket } = require('../lib/encar/market');
 const { estimateLandedCost, SETTING_KEY: COST_KEY } = require('../lib/encar/landed-cost');
 const { loadDutyRates } = require('../lib/duty-rates');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Used cars in South Korea, browsable from our own database (docs/
-// ENCAR-IMPORT-PLAN.md, A10). Nothing here calls the provider: it reads the
-// mirror the sync worker keeps, so a search costs one indexed query.
+// ENCAR-IMPORT-PLAN.md, A10). The search and car routes never call the
+// provider: they read the mirror the sync worker keeps, so a search costs one
+// indexed query. The one exception is /market (lib/encar/market.js), the
+// summary the provider's free plan can supply: cached, budgeted, and asked at
+// most once a day per answer.
 //
 // Public, and gated by platform_settings.encar_flags.catalog_public: while that
 // is false every route answers `available: false` and clients show the request
@@ -286,6 +290,75 @@ router.get('/facets', async (req, res) => {
   } catch (err) {
     log.error('korea facets error', { error: err.message });
     res.status(500).json({ error: 'Could not load filters' });
+  }
+});
+
+// ── /market: the Korea market guide (lib/encar/market.js) ──────────────────
+// Counts by make and model, and the asking prices of recent listings, from the
+// provider's free plan. Gated separately from the catalogue: it needs only
+// ENCAR_API_KEY and encar_flags.market_public (on by default). Prices go out in
+// 만원 and KRW, with an approximate USD figure at today's rate, as the
+// catalogue does; landed cost is not estimated here.
+const market = createMarket({ db: pool, client, loadFlags });
+const marketLimiter = rateLimit({
+  windowMs: 60_000, limit: 60, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many requests. Try again in a minute.' },
+});
+const SEGMENT = /^[A-Za-z0-9 ._()&'-]{1,60}$/;
+
+function marketReply(res, result, extra = {}) {
+  if (result.notFound) return res.status(404).json({ available: true, error: 'Not found' });
+  // Short browser cache: the server-side cache is what protects the budget.
+  res.set('Cache-Control', 'public, max-age=300');
+  if (result.pending) return res.json({ available: true, pending: true, ...extra });
+  return res.json({ available: true, pending: false, stale: result.stale, fetched_at: result.fetched_at, ...result.data, ...extra });
+}
+
+router.get('/market', marketLimiter, async (_req, res) => {
+  try {
+    if (!(await market.available())) return res.set('Cache-Control', 'public, max-age=60').json({ available: false });
+    marketReply(res, await market.overview());
+  } catch (err) {
+    log.error('korea market error', { error: err.message });
+    res.status(500).json({ error: 'Could not load the Korea market' });
+  }
+});
+
+router.get('/market/:make', marketLimiter, async (req, res) => {
+  try {
+    if (!(await market.available())) return res.set('Cache-Control', 'public, max-age=60').json({ available: false });
+    if (!SEGMENT.test(req.params.make)) return res.status(404).json({ available: true, error: 'Not found' });
+    marketReply(res, await market.makeView(req.params.make));
+  } catch (err) {
+    log.error('korea market error', { error: err.message });
+    res.status(500).json({ error: 'Could not load the Korea market' });
+  }
+});
+
+router.get('/market/:make/:model', marketLimiter, async (req, res) => {
+  try {
+    if (!(await market.available())) return res.set('Cache-Control', 'public, max-age=60').json({ available: false });
+    if (!SEGMENT.test(req.params.make) || !SEGMENT.test(req.params.model)) {
+      return res.status(404).json({ available: true, error: 'Not found' });
+    }
+    const result = await market.modelView(req.params.make, req.params.model);
+    if (result.notFound || result.pending) return marketReply(res, result);
+    const fx = await krwPerUsd();
+    const usd = (man) => (fx && man != null ? Math.round((man * 10000) / fx.rate / 10) * 10 : null);
+    const data = result.data;
+    marketReply(res, {
+      ...result,
+      data: {
+        ...data,
+        price_usd: data.price_man
+          ? { min: usd(data.price_man.min), median: usd(data.price_man.median), max: usd(data.price_man.max) }
+          : null,
+        listings: data.listings.map((l) => ({ ...l, price_krw: l.price_man * 10000, price_usd: usd(l.price_man) })),
+      },
+    }, { fx: fx ? { krw_per_usd: fx.rate, fetched_at: fx.fetched_at, stale: fx.stale } : null });
+  } catch (err) {
+    log.error('korea market error', { error: err.message });
+    res.status(500).json({ error: 'Could not load the Korea market' });
   }
 });
 

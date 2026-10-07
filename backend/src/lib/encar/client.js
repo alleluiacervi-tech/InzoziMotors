@@ -228,6 +228,9 @@ function createClient(opts = {}) {
     },
 
     enums: () => json('GET', '/api/enums'),
+
+    /** Make / model / badge tree with counts; filter with { manufacturer }. */
+    nav: (query) => json('GET', '/api/nav', { query }),
   };
 }
 

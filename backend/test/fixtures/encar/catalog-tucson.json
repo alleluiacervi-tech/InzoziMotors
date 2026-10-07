@@ -1,0 +1,93 @@
+{
+ "Count": 2167,
+ "SearchResults": [
+  {
+   "Id": "42653095",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson",
+   "Badge": "Diesel (CRDI) 2WD MXL",
+   "Year": 200502,
+   "FormYear": "2005",
+   "Mileage": 280837,
+   "Price": 150,
+   "FuelType": "diesel"
+  },
+  {
+   "Id": "42583592",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson",
+   "Badge": "Diesel(CRDI) 2WD MX",
+   "Year": 200804,
+   "FormYear": "2008",
+   "Mileage": 194864,
+   "Price": 215,
+   "FuelType": "diesel"
+  },
+  {
+   "Id": "42502684",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson ix",
+   "Badge": "Diesel 2WD LX20",
+   "Year": 201007,
+   "FormYear": "2011",
+   "Mileage": 252859,
+   "Price": 219,
+   "FuelType": "diesel"
+  },
+  {
+   "Id": "42243005",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson ix",
+   "Badge": "Diesel 2WD X20",
+   "Year": 200909,
+   "FormYear": "2010",
+   "Mileage": 216203,
+   "Price": 220,
+   "FuelType": "diesel"
+  },
+  {
+   "Id": "42788532",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson ix",
+   "Badge": "Diesel 2WD LX20",
+   "Year": 201211,
+   "FormYear": "2013",
+   "Mileage": 157645,
+   "Price": 250,
+   "FuelType": "diesel"
+  },
+  {
+   "Id": "42508797",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson ix",
+   "Badge": "Diesel 2WD LX20",
+   "Year": 201205,
+   "FormYear": "2012",
+   "Mileage": 320590,
+   "Price": 250,
+   "FuelType": "diesel"
+  },
+  {
+   "Id": "42257834",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson ix",
+   "Badge": "Diesel 2WD LX20",
+   "Year": 201008,
+   "FormYear": "2011",
+   "Mileage": 239981,
+   "Price": 250,
+   "FuelType": "diesel"
+  },
+  {
+   "Id": "41937546",
+   "Manufacturer": "Hyundai",
+   "Model": "Tucson ix",
+   "Badge": "Diesel 2WD X20",
+   "Year": 201203,
+   "FormYear": "2012",
+   "Mileage": 361159,
+   "Price": 250,
+   "FuelType": "diesel"
+  }
+ ]
+}

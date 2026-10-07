@@ -163,15 +163,22 @@ function validateRules(value) {
   return problems;
 }
 
-/** The two switches (platform_settings.encar_flags). Booleans only, nothing else. */
+/**
+ * The switches (platform_settings.encar_flags). Booleans only, nothing else.
+ * market_public (the Korea market guide, lib/encar/market.js) is optional so
+ * a row saved before it existed still validates; it defaults to on.
+ */
+const REQUIRED_FLAGS = ['sync_enabled', 'catalog_public'];
+const KNOWN_FLAGS = [...REQUIRED_FLAGS, 'market_public'];
 function validateFlags(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return ['Flags must be an object'];
   const problems = [];
-  for (const k of ['sync_enabled', 'catalog_public']) {
+  for (const k of REQUIRED_FLAGS) {
     if (typeof value[k] !== 'boolean') problems.push(`${k} must be true or false`);
   }
+  if ('market_public' in value && typeof value.market_public !== 'boolean') problems.push('market_public must be true or false');
   for (const k of Object.keys(value)) {
-    if (!['sync_enabled', 'catalog_public'].includes(k)) problems.push(`${k} is not a known flag`);
+    if (!KNOWN_FLAGS.includes(k)) problems.push(`${k} is not a known flag`);
   }
   return problems;
 }

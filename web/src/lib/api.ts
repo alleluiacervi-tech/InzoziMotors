@@ -600,6 +600,56 @@ export const koreaCatalog = {
     request<KoreaReports>(`/imports/korea/${encodeURIComponent(id)}/reports`, { revalidate: 300, tags: ['korea-catalog'], timeoutMs: 30_000 }),
 }
 
+/** The Korea market guide (backend lib/encar/market.js): counts and recent
+ *  asking prices from the provider's free plan, cached a day or two. */
+type KoreaMarketBase = {
+  available: boolean
+  pending?: boolean
+  stale?: boolean
+  fetched_at?: string
+}
+export type KoreaMarketOverview = KoreaMarketBase & {
+  total?: number
+  makes?: { make: string; label: string; count: number }[]
+}
+export type KoreaMarketMake = KoreaMarketBase & {
+  make?: string
+  label?: string
+  total?: number
+  models?: { model: string; label: string; count: number }[]
+}
+export type KoreaMarketListing = {
+  model: string
+  badge: string | null
+  year: number
+  month: number | null
+  mileage_km: number | null
+  fuel: string | null
+  price_man: number
+  price_krw: number
+  price_usd: number | null
+}
+export type KoreaMarketModel = KoreaMarketBase & {
+  make?: string
+  model?: string
+  make_label?: string
+  model_label?: string
+  min_year?: number
+  total?: number
+  sample?: number
+  price_man?: { min: number; median: number; max: number } | null
+  price_usd?: { min: number | null; median: number | null; max: number | null } | null
+  listings?: KoreaMarketListing[]
+}
+
+export const koreaMarket = {
+  overview: () => request<KoreaMarketOverview>('/imports/korea/market', { revalidate: 600, tags: ['korea-market'] }),
+  make: (make: string) =>
+    request<KoreaMarketMake>(`/imports/korea/market/${encodeURIComponent(make)}`, { revalidate: 600, tags: ['korea-market'], timeoutMs: 15_000 }),
+  model: (make: string, model: string) =>
+    request<KoreaMarketModel>(`/imports/korea/market/${encodeURIComponent(make)}/${encodeURIComponent(model)}`, { revalidate: 600, tags: ['korea-market'], timeoutMs: 15_000 }),
+}
+
 export const importOrders = {
   mine: (token: string) => request<any[]>('/imports/mine', { token }),
   get: (token: string, id: string) => request<any>(`/imports/${id}`, { token }),

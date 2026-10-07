@@ -9,6 +9,7 @@ import { getCurrentUser } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
 import { breadcrumbNode, graph, serviceNode } from '@/lib/seo'
 import { RequestImportForm } from './RequestImportForm'
+import { KoreaMarketTeaser } from './korea/market/Teaser'
 import { BrandMark } from '@/components/marketplace/BrandMark'
 import { getLogoLookup } from '@/lib/brands'
 
@@ -323,7 +324,15 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
           </Container>
         </Section>
       ) : (
-        // The model catalogue: server-rendered and linkable (?origin= and ?make=).
+        <>
+        {/* Until the full Korean catalogue opens, the market guide shows what
+            Korea has for sale today (counts and asking prices). */}
+        <Section tone="page">
+          <Container>
+            <KoreaMarketTeaser />
+          </Container>
+        </Section>
+        {/* The model catalogue: server-rendered and linkable (?origin= and ?make=). */}
       <Section tone="surface" id="catalog">
         <Container>
           <h2 className="text-headline font-extrabold text-content">{t('imports.catalogTitle')}</h2>
@@ -386,6 +395,7 @@ export default async function ImportsPage({ searchParams }: { searchParams: Sear
           )}
         </Container>
       </Section>
+        </>
       )}
     </>
   )

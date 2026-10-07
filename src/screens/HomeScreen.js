@@ -18,6 +18,7 @@ import { useApp } from '../context/AppContext';
 import { getListedDaysAgo, getSavedCount, getDriveType } from '../data/marketData';
 import { importCatalogMakes } from '../data/importCatalog';
 import useKoreaAvailable from '../hooks/useKoreaAvailable';
+import useKoreaMarket from '../hooks/useKoreaMarket';
 import { PHOTO } from '../utils/photo';
 import { cars as carsApi } from '../api/cars';
 import Photo from '../components/Photo';
@@ -199,6 +200,9 @@ export default function HomeScreen({ navigation }) {
   // strip below: the makes with the most cars for sale in Korea. Until then the
   // strip is exactly what it was.
   const korea = useKoreaAvailable();
+  // The Korea market guide (counts and asking prices from the provider's free
+  // plan): a strip under the import brands while the full catalogue is off.
+  const koreaMarket = useKoreaMarket();
   const importRail = korea.available
     ? korea.makes.slice(0, 12).map((m) => ({ make: m.make, count: m.count, korea: true }))
     : importBrands;
@@ -540,6 +544,23 @@ export default function HomeScreen({ navigation }) {
               </Pressable>
             )}
           />
+
+          {!korea.available && koreaMarket.available ? (
+            <Pressable
+              style={styles.importNoteStrip}
+              onPress={() => navigation.navigate('KoreaMarket')}
+              accessibilityRole="button"
+            >
+              <View style={styles.importNoteIcon}>
+                <Ionicons name="stats-chart-outline" size={16} color={colors.textSecondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.importNoteTitle}>{t('korea.market.homeTitle')}</Text>
+                <Text style={styles.importNoteSub}>{t('korea.market.homeBody', { count: koreaMarket.total.toLocaleString('en-US') })}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
 
           <Pressable
             style={styles.importNoteStrip}
