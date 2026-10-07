@@ -322,6 +322,8 @@ cd admin && npm run dev
 npm start                     # Expo (repo root)
 npm run release:check         # release preflight
 npm run mobile:imports        # mobile import resolution check
+
+cd marketing/launch-video && npm run video   # 60 s launch film (not deployed; see its README)
 ```
 
 Brand: **Signal Red `#CC050F`** (`src/theme/colors.js`, `web/tailwind.config.ts`).

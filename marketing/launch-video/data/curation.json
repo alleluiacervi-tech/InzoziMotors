@@ -1,0 +1,29 @@
+{
+  "_readme": "Editorial picks for the film. select-cars.mjs merges these with the live public API (read-only) and writes cars.json. 'photos' are indexes into the listing's image array, best first. A car that is no longer live, or whose chosen photos fall below the size floor, is dropped automatically and reported.",
+  "min_photo_width": 1400,
+  "cars": [
+    {
+      "id": "24165e41-b631-4a69-9ad3-630287c8a8f6",
+      "role": "hero",
+      "photos": [0, 3, 1, 7, 4]
+    },
+    {
+      "id": "8ce657a3-8b8f-4349-a18c-bf9050318f80",
+      "role": "feed",
+      "photos": [8, 1, 0],
+      "note": "Listing make/model fields say 'Nissan Crossover SUV'; title and photos are a Denza N7. The film uses the listing title, which is what the app and website display."
+    },
+    {
+      "id": "6cf09008-ea56-48f6-adea-c4b07d3063ad",
+      "role": "feed",
+      "photos": [2, 1],
+      "note": "Listing fuel says Petrol; the standout detail shown is mileage, not fuel."
+    },
+    {
+      "id": "aad7d301-fd6a-4cae-aa50-16dfc4885d0c",
+      "role": "feed",
+      "photos": [1, 6, 0],
+      "note": "Listing make field says 'Hyundai'; title and photos are a BYD Qin Plus. The film uses the listing title, which is what the app and website display."
+    }
+  ]
+}
