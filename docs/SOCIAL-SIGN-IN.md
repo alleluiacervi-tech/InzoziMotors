@@ -71,8 +71,9 @@ Project → *APIs & Services*.
    | iOS | Bundle ID `com.sawacars.app` | the iOS app's native sheet |
    | Android | Package `com.sawacars.app`, SHA-1 of the **Play App Signing** key (Play Console → *Test and release → App integrity*). Add a second Android client with the upload key's SHA-1 for internal builds. | the Android app |
 
-   The **upload key** is the EAS production keystore for `com.sawacars.app`
-   (`eas credentials` → Android → production shows its SHA-1 and SHA-256;
+   The **upload key** is the EAS production keystore for `com.sawacars.app`,
+   created by the first build on 10 Oct 2026 (`eas credentials` → Android →
+   production shows its SHA-1 and SHA-256;
    fingerprints are public, not secrets). The keystore *Build Credentials
    4RrJX5tVp0* (SHA-1 `3D:DC:17:…:22:AB`) belongs to the retired
    `com.sawacars.apps` and is not used.
