@@ -4,12 +4,20 @@ name: Android upload key (one-off)
 # One-off lever, never merged to main.
 #
 # Play expects com.sawacars.app to be signed with the upload key that lives on
-# the old alleluia_cervi Expo project (SHA-1 A8:A6:…:66:74). The first build on
-# the current alleluiacervi project (10 Oct 2026) generated a new key instead,
-# so Play rejects it. This job runs on a push to its own feature branch.
+# the old alleluia_cervi Expo project (SHA-1 a8a6a8ec…6674, "Build Credentials
+# YBuk3NIpDQ"). The first build on the current alleluiacervi project
+# (10 Oct 2026) generated a new key instead (6b767245…), so Play rejects it.
+# This job runs on a push to its own feature branch.
 #
 #   MODE=probe     read-only: fingerprints and version codes on both projects.
-#                  Never requests a keystore, a password or an alias.
+#   MODE=transfer  copies the old key onto the new project's account, points
+#                  the new project's default build credentials at it, and sets
+#                  the remote Android versionCode to the old project's highest
+#                  (23) so the next build is 24. The 10 Oct key stays stored;
+#                  its id is printed so the swap can be reversed.
+#
+# The keystore, its passwords and alias are masked before any request is made
+# and are never echoed. Only fingerprints, ids and version numbers are printed.
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -25,32 +33,41 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  MODE: probe
+  MODE: transfer
   OLD_APP_ID: 9c7aebc4-04b3-4950-b4db-0021e7836e65 # @alleluia_cervi/sawa-cars
   NEW_APP_ID: f2c5d3f8-8777-4b97-96ec-1482d374a42a # @alleluiacervi/sawa-cars
   PACKAGE: com.sawacars.app
-  EXPECTED_SHA1: 'A8:A6:A8:EC:E6:E4:99:30:66:5B:3C:9C:4D:6D:A5:46:38:2D:66:74'
+  EXPECTED_SHA1: a8a6a8ece6e49930665b3c9c4d6da546382d6674
+  STORE_VERSION: 1.0.9
+  MIN_BUILD_VERSION: 23
 
 jobs:
   key:
     name: Upload key (${{ github.sha }})
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      NEW_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      OLD_TOKEN: ${{ secrets.EXPO_TOKEN_OLD }}
     steps:
-      - name: Probe both projects (read-only)
-        env:
-          NEW_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          OLD_TOKEN: ${{ secrets.EXPO_TOKEN_OLD }}
+      - name: Write helpers
         run: |
           set -euo pipefail
           [ -n "$NEW_TOKEN" ] || { echo "::error::EXPO_TOKEN is not set"; exit 1; }
           [ -n "$OLD_TOKEN" ] || { echo "::error::EXPO_TOKEN_OLD is not set"; exit 1; }
+          cat > "$RUNNER_TEMP/lib.sh" <<'LIB'
+          # gql TOKEN QUERY VARIABLES_JSON → response on stdout
+          gql() {
+            jq -n --arg q "$2" --argjson v "$3" '{query: $q, variables: $v}' |
+            curl -sS https://api.expo.dev/graphql \
+              -H "authorization: Bearer $1" -H 'content-type: application/json' --data @-
+          }
+          errors() { jq -r '.errors[]? | "error: \(.extensions.errorCode // "") \(.message)"'; }
 
-          QUERY='query Probe($appId: String!, $pkg: String!) {
+          PROBE='query Probe($appId: String!, $pkg: String!) {
             app {
               byId(appId: $appId) {
                 fullName
-                ownerAccount { name }
                 latestAppVersionByPlatformAndApplicationIdentifier(platform: ANDROID, applicationIdentifier: $pkg) {
                   storeVersion
                   buildVersion
@@ -59,53 +76,134 @@ jobs:
                   androidAppBuildCredentialsList {
                     name
                     isDefault
-                    androidKeystore { type sha1CertificateFingerprint sha256CertificateFingerprint createdAt }
+                    androidKeystore { id sha1CertificateFingerprint sha256CertificateFingerprint createdAt }
                   }
                 }
               }
             }
           }'
 
-          BUILDS='query Builds($appId: String!, $pkg: String!) {
-            app {
-              byId(appId: $appId) {
-                builds(offset: 0, limit: 50, filter: { platform: ANDROID, appIdentifier: $pkg }) {
-                  appVersion
-                  appBuildVersion
-                  status
-                  createdAt
-                }
-              }
-            }
-          }'
-
-          gql() { # token query appId
-            jq -n --arg q "$2" --arg appId "$3" --arg pkg "$PACKAGE" \
-              '{query: $q, variables: {appId: $appId, pkg: $pkg}}' |
-            curl -sS https://api.expo.dev/graphql \
-              -H "authorization: Bearer $1" -H 'content-type: application/json' --data @-
-          }
-
-          report() { # label token appId
+          report() { # LABEL TOKEN APP_ID
             echo "════════ $1 ════════"
-            r="$(gql "$2" "$QUERY" "$3")"
-            echo "$r" | jq -r '.errors[]?.message | "error: \(.)"'
+            local r
+            r="$(gql "$2" "$PROBE" "$(jq -n --arg a "$3" --arg p "$PACKAGE" '{appId: $a, pkg: $p}')")"
+            echo "$r" | errors
             echo "$r" | jq -r --arg want "$EXPECTED_SHA1" '
               .data.app.byId // empty
-              | "project: \(.fullName)  (owner \(.ownerAccount.name))",
+              | "project: \(.fullName)",
                 "remote version: \(.latestAppVersionByPlatformAndApplicationIdentifier // "none" | if type == "object" then "\(.storeVersion) (\(.buildVersion))" else . end)",
                 (.androidAppCredentials[]?.androidAppBuildCredentialsList[]?
-                  | "keystore \"\(.name)\" default=\(.isDefault) type=\(.androidKeystore.type)",
+                  | "keystore \"\(.name)\" default=\(.isDefault) id=\(.androidKeystore.id)",
                     "  sha1   \(.androidKeystore.sha1CertificateFingerprint)\(if .androidKeystore.sha1CertificateFingerprint == $want then "   <-- the key Play expects" else "" end)",
-                    "  sha256 \(.androidKeystore.sha256CertificateFingerprint)",
-                    "  created \(.androidKeystore.createdAt)")'
-            b="$(gql "$2" "$BUILDS" "$3")"
-            echo "$b" | jq -r '.errors[]?.message | "builds error: \(.)"'
-            echo "$b" | jq -r '
-              [.data.app.byId.builds[]? | select(.appBuildVersion != null)] as $all
-              | "android builds: \($all | length); highest versionCode: \([$all[].appBuildVersion | tonumber] | max // "none")",
-                ($all[:8][] | "  \(.createdAt[:10])  \(.appVersion) (\(.appBuildVersion))  \(.status)")'
+                    "  sha256 \(.androidKeystore.sha256CertificateFingerprint)")'
           }
+          LIB
 
+      - name: Before
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/lib.sh"
           report "OLD (alleluia_cervi)" "$OLD_TOKEN" "$OLD_APP_ID"
           report "NEW (alleluiacervi)"  "$NEW_TOKEN" "$NEW_APP_ID"
+
+      - name: Move the upload key
+        if: env.MODE == 'transfer'
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/lib.sh"
+          vars="$(jq -n --arg p "$PACKAGE" '{pkg: $p}')"
+
+          # ── 1. The new project: account, build credentials, current key ──
+          new="$(gql "$NEW_TOKEN" 'query($appId: String!, $pkg: String!) {
+              app { byId(appId: $appId) {
+                ownerAccount { id }
+                androidAppCredentials(filter: { applicationIdentifier: $pkg }) {
+                  androidAppBuildCredentialsList { id name isDefault androidKeystore { id sha1CertificateFingerprint } }
+                }
+              } } }' "$(echo "$vars" | jq --arg a "$NEW_APP_ID" '. + {appId: $a}')")"
+          echo "$new" | errors
+          account_id="$(echo "$new" | jq -r '.data.app.byId.ownerAccount.id // empty')"
+          build_creds_id="$(echo "$new" | jq -r '[.data.app.byId.androidAppCredentials[]?.androidAppBuildCredentialsList[]? | select(.isDefault)][0].id // empty')"
+          current_key_id="$(echo "$new" | jq -r '[.data.app.byId.androidAppCredentials[]?.androidAppBuildCredentialsList[]? | select(.isDefault)][0].androidKeystore.id // empty')"
+          current_sha1="$(echo "$new" | jq -r '[.data.app.byId.androidAppCredentials[]?.androidAppBuildCredentialsList[]? | select(.isDefault)][0].androidKeystore.sha1CertificateFingerprint // empty')"
+          [ -n "$account_id" ] && [ -n "$build_creds_id" ] || { echo "::error::New project's default Android build credentials not found"; exit 1; }
+          echo "new project default build credentials: $build_creds_id (keystore $current_key_id, sha1 $current_sha1)"
+
+          if [ "$current_sha1" = "$EXPECTED_SHA1" ]; then
+            echo "The new project already signs with the expected key; nothing to move."
+          else
+            # ── 2. Read the old key. Masked before anything else touches it ──
+            old="$(gql "$OLD_TOKEN" 'query($appId: String!, $pkg: String!) {
+                app { byId(appId: $appId) {
+                  androidAppCredentials(filter: { applicationIdentifier: $pkg }) {
+                    androidAppBuildCredentialsList { isDefault androidKeystore {
+                      keystore keystorePassword keyAlias keyPassword sha1CertificateFingerprint
+                    } }
+                  }
+                } } }' "$(echo "$vars" | jq --arg a "$OLD_APP_ID" '. + {appId: $a}')")"
+            if [ "$(echo "$old" | jq '.errors | length // 0')" != "0" ]; then
+              echo "::error::Could not read the old key (error codes: $(echo "$old" | jq -r '[.errors[].extensions.errorCode // "unknown"] | join(", ")'))"
+              exit 1
+            fi
+            sel='[.data.app.byId.androidAppCredentials[]?.androidAppBuildCredentialsList[]? | select(.androidKeystore.sha1CertificateFingerprint == $want)][0].androidKeystore'
+            ks="$(echo "$old" | jq -r --arg want "$EXPECTED_SHA1" "$sel.keystore // empty" | tr -d '\n')"
+            ks_pass="$(echo "$old" | jq -r --arg want "$EXPECTED_SHA1" "$sel.keystorePassword // empty")"
+            alias="$(echo "$old" | jq -r --arg want "$EXPECTED_SHA1" "$sel.keyAlias // empty")"
+            key_pass="$(echo "$old" | jq -r --arg want "$EXPECTED_SHA1" "$sel.keyPassword // empty")"
+            unset old
+            for s in "$ks" "$ks_pass" "$alias" "$key_pass"; do
+              if [ -n "$s" ]; then echo "::add-mask::$s"; fi
+            done
+            [ -n "$ks" ] && [ -n "$ks_pass" ] && [ -n "$alias" ] || { echo "::error::The old project has no keystore with sha1 $EXPECTED_SHA1"; exit 1; }
+            echo "old key found (sha1 $EXPECTED_SHA1)"
+
+            # ── 3. Store it on the new account ──
+            input="$(jq -n --arg k "$ks" --arg p "$ks_pass" --arg a "$alias" --arg kp "$key_pass" \
+              '{base64EncodedKeystore: $k, keystorePassword: $p, keyAlias: $a} + (if $kp == "" then {} else {keyPassword: $kp} end)')"
+            unset ks ks_pass alias key_pass
+            created="$(gql "$NEW_TOKEN" 'mutation($input: AndroidKeystoreInput!, $accountId: ID!) {
+                androidKeystore { createAndroidKeystore(androidKeystoreInput: $input, accountId: $accountId) {
+                  id sha1CertificateFingerprint
+                } } }' "$(jq -n --argjson i "$input" --arg acc "$account_id" '{input: $i, accountId: $acc}')")"
+            unset input
+            echo "$created" | jq -r '.errors[]? | "error: \(.extensions.errorCode // "unknown")"'
+            new_key_id="$(echo "$created" | jq -r '.data.androidKeystore.createAndroidKeystore.id // empty')"
+            new_key_sha1="$(echo "$created" | jq -r '.data.androidKeystore.createAndroidKeystore.sha1CertificateFingerprint // empty')"
+            [ -n "$new_key_id" ] && [ "$new_key_sha1" = "$EXPECTED_SHA1" ] || { echo "::error::Storing the key on the new account failed"; exit 1; }
+            echo "stored on the new account as keystore $new_key_id (sha1 $new_key_sha1)"
+
+            # ── 4. Point the default build credentials at it ──
+            set_key="$(gql "$NEW_TOKEN" 'mutation($id: ID!, $keystoreId: ID!) {
+                androidAppBuildCredentials { setKeystore(id: $id, keystoreId: $keystoreId) {
+                  id name isDefault androidKeystore { id sha1CertificateFingerprint }
+                } } }' "$(jq -n --arg id "$build_creds_id" --arg k "$new_key_id" '{id: $id, keystoreId: $k}')")"
+            echo "$set_key" | errors
+            [ "$(echo "$set_key" | jq -r '.data.androidAppBuildCredentials.setKeystore.androidKeystore.sha1CertificateFingerprint // empty')" = "$EXPECTED_SHA1" ] \
+              || { echo "::error::Could not set the key on the build credentials"; exit 1; }
+            echo "default build credentials now sign with $EXPECTED_SHA1"
+            echo "to reverse: setKeystore(id: $build_creds_id, keystoreId: $current_key_id)"
+          fi
+
+          # ── 5. Version code: never below what Play has already seen ──
+          ver="$(gql "$NEW_TOKEN" 'query($appId: String!, $pkg: String!) { app { byId(appId: $appId) {
+              latestAppVersionByPlatformAndApplicationIdentifier(platform: ANDROID, applicationIdentifier: $pkg) { buildVersion }
+            } } }' "$(echo "$vars" | jq --arg a "$NEW_APP_ID" '. + {appId: $a}')")"
+          echo "$ver" | errors
+          current_build="$(echo "$ver" | jq -r '.data.app.byId.latestAppVersionByPlatformAndApplicationIdentifier.buildVersion // "0"')"
+          if [ "$current_build" -lt "$MIN_BUILD_VERSION" ]; then
+            made="$(gql "$NEW_TOKEN" 'mutation($input: AppVersionInput!) { appVersion { createAppVersion(appVersionInput: $input) { id } } }' \
+              "$(jq -n --arg a "$NEW_APP_ID" --arg p "$PACKAGE" --arg s "$STORE_VERSION" --arg b "$MIN_BUILD_VERSION" \
+                '{input: {appId: $a, applicationIdentifier: $p, platform: "ANDROID", storeVersion: $s, buildVersion: $b, runtimeVersion: $s}}')")"
+            echo "$made" | errors
+            [ -n "$(echo "$made" | jq -r '.data.appVersion.createAppVersion.id // empty')" ] || { echo "::error::Could not set the version code"; exit 1; }
+            echo "remote versionCode $current_build → $MIN_BUILD_VERSION (next build: $((MIN_BUILD_VERSION + 1)))"
+          else
+            echo "remote versionCode already $current_build; left as is"
+          fi
+
+      - name: After
+        if: env.MODE == 'transfer'
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/lib.sh"
+          report "NEW (alleluiacervi)" "$NEW_TOKEN" "$NEW_APP_ID"
