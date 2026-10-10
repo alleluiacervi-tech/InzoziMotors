@@ -1,0 +1,111 @@
+name: Android upload key (one-off)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# One-off lever, never merged to main.
+#
+# Play expects com.sawacars.app to be signed with the upload key that lives on
+# the old alleluia_cervi Expo project (SHA-1 A8:A6:…:66:74). The first build on
+# the current alleluiacervi project (10 Oct 2026) generated a new key instead,
+# so Play rejects it. This job runs on a push to its own feature branch.
+#
+#   MODE=probe     read-only: fingerprints and version codes on both projects.
+#                  Never requests a keystore, a password or an alias.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [claude/determined-brahmagupta-plgaks]
+    paths: ['.github/workflows/android-upload-key.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-upload-key
+  cancel-in-progress: false
+
+env:
+  MODE: probe
+  OLD_APP_ID: 9c7aebc4-04b3-4950-b4db-0021e7836e65 # @alleluia_cervi/sawa-cars
+  NEW_APP_ID: f2c5d3f8-8777-4b97-96ec-1482d374a42a # @alleluiacervi/sawa-cars
+  PACKAGE: com.sawacars.app
+  EXPECTED_SHA1: 'A8:A6:A8:EC:E6:E4:99:30:66:5B:3C:9C:4D:6D:A5:46:38:2D:66:74'
+
+jobs:
+  key:
+    name: Upload key (${{ github.sha }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe both projects (read-only)
+        env:
+          NEW_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          OLD_TOKEN: ${{ secrets.EXPO_TOKEN_OLD }}
+        run: |
+          set -euo pipefail
+          [ -n "$NEW_TOKEN" ] || { echo "::error::EXPO_TOKEN is not set"; exit 1; }
+          [ -n "$OLD_TOKEN" ] || { echo "::error::EXPO_TOKEN_OLD is not set"; exit 1; }
+
+          QUERY='query Probe($appId: String!, $pkg: String!) {
+            app {
+              byId(appId: $appId) {
+                fullName
+                ownerAccount { name }
+                latestAppVersionByPlatformAndApplicationIdentifier(platform: ANDROID, applicationIdentifier: $pkg) {
+                  storeVersion
+                  buildVersion
+                }
+                androidAppCredentials(filter: { applicationIdentifier: $pkg }) {
+                  androidAppBuildCredentialsList {
+                    name
+                    isDefault
+                    androidKeystore { type sha1CertificateFingerprint sha256CertificateFingerprint createdAt }
+                  }
+                }
+              }
+            }
+          }'
+
+          BUILDS='query Builds($appId: String!, $pkg: String!) {
+            app {
+              byId(appId: $appId) {
+                builds(offset: 0, limit: 50, filter: { platform: ANDROID, appIdentifier: $pkg }) {
+                  appVersion
+                  appBuildVersion
+                  status
+                  createdAt
+                }
+              }
+            }
+          }'
+
+          gql() { # token query appId
+            jq -n --arg q "$2" --arg appId "$3" --arg pkg "$PACKAGE" \
+              '{query: $q, variables: {appId: $appId, pkg: $pkg}}' |
+            curl -sS https://api.expo.dev/graphql \
+              -H "authorization: Bearer $1" -H 'content-type: application/json' --data @-
+          }
+
+          report() { # label token appId
+            echo "════════ $1 ════════"
+            r="$(gql "$2" "$QUERY" "$3")"
+            echo "$r" | jq -r '.errors[]?.message | "error: \(.)"'
+            echo "$r" | jq -r --arg want "$EXPECTED_SHA1" '
+              .data.app.byId // empty
+              | "project: \(.fullName)  (owner \(.ownerAccount.name))",
+                "remote version: \(.latestAppVersionByPlatformAndApplicationIdentifier // "none" | if type == "object" then "\(.storeVersion) (\(.buildVersion))" else . end)",
+                (.androidAppCredentials[]?.androidAppBuildCredentialsList[]?
+                  | "keystore \"\(.name)\" default=\(.isDefault) type=\(.androidKeystore.type)",
+                    "  sha1   \(.androidKeystore.sha1CertificateFingerprint)\(if .androidKeystore.sha1CertificateFingerprint == $want then "   <-- the key Play expects" else "" end)",
+                    "  sha256 \(.androidKeystore.sha256CertificateFingerprint)",
+                    "  created \(.androidKeystore.createdAt)")'
+            b="$(gql "$2" "$BUILDS" "$3")"
+            echo "$b" | jq -r '.errors[]?.message | "builds error: \(.)"'
+            echo "$b" | jq -r '
+              [.data.app.byId.builds[]? | select(.appBuildVersion != null)] as $all
+              | "android builds: \($all | length); highest versionCode: \([$all[].appBuildVersion | tonumber] | max // "none")",
+                ($all[:8][] | "  \(.createdAt[:10])  \(.appVersion) (\(.appBuildVersion))  \(.status)")'
+          }
+
+          report "OLD (alleluia_cervi)" "$OLD_TOKEN" "$OLD_APP_ID"
+          report "NEW (alleluiacervi)"  "$NEW_TOKEN" "$NEW_APP_ID"
