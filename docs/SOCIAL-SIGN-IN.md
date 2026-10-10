@@ -69,13 +69,13 @@ Project → *APIs & Services*.
    |---|---|---|
    | Web application | Authorised redirect URI `https://sawacars.com/api/auth/oauth/google/callback`; Authorised JavaScript origin `https://sawacars.com` (One Tap needs it) | website and One Tap; also the audience of the app's ID tokens |
    | iOS | Bundle ID `com.sawacars.app` | the iOS app's native sheet |
-   | Android | Package `com.sawacars.apps`, SHA-1 of the **Play App Signing** key (Play Console → *Test and release → App integrity*). Add a second Android client with the upload key's SHA-1 for internal builds. | the Android app |
+   | Android | Package `com.sawacars.app`, SHA-1 of the **Play App Signing** key (Play Console → *Test and release → App integrity*). Add a second Android client with the upload key's SHA-1 for internal builds. | the Android app |
 
-   The **upload key** is the EAS keystore *Build Credentials 4RrJX5tVp0*
-   (production, created 5 Oct 2026; fingerprints are public, not secrets):
-   - SHA-1 `3D:DC:17:C4:83:B9:98:7A:B3:2E:22:06:B4:E9:3A:C6:14:0B:22:AB`
-   - SHA-256 `B0:5B:F0:D2:1E:3D:7E:3B:27:D0:9B:DB:8E:5B:A9:61:E9:8A:17:34:5F:9B:59:F4:D5:DF:EC:B3:4C:B0:0A:06`
-     (already in `assetlinks.json`)
+   The **upload key** is the EAS production keystore for `com.sawacars.app`
+   (`eas credentials` → Android → production shows its SHA-1 and SHA-256;
+   fingerprints are public, not secrets). The keystore *Build Credentials
+   4RrJX5tVp0* (SHA-1 `3D:DC:17:…:22:AB`) belongs to the retired
+   `com.sawacars.apps` and is not used.
 
    Play re-signs every build it distributes, internal testing included, with
    its own **app signing key**, which exists only after the first `.aab` is
