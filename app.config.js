@@ -138,10 +138,9 @@ export default ({ config }) => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#CC050F',
     },
-    // Differs from the iOS bundle id on purpose: com.sawacars.app is held by a
-    // personal Play account, so the company's new Play Console account
-    // publishes under this name. Permanent once the first build is uploaded.
-    package: 'com.sawacars.apps',
+    // Same as the iOS bundle id. com.sawacars.apps (Oct 2026) and
+    // com.sawacars.android (Sep 2026) were detours and are retired.
+    package: 'com.sawacars.app',
     ...(GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
     permissions: [
       'CAMERA',

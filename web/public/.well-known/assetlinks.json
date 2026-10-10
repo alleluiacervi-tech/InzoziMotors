@@ -8,15 +8,5 @@
         "D2:9F:B0:6F:3A:C3:BD:82:C4:F5:AB:CC:CE:AC:64:66:E8:DE:EC:B4:BA:D2:80:F9:3D:6F:26:D0:39:74:20:EC"
       ]
     }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.sawacars.apps",
-      "sha256_cert_fingerprints": [
-        "B0:5B:F0:D2:1E:3D:7E:3B:27:D0:9B:DB:8E:5B:A9:61:E9:8A:17:34:5F:9B:59:F4:D5:DF:EC:B3:4C:B0:0A:06"
-      ]
-    }
   }
 ]
