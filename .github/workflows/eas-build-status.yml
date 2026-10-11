@@ -1,0 +1,41 @@
+name: EAS build status (one-off)
+
+# Read-only: reports one EAS build's status, version code and download link.
+# Runs on a push to its own feature branch; never merged.
+
+on:
+  push:
+    branches: [claude/determined-brahmagupta-plgaks]
+    paths: ['.github/workflows/eas-build-status.yml']
+
+permissions:
+  contents: read
+
+env:
+  BUILD_ID: 6ac2c2af-4021-4f26-a62b-7148691ca2db
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Build status
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          jq -n --arg id "$BUILD_ID" '{
+            query: "query($id: ID!) { builds { byId(buildId: $id) { status platform appVersion appBuildVersion appIdentifier createdAt completedAt error { errorCode message } artifacts { applicationArchiveUrl buildUrl } } } }",
+            variables: {id: $id}
+          }' |
+          curl -sS https://api.expo.dev/graphql \
+            -H "authorization: Bearer $EXPO_TOKEN" -H 'content-type: application/json' --data @- |
+          jq -r '(.errors[]? | "error: \(.message)"),
+                 (.data.builds.byId // empty
+                  | "status:     \(.status)",
+                    "platform:   \(.platform)  \(.appIdentifier)",
+                    "version:    \(.appVersion) (versionCode \(.appBuildVersion))",
+                    "started:    \(.createdAt)",
+                    "finished:   \(.completedAt // "-")",
+                    (if .error then "error:      \(.error.errorCode): \(.error.message)" else empty end),
+                    "download:   \(.artifacts.applicationArchiveUrl // .artifacts.buildUrl // "not yet")")'
