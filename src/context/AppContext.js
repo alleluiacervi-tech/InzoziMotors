@@ -193,6 +193,7 @@ export function AppProvider({ children }) {
         pickup_location: inquiry.pickupLocation || undefined,
         message: inquiry.message || undefined,
         preferred_channel: inquiry.preferredChannel || 'in_app',
+        share_contact: inquiry.shareContact === true,
         acknowledge: true,
       });
       const mine = await rentalsApi.getMyInquiries();
@@ -631,6 +632,10 @@ export function AppProvider({ children }) {
       image: rc.images?.[0] || null, images: rc.images || [],
       safariReady: !!rc.safari_ready,
       unavailableUntil: rc.unavailable_until || null,
+      // The Sawa Rental Check summary, and the provider's calendar as renters
+      // see it (backend lib/rental-check-policy.js, lib/rental-calendar.js).
+      rentalCheck: rc.rental_check || null,
+      availability: rc.availability || null,
       providerId: rc.provider_id || null,
       providerName: rc.provider_business_name || rc.provider_name || 'Verified rental provider',
       providerContactAvailable: rc.provider_contact_available || { phone: false, whatsapp: false, in_app: true },
@@ -649,6 +654,7 @@ export function AppProvider({ children }) {
     pickupLocation: b.pickup_location,
     message: b.message,
     preferredChannel: b.preferred_channel,
+    conversationId: b.conversation_id || null,
     providerName: b.provider_business_name || b.provider_name || 'Rental provider',
     status: b.status,
     createdAt: b.created_at,

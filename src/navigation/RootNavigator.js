@@ -47,6 +47,8 @@ import RentalDetailScreen from '../screens/RentalDetailScreen';
 import RentalInquiryScreen from '../screens/RentalInquiryScreen';
 import MyRentalsScreen from '../screens/MyRentalsScreen';
 import RentalInboxScreen from '../screens/RentalInboxScreen';
+import RentalFleetCarScreen from '../screens/RentalFleetCarScreen';
+import RentalAddCarScreen from '../screens/RentalAddCarScreen';
 import ServiceFeesScreen from '../screens/ServiceFeesScreen';
 // Seller tools
 import SellScreen from '../screens/SellScreen';
@@ -128,6 +130,8 @@ export default function RootNavigator({ initialRoute = 'Onboarding' }) {
       />
       <Stack.Screen name="MyRentals" component={MyRentalsScreen} />
       <Stack.Screen name="RentalInbox" component={RentalInboxScreen} />
+      <Stack.Screen name="RentalFleetCar" component={RentalFleetCarScreen} />
+      <Stack.Screen name="RentalAddCar" component={RentalAddCarScreen} />
       <Stack.Screen name="ServiceFees" component={ServiceFeesScreen} />
       <Stack.Screen name="Sell" component={SellScreen} />
       <Stack.Screen name="CarValuation" component={CarValuationScreen} />

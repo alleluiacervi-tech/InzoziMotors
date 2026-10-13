@@ -75,6 +75,30 @@ function resolve(sql) {
     .replace(/\$\{MARKET_LATERALS\}/g, ' LEFT JOIN LATERAL (SELECT 1 AS n) mkt ON TRUE')
     .replace(/\$\{PROVIDER_COLUMNS\}/g, 'u.name AS provider_name')
     .replace(/\$\{VALID_RENTAL_INSPECTION\}/g, 'JOIN inspections evidence ON evidence.id = rc.inspection_id')
+    // The Rental Check evidence (migration 0060, routes/rentals.js). Expanded
+    // to the real fragments so the grammar checks the join and the predicate.
+    .replace(
+      /\$\{RENTAL_EVIDENCE\}/g,
+      ' LEFT JOIN LATERAL (SELECT rck.* FROM rental_checks rck WHERE rck.rental_car_id = rc.id'
+      + ' AND rck.voided_at IS NULL ORDER BY rck.checked_at DESC LIMIT 1) chk ON TRUE'
+    )
+    .replace(
+      /\$\{RENTAL_EVIDENCE_OK\}/g,
+      "((chk.id IS NOT NULL AND chk.passed AND chk.checked_at > NOW() - INTERVAL '12 months'"
+      + " AND chk.insurance_expires_on >= (NOW() AT TIME ZONE 'Africa/Kigali')::date"
+      + " AND chk.technical_control_expires_on >= (NOW() AT TIME ZONE 'Africa/Kigali')::date)"
+      + ' OR (chk.id IS NULL AND EXISTS (SELECT 1 FROM inspections evidence WHERE evidence.id = rc.inspection_id)))'
+    )
+    .replace(
+      /\$\{LEGACY_INSPECTION_EXISTS\}/g,
+      'EXISTS (SELECT 1 FROM inspections evidence WHERE evidence.id = rc.inspection_id)'
+    )
+    .replace(
+      /\$\{CHECK_COLUMNS\}/g,
+      ' chk.id AS check_id, chk.results AS check_results, chk.passed AS check_passed,'
+      + ' chk.checked_at AS check_checked_at'
+    )
+    .replace(/\$\{KIGALI_TODAY_SQL\}/g, "(NOW() AT TIME ZONE 'Africa/Kigali')::date")
     // The listing-subscription predicate (migration 0025). Substituted with the
     // real join, not a placeholder, so the grammar actually checks it — an
     // unknown fragment silently becomes a bare `1`, which is what made this

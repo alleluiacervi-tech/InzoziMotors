@@ -2,6 +2,7 @@ import Image from '@/components/ui/SafeImage'
 import Link from 'next/link'
 import { Badge, Icon } from '@/components/ui'
 import { formatMoneyExact, formatMoney, getCertTier } from '@/lib/business'
+import { formatDay } from '@/lib/rental-dates'
 import type { RentalCar } from '@/lib/types'
 import { getServerT } from '@/lib/i18n/server'
 import { formatRating } from './rental-math'
@@ -20,15 +21,13 @@ const FALLBACK_IMAGE =
  */
 export async function RentalCard({ car, priority = false }: { car: RentalCar; priority?: boolean }) {
   const t = await getServerT()
-  const tier = getCertTier(car)
+  // A car listed on its Rental Check carries that, never a sale-car tier.
+  const check = car.rental_check?.kind === 'rental_check' ? car.rental_check : null
+  const tier = check ? null : getCertTier(car)
   const image = car.images?.[0] || FALLBACK_IMAGE
   const rating = formatRating(car.rating)
-  // Future-dated and unparsed-safe: a bad or past value must never render.
-  const unavailableDate = car.unavailable_until ? new Date(car.unavailable_until) : null
-  const unavailableUntil =
-    unavailableDate && !Number.isNaN(unavailableDate.getTime()) && unavailableDate.getTime() > Date.now()
-      ? unavailableDate
-      : null
+  // Only while the provider has marked today taken; the server derives it.
+  const backOn = car.availability?.out_now ? car.availability.back_on : null
 
   return (
     <Link
@@ -45,7 +44,11 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
           priority={priority}
         />
         <div className="absolute left-3 top-3 flex max-w-[58%] flex-wrap gap-1.5">
-          {tier ? (
+          {check ? (
+            <Badge tone="inspected" icon="shield-check" className="max-w-full truncate">
+              {t('rentals.card.checkBadge', { passed: check.passed_count, total: check.total })}
+            </Badge>
+          ) : tier ? (
             <Badge
               tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'}
               icon="shield-check"
@@ -61,11 +64,11 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
               {t('rentals.card.safariReady')}
             </Badge>
           ) : null}
-          {/* Informational only — the provider set this, it never hides the car
-              or blocks an inquiry. See migration 0037. */}
-          {unavailableUntil ? (
+          {/* Informational only — the provider's calendar never hides the car or
+              blocks an inquiry. See migration 0061. */}
+          {backOn ? (
             <Badge tone="neutral" icon="clock" className="max-w-full truncate">
-              {t('rentals.card.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
+              {t('rentals.card.takenBack', { date: formatDay(backOn) })}
             </Badge>
           ) : null}
         </div>

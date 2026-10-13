@@ -9,6 +9,8 @@ import { LoadingState, ErrorState } from '../components/StateViews';
 import { colors, radius, shadows, fonts } from '../theme';
 import { formatRWF } from '../data/marketData';
 import { useApp } from '../context/AppContext';
+import rentalsApi from '../api/rentals';
+import { formatDay } from '../utils/rentalDates';
 import { Image as ExpoImage } from 'expo-image';
 import Photo from '../components/Photo';
 import { PHOTO, photoUrl } from '../utils/photo';
@@ -29,6 +31,21 @@ export default function RentalDetailScreen({ navigation, route }) {
     (rentalCars || []).find((c) => String(c.id) === String(rentalId)) ||
     null;
   React.useEffect(() => { if (car?.id) recordCarView(car.id); }, [car?.id]);
+
+  // The list payload carries the check and today's state; the detail adds the
+  // provider's taken periods. Fetched quietly: the page works without it.
+  const [detail, setDetail] = useState(null);
+  React.useEffect(() => {
+    if (!car?.id || !String(car.id).includes('-')) return undefined;
+    let alive = true;
+    rentalsApi.getRentalCar(car.id)
+      .then((row) => { if (alive) setDetail(row); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [car?.id]);
+  const rentalCheck = detail?.rental_check || car?.rentalCheck || null;
+  const availability = detail?.availability || car?.availability || null;
+  const check = rentalCheck?.kind === 'rental_check' ? rentalCheck : null;
 
   const imageList = React.useMemo(
     () => (car?.images && car.images.length > 0 ? car.images : (car?.image ? [car.image] : [])),
@@ -76,14 +93,12 @@ export default function RentalDetailScreen({ navigation, route }) {
     );
   }
 
-  // Future-dated and unparsed-safe: a bad or past value must never render.
-  // Informational only — the provider set this, it never hides the car or
-  // blocks an inquiry. See backend migration 0037.
-  const unavailableDate = car.unavailableUntil ? new Date(car.unavailableUntil) : null;
-  const unavailableUntil =
-    unavailableDate && !Number.isNaN(unavailableDate.getTime()) && unavailableDate.getTime() > Date.now()
-      ? unavailableDate
-      : null;
+  // The provider's calendar: informational only, it never hides the car or
+  // blocks an inquiry (backend migration 0061). Older payloads carry only
+  // unavailable_until, which is the same "back on" day.
+  const backOn = availability ? (availability.out_now ? availability.back_on : null) : (car.unavailableUntil || null);
+  const busy = availability?.busy || [];
+  const freshCalendar = availability && (availability.freshness === 'fresh' || availability.freshness === 'aging');
 
   return (
     <View style={styles.root}>
@@ -130,22 +145,27 @@ export default function RentalDetailScreen({ navigation, route }) {
               <Ionicons name="key" size={11} color="#fff" />
               <Text style={styles.rentPillText}>{t('rentalDetail.forRent')}</Text>
             </View>
-            <View style={styles.certPill}>
-              <Ionicons name="shield-checkmark" size={11} color="#fff" />
-              <Text style={styles.rentPillText}>{t('rentalDetail.certified', { score: car.inspectionScore })}</Text>
-            </View>
+            {check ? (
+              <View style={styles.certPill}>
+                <Ionicons name="shield-checkmark" size={11} color="#fff" />
+                <Text style={styles.rentPillText}>{t('rentalCheck.badge', { passed: check.passed_count, total: check.total })}</Text>
+              </View>
+            ) : car.inspectionScore ? (
+              <View style={styles.certPill}>
+                <Ionicons name="shield-checkmark" size={11} color="#fff" />
+                <Text style={styles.rentPillText}>{t('rentalDetail.certified', { score: car.inspectionScore })}</Text>
+              </View>
+            ) : null}
             {car.safariReady && (
               <View style={styles.safariPill}>
                 <Ionicons name="trail-sign" size={11} color="#fff" />
                 <Text style={styles.rentPillText}>{t('rentalDetail.safariReady')}</Text>
               </View>
             )}
-            {unavailableUntil && (
+            {!!backOn && (
               <View style={styles.unavailablePill}>
                 <Ionicons name="time-outline" size={11} color="#fff" />
-                <Text style={styles.rentPillText}>
-                  {t('rentalDetail.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
-                </Text>
+                <Text style={styles.rentPillText}>{t('rentalCalendar.takenBack', { date: formatDay(backOn) })}</Text>
               </View>
             )}
           </View>
@@ -179,9 +199,58 @@ export default function RentalDetailScreen({ navigation, route }) {
             ))}
           </View>
 
-          {/* Availability is confirmed by the independent provider. */}
-          <Text style={styles.sectionTitle}>{t('rentalDetail.availability')}</Text>
-          <View style={styles.availabilityNote}><Ionicons name="calendar-outline" size={21} color={colors.primary} /><View style={{ flex: 1 }}><Text style={styles.availabilityTitle}>{t('rentalDetail.requestDates')}</Text><Text style={styles.availabilityText}>{t('rentalDetail.availabilityNote')}</Text></View></View>
+          {/* The Sawa Rental Check: what Sawa itself saw, and when. Never
+              "certified" or "guaranteed": Sawa is not party to the rental. */}
+          {check && (
+            <>
+              <Text style={styles.sectionTitle}>{t('rentalCheck.title')}</Text>
+              <View style={styles.availabilityNote}>
+                <Ionicons name="shield-checkmark-outline" size={21} color={colors.green} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.availabilityTitle}>{t('rentalCheck.summary', { date: formatDay(check.checked_on), passed: check.passed_count, total: check.total })}</Text>
+                  <Text style={styles.availabilityText}>{t('rentalCheck.insurance', { date: formatDay(check.insurance_valid_until) })}</Text>
+                  <Text style={styles.availabilityText}>{t('rentalCheck.technical', { date: formatDay(check.technical_control_valid_until) })}</Text>
+                  {(check.disclosures || []).map((item) => (
+                    <Text key={item.id} style={styles.availabilityText}>• {item.label}{item.note ? `: ${item.note}` : ''}</Text>
+                  ))}
+                  <Text style={[styles.availabilityText, { color: colors.textMuted }]}>{t('rentalCheck.note')}</Text>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* The provider's own calendar, attributed to them, with its age. */}
+          <Text style={styles.sectionTitle}>{t('rentalCalendar.title')}</Text>
+          <View style={styles.availabilityNote}>
+            <Ionicons name="calendar-outline" size={21} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              {!!backOn && <Text style={styles.availabilityTitle}>{t('rentalCalendar.outNow', { date: formatDay(backOn) })}</Text>}
+              {availability?.freshness === 'never' || !availability ? (
+                <Text style={styles.availabilityText}>{t('rentalCalendar.never')}</Text>
+              ) : (
+                <>
+                  {busy.length ? (
+                    <>
+                      <Text style={styles.availabilityTitle}>{t('rentalCalendar.takenList')}</Text>
+                      {busy.map((range) => (
+                        <Text key={range.from} style={styles.availabilityText}>
+                          {range.from === range.to ? formatDay(range.from) : t('rentalCalendar.range', { from: formatDay(range.from), to: formatDay(range.to) })}
+                        </Text>
+                      ))}
+                    </>
+                  ) : (
+                    <Text style={styles.availabilityText}>{t('rentalCalendar.none')}</Text>
+                  )}
+                  {!!availability.updated_at && (
+                    <Text style={[styles.availabilityText, { color: colors.textMuted }]}>
+                      {freshCalendar ? t('rentalCalendar.updated', { date: formatDay(String(availability.updated_at).slice(0, 10)) }) : t('rentalCalendar.stale')}
+                    </Text>
+                  )}
+                </>
+              )}
+              <Text style={[styles.availabilityText, { color: colors.textMuted }]}>{t('rentalCalendar.footnote')}</Text>
+            </View>
+          </View>
 
           {/* Pricing */}
           <Text style={styles.sectionTitle}>{t('rentalDetail.pricing')}</Text>

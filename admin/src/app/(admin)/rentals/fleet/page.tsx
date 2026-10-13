@@ -7,6 +7,7 @@ import { QueueSearch } from '@/components/QueueSearch'
 import { useConfirm, useToast } from '@/components/feedback'
 import { fmtDate } from '@/lib/format'
 import { MoneyInput } from '@/components/MoneyInput'
+import { RentalCheckForm } from '@/components/RentalCheckForm'
 
 const EMPTY = {
   provider_id: '', title: '', make: '', model: '', year: '', daily_rate: '',
@@ -25,7 +26,19 @@ const number = (value: string) => value === '' ? undefined : Number.parseInt(val
 // the neutral grey the admin-created statuses use.
 const STATUS_LABEL: Record<string, string> = {
   all: 'All', active: 'Active', maintenance: 'Maintenance', retired: 'Retired',
-  pending_review: 'Pending review',
+  pending_review: 'Pending review', check_requested: 'Check requested',
+}
+
+// Where the car stands on its 10-point Rental Check — derived once, on the
+// server (rentalCheckStatus in routes/rentals.js).
+const CHECK: Record<string, { label: string; tone: string; listable: boolean }> = {
+  requested: { label: 'Rental Check requested', tone: 'bg-info-tint text-info', listable: false },
+  none: { label: 'No Rental Check yet', tone: 'bg-danger-tint text-danger-strong', listable: false },
+  legacy: { label: 'Listed on a 150-point inspection', tone: 'bg-gray-100 text-gray-600', listable: true },
+  failed: { label: 'Rental Check failed — not public', tone: 'bg-danger-tint text-danger-strong', listable: false },
+  expired: { label: 'Check or document expired — not public', tone: 'bg-danger-tint text-danger-strong', listable: false },
+  expiring: { label: 'A document or the check runs out within 30 days', tone: 'bg-warning-tint text-warning-text', listable: true },
+  passed: { label: 'Rental Check passed', tone: 'bg-success-tint text-success-text', listable: true },
 }
 
 export default function RentalFleetPage() {
@@ -49,6 +62,7 @@ export default function RentalFleetPage() {
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkRenewing, setBulkRenewing] = useState(false)
+  const [checking, setChecking] = useState<any | null>(null)
   const toast = useToast()
   const ask = useConfirm()
 
@@ -100,6 +114,8 @@ export default function RentalFleetPage() {
   // Everything else — paid and live, maintenance, retired — can wait.
   function urgencyRank(car: any): number {
     if (car.publishable) return 0
+    // A provider waiting for Sawa to come and check is waiting on us.
+    if (car.check_status === 'requested') return 1
     if (car.status === 'pending_review') return 1
     if (car.subscription_status === 'lapsed' || car.subscription_status === 'none') return 2
     if (car.subscription_status === 'lapsing') return 3
@@ -109,7 +125,8 @@ export default function RentalFleetPage() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return cars
-      .filter((car) => (filter === 'all' || car.status === filter) && (!q || [
+      .filter((car) => (filter === 'all' || car.status === filter
+        || (filter === 'check_requested' && car.check_status === 'requested')) && (!q || [
         car.title, car.make, car.model, car.location, car.provider_name,
         car.provider_business_name, car.id,
       ].some((value) => String(value || '').toLowerCase().includes(q))))
@@ -199,8 +216,8 @@ export default function RentalFleetPage() {
 
   async function save(event: React.FormEvent) {
     event.preventDefault()
-    if (!form.provider_id || !form.inspection_id || !form.title.trim() || !number(form.daily_rate)) {
-      toast('Choose a verified rental provider, a passing inspection, a title and a daily rate.', 'error'); return
+    if (!form.provider_id || !form.title.trim() || !number(form.daily_rate)) {
+      toast('Choose a verified rental provider, a title and a daily rate.', 'error'); return
     }
     const payload = {
       provider_id: form.provider_id, title: form.title.trim(), make: form.make.trim() || null,
@@ -208,7 +225,7 @@ export default function RentalFleetPage() {
       weekly_rate: number(form.weekly_rate), deposit: number(form.deposit) || 0,
       min_days: number(form.min_days) || 1, mileage: number(form.mileage),
       location: form.location.trim() || null,
-      inspection_id: form.inspection_id,
+      inspection_id: form.inspection_id || undefined,
       images: form.images.split('\n').map((item) => item.trim()).filter(Boolean), status: form.status,
     }
     setSaving(true)
@@ -245,6 +262,11 @@ export default function RentalFleetPage() {
   // server transitions, chained, with an honest fallback if the second one
   // fails after the first already landed.
   async function approveAndActivate(car: any) {
+    // Checked here as well as on the server so a payment is not recorded for
+    // a car that then cannot be activated.
+    if (!CHECK[car.check_status]?.listable) {
+      toast('Record a passing Rental Check before approving this vehicle.', 'error'); return
+    }
     const amount = parseRwfInput(renewAmount[car.id] ?? defaultSubAmount)
     if (!amount) { toast('Enter the amount collected, in Rwandan francs, before activating.', 'error'); return }
     const ok = await ask({
@@ -301,7 +323,7 @@ export default function RentalFleetPage() {
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1">{['all', 'pending_review', 'active', 'maintenance', 'retired'].map((status) => (
+        <div className="flex flex-wrap gap-1">{['all', 'check_requested', 'pending_review', 'active', 'maintenance', 'retired'].map((status) => (
           <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${filter === status ? 'bg-ink-900 text-white' : 'border border-gray-200 bg-surface text-gray-600'}`}>{STATUS_LABEL[status] || status}</button>
         ))}</div>
         <button onClick={() => begin()} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-on">Add provider vehicle</button>
@@ -337,6 +359,29 @@ export default function RentalFleetPage() {
               <p className="mt-4 text-lg font-extrabold text-gray-900">{fmtMoney(car.daily_rate, car.currency || 'RWF')} <span className="text-xs font-medium text-gray-500">provider rate / day</span></p>
               <p className="mt-2 text-xs text-gray-500">Rates and availability are confirmed directly by the provider.</p>
 
+              {/* The Rental Check: the evidence half of "is this car public". */}
+              {car.check_status && CHECK[car.check_status] ? (
+                <div className={`mt-3 rounded-lg px-3 py-2 text-xs ${CHECK[car.check_status].tone}`}>
+                  <p className="font-bold">{CHECK[car.check_status].label}</p>
+                  {car.rental_check?.kind === 'rental_check' ? (
+                    <p className="mt-0.5 font-medium">
+                      {car.rental_check.passed_count}/{car.rental_check.total} on {fmtDate(car.rental_check.checked_on)}
+                      {' · '}insurance to {fmtDate(car.rental_check.insurance_valid_until)}
+                      {' · '}technical control to {fmtDate(car.rental_check.technical_control_valid_until)}
+                    </p>
+                  ) : null}
+                  {car.rental_check?.failed?.length ? (
+                    <ul className="mt-1 list-disc pl-4">
+                      {car.rental_check.failed.map((f: any) => <li key={f.id}>{f.label}{f.note ? `: ${f.note}` : ''}</li>)}
+                    </ul>
+                  ) : null}
+                  <button type="button" onClick={() => setChecking(car)}
+                    className="mt-2 min-h-[36px] rounded-lg bg-ink-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-ink-800">
+                    {car.check_status === 'none' || car.check_status === 'requested' || car.check_status === 'legacy' ? 'Record Rental Check' : 'Record a new check'}
+                  </button>
+                </div>
+              ) : null}
+
               {/* Whether this car is actually in the catalogue. A lapsed car is
                   shown, never hidden — these are the ones needing a call. */}
               <div className={`mt-3 rounded-lg px-3 py-2 text-xs ${
@@ -365,8 +410,8 @@ export default function RentalFleetPage() {
                 <div className="mt-2 rounded-lg border border-line bg-info-tint px-3 py-2.5">
                   <p className="text-xs font-bold text-info">Provider-proposed — awaiting your review</p>
                   <p className="mt-0.5 text-caption text-info">
-                    {car.provider_business_name || car.provider_name || 'The provider'} proposed this vehicle from
-                    their own passing inspection. Check the inspection and images below, then approve it.
+                    {car.provider_business_name || car.provider_name || 'The provider'} added this vehicle.
+                    Record its Rental Check, check the images, then approve it.
                   </p>
                 </div>
               ) : null}
@@ -424,6 +469,10 @@ export default function RentalFleetPage() {
         ))}</div>
       )}
 
+      {checking ? (
+        <RentalCheckForm car={checking} onClose={() => setChecking(null)} onSaved={() => { setChecking(null); load() }} />
+      ) : null}
+
       {editing && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(null) }}>
         <form onSubmit={save} className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-surface p-5 shadow-xl sm:rounded-2xl sm:p-6">
           <div className="mb-5 flex items-center justify-between"><div><h2 className="text-lg font-bold text-gray-900">{editing.id ? 'Edit rental vehicle' : 'Add rental vehicle'}</h2><p className="mt-1 text-xs text-gray-500">Every vehicle must belong to a verified rental company.</p></div><button type="button" onClick={() => setEditing(null)} className="text-gray-500">Close</button></div>
@@ -445,7 +494,7 @@ export default function RentalFleetPage() {
             ))}</div>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2"><label className={label}>Passing 150-point inspection</label><select value={form.inspection_id} onChange={(e) => { const selected = inspections.find((inspection) => inspection.id === e.target.value); setForm({ ...form, inspection_id: e.target.value, make: selected ? String(selected.make || selected.submission_make || '') : form.make, model: selected ? String(selected.model || selected.submission_model || '') : form.model, year: selected ? String(selected.year || selected.submission_year || '') : form.year }) }} className={input} required disabled={!form.provider_id}><option value="">Select inspection evidence</option>{inspections.filter((inspection) => inspection.seller_id === form.provider_id && (!cars.some((car) => car.inspection_id === inspection.id) || inspection.id === editing?.inspection_id)).map((inspection) => <option key={inspection.id} value={inspection.id}>{inspection.year || inspection.submission_year} {inspection.make || inspection.submission_make} {inspection.model || inspection.submission_model} · {inspection.score}/150 · {fmtDate(inspection.completed_at)}</option>)}</select><p className="mt-1 text-xs text-gray-500">Only a complete, passing inspection belonging to the selected provider can activate this vehicle.</p></div>
+            <div className="sm:col-span-2"><label className={label}>Passing 150-point inspection (optional)</label><select value={form.inspection_id} onChange={(e) => { const selected = inspections.find((inspection) => inspection.id === e.target.value); setForm({ ...form, inspection_id: e.target.value, make: selected ? String(selected.make || selected.submission_make || '') : form.make, model: selected ? String(selected.model || selected.submission_model || '') : form.model, year: selected ? String(selected.year || selected.submission_year || '') : form.year }) }} className={input} disabled={!form.provider_id}><option value="">None — record a Rental Check instead</option>{inspections.filter((inspection) => inspection.seller_id === form.provider_id && (!cars.some((car) => car.inspection_id === inspection.id) || inspection.id === editing?.inspection_id)).map((inspection) => <option key={inspection.id} value={inspection.id}>{inspection.year || inspection.submission_year} {inspection.make || inspection.submission_make} {inspection.model || inspection.submission_model} · {inspection.score}/150 · {fmtDate(inspection.completed_at)}</option>)}</select><p className="mt-1 text-xs text-gray-500">Rental cars are listed on the 10-point Rental Check, recorded from the fleet card after saving. An existing passing inspection of this car may stand in until the first check.</p></div>
             <div className="sm:col-span-2"><label className={label}>Listing title</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={input} required /></div>
             <div><label className={label}>Make</label><input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} className={input} required /></div>
             <div><label className={label}>Model</label><input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={input} required /></div>

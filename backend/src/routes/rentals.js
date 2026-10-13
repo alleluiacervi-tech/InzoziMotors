@@ -18,6 +18,21 @@ const {
   PUBLISH_THRESHOLD,
   evaluateChecklist,
 } = require('../lib/inspection-policy');
+const {
+  RENTAL_CHECK_VERSION,
+  RENTAL_CHECK_VALID_MONTHS,
+  ITEMS: RENTAL_CHECK_ITEMS,
+  evaluateRentalCheck,
+  disclosures: rentalCheckDisclosures,
+  publicDefinition: rentalCheckDefinition,
+} = require('../lib/rental-check-policy');
+const { kigaliToday } = require('../lib/insights-range');
+const fs = require('fs');
+const { uploadPhotos, verifyImageContent, resolveUploadUrl } = require('../middleware/upload');
+const { compressUploads } = require('../middleware/image-compress');
+const { stripUploadMetadata } = require('../middleware/strip-metadata');
+const calendar = require('../lib/rental-calendar');
+const { screenUserText } = require('../lib/moderation');
 
 const router = express.Router();
 const MAX_RENTAL_PHOTOS = 40;
@@ -56,21 +71,84 @@ async function inspectionEvidenceForProvider(db, inspectionId, providerId) {
   return { ...rows[0], evaluated };
 }
 
+/** Whether the car's latest Rental Check lets it be listed today.
+ *  { hasCheck: false } when it has none, so the caller falls back to the
+ *  legacy inspection exactly as RENTAL_EVIDENCE_OK does. */
+async function rentalCheckAllowsListing(db, carId) {
+  const { rows } = await db.query(
+    `SELECT chk.id IS NOT NULL AS has_check,
+            COALESCE(chk.passed
+              AND chk.checked_at > NOW() - INTERVAL '${RENTAL_CHECK_VALID_MONTHS} months'
+              AND chk.insurance_expires_on >= ${KIGALI_TODAY_SQL}
+              AND chk.technical_control_expires_on >= ${KIGALI_TODAY_SQL}, FALSE) AS ok
+       FROM rental_cars rc ${RENTAL_EVIDENCE}
+      WHERE rc.id = $1`,
+    [carId]
+  );
+  return { hasCheck: Boolean(rows[0]?.has_check), ok: Boolean(rows[0]?.ok) };
+}
+
 function inspectionMatchesVehicle(evidence, vehicle) {
   const sameText = (left, right) => String(left || '').trim().toLowerCase() === String(right || '').trim().toLowerCase();
   return evidence && sameText(evidence.make, vehicle.make) && sameText(evidence.model, vehicle.model)
     && Number(evidence.year) === Number(vehicle.year);
 }
 
-const VALID_RENTAL_INSPECTION = `
-  JOIN inspections evidence ON evidence.id = rc.inspection_id
-  JOIN submissions evidence_submission ON evidence_submission.id = evidence.submission_id
-    AND evidence_submission.seller_id = rc.provider_id
-    AND lower(evidence_submission.make) = lower(rc.make)
-    AND lower(evidence_submission.model) = lower(rc.model)
-    AND evidence_submission.year = rc.year
-    AND evidence.status = 'complete'
-    AND evidence.checklist_version = '${CHECKLIST_VERSION}'`;
+// What lets a rental car be listed: its Sawa Rental Check
+// (lib/rental-check-policy.js), or — for cars listed before Rental Checks
+// existed — the 150-point inspection they were approved on.
+//
+// The LATEST non-voided check decides: a failed re-check takes the car down
+// even though an older check passed. It must have passed, be under 12 months
+// old, and both recorded document dates must be today or later in Kigali —
+// expiry by predicate, so the listing hides itself the day the insurance or
+// technical control runs out, with nothing scheduled to make it happen.
+//
+// A car with no check at all keeps its legacy inspection evidence, matched to
+// the provider and vehicle exactly as before. Recording its first check ends
+// that: from then on only checks count.
+//
+// RENTAL_EVIDENCE is a join (it exposes chk.* for the payload);
+// RENTAL_EVIDENCE_OK goes in the WHERE clause. Both go in ALL THREE public
+// reads (catalogue, detail, inquire), for the reason given below.
+const KIGALI_TODAY_SQL = "(NOW() AT TIME ZONE 'Africa/Kigali')::date";
+
+const RENTAL_EVIDENCE = `
+  LEFT JOIN LATERAL (
+    SELECT rck.* FROM rental_checks rck
+     WHERE rck.rental_car_id = rc.id AND rck.voided_at IS NULL
+     ORDER BY rck.checked_at DESC LIMIT 1
+  ) chk ON TRUE`;
+
+const LEGACY_INSPECTION_EXISTS = `EXISTS (
+    SELECT 1 FROM inspections evidence
+      JOIN submissions evidence_submission ON evidence_submission.id = evidence.submission_id
+     WHERE evidence.id = rc.inspection_id
+       AND evidence_submission.seller_id = rc.provider_id
+       AND lower(evidence_submission.make) = lower(rc.make)
+       AND lower(evidence_submission.model) = lower(rc.model)
+       AND evidence_submission.year = rc.year
+       AND evidence.status = 'complete'
+       AND evidence.checklist_version = '${CHECKLIST_VERSION}')`;
+
+const RENTAL_EVIDENCE_OK = `(
+    (chk.id IS NOT NULL AND chk.passed
+       AND chk.checked_at > NOW() - INTERVAL '${RENTAL_CHECK_VALID_MONTHS} months'
+       AND chk.insurance_expires_on >= ${KIGALI_TODAY_SQL}
+       AND chk.technical_control_expires_on >= ${KIGALI_TODAY_SQL})
+    OR (chk.id IS NULL AND ${LEGACY_INSPECTION_EXISTS})
+  )`;
+
+// The check columns a payload needs, aliased so they cannot collide with rc.*.
+const CHECK_COLUMNS = `
+  chk.id AS check_id,
+  chk.checklist_version AS check_version,
+  chk.results AS check_results,
+  chk.passed AS check_passed,
+  chk.passed_count AS check_passed_count,
+  chk.insurance_expires_on AS check_insurance_expires_on,
+  chk.technical_control_expires_on AS check_technical_control_expires_on,
+  chk.checked_at AS check_checked_at`;
 
 // A car is publicly listed only while a paid, un-voided subscription covers
 // today. This is EXPIRY BY PREDICATE: nothing sweeps rows, nothing has to run
@@ -101,7 +179,119 @@ const PROVIDER_COLUMNS = `
   u.account_status AS provider_account_status,
   u.deleted_at AS provider_deleted_at`;
 
-function publicRental(row, includeContact = false) {
+const CHECK_EXPIRY_WARNING_DAYS = 30;
+
+/** Loads the taken periods for these cars and adds `availability` to each,
+ *  in one query. `unavailable_until` is derived from it for old app builds:
+ *  the day the car is back, while it is out. */
+async function attachAvailability(db, cars, { withPeriods = false, forOwner = false } = {}) {
+  if (!cars.length) return cars;
+  const today = kigaliToday();
+  const horizon = calendar.addDays(today, calendar.PUBLIC_WINDOW_DAYS);
+  const { rows } = await db.query(
+    `SELECT id, rental_car_id, to_char(starts_on, 'YYYY-MM-DD') AS from_day, to_char(ends_on, 'YYYY-MM-DD') AS to_day
+       FROM rental_busy_periods
+      WHERE rental_car_id = ANY($1::uuid[]) AND ends_on >= $2::date
+        AND ($4::boolean OR starts_on <= $3::date)
+      ORDER BY starts_on`,
+    [cars.map((c) => c.id), today, horizon, forOwner]
+  );
+  const byCar = new Map();
+  for (const row of rows) {
+    if (!byCar.has(row.rental_car_id)) byCar.set(row.rental_car_id, []);
+    byCar.get(row.rental_car_id).push({ id: row.id, from: row.from_day, to: row.to_day });
+  }
+  return cars.map((car) => {
+    const own = byCar.get(car.id) || [];
+    const availability = calendar.availabilitySummary({
+      ranges: own, today, updatedAt: car.calendar_updated_at, withPeriods,
+    });
+    const out = { ...car, availability, unavailable_until: availability.back_on };
+    // The owner edits periods one by one, so they get them with their ids.
+    if (forOwner) out.calendar_periods = own.map((r) => ({ id: r.id, starts_on: r.from, ends_on: r.to }));
+    return out;
+  });
+}
+
+function addDaysIso(iso, days) {
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function addMonthsIso(iso, months) {
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+function kigaliDayOf(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : kigaliToday(date);
+}
+
+/**
+ * Where a car stands on its Rental Check, for its provider and for staff.
+ * One definition, so the fleet screens on web, app and admin agree.
+ *
+ *   requested  the provider asked for a check and none has been recorded since
+ *   none       no check and no legacy inspection: cannot be listed
+ *   legacy     listed on a 150-point inspection from before Rental Checks
+ *   failed     the latest check failed a document or safety point
+ *   expired    passed, but over 12 months old or a document date has passed
+ *   expiring   passed, but a document runs out (or the check turns 12 months)
+ *              within 30 days
+ *   passed     good to list
+ */
+function rentalCheckStatus(row, today = kigaliToday()) {
+  const checkedOn = kigaliDayOf(row.check_checked_at);
+  const requestedOn = row.check_requested_at ? new Date(row.check_requested_at) : null;
+  const checkedAt = row.check_checked_at ? new Date(row.check_checked_at) : null;
+  if (requestedOn && (!checkedAt || requestedOn > checkedAt)) return 'requested';
+  if (!row.check_id) return row.inspection_id && row.inspected ? 'legacy' : 'none';
+  if (!row.check_passed) return 'failed';
+  const insurance = isoDay(row.check_insurance_expires_on);
+  const technical = isoDay(row.check_technical_control_expires_on);
+  const validUntil = addMonthsIso(checkedOn, RENTAL_CHECK_VALID_MONTHS);
+  const firstDeadline = [insurance, technical, validUntil].filter(Boolean).sort()[0];
+  if (!firstDeadline || firstDeadline < today) return 'expired';
+  if (firstDeadline <= addDaysIso(today, CHECK_EXPIRY_WARNING_DAYS)) return 'expiring';
+  return 'passed';
+}
+
+/** The check as a renter sees it. Owners and staff also get the failed points,
+ *  which a renter never needs: a car that failed one is not listed. */
+function rentalCheckSummary(row, { forOwner = false } = {}) {
+  if (row.check_id) {
+    const summary = {
+      kind: 'rental_check',
+      version: row.check_version,
+      passed: Boolean(row.check_passed),
+      passed_count: row.check_passed_count,
+      total: RENTAL_CHECK_ITEMS.length,
+      checked_on: kigaliDayOf(row.check_checked_at),
+      insurance_valid_until: isoDay(row.check_insurance_expires_on),
+      technical_control_valid_until: isoDay(row.check_technical_control_expires_on),
+      disclosures: rentalCheckDisclosures(row.check_results),
+    };
+    if (forOwner) {
+      summary.failed = RENTAL_CHECK_ITEMS
+        .filter((entry) => row.check_results?.[entry.id]?.verdict === 'fail')
+        .map((entry) => ({ id: entry.id, label: entry.label, note: row.check_results[entry.id].note || null }));
+    }
+    return summary;
+  }
+  if (row.inspection_id && row.inspected) {
+    return { kind: 'inspection', inspection_score: row.inspection_score };
+  }
+  return null;
+}
+
+const CHECK_RAW_FIELDS = ['check_id', 'check_version', 'check_results', 'check_passed', 'check_passed_count',
+  'check_insurance_expires_on', 'check_technical_control_expires_on', 'check_checked_at'];
+
+function publicRental(row, includeContact = false, { forOwner = false } = {}) {
   const available = contactAvailability({
     id_verified: row.provider_id_verified,
     role: row.provider_role,
@@ -128,6 +318,14 @@ function publicRental(row, includeContact = false) {
   delete result.provider_whatsapp_visible;
   delete result.provider_account_status;
   delete result.provider_deleted_at;
+  result.rental_check = rentalCheckSummary(row, { forOwner });
+  if (forOwner) {
+    result.check_status = rentalCheckStatus(row);
+  } else {
+    // Internal workflow state, not for the catalogue.
+    delete result.check_requested_at;
+  }
+  for (const field of CHECK_RAW_FIELDS) delete result[field];
   return result;
 }
 
@@ -136,16 +334,17 @@ function publicRental(row, includeContact = false) {
 router.get('/', async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT rc.*, ${PROVIDER_COLUMNS}
+      `SELECT rc.*, ${PROVIDER_COLUMNS}, ${CHECK_COLUMNS}
        FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
-       ${VALID_RENTAL_INSPECTION}
+       ${RENTAL_EVIDENCE}
        ${ACTIVE_RENTAL_SUBSCRIPTION}
        WHERE rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
          AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND ${RENTAL_EVIDENCE_OK}
        ORDER BY rc.daily_rate ASC`
     );
-    res.json(rows.map((row) => publicRental(row)));
+    res.json(await attachAvailability(pool, rows.map((row) => publicRental(row))));
   } catch (err) {
     log.error('rentals list error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
@@ -158,7 +357,7 @@ router.get('/admin/fleet', requireAdmin, async (_req, res) => {
     // the ones needing a conversation — so the subscription is reported here,
     // never used to hide anything.
     const { rows } = await pool.query(
-      `SELECT rc.*, ${PROVIDER_COLUMNS},
+      `SELECT rc.*, ${PROVIDER_COLUMNS}, ${CHECK_COLUMNS},
               sub.ends_on AS subscription_ends_on,
               sub.amount_rwf AS subscription_amount_rwf,
               CASE
@@ -174,10 +373,11 @@ router.get('/admin/fleet', requireAdmin, async (_req, res) => {
           WHERE s.rental_car_id = rc.id AND s.voided_at IS NULL
           ORDER BY s.ends_on DESC LIMIT 1
        ) sub ON TRUE
+       ${RENTAL_EVIDENCE}
        ORDER BY rc.created_at DESC`
     );
     res.json(rows.map((row) => ({
-      ...publicRental(row, true),
+      ...publicRental(row, true, { forOwner: true }),
       subscription_status: row.subscription_status,
       subscription_ends_on: row.subscription_ends_on,
       subscription_amount_rwf: row.subscription_amount_rwf,
@@ -193,7 +393,9 @@ router.get('/admin/fleet', requireAdmin, async (_req, res) => {
       //
       // Derived here rather than in each client so there is one definition of
       // "one click away from being live".
-      publishable: row.subscription_status === 'active' && row.status !== 'active',
+      // Evidence counts too: paid but unchecked is not one click from live.
+      publishable: row.subscription_status === 'active' && row.status !== 'active'
+        && ['passed', 'expiring', 'legacy'].includes(rentalCheckStatus(row)),
     })));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -238,8 +440,10 @@ router.get('/inquiries', requireAuth, async (req, res) => {
     }
     const { rows } = await pool.query(
       `SELECT ri.*, rc.title AS car_title,
-              renter.name AS renter_name, renter.phone AS renter_phone,
-              renter.whatsapp_phone AS renter_whatsapp,
+              renter.name AS renter_name,
+              -- Only with the renter's consent (migration 0061).
+              CASE WHEN ri.renter_shares_contact THEN renter.phone END AS renter_phone,
+              CASE WHEN ri.renter_shares_contact THEN renter.whatsapp_phone END AS renter_whatsapp,
               provider.name AS provider_name,
               provider.business_name AS provider_business_name
        FROM rental_inquiries ri
@@ -277,11 +481,13 @@ router.patch('/inquiries/:id/status', requireAuth, requireUuid('id'), async (req
       if (['closed', 'cancelled'].includes(inquiry.status)) {
         const e = new Error('This inquiry is already closed'); e.status = 409; throw e;
       }
+      // The provider acting on it counts as their first response.
       const { rows } = await client.query(
         `UPDATE rental_inquiries SET status=$1, updated_at=NOW(),
-           closed_at=CASE WHEN $1 IN ('closed','cancelled') THEN NOW() ELSE NULL END
+           closed_at=CASE WHEN $1 IN ('closed','cancelled') THEN NOW() ELSE NULL END,
+           first_response_at=CASE WHEN $3 THEN COALESCE(first_response_at, NOW()) ELSE first_response_at END
          WHERE id=$2 RETURNING *`,
-        [status, req.params.id]
+        [status, req.params.id, isProvider]
       );
       if (isAdmin) {
         await recordAdminAction(client, {
@@ -318,12 +524,19 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
   const pickupLocation = String(req.body.pickup_location || '').trim().slice(0, 200) || null;
   if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return res.status(400).json({ error: 'start_date is required in YYYY-MM-DD format' });
   const parsedStart = new Date(`${startDate}T00:00:00.000Z`);
-  const today = new Date().toISOString().slice(0, 10);
+  // The renter's "today" is Kigali's, the same day the calendar shows.
+  const today = kigaliToday();
   if (Number.isNaN(parsedStart.getTime()) || parsedStart.toISOString().slice(0, 10) !== startDate || startDate < today) {
     return res.status(400).json({ error: 'start_date must be a valid date that is today or later' });
   }
   if (!Number.isInteger(days) || days < 1 || days > 365) return res.status(400).json({ error: 'days is required and must be between 1 and 365' });
   if (!['in_app', 'phone', 'whatsapp'].includes(preferredChannel)) return res.status(400).json({ error: 'Invalid preferred channel' });
+  // The message now opens a chat thread, so it passes the same screening as
+  // any chat message (lib/moderation.js).
+  if (message) {
+    const screened = screenUserText(message, 1500);
+    if (!screened.ok) return res.status(400).json({ error: screened.error, code: screened.code });
+  }
   try {
     const inquiry = await withTransaction(async (client) => {
       const { rows } = await client.query(
@@ -332,13 +545,14 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
                 buyer.marketplace_terms_version
          FROM rental_cars rc
          JOIN users u ON u.id = rc.provider_id
-         ${VALID_RENTAL_INSPECTION}
+         ${RENTAL_EVIDENCE}
          ${ACTIVE_RENTAL_SUBSCRIPTION}
          JOIN users buyer ON buyer.id = $2
          WHERE rc.id = $1 AND rc.status = 'active'
            AND u.role = 'seller' AND u.id_verified = 'approved'
            AND u.business_verified = TRUE AND u.account_status = 'active'
            AND u.deleted_at IS NULL
+           AND ${RENTAL_EVIDENCE_OK}
          FOR UPDATE OF rc`,
         [req.params.id, req.user.id]
       );
@@ -387,29 +601,103 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
           ORDER BY created_at DESC LIMIT 1`,
         [car.id, req.user.id, startDate, days]
       );
-      if (existing.rows.length) return { ...existing.rows[0], ...shared, duplicate: true };
+      if (existing.rows.length) return { ...existing.rows[0], ...shared, car, duplicate: true };
+
+      // The renter's number goes to the provider only with the renter's say-so:
+      // asking to be called or messaged on WhatsApp is consent; choosing
+      // in-app is not, unless they also tick "share my number".
+      const sharesContact = preferredChannel !== 'in_app' || req.body.share_contact === true;
+      const lastDay = calendar.addDays(startDate, days - 1);
+      const busy = await client.query(
+        `SELECT to_char(starts_on, 'YYYY-MM-DD') AS from_day, to_char(ends_on, 'YYYY-MM-DD') AS to_day
+           FROM rental_busy_periods
+          WHERE rental_car_id = $1 AND starts_on <= $3::date AND ends_on >= $2::date`,
+        [car.id, startDate, lastDay]
+      );
+      const busyOverlap = calendar.overlap(busy.rows.map((r) => ({ from: r.from_day, to: r.to_day })), startDate, lastDay);
 
       const ref = 'RI-' + crypto.randomBytes(4).toString('hex').toUpperCase();
       const inserted = await client.query(
         `INSERT INTO rental_inquiries
            (inquiry_ref, rental_car_id, renter_id, provider_id, start_date, days,
-            pickup_location, message, preferred_channel)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-        [ref, car.id, req.user.id, car.provider_id, startDate, days, pickupLocation, message, preferredChannel]
+            pickup_location, message, preferred_channel, renter_shares_contact)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+        [ref, car.id, req.user.id, car.provider_id, startDate, days, pickupLocation, message, preferredChannel, sharesContact]
       );
+
+      // The request opens (or continues) the renter-provider conversation, so
+      // both sides can talk inside Sawa and the provider's reply is visible
+      // and timed. Same find-or-create as messages.js: one thread per pair,
+      // its pinned card now pointing at this rental car.
+      let thread = null;
+      const blocked = await client.query(
+        `SELECT 1 FROM blocked_users
+          WHERE (user_id = $1 AND blocked_id = $2) OR (user_id = $2 AND blocked_id = $1) LIMIT 1`,
+        [req.user.id, car.provider_id]
+      );
+      if (car.provider_id && !blocked.rowCount) {
+        const conv = await client.query(
+          `INSERT INTO conversations (car_id, rental_car_id, buyer_id, seller_id)
+           VALUES (NULL, $1, $2, $3)
+           ON CONFLICT (buyer_id, seller_id)
+           DO UPDATE SET car_id = NULL, rental_car_id = EXCLUDED.rental_car_id
+           RETURNING *`,
+          [car.id, req.user.id, car.provider_id]
+        );
+        const text = [
+          `Availability request ${ref}: ${car.title}, ${days} day${days === 1 ? '' : 's'} from ${startDate}`
+            + (pickupLocation ? `, pickup ${pickupLocation}` : '') + '.',
+          message,
+        ].filter(Boolean).join('\n\n');
+        const msg = await client.query(
+          'INSERT INTO messages (conversation_id, sender_id, text) VALUES ($1, $2, $3) RETURNING *',
+          [conv.rows[0].id, req.user.id, text]
+        );
+        await client.query(
+          'UPDATE conversations SET last_message = $1, last_message_at = NOW() WHERE id = $2',
+          [text.slice(0, 500), conv.rows[0].id]
+        );
+        await client.query('UPDATE rental_inquiries SET conversation_id = $1 WHERE id = $2', [conv.rows[0].id, inserted.rows[0].id]);
+        thread = { conversation: conv.rows[0], message: msg.rows[0] };
+      }
+
       if (car.provider_id) {
+        const overlapNote = busyOverlap.length
+          ? ` They asked for dates you marked taken (${busyOverlap.map((r) => (r.from === r.to ? r.from : `${r.from} to ${r.to}`)).join(', ')}).`
+          : '';
         await notifyUser(client, {
           user_id: car.provider_id,
           type: 'listing_update',
           title: 'New rental inquiry',
-          body: `${car.title} has a new availability request (${ref}). Contact the renter directly to confirm terms.`,
-          meta: JSON.stringify({ inquiryId: inserted.rows[0].id, rentalCarId: car.id }),
+          body: `${car.title} has a new availability request (${ref}).${overlapNote} Reply in Messages or contact the renter directly to agree terms.`,
+          meta: JSON.stringify({
+            inquiryId: inserted.rows[0].id, rentalCarId: car.id,
+            ...(thread ? { conversationId: thread.conversation.id } : {}),
+          }),
         });
       }
-      return { ...inserted.rows[0], ...shared };
+      return { ...inserted.rows[0], conversation_id: thread?.conversation.id || null, ...shared, car, thread, busy_overlap: busyOverlap };
     });
+
+    // Live delivery after commit, as messages.js does for a first message.
+    const io = req.app.get('io');
+    if (io && inquiry.thread) {
+      const { conversation, message: msg } = inquiry.thread;
+      io.to(`user:${conversation.buyer_id}`).to(`user:${conversation.seller_id}`)
+        .emit('new_message', { ...msg, sender_name: req.user.name || req.user.email });
+    }
+    const { car: inquiredCar, thread: _thread, ...payload } = inquiry;
+    // A WhatsApp message the renter can send as is: their own words go from
+    // their own WhatsApp to the provider's, with the reference both can quote.
+    const whatsappText = payload.contact && preferredChannel === 'whatsapp'
+      ? `Hello${inquiredCar.provider_business_name || inquiredCar.provider_name ? ` ${inquiredCar.provider_business_name || inquiredCar.provider_name}` : ''}, `
+        + `I found your ${inquiredCar.title} on Sawa Cars (request ${payload.inquiry_ref}). `
+        + `Is it free for ${payload.days} day${payload.days === 1 ? '' : 's'} from ${isoDay(payload.start_date)}?`
+      : null;
     res.status(inquiry.duplicate ? 200 : 201).json({
-      ...inquiry,
+      ...payload,
+      whatsapp_text: whatsappText,
+      busy_overlap: payload.busy_overlap || [],
       notice: DIRECT_DEAL_NOTICE,
       message: 'Inquiry sent. The rental provider—not Sawa—will confirm availability, price and terms.',
     });
@@ -439,7 +727,7 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
 router.get('/mine', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT rc.*, ${PROVIDER_COLUMNS},
+      `SELECT rc.*, ${PROVIDER_COLUMNS}, ${CHECK_COLUMNS},
               sub.ends_on AS subscription_ends_on,
               sub.amount_rwf AS subscription_amount_rwf,
               CASE
@@ -455,16 +743,17 @@ router.get('/mine', requireAuth, async (req, res) => {
           WHERE s.rental_car_id = rc.id AND s.voided_at IS NULL
           ORDER BY s.ends_on DESC LIMIT 1
        ) sub ON TRUE
+       ${RENTAL_EVIDENCE}
        WHERE rc.provider_id = $1
        ORDER BY rc.created_at DESC`,
       [req.user.id]
     );
-    res.json(rows.map((row) => ({
-      ...publicRental(row, true),
+    res.json(await attachAvailability(pool, rows.map((row) => ({
+      ...publicRental(row, true, { forOwner: true }),
       subscription_status: row.subscription_status,
       subscription_ends_on: row.subscription_ends_on,
       subscription_amount_rwf: row.subscription_amount_rwf,
-    })));
+    })), { withPeriods: true, forOwner: true }));
   } catch (err) {
     log.error('rentals mine error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
@@ -473,7 +762,7 @@ router.get('/mine', requireAuth, async (req, res) => {
 
 // GET /rentals/mine/eligible-inspections — the caller's own inspections that
 // could back a NEW rental car: complete, passing, and not already claimed by a
-// live (non-retired) rental_cars row. Mirrors VALID_RENTAL_INSPECTION's
+// live (non-retired) rental_cars row. Mirrors the legacy-inspection half of RENTAL_EVIDENCE_OK's
 // conditions for the picker; inspectionEvidenceForProvider is the authority
 // that actually decides it, re-checked in POST /propose.
 router.get('/mine/eligible-inspections', requireAuth, async (req, res) => {
@@ -503,19 +792,27 @@ router.get('/mine/eligible-inspections', requireAuth, async (req, res) => {
   }
 });
 
-// POST /rentals/propose — a verified rental provider creates their own rental
-// car row from their own passing inspection. Same validation as admin POST /,
-// with two differences: provider_id is always the caller (never trusted from
-// the body), and the row can only start 'pending_review'.
+// POST /rentals/propose — a verified rental provider adds a car to their own
+// fleet. provider_id is always the caller (never trusted from the body), and
+// the row can only start 'pending_review'.
+//
+// The evidence is a Sawa Rental Check, which this request asks for: staff go
+// to the provider and record it (POST /:id/checks). A provider who already has
+// a passing 150-point inspection of the same car may still attach it, and that
+// stands in until the first Rental Check is recorded.
 router.post('/propose', requireAuth, async (req, res) => {
   const { title, make, model, year, category, seats, fuel,
           transmission, mileage, daily_rate, weekly_rate, deposit, min_days,
           inspection_id, location, images } = req.body;
-  if (!title || !make || !model || !year || !daily_rate || !inspection_id) {
-    return res.status(400).json({ error: 'title, make, model, year, daily_rate and inspection_id are required' });
+  if (!title || !make || !model || !year || !daily_rate) {
+    return res.status(400).json({ error: 'title, make, model, year and daily_rate are required' });
   }
   if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) return res.status(400).json({ error: 'daily_rate must be a positive number' });
-  const galleryError = rentalGalleryError(images, true);
+  // Photos may come later, uploaded from the fleet (POST /:id/mine/photos):
+  // a provider adding a car from a phone has no image links to paste. The car
+  // cannot be activated without one (PATCH /:id checks the gallery).
+  const gallery = images === undefined || images === null ? [] : images;
+  const galleryError = rentalGalleryError(gallery, false);
   if (galleryError) return res.status(400).json({ error: galleryError });
   try {
     const created = await withTransaction(async (client) => {
@@ -524,13 +821,13 @@ router.post('/propose', requireAuth, async (req, res) => {
         error.status = 403;
         throw error;
       }
-      const evidence = await inspectionEvidenceForProvider(client, inspection_id, req.user.id);
-      if (!evidence) {
-        const error = new Error('Choose one of your own complete, passing 150-point inspections');
+      const evidence = inspection_id ? await inspectionEvidenceForProvider(client, inspection_id, req.user.id) : null;
+      if (inspection_id && !evidence) {
+        const error = new Error('Choose one of your own complete, passing 150-point inspections, or leave it out and request a Rental Check');
         error.status = 409;
         throw error;
       }
-      if (!inspectionMatchesVehicle(evidence, { make, model, year })) {
+      if (evidence && !inspectionMatchesVehicle(evidence, { make, model, year })) {
         const error = new Error('The selected inspection belongs to a different make, model, or model year');
         error.status = 409;
         throw error;
@@ -538,25 +835,32 @@ router.post('/propose', requireAuth, async (req, res) => {
       const { rows } = await client.query(
         `INSERT INTO rental_cars
            (provider_id,title,make,model,year,category,seats,fuel,transmission,mileage,
-            daily_rate,weekly_rate,deposit,min_days,inspection_id,inspected,inspection_score,location,images,status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TRUE,$16,$17,$18,'pending_review')
+            daily_rate,weekly_rate,deposit,min_days,inspection_id,inspected,inspection_score,location,images,status,
+            check_requested_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'pending_review',$20)
          RETURNING *`,
         [req.user.id, String(title).trim(), make, model, year, category, seats || 5, fuel,
          transmission, mileage, daily_rate, weekly_rate || Number(daily_rate) * 6,
-         deposit || 0, min_days || 1, inspection_id, Number(evidence.score), location,
-         images.map((url) => url.trim())]
+         deposit || 0, min_days || 1, evidence ? inspection_id : null, Boolean(evidence),
+         evidence ? Number(evidence.score) : null, location,
+         gallery.map((url) => url.trim()), evidence ? null : new Date()]
       );
       await recordAdminAction(client, {
         actorId: req.user.id, action: 'rental_car.proposed', targetType: 'rental_car', targetId: rows[0].id,
         summary: `${rows[0].title} proposed for rental review`, metadata: {
-          daily_rate: rows[0].daily_rate, inspection_id, inspection_score: Number(evidence.score),
+          daily_rate: rows[0].daily_rate,
+          inspection_id: evidence ? inspection_id : null,
+          inspection_score: evidence ? Number(evidence.score) : null,
+          rental_check_requested: !evidence,
         },
       });
       return rows[0];
     });
     res.status(201).json({
       ...created,
-      message: 'Sent for review. An admin checks the inspection and your verification before this appears in the catalogue.',
+      message: created.check_requested_at
+        ? 'Added. Sawa will contact you to arrange the 10-point Rental Check; the car is listed once it passes and the listing fee is recorded.'
+        : 'Sent for review. An admin checks the inspection and your verification before this appears in the catalogue.',
     });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
@@ -613,6 +917,35 @@ router.patch('/:id/mine', requireAuth, requireUuid('id'), async (req, res) => {
       const { rows } = await client.query(
         `UPDATE rental_cars SET ${assignments.join(', ')} WHERE id=$${params.length} RETURNING *`, params
       );
+
+      // Older app and web builds still send the single "unavailable until"
+      // date. It becomes calendar periods: a date means out from today until
+      // the day before it; empty means back now. Applied only when it says
+      // something different from the calendar, so re-saving the rates form
+      // with the value it was given changes nothing and does not refresh the
+      // calendar's "updated" stamp.
+      if (fields.includes('unavailable_until')) {
+        const today = kigaliToday();
+        const periods = await readPeriods(client, req.params.id, today);
+        const { back_on: backOn } = calendar.availabilitySummary({
+          ranges: periods.map((p) => ({ from: p.starts_on, to: p.ends_on })), today,
+        });
+        if ((unavailableUntil || null) !== (backOn || null)) {
+          const yesterday = calendar.addDays(today, -1);
+          for (const period of periods.filter((p) => p.starts_on <= today && p.ends_on >= today)) {
+            if (period.starts_on < today) {
+              await client.query('UPDATE rental_busy_periods SET ends_on = $1::date WHERE id = $2', [yesterday, period.id]);
+            } else {
+              await client.query('DELETE FROM rental_busy_periods WHERE id = $1', [period.id]);
+            }
+          }
+          if (unavailableUntil && calendar.addDays(unavailableUntil, -1) >= today
+              && !calendar.validatePeriod(today, calendar.addDays(unavailableUntil, -1), today)) {
+            await markTaken(client, rows[0], today, calendar.addDays(unavailableUntil, -1), req.user.id);
+          }
+          await touchCalendar(client, req.params.id);
+        }
+      }
       return rows[0];
     });
     res.json(publicRental(updated, true));
@@ -623,21 +956,511 @@ router.patch('/:id/mine', requireAuth, requireUuid('id'), async (req, res) => {
   }
 });
 
+// POST /rentals/:id/mine/photos — multipart, field `photos`. The provider adds
+// listing photos to their own car from a phone. Same pipeline as submission
+// reference photos: bytes checked, compressed, metadata (GPS) stripped.
+const RENTAL_PHOTOS_PER_REQUEST = 6;
+
+async function rentalPhotoTarget(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      'SELECT provider_id, status, COALESCE(array_length(images, 1), 0) AS stored FROM rental_cars WHERE id = $1',
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
+    if (rows[0].provider_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    if (rows[0].status === 'retired') return res.status(409).json({ error: 'This car is retired' });
+    if (Number(rows[0].stored) >= MAX_RENTAL_PHOTOS) {
+      return res.status(409).json({ error: `A rental listing may contain at most ${MAX_RENTAL_PHOTOS} images` });
+    }
+    next();
+  } catch (err) {
+    log.error('rental photo lookup error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+router.post(
+  '/:id/mine/photos',
+  requireAuth,
+  requireUuid('id'),
+  rentalPhotoTarget,
+  uploadPhotos.array('photos', RENTAL_PHOTOS_PER_REQUEST),
+  verifyImageContent,
+  compressUploads,
+  stripUploadMetadata,
+  async (req, res) => {
+    const files = req.files || [];
+    if (!files.length) return res.status(400).json({ error: 'Add at least one photo' });
+    try {
+      const urls = [];
+      for (const file of files) urls.push(await resolveUploadUrl(req, file));
+      // The cap is enforced in the statement that appends, so two uploads at
+      // once cannot both pass the check above and overshoot it.
+      const { rows } = await pool.query(
+        `UPDATE rental_cars SET images = COALESCE(images, '{}') || $3::text[]
+          WHERE id = $1 AND provider_id = $2
+            AND COALESCE(array_length(images, 1), 0) + cardinality($3::text[]) <= $4
+          RETURNING *`,
+        [req.params.id, req.user.id, urls, MAX_RENTAL_PHOTOS]
+      );
+      if (!rows.length) {
+        files.forEach((file) => { if (file.path) fs.unlink(file.path, () => {}); });
+        return res.status(409).json({ error: `A rental listing may contain at most ${MAX_RENTAL_PHOTOS} images` });
+      }
+      res.status(201).json(publicRental(rows[0], true));
+    } catch (err) {
+      log.error('rental photo upload error', { error: err.message });
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The provider's calendar: which days a car is out (lib/rental-calendar.js,
+// migration 0061). Owner-only writes; staff and renters only ever read the
+// merged result. An inquiry never writes here — "Rented out for these dates"
+// on an inquiry is the provider writing, pre-filled from it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MAX_OPEN_PERIODS = 60;
+const PRUNE_AFTER_DAYS = 90;
+
+async function ownCarForUpdate(client, carId, userId) {
+  const { rows } = await client.query('SELECT * FROM rental_cars WHERE id = $1 FOR UPDATE', [carId]);
+  if (!rows.length) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
+  if (rows[0].provider_id !== userId) { const e = new Error('Forbidden'); e.status = 403; throw e; }
+  if (rows[0].status === 'retired') { const e = new Error('This car is retired'); e.status = 409; throw e; }
+  return rows[0];
+}
+
+async function readPeriods(db, carId, today) {
+  const { rows } = await db.query(
+    `SELECT id, to_char(starts_on, 'YYYY-MM-DD') AS starts_on, to_char(ends_on, 'YYYY-MM-DD') AS ends_on
+       FROM rental_busy_periods
+      WHERE rental_car_id = $1 AND ends_on >= $2::date
+      ORDER BY starts_on`,
+    [carId, today]
+  );
+  return rows;
+}
+
+/** Marks [startsOn, endsOn] taken, joined with any period it overlaps or
+ *  touches, so the provider's list never shows the same day twice. Caller
+ *  holds the car row lock, which serialises every calendar write. */
+async function markTaken(client, car, startsOn, endsOn, userId) {
+  const touching = await client.query(
+    `SELECT id, to_char(starts_on, 'YYYY-MM-DD') AS s, to_char(ends_on, 'YYYY-MM-DD') AS e
+       FROM rental_busy_periods
+      WHERE rental_car_id = $1 AND starts_on <= ($3::date + 1) AND ends_on >= ($2::date - 1)`,
+    [car.id, startsOn, endsOn]
+  );
+  let from = startsOn;
+  let to = endsOn;
+  for (const row of touching.rows) {
+    if (row.s < from) from = row.s;
+    if (row.e > to) to = row.e;
+  }
+  if (touching.rows.length) {
+    await client.query('DELETE FROM rental_busy_periods WHERE id = ANY($1::uuid[])', [touching.rows.map((r) => r.id)]);
+  }
+  const count = await client.query(
+    'SELECT COUNT(*)::int AS n FROM rental_busy_periods WHERE rental_car_id = $1 AND ends_on >= $2::date',
+    [car.id, kigaliToday()]
+  );
+  if (count.rows[0].n >= MAX_OPEN_PERIODS) {
+    const e = new Error(`A car can have at most ${MAX_OPEN_PERIODS} upcoming taken periods`); e.status = 409; e.code = 'BUSY_LIMIT'; throw e;
+  }
+  const { rows } = await client.query(
+    `INSERT INTO rental_busy_periods (rental_car_id, starts_on, ends_on, created_by)
+     VALUES ($1, $2::date, $3::date, $4)
+     RETURNING id, to_char(starts_on, 'YYYY-MM-DD') AS starts_on, to_char(ends_on, 'YYYY-MM-DD') AS ends_on`,
+    [car.id, from, to, userId]
+  );
+  return rows[0];
+}
+
+async function touchCalendar(client, carId) {
+  await client.query(
+    `DELETE FROM rental_busy_periods
+      WHERE rental_car_id = $1 AND ends_on < ($2::date - ${PRUNE_AFTER_DAYS})`,
+    [carId, kigaliToday()]
+  );
+  await client.query('UPDATE rental_cars SET calendar_updated_at = NOW() WHERE id = $1', [carId]);
+}
+
+async function calendarPayload(db, carId) {
+  const today = kigaliToday();
+  const car = await db.query('SELECT calendar_updated_at FROM rental_cars WHERE id = $1', [carId]);
+  const periods = await readPeriods(db, carId, today);
+  const updatedAt = car.rows[0]?.calendar_updated_at || null;
+  return {
+    today,
+    periods,
+    calendar_updated_at: updatedAt,
+    availability: calendar.availabilitySummary({
+      ranges: periods.map((p) => ({ from: p.starts_on, to: p.ends_on })), today, updatedAt, withPeriods: true,
+    }),
+  };
+}
+
+function calendarError(res, err, label) {
+  if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+  log.error(label, { error: err.message });
+  return res.status(500).json({ error: 'Server error' });
+}
+
+// GET /rentals/:id/mine/busy — the owner's calendar.
+router.get('/:id/mine/busy', requireAuth, requireUuid('id'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT provider_id FROM rental_cars WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
+    if (rows[0].provider_id !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    res.json(await calendarPayload(pool, req.params.id));
+  } catch (err) {
+    calendarError(res, err, 'rental calendar read error');
+  }
+});
+
+// POST /rentals/:id/mine/busy {starts_on, ends_on} — mark days taken.
+router.post('/:id/mine/busy', requireAuth, requireUuid('id'), async (req, res) => {
+  const startsOn = String(req.body?.starts_on || '');
+  const endsOn = String(req.body?.ends_on || startsOn);
+  const invalid = calendar.validatePeriod(startsOn, endsOn, kigaliToday());
+  if (invalid) return res.status(400).json({ error: invalid });
+  try {
+    const period = await withTransaction(async (client) => {
+      const car = await ownCarForUpdate(client, req.params.id, req.user.id);
+      const created = await markTaken(client, car, startsOn, endsOn, req.user.id);
+      await touchCalendar(client, car.id);
+      return created;
+    });
+    res.status(201).json({ period, ...(await calendarPayload(pool, req.params.id)) });
+  } catch (err) {
+    calendarError(res, err, 'rental calendar write error');
+  }
+});
+
+// PATCH /rentals/:id/mine/busy/:busyId {starts_on?, ends_on?} — change dates,
+// e.g. "back early" sends ends_on = yesterday. A period that no longer has a
+// day left is removed.
+router.patch('/:id/mine/busy/:busyId', requireAuth, requireUuid('id'), requireUuid('busyId'), async (req, res) => {
+  try {
+    await withTransaction(async (client) => {
+      const car = await ownCarForUpdate(client, req.params.id, req.user.id);
+      const { rows } = await client.query(
+        `SELECT id, to_char(starts_on, 'YYYY-MM-DD') AS s, to_char(ends_on, 'YYYY-MM-DD') AS e
+           FROM rental_busy_periods WHERE id = $1 AND rental_car_id = $2`,
+        [req.params.busyId, car.id]
+      );
+      if (!rows.length) { const e = new Error('Period not found'); e.status = 404; throw e; }
+      const startsOn = req.body?.starts_on !== undefined ? String(req.body.starts_on) : rows[0].s;
+      const endsOn = req.body?.ends_on !== undefined ? String(req.body.ends_on) : rows[0].e;
+      if (!calendar.isIsoDay(startsOn) || !calendar.isIsoDay(endsOn)) {
+        const e = new Error('Give the dates as YYYY-MM-DD'); e.status = 400; throw e;
+      }
+      const today = kigaliToday();
+      const nothingLeft = endsOn < startsOn || endsOn < today;
+      if (!nothingLeft) {
+        const invalid = calendar.validatePeriod(startsOn, endsOn, today);
+        if (invalid) { const e = new Error(invalid); e.status = 400; throw e; }
+      }
+      await client.query('DELETE FROM rental_busy_periods WHERE id = $1', [rows[0].id]);
+      if (!nothingLeft) await markTaken(client, car, startsOn, endsOn, req.user.id);
+      await touchCalendar(client, car.id);
+    });
+    res.json(await calendarPayload(pool, req.params.id));
+  } catch (err) {
+    calendarError(res, err, 'rental calendar update error');
+  }
+});
+
+// DELETE /rentals/:id/mine/busy/:busyId — free those days again.
+router.delete('/:id/mine/busy/:busyId', requireAuth, requireUuid('id'), requireUuid('busyId'), async (req, res) => {
+  try {
+    await withTransaction(async (client) => {
+      const car = await ownCarForUpdate(client, req.params.id, req.user.id);
+      const { rowCount } = await client.query(
+        'DELETE FROM rental_busy_periods WHERE id = $1 AND rental_car_id = $2', [req.params.busyId, car.id]
+      );
+      if (!rowCount) { const e = new Error('Period not found'); e.status = 404; throw e; }
+      await touchCalendar(client, car.id);
+    });
+    res.json(await calendarPayload(pool, req.params.id));
+  } catch (err) {
+    calendarError(res, err, 'rental calendar delete error');
+  }
+});
+
+// POST /rentals/:id/mine/calendar/confirm — "My calendar is up to date". Only
+// refreshes the stamp renters see; nothing else changes.
+router.post('/:id/mine/calendar/confirm', requireAuth, requireUuid('id'), async (req, res) => {
+  try {
+    await withTransaction(async (client) => {
+      const car = await ownCarForUpdate(client, req.params.id, req.user.id);
+      await touchCalendar(client, car.id);
+    });
+    res.json(await calendarPayload(pool, req.params.id));
+  } catch (err) {
+    calendarError(res, err, 'rental calendar confirm error');
+  }
+});
+
+// POST /rentals/inquiries/:id/rented-out {starts_on?, ends_on?} — the provider
+// agreed this request with the renter (off Sawa) and marks the days taken.
+// Pre-filled from the inquiry; closes it. The period stores no link to the
+// inquiry or the renter: Sawa records that the car is out, not a deal.
+router.post('/inquiries/:id/rented-out', requireAuth, requireUuid('id'), async (req, res) => {
+  try {
+    const result = await withTransaction(async (client) => {
+      const found = await client.query('SELECT * FROM rental_inquiries WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!found.rows.length) { const e = new Error('Inquiry not found'); e.status = 404; throw e; }
+      const inquiry = found.rows[0];
+      if (inquiry.provider_id !== req.user.id) { const e = new Error('Forbidden'); e.status = 403; throw e; }
+      if (inquiry.status === 'cancelled') {
+        const e = new Error('The renter cancelled this request. Use Mark taken on the car instead.'); e.status = 409; throw e;
+      }
+      const startDefault = isoDay(inquiry.start_date);
+      const startsOn = req.body?.starts_on ? String(req.body.starts_on) : startDefault;
+      const endsOn = req.body?.ends_on ? String(req.body.ends_on)
+        : (startDefault ? calendar.addDays(startDefault, Math.max(1, inquiry.days || 1) - 1) : null);
+      const invalid = calendar.validatePeriod(startsOn, endsOn, kigaliToday());
+      if (invalid) { const e = new Error(invalid); e.status = 400; throw e; }
+      const car = await ownCarForUpdate(client, inquiry.rental_car_id, req.user.id);
+      const period = await markTaken(client, car, startsOn, endsOn, req.user.id);
+      await touchCalendar(client, car.id);
+      await client.query(
+        `UPDATE rental_inquiries SET status = 'closed', closed_at = NOW(), updated_at = NOW(),
+                first_response_at = COALESCE(first_response_at, NOW())
+          WHERE id = $1`,
+        [inquiry.id]
+      );
+      return { period, carId: car.id };
+    });
+    res.status(201).json({ period: result.period, ...(await calendarPayload(pool, result.carId)) });
+  } catch (err) {
+    calendarError(res, err, 'rental rented-out error');
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The Sawa Rental Check (lib/rental-check-policy.js, migration 0060).
+//
+// Staff record it at the provider's yard; the provider asks for one from their
+// fleet. Recording a check never changes the car's status: the public reads
+// decide visibility from the latest check by predicate, so a failed re-check
+// takes a live car down at once and a passed one brings it back, with no
+// status for anyone to forget to flip.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /rentals/check-definition — the ten points, for the staff form and for
+// clients that explain the check to renters. Public: it is the standard.
+router.get('/check-definition', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.json(rentalCheckDefinition());
+});
+
+async function ownedOrAdmin(db, carId, user) {
+  const { rows } = await db.query('SELECT id, provider_id, title, status, check_requested_at FROM rental_cars WHERE id = $1', [carId]);
+  if (!rows.length) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
+  if (user.role !== 'admin' && rows[0].provider_id !== user.id) { const e = new Error('Forbidden'); e.status = 403; throw e; }
+  return rows[0];
+}
+
+// GET /rentals/:id/checks — the car's check history, newest first, for its
+// provider and for staff.
+router.get('/:id/checks', requireAuth, requireUuid('id'), async (req, res) => {
+  try {
+    await ownedOrAdmin(pool, req.params.id, req.user);
+    const { rows } = await pool.query(
+      `SELECT rck.id, rck.checklist_version, rck.results, rck.passed, rck.passed_count,
+              rck.insurance_expires_on, rck.technical_control_expires_on, rck.odometer_km,
+              rck.notes, rck.checked_at, rck.voided_at, rck.void_reason,
+              u.name AS checked_by_name
+         FROM rental_checks rck
+         LEFT JOIN users u ON u.id = rck.checked_by
+        WHERE rck.rental_car_id = $1
+        ORDER BY rck.checked_at DESC`,
+      [req.params.id]
+    );
+    res.json(rows.map((row) => ({
+      ...row,
+      insurance_expires_on: isoDay(row.insurance_expires_on),
+      technical_control_expires_on: isoDay(row.technical_control_expires_on),
+      // Staff notes are internal working notes, not for the provider.
+      notes: req.user.role === 'admin' ? row.notes : undefined,
+    })));
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental checks read error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /rentals/:id/checks — staff record a check.
+router.post('/:id/checks', requireAdmin, requireUuid('id'), async (req, res) => {
+  const evaluated = evaluateRentalCheck(req.body || {}, kigaliToday());
+  if (evaluated.errors.length) {
+    return res.status(400).json({ error: evaluated.errors[0], errors: evaluated.errors });
+  }
+  const notes = String(req.body?.notes || '').trim().slice(0, 1000) || null;
+  try {
+    const result = await withTransaction(async (client) => {
+      const car = await client.query('SELECT * FROM rental_cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!car.rowCount) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
+      const before = car.rows[0];
+      if (before.status === 'retired') { const e = new Error('This car is retired'); e.status = 409; throw e; }
+      const { rows } = await client.query(
+        `INSERT INTO rental_checks
+           (rental_car_id, checklist_version, results, passed, passed_count,
+            insurance_expires_on, technical_control_expires_on, odometer_km, notes, checked_by)
+         VALUES ($1,$2,$3,$4,$5,$6::date,$7::date,$8,$9,$10) RETURNING *`,
+        [before.id, evaluated.version, JSON.stringify(evaluated.results), evaluated.passed,
+         evaluated.passed_count, evaluated.insurance_expires_on, evaluated.technical_control_expires_on,
+         evaluated.odometer_km, notes, req.user.id]
+      );
+      // The odometer reading is the one Sawa saw; the request is answered.
+      // `inspected` stays the legacy 150-point flag: a voided check must fall
+      // back to it, so a check never overwrites it.
+      await client.query(
+        'UPDATE rental_cars SET check_requested_at = NULL, mileage = $1 WHERE id = $2',
+        [evaluated.odometer_km, before.id]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: evaluated.passed ? 'rental_check.passed' : 'rental_check.failed',
+        targetType: 'rental_car', targetId: before.id,
+        summary: `${before.title}: Rental Check ${evaluated.passed ? 'passed' : 'failed'} (${evaluated.passed_count}/${RENTAL_CHECK_ITEMS.length})`,
+        metadata: {
+          check_id: rows[0].id,
+          failed: evaluated.failed_blocking.map((f) => f.id),
+          insurance_expires_on: evaluated.insurance_expires_on,
+          technical_control_expires_on: evaluated.technical_control_expires_on,
+        },
+      });
+      const live = await client.query(
+        `SELECT 1 FROM rental_subscriptions
+          WHERE rental_car_id = $1 AND voided_at IS NULL
+            AND starts_on <= CURRENT_DATE AND ends_on >= CURRENT_DATE`,
+        [before.id]
+      );
+      if (before.provider_id) {
+        await notifyUser(client, evaluated.passed ? {
+          user_id: before.provider_id,
+          type: 'listing_update',
+          title: 'Rental Check passed',
+          body: `${before.title} passed Sawa's Rental Check (${evaluated.passed_count}/${RENTAL_CHECK_ITEMS.length}).`
+            + (before.status === 'active' && live.rowCount ? ' It is listed for renters.' : ' Sawa will confirm when it is listed.'),
+          meta: JSON.stringify({ rentalCarId: before.id }),
+        } : {
+          user_id: before.provider_id,
+          type: 'listing_update',
+          title: 'Rental Check: needs fixing',
+          body: `${before.title} did not pass: ${evaluated.failed_blocking.map((f) => f.label).join('; ')}. Fix it and ask for a re-check from your fleet.`,
+          meta: JSON.stringify({ rentalCarId: before.id }),
+        });
+      }
+      return { check: rows[0], status: before.status, subscribed: live.rowCount > 0 };
+    });
+    const warnings = [];
+    if (evaluated.passed && result.status !== 'active') warnings.push(`Passed, but the car is ${result.status}: set it to Active to list it.`);
+    if (evaluated.passed && !result.subscribed) warnings.push('Passed, but no listing subscription covers today: record one to list it.');
+    res.status(201).json({
+      ...result.check,
+      insurance_expires_on: evaluated.insurance_expires_on,
+      technical_control_expires_on: evaluated.technical_control_expires_on,
+      failed_blocking: evaluated.failed_blocking,
+      listed: evaluated.passed && result.status === 'active' && result.subscribed,
+      warnings,
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental check create error', { error: err.message });
+    res.status(500).json({ error: 'Could not record the check' });
+  }
+});
+
+// POST /rentals/checks/:checkId/void — undo a check recorded by mistake.
+// Void, never delete, with a reason, like subscriptions. The previous check
+// (or the legacy inspection, if none is left) decides again at once.
+router.post('/checks/:checkId/void', requireAdmin, requireUuid('checkId'), async (req, res) => {
+  const reason = String(req.body?.reason || '').trim();
+  if (reason.length < 4) return res.status(400).json({ error: 'Say why it is being voided — it stays on the record' });
+  try {
+    const voided = await withTransaction(async (client) => {
+      const current = await client.query('SELECT * FROM rental_checks WHERE id = $1 FOR UPDATE', [req.params.checkId]);
+      if (!current.rowCount) { const e = new Error('Check not found'); e.status = 404; throw e; }
+      if (current.rows[0].voided_at) { const e = new Error('That check is already voided'); e.status = 409; throw e; }
+      const { rows } = await client.query(
+        `UPDATE rental_checks SET voided_at = NOW(), voided_by = $1, void_reason = $2
+          WHERE id = $3 RETURNING *`,
+        [req.user.id, reason.slice(0, 500), req.params.checkId]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'rental_check.voided',
+        targetType: 'rental_car', targetId: current.rows[0].rental_car_id,
+        summary: `Voided a Rental Check: ${reason.slice(0, 120)}`,
+        metadata: { check_id: req.params.checkId },
+      });
+      return rows[0];
+    });
+    res.json(voided);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental check void error', { error: err.message });
+    res.status(500).json({ error: 'Could not void the check' });
+  }
+});
+
+// POST /rentals/:id/mine/request-check — the provider asks Sawa to come and
+// check a car (first time, after fixing a failure, or before a document runs
+// out). Idempotent while a request is open.
+router.post('/:id/mine/request-check', requireAuth, requireUuid('id'), async (req, res) => {
+  try {
+    const result = await withTransaction(async (client) => {
+      const { rows } = await client.query('SELECT * FROM rental_cars WHERE id = $1 FOR UPDATE', [req.params.id]);
+      if (!rows.length) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
+      const car = rows[0];
+      if (car.provider_id !== req.user.id) { const e = new Error('Forbidden'); e.status = 403; throw e; }
+      if (car.status === 'retired') { const e = new Error('This car is retired'); e.status = 409; throw e; }
+      if (car.check_requested_at) return { check_requested_at: car.check_requested_at, already: true };
+      const updated = await client.query(
+        'UPDATE rental_cars SET check_requested_at = NOW() WHERE id = $1 RETURNING check_requested_at',
+        [car.id]
+      );
+      await recordAdminAction(client, {
+        actorId: req.user.id, action: 'rental_check.requested', targetType: 'rental_car', targetId: car.id,
+        summary: `${car.title}: provider requested a Rental Check`, metadata: {},
+      });
+      return { check_requested_at: updated.rows[0].check_requested_at, already: false };
+    });
+    res.status(result.already ? 200 : 201).json({
+      check_requested_at: result.check_requested_at,
+      message: 'Requested. Sawa will contact you to arrange the visit.',
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    log.error('rental check request error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /rentals/:id — public detail after fixed route names above.
 router.get('/:id', requireUuid('id'), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT rc.*, ${PROVIDER_COLUMNS}
+      `SELECT rc.*, ${PROVIDER_COLUMNS}, ${CHECK_COLUMNS}
        FROM rental_cars rc JOIN users u ON u.id = rc.provider_id
-       ${VALID_RENTAL_INSPECTION}
+       ${RENTAL_EVIDENCE}
        ${ACTIVE_RENTAL_SUBSCRIPTION}
        WHERE rc.id = $1 AND rc.status = 'active' AND u.role = 'seller'
          AND u.id_verified = 'approved' AND u.business_verified = TRUE
-         AND u.account_status = 'active' AND u.deleted_at IS NULL`,
+         AND u.account_status = 'active' AND u.deleted_at IS NULL
+         AND ${RENTAL_EVIDENCE_OK}`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
-    res.json(publicRental(rows[0]));
+    const [car] = await attachAvailability(pool, [publicRental(rows[0])], { withPeriods: true });
+    res.json(car);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -821,7 +1644,7 @@ router.post('/', requireAdmin, async (req, res) => {
   const { provider_id, title, make, model, year, category, seats, fuel,
           transmission, mileage, daily_rate, weekly_rate, deposit, min_days,
           inspection_id, location, images } = req.body;
-  if (!provider_id || !title || !make || !model || !year || !daily_rate || !inspection_id) return res.status(400).json({ error: 'provider_id, title, make, model, year, daily_rate and inspection_id are required' });
+  if (!provider_id || !title || !make || !model || !year || !daily_rate) return res.status(400).json({ error: 'provider_id, title, make, model, year and daily_rate are required' });
   if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) return res.status(400).json({ error: 'daily_rate must be a positive number' });
   const galleryError = rentalGalleryError(images, true);
   if (galleryError) return res.status(400).json({ error: galleryError });
@@ -832,13 +1655,16 @@ router.post('/', requireAdmin, async (req, res) => {
         error.status = 400;
         throw error;
       }
-      const evidence = await inspectionEvidenceForProvider(client, inspection_id, provider_id);
-      if (!evidence) {
+      // The inspection is optional now: a car added without one gets its
+      // Rental Check recorded next (POST /:id/checks), and cannot be listed
+      // until then.
+      const evidence = inspection_id ? await inspectionEvidenceForProvider(client, inspection_id, provider_id) : null;
+      if (inspection_id && !evidence) {
         const error = new Error('Choose a complete, passing 150-point inspection belonging to this provider');
         error.status = 409;
         throw error;
       }
-      if (!inspectionMatchesVehicle(evidence, { make, model, year })) {
+      if (evidence && !inspectionMatchesVehicle(evidence, { make, model, year })) {
         const error = new Error('The selected inspection belongs to a different make, model, or model year');
         error.status = 409;
         throw error;
@@ -846,20 +1672,22 @@ router.post('/', requireAdmin, async (req, res) => {
       // A car with no paid subscription would be created 'active' and then be
       // invisible to every public read — an operator would reasonably conclude
       // the listing was broken. So it is created in maintenance instead, which
-      // is what it actually is: present, not published.
+      // is what it actually is: present, not published. The same goes for a car
+      // with no evidence yet.
       const period = req.body.subscription ? readSubscription(req.body.subscription) : null;
       if (period && period.error) { const e = new Error(period.error); e.status = 400; throw e; }
-      const initialStatus = period ? 'active' : 'maintenance';
+      const initialStatus = period && evidence ? 'active' : 'maintenance';
 
       const { rows } = await client.query(
         `INSERT INTO rental_cars
            (provider_id,title,make,model,year,category,seats,fuel,transmission,mileage,
             daily_rate,weekly_rate,deposit,min_days,inspection_id,inspected,inspection_score,location,images,status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TRUE,$16,$17,$18,$19)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
          RETURNING *`,
         [provider_id, String(title).trim(), make, model, year, category, seats || 5, fuel,
          transmission, mileage, daily_rate, weekly_rate || Number(daily_rate) * 6,
-         deposit || 0, min_days || 1, inspection_id, Number(evidence.score), location,
+         deposit || 0, min_days || 1, evidence ? inspection_id : null, Boolean(evidence),
+         evidence ? Number(evidence.score) : null, location,
          images.map((url) => url.trim()), initialStatus]
       );
       if (period) {
@@ -868,7 +1696,9 @@ router.post('/', requireAdmin, async (req, res) => {
       await recordAdminAction(client, {
         actorId: req.user.id, action: 'rental_car.created', targetType: 'rental_car', targetId: rows[0].id,
         summary: `${rows[0].title} added for a verified rental provider`, metadata: {
-          provider_id, daily_rate: rows[0].daily_rate, inspection_id, inspection_score: Number(evidence.score),
+          provider_id, daily_rate: rows[0].daily_rate,
+          inspection_id: evidence ? inspection_id : null,
+          inspection_score: evidence ? Number(evidence.score) : null,
         },
       });
       return rows[0];
@@ -909,6 +1739,17 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       const images = req.body.images !== undefined ? req.body.images : (before.images || []);
       const inspectionId = req.body.inspection_id !== undefined ? req.body.inspection_id : before.inspection_id;
 
+      // A Rental Check sighted this provider's documents for this car. A new
+      // provider has not been checked, so their earlier checks stop counting.
+      if (providerId !== before.provider_id) {
+        await client.query(
+          `UPDATE rental_checks
+              SET voided_at = NOW(), voided_by = $2, void_reason = 'Car moved to another provider'
+            WHERE rental_car_id = $1 AND voided_at IS NULL`,
+          [before.id, req.user.id]
+        );
+      }
+
       // Only on an explicit transition to 'active' — deliberately NOT inherited
       // like the assertions around it. Inheriting would 409 on editing a lapsed
       // car's location or rate, which is exactly when an operator needs to.
@@ -948,9 +1789,13 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
         }
         const galleryError = rentalGalleryError(images, true);
         if (galleryError) { const error = new Error(galleryError); error.status = 409; throw error; }
-        if (!evidence) {
-          const error = new Error('An active rental listing requires a valid 150-point inspection');
+        const check = await rentalCheckAllowsListing(client, req.params.id);
+        if (check.hasCheck ? !check.ok : !evidence) {
+          const error = new Error(check.hasCheck
+            ? 'This car\'s latest Rental Check does not allow listing: it failed, is over 12 months old, or a document has expired. Record a new check first.'
+            : 'An active rental listing requires a passed Rental Check');
           error.status = 409;
+          error.code = 'RENTAL_CHECK_REQUIRED';
           throw error;
         }
       }

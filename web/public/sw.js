@@ -6,7 +6,7 @@
  * Push payloads (backend/src/lib/web-push.js) carry a title, a body and ids
  * only; the URL a tap opens is resolved by /dashboard/notifications/open. */
 
-const ID_KEYS = ['type', 'conversationId', 'carId', 'submissionId', 'importOrderId', 'inquiryId', 'bookingId', 'disputeId']
+const ID_KEYS = ['type', 'conversationId', 'carId', 'submissionId', 'importOrderId', 'inquiryId', 'rentalCarId', 'bookingId', 'disputeId']
 
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))

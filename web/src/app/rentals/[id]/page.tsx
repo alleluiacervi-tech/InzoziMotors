@@ -11,6 +11,8 @@ import { Badge, Button, Card, Container, Icon, Section } from '@/components/ui'
 import { Gallery } from '@/components/marketplace/Gallery'
 import { OpenInAppButton } from '@/components/marketplace/OpenInAppButton'
 import { InspectionReportCard } from '@/components/marketplace/InspectionReportCard'
+import { RentalCalendarCard, RentalCheckCard } from '@/components/marketplace/RentalTrustCards'
+import { formatDay } from '@/lib/rental-dates'
 import { SpecGrid, type Spec } from '@/components/marketplace/SpecGrid'
 import { RENTAL_INCLUDES, RENTAL_REQUIREMENTS } from '@/components/marketplace/rental-copy'
 import { formatRating, tripCost } from '@/components/marketplace/rental-math'
@@ -83,15 +85,14 @@ export default async function RentalDetailPage({ params }: PageProps) {
   ])
 
   const images = (car.images ?? []).filter(Boolean)
-  const tier = getCertTier(car)
+  // A car listed on its Rental Check shows that, never a sale-car certification
+  // tier; the tier only remains for cars still listed on a 150-point inspection.
+  const check = car.rental_check?.kind === 'rental_check' ? car.rental_check : null
+  const tier = check ? null : getCertTier(car)
   const rating = formatRating(car.rating)
-  // Future-dated and unparsed-safe: informational only, never a gate — the
-  // page, gallery and inquiry form below all stay fully usable regardless.
-  const unavailableDate = car.unavailable_until ? new Date(car.unavailable_until) : null
-  const unavailableUntil =
-    unavailableDate && !Number.isNaN(unavailableDate.getTime()) && unavailableDate.getTime() > Date.now()
-      ? unavailableDate
-      : null
+  // The provider's own calendar: informational only, never a gate — the page,
+  // gallery and inquiry form below all stay fully usable regardless.
+  const backOn = car.availability?.out_now ? car.availability.back_on : null
   const weekly = car.weekly_rate ?? car.daily_rate * 7
 
   // A few trip lengths priced with the server's own formula, so the weekly rate
@@ -162,9 +163,14 @@ export default async function RentalDetailPage({ params }: PageProps) {
                   </Badge>
                 ) : null}
                 {car.status !== 'active' ? <Badge tone="neutral">{t('rentals.detail.notAvailableBadge')}</Badge> : null}
-                {unavailableUntil ? (
+                {check ? (
+                  <Badge tone="inspected" icon="shield-check">
+                    {t('rentals.card.checkBadge', { passed: check.passed_count, total: check.total })}
+                  </Badge>
+                ) : null}
+                {backOn ? (
                   <Badge tone="neutral" icon="clock">
-                    {t('rentals.card.unavailableUntil', { date: unavailableUntil.toLocaleDateString() })}
+                    {t('rentals.card.takenBack', { date: formatDay(backOn) })}
                   </Badge>
                 ) : null}
               </div>
@@ -240,8 +246,9 @@ export default async function RentalDetailPage({ params }: PageProps) {
           </aside>
 
           <div className="min-w-0 space-y-8 lg:col-start-1 lg:row-start-2">
-            <InspectionReportCard report={inspectionReport} />
-            <section aria-labelledby="availability-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7"><h2 id="availability-heading" className="text-title font-extrabold text-content">{t('rentals.detail.availabilityTitle')}</h2><p className="mt-2 text-body leading-relaxed text-content-secondary">{t('rentals.detail.availabilityBody')}</p></section>
+            <RentalCheckCard car={car} />
+            {check ? null : <InspectionReportCard report={inspectionReport} />}
+            <RentalCalendarCard car={car} />
 
             <section aria-labelledby="specs-heading" className="rounded-3xl border border-line-soft bg-surface p-5 shadow-card sm:p-7">
               <h2 id="specs-heading" className="mb-4 text-title font-extrabold text-content">

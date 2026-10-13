@@ -838,6 +838,49 @@ ALTER TABLE cars ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
 -- rental_cars.status is never touched on lapse: status is what the operator
 -- said about the vehicle, the subscription is what the business says about the
 -- listing, and a renewal must not republish a car somebody parked.
+-- ─── Rental contact and calendar (0061) ─────────────────────────────────────
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS rental_car_id UUID
+  REFERENCES rental_cars(id) ON DELETE SET NULL;
+ALTER TABLE rental_inquiries ADD COLUMN IF NOT EXISTS renter_shares_contact BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE rental_inquiries ADD COLUMN IF NOT EXISTS conversation_id UUID
+  REFERENCES conversations(id) ON DELETE SET NULL;
+ALTER TABLE rental_inquiries ADD COLUMN IF NOT EXISTS first_response_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS rental_busy_periods (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rental_car_id  UUID NOT NULL REFERENCES rental_cars(id) ON DELETE CASCADE,
+  starts_on      DATE NOT NULL,
+  ends_on        DATE NOT NULL,
+  created_by     UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT rental_busy_periods_order CHECK (ends_on >= starts_on),
+  CONSTRAINT rental_busy_periods_span CHECK (ends_on - starts_on <= 365)
+);
+CREATE INDEX IF NOT EXISTS idx_rental_busy_periods_car
+  ON rental_busy_periods(rental_car_id, ends_on);
+ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS calendar_updated_at TIMESTAMPTZ;
+
+-- ─── Sawa Rental Checks — 10-point evidence for rental listings (0060) ──────
+CREATE TABLE IF NOT EXISTS rental_checks (
+  id                            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  rental_car_id                 UUID NOT NULL REFERENCES rental_cars(id) ON DELETE CASCADE,
+  checklist_version             TEXT NOT NULL,
+  results                       JSONB NOT NULL,
+  passed                        BOOLEAN NOT NULL,
+  passed_count                  INT NOT NULL CHECK (passed_count BETWEEN 0 AND 10),
+  insurance_expires_on          DATE NOT NULL,
+  technical_control_expires_on  DATE NOT NULL,
+  odometer_km                   INT CHECK (odometer_km IS NULL OR odometer_km >= 0),
+  notes                         TEXT,
+  checked_by                    UUID REFERENCES users(id) ON DELETE SET NULL,
+  checked_at                    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  voided_at                     TIMESTAMPTZ,
+  voided_by                     UUID REFERENCES users(id) ON DELETE SET NULL,
+  void_reason                   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_rental_checks_car
+  ON rental_checks(rental_car_id, checked_at DESC) WHERE voided_at IS NULL;
+ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS check_requested_at TIMESTAMPTZ;
+
 CREATE TABLE IF NOT EXISTS rental_subscriptions (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   rental_car_id  UUID NOT NULL REFERENCES rental_cars(id) ON DELETE CASCADE,

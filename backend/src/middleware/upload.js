@@ -12,6 +12,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 //   /inspections/cars/:carId/photos      -> cars/<carId>
 //   /rentals/bookings/:bookingId/photos  -> rentals/<bookingId>
 //   /submissions/:id/reference-photos    -> submissions/<id>
+//   /rentals/:id/mine/photos             -> rental-cars/<id> (public listing photos)
 //   /admin/users/:userId/avatar          -> avatars
 //   /imports/admin/catalog/:catalogId/photo -> catalog
 //   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)
@@ -31,6 +32,7 @@ const resolveSubdir = (req) => {
   if (req.params.bookingId) return `rentals/${req.params.bookingId}`;
   if (req.params.id && req.baseUrl === '/imports') return `imports/${req.params.id}`;
   if (req.params.id && req.baseUrl === '/submissions') return `submissions/${req.params.id}`;
+  if (req.params.id && req.baseUrl === '/rentals') return `rental-cars/${req.params.id}`;
   return 'id-docs';
 };
 

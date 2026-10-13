@@ -19,3 +19,17 @@ export async function markInquiryClosed(formData: FormData) {
   await rentals.updateInquiryStatus(token, id, 'closed')
   revalidatePath('/dashboard/rentals/inbox')
 }
+
+/** "Rented out for these dates": the provider agreed this request with the
+ *  renter, so its days are marked taken on the car's calendar and it closes.
+ *  The calendar stores no link to the renter (backend migration 0061). */
+export async function markRentedOut(formData: FormData) {
+  const id = String(formData.get('id') || '')
+  const token = await getToken()
+  if (!id || !token) return
+  await rentals.rentedOut(token, id).catch((err) => {
+    console.error('rented-out failed:', (err as Error).message)
+  })
+  revalidatePath('/dashboard/rentals/inbox')
+  revalidatePath('/dashboard/rentals/fleet')
+}

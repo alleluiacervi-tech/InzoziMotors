@@ -46,5 +46,9 @@ export function notificationTarget(
   const inquiryId = readId(meta, 'inquiryId')
   if (inquiryId) return { href: '/dashboard/rentals/inbox', labelKey: 'dashboard.notificationTarget.viewInquiry' }
 
+  // A Rental Check result about one of the provider's own cars.
+  const rentalCarId = readId(meta, 'rentalCarId')
+  if (rentalCarId) return { href: '/dashboard/rentals/fleet', labelKey: 'dashboard.notificationTarget.viewFleet' }
+
   return null
 }

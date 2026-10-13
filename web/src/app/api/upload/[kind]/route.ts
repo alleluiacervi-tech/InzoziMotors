@@ -62,6 +62,17 @@ const KINDS: Record<string, UploadKind> = {
     maxFiles: 2,
     maxBytesPerFile: 10 * 1024 * 1024,
   },
+  // POST /rentals/:id/mine/photos — a provider's listing photos for their own
+  // rental car. The backend checks ownership; this only refuses a malformed id.
+  rental: {
+    path: (search) => {
+      const id = search.get('car') ?? ''
+      return UUID.test(id) ? `/rentals/${id}/mine/photos` : null
+    },
+    fields: ['photos'],
+    maxFiles: 6,
+    maxBytesPerFile: 10 * 1024 * 1024,
+  },
 }
 
 type Ctx = { params: Promise<{ kind: string }> }

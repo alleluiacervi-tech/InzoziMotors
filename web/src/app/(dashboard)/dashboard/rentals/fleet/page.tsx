@@ -2,16 +2,19 @@ import { redirect } from 'next/navigation'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { EditRentalTermsForm } from '@/components/dashboard/EditRentalTermsForm'
 import { ProposeRentalForm } from '@/components/dashboard/ProposeRentalForm'
+import { RentalCalendarPanel, RentalCheckPanel, RentalPhotosPanel } from '@/components/dashboard/RentalFleetPanels'
 import { Badge, Card, EmptyState } from '@/components/ui'
 import { rentals } from '@/lib/api'
 import { formatMoney } from '@/lib/business'
+import { formatDay } from '@/lib/rental-dates'
 import { getCurrentUser, getToken } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
 import type { RentalCar } from '@/lib/types'
 
-// The provider's own fleet: propose a new vehicle from a passing inspection,
-// see every car they've proposed regardless of status, and adjust terms.
-// Publication itself is not here — status only ever moves via an admin.
+// The provider's own fleet: add a car (which asks Sawa for its Rental Check),
+// see every car regardless of status, keep its Rental Check, rates and taken
+// dates current. Publication itself is not here — status only ever moves via
+// an admin.
 
 const STATUS_TONE: Record<RentalCar['status'], 'success' | 'warning' | 'neutral' | 'danger'> = {
   active: 'success',
@@ -62,8 +65,8 @@ export default async function RentalFleetPage() {
                           {t(`dashboard.rentalFleet.subscription.${car.subscription_status}`)}
                         </Badge>
                       ) : null}
-                      {car.unavailable_until ? (
-                        <Badge tone="info">{t('dashboard.rentalFleet.unavailableBadge', { date: new Date(car.unavailable_until).toLocaleDateString() })}</Badge>
+                      {car.availability?.out_now && car.availability.back_on ? (
+                        <Badge tone="info">{t('rentals.card.takenBack', { date: formatDay(car.availability.back_on) })}</Badge>
                       ) : null}
                     </div>
                   </div>
@@ -74,6 +77,9 @@ export default async function RentalFleetPage() {
                     </p>
                   ) : null}
 
+                  <RentalCheckPanel car={car} />
+                  {car.status !== 'retired' ? <RentalPhotosPanel car={car} /> : null}
+                  {car.status !== 'retired' ? <RentalCalendarPanel car={car} periods={car.calendar_periods ?? []} /> : null}
                   <EditRentalTermsForm car={car} />
                 </Card>
               </li>

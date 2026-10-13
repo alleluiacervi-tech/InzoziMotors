@@ -10,6 +10,7 @@ import { showConfirm, showToast } from '../components/Feedback';
 import { useApp } from '../context/AppContext';
 import rentalsApi from '../api/rentals';
 import { formatRWF } from '../data/marketData';
+import { formatDay } from '../utils/rentalDates';
 import { colors, fonts, radius, shadows } from '../theme';
 
 // What a rental provider sees: the requests people sent about their vehicles,
@@ -33,6 +34,17 @@ const FLEET_STATUS = {
 };
 
 const digits = (value) => String(value || '').replace(/[^\d]/g, '');
+
+// Rental Check state, as the server derives it (rentalCheckStatus).
+const CHECK_STATUS = {
+  requested: { color: colors.primary },
+  none: { color: colors.danger },
+  legacy: { color: colors.textMuted },
+  failed: { color: colors.danger },
+  expired: { color: colors.danger },
+  expiring: { color: colors.amberText },
+  passed: { color: colors.greenText || colors.green },
+};
 
 export default function RentalInboxScreen({ navigation }) {
   const { t } = useApp();
@@ -82,34 +94,54 @@ export default function RentalInboxScreen({ navigation }) {
 
   const open = (url) => Linking.openURL(url).catch(() => showToast(t('rentalInbox.updateFailed'), 'error'));
 
+  // "Rented out for these dates": the provider agreed it with the renter, so
+  // the dates go on the car's calendar and the request closes. The calendar
+  // keeps no link to the renter (backend migration 0061).
+  const rentedOut = async (item) => {
+    setBusyId(item.id);
+    try {
+      await rentalsApi.rentedOut(item.id);
+      setInquiries((list) => list.map((row) => (row.id === item.id ? { ...row, status: 'closed' } : row)));
+      showToast(t('rentalInbox.rentedOutDone'), 'success');
+    } catch (err) {
+      showToast(err?.message || t('rentalInbox.updateFailed'), 'error');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const body = () => {
     if (failed && inquiries === null) {
       return <ErrorState title={t('rentalInbox.title')} sub={t('rentalInbox.loadFailed')} actionLabel={t('rentalInbox.retry')} onAction={load} />;
     }
     if (inquiries === null) return <LoadingState label={t('common.loading')} />;
     if (tab === 'fleet') {
-      if (!fleet.length) return <EmptyState icon="car-outline" title={t('rentalInbox.tabFleet')} sub={t('rentalInbox.fleetEmpty')} />;
-      return fleet.map((car) => {
+      const addCar = <Button key="add" title={t('rentalFleet.addCar')} icon="add-circle-outline" variant="outline" onPress={() => navigation.navigate('RentalAddCar')} />;
+      if (!fleet.length) return [addCar, <EmptyState key="empty" icon="car-outline" title={t('rentalInbox.tabFleet')} sub={t('rentalInbox.fleetEmpty')} />];
+      return [addCar, ...fleet.map((car) => {
         const meta = FLEET_STATUS[car.status] || FLEET_STATUS.retired;
+        const check = CHECK_STATUS[car.check_status] || null;
+        const backOn = car.availability?.out_now ? car.availability.back_on : null;
         return (
-          <View key={car.id} style={styles.card}>
+          <Pressable key={car.id} style={styles.card} onPress={() => navigation.navigate('RentalFleetCar', { carId: car.id })} accessibilityRole="button" accessibilityLabel={car.title}>
             <View style={styles.cardHead}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{car.title}</Text>
                 <Text style={styles.sub}>{t('rentalInbox.perDay', { amount: formatRWF(Number(car.daily_rate)) })}</Text>
               </View>
               <View style={[styles.badge, { backgroundColor: meta.bg }]}><Text style={[styles.badgeText, { color: meta.color }]}>{t(meta.key)}</Text></View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ marginTop: 4 }} />
             </View>
-            {!!car.unavailable_until && (
-              <Text style={styles.sub}>{t('rentalInbox.availableFrom', { date: String(car.unavailable_until).slice(0, 10) })}</Text>
-            )}
-          </View>
+            {!!check && <Text style={[styles.sub, { color: check.color }]}>{t(`rentalFleet.checkStatus.${car.check_status}`)}</Text>}
+            {!!backOn && <Text style={styles.sub}>{t('rentalCalendar.takenBack', { date: formatDay(backOn) })}</Text>}
+          </Pressable>
         );
-      });
+      })];
     }
     if (!inquiries.length) return <EmptyState icon="mail-open-outline" title={t('rentalInbox.emptyTitle')} sub={t('rentalInbox.emptyText')} />;
     return inquiries.map((item) => {
       const meta = INQUIRY_STATUS[item.status] || INQUIRY_STATUS.new;
+      // Numbers arrive only when the renter agreed to share them.
       const phone = digits(item.renter_phone);
       const wa = digits(item.renter_whatsapp || item.renter_phone);
       const live = item.status === 'new' || item.status === 'contacted';
@@ -128,14 +160,17 @@ export default function RentalInboxScreen({ navigation }) {
             {item.days ? ` · ${t('rentalInbox.days', { count: item.days })}` : ''}
           </Text>
           {!!item.message && <Text style={styles.message}>{item.message}</Text>}
+          {!phone && !wa && <Text style={styles.sub}>{t('rentalInbox.numberPrivate')}</Text>}
           {live && (
             <View style={styles.actions}>
+              {!!item.conversation_id && <Pressable style={styles.chip} onPress={() => navigation.navigate('Chat', { convId: item.conversation_id, name: item.renter_name })}><Ionicons name="chatbubbles-outline" size={16} color={colors.textPrimary} /><Text style={styles.chipText}>{t('rentalInbox.openChat')}</Text></Pressable>}
               {!!phone && <Pressable style={styles.chip} onPress={() => open(`tel:+${phone}`)}><Ionicons name="call-outline" size={16} color={colors.textPrimary} /><Text style={styles.chipText}>{t('rentalInbox.call')}</Text></Pressable>}
               {!!wa && <Pressable style={styles.chip} onPress={() => open(`https://wa.me/${wa}`)}><Ionicons name="logo-whatsapp" size={16} color={colors.textPrimary} /><Text style={styles.chipText}>{t('rentalInbox.whatsapp')}</Text></Pressable>}
             </View>
           )}
           {live && (
             <View style={styles.actions}>
+              {!!item.start_date && <Button title={t('rentalInbox.rentedOut')} icon="calendar-outline" variant="primary" fullWidth={false} loading={busyId === item.id} onPress={() => rentedOut(item)} style={styles.actionButton} />}
               {item.status === 'new' && <Button title={t('rentalInbox.markContacted')} variant="outline" fullWidth={false} loading={busyId === item.id} onPress={() => setStatus(item, 'contacted')} style={styles.actionButton} />}
               <Button title={t('rentalInbox.close')} variant="secondary" fullWidth={false} loading={busyId === item.id} onPress={() => setStatus(item, 'closed')} style={styles.actionButton} />
             </View>

@@ -8,7 +8,8 @@ import { useT } from '@/lib/i18n/context'
 import type { RentalCar } from '@/lib/types'
 
 // Quick terms edit for one of the provider's own cars — status, provider and
-// inspection stay out of this form entirely; the backend (PATCH .../mine)
+// inspection stay out of this form entirely (taken dates have their own
+// calendar panel, RentalCalendarPanel); the backend (PATCH .../mine)
 // would ignore them anyway, but not offering the fields is the honest version
 // of that.
 export function EditRentalTermsForm({ car }: { car: RentalCar }) {
@@ -46,18 +47,6 @@ export function EditRentalTermsForm({ car }: { car: RentalCar }) {
         </Field>
         <Field label={t('dashboard.rentalFleet.propose.location')} htmlFor={`edit-location-${car.id}`}>
           <Input id={`edit-location-${car.id}`} name="location" defaultValue={car.location ?? ''} />
-        </Field>
-        <Field
-          label={t('dashboard.rentalFleet.edit.unavailableUntil')}
-          htmlFor={`edit-unavailable-${car.id}`}
-          hint={t('dashboard.rentalFleet.edit.unavailableHint')}
-        >
-          <Input
-            id={`edit-unavailable-${car.id}`}
-            name="unavailable_until"
-            type="date"
-            defaultValue={car.unavailable_until ? car.unavailable_until.slice(0, 10) : ''}
-          />
         </Field>
       </div>
 

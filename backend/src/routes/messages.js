@@ -78,7 +78,10 @@ router.get('/conversations', requireAuth, paginate(), async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT conv.*,
-              c.title AS car_title, c.images AS car_images,
+              -- A thread's pinned card is a sale car or, since migration 0061,
+              -- a rental car; clients read the same two fields for either.
+              COALESCE(c.title, rcar.title) AS car_title,
+              COALESCE(c.images, rcar.images) AS car_images,
               buyer.name AS buyer_name,
               ${sellerDisplayName('seller')} AS seller_name,
               seller.avatar_url AS seller_avatar_url,
@@ -87,6 +90,7 @@ router.get('/conversations', requireAuth, paginate(), async (req, res) => {
                  AND m.sender_id != $1) AS unread_count
        FROM conversations conv
        LEFT JOIN cars c ON c.id = conv.car_id
+       LEFT JOIN rental_cars rcar ON rcar.id = conv.rental_car_id
        JOIN users buyer ON buyer.id = conv.buyer_id
        JOIN users seller ON seller.id = conv.seller_id
        WHERE (conv.buyer_id = $1 OR conv.seller_id = $1)
@@ -197,7 +201,7 @@ router.post('/conversations', requireAuth, async (req, res) => {
       `INSERT INTO conversations (car_id, buyer_id, seller_id)
        VALUES ($1, $2, $3)
        ON CONFLICT (buyer_id, seller_id)
-       DO UPDATE SET car_id = EXCLUDED.car_id
+       DO UPDATE SET car_id = EXCLUDED.car_id, rental_car_id = NULL
        RETURNING *`,
       [car_id, req.user.id, car.seller_id]
     );
@@ -265,6 +269,26 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
       `UPDATE conversations SET last_message = $1, last_message_at = NOW() WHERE id = $2`,
       [screened.text, conv.id]
     );
+
+    // A rental provider answering in the thread is their first response to the
+    // renter's open requests: timed here, so response time is measured rather
+    // than self-reported (migration 0061). Best-effort: it must never fail the
+    // message that was just sent.
+    // Only the inquiry the thread is about right now: one renter can ask one
+    // provider about several cars, and the thread follows the latest of them
+    // (or a sale car, when rental_car_id is NULL and nothing is stamped).
+    if (req.user.id === conv.seller_id && conv.rental_car_id) {
+      pool.query(
+        `UPDATE rental_inquiries
+            SET first_response_at = COALESCE(first_response_at, NOW()),
+                status = CASE WHEN status = 'new' THEN 'contacted' ELSE status END,
+                updated_at = NOW()
+          WHERE conversation_id = $1 AND rental_car_id = $2
+            AND provider_id = $3 AND renter_id = $4 AND status IN ('new', 'contacted')
+            AND first_response_at IS NULL`,
+        [conv.id, conv.rental_car_id, conv.seller_id, conv.buyer_id]
+      ).catch((err) => log.error('rental first response stamp failed', { error: err.message }));
+    }
 
     // Single delivery path, shared with the start route: fan out to both
     // participants' user rooms and learn whether the recipient is connected.

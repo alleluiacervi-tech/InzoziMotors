@@ -28,6 +28,7 @@ const AMOUNTS: [string, string, string][] = [
   ['inspection_fee_rwf', 'Walk-in inspection', 'Charged at the office for a standalone 150-point inspection'],
   ['report_resale_fee_rwf', 'Report resale', 'A second reader buying access to a report already paid for once'],
   ['rental_subscription_monthly_rwf', 'Rental listing subscription', 'Per vehicle, per month, to stay visible in the rental fleet'],
+  ['rental_check_fee_rwf', 'Rental Check', 'Per vehicle, per visit: the 10-point check that lets a rental car be listed'],
 ]
 
 export default function ServiceRatesPage() {
