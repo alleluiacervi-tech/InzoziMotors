@@ -583,6 +583,33 @@ async function optionalAuth(req, _res, next) {
   next();
 }
 
+// One disclosure is one lead. A double tap, a reload or a second visit the same
+// day reveals the same number to the same person, and counting each as a new
+// contact inflated the Insights contact figures and the per-listing CSV. So
+// the event is written at most once per buyer, car and channel per window.
+// The advisory lock serialises concurrent requests for the same triple (a
+// double tap arrives as two requests at once), which a NOT EXISTS alone would
+// let both through.
+const CONTACT_EVENT_WINDOW_HOURS = 24;
+
+async function recordContactEvent(car, buyerId, channel) {
+  await withTransaction(async (client) => {
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtext($1))',
+      [`contact:${car.id}:${buyerId}:${channel}`]
+    );
+    await client.query(
+      `INSERT INTO listing_contact_events (car_id, buyer_id, seller_id, channel)
+       SELECT $1, $2, $3, $4
+        WHERE NOT EXISTS (
+          SELECT 1 FROM listing_contact_events
+           WHERE car_id = $1 AND buyer_id = $2 AND channel = $4
+             AND created_at > NOW() - make_interval(hours => $5))`,
+      [car.id, buyerId, car.seller_id, channel, CONTACT_EVENT_WINDOW_HOURS]
+    );
+  });
+}
+
 // POST /cars/:id/contact — disclose an opted-in seller contact to an
 // authenticated buyer and record the disclosure. The public catalogue never
 // carries phone numbers, and an acknowledgement is required once per policy
@@ -638,13 +665,7 @@ router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => 
       });
     }
 
-    if (!isInsider) {
-      await pool.query(
-        `INSERT INTO listing_contact_events (car_id, buyer_id, seller_id, channel)
-         VALUES ($1, $2, $3, $4)`,
-        [car.id, req.user.id, car.seller_id, channel]
-      );
-    }
+    if (!isInsider) await recordContactEvent(car, req.user.id, channel);
 
     res.json({
       channel,

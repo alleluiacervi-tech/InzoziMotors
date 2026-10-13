@@ -68,6 +68,15 @@ const nextConfig: NextConfig = {
         { source: `${route}/:path*`, headers: [{ key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(self)' }] },
       ]),
       {
+        // The service worker (browser notifications) must never be served
+        // stale from a cache, or a fix to it would take days to reach people.
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+        ],
+      },
+      {
         // Apple requires this file be served as JSON with no extension
         source: '/.well-known/apple-app-site-association',
         headers: [{ key: 'Content-Type', value: 'application/json' }],

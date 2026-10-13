@@ -938,6 +938,19 @@ CREATE TABLE IF NOT EXISTS device_tokens (
 );
 CREATE INDEX IF NOT EXISTS idx_device_tokens_user ON device_tokens(user_id);
 
+-- ─── Web Push subscriptions — browser push targets (migration 0059) ──────────
+CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint         TEXT NOT NULL,
+  p256dh           TEXT NOT NULL,
+  auth             TEXT NOT NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_success_at  TIMESTAMPTZ,
+  UNIQUE (endpoint)
+);
+CREATE INDEX IF NOT EXISTS idx_web_push_subscriptions_user ON web_push_subscriptions(user_id);
+
 -- ─── Disputes — post-handover mediation (7-day return window) ────────────────
 CREATE TABLE IF NOT EXISTS disputes (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

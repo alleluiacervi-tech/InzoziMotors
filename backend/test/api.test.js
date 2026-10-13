@@ -389,6 +389,19 @@ test('seller contact requires consent, verification, acknowledgement, and an aud
   );
   assert.equal(events.rows.length, 1);
   assert.equal(events.rows[0].channel, 'whatsapp');
+
+  // A double tap (two requests at once) and a later repeat are the same lead:
+  // still one event. A different channel is a new one.
+  const again = await Promise.all([1, 2].map(() => api().post(`/cars/${car.body.id}/contact`).set(auth)
+    .send({ channel: 'whatsapp', acknowledge: true })));
+  for (const r of again) assert.equal(r.status, 200);
+  assert.equal(again[0].body.contact, '+250788000222');
+  await api().post(`/cars/${car.body.id}/contact`).set(auth).send({ channel: 'phone', acknowledge: true }).expect(200);
+  const after = await pool.query(
+    'SELECT channel FROM listing_contact_events WHERE car_id=$1 AND buyer_id=$2 ORDER BY channel',
+    [car.body.id, buyer.id]
+  );
+  assert.deepEqual(after.rows.map((r) => r.channel), ['phone', 'whatsapp']);
 });
 
 test('public contact settings require a verified seller and a usable channel', async () => {
@@ -449,6 +462,23 @@ test('rental inquiries only reach active verified providers and never create a b
     .send({ start_date: start, days: 3, preferred_channel: 'phone', acknowledge: true }).expect(201);
   assert.equal(inquiry.body.contact, '+250788000555');
   assert.match(inquiry.body.notice, /does not collect or hold transaction funds/i);
+
+  // Sent twice at once: one inquiry, one notification to the provider, and
+  // both callers get the same inquiry back. Different dates are a new one.
+  const twice = await Promise.all([1, 2].map(() => api().post(`/rentals/${rental.body.id}/inquire`).set(auth)
+    .send({ start_date: start, days: 3, preferred_channel: 'phone', acknowledge: true })));
+  assert.deepEqual(twice.map((r) => r.status).sort(), [200, 200]);
+  assert.ok(twice.every((r) => r.body.id === inquiry.body.id && r.body.contact === '+250788000555'));
+  const inquiries = await pool.query('SELECT COUNT(*)::int AS count FROM rental_inquiries WHERE renter_id=$1', [renter.id]);
+  assert.equal(inquiries.rows[0].count, 1);
+  const notes = await pool.query(
+    "SELECT COUNT(*)::int AS count FROM notifications WHERE user_id=$1 AND title='New rental inquiry'", [provider.id]
+  );
+  assert.equal(notes.rows[0].count, 1);
+  const longer = await api().post(`/rentals/${rental.body.id}/inquire`).set(auth)
+    .send({ start_date: start, days: 5, preferred_channel: 'phone', acknowledge: true }).expect(201);
+  assert.notEqual(longer.body.id, inquiry.body.id);
+
   const legacyBookings = await pool.query('SELECT COUNT(*)::int AS count FROM rental_bookings WHERE renter_id=$1', [renter.id]);
   assert.equal(legacyBookings.rows[0].count, 0);
 

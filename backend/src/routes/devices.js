@@ -3,6 +3,9 @@ const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { sendExpoPushDetailed } = require('../lib/push');
+const {
+  webPushConfigured, webPushPublicKey, parseSubscription, sendWebPushDetailed,
+} = require('../lib/web-push');
 
 const router = express.Router();
 
@@ -82,20 +85,115 @@ router.post('/test', requireAuth, async (req, res) => {
   }
   lastTest.set(req.user.id, now);
   try {
-    const { rows } = await pool.query(
-      'SELECT token, platform FROM device_tokens WHERE user_id = $1', [req.user.id]
-    );
-    if (!rows.length) return res.json({ sent: 0, devices: [] });
-    const platformOf = new Map(rows.map((r) => [r.token, r.platform || 'unknown']));
-    const { results } = await sendExpoPushDetailed(rows.map((r) => r.token), {
+    const message = {
       title: 'Sawa Cars',
       body: 'Notifications are working on this device.',
       data: { type: 'test' },
-    });
-    const devices = results.map((r) => ({ platform: platformOf.get(r.token), ok: r.ok, error: r.error || null }));
+    };
+    const [{ rows }, web] = await Promise.all([
+      pool.query('SELECT token, platform FROM device_tokens WHERE user_id = $1', [req.user.id]),
+      pool.query('SELECT endpoint, p256dh, auth FROM web_push_subscriptions WHERE user_id = $1', [req.user.id]),
+    ]);
+    const platformOf = new Map(rows.map((r) => [r.token, r.platform || 'unknown']));
+    const [{ results }, webResults] = await Promise.all([
+      rows.length ? sendExpoPushDetailed(rows.map((r) => r.token), message) : { results: [] },
+      sendWebPushDetailed(web.rows, message),
+    ]);
+    const devices = [
+      ...results.map((r) => ({ platform: platformOf.get(r.token), ok: r.ok, error: r.error || null })),
+      ...webResults.map((r) => ({ platform: 'browser', ok: r.ok, error: r.error || null })),
+    ];
     res.json({ sent: devices.filter((d) => d.ok).length, devices });
   } catch (err) {
     log.error('test push error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ─── Web Push (sawacars.com) ──────────────────────────────────────────────────
+// A browser subscription lives in its own table (migration 0059); see
+// lib/web-push.js for why the endpoint is checked against known push services.
+
+// Keeps the table bounded: a person rarely uses more than a few browsers, and
+// the oldest subscription is the one most likely to be dead already.
+const MAX_WEB_SUBSCRIPTIONS = 10;
+
+// GET /devices/web-push/config — public. { enabled:false } hides the toggle.
+router.get('/web-push/config', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json(webPushConfigured()
+    ? { enabled: true, publicKey: webPushPublicKey() }
+    : { enabled: false });
+});
+
+// GET /devices/web-push — is this browser subscribed for the caller?
+// The endpoint is passed in the query because only the browser knows it.
+router.get('/web-push', requireAuth, async (req, res) => {
+  const endpoint = typeof req.query.endpoint === 'string' ? req.query.endpoint : '';
+  if (!endpoint) return res.status(400).json({ error: 'endpoint is required' });
+  try {
+    const { rowCount } = await pool.query(
+      'SELECT 1 FROM web_push_subscriptions WHERE endpoint = $1 AND user_id = $2',
+      [endpoint, req.user.id]
+    );
+    res.json({ subscribed: rowCount > 0 });
+  } catch (err) {
+    log.error('web push status error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /devices/web-push — save (or move to the caller) this browser's subscription
+router.post('/web-push', requireAuth, async (req, res) => {
+  if (!webPushConfigured()) {
+    return res.status(503).json({ error: 'Browser notifications are not switched on yet.', code: 'WEB_PUSH_DISABLED' });
+  }
+  const sub = parseSubscription(req.body?.subscription);
+  if (!sub) return res.status(400).json({ error: 'subscription is not a valid browser push subscription' });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Same rule as device_tokens: the subscription follows whoever turned
+    // notifications on last in this browser.
+    await client.query(
+      `INSERT INTO web_push_subscriptions (user_id, endpoint, p256dh, auth)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (endpoint) DO UPDATE
+         SET user_id = EXCLUDED.user_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth,
+             created_at = NOW()`,
+      [req.user.id, sub.endpoint, sub.p256dh, sub.auth]
+    );
+    await client.query(
+      `DELETE FROM web_push_subscriptions
+        WHERE user_id = $1
+          AND id NOT IN (SELECT id FROM web_push_subscriptions WHERE user_id = $1
+                          ORDER BY created_at DESC LIMIT $2)`,
+      [req.user.id, MAX_WEB_SUBSCRIPTIONS]
+    );
+    await client.query('COMMIT');
+    res.status(201).json({ subscribed: true });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    log.error('save web push subscription error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// DELETE /devices/web-push — turn notifications off in this browser. Idempotent:
+// a subscription that is already gone is the state the caller asked for.
+router.delete('/web-push', requireAuth, async (req, res) => {
+  const endpoint = typeof req.body?.endpoint === 'string' ? req.body.endpoint : '';
+  if (!endpoint) return res.status(400).json({ error: 'endpoint is required' });
+  try {
+    await pool.query(
+      'DELETE FROM web_push_subscriptions WHERE endpoint = $1 AND user_id = $2',
+      [endpoint, req.user.id]
+    );
+    res.json({ subscribed: false });
+  } catch (err) {
+    log.error('delete web push subscription error', { error: err.message });
     res.status(500).json({ error: 'Server error' });
   }
 });

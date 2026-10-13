@@ -736,6 +736,34 @@ export const notifications = {
     request<{ success: true }>('/notifications/read-all', { token, method: 'PATCH' }),
 }
 
+/** A browser's push subscription, as `PushSubscription.toJSON()` gives it. */
+export type WebPushSubscriptionJSON = {
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+}
+
+export type PushTestResult = {
+  sent: number
+  devices: { platform: string; ok: boolean; error: string | null }[]
+}
+
+export const devices = {
+  /** Public. `enabled: false` until the API has its VAPID keys. */
+  webPushConfig: () =>
+    request<{ enabled: boolean; publicKey?: string }>('/devices/web-push/config', { revalidate: 300 }),
+  webPushStatus: (token: string, endpoint: string) =>
+    request<{ subscribed: boolean }>(`/devices/web-push${qs({ endpoint })}`, { token }),
+  saveWebPush: (token: string, subscription: WebPushSubscriptionJSON) =>
+    request<{ subscribed: true }>('/devices/web-push', {
+      token, method: 'POST', body: JSON.stringify({ subscription }),
+    }),
+  deleteWebPush: (token: string, endpoint: string, timeoutMs?: number) =>
+    request<{ subscribed: false }>('/devices/web-push', {
+      token, method: 'DELETE', body: JSON.stringify({ endpoint }), timeoutMs,
+    }),
+  test: (token: string) => request<PushTestResult>('/devices/test', { token, method: 'POST' }),
+}
+
 export const messages = {
   conversations: (token: string, limit?: number) =>
     request<Conversation[]>(`/messages/conversations${limit ? `?limit=${limit}` : ''}`, { token }),

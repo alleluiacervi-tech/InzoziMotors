@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { account, auth as authApi, ApiError } from '@/lib/api'
 import { clearSession, getToken, quietGoogleForSession, setSession } from '@/lib/session'
 import { sameOriginPath } from '@/lib/same-origin-path'
+import { dropPushSubscriptionForSignOut } from '@/lib/web-push-session'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth via Server Actions.
@@ -162,6 +163,8 @@ export async function completeProfileAction(_prev: AuthState, formData: FormData
 }
 
 export async function signOutAction(): Promise<void> {
+  // First, while the session still exists to authorise it.
+  await dropPushSubscriptionForSignOut()
   await clearSession()
   await quietGoogleForSession()
   revalidatePath('/', 'layout')

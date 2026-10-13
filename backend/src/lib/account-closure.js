@@ -68,6 +68,7 @@ async function closeAccount(client, { userId, reason, note }) {
   // A closed account must stop reaching the handset immediately. Unlike the
   // listings, there is nothing to restore — the device re-registers on sign-in.
   await client.query('DELETE FROM device_tokens WHERE user_id = $1', [userId]);
+  await client.query('DELETE FROM web_push_subscriptions WHERE user_id = $1', [userId]);
 
   const { rows } = await client.query(
     `UPDATE users SET
@@ -133,6 +134,7 @@ async function purgeAccount(client, userId) {
   await client.query('DELETE FROM saved_cars      WHERE user_id = $1', [user.id]);
   await client.query('DELETE FROM saved_searches  WHERE user_id = $1', [user.id]);
   await client.query('DELETE FROM device_tokens   WHERE user_id = $1', [user.id]);
+  await client.query('DELETE FROM web_push_subscriptions WHERE user_id = $1', [user.id]);
   await client.query('DELETE FROM password_resets WHERE user_id = $1', [user.id]);
   await client.query('DELETE FROM notifications   WHERE user_id = $1', [user.id]);
   // The Google/Apple link goes with the account, so the same person can sign
