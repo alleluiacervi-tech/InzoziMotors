@@ -74,8 +74,13 @@ TOC="$($RESTORE_CMD --list < "$DB_FILE" 2>/dev/null)" || die "dump is unreadable
 
 # The tables whose loss would end the business. Their absence means the dump
 # ran against the wrong database, which a size check would never catch.
+#
+# Here-strings, never `echo "$TOC" | grep -q`: under pipefail, grep -q exits on
+# the first match, echo dies of SIGPIPE writing the rest, and the pipeline fails.
+# Once the TOC outgrew the 64 KB pipe buffer that reported a table near the top
+# (cars) as missing and refused every deploy that carried a migration.
 for table in users cars inspections submissions rental_cars; do
-  echo "$TOC" | grep -q "TABLE DATA public $table" \
+  grep -q "TABLE DATA public $table" <<<"$TOC" \
     || die "dump is missing table '$table' — wrong database?"
 done
 
@@ -87,11 +92,11 @@ done
 # present, reported when not.
 MISSING_LEGACY=""
 for table in handovers platform_fees rental_bookings payments; do
-  echo "$TOC" | grep -q "TABLE DATA public $table" || MISSING_LEGACY="$MISSING_LEGACY $table"
+  grep -q "TABLE DATA public $table" <<<"$TOC" || MISSING_LEGACY="$MISSING_LEGACY $table"
 done
 [ -n "$MISSING_LEGACY" ] && log "note: retired tables absent from this database:$MISSING_LEGACY"
 
-log "dump verified ($(du -h "$DB_FILE" | cut -f1), $(echo "$TOC" | grep -c 'TABLE DATA') tables)"
+log "dump verified ($(du -h "$DB_FILE" | cut -f1), $(grep -c 'TABLE DATA' <<<"$TOC") tables)"
 
 # ─── Uploads ─────────────────────────────────────────────────────────────────
 if [ -d "$UPLOADS_PATH" ]; then

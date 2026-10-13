@@ -311,6 +311,7 @@ jobs:
         run: |
           ops/test/reap-oneoffs.test.sh
           ops/test/prune-deploy-images.test.sh
+          ops/test/backup.test.sh
 
       # The deploy and ops workflows run shell that lives inside YAML, and the
       # ops one additionally sends a script down an SSH heredoc. Neither the YAML
