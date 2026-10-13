@@ -274,15 +274,19 @@ router.post('/conversations/:id', requireAuth, requireUuid('id'), async (req, re
     // renter's open requests: timed here, so response time is measured rather
     // than self-reported (migration 0061). Best-effort: it must never fail the
     // message that was just sent.
-    if (req.user.id === conv.seller_id) {
+    // Only the inquiry the thread is about right now: one renter can ask one
+    // provider about several cars, and the thread follows the latest of them
+    // (or a sale car, when rental_car_id is NULL and nothing is stamped).
+    if (req.user.id === conv.seller_id && conv.rental_car_id) {
       pool.query(
         `UPDATE rental_inquiries
             SET first_response_at = COALESCE(first_response_at, NOW()),
                 status = CASE WHEN status = 'new' THEN 'contacted' ELSE status END,
                 updated_at = NOW()
-          WHERE provider_id = $1 AND renter_id = $2 AND status IN ('new', 'contacted')
+          WHERE conversation_id = $1 AND rental_car_id = $2
+            AND provider_id = $3 AND renter_id = $4 AND status IN ('new', 'contacted')
             AND first_response_at IS NULL`,
-        [conv.seller_id, conv.buyer_id]
+        [conv.id, conv.rental_car_id, conv.seller_id, conv.buyer_id]
       ).catch((err) => log.error('rental first response stamp failed', { error: err.message }));
     }
 

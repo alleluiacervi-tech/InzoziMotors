@@ -1320,9 +1320,11 @@ router.post('/:id/checks', requireAdmin, requireUuid('id'), async (req, res) => 
          evaluated.odometer_km, notes, req.user.id]
       );
       // The odometer reading is the one Sawa saw; the request is answered.
+      // `inspected` stays the legacy 150-point flag: a voided check must fall
+      // back to it, so a check never overwrites it.
       await client.query(
-        'UPDATE rental_cars SET check_requested_at = NULL, mileage = $1, inspected = $2 WHERE id = $3',
-        [evaluated.odometer_km, evaluated.passed, before.id]
+        'UPDATE rental_cars SET check_requested_at = NULL, mileage = $1 WHERE id = $2',
+        [evaluated.odometer_km, before.id]
       );
       await recordAdminAction(client, {
         actorId: req.user.id, action: evaluated.passed ? 'rental_check.passed' : 'rental_check.failed',
@@ -1736,6 +1738,17 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       const status = req.body.status !== undefined ? req.body.status : before.status;
       const images = req.body.images !== undefined ? req.body.images : (before.images || []);
       const inspectionId = req.body.inspection_id !== undefined ? req.body.inspection_id : before.inspection_id;
+
+      // A Rental Check sighted this provider's documents for this car. A new
+      // provider has not been checked, so their earlier checks stop counting.
+      if (providerId !== before.provider_id) {
+        await client.query(
+          `UPDATE rental_checks
+              SET voided_at = NOW(), voided_by = $2, void_reason = 'Car moved to another provider'
+            WHERE rental_car_id = $1 AND voided_at IS NULL`,
+          [before.id, req.user.id]
+        );
+      }
 
       // Only on an explicit transition to 'active' — deliberately NOT inherited
       // like the assertions around it. Inheriting would 409 on editing a lapsed

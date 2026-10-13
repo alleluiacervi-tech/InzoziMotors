@@ -236,3 +236,37 @@ test('the rate card carries the check fee', async () => {
   const res = await api().get('/settings/rate-card').expect(200);
   assert.equal(res.body.rental_check_fee_rwf, 5000);
 });
+
+test('a check never overwrites the legacy inspection flag', async () => {
+  const owner = await provider();
+  const car = await proposedCar(owner);
+  await pool.query('UPDATE rental_cars SET inspected = TRUE WHERE id = $1', [car.id]);
+  await api().post(`/rentals/${car.id}/checks`).set(admin)
+    .send(checkBody({ results: { ...allPass(), s1: { verdict: 'fail', note: 'Brake pads worn out' } } })).expect(201);
+  const { rows } = await pool.query('SELECT inspected FROM rental_cars WHERE id = $1', [car.id]);
+  assert.equal(rows[0].inspected, true, 'voiding this check must be able to fall back to the legacy evidence');
+});
+
+test('moving a car to another provider voids its checks: the new provider was never checked', async () => {
+  const owner = await provider();
+  const car = await proposedCar(owner);
+  await subscribe(admin, car.id);
+  await api().post(`/rentals/${car.id}/checks`).set(admin).send(checkBody()).expect(201);
+  await api().patch(`/rentals/${car.id}`).set(admin).send({ status: 'active' }).expect(200);
+  assert.equal(await listed(car.id), true);
+
+  const next = await provider();
+  // Still active under the new provider would need a check of their own.
+  const refused = await api().patch(`/rentals/${car.id}`).set(admin).send({ provider_id: next.id }).expect(409);
+  assert.equal(refused.body.code, 'RENTAL_CHECK_REQUIRED');
+  await api().patch(`/rentals/${car.id}`).set(admin).send({ provider_id: next.id, status: 'maintenance' }).expect(200);
+  const { rows } = await pool.query(
+    'SELECT COUNT(*)::int AS live FROM rental_checks WHERE rental_car_id = $1 AND voided_at IS NULL', [car.id]
+  );
+  assert.equal(rows[0].live, 0);
+  assert.equal(await listed(car.id), false);
+
+  await api().post(`/rentals/${car.id}/checks`).set(admin).send(checkBody()).expect(201);
+  await api().patch(`/rentals/${car.id}`).set(admin).send({ status: 'active' }).expect(200);
+  assert.equal(await listed(car.id), true, 'a check of the new provider lists it again');
+});

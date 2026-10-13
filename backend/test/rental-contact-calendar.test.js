@@ -255,3 +255,40 @@ test('a provider adds a car with no photos from a phone, then uploads them; GPS 
     assert.equal((await sharp(fs.readFileSync(stored)).metadata()).exif, undefined, 'GPS must not survive');
   }
 });
+
+test('a reply in the thread stamps only the inquiry the thread is about', async () => {
+  const { owner, car: first } = await liveCar();
+  const second = (await api().post('/rentals/propose').set(owner.auth).send({
+    title: '2021 Toyota Hilux', make: 'Toyota', model: 'Hilux', year: 2021,
+    daily_rate: 80000, images: ['https://example.test/hilux.jpg'],
+  }).expect(201)).body;
+  await api().post(`/rentals/${second.id}/subscriptions`).set(admin)
+    .send({ amount_rwf: 10000, starts_on: dayFrom(-1), ends_on: dayFrom(29), method: 'cash' }).expect(201);
+  await api().post(`/rentals/${second.id}/checks`).set(admin).send({
+    results: Object.fromEntries(ITEMS.map((i) => [i.id, { verdict: 'pass' }])),
+    insurance_expires_on: dayFrom(200), technical_control_expires_on: dayFrom(200), odometer_km: 30000,
+  }).expect(201);
+  await api().patch(`/rentals/${second.id}`).set(admin).send({ status: 'active' }).expect(200);
+
+  const renter = await register();
+  const a = (await api().post(`/rentals/${first.id}/inquire`).set(renter.auth)
+    .send({ start_date: dayFrom(5), days: 2, acknowledge: true }).expect(201)).body;
+  const b = (await api().post(`/rentals/${second.id}/inquire`).set(renter.auth)
+    .send({ start_date: dayFrom(9), days: 2, acknowledge: true }).expect(201)).body;
+  assert.equal(a.conversation_id, b.conversation_id, 'one thread per renter and provider');
+
+  await api().post(`/messages/conversations/${b.conversation_id}`).set(owner.auth)
+    .send({ text: 'The Hilux is free then.' }).expect(201);
+  for (let i = 0; i < 20; i += 1) {
+    const { rows } = await pool.query('SELECT first_response_at FROM rental_inquiries WHERE id = $1', [b.id]);
+    if (rows[0].first_response_at) break;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  const { rows } = await pool.query(
+    'SELECT id, first_response_at, status FROM rental_inquiries WHERE id = ANY($1::uuid[])', [[a.id, b.id]]
+  );
+  const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+  assert.ok(byId[b.id].first_response_at, 'the Hilux request is answered');
+  assert.equal(byId[a.id].first_response_at, null, 'the Prado request is not');
+  assert.equal(byId[a.id].status, 'new');
+});
