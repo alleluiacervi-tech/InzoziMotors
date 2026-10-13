@@ -301,6 +301,50 @@ export interface RentalCar {
   subscription_status?: 'none' | 'lapsed' | 'lapsing' | 'active'
   subscription_ends_on?: string | null
   subscription_amount_rwf?: number | null
+  /** The evidence the car is listed on (backend rentalCheckSummary). */
+  rental_check?: RentalCheckSummary | null
+  /** Owner and staff views only. */
+  check_status?: RentalCheckStatus
+  check_requested_at?: string | null
+  /** The provider's calendar, as renters see it (lib/rental-calendar.js). */
+  availability?: RentalAvailability
+  /** GET /rentals/mine only: upcoming taken periods with ids, for editing. */
+  calendar_periods?: { id: string; starts_on: string; ends_on: string }[]
+}
+
+export type RentalCheckStatus = 'requested' | 'none' | 'legacy' | 'failed' | 'expired' | 'expiring' | 'passed'
+
+export type RentalCheckSummary =
+  | {
+      kind: 'rental_check'
+      version: string
+      passed: boolean
+      passed_count: number
+      total: number
+      checked_on: string | null
+      insurance_valid_until: string | null
+      technical_control_valid_until: string | null
+      /** As-advertised points that failed: shown to renters. */
+      disclosures: { id: string; label: string; note: string | null }[]
+      /** Owner and staff only. */
+      failed?: { id: string; label: string; note: string | null }[]
+    }
+  | { kind: 'inspection'; inspection_score: number | null }
+
+export interface RentalAvailability {
+  out_now: boolean
+  back_on: string | null
+  freshness: 'never' | 'fresh' | 'aging' | 'stale'
+  updated_at: string | null
+  /** Detail and owner views only: merged taken periods, inclusive. */
+  busy?: { from: string; to: string }[]
+}
+
+export interface RentalCalendar {
+  today: string
+  periods: { id: string; starts_on: string; ends_on: string }[]
+  calendar_updated_at: string | null
+  availability: RentalAvailability
 }
 
 /** One of the caller's own inspections eligible to back a new rental proposal. */
@@ -331,10 +375,15 @@ export interface RentalInquiry {
   car_images?: string[] | null
   provider_name?: string | null
   provider_business_name?: string | null
-  /** Present only on GET /rentals/inquiries (the provider/admin inbox). */
+  /** Present only on GET /rentals/inquiries (the provider/admin inbox).
+   *  The numbers only when the renter agreed to share them. */
   renter_name?: string | null
   renter_phone?: string | null
   renter_whatsapp?: string | null
+  renter_shares_contact?: boolean
+  /** The renter-provider thread this request opened (migration 0061). */
+  conversation_id?: string | null
+  first_response_at?: string | null
 }
 
 export type SubmissionStatus =
@@ -430,6 +479,8 @@ export interface SavedSearch {
 export interface Conversation {
   id: string
   car_id?: string | null
+  /** Set when the thread's latest topic is a rental car (migration 0061). */
+  rental_car_id?: string | null
   buyer_id: string
   seller_id: string
   last_message?: string | null

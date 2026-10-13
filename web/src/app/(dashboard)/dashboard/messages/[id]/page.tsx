@@ -37,7 +37,7 @@ export default async function ThreadPage({ params }: { params: Params }) {
 
   const view = conv
     ? viewOf(conv, user.id)
-    : { id, otherId: '', otherName: '', lastMessage: null, lastMessageAt: null, unread: 0, carId: null, carTitle: null, carImage: null }
+    : { id, otherId: '', otherName: '', lastMessage: null, lastMessageAt: null, unread: 0, carId: null, rentalCarId: null, carTitle: null, carImage: null }
 
   return <ThreadView conversation={view} initialMessages={initialMessages} myId={user.id} />
 }

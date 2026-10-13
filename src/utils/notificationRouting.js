@@ -19,6 +19,7 @@ export function resolveNotificationRoute(input) {
   const bookingId = meta.bookingId || input?.bookingId;
   const importOrderId = meta.importOrderId || input?.importOrderId;
   const inquiryId = meta.inquiryId || input?.inquiryId;
+  const rentalCarId = meta.rentalCarId || input?.rentalCarId;
 
   // A message push always carries conversationId — go straight to the thread,
   // not the inbox list, so a tap lands where the actual new text is.
@@ -36,6 +37,8 @@ export function resolveNotificationRoute(input) {
   // A rental inquiry sent TO a provider. MyRentals is the renter's own list, so
   // sending the provider there showed them none of the requests they were told about.
   if (inquiryId) return { screen: 'RentalInbox' };
+  // A Rental Check result about one of the provider's own cars.
+  if (rentalCarId) return { screen: 'RentalFleetCar', params: { carId: rentalCarId } };
   if (type === 'listing_update') {
     // Historical rows from before rentals and selling had separate copy
     // sometimes only distinguish themselves in the text.

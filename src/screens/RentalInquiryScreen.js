@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { useApp } from '../context/AppContext';
+import { formatDay } from '../utils/rentalDates';
 import { colors, fonts, radius, shadows } from '../theme';
 
 const tomorrowISO = () => {
@@ -28,6 +29,9 @@ export default function RentalInquiryScreen({ navigation, route }) {
   const [message, setMessage] = useState('');
   const [preferredChannel, setPreferredChannel] = useState('in_app');
   const [acknowledged, setAcknowledged] = useState(false);
+  // In-app alone keeps the renter's number private; choosing WhatsApp or
+  // Phone shares it anyway (backend migration 0061).
+  const [shareContact, setShareContact] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -44,8 +48,14 @@ export default function RentalInquiryScreen({ navigation, route }) {
     if (!acknowledged) return setError(t('rentalInquiry.errAccept'));
     setLoading(true); setError('');
     try {
-      const created = await sendRentalInquiry({ carId: car.id, carTitle: car.title, startDateISO: startDate, startDate, days: count, pickupLocation: pickupLocation.trim(), message: message.trim(), preferredChannel });
-      setResult({ reference: created.inquiry_ref || created.inquiryRef, contact: created.contact || null, notice: created.notice || car.directDealNotice, channel: preferredChannel });
+      const created = await sendRentalInquiry({ carId: car.id, carTitle: car.title, startDateISO: startDate, startDate, days: count, pickupLocation: pickupLocation.trim(), message: message.trim(), preferredChannel, shareContact });
+      setResult({
+        reference: created.inquiry_ref || created.inquiryRef, contact: created.contact || null,
+        notice: created.notice || car.directDealNotice, channel: preferredChannel,
+        conversationId: created.conversation_id || null,
+        whatsappText: created.whatsapp_text || null,
+        busyOverlap: Array.isArray(created.busy_overlap) ? created.busy_overlap : [],
+      });
     } catch (err) {
       setError(err?.message || t('rentalInquiry.errSend'));
     } finally { setLoading(false); }
@@ -54,10 +64,15 @@ export default function RentalInquiryScreen({ navigation, route }) {
   if (result) {
     const openContact = async () => {
       if (!result.contact) return;
-      const url = result.channel === 'whatsapp' ? `https://wa.me/${String(result.contact).replace(/\D/g, '')}` : `tel:${result.contact}`;
-      await Linking.openURL(url);
+      // WhatsApp opens with the message already written, reference included.
+      const text = result.whatsappText ? `?text=${encodeURIComponent(result.whatsappText)}` : '';
+      const url = result.channel === 'whatsapp' ? `https://wa.me/${String(result.contact).replace(/\D/g, '')}${text}` : `tel:${result.contact}`;
+      await Linking.openURL(url).catch(() => {});
     };
-    return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.sentTitle')} onBack={() => navigation.navigate('MyRentals')} /><View style={styles.success}><View style={styles.successIcon}><Ionicons name="checkmark" size={34} color="#fff" /></View><Text style={styles.successTitle}>{t('rentalInquiry.sentHeading')}</Text><Text style={styles.successBody}>{t('rentalInquiry.sentBody', { ref: result.reference || '—' })}</Text>{result.contact && result.channel !== 'in_app' ? <Button title={result.channel === 'whatsapp' ? t('rentalInquiry.continueWhatsapp') : t('rentalInquiry.callContact', { contact: result.contact })} icon={result.channel === 'whatsapp' ? 'logo-whatsapp' : 'call-outline'} onPress={openContact} style={styles.successButton} /> : null}<Button title={t('rentalInquiry.viewInquiries')} variant="outline" onPress={() => navigation.replace('MyRentals')} style={styles.successButton} /><Text style={styles.noticeSmall}>{result.notice}</Text></View></Screen>;
+    const overlap = result.busyOverlap
+      .map((r) => (r.from === r.to ? formatDay(r.from) : `${formatDay(r.from)} – ${formatDay(r.to)}`))
+      .join(', ');
+    return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.sentTitle')} onBack={() => navigation.navigate('MyRentals')} /><ScrollView contentContainerStyle={styles.success}><View style={styles.successIcon}><Ionicons name="checkmark" size={34} color="#fff" /></View><Text style={styles.successTitle}>{t('rentalInquiry.sentHeading')}</Text><Text style={styles.successBody}>{t('rentalInquiry.sentBody', { ref: result.reference || '—' })}</Text>{!!overlap && <View style={styles.overlap}><Ionicons name="calendar-outline" size={18} color={colors.amberText} /><Text style={styles.overlapText}>{t('rentalCalendar.overlap', { dates: overlap })}</Text></View>}{result.contact && result.channel !== 'in_app' ? <Button title={result.channel === 'whatsapp' ? t('rentalInquiry.continueWhatsapp') : t('rentalInquiry.callContact', { contact: result.contact })} icon={result.channel === 'whatsapp' ? 'logo-whatsapp' : 'call-outline'} onPress={openContact} style={styles.successButton} /> : null}{result.conversationId ? <Button title={t('rentalInquiry.openChat')} icon="chatbubbles-outline" variant={result.contact && result.channel !== 'in_app' ? 'outline' : 'primary'} onPress={() => navigation.navigate('Chat', { convId: result.conversationId, name: car.providerName })} style={styles.successButton} /> : null}<Button title={t('rentalInquiry.viewInquiries')} variant="outline" onPress={() => navigation.replace('MyRentals')} style={styles.successButton} /><Text style={styles.noticeSmall}>{result.notice}</Text></ScrollView></Screen>;
   }
 
   return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.title')} onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -67,6 +82,7 @@ export default function RentalInquiryScreen({ navigation, route }) {
     <Text style={styles.label}>{t('rentalInquiry.pickupArea')}</Text><TextInput value={pickupLocation} onChangeText={setPickupLocation} maxLength={200} placeholder={t('rentalInquiry.pickupPlaceholder')} placeholderTextColor={colors.textMuted} style={styles.input} />
     <Text style={[styles.label, { marginTop: 16 }]}>{t('rentalInquiry.message')}</Text><TextInput value={message} onChangeText={setMessage} maxLength={1500} multiline placeholder={t('rentalInquiry.messagePlaceholder')} placeholderTextColor={colors.textMuted} style={styles.textarea} />
     <Text style={styles.section}>{t('rentalInquiry.preferredReply')}</Text><View style={styles.channels}>{channels.map((item) => <Button key={item.id} title={item.label} icon={item.icon} fullWidth={false} variant={preferredChannel === item.id ? 'primary' : 'outline'} onPress={() => setPreferredChannel(item.id)} style={styles.channel} />)}</View>
+    <Pressable onPress={() => setShareContact((v) => !v)} style={styles.share} accessibilityRole="checkbox" accessibilityState={{ checked: shareContact }}><Ionicons name={shareContact ? 'checkbox' : 'square-outline'} size={22} color={shareContact ? colors.primary : colors.textMuted} /><View style={{ flex: 1 }}><Text style={styles.shareText}>{t('rentalInquiry.shareContact')}</Text><Text style={styles.shareHint}>{t('rentalInquiry.shareContactHint')}</Text></View></Pressable>
     <View style={styles.notice}><Ionicons name="information-circle-outline" size={22} color={colors.primary} /><Text style={styles.noticeText}>{t('rentalInquiry.notice')}</Text></View>
     <Button title={acknowledged ? t('rentalInquiry.noticeAccepted') : t('rentalInquiry.accept')} icon={acknowledged ? 'checkmark-circle' : 'ellipse-outline'} variant={acknowledged ? 'secondary' : 'outline'} onPress={() => { setAcknowledged((value) => !value); setError(''); }} />
     {!!error && <View style={styles.error}><Ionicons name="alert-circle-outline" size={18} color={colors.danger} /><Text style={styles.errorText}>{error}</Text></View>}
@@ -85,5 +101,7 @@ const styles = StyleSheet.create({
   channels: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 }, channel: { minWidth: 105, minHeight: 48 },
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginVertical: 20, padding: 15, borderRadius: radius.xl, backgroundColor: colors.blueTint }, noticeText: { flex: 1, fontSize: 13, lineHeight: 19, color: colors.textSecondary },
   error: { flexDirection: 'row', gap: 8, marginTop: 14, padding: 12, borderRadius: radius.lg, backgroundColor: colors.danger + '10' }, errorText: { flex: 1, fontSize: 13, lineHeight: 18, color: colors.danger },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, success: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 }, successIcon: { width: 68, height: 68, borderRadius: 34, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' }, successTitle: { marginTop: 20, fontSize: 22, fontFamily: fonts.extraBold, color: colors.textPrimary, textAlign: 'center' }, successBody: { marginTop: 10, fontSize: 14, lineHeight: 21, color: colors.textSecondary, textAlign: 'center' }, successButton: { marginTop: 14 }, noticeSmall: { marginTop: 18, fontSize: 12, lineHeight: 17, color: colors.textMuted, textAlign: 'center' },
+  share: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 16, minHeight: 48 }, shareText: { fontSize: 13, lineHeight: 18, fontFamily: fonts.semiBold, color: colors.textPrimary }, shareHint: { marginTop: 3, fontSize: 12, lineHeight: 17, color: colors.textMuted },
+  overlap: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 14, padding: 12, borderRadius: radius.lg, backgroundColor: colors.amberTint }, overlapText: { flex: 1, fontSize: 13, lineHeight: 18, color: colors.amberText },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, success: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 28 }, successIcon: { width: 68, height: 68, borderRadius: 34, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' }, successTitle: { marginTop: 20, fontSize: 22, fontFamily: fonts.extraBold, color: colors.textPrimary, textAlign: 'center' }, successBody: { marginTop: 10, fontSize: 14, lineHeight: 21, color: colors.textSecondary, textAlign: 'center' }, successButton: { marginTop: 14 }, noticeSmall: { marginTop: 18, fontSize: 12, lineHeight: 17, color: colors.textMuted, textAlign: 'center' },
 });

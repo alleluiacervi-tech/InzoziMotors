@@ -71,7 +71,7 @@ function parseSubscription(sub) {
 
 // Only ids and the type travel to the browser; the service worker turns them
 // into a website URL. Anything else in meta (amounts, names) stays server-side.
-const DATA_KEYS = ['type', 'conversationId', 'carId', 'submissionId', 'importOrderId', 'inquiryId', 'bookingId', 'disputeId'];
+const DATA_KEYS = ['type', 'conversationId', 'carId', 'submissionId', 'importOrderId', 'inquiryId', 'rentalCarId', 'bookingId', 'disputeId'];
 
 function buildPayload({ title, body, data } = {}) {
   const clean = {};

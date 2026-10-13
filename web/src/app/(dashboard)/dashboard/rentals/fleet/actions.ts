@@ -30,10 +30,16 @@ export async function proposeRentalAction(_prev: ActionState, formData: FormData
   const images = imagesRaw.split('\n').map((line) => line.trim()).filter(Boolean)
 
   const fieldErrors: Record<string, string> = {}
-  if (!inspectionId) fieldErrors.inspection_id = t('dashboard.rentalFleet.propose.errors.chooseInspection')
+  // The inspection is optional now: without one, adding the car asks Sawa for
+  // its Rental Check (POST /rentals/propose). With one, the vehicle identity
+  // comes from it, as before.
+  if (!inspectionId && (!make.trim() || !model.trim() || !/^\d{4}$/.test(year))) {
+    fieldErrors.vehicle = t('dashboard.rentalFleet.propose.errors.vehicle')
+  }
   if (!title) fieldErrors.title = t('dashboard.rentalFleet.propose.errors.titleRequired')
   if (!dailyRate || dailyRate <= 0 || Number.isNaN(dailyRate)) fieldErrors.daily_rate = t('dashboard.rentalFleet.propose.errors.dailyRate')
-  if (!images.length) fieldErrors.images = t('dashboard.rentalFleet.propose.errors.imageRequired')
+  // Photos are optional here: they can be uploaded from the fleet list after
+  // the car is added, and it cannot be published without one.
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 
   const token = await getToken()
@@ -41,8 +47,8 @@ export async function proposeRentalAction(_prev: ActionState, formData: FormData
 
   try {
     await rentals.propose(token, {
-      inspection_id: inspectionId,
-      make, model, year: Number(year),
+      inspection_id: inspectionId || undefined,
+      make: make.trim(), model: model.trim(), year: Number(year),
       title,
       category: String(formData.get('category') || '') || undefined,
       seats: numberField(formData, 'seats'),
@@ -77,8 +83,6 @@ export async function updateRentalTermsAction(_prev: ActionState, formData: Form
   }
   if (Object.keys(fieldErrors).length) return { fieldErrors }
 
-  const unavailableRaw = String(formData.get('unavailable_until') || '')
-
   const token = await getToken()
   if (!token) return { error: t('dashboard.errors.sessionExpired') }
 
@@ -90,7 +94,6 @@ export async function updateRentalTermsAction(_prev: ActionState, formData: Form
       deposit: numberField(formData, 'deposit'),
       min_days: numberField(formData, 'min_days'),
       location: String(formData.get('location') || '') || undefined,
-      unavailable_until: unavailableRaw || null,
     })
   } catch (err) {
     return { error: describeError(err, t('dashboard.rentalFleet.edit.errors.failed')) }
@@ -98,4 +101,56 @@ export async function updateRentalTermsAction(_prev: ActionState, formData: Form
 
   revalidatePath('/dashboard/rentals/fleet')
   return { ok: true, message: t('dashboard.rentalFleet.edit.success') }
+}
+
+// ─── Rental Check and calendar ───────────────────────────────────────────────
+// Small form actions: each changes one thing and re-renders the fleet page,
+// which is the source of truth for what the provider sees next.
+
+async function fleetAction(
+  run: (token: string) => Promise<unknown>,
+  failedKey: string,
+  okKey: string
+): Promise<ActionState> {
+  const t = await getServerT()
+  const token = await getToken()
+  if (!token) return { error: t('dashboard.errors.sessionExpired') }
+  try {
+    await run(token)
+  } catch (err) {
+    return { error: err instanceof ApiError && err.status < 500 ? err.message : t(failedKey) }
+  }
+  revalidatePath('/dashboard/rentals/fleet')
+  return { ok: true, message: t(okKey) }
+}
+
+export async function requestCheckAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get('id') || '')
+  return fleetAction((token) => rentals.requestCheck(token, id), 'dashboard.rentalFleet.check.failedAction', 'dashboard.rentalFleet.check.requested')
+}
+
+export async function markTakenAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get('id') || '')
+  const from = String(formData.get('starts_on') || '')
+  const to = String(formData.get('ends_on') || '') || from
+  return fleetAction((token) => rentals.markTaken(token, id, from, to), 'dashboard.rentalFleet.calendar.failed', 'dashboard.rentalFleet.calendar.saved')
+}
+
+export async function removePeriodAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get('id') || '')
+  const periodId = String(formData.get('period_id') || '')
+  return fleetAction((token) => rentals.removePeriod(token, id, periodId), 'dashboard.rentalFleet.calendar.failed', 'dashboard.rentalFleet.calendar.saved')
+}
+
+/** "Back today": the period ends yesterday, so today shows the car home. */
+export async function backTodayAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get('id') || '')
+  const periodId = String(formData.get('period_id') || '')
+  const yesterday = String(formData.get('yesterday') || '')
+  return fleetAction((token) => rentals.updatePeriod(token, id, periodId, { ends_on: yesterday }), 'dashboard.rentalFleet.calendar.failed', 'dashboard.rentalFleet.calendar.saved')
+}
+
+export async function confirmCalendarAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const id = String(formData.get('id') || '')
+  return fleetAction((token) => rentals.confirmCalendar(token, id), 'dashboard.rentalFleet.calendar.failed', 'dashboard.rentalFleet.calendar.saved')
 }

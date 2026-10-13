@@ -6,7 +6,19 @@ import { getToken } from '@/lib/session'
 export type RentalInquiryState =
   | { status: 'idle' }
   | { status: 'error'; message: string }
-  | { status: 'done'; reference: string; contact: string | null; channel: 'in_app' | 'phone' | 'whatsapp'; notice: string }
+  | {
+      status: 'done'
+      reference: string
+      contact: string | null
+      channel: 'in_app' | 'phone' | 'whatsapp'
+      notice: string
+      /** The thread this request opened, to continue in Messages. */
+      conversationId: string | null
+      /** A ready WhatsApp message carrying the reference. */
+      whatsappText: string | null
+      /** Requested days the provider marked taken: a warning, never a refusal. */
+      busyOverlap: { from: string; to: string }[]
+    }
 
 export async function sendRentalInquiryAction(
   _previous: RentalInquiryState,
@@ -26,9 +38,16 @@ export async function sendRentalInquiryAction(
   try {
     const result = await rentals.inquire(token, rentalId, {
       start_date: startDate, days, pickup_location: pickup || undefined,
-      message: message || undefined, preferred_channel: channel, acknowledge: true,
+      message: message || undefined, preferred_channel: channel,
+      share_contact: formData.get('share_contact') === 'yes',
+      acknowledge: true,
     })
-    return { status: 'done', reference: result.inquiry_ref, contact: result.contact || null, channel, notice: result.notice }
+    return {
+      status: 'done', reference: result.inquiry_ref, contact: result.contact || null, channel, notice: result.notice,
+      conversationId: result.conversation_id ?? null,
+      whatsappText: result.whatsapp_text ?? null,
+      busyOverlap: result.busy_overlap ?? [],
+    }
   } catch (error) {
     if (error instanceof ApiError) return { status: 'error', message: error.message }
     return { status: 'error', message: 'The inquiry could not be sent. Please try again.' }

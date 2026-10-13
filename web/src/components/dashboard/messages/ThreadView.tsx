@@ -275,9 +275,9 @@ export function ThreadView({
             {otherTyping ? t('messages.typing') : conversation.carTitle || ''}
           </p>
         </div>
-        {conversation.carId ? (
+        {conversation.carId || conversation.rentalCarId ? (
           <Link
-            href={`/cars/${conversation.carId}`}
+            href={conversation.carId ? `/cars/${conversation.carId}` : `/rentals/${conversation.rentalCarId}`}
             aria-label={t('messages.viewListing')}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-content hover:bg-surface-alt"
           >

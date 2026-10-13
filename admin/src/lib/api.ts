@@ -1078,7 +1078,7 @@ export const api = {
   // The public rate card — same numbers a customer would see, so a
   // fee-recording form can prefill what the office should be charging
   // without duplicating the whole settings read.
-  rateCard: () => request<{ inspection_fee_rwf: number; report_resale_fee_rwf: number; rental_subscription_monthly_rwf: number; reviewed_on?: string }>('/settings/rate-card'),
+  rateCard: () => request<{ inspection_fee_rwf: number; report_resale_fee_rwf: number; rental_subscription_monthly_rwf: number; rental_check_fee_rwf?: number; reviewed_on?: string }>('/settings/rate-card'),
 
   // ── Reported messages ──────────────────────────────────────────────────────
   reports: (status: 'open' | 'resolved' | 'dismissed' | 'all' = 'open') =>
@@ -1191,6 +1191,18 @@ export const api = {
   updateRentalCar: (id: string, data: any) =>
     request<any>(`/rentals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
+  // The Sawa Rental Check (backend lib/rental-check-policy.js). Recording one
+  // never changes the car's status; the latest check decides visibility.
+  rentalCheckDefinition: () => request<RentalCheckDefinition>('/rentals/check-definition'),
+  rentalChecks: (id: string) => request<any[]>(`/rentals/${id}/checks`),
+  recordRentalCheck: (id: string, data: {
+    results: Record<string, { verdict: 'pass' | 'fail'; note?: string }>
+    insurance_expires_on: string; technical_control_expires_on: string
+    odometer_km: number; notes?: string
+  }) => request<any>(`/rentals/${id}/checks`, { method: 'POST', body: JSON.stringify(data) }),
+  voidRentalCheck: (checkId: string, reason: string) =>
+    request<any>(`/rentals/checks/${checkId}/void`, { method: 'POST', body: JSON.stringify({ reason }) }),
+
   // Rental inquiries — providers own booking confirmation and payment.
   getRentalInquiries: (status?: string) =>
     request<any[]>(`/rentals/inquiries${status ? `?status=${status}` : ''}`),
@@ -1209,4 +1221,12 @@ export const downloadUrl = {
   csv: (dataset: string, r: RangeQuery) => `${BASE}/admin/exports/${encodeURIComponent(dataset)}?${rangeQuery(r)}`,
   revenueStatement: (month: string) => `${BASE}/admin/statements/revenue?month=${encodeURIComponent(month)}`,
   businessReport: (r: RangeQuery) => `${BASE}/admin/statements/business?${rangeQuery(r)}`,
+}
+
+export interface RentalCheckDefinition {
+  version: string
+  item_count: number
+  valid_months: number
+  groups: { id: string; name: string; blocking: boolean }[]
+  items: { id: string; group: string; label: string; hint: string; blocking: boolean }[]
 }

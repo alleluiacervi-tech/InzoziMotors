@@ -24,10 +24,15 @@ const DEFAULT_RATES = {
   inspection_fee_rwf: 15000,
   report_resale_fee_rwf: 5000,
   rental_subscription_monthly_rwf: 10000,
+  // The 10-point Rental Check (lib/rental-check-policy.js), per car per visit.
+  rental_check_fee_rwf: 5000,
   reviewed_on: '2026-09-02',
 };
 
 const AMOUNT_FIELDS = ['inspection_fee_rwf', 'report_resale_fee_rwf', 'rental_subscription_monthly_rwf'];
+// Added after the rate card was first saved: a stored card without it is still
+// valid and gets the default, instead of every edited rate falling back too.
+const OPTIONAL_AMOUNT_FIELDS = ['rental_check_fee_rwf'];
 
 /** Returns an array of human-readable problems — empty means valid. */
 function validateRates(value) {
@@ -39,6 +44,12 @@ function validateRates(value) {
   for (const field of AMOUNT_FIELDS) {
     const amount = value[field];
     if (!Number.isInteger(amount) || amount < 0) {
+      problems.push(`${field} must be a whole number of RWF, zero or more`);
+    }
+  }
+  for (const field of OPTIONAL_AMOUNT_FIELDS) {
+    const amount = value[field];
+    if (amount !== undefined && (!Number.isInteger(amount) || amount < 0)) {
       problems.push(`${field} must be a whole number of RWF, zero or more`);
     }
   }

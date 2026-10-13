@@ -5,7 +5,7 @@ import { Badge, Button, Card, EmptyState, Icon } from '@/components/ui'
 import { rentals } from '@/lib/api'
 import { getCurrentUser, getToken } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
-import { markInquiryClosed, markInquiryContacted } from './actions'
+import { markInquiryClosed, markInquiryContacted, markRentedOut } from './actions'
 
 // The provider's incoming availability requests — the other half of the
 // inquiry the renter sends from a rental's detail page. Sawa never arranges
@@ -72,15 +72,30 @@ export default async function RentalInboxPage() {
                 ) : null}
 
                 <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line-soft pt-4">
-                  {item.preferred_channel === 'phone' && item.renter_phone ? (
+                  {/* The request opened a thread: replying there is visible and
+                      timed, and works without anyone's number. */}
+                  {item.conversation_id ? (
+                    <Button href={`/dashboard/messages/${item.conversation_id}`} size="sm" leadingIcon={<Icon name="mail" size={14} />}>
+                      {t('dashboard.rentalInbox.openChat')}
+                    </Button>
+                  ) : null}
+                  {item.renter_phone ? (
                     <a href={`tel:${item.renter_phone}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-caption font-bold text-content hover:bg-surface-alt">
                       <Icon name="phone" size={14} />{item.renter_phone}
                     </a>
                   ) : null}
-                  {item.preferred_channel === 'whatsapp' && item.renter_whatsapp ? (
+                  {item.renter_whatsapp ? (
                     <a href={`https://wa.me/${item.renter_whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-caption font-bold text-content hover:bg-surface-alt">
                       <Icon name="whatsapp" size={14} />{t('dashboard.rentalInbox.whatsapp')}
                     </a>
+                  ) : null}
+                  {['new', 'contacted'].includes(item.status) && item.start_date ? (
+                    <form action={markRentedOut}>
+                      <input type="hidden" name="id" value={item.id} />
+                      <Button type="submit" variant="outline" size="sm" leadingIcon={<Icon name="calendar" size={14} />}>
+                        {t('dashboard.rentalInbox.rentedOut')}
+                      </Button>
+                    </form>
                   ) : null}
                   {item.status === 'new' ? (
                     <form action={markInquiryContacted}>
@@ -97,6 +112,9 @@ export default async function RentalInboxPage() {
                     </form>
                   ) : null}
                 </div>
+                {!item.renter_phone && !item.renter_whatsapp ? (
+                  <p className="mt-2 text-micro text-content-muted">{t('dashboard.rentalInbox.numberPrivate')}</p>
+                ) : null}
               </Card>
             </li>
           ))}

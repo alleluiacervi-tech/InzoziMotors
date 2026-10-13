@@ -44,6 +44,32 @@ a booking.
 **Sellers** submit a vehicle, book an inspection slot, and control which
 contact channels may be disclosed. They cannot publish; only an admin can.
 
+**Rentals** (Oct 2026; migrations 0060–0061). Rules that keep them honest:
+- **Evidence is the Sawa Rental Check**, not the 150-point sale inspection:
+  ten points (`backend/src/lib/rental-check-policy.js`: 3 documents and 5
+  safety points block listing, 2 as-advertised points are disclosed), done by
+  staff at the provider's yard (admin fleet → Record Rental Check). The
+  **latest** non-voided check decides, by predicate (`RENTAL_EVIDENCE_OK` in
+  `routes/rentals.js`, in all three public reads): passed, under 12 months old,
+  and the recorded insurance and technical-control dates today or later in
+  Kigali, so a car hides itself the day a document runs out. Documents are
+  *sighted originals*, never claimed as registry or insurer checks. Cars
+  listed on a 150-point inspection keep it until their first check. Never
+  "certified" or "guaranteed" wording on a rental.
+- **Providers add cars without an inspection** (`POST /rentals/propose`, which
+  requests a check), upload photos (`POST /rentals/:id/mine/photos`) and keep
+  a **calendar of taken days** (`rental_busy_periods`, `lib/rental-calendar.js`).
+  Only the provider writes it; an inquiry never creates, holds or releases a
+  day, renters are warned about taken days but never refused, a car is never
+  hidden for being taken, and the table has no renter, inquiry or price
+  column. Renters see "taken · back on" and how fresh the calendar is; there
+  is no "available" or "booked" wording anywhere. This is not a booking system.
+- **An inquiry opens a conversation** with the provider (conversations carry
+  `rental_car_id`), WhatsApp gets a pre-filled message with the `RI-` reference,
+  the renter's number reaches the provider **only with the renter's consent**
+  (chose WhatsApp or Phone, or ticked share), and the provider's first reply or
+  status change sets `first_response_at` (response time, measured).
+
 **Web ↔ app parity is a requirement.** More people use sawacars.com than the
 apps, so a signed-in user must be able to do on the website everything they can
 do in the app, calling the same endpoint with the same rules. "Use the app" is
@@ -319,7 +345,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0059`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0061`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.

@@ -10,6 +10,8 @@ export interface ConversationView {
   lastMessageAt: string | null
   unread: number
   carId: string | null
+  /** The thread is about a rental car instead (opened by an availability request). */
+  rentalCarId: string | null
   carTitle: string | null
   carImage: string | null
 }
@@ -24,6 +26,7 @@ export function viewOf(conv: Conversation, myId: string): ConversationView {
     lastMessageAt: conv.last_message_at ?? null,
     unread: Number(conv.unread_count || 0),
     carId: conv.car_id ?? null,
+    rentalCarId: conv.rental_car_id ?? null,
     carTitle: conv.car_title ?? null,
     carImage: conv.car_images?.[0] ?? null,
   }

@@ -8,7 +8,7 @@ import type { AppNotification } from '@/lib/types'
 // two can never disagree. The middleware sends a signed-out visitor to sign in
 // and back.
 
-const ID_KEYS = ['conversationId', 'carId', 'submissionId', 'importOrderId', 'inquiryId', 'bookingId', 'disputeId']
+const ID_KEYS = ['conversationId', 'carId', 'submissionId', 'importOrderId', 'inquiryId', 'rentalCarId', 'bookingId', 'disputeId']
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/
 
 export function GET(req: NextRequest) {

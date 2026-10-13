@@ -2,7 +2,7 @@ import type { DutyRates } from '@/lib/business'
 import type {
   AppNotification, Car, CarQuery, Conversation, EligibleRentalInspection, FeaturedPlacement, SoldCar,
   InspectionCenter, InspectionReport,
-  Message, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Showroom, Submission, TrustScore, User,
+  Message, RentalCalendar, RentalCar, RentalInquiry, ReportEntitlement, SavedSearch, SellerProfile, SellerReviews, Showroom, Submission, TrustScore, User,
   Valuation, VehicleHistory, VehicleMake, ModelSafety,
 } from './types'
 import { withCleanTitle } from './vehicle-names'
@@ -249,8 +249,15 @@ export const rentals = {
     request<RentalCar>(`/rentals/${id}`, { revalidate: CATALOGUE_REVALIDATE }).then(withCleanTitle),
   inspectionReport: (id: string) =>
     request<InspectionReport>(`/inspections/report/rental/${id}`, { revalidate: CATALOGUE_REVALIDATE }),
-  inquire: (token: string, id: string, body: { start_date?: string; days?: number; pickup_location?: string; message?: string; preferred_channel: 'in_app' | 'phone' | 'whatsapp'; acknowledge: boolean }) =>
-    request<RentalInquiry & { contact?: string | null; notice: string }>(`/rentals/${id}/inquire`, {
+  inquire: (token: string, id: string, body: { start_date?: string; days?: number; pickup_location?: string; message?: string; preferred_channel: 'in_app' | 'phone' | 'whatsapp'; share_contact?: boolean; acknowledge: boolean }) =>
+    request<RentalInquiry & {
+      contact?: string | null
+      notice: string
+      /** A ready WhatsApp message carrying the reference, when WhatsApp was chosen. */
+      whatsapp_text?: string | null
+      /** The requested days the provider has marked taken. A warning, never a refusal. */
+      busy_overlap?: { from: string; to: string }[]
+    }>(`/rentals/${id}/inquire`, {
       token, method: 'POST', body: JSON.stringify(body), cache: 'no-store',
     }),
   myInquiries: (token: string) => request<RentalInquiry[]>('/rentals/inquiries/my', { token, cache: 'no-store' }),
@@ -276,6 +283,26 @@ export const rentals = {
     request<RentalInquiry[]>(`/rentals/inquiries${status ? `?status=${status}` : ''}`, { token, cache: 'no-store' }),
   updateInquiryStatus: (token: string, id: string, status: 'contacted' | 'closed' | 'cancelled') =>
     request<RentalInquiry>(`/rentals/inquiries/${id}/status`, { token, method: 'PATCH', body: JSON.stringify({ status }) }),
+  /** Ask Sawa to come and do the 10-point Rental Check. */
+  requestCheck: (token: string, id: string) =>
+    request<{ check_requested_at: string; message: string }>(`/rentals/${id}/mine/request-check`, { token, method: 'POST' }),
+
+  // ── The provider's calendar (taken days). Owner-only writes. ──────────────
+  calendar: (token: string, id: string) =>
+    request<RentalCalendar>(`/rentals/${id}/mine/busy`, { token, cache: 'no-store' }),
+  markTaken: (token: string, id: string, startsOn: string, endsOn: string) =>
+    request<RentalCalendar>(`/rentals/${id}/mine/busy`, {
+      token, method: 'POST', body: JSON.stringify({ starts_on: startsOn, ends_on: endsOn }),
+    }),
+  updatePeriod: (token: string, id: string, periodId: string, body: { starts_on?: string; ends_on?: string }) =>
+    request<RentalCalendar>(`/rentals/${id}/mine/busy/${periodId}`, { token, method: 'PATCH', body: JSON.stringify(body) }),
+  removePeriod: (token: string, id: string, periodId: string) =>
+    request<RentalCalendar>(`/rentals/${id}/mine/busy/${periodId}`, { token, method: 'DELETE' }),
+  confirmCalendar: (token: string, id: string) =>
+    request<RentalCalendar>(`/rentals/${id}/mine/calendar/confirm`, { token, method: 'POST' }),
+  /** The provider agreed this request with the renter: mark its dates taken, close it. */
+  rentedOut: (token: string, inquiryId: string, body: { starts_on?: string; ends_on?: string } = {}) =>
+    request<RentalCalendar>(`/rentals/inquiries/${inquiryId}/rented-out`, { token, method: 'POST', body: JSON.stringify(body) }),
 }
 
 /** The brand list the app's submission form offers (GET /makes). Public,
