@@ -100,6 +100,14 @@ export async function signInWithGoogle() {
       e.code = 'PLAY_SERVICES';
       throw e;
     }
+    // Android's DEVELOPER_ERROR (CommonStatusCodes 10): the Android OAuth client
+    // in Google Cloud does not list the SHA-1 of the key that signed this
+    // install (docs/SOCIAL-SIGN-IN.md). Nothing the person can fix.
+    if (String(err?.code) === '10') {
+      const e = new Error(`GOOGLE_CONFIG: ${err.message || 'DEVELOPER_ERROR'}`);
+      e.code = 'GOOGLE_CONFIG';
+      throw e;
+    }
     throw err;
   }
 }

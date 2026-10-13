@@ -121,9 +121,12 @@ jobs:
           # git branch has to land on the same EAS branch to be seen at all.
           # Which branch a bundle came from then has to be readable somewhere,
           # and the message is that somewhere.
+          # --environment: the bundle gets the EAS "preview" variables, as the
+          # preview build did (eas.json); without it EXPO_PUBLIC_* are empty.
           npx eas-cli update \
             --branch preview \
             --platform all \
+            --environment preview \
             --message "[${GITHUB_REF_NAME}] ${GITHUB_SHA:0:8} $(git log -1 --pretty=%s)" \
             --non-interactive
 

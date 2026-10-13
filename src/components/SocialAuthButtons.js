@@ -24,6 +24,7 @@ import { auth as authApi } from '../api/auth';
 import { appleAvailable, googleConfigured, signInWithApple, signInWithGoogle } from '../utils/socialAuth';
 import { colors, fonts, radius } from '../theme';
 import { showConfirm, showToast } from './Feedback';
+import { reportClientError } from '../utils/crashReport';
 
 const BUTTON_HEIGHT = 54;
 
@@ -37,6 +38,7 @@ const ERROR_KEYS = {
   PROVIDER_DISABLED: 'auth.social.unavailable',
   JWKS_UNAVAILABLE: 'auth.social.unavailable',
   PLAY_SERVICES: 'auth.social.playServices',
+  GOOGLE_CONFIG: 'auth.social.unavailable',
 };
 
 function AppleMark({ color }) {
@@ -105,6 +107,11 @@ export default function SocialAuthButtons({ navigation, role }) {
       }
     } catch (err) {
       const key = ERROR_KEYS[err?.code];
+      // A provider-side failure is a configuration problem nobody on the phone
+      // can see: report its code (never the person) so it shows in the API logs.
+      if (!err?.isNetworkError && (!key || err.code === 'GOOGLE_CONFIG')) {
+        reportClientError(err, `oauth:${provider}:${err?.code ?? 'none'}`);
+      }
       showToast(key ? t(key) : (err?.isNetworkError ? err.message : t('auth.social.failed')), 'error');
     } finally {
       setBusy(null);
