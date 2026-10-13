@@ -53,7 +53,7 @@ export default ({ config }) => ({
   // forged value rather than the binary's real one, so the app misreports its
   // own version. The build and the publish must agree on this number, and the
   // only way to guarantee that is for it not to be configurable.
-  version: '2.0.0',
+  version: '1.0.9',
   orientation: 'portrait',
   icon: './assets/icon.png',
   scheme: 'sawa',
