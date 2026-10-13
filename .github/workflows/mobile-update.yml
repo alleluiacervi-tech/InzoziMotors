@@ -431,14 +431,19 @@ jobs:
           #
           # Reaching older installs is a STORE BUILD's job. An update reaches
           # the runtime it was built for, and only that one.
-          # --environment loads the EAS "production" variables into the bundle,
-          # as `eas build` does for the binary. Without it every EXPO_PUBLIC_*
-          # value is empty in the update: the Oct 2026 publish shipped without
-          # the Google client ids and hid Sign in with Google on every phone.
+          # --environment loads the EAS variables into the bundle, as `eas build`
+          # does for the binary. Without it every EXPO_PUBLIC_* value is empty
+          # in the update: the Oct 2026 publish shipped without the Google
+          # client ids and hid Sign in with Google on every phone. The branch
+          # picks the environment its binaries were built with (eas.json).
+          case "$branch" in
+            preview) environment=preview ;;
+            *)       environment=production ;;
+          esac
           npx eas-cli update \
             --branch "$branch" \
             --platform all \
-            --environment production \
+            --environment "$environment" \
             --message "$msg" \
             --non-interactive
 
