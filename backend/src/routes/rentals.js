@@ -368,6 +368,27 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
         e.status = 409; e.code = 'CONTACT_NOT_AVAILABLE'; e.available = available; throw e;
       }
 
+      const shared = {
+        provider_name: car.provider_name,
+        provider_business_name: car.provider_business_name,
+        provider_contact_available: available,
+        contact: preferredChannel === 'phone' ? car.provider_phone
+          : preferredChannel === 'whatsapp' ? car.provider_whatsapp : null,
+      };
+
+      // The same request sent twice (a double tap, a retry after a dropped
+      // connection) is answered with the inquiry it already made, and the
+      // provider is notified once. Race-free because the car row is locked
+      // FOR UPDATE above, so a second request waits for this one to commit.
+      const existing = await client.query(
+        `SELECT * FROM rental_inquiries
+          WHERE rental_car_id = $1 AND renter_id = $2 AND start_date = $3 AND days = $4
+            AND status = 'new' AND created_at > NOW() - INTERVAL '24 hours'
+          ORDER BY created_at DESC LIMIT 1`,
+        [car.id, req.user.id, startDate, days]
+      );
+      if (existing.rows.length) return { ...existing.rows[0], ...shared, duplicate: true };
+
       const ref = 'RI-' + crypto.randomBytes(4).toString('hex').toUpperCase();
       const inserted = await client.query(
         `INSERT INTO rental_inquiries
@@ -385,16 +406,9 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
           meta: JSON.stringify({ inquiryId: inserted.rows[0].id, rentalCarId: car.id }),
         });
       }
-      return {
-        ...inserted.rows[0],
-        provider_name: car.provider_name,
-        provider_business_name: car.provider_business_name,
-        provider_contact_available: available,
-        contact: preferredChannel === 'phone' ? car.provider_phone
-          : preferredChannel === 'whatsapp' ? car.provider_whatsapp : null,
-      };
+      return { ...inserted.rows[0], ...shared };
     });
-    res.status(201).json({
+    res.status(inquiry.duplicate ? 200 : 201).json({
       ...inquiry,
       notice: DIRECT_DEAL_NOTICE,
       message: 'Inquiry sent. The rental provider—not Sawa—will confirm availability, price and terms.',

@@ -11,7 +11,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "next": "15.5.22",
+    "next": "15.5.27",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "socket.io-client": "^4.7.5"
