@@ -275,7 +275,7 @@ commission.
 |---|---|
 | Bundle id / package | `com.sawacars.app` on both iOS and Android (back from 10 Oct 2026; `com.sawacars.apps` and `com.sawacars.android` were detours and are retired) |
 | Slug / EAS project | `sawa-cars` / `f2c5d3f8-8777-4b97-96ec-1482d374a42a` (account `alleluiacervi`; moved from `alleluia_cervi` 25 Sep 2026 after the free build quota ran out) |
-| Version | `1.0.8` (`app.config.js`); build numbers are **remote** (`appVersionSource: remote`, auto-increment). `runtimeVersion` follows the app version, so bump it **only** for native changes: a bump strands every installed build from OTA updates |
+| Version | `2.0.0` (`app.config.js`; 1.0.9 phones stop receiving OTA updates once 2.0.0 is the tree); build numbers are **remote** (`appVersionSource: remote`, auto-increment). `runtimeVersion` follows the app version, so bump it **only** for native changes: a bump strands every installed build from OTA updates |
 | Apple Team ID | `5Z2LA9U639` · ASC app id `6803097569` |
 | Android | target/compile SDK 36. The first `com.sawacars.app` build on the `alleluiacervi` EAS project (10 Oct 2026) made a **new** upload keystore and started remote versionCode at 2, so a Play listing that already holds `com.sawacars.app` uploads needs an upload-key reset (or the old keystore restored on EAS) and `eas build:version:set` above its highest versionCode. `web/public/.well-known/assetlinks.json` lists `com.sawacars.app` with a SHA-256 from Sep 2026 that predates that keystore; add the app signing and upload key SHA-256s from Play Console → App integrity beside it (a real value only — `release:check` must stay green) |
 | OTA | EAS Update, `runtimeVersion: appVersion`, channel `production` via `.github/workflows/mobile-update.yml` |
