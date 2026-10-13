@@ -110,6 +110,13 @@ services:
       APPLE_TEAM_ID:       ${APPLE_TEAM_ID:-}
       APPLE_KEY_ID:        ${APPLE_KEY_ID:-}
       APPLE_PRIVATE_KEY:   ${APPLE_PRIVATE_KEY:-}
+      # ── Web Push for sawacars.com (backend/src/lib/web-push.js) ────────────
+      # All three empty keeps browser notifications off and the website hides
+      # its toggle. Generate once: `npx web-push generate-vapid-keys`. Rotating
+      # the pair silently drops every browser subscription.
+      VAPID_PUBLIC_KEY:    ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY:   ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT:       ${VAPID_SUBJECT:-mailto:contact@sawacars.com}
       LOG_LEVEL:           info
     ports:
       - "127.0.0.1:4000:3000"

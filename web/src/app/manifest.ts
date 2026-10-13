@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next'
 import { APP, SITE } from '@/lib/site'
 
-// The website is installable, but it is not a replacement for the app: the
-// camera work (ID verification, submission photos) and push notifications are
-// native-only. `related_applications` with prefer_related_applications = false
-// says exactly that — offer the store listing, don't force it.
+// The website is installable (the dashboard's InstallAppCard offers it) and,
+// once the API has its VAPID keys, can send notifications too (public/sw.js).
+// The app stays the better home on a phone whose store has it:
+// `related_applications` with prefer_related_applications = false offers the
+// store listing without forcing it.
 
 export default function manifest(): MetadataRoute.Manifest {
   return {

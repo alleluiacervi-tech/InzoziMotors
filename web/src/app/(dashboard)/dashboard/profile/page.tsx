@@ -5,9 +5,10 @@ import { NotificationSettingsForm } from '@/components/dashboard/NotificationSet
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { PasswordForm } from '@/components/dashboard/PasswordForm'
 import { ProfileForm } from '@/components/dashboard/ProfileForm'
+import { WebPushToggle } from '@/components/dashboard/WebPushToggle'
 import { Badge, Button, Card, Icon } from '@/components/ui'
 import { formatDate } from '@/lib/business'
-import { account } from '@/lib/api'
+import { account, devices } from '@/lib/api'
 import { getCurrentUser } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
 import type { IdVerificationStatus } from '@/lib/types'
@@ -62,7 +63,11 @@ export default async function ProfilePage() {
   // offer a reason the database refuses. The component keeps a bundled fallback
   // for the case where this read fails — being unable to list reasons must not
   // be what stops somebody closing their account.
-  const closure = await account.closureReasons().catch(() => null)
+  // Browser notifications stay hidden until the API has its VAPID key.
+  const [closure, push] = await Promise.all([
+    account.closureReasons().catch(() => null),
+    devices.webPushConfig().catch(() => ({ enabled: false, publicKey: undefined })),
+  ])
 
   return (
     <>
@@ -105,6 +110,11 @@ export default async function ProfilePage() {
           <section aria-labelledby="notifications">
             <PanelHeading id="notifications" title={t('dashboard.profile.notificationsHeading')} />
             <Card className="p-5 sm:p-6">
+              {push.enabled && push.publicKey ? (
+                <div className="mb-5 border-b border-line-soft pb-5">
+                  <WebPushToggle publicKey={push.publicKey} />
+                </div>
+              ) : null}
               <NotificationSettingsForm messageEmails={user.message_email_notifications !== false} />
             </Card>
           </section>

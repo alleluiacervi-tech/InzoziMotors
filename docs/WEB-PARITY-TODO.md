@@ -103,8 +103,8 @@ Detailed plan: [`WEB-PARITY-PLAN.md` §11](WEB-PARITY-PLAN.md#11-phase-3-in-deta
 
 ## Phase 4 — Reach & polish (G12–G14, W3)
 - [ ] **O3** Referrals: implement web page or remove from app, per decision
-- [ ] **G13** Web Push: VAPID keys (secret — human provides), service worker, `platform` on device tokens, backend sender + tests
-- [ ] PWA install prompt on supported browsers
+- [x] **G13** Web Push: service worker (`web/public/sw.js`), own table `web_push_subscriptions` (migration 0059) instead of `platform` on device tokens, backend sender `lib/web-push.js` + tests, toggle and test button in Profile → Notifications, sign-out drops the subscription. **Ships off** until the VAPID keys are in the server's `.env` (human)
+- [x] PWA install prompt on supported browsers (dashboard overview; Chrome/Edge/Samsung via `beforeinstallprompt`; hidden where the store app is live, so not on iPhone)
 - [ ] **W3** Copy sweep: `AppCapabilities.tsx` (drop 36-angle + app-only claims), `VerificationNotice.tsx`, `dashboard/selling`, `dashboard/profile`, `RequestCarForm.tsx`, `/download` page
 - [ ] **G14** Content check: `/how-it-works`, `/promise` vs app `BuyingGuide`, `SawaPromise`
 - [ ] Final parity audit — re-run the §3 method; every row "at parity" or listed in §7

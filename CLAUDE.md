@@ -54,7 +54,9 @@ case is a bug.
   seller onboarding (`/dashboard/verify`, `/sell/submit`,
   `/dashboard/selling/[id]/schedule`), seller profiles (`/sellers/[id]`),
   compare (`/compare`, up to 3) and reopening a closed account at sign-in.
-  What is left (Web Push, PWA, the copy sweep) is Phase 4 of the plan.
+  Web Push and the install prompt shipped 13 Oct 2026 (Web Push off until the
+  VAPID keys are set, see section 5); what is left of Phase 4 is the copy
+  sweep, the content check and the referrals decision (O3).
 - The plan, phases and decisions are in `docs/WEB-PARITY-PLAN.md`. Tasks are in
   `docs/WEB-PARITY-TODO.md`; tick them in the PR that ships them.
 - Browser rules:
@@ -283,6 +285,19 @@ and "server" apart, Settings → *Send a test notification* calls
 reads Expo's receipts 15 minutes after a send and logs credential errors
 (`expo push receipt error`).
 
+**Web Push (sawacars.com).** `backend/src/lib/web-push.js` sends to browser
+subscriptions (`web_push_subscriptions`, migration 0059) alongside every Expo
+push in `notify.js`. Off until `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and
+`VAPID_SUBJECT` are in the server's `.env` (generate once with
+`npx web-push generate-vapid-keys`; rotating them drops every subscription).
+The endpoint a browser sends is checked against the browsers' push services
+before the API will POST to it (SSRF); payloads carry ids only. The website's
+toggle and test button live in Profile → Notifications, a tap lands on
+`/dashboard/notifications/open` (same `notificationTarget()` as the
+notifications page), and signing out removes the browser's subscription. On
+iPhone the toggle points to the App Store app instead (Safari only allows push
+from a home-screen web app).
+
 **Crash visibility.** JavaScript errors go to `POST /client-errors`
 (`src/utils/crashReport.js` → one structured log line, no user data). Native
 crash reporting (Sentry) is wired but inert until `EXPO_PUBLIC_SENTRY_DSN` is
@@ -304,7 +319,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0058`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0059`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.

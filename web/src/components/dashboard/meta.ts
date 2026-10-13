@@ -39,5 +39,12 @@ export function notificationTarget(
   const submissionId = readId(meta, 'submissionId')
   if (submissionId) return { href: '/dashboard/selling', labelKey: 'dashboard.notificationTarget.viewSubmission' }
 
+  const importOrderId = readId(meta, 'importOrderId')
+  if (importOrderId) return { href: `/dashboard/imports/${importOrderId}`, labelKey: 'dashboard.notificationTarget.viewImport' }
+
+  // A rental inquiry sent TO a provider: their inbox, as in the app.
+  const inquiryId = readId(meta, 'inquiryId')
+  if (inquiryId) return { href: '/dashboard/rentals/inbox', labelKey: 'dashboard.notificationTarget.viewInquiry' }
+
   return null
 }

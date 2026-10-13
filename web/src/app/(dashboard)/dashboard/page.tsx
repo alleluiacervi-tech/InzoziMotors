@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { InstallAppCard } from '@/components/dashboard/InstallAppCard'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { StatTile } from '@/components/dashboard/StatTile'
 import { getNotifications, settled } from '@/components/dashboard/data'
@@ -79,6 +80,8 @@ export default async function DashboardOverviewPage() {
           </Button>
         }
       />
+
+      <InstallAppCard />
 
       {failed ? (
         <Alert tone="warning" title={t('dashboard.common.partFailedTitle')} className="mb-6">

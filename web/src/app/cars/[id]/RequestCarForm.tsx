@@ -52,7 +52,7 @@ export function RequestCarForm({ carId, available }: { carId: string; available?
     <label className="block text-caption font-bold text-content">Message
       <textarea name="message" rows={3} defaultValue="Hi, is this vehicle still available?" maxLength={1000}
         className="mt-1.5 w-full rounded-xl border border-line bg-surface px-3 py-2.5 font-normal outline-none focus:border-brand" />
-      <span className="mt-1 block text-micro font-normal text-content-muted">Used for in-app chat; ignored when you choose phone or WhatsApp.</span>
+      <span className="mt-1 block text-micro font-normal text-content-muted">Used for the chat on Sawa Cars; ignored when you choose phone or WhatsApp.</span>
     </label>
     <label className="flex items-start gap-3 rounded-xl bg-surface-alt p-3 text-micro leading-relaxed text-content-secondary">
       <input type="checkbox" name="acknowledge" value="yes" className="mt-0.5 h-4 w-4 shrink-0 accent-brand" />

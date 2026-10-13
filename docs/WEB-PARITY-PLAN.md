@@ -143,7 +143,7 @@ Each phase is one PR to `main`, and each is independently useful.
 | **1 — Messaging** ✅ *implemented 27 Sep 2026, pending CI verification* | G1, G2, G3 and the D3 email | The biggest gap: web users can't read replies today |
 | **2 — Seller onboarding** ✅ *implemented 27 Sep 2026* | G4, G5, G6, B2, B4 and B5 (see §10) | Turns web visitors into sellers without the app |
 | **3 — Account and trust** | G7, G9, G10, G11, B1 and G8 | Completes the seller and buyer loops |
-| **4 — Reach** | G12 (after O3), G13 Web Push, PWA install prompt, W3 copy sweep, G14 content check | Polish and re-engagement |
+| **4 — Reach** | G12 (after O3), G13 Web Push, PWA install prompt, W3 copy sweep, G14 content check | Polish and re-engagement. G13 and the install prompt shipped 13 Oct 2026 (Web Push off until the VAPID keys are set) |
 
 Rough size: phase 0 is 2–3 days; phases 1 and 2 are 4–5 days each; phase 3 is
 3–4 days; phase 4 is 3 days.
@@ -166,7 +166,7 @@ Rough size: phase 0 is 2–3 days; phases 1 and 2 are 4–5 days each; phase 3 i
 | Difference | Reason |
 |---|---|
 | Staff tools (`InspectionForm`, `AdminPanel`, `AdminAnalytics`) aren't on sawacars.com | Staff use admin.sawacars.com; the public site shouldn't expose staff surfaces |
-| Web Push isn't available in iPhone Safari unless the site is installed to the home screen | Apple platform limit; email covers the gap |
+| Web Push isn't available in iPhone Safari unless the site is installed to the home screen | Apple platform limit. The toggle points iPhone users to the App Store app (live since 28 Aug 2026); email covers the gap |
 | Haptics and the native share sheet | Browser equivalents are used where they exist (`navigator.share`) |
 
 ## 8. Open decisions
