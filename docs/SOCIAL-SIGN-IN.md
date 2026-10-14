@@ -82,7 +82,8 @@ Project → *APIs & Services*.
 
    Play's app signing key has SHA-256
    `D2:9F:B0:6F:3A:C3:BD:82:C4:F5:AB:CC:CE:AC:64:66:E8:DE:EC:B4:BA:D2:80:F9:3D:6F:26:D0:39:74:20:EC`
-   (Play Console → App integrity → App signing; its SHA-1 is listed there too).
+   and SHA-1 `E9:ED:54:32:04:F1:37:BD:4A:2A:C9:50:55:50:B8:8E:AC:AD:B9:77`
+   (Play Console → App integrity → App signing).
    Every Android user so far installed from Play, so this is the key Google
    sees for them.
 
