@@ -79,16 +79,17 @@ test('a card-sized request costs a fraction of the full photo', async () => {
     + `vs ${(originalBytes / 1024).toFixed(0)}KB original — ${(100 - ratio * 100).toFixed(0)}% smaller`);
 });
 
-test('a client that cannot read WebP still gets a resized JPEG', async () => {
-  const res = await fetchBinary(
-    request(app).get(`/uploads/cars/variant-test/${NAME}?w=400`).set('Accept', 'image/*')
-  ).expect(200);
-  assert.equal(res.headers['content-type'], 'image/jpeg');
-  assert.equal((await sharp(res.body).metadata()).width, 400);
-  assert.ok(res.body.length < originalBytes);
-  // Any shared cache must key on Accept, or a WebP body reaches a client that
-  // cannot decode it.
-  assert.match(String(res.headers.vary || ''), /Accept/i);
+test('a resized photo is WebP whatever the Accept header says', async () => {
+  // One URL, one body. A CDN on a free plan ignores Vary, so a URL that
+  // answered JPEG to one client and WebP to another would hand whichever it
+  // cached first to everybody.
+  for (const accept of ['image/*', 'image/webp,image/*', undefined]) {
+    const req = request(app).get(`/uploads/cars/variant-test/${NAME}?w=400`);
+    const res = await fetchBinary(accept ? req.set('Accept', accept) : req).expect(200);
+    assert.equal(res.headers['content-type'], 'image/webp', `Accept: ${accept}`);
+    assert.equal((await sharp(res.body).metadata()).width, 400);
+    assert.doesNotMatch(String(res.headers.vary || ''), /Accept/i);
+  }
 });
 
 test('photos are cacheable for a year, which they were not', async () => {

@@ -356,6 +356,13 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **Uploads**: Cloudinary when configured, persistent volume otherwise; URLs are
   normalised through `src/lib/public-origin.js` so no Docker-internal hostname
   is ever persisted (that bug shipped once — migration `0021` repaired it).
+- **Caddy and Cloudflare**: Caddy (`ops/caddy/sawacars.Caddyfile`, installed by
+  hand on the shared VPS) terminates TLS and sets the one `X-Forwarded-For`
+  Express trusts. It takes the visitor's address from `CF-Connecting-IP` only
+  when the connection comes from Cloudflare's ranges, so rate limits stay per
+  visitor behind the CDN and the header cannot be spoofed by calling the IP
+  directly. Resized photos (`?w=`) are always WebP with no `Vary`, so a CDN
+  caches one body per URL. Setup and rollback: `docs/CLOUDFLARE.md`.
 
 ---
 

@@ -13,9 +13,8 @@
 //
 //   GET /uploads/cars/<id>/photo.jpg?w=400
 //
-// Resized with sharp, re-encoded to WebP when the client accepts it, and
-// written to a disk cache so the work happens once per (file, width, format)
-// rather than once per request.
+// Resized with sharp, re-encoded to WebP, and written to a disk cache so the
+// work happens once per (file, width) rather than once per request.
 //
 // ── Why on demand rather than at upload ──────────────────────────────────────
 // Generating derivatives during upload would help nothing already uploaded, and
@@ -87,11 +86,13 @@ function imageVariants(uploadRoot) {
     catch { return next(); }          // missing file: let static produce the 404
     if (!stat.isFile()) return next();
 
-    // WebP is roughly 30% smaller than JPEG at the same quality and is
-    // universally supported on the Android and iOS versions this app targets.
-    // The Accept header is still honoured rather than assumed.
-    const wantsWebp = String(req.headers.accept || '').includes('image/webp');
-    const format = wantsWebp ? 'webp' : 'jpeg';
+    // Always WebP. It is roughly 30% smaller than JPEG at the same quality, and
+    // the only client that asks for ?w= is the app, whose image loaders read
+    // WebP on every iOS and Android version it supports. This used to follow
+    // the Accept header and answer `Vary: Accept`, but a CDN on a free plan
+    // (Cloudflare) ignores Vary and would hand whichever format it cached
+    // first to everyone. One URL, one body, cacheable anywhere.
+    const format = 'webp';
 
     // The cache key includes mtime and size, so re-masking a plate — which
     // rewrites the file at the same path — cannot serve a stale derivative of
@@ -103,7 +104,7 @@ function imageVariants(uploadRoot) {
 
     try {
       await fsp.access(cached);
-      return sendVariant(res, cached, format);
+      return sendVariant(res, cached);
     } catch { /* not cached yet */ }
 
     try {
@@ -112,9 +113,7 @@ function imageVariants(uploadRoot) {
         // not upscale it into a blurry, larger file than the original.
         .resize({ width, withoutEnlargement: true })
         .rotate();                                  // honour EXIF orientation
-      const buffer = format === 'webp'
-        ? await pipeline.webp({ quality: 78 }).toBuffer()
-        : await pipeline.jpeg({ quality: 80, progressive: true, mozjpeg: true }).toBuffer();
+      const buffer = await pipeline.webp({ quality: 78 }).toBuffer();
 
       // Never serve a derivative larger than the file it came from.
       if (buffer.length >= stat.size) return next();
@@ -126,7 +125,7 @@ function imageVariants(uploadRoot) {
       await fsp.writeFile(temp, buffer);
       await fsp.rename(temp, cached);
       scheduleSweep(cacheRoot);
-      return sendVariant(res, cached, format);
+      return sendVariant(res, cached);
     } catch (error) {
       log.warn('image variant failed; serving the original', { relative, width, error: error.message });
       return next();
@@ -138,7 +137,7 @@ function imageVariants(uploadRoot) {
 // The cache key includes the source file's mtime and size, which is what stops
 // a re-masked plate serving a stale derivative — and it also means re-masking
 // ORPHANS the previous set of derivatives under a key nothing will ever ask for
-// again. With four widths and two formats that is up to eight files stranded
+// again. With four widths that is up to four files stranded
 // per re-mask, and nothing ever deleted any of them. The directory could only
 // grow, and the failure mode is a full disk at two in the morning.
 //
@@ -198,16 +197,12 @@ async function sweepCache(cacheRoot) {
   log.info('variant cache swept', { removed, remainingBytes: total });
 }
 
-function sendVariant(res, file, format) {
-  res.type(format === 'webp' ? 'image/webp' : 'image/jpeg');
+function sendVariant(res, file) {
+  res.type('image/webp');
   // A derivative is addressed by a URL that includes its width, and the
   // underlying file never changes in place without changing its name, so this
   // is safe to cache for a year.
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  // The same URL answers differently to a client that accepts WebP, so any
-  // shared cache must key on it. Without this a proxy could hand a WebP body
-  // to a client that cannot read it.
-  res.setHeader('Vary', 'Accept');
   return res.sendFile(file);
 }
 
