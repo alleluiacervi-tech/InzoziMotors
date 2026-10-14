@@ -21,10 +21,16 @@ would share one rate-limit bucket and be locked out together. It is safe to
 install before Cloudflare exists: nothing matches, behaviour is unchanged.
 
 ```bash
+cd /srv/sawa                                          # the checkout the deploy updates
+sudo cp /etc/caddy/sites/sawacars.Caddyfile /root/sawacars.Caddyfile.bak-$(date +%F)
 sudo cp ops/caddy/sawacars.Caddyfile /etc/caddy/sites/sawacars.Caddyfile
 sudo caddy validate --config /etc/caddy/Caddyfile     # must say "Valid configuration"
 sudo systemctl reload caddy                            # only after validate passes
 ```
+
+Keep the backup **outside** `/etc/caddy/sites/`: the main Caddyfile has
+`import sites/*`, so a copy left in that folder is loaded too and validation
+fails with `ambiguous site definition` (and Caddy would not start on reboot).
 
 The other project's blocks on this host are not touched.
 
