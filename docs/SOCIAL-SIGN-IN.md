@@ -74,7 +74,9 @@ Project → *APIs & Services*.
    The **upload key** is the EAS production keystore for `com.sawacars.app`,
    created by the first build on 10 Oct 2026 (`eas credentials` → Android →
    production shows its SHA-1 and SHA-256;
-   fingerprints are public, not secrets). The keystore *Build Credentials
+   fingerprints are public, not secrets): SHA-1
+   `A8:A6:A8:EC:E6:E4:99:30:66:5B:3C:9C:4D:6D:A5:46:38:2D:66:74`, SHA-256
+   `0A:82:7C:B7:57:F3:EB:79:20:D9:AB:0A:77:2B:86:43:BC:E4:23:4A:EC:4E:E1:B1:C6:AC:5B:7D:65:1B:0E:56`. The keystore *Build Credentials
    4RrJX5tVp0* (SHA-1 `3D:DC:17:…:22:AB`) belongs to the retired
    `com.sawacars.apps` and is not used.
 

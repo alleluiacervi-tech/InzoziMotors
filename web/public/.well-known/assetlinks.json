@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.sawacars.app",
       "sha256_cert_fingerprints": [
-        "D2:9F:B0:6F:3A:C3:BD:82:C4:F5:AB:CC:CE:AC:64:66:E8:DE:EC:B4:BA:D2:80:F9:3D:6F:26:D0:39:74:20:EC"
+        "D2:9F:B0:6F:3A:C3:BD:82:C4:F5:AB:CC:CE:AC:64:66:E8:DE:EC:B4:BA:D2:80:F9:3D:6F:26:D0:39:74:20:EC",
+        "0A:82:7C:B7:57:F3:EB:79:20:D9:AB:0A:77:2B:86:43:BC:E4:23:4A:EC:4E:E1:B1:C6:AC:5B:7D:65:1B:0E:56"
       ]
     }
   }
