@@ -42,6 +42,40 @@ const NONE = [];
 
 const demo = (fixture) => (DEMO_MODE ? fixture : NONE);
 
+// The last catalogue seen, as the API returned it, for an instant first screen.
+const CATALOGUE_KEYS = { cars: 'catalogueCars', rentals: 'catalogueRentals' };
+const CATALOGUE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+// A conversation as the screens draw it, seen by `viewerId`. Module-level and
+// given the viewer explicitly so the startup loader does not depend on the
+// signed-in user: when it did, setting the user re-created the loader and the
+// whole startup ran a second time on every launch.
+function toConversation(conv, viewerId) {
+  const isBuyer = conv.buyer_id === viewerId;
+  const otherName = isBuyer ? conv.seller_name : conv.buyer_name;
+  const lastTime = conv.last_message_at ? new Date(conv.last_message_at) : new Date(conv.created_at);
+  const timeStr = lastTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  return {
+    id: conv.id,
+    name: otherName || 'Sawa User',
+    last: conv.last_message || 'No messages yet',
+    time: timeStr,
+    unread: parseInt(conv.unread_count || 0),
+    avatar: (otherName || 'I')[0].toUpperCase(),
+    // The other participant's user id — what Block needs.
+    otherId: isBuyer ? conv.seller_id : conv.buyer_id,
+    // No presence system exists yet — a hardcoded green "online" dot on
+    // every user was a small lie a trust-first brand can't afford.
+    online: false,
+    carId: conv.car_id,
+    // LEFT JOIN server-side: a removed car no longer erases the thread,
+    // it just loses its title.
+    carTitle: conv.car_title || (conv.car_id ? conv.car_title : 'Listing removed'),
+    carImage: conv.car_images?.[0] || null,
+  };
+}
+
 // Demo user shown when no backend auth token exists
 const DEFAULT_USER = {
   name: 'Alex Morgan',
@@ -515,45 +549,32 @@ export function AppProvider({ children }) {
     };
   }, []);
 
-  const mapConversation = useCallback((conv) => {
-    const isBuyer = conv.buyer_id === currentUser?.id;
-    const otherName = isBuyer ? conv.seller_name : conv.buyer_name;
-    const lastTime = conv.last_message_at ? new Date(conv.last_message_at) : new Date(conv.created_at);
-    const timeStr = lastTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-    return {
-      id: conv.id,
-      name: otherName || 'Sawa User',
-      last: conv.last_message || 'No messages yet',
-      time: timeStr,
-      unread: parseInt(conv.unread_count || 0),
-      avatar: (otherName || 'I')[0].toUpperCase(),
-      // The other participant's user id — what Block needs.
-      otherId: isBuyer ? conv.seller_id : conv.buyer_id,
-      // No presence system exists yet — a hardcoded green "online" dot on
-      // every user was a small lie a trust-first brand can't afford.
-      online: false,
-      carId: conv.car_id,
-      // LEFT JOIN server-side: a removed car no longer erases the thread,
-      // it just loses its title.
-      carTitle: conv.car_title || (conv.car_id ? conv.car_title : 'Listing removed'),
-      carImage: conv.car_images?.[0] || null,
-    };
-  }, [currentUser?.id]);
+  const mapConversation = useCallback(
+    (conv) => toConversation(conv, currentUser?.id),
+    [currentUser?.id],
+  );
 
   // Fetch cars from the API; fall back to bundled demo data when the backend
   // is unreachable or has no listings yet (backend deployment is Phase 6A).
+  //
+  // Resolves to null, never rejects, when the request failed in a release
+  // build, so the caller can keep what is already on screen (the last
+  // catalogue from disk) instead of replacing it with nothing.
   const fetchCars = useCallback(async () => {
     try {
       const carList = await carsApi.getCars();
       setBackendReachable(true);
       // An empty catalogue is a true answer, not a failure. Only DEMO_MODE is
       // allowed to substitute fixtures for it.
-      if (carList && carList.length) return carList.map(mapCar);
+      if (carList && carList.length) {
+        setJSON(CATALOGUE_KEYS.cars, { at: Date.now(), list: carList });
+        return carList.map(mapCar);
+      }
       if (DEMO_MODE) {
         console.warn('Cars API returned no listings — using bundled demo data');
         return mockCars;
       }
+      setJSON(CATALOGUE_KEYS.cars, null);
       return NONE;
     } catch (err) {
       if (err?.isNetworkError) setBackendReachable(false);
@@ -561,9 +582,8 @@ export function AppProvider({ children }) {
         console.warn('Cars API unreachable — using bundled demo data:', err.message);
         return mockCars;
       }
-      // Release build: an unreachable marketplace shows as unreachable.
       console.warn('Cars API unreachable:', err.message);
-      return NONE;
+      return null;
     }
   }, [mapCar]);
 
@@ -681,17 +701,66 @@ export function AppProvider({ children }) {
     };
   }, []);
 
+  // Same contract as fetchCars: null means "failed, keep what you have".
   const fetchRentalCars = useCallback(async () => {
     try {
       const list = await rentalsApi.getRentalCars();
-      if (list && list.length) return list.map(mapRentalCar);
+      if (list && list.length) {
+        setJSON(CATALOGUE_KEYS.rentals, { at: Date.now(), list });
+        return list.map(mapRentalCar);
+      }
+      setJSON(CATALOGUE_KEYS.rentals, null);
       return DEMO_MODE ? RENTAL_CARS : NONE;
     } catch (err) {
       if (err?.isNetworkError) setBackendReachable(false);
       console.warn('Rentals API unreachable:', err.message);
-      return DEMO_MODE ? RENTAL_CARS : NONE;
+      return DEMO_MODE ? RENTAL_CARS : null;
     }
   }, [mapRentalCar]);
+
+  // Both lists at once. They are public and independent of each other and of
+  // the session, so nothing is gained by waiting for one before the other.
+  // A failed list leaves the one on screen alone.
+  const liveCatalogue = useRef({ cars: false, rentals: false });
+  const loadCatalogue = useCallback(async () => {
+    const [nextCars, nextRentals] = await Promise.all([fetchCars(), fetchRentalCars()]);
+    if (nextCars) { liveCatalogue.current.cars = true; setCars(nextCars); }
+    if (nextRentals) { liveCatalogue.current.rentals = true; setRentalCars(nextRentals); }
+  }, [fetchCars, fetchRentalCars]);
+
+  // The last catalogue this phone saw, drawn before the network answers, so
+  // the home screen opens on cars rather than on a spinner. Never overrides a
+  // live answer: if the network won the race, even with "no cars", it stands. Kept
+  // for a day at most, so a car that has since come down is never shown for
+  // long; the live list replaces it the moment it arrives either way.
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    let alive = true;
+    (async () => {
+      const [cachedCars, cachedRentals] = await Promise.all([
+        getJSON(CATALOGUE_KEYS.cars),
+        getJSON(CATALOGUE_KEYS.rentals),
+      ]);
+      if (!alive) return;
+      const fresh = (entry) => Array.isArray(entry?.list) && entry.list.length
+        && Date.now() - Number(entry.at) < CATALOGUE_MAX_AGE_MS;
+      try {
+        if (fresh(cachedCars)) {
+          const mapped = cachedCars.list.map(mapCar);
+          setCars((current) => (liveCatalogue.current.cars ? current : mapped));
+        }
+        if (fresh(cachedRentals)) {
+          const mapped = cachedRentals.list.map(mapRentalCar);
+          setRentalCars((current) => (liveCatalogue.current.rentals ? current : mapped));
+        }
+      } catch (err) {
+        // A cache written by an older build that today's mapper cannot read is
+        // simply not used; the network answer follows.
+        console.warn('Ignoring unreadable cached catalogue:', err?.message || err);
+      }
+    })();
+    return () => { alive = false; };
+  }, [mapCar, mapRentalCar]);
 
   // --- Initial Data Loader ---
 
@@ -715,9 +784,9 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  const loadInitialData = useCallback(async (user) => {
-    setCars(await fetchCars());
-    setRentalCars(await fetchRentalCars());
+  // A signed-in person's own rows. Everything here is independent, so it all
+  // goes at once.
+  const loadPersonalData = useCallback(async (user) => {
     if (!user) return;
 
     const sections = [
@@ -739,7 +808,7 @@ export function AppProvider({ children }) {
       }]]),
       ['conversations', async () => {
         const convList = await messagesApi.getConversations();
-        setConversations(convList.map(mapConversation));
+        setConversations(convList.map((conv) => toConversation(conv, user.id)));
       }],
       ['notifications', async () => {
         const notifList = await notificationsApi.getNotifications();
@@ -789,8 +858,14 @@ export function AppProvider({ children }) {
 
     // Concurrent, and no rejection can escape: loadSection resolves either way.
     await Promise.all(sections.map(([label, run]) => loadSection(label, run)));
-  }, [fetchCars, fetchRentalCars, loadSection, mapRentalInquiry, mapSubmission,
-      mapConversation, mapNotification, mapAdminInspection]);
+  }, [loadSection, mapRentalInquiry, mapSubmission, mapNotification, mapAdminInspection]);
+
+  // After a sign-in: the catalogue and the person's rows, side by side. This
+  // used to fetch cars, then rentals, then the rest, three round trips in a
+  // row before the screen settled.
+  const loadInitialData = useCallback(async (user) => {
+    await Promise.all([loadCatalogue(), loadPersonalData(user)]);
+  }, [loadCatalogue, loadPersonalData]);
 
   // ─── Refresh, on demand ─────────────────────────────────────────────────────
   // The catalogue was fetched exactly once, inside the mount-once effect below,
@@ -810,17 +885,17 @@ export function AppProvider({ children }) {
   const refreshCatalogue = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [nextCars, nextRentals] = await Promise.all([fetchCars(), fetchRentalCars()]);
-      setCars(nextCars);
-      setRentalCars(nextRentals);
       // A signed-in person's own rows — saved cars, messages, submissions — are
       // reloaded too, because the commonest reason to pull is "I did something
       // on another device" or "the first load failed and I lost my saved list".
-      if (isLoggedIn && currentUser?.id) await loadInitialData(currentUser);
+      await Promise.all([
+        loadCatalogue(),
+        isLoggedIn && currentUser?.id ? loadPersonalData(currentUser) : null,
+      ]);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchCars, fetchRentalCars, isLoggedIn, currentUser, loadInitialData]);
+  }, [loadCatalogue, loadPersonalData, isLoggedIn, currentUser]);
 
   // Restore the session on startup.
   //
@@ -837,6 +912,9 @@ export function AppProvider({ children }) {
   // client's job (it clears the keychain), not this effect's.
   useEffect(() => {
     const initAuth = async () => {
+      // The catalogue does not depend on who is signed in, so it starts now,
+      // alongside the session check, instead of after it.
+      const catalogue = loadCatalogue();
       try {
         const token = await getToken();
         if (token) {
@@ -852,10 +930,7 @@ export function AppProvider({ children }) {
           // Only after the server has just answered for this token — a renewal
           // can never be the thing that discovers the session is dead.
           authApi.refreshSession();
-          await loadInitialData(me);
-        } else {
-          setCars(await fetchCars());
-          setRentalCars(await fetchRentalCars());
+          await loadPersonalData(me);
         }
       } catch (err) {
         // A dropped connection is not a logout. The optimistic session from the
@@ -873,12 +948,11 @@ export function AppProvider({ children }) {
           setJSON('cachedProfile', null);
         }
         console.warn('Initial auth setup failed, falling back to public data:', err);
-        setCars(await fetchCars());
-        setRentalCars(await fetchRentalCars());
       }
+      await catalogue;
     };
     initAuth();
-  }, [loadInitialData, fetchCars]);
+  }, [loadCatalogue, loadPersonalData]);
 
   // Register this device for push once we know who is signed in. The server
   // keys tokens to the user, so this has to run after auth, not at boot.
