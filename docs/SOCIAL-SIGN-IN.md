@@ -80,6 +80,12 @@ Project → *APIs & Services*.
    4RrJX5tVp0* (SHA-1 `3D:DC:17:…:22:AB`) belongs to the retired
    `com.sawacars.apps` and is not used.
 
+   Play's app signing key has SHA-256
+   `D2:9F:B0:6F:3A:C3:BD:82:C4:F5:AB:CC:CE:AC:64:66:E8:DE:EC:B4:BA:D2:80:F9:3D:6F:26:D0:39:74:20:EC`
+   (Play Console → App integrity → App signing; its SHA-1 is listed there too).
+   Every Android user so far installed from Play, so this is the key Google
+   sees for them.
+
    Play re-signs every build it distributes, internal testing included, with
    its own **app signing key**, which exists only after the first `.aab` is
    uploaded. Until that client exists, Google sign-in works only in EAS-built
