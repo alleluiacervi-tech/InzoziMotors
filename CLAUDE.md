@@ -362,7 +362,10 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
   when the connection comes from Cloudflare's ranges, so rate limits stay per
   visitor behind the CDN and the header cannot be spoofed by calling the IP
   directly. Resized photos (`?w=`) are always WebP with no `Vary`, so a CDN
-  caches one body per URL. Setup and rollback: `docs/CLOUDFLARE.md`.
+  caches one body per URL. The website draws its own uploads from those `?w=`
+  copies too (`SafeImage` + `web/src/lib/api-photo.ts`), not `/_next/image`,
+  whose answers Cloudflare's free plan cannot cache; only the site's own
+  `/public` images still go through the Next optimiser. Setup and rollback: `docs/CLOUDFLARE.md`.
 
 ---
 

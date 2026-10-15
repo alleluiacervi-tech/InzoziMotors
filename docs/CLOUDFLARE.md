@@ -110,6 +110,10 @@ server again within a minute or two; nothing on the server needs to change.
 - Cloudflare's IP ranges are pinned in the Caddy file (checked 14 Oct 2026,
   https://www.cloudflare.com/ips). They change rarely; a stale list fails safe
   (that edge is treated as the visitor, the old behaviour).
+- The website loads uploaded photos from the API's `?w=` copies
+  (`web/src/lib/api-photo.ts`), so they are cached like the app's. Answers
+  from `/_next/image` are never cached by Cloudflare (no file extension, and
+  the body varies by `Accept`); only the site's own `/public` images use it.
 - Resized photos (`?w=`) are always WebP. They used to follow the `Accept`
   header with `Vary: Accept`, which Cloudflare's Free plan ignores, so the first
   format cached would have gone to everyone.
