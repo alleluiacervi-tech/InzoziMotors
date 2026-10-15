@@ -260,6 +260,57 @@ function rentalCheckStatus(row, today = kigaliToday()) {
   return 'passed';
 }
 
+/** The car's evidence, ignoring a pending request for a new check: a provider
+ *  asking for a re-check does not stop a car whose check still holds from
+ *  being listed. */
+function rentalEvidenceStatus(row, today = kigaliToday()) {
+  return rentalCheckStatus({ ...row, check_requested_at: null }, today);
+}
+
+/** Every reason a car is not on the public catalogue right now, in the order
+ *  an operator fixes them. Empty means it is public. Mirrors the public reads
+ *  (GET /rentals): status, provider, subscription, evidence; plus photos,
+ *  which activation requires. */
+function rentalPublicBlockers(row, today = kigaliToday()) {
+  const blockers = [];
+  const providerProblems = [];
+  if (row.provider_role !== 'seller') providerProblems.push('not a seller account');
+  if (row.provider_id_verified !== 'approved') providerProblems.push('identity not verified');
+  if (row.provider_business_verified !== true) providerProblems.push('not business-verified');
+  if (row.provider_account_status !== 'active' || row.provider_deleted_at) providerProblems.push('account suspended or closed');
+  if (providerProblems.length) {
+    blockers.push({ code: 'provider', message: `Provider: ${providerProblems.join(', ')}. Fix it in Users.` });
+  }
+  if (!Array.isArray(row.images) || !row.images.length) {
+    blockers.push({ code: 'photos', message: 'No photos yet. Edit inventory → Add photos.' });
+  }
+  const evidence = rentalEvidenceStatus(row, today);
+  if (!['passed', 'expiring', 'legacy'].includes(evidence)) {
+    blockers.push({
+      code: 'check',
+      message: {
+        none: 'No Rental Check yet. Record Rental Check.',
+        failed: 'The latest Rental Check failed. Record a new one once fixed.',
+        expired: 'The Rental Check or a document has expired. Record a new check.',
+      }[evidence] || 'Record a passing Rental Check.',
+    });
+  }
+  const covered = row.subscription_starts_on && row.subscription_ends_on
+    && isoDay(row.subscription_starts_on) <= today && isoDay(row.subscription_ends_on) >= today;
+  if (!covered) {
+    blockers.push({
+      code: 'subscription',
+      message: row.subscription_starts_on && isoDay(row.subscription_starts_on) > today
+        ? `The listing subscription starts on ${isoDay(row.subscription_starts_on)}.`
+        : 'No listing subscription covers today. Pay 30 days.',
+    });
+  }
+  if (row.status !== 'active') {
+    blockers.push({ code: 'status', message: `The car is ${String(row.status).replace('_', ' ')}. Set it to Active.` });
+  }
+  return blockers;
+}
+
 /** The check as a renter sees it. Owners and staff also get the failed points,
  *  which a renter never needs: a car that failed one is not listed. */
 function rentalCheckSummary(row, { forOwner = false } = {}) {
@@ -359,6 +410,7 @@ router.get('/admin/fleet', requireAdmin, async (_req, res) => {
     const { rows } = await pool.query(
       `SELECT rc.*, ${PROVIDER_COLUMNS}, ${CHECK_COLUMNS},
               sub.ends_on AS subscription_ends_on,
+              sub.starts_on AS subscription_starts_on,
               sub.amount_rwf AS subscription_amount_rwf,
               CASE
                 WHEN sub.id IS NULL THEN 'none'
@@ -376,11 +428,19 @@ router.get('/admin/fleet', requireAdmin, async (_req, res) => {
        ${RENTAL_EVIDENCE}
        ORDER BY rc.created_at DESC`
     );
-    res.json(rows.map((row) => ({
+    const today = kigaliToday();
+    res.json(rows.map((row) => {
+      const blockers = rentalPublicBlockers(row, today);
+      return {
       ...publicRental(row, true, { forOwner: true }),
       subscription_status: row.subscription_status,
       subscription_ends_on: row.subscription_ends_on,
+      subscription_starts_on: row.subscription_starts_on,
       subscription_amount_rwf: row.subscription_amount_rwf,
+      evidence_status: rentalEvidenceStatus(row, today),
+      provider_eligible: !blockers.some((b) => b.code === 'provider'),
+      // Why the car is not public, one line per reason. Empty = public now.
+      public_blockers: blockers,
       // Paid for, and still not on the public feed.
       //
       // Recording a subscription deliberately does not flip status: a car in
@@ -393,10 +453,10 @@ router.get('/admin/fleet', requireAdmin, async (_req, res) => {
       //
       // Derived here rather than in each client so there is one definition of
       // "one click away from being live".
-      // Evidence counts too: paid but unchecked is not one click from live.
-      publishable: row.subscription_status === 'active' && row.status !== 'active'
-        && ['passed', 'expiring', 'legacy'].includes(rentalCheckStatus(row)),
-    })));
+      // Evidence, photos and the provider count too: only the status is left.
+      publishable: blockers.length === 1 && blockers[0].code === 'status',
+      };
+    }));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -908,6 +968,12 @@ router.patch('/:id/mine', requireAuth, requireUuid('id'), async (req, res) => {
       const current = await client.query('SELECT * FROM rental_cars WHERE id=$1 FOR UPDATE', [req.params.id]);
       if (!current.rowCount) { const error = new Error('Rental car not found'); error.status = 404; throw error; }
       if (current.rows[0].provider_id !== req.user.id) { const error = new Error('Forbidden'); error.status = 403; throw error; }
+      // A live car keeps at least one photo: removing the last one would leave
+      // a listing on the public feed with nothing to show.
+      if (req.body.images !== undefined && current.rows[0].status === 'active' && !req.body.images.length) {
+        const error = new Error('A live car needs at least one photo. Add a new one before removing the last.');
+        error.status = 409; throw error;
+      }
       const normalized = { ...req.body };
       if (normalized.title !== undefined) normalized.title = String(normalized.title).trim();
       if (normalized.images !== undefined) normalized.images = normalized.images.map((url) => url.trim());
@@ -1632,6 +1698,24 @@ router.post('/:id/subscriptions', requireAdmin, requireUuid('id'), async (req, r
     const created = await withTransaction(async (client) => {
       const car = await client.query('SELECT id, status FROM rental_cars WHERE id=$1 FOR UPDATE', [req.params.id]);
       if (!car.rowCount) { const e = new Error('Rental car not found'); e.status = 404; throw e; }
+      // "Pay 30 days" on a car whose subscription still runs: the new period
+      // starts the day after the current one ends instead of overlapping it.
+      // Without this, renewing a lapsing listing always failed with an overlap
+      // and the fleet page had no way to pick a later start.
+      if (req.body.extend === true) {
+        const current = await client.query(
+          `SELECT ends_on FROM rental_subscriptions
+            WHERE rental_car_id = $1 AND voided_at IS NULL AND ends_on >= $2::date
+            ORDER BY ends_on DESC LIMIT 1`,
+          [req.params.id, period.startsOn]
+        );
+        if (current.rows.length) {
+          const length = Math.round((Date.parse(period.endsOn) - Date.parse(period.startsOn)) / 86400000);
+          const nextStart = addDaysIso(isoDay(current.rows[0].ends_on), 1);
+          period.startsOn = nextStart;
+          period.endsOn = addDaysIso(nextStart, length);
+        }
+      }
       const created = await insertSubscription(client, {
         rentalCarId: req.params.id, period, actorId: req.user.id,
       });
@@ -1650,7 +1734,7 @@ router.post('/:id/subscriptions', requireAdmin, requireUuid('id'), async (req, r
       warnings: created.status !== 'active' && coversToday
         ? ['This subscription is paid, but the vehicle is still set to '
            + `${created.status} so it is NOT on the public rental feed. `
-           + 'Set it to Active to publish it.']
+           + 'It goes live once it has a passing Rental Check and a photo and is set to Active.']
         : [],
     });
   } catch (err) {
@@ -1801,11 +1885,21 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       const providerId = req.body.provider_id !== undefined ? req.body.provider_id : before.provider_id;
       const status = req.body.status !== undefined ? req.body.status : before.status;
       const images = req.body.images !== undefined ? req.body.images : (before.images || []);
-      const inspectionId = req.body.inspection_id !== undefined ? req.body.inspection_id : before.inspection_id;
+      const providerChanged = providerId !== before.provider_id;
+      // '' and null both mean "no inspection": choosing None in the form clears it.
+      const requestedInspection = req.body.inspection_id !== undefined ? (req.body.inspection_id || null) : undefined;
+      const inspectionChanged = requestedInspection !== undefined
+        && requestedInspection !== (before.inspection_id || null);
+      let inspectionId = requestedInspection !== undefined ? requestedInspection : (before.inspection_id || null);
+      // Only what this edit changes is re-validated, and the full listing gates
+      // run only when the car is being put live. Re-checking everything stored
+      // on every save made an ordinary edit (a rate, a location, retiring the
+      // car) fail on an old inspection or a document that ran out since.
+      const becomingActive = status === 'active' && before.status !== 'active';
 
       // A Rental Check sighted this provider's documents for this car. A new
       // provider has not been checked, so their earlier checks stop counting.
-      if (providerId !== before.provider_id) {
+      if (providerChanged) {
         await client.query(
           `UPDATE rental_checks
               SET voided_at = NOW(), voided_by = $2, void_reason = 'Car moved to another provider'
@@ -1817,7 +1911,7 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
       // Only on an explicit transition to 'active' — deliberately NOT inherited
       // like the assertions around it. Inheriting would 409 on editing a lapsed
       // car's location or rate, which is exactly when an operator needs to.
-      if (req.body.status === 'active' && before.status !== 'active') {
+      if (becomingActive) {
         const live = await client.query(
           `SELECT 1 FROM rental_subscriptions
             WHERE rental_car_id = $1 AND voided_at IS NULL
@@ -1825,51 +1919,76 @@ router.patch('/:id', requireAdmin, requireUuid('id'), async (req, res) => {
           [req.params.id]
         );
         if (!live.rowCount) {
-          const error = new Error('Record a listing subscription before putting this car back in the catalogue');
+          const error = new Error('Record a listing subscription (Pay 30 days) before putting this car live');
           error.status = 409; error.code = 'SUBSCRIPTION_REQUIRED'; throw error;
         }
       }
-      const evidence = await inspectionEvidenceForProvider(client, inspectionId, providerId);
-      if (inspectionId && !evidence) {
-        const error = new Error('The selected inspection must be complete, passing, and belong to this provider');
-        error.status = 409;
-        throw error;
+      let evidence = null;
+      if (inspectionChanged && inspectionId) {
+        evidence = await inspectionEvidenceForProvider(client, inspectionId, providerId);
+        if (!evidence) {
+          const error = new Error('The selected inspection must be complete, passing, and belong to this provider');
+          error.status = 409;
+          throw error;
+        }
+      } else if (providerChanged && inspectionId) {
+        // The old provider's inspection does not travel with the car: it is
+        // dropped rather than blocking the move. The new provider's car is
+        // listed on its own Rental Check.
+        evidence = await inspectionEvidenceForProvider(client, inspectionId, providerId);
+        if (!evidence) inspectionId = null;
+      } else if (becomingActive && inspectionId) {
+        evidence = await inspectionEvidenceForProvider(client, inspectionId, providerId);
       }
       const vehicle = {
         make: req.body.make !== undefined ? req.body.make : before.make,
         model: req.body.model !== undefined ? req.body.model : before.model,
         year: req.body.year !== undefined ? req.body.year : before.year,
       };
-      if (evidence && !inspectionMatchesVehicle(evidence, vehicle)) {
+      if (evidence && inspectionChanged && !inspectionMatchesVehicle(evidence, vehicle)) {
         const error = new Error('The rental vehicle details do not match the selected inspection');
         error.status = 409;
         throw error;
       }
-      if (status === 'active') {
+      if (status === 'active' && (becomingActive || providerChanged)) {
         if (!await verifiedRentalProvider(client, providerId)) {
           const error = new Error('An active rental listing requires an active, identity- and business-verified provider');
           error.status = 409;
           throw error;
         }
+      }
+      // A live car never loses its last photo; a car being put live needs one.
+      if (status === 'active' && (becomingActive || req.body.images !== undefined)) {
         const galleryError = rentalGalleryError(images, true);
         if (galleryError) { const error = new Error(galleryError); error.status = 409; throw error; }
+      }
+      // Moving a live car to another provider voided its checks above, so it
+      // must not stay live on evidence that no longer counts.
+      if (becomingActive || (status === 'active' && providerChanged)) {
         const check = await rentalCheckAllowsListing(client, req.params.id);
         if (check.hasCheck ? !check.ok : !evidence) {
           const error = new Error(check.hasCheck
             ? 'This car\'s latest Rental Check does not allow listing: it failed, is over 12 months old, or a document has expired. Record a new check first.'
-            : 'An active rental listing requires a passed Rental Check');
+            : 'Record a passing Rental Check before putting this car live');
           error.status = 409;
           error.code = 'RENTAL_CHECK_REQUIRED';
           throw error;
         }
       }
+      // inspected/inspection_score follow the inspection only when it changes:
+      // an unchanged legacy inspection keeps the flags it was listed with.
+      const inspectionTouched = inspectionChanged || (providerChanged && (before.inspection_id || null) !== inspectionId);
       const normalized = { ...req.body };
       if (normalized.title !== undefined) normalized.title = String(normalized.title).trim();
       if (normalized.images !== undefined) normalized.images = normalized.images.map((url) => url.trim());
-      const params = fields.map((field) => normalized[field]);
-      const assignments = fields.map((field, index) => `${field}=$${index + 1}`);
-      params.push(Boolean(evidence), evidence ? Number(evidence.score) : null);
-      assignments.push(`inspected=$${params.length - 1}`, `inspection_score=$${params.length}`);
+      if (normalized.inspection_id !== undefined || inspectionTouched) normalized.inspection_id = inspectionId;
+      const written = inspectionTouched && !fields.includes('inspection_id') ? [...fields, 'inspection_id'] : fields;
+      const params = written.map((field) => normalized[field]);
+      const assignments = written.map((field, index) => `${field}=$${index + 1}`);
+      if (inspectionTouched) {
+        params.push(Boolean(evidence && inspectionId), evidence && inspectionId ? Number(evidence.score) : null);
+        assignments.push(`inspected=$${params.length - 1}`, `inspection_score=$${params.length}`);
+      }
       if (req.body.status === 'retired') assignments.push('retired_at=NOW()');
       if (req.body.status && req.body.status !== 'retired') assignments.push('retired_at=NULL', 'retirement_reason=NULL');
       params.push(req.params.id);

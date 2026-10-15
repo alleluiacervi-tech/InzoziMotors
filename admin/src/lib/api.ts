@@ -1184,6 +1184,8 @@ export const api = {
   recordRentalSubscription: (id: string, data: {
     amount_rwf: number; method?: 'cash' | 'mobile_money' | 'bank_transfer'
     reference?: string; starts_on: string; ends_on: string; note?: string
+    /** Start the day after a subscription that still runs, instead of overlapping it. */
+    extend?: boolean
   }) => request<any>(`/rentals/${id}/subscriptions`, { method: 'POST', body: JSON.stringify(data) }),
   voidRentalSubscription: (subId: string, reason: string) =>
     request<any>(`/rentals/subscriptions/${subId}/void`, { method: 'POST', body: JSON.stringify({ reason }) }),

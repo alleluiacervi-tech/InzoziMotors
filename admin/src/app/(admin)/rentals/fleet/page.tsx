@@ -206,7 +206,7 @@ export default function RentalFleetPage() {
       if (!amount) { failures.push(`${car.title}: no amount entered`); continue }
       try {
         await api.recordRentalSubscription(car.id, {
-          amount_rwf: amount, method: 'cash',
+          amount_rwf: amount, method: 'cash', extend: true,
           starts_on: today.toISOString().slice(0, 10), ends_on: ends.toISOString().slice(0, 10),
         })
         succeeded += 1
@@ -256,7 +256,8 @@ export default function RentalFleetPage() {
       weekly_rate: number(form.weekly_rate), deposit: number(form.deposit) || 0,
       min_days: number(form.min_days) || 1, mileage: number(form.mileage),
       location: form.location.trim() || null,
-      inspection_id: form.inspection_id || undefined,
+      // null clears it: "None" means no inspection, not "leave it as it was".
+      inspection_id: form.inspection_id || null,
       images: form.images.split('\n').map((item) => item.trim()).filter(Boolean), status: form.status,
     }
     // Activating needs a photo, and a new car's photos are only uploaded after
@@ -276,7 +277,9 @@ export default function RentalFleetPage() {
         else if (activatingWithPhotosPending) await api.updateRentalCar(carId, { status: 'active' })
       }
       setEditing(null); setForm(EMPTY); setPhotoFiles([]); await load()
-      const done = editing?.id ? 'Rental listing updated.' : 'Rental listing created.'
+      const done = editing?.id
+        ? 'Rental listing updated.'
+        : 'Vehicle saved, not public yet. Next: Record Rental Check, Pay 30 days, then set it to Active.'
       if (photoNote) toast(done + photoNote, 'error')
       else toast(done, 'success')
     } catch (e: any) { toast(e.message, 'error') }
@@ -322,15 +325,15 @@ export default function RentalFleetPage() {
   // fails after the first already landed.
   async function approveAndActivate(car: any) {
     // Checked here as well as on the server so a payment is not recorded for
-    // a car that then cannot be activated.
-    if (!CHECK[car.check_status]?.listable) {
-      toast('Record a passing Rental Check before approving this vehicle.', 'error'); return
-    }
+    // a car that then cannot be activated: everything except the payment and
+    // the status, which this action supplies.
+    const blocking = (car.public_blockers || []).filter((b: any) => b.code !== 'subscription' && b.code !== 'status')
+    if (blocking.length) { toast(blocking[0].message, 'error'); return }
     const amount = parseRwfInput(renewAmount[car.id] ?? defaultSubAmount)
     if (!amount) { toast('Enter the amount collected, in Rwandan francs, before activating.', 'error'); return }
     const ok = await ask({
       title: `Approve and activate ${car.title}?`,
-      message: 'Records a 30-day listing subscription for the amount entered and puts the vehicle on the public rental feed immediately. Check the inspection and images below first.',
+      message: 'Records a 30-day listing subscription for the amount entered and puts the vehicle on the public rental feed immediately.',
       confirmLabel: 'Approve & activate',
     })
     if (!ok) return
@@ -339,7 +342,7 @@ export default function RentalFleetPage() {
     setRenewing(car.id)
     try {
       await api.recordRentalSubscription(car.id, {
-        amount_rwf: amount, method: 'cash',
+        amount_rwf: amount, method: 'cash', extend: true,
         starts_on: today.toISOString().slice(0, 10), ends_on: ends.toISOString().slice(0, 10),
       })
       await api.updateRentalCar(car.id, { status: 'active' })
@@ -363,13 +366,18 @@ export default function RentalFleetPage() {
     const ends = new Date(today.getTime() + 30 * 86_400_000)
     setRenewing(car.id)
     try {
-      await api.recordRentalSubscription(car.id, {
+      const paid = await api.recordRentalSubscription(car.id, {
         amount_rwf: amount,
         method: 'cash',
+        extend: true,
         starts_on: today.toISOString().slice(0, 10),
         ends_on: ends.toISOString().slice(0, 10),
       })
-      toast('Listing paid for 30 days. The car is public again immediately.', 'success')
+      // Say what is actually true: paid is not the same as public.
+      const until = paid?.ends_on ? ` to ${fmtDate(String(paid.ends_on).slice(0, 10))}` : ''
+      const still = (car.public_blockers || []).filter((b: any) => b.code !== 'subscription')
+      if (!still.length) toast(`Listing paid${until}. The car is public.`, 'success')
+      else toast(`Listing paid${until}, but not public yet: ${still.map((b: any) => b.message).join(' ')}`, 'error')
       setRenewAmount({ ...renewAmount, [car.id]: '' })
       load()
     } catch (e) {
@@ -417,6 +425,21 @@ export default function RentalFleetPage() {
               </div>
               <p className="mt-4 text-lg font-extrabold text-gray-900">{fmtMoney(car.daily_rate, car.currency || 'RWF')} <span className="text-xs font-medium text-gray-500">provider rate / day</span></p>
               <p className="mt-2 text-xs text-gray-500">Rates and availability are confirmed directly by the provider.</p>
+
+              {/* Public or not, and every reason why not, from the server's own
+                  definition (public_blockers mirrors GET /rentals). */}
+              {Array.isArray(car.public_blockers) ? (
+                car.public_blockers.length === 0 ? (
+                  <p className="mt-3 rounded-lg bg-success-tint px-3 py-2 text-xs font-bold text-success-text">Public now on sawacars.com and the app</p>
+                ) : car.status !== 'retired' ? (
+                  <div className="mt-3 rounded-lg border border-line bg-surface-alt px-3 py-2 text-xs text-content">
+                    <p className="font-bold">Not public yet</p>
+                    <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                      {car.public_blockers.map((b: any) => <li key={b.code}>{b.message}</li>)}
+                    </ul>
+                  </div>
+                ) : null
+              ) : null}
 
               {/* The Rental Check: the evidence half of "is this car public". */}
               {car.check_status && CHECK[car.check_status] ? (

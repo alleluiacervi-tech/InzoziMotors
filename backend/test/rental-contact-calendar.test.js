@@ -288,6 +288,34 @@ test('the team adds a car without photos, then uploads them from the fleet form'
   assert.equal(logged.rowCount, 1);
 });
 
+test('the fleet says why a car is not public, and a running listing can be renewed', async () => {
+  const { owner, car } = await liveCar();
+  const find = async () => (await api().get('/rentals/admin/fleet').set(admin).expect(200)).body.find((c) => c.id === car.id);
+  // Live: nothing in the way.
+  assert.deepEqual((await find()).public_blockers, []);
+
+  // "Pay 30 days" on a listing that still runs starts after it, not on top of it.
+  const renewed = await api().post(`/rentals/${car.id}/subscriptions`).set(admin)
+    .send({ amount_rwf: 10000, starts_on: dayFrom(0), ends_on: dayFrom(30), method: 'cash', extend: true }).expect(201);
+  assert.equal(String(renewed.body.starts_on).slice(0, 10), dayFrom(30));
+  // Without extend it is still refused as an overlap.
+  const clash = await api().post(`/rentals/${car.id}/subscriptions`).set(admin)
+    .send({ amount_rwf: 10000, starts_on: dayFrom(0), ends_on: dayFrom(30), method: 'cash' });
+  assert.equal(clash.status, 409);
+
+  // An ordinary edit of a live car never re-runs the listing gates.
+  await api().patch(`/rentals/${car.id}`).set(admin).send({ daily_rate: 95000, status: 'active', location: 'Kicukiro' }).expect(200);
+  // A provider cannot strip a live car of its last photo.
+  const stripped = await api().patch(`/rentals/${car.id}/mine`).set(owner.auth).send({ images: [] });
+  assert.equal(stripped.status, 409);
+
+  // Unverify the provider: the fleet names it as the reason, and publishable stays false.
+  await pool.query("UPDATE users SET business_verified = FALSE WHERE id = $1", [owner.id]);
+  const parked = await find();
+  assert.ok(parked.public_blockers.some((b) => b.code === 'provider'), JSON.stringify(parked.public_blockers));
+  assert.equal(parked.publishable, false);
+});
+
 test('a reply in the thread stamps only the inquiry the thread is about', async () => {
   const { owner, car: first } = await liveCar();
   const second = (await api().post('/rentals/propose').set(owner.auth).send({

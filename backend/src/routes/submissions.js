@@ -30,7 +30,7 @@ const PURPOSES = ['sale', 'rental', 'both'];
 // a submission only leads to the 150-point sale inspection, which a hire car
 // does not need. 'both' still files one, because the car is also for sale.
 const RENTAL_ONLY_ERROR = 'A car only for rental does not need the 150-point inspection. '
-  + 'Add it in Rentals → Fleet and record its 10-point Rental Check there.';
+  + 'Add it in Rentals → Inventory (Add provider vehicle) and record its 10-point Rental Check there.';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Field validation shared by the seller route and the admin intake route
@@ -125,8 +125,8 @@ router.post('/', requireAuth, async (req, res) => {
 // submissions for vehicles never intended for sale, and every screen downstream
 // described them as cars awaiting publication as listings.
 //
-// The submission stays the right record — routes/rentals.js requires one as
-// evidence, and that is a real safety property. What was missing was somewhere
+// The submission stays the right record for a car that will be sold: it is
+// what the 150-point inspection is filed against. What was missing was somewhere
 // to say what the vehicle is FOR, and someone other than the owner being able
 // to file it. Both are here; no gate changed.
 //

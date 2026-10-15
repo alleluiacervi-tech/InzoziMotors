@@ -308,7 +308,10 @@ export default function RentalDetailScreen({ navigation, route }) {
             <Ionicons name="chevron-forward" size={13} color={colors.primary} />
           </Pressable>
 
-          {/* Inspection trust row */}
+          {/* Inspection trust row: only for a car still listed on a 150-point
+              inspection. A car with a Rental Check has no 150-point report, so
+              the row read "null/150" and opened a report that does not exist. */}
+          {!check && car.inspectionScore ? (
           <Pressable
             style={styles.inspectionRow}
             onPress={() => navigation.navigate('InspectionReport', { car, score: car.inspectionScore })}
@@ -322,6 +325,7 @@ export default function RentalDetailScreen({ navigation, route }) {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
+          ) : null}
 
           {/* How it works */}
           <Text style={styles.sectionTitle}>{t('rentalDetail.howItWorks')}</Text>
