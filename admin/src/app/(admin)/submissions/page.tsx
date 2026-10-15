@@ -16,13 +16,15 @@ const STATUS_TABS = ['all', 'under_review', 'approved', 'scheduled', 'inspecting
 // with ten vans to hire out had to ask the provider to file ten sale
 // submissions. This form is the intake, and `purpose` is what stops every screen
 // downstream from calling a hire van a car awaiting publication.
+// A car only for hire is not taken in here: it is listed on the 10-point Rental
+// Check, added in Rentals → Fleet, and this intake leads only to the 150-point
+// inspection (the API refuses purpose 'rental' with RENTAL_USES_FLEET).
 const PURPOSES = [
   { value: 'sale' as const, label: 'For sale', hint: 'Becomes a listing once inspected and approved.' },
-  { value: 'rental' as const, label: 'For rental', hint: 'Goes to the rental fleet once inspected. Provider must be business-verified.' },
-  { value: 'both' as const, label: 'Sale and rental', hint: 'One inspection covers both — it no longer has to be done twice.' },
+  { value: 'both' as const, label: 'Sale and rental', hint: 'One 150-point inspection covers both. The provider must be business-verified to rent it out.' },
 ]
 const EMPTY_INTAKE = {
-  seller_id: '', seller_label: '', purpose: 'rental' as 'sale' | 'rental' | 'both',
+  seller_id: '', seller_label: '', purpose: 'sale' as 'sale' | 'both',
   // A person who drove to the office has no account to search for. Filling
   // these creates one as part of the intake, so the operator never has to leave
   // the form with a customer standing at the desk.
@@ -251,9 +253,16 @@ export default function SubmissionsPage() {
         <Card className="mb-5 p-5">
           <h2 className="font-extrabold text-content">Take in a vehicle for a seller</h2>
           <p className="mt-1 text-label text-content-muted">
-            Files the submission the seller would otherwise have to file themselves, which is what the
-            rental fleet never had. The vehicle then follows the ordinary route: book its inspection,
-            complete the 150 points, and add it to the fleet or publish it as a listing.
+            Files the submission the seller would otherwise have to file themselves. The vehicle then
+            follows the ordinary route: book its inspection, complete the 150 points, and publish it as a
+            listing (or add it to the fleet too, if it is also for rent).
+          </p>
+          <p className="mt-3 rounded-xl border border-line bg-surface-alt px-3.5 py-2.5 text-label text-content">
+            <span className="font-bold">Only for rental?</span> It does not need the 150-point inspection.{' '}
+            <Link href="/rentals/fleet" className="font-semibold text-brand underline-offset-2 hover:underline">
+              Add it in Rentals → Fleet
+            </Link>{' '}
+            and record its 10-point Rental Check there.
           </p>
           <form onSubmit={submitIntake} className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -299,7 +308,7 @@ export default function SubmissionsPage() {
               ) : null}
             </div>
 
-            <fieldset className="sm:col-span-2 grid gap-2 sm:grid-cols-3">
+            <fieldset className="sm:col-span-2 grid gap-2 sm:grid-cols-2">
               <legend className="mb-1 text-label font-semibold text-content">What is it for?</legend>
               {PURPOSES.map((p) => (
                 <label key={p.value} className={`cursor-pointer rounded-xl border p-3 ${intake.purpose === p.value ? 'border-brand bg-surface-alt' : 'border-line hover:border-content-muted'}`}>

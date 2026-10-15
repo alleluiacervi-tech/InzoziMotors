@@ -15,7 +15,7 @@ const ELSEWHERE: { href: string; label: string; description: string; icon: IconN
   {
     href: '/rentals',
     label: 'Rent a car',
-    description: 'The same inspection standard, by the day or the week.',
+    description: 'Every car passes a 10-point Rental Check. By the day or the week.',
     icon: 'key',
   },
   {

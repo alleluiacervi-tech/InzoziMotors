@@ -120,15 +120,35 @@ test('the car then follows the ordinary route, all the way to live', async () =>
   assert.equal((await api().get(`/cars/${car.body.id}`).expect(200)).body.make, 'Suzuki');
 });
 
-test('a walk-in can be taken in for the rental fleet, and is told what is missing', async () => {
+test('a car only for rental is sent to the fleet, not to a 150-point inspection', async () => {
+  const a = await admin();
+  const auth = { Authorization: `Bearer ${a.token}` };
+
+  // A hire car is listed on the 10-point Rental Check, added in the fleet. An
+  // intake only leads to the sale inspection, so filing one for it would book
+  // a 150-point inspection the car does not need.
+  const email = uniq('renter');
+  const refused = await api().post('/submissions/admin').set(auth).send({
+    seller: { name: 'Hirwa Rentals', email },
+    purpose: 'rental', make: 'Toyota', model: 'Hiace', year: 2018,
+  });
+  assert.equal(refused.status, 400);
+  assert.equal(refused.body.code, 'RENTAL_USES_FLEET');
+  assert.match(refused.body.error, /Rental Check/);
+  // Refused before anything was written: no account for the walk-in either.
+  const made = await pool.query('SELECT COUNT(*)::int AS n FROM users WHERE email = $1', [email]);
+  assert.equal(made.rows[0].n, 0);
+});
+
+test('a walk-in taken in for sale and rental is told what the rental side is missing', async () => {
   const a = await admin();
   const auth = { Authorization: `Bearer ${a.token}` };
 
   const res = await api().post('/submissions/admin').set(auth).send({
     seller: { name: 'Hirwa Rentals', email: uniq('renter') },
-    purpose: 'rental', make: 'Toyota', model: 'Hiace', year: 2018,
+    purpose: 'both', make: 'Toyota', model: 'Hiace', year: 2018,
   }).expect(201);
-  assert.equal(res.body.purpose, 'rental');
+  assert.equal(res.body.purpose, 'both');
   assert.equal(res.body.seller_created, true);
   // A brand-new individual is not business-verified, and holding rental stock
   // needs that. Said now, at the desk, rather than by POST /rentals three steps

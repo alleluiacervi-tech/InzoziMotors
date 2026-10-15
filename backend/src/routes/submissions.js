@@ -24,6 +24,13 @@ const REFERENCE_PHOTOS_PER_REQUEST = 4;
 const REFERENCE_PHOTO_STATUSES = ['under_review', 'approved', 'scheduled'];
 
 const PURPOSES = ['sale', 'rental', 'both'];
+// 'rental' stays a valid stored value (older rows carry it) but is no longer
+// filed. A car only for hire is listed on the 10-point Rental Check, added in
+// the rental fleet (POST /rentals, or POST /rentals/propose by the provider):
+// a submission only leads to the 150-point sale inspection, which a hire car
+// does not need. 'both' still files one, because the car is also for sale.
+const RENTAL_ONLY_ERROR = 'A car only for rental does not need the 150-point inspection. '
+  + 'Add it in Rentals → Fleet and record its 10-point Rental Check there.';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Field validation shared by the seller route and the admin intake route
@@ -45,6 +52,7 @@ function submissionFieldError(body) {
   if (purpose !== undefined && !PURPOSES.includes(purpose)) {
     return `purpose must be one of: ${PURPOSES.join(', ')}`;
   }
+  if (purpose === 'rental') return RENTAL_ONLY_ERROR;
   // reference_images lands in a TEXT[] column — anything but strings would
   // either crash the insert or store garbage the app then renders as an <img>.
   if (reference_images !== undefined && reference_images !== null) {
@@ -122,6 +130,10 @@ router.post('/', requireAuth, async (req, res) => {
 // to say what the vehicle is FOR, and someone other than the owner being able
 // to file it. Both are here; no gate changed.
 //
+// Since the 10-point Rental Check (Oct 2026) a car only for hire is refused
+// here (RENTAL_USES_FLEET) and added in the rental fleet instead: this route
+// leads only to the 150-point inspection. Sale, and sale-and-rental, remain.
+//
 // The seller still has to be a real, active seller account. An admin may file
 // the paperwork; they may not invent the counterparty.
 router.post('/admin', requireAdmin, async (req, res) => {
@@ -161,7 +173,12 @@ router.post('/admin', requireAdmin, async (req, res) => {
     }
   }
   const fieldError = submissionFieldError(req.body);
-  if (fieldError) return res.status(400).json({ error: fieldError });
+  if (fieldError) {
+    return res.status(400).json({
+      error: fieldError,
+      ...(req.body.purpose === 'rental' ? { code: 'RENTAL_USES_FLEET', field: 'purpose' } : {}),
+    });
+  }
   const purpose = PURPOSES.includes(req.body.purpose) ? req.body.purpose : 'sale';
 
   try {
@@ -233,9 +250,7 @@ router.post('/admin', requireAdmin, async (req, res) => {
         user_id: sellerUserId,
         type: 'listing_update',
         title: 'Vehicle submitted by our team',
-        body: purpose === 'rental'
-          ? 'Our team has registered your vehicle for rental listing. The next step is its 150-point inspection.'
-          : 'Our team has submitted your vehicle on your behalf. The next step is its 150-point inspection.',
+        body: 'Our team has submitted your vehicle on your behalf. The next step is its 150-point inspection.',
         meta: JSON.stringify({ submissionId: sub.id }),
       });
 

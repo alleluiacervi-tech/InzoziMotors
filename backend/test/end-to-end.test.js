@@ -353,7 +353,7 @@ test('the gates still refuse what they are there to refuse', async () => {
     .send({ name: 'Unverified', email, password: 'password123', role: 'seller' }).expect(201);
 
   const intake = await api().post('/submissions/admin').set(auth)
-    .send({ seller_id: reg.body.user.id, purpose: 'rental', ...VEHICLE });
+    .send({ seller_id: reg.body.user.id, purpose: 'both', ...VEHICLE });
   assert.equal(intake.status, 201);
   // The warning is the point: the rental gate would refuse this provider three
   // steps later, and the operator is told now.
