@@ -73,15 +73,19 @@ function MenuSection({ title, items, navigation }) {
 export default function ProfileScreen({ navigation }) {
   const { currentUser, submissions, logoutUser, idVerificationStatus, isLoggedIn, loginAsGuest, demoMode, t } = useApp();
 
-  // A rental provider is someone who has rental vehicles on file. Asked once per
-  // visit and quietly: for everyone else the answer is an empty list and the
-  // row simply never appears.
-  const [isRentalProvider, setIsRentalProvider] = useState(false);
+  // A rental provider is someone who has rental vehicles on file, or who may
+  // add one: the same flags as verifiedRentalProvider() on the server and the
+  // website's dashboard. Without the second half a newly verified company with
+  // no car yet had no way in, since "Add car" lives inside RentalInbox.
+  const eligibleProvider = currentUser?.role === 'seller'
+    && currentUser?.id_verified === 'approved' && currentUser?.business_verified === true;
+  const [hasRentalCars, setHasRentalCars] = useState(false);
+  const isRentalProvider = eligibleProvider || hasRentalCars;
   useEffect(() => {
     if (!isLoggedIn || demoMode) return undefined;
     let alive = true;
     rentalsApi.getMyFleet()
-      .then((list) => { if (alive) setIsRentalProvider(Array.isArray(list) && list.length > 0); })
+      .then((list) => { if (alive) setHasRentalCars(Array.isArray(list) && list.length > 0); })
       .catch(() => {});
     return () => { alive = false; };
   }, [isLoggedIn, demoMode]);

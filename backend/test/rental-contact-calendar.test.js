@@ -256,6 +256,66 @@ test('a provider adds a car with no photos from a phone, then uploads them; GPS 
   }
 });
 
+test('the team adds a car without photos, then uploads them from the fleet form', async () => {
+  const sharp = require('sharp');
+  const owner = await register({ role: 'seller', name: 'Gasabo Hire' });
+  await pool.query(
+    "UPDATE users SET id_verified='approved', seller_type='showroom', business_verified=TRUE WHERE id=$1", [owner.id]
+  );
+  // No image links to paste: the car is saved first, out of the catalogue.
+  const car = (await api().post('/rentals').set(admin).send({
+    provider_id: owner.id, title: 'Honda Civic 2025', make: 'Honda', model: 'Civic', year: 2025, daily_rate: 70000,
+  }).expect(201)).body;
+  assert.deepEqual(car.images, []);
+  assert.equal(car.status, 'maintenance');
+  // And it cannot be put live while it has no photo.
+  const early = await api().patch(`/rentals/${car.id}`).set(admin).send({ status: 'active' });
+  assert.equal(early.status, 409);
+
+  const photo = await sharp({ create: { width: 32, height: 24, channels: 3, background: { r: 200, g: 20, b: 20 } } })
+    .jpeg().toBuffer();
+  // Staff only: the provider has their own route, a stranger has none.
+  await api().post(`/rentals/${car.id}/photos`).set(owner.auth)
+    .attach('photos', photo, { filename: 'front.jpg', contentType: 'image/jpeg' }).expect(403);
+  const res = await api().post(`/rentals/${car.id}/photos`).set(admin)
+    .attach('photos', photo, { filename: 'front.jpg', contentType: 'image/jpeg' })
+    .expect(201);
+  assert.equal(res.body.images.length, 1);
+  assert.match(res.body.images[0], new RegExp(`/uploads/rental-cars/${car.id}/`), 'listing photos are public, never in id-docs');
+  const logged = await pool.query(
+    "SELECT 1 FROM admin_audit_log WHERE action = 'rental_car.photos_added' AND target_id = $1", [car.id]
+  );
+  assert.equal(logged.rowCount, 1);
+});
+
+test('the fleet says why a car is not public, and a running listing can be renewed', async () => {
+  const { owner, car } = await liveCar();
+  const find = async () => (await api().get('/rentals/admin/fleet').set(admin).expect(200)).body.find((c) => c.id === car.id);
+  // Live: nothing in the way.
+  assert.deepEqual((await find()).public_blockers, []);
+
+  // "Pay 30 days" on a listing that still runs starts after it, not on top of it.
+  const renewed = await api().post(`/rentals/${car.id}/subscriptions`).set(admin)
+    .send({ amount_rwf: 10000, starts_on: dayFrom(0), ends_on: dayFrom(30), method: 'cash', extend: true }).expect(201);
+  assert.equal(String(renewed.body.starts_on).slice(0, 10), dayFrom(30));
+  // Without extend it is still refused as an overlap.
+  const clash = await api().post(`/rentals/${car.id}/subscriptions`).set(admin)
+    .send({ amount_rwf: 10000, starts_on: dayFrom(0), ends_on: dayFrom(30), method: 'cash' });
+  assert.equal(clash.status, 409);
+
+  // An ordinary edit of a live car never re-runs the listing gates.
+  await api().patch(`/rentals/${car.id}`).set(admin).send({ daily_rate: 95000, status: 'active', location: 'Kicukiro' }).expect(200);
+  // A provider cannot strip a live car of its last photo.
+  const stripped = await api().patch(`/rentals/${car.id}/mine`).set(owner.auth).send({ images: [] });
+  assert.equal(stripped.status, 409);
+
+  // Unverify the provider: the fleet names it as the reason, and publishable stays false.
+  await pool.query("UPDATE users SET business_verified = FALSE WHERE id = $1", [owner.id]);
+  const parked = await find();
+  assert.ok(parked.public_blockers.some((b) => b.code === 'provider'), JSON.stringify(parked.public_blockers));
+  assert.equal(parked.publishable, false);
+});
+
 test('a reply in the thread stamps only the inquiry the thread is about', async () => {
   const { owner, car: first } = await liveCar();
   const second = (await api().post('/rentals/propose').set(owner.auth).send({

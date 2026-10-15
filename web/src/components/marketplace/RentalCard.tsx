@@ -23,7 +23,9 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
   const t = await getServerT()
   // A car listed on its Rental Check carries that, never a sale-car tier.
   const check = car.rental_check?.kind === 'rental_check' ? car.rental_check : null
-  const tier = check ? null : getCertTier(car)
+  // A car still listed on a 150-point inspection shows its score: rentals are
+  // never labelled "Certified" (CLAUDE.md, Rentals).
+  const tier = check ? null : (car.inspection_score ? getCertTier(car) : null)
   const image = car.images?.[0] || FALLBACK_IMAGE
   const rating = formatRating(car.rating)
   // Only while the provider has marked today taken; the server derives it.
@@ -49,12 +51,8 @@ export async function RentalCard({ car, priority = false }: { car: RentalCar; pr
               {t('rentals.card.checkBadge', { passed: check.passed_count, total: check.total })}
             </Badge>
           ) : tier ? (
-            <Badge
-              tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'}
-              icon="shield-check"
-              className="max-w-full truncate"
-            >
-              {tier.short}
+            <Badge tone="inspected" icon="shield-check" className="max-w-full truncate">
+              {`${car.inspection_score}/150`}
             </Badge>
           ) : null}
         </div>

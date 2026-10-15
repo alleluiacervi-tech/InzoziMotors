@@ -7,12 +7,12 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     metaTitle: 'Car rental in Kigali, Rwanda — inspected vehicles',
     metaDescription:
       'Browse verified rental-provider inventory in Kigali, compare provider-supplied rates and send direct availability inquiries through Sawa Cars.',
-    metaOgTitle: 'Rent a certified car in Kigali · {{name}}',
+    metaOgTitle: 'Rent a checked car in Kigali · {{name}}',
     eyebrow: 'Rentals',
-    title: 'Rent a certified car in Kigali',
+    title: 'Rent a checked car in Kigali',
     introDescription:
-      'The same 150-point standard as every car listed for sale. Dates, deposit, pickup and return are agreed with the provider directly.',
-    list: { resultsTitle: 'Available rentals' },
+      'Every car has passed Sawa’s 10-point Rental Check: documents sighted and safety checked at the provider’s yard. Dates, deposit, pickup and return are agreed with the provider directly.',
+    list: { resultsTitle: 'Rental cars' },
     filter: {
       ariaLabel: 'Filter the fleet',
       allCars: 'All cars',
@@ -22,7 +22,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Safari-ready means four-wheel drive with the ground clearance and tyres for park roads — Akagera, Nyungwe and Volcanoes.',
     emptyMatchTitle: 'Nothing in the fleet matches that',
     emptyNoneTitle: 'No rental cars are listed right now',
-    emptyNoneDesc: 'Rental cars appear here once a verified provider’s car passes inspection. Browse cars for sale in the meantime.',
+    emptyNoneDesc: 'Rental cars appear here once a verified provider’s car passes its Rental Check. Browse cars for sale in the meantime.',
     browseSale: 'Browse cars for sale',
     emptyUnreachableTitle: 'The fleet is briefly unreachable',
     emptyMatchDesc: 'Try the full fleet — availability changes as cars come back from trips.',
@@ -40,7 +40,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     howItWorks: {
       title: 'How renting works',
       steps: {
-        browse: { title: 'Browse inspected vehicles', body: 'Every car passed the same 150-point check as our sale listings.' },
+        browse: { title: 'Browse checked vehicles', body: 'Every car listed has passed Sawa’s 10-point Rental Check.' },
         inquire: { title: 'Send an availability inquiry', body: 'Pick your dates and message the provider — this is not a booking.' },
         confirm: { title: 'Confirm directly with the provider', body: 'Agree price, deposit, insurance, pickup and return between yourselves.' },
       },
@@ -67,7 +67,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       depositLine: '{{amount}} provider-stated deposit',
       trips: '{{count}} trips',
       minDays: 'Minimum {{count}} days',
-      fromOneDay: 'Available from one day',
+      fromOneDay: 'From one day',
       providerConfirmsDates: 'provider confirms dates',
       viewDetails: 'View details & request availability',
     },
@@ -159,12 +159,12 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     metaTitle: 'Gukodesha imodoka i Kigali, mu Rwanda — imodoka zasuzumwe',
     metaDescription:
       'Reba ububiko bw’abatanga imodoka zikodeshwa bemejwe i Kigali, ugereranye ibiciro batanga kandi wohereze ibibazo by’ukuboneka ku buryo butaziguye unyuze kuri Sawa Cars.',
-    metaOgTitle: 'Kodesha imodoka yemewe i Kigali · {{name}}',
+    metaOgTitle: 'Kodesha imodoka yasuzumwe i Kigali · {{name}}',
     eyebrow: 'Izikodeshwa',
-    title: 'Kodesha imodoka yemewe i Kigali',
+    title: 'Kodesha imodoka yasuzumwe i Kigali',
     introDescription:
-      'Ipimo rimwe ry’ingingo 150 nk’iry’imodoka zose zigurishwa. Amatariki, ingwate, kuyifata no kuyigarura mubyumvikanaho n’umukodesha ubwanyu.',
-    list: { resultsTitle: 'Imodoka zikodeshwa ziboneka' },
+      'Buri modoka yatsinze isuzuma rya Sawa ry’ingingo 10 ry’imodoka zikodeshwa: ibyangombwa byarebwe n’umutekano wasuzumiwe aho umukodesha akorera. Amatariki, ingwate, kuyifata no kuyigarura mubyumvikanaho n’umukodesha ubwanyu.',
+    list: { resultsTitle: 'Imodoka zikodeshwa' },
     filter: {
       ariaLabel: 'Yungurura ububiko',
       allCars: 'Imodoka zose',
@@ -174,7 +174,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Kubereye safari bivuga imodoka ya 4x4 ifite ubugari bwo hasi na pine bikwiye imihanda ya parike — Akagera, Nyungwe na Birunga.',
     emptyMatchTitle: 'Nta na kimwe mu bubiko kihuye n’ibyo',
     emptyNoneTitle: 'Nta modoka zikodeshwa ziri ku rutonde ubu',
-    emptyNoneDesc: 'Imodoka zikodeshwa zigaragara hano iyo imodoka y’umukodesha wemewe itsinze isuzuma. Hagati aho reba imodoka zigurishwa.',
+    emptyNoneDesc: 'Imodoka zikodeshwa zigaragara hano iyo imodoka y’umukodesha wemewe itsinze isuzuma ry’imodoka zikodeshwa. Hagati aho reba imodoka zigurishwa.',
     browseSale: 'Reba imodoka zigurishwa',
     emptyUnreachableTitle: 'Ububiko ntibugerwaho by’agateganyo',
     emptyMatchDesc: 'Gerageza ububiko bwose — ukuboneka guhinduka uko imodoka zigaruka mu ngendo.',
@@ -192,7 +192,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     howItWorks: {
       title: 'Uko gukodesha bikorwa',
       steps: {
-        browse: { title: 'Reba imodoka zasuzumwe', body: 'Buri modoka yanyuze mu isuzuma ry’ingingo 150, nk’izigurishwa.' },
+        browse: { title: 'Reba imodoka zasuzumwe', body: 'Buri modoka iri hano yatsinze isuzuma rya Sawa ry’ingingo 10 ry’imodoka zikodeshwa.' },
         inquire: { title: 'Ohereza ikibazo ku kuboneka', body: 'Hitamo amatariki wandikire uwatanga imodoka — ntibisobanura ko wabitswe.' },
         confirm: { title: 'Mwumvikane ubwanyu n’uwatanga imodoka', body: 'Mwumvikane ku giciro, ingwate, ubwishingizi, gufata no gusubiza imodoka.' },
       },
@@ -219,7 +219,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       depositLine: 'ingwate {{amount}} yatangajwe n’utanga',
       trips: 'ingendo {{count}}',
       minDays: 'Nibura iminsi {{count}}',
-      fromOneDay: 'Iraboneka kuva ku munsi umwe',
+      fromOneDay: 'Guhera ku munsi umwe',
       providerConfirmsDates: 'utanga yemeza amatariki',
       viewDetails: 'Reba ibisobanuro & saba ukuboneka',
     },
@@ -311,12 +311,12 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     metaTitle: 'Location de voiture à Kigali, Rwanda — véhicules inspectés',
     metaDescription:
       'Parcourez l’inventaire de prestataires de location vérifiés à Kigali, comparez les tarifs fournis par les prestataires et envoyez des demandes de disponibilité directes via Sawa Cars.',
-    metaOgTitle: 'Louez une voiture certifiée à Kigali · {{name}}',
+    metaOgTitle: 'Louez une voiture contrôlée à Kigali · {{name}}',
     eyebrow: 'Locations',
-    title: 'Louez une voiture certifiée à Kigali',
+    title: 'Louez une voiture contrôlée à Kigali',
     introDescription:
-      'Le même standard en 150 points que chaque voiture mise en vente. Dates, caution, prise en charge et retour se conviennent directement avec le loueur.',
-    list: { resultsTitle: 'Locations disponibles' },
+      'Chaque voiture a réussi le contrôle location Sawa en 10 points : documents vus et sécurité vérifiée chez le loueur. Dates, caution, prise en charge et retour se conviennent directement avec le loueur.',
+    list: { resultsTitle: 'Voitures de location' },
     filter: {
       ariaLabel: 'Filtrer la flotte',
       allCars: 'Toutes les voitures',
@@ -326,7 +326,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Prête pour safari signifie une transmission intégrale avec la garde au sol et les pneus adaptés aux routes des parcs — Akagera, Nyungwe et Volcans.',
     emptyMatchTitle: 'Rien dans la flotte ne correspond',
     emptyNoneTitle: 'Aucune voiture de location n’est publiée pour l’instant',
-    emptyNoneDesc: 'Les voitures de location apparaissent ici dès qu’une voiture d’un loueur vérifié réussit l’inspection. En attendant, voyez les voitures à vendre.',
+    emptyNoneDesc: 'Les voitures de location apparaissent ici dès qu’une voiture d’un loueur vérifié réussit son contrôle location. En attendant, voyez les voitures à vendre.',
     browseSale: 'Voir les voitures à vendre',
     emptyUnreachableTitle: 'La flotte est momentanément inaccessible',
     emptyMatchDesc: 'Essayez la flotte complète — la disponibilité change à mesure que les voitures reviennent de voyage.',
@@ -344,7 +344,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     howItWorks: {
       title: 'Comment fonctionne la location',
       steps: {
-        browse: { title: 'Parcourez des véhicules inspectés', body: 'Chaque voiture a passé le même contrôle en 150 points que nos annonces de vente.' },
+        browse: { title: 'Parcourez des véhicules contrôlés', body: 'Chaque voiture proposée a réussi le contrôle location Sawa en 10 points.' },
         inquire: { title: 'Envoyez une demande de disponibilité', body: 'Choisissez vos dates et écrivez au prestataire — ce n’est pas une réservation.' },
         confirm: { title: 'Confirmez directement avec le prestataire', body: 'Convenez du prix, de la caution, de l’assurance, de la prise en charge et du retour entre vous.' },
       },
@@ -371,7 +371,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       depositLine: 'caution de {{amount}} indiquée par le prestataire',
       trips: '{{count}} voyages',
       minDays: 'Minimum {{count}} jours',
-      fromOneDay: 'Disponible à partir d’un jour',
+      fromOneDay: 'À partir d’un jour',
       providerConfirmsDates: 'le prestataire confirme les dates',
       viewDetails: 'Voir les détails et demander la disponibilité',
     },
@@ -463,12 +463,12 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     metaTitle: 'Kukodisha gari Kigali, Rwanda — magari yaliyokaguliwa',
     metaDescription:
       'Vinjari hazina ya watoa huduma za ukodishaji waliothibitishwa Kigali, linganisha bei zilizotolewa na watoa huduma na utume maombi ya upatikanaji ya moja kwa moja kupitia Sawa Cars.',
-    metaOgTitle: 'Kodisha gari lililothibitishwa Kigali · {{name}}',
+    metaOgTitle: 'Kodisha gari lililokaguliwa Kigali · {{name}}',
     eyebrow: 'Za kukodisha',
-    title: 'Kodisha gari lililothibitishwa Kigali',
+    title: 'Kodisha gari lililokaguliwa Kigali',
     introDescription:
-      'Kiwango kile kile cha pointi 150 kama kila gari linalouzwa. Tarehe, amana, kuchukua na kurudisha mnakubaliana na mkodishaji moja kwa moja.',
-    list: { resultsTitle: 'Magari ya kukodisha yanayopatikana' },
+      'Kila gari limepita Ukaguzi wa Kukodisha wa Sawa wa pointi 10: nyaraka zimeonwa na usalama umekaguliwa kwa mkodishaji. Tarehe, amana, kuchukua na kurudisha mnakubaliana na mkodishaji moja kwa moja.',
+    list: { resultsTitle: 'Magari ya kukodisha' },
     filter: {
       ariaLabel: 'Chuja kundi la magari',
       allCars: 'Magari yote',
@@ -478,7 +478,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       'Tayari kwa safari maana yake ni gari la magurudumu manne yenye mwinuko wa chini na matairi yanayofaa barabara za mbuga — Akagera, Nyungwe na Volcanoes.',
     emptyMatchTitle: 'Hakuna kwenye kundi kinacholingana na hicho',
     emptyNoneTitle: 'Hakuna magari ya kukodi yaliyoorodheshwa sasa hivi',
-    emptyNoneDesc: 'Magari ya kukodi huonekana hapa gari la mkodishaji aliyethibitishwa likipita ukaguzi. Kwa sasa angalia magari yanayouzwa.',
+    emptyNoneDesc: 'Magari ya kukodi huonekana hapa gari la mkodishaji aliyethibitishwa likipita Ukaguzi wake wa Kukodisha. Kwa sasa angalia magari yanayouzwa.',
     browseSale: 'Angalia magari yanayouzwa',
     emptyUnreachableTitle: 'Kundi la magari halifikiki kwa muda mfupi',
     emptyMatchDesc: 'Jaribu kundi kamili — upatikanaji hubadilika magari yanaporudi kutoka safari.',
@@ -496,7 +496,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     howItWorks: {
       title: 'Jinsi ukodishaji unavyofanya kazi',
       steps: {
-        browse: { title: 'Angalia magari yaliyokaguliwa', body: 'Kila gari lilipitia ukaguzi ule ule wa pointi 150 kama matangazo yetu ya mauzo.' },
+        browse: { title: 'Angalia magari yaliyokaguliwa', body: 'Kila gari lililoorodheshwa limepita Ukaguzi wa Kukodisha wa Sawa wa pointi 10.' },
         inquire: { title: 'Tuma ombi la upatikanaji', body: 'Chagua tarehe zako na umtumie ujumbe mtoa huduma — hii si uhifadhi.' },
         confirm: { title: 'Thibitisha moja kwa moja na mtoa huduma', body: 'Kubaliana bei, amana, bima, uchukuaji na urejeshaji ninyi wenyewe.' },
       },
@@ -523,7 +523,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       depositLine: 'amana ya {{amount}} iliyotajwa na mtoa huduma',
       trips: 'safari {{count}}',
       minDays: 'Angalau siku {{count}}',
-      fromOneDay: 'Inapatikana kuanzia siku moja',
+      fromOneDay: 'Kuanzia siku moja',
       providerConfirmsDates: 'mtoa huduma huthibitisha tarehe',
       viewDetails: 'Ona maelezo na omba upatikanaji',
     },
@@ -615,12 +615,12 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     metaTitle: '르완다 키갈리 렌터카 — 검사 완료 차량',
     metaDescription:
       '키갈리의 인증된 렌트 제공자 재고를 둘러보고, 제공자가 제시한 요금을 비교하며, Sawa Cars를 통해 직접 예약 가능 여부를 문의하세요.',
-    metaOgTitle: '키갈리에서 인증 차량 렌트 · {{name}}',
+    metaOgTitle: '키갈리에서 점검된 차량 렌트 · {{name}}',
     eyebrow: '렌트',
-    title: '키갈리에서 인증 차량을 렌트하세요',
+    title: '키갈리에서 점검된 차량을 렌트하세요',
     introDescription:
-      '판매 매물과 동일한 150개 항목 기준입니다. 날짜, 보증금, 인수와 반납은 업체와 직접 합의합니다.',
-    list: { resultsTitle: '이용 가능한 렌트' },
+      '모든 차량은 Sawa의 10개 항목 렌트 점검을 통과했습니다. 업체 현장에서 서류를 확인하고 안전을 점검합니다. 날짜, 보증금, 인수와 반납은 업체와 직접 합의합니다.',
+    list: { resultsTitle: '렌트 차량' },
     filter: {
       ariaLabel: '차량 목록 필터',
       allCars: '전체 차량',
@@ -630,7 +630,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       '사파리 대응이란 공원 도로 — 아카게라, 뉴웅궤, 볼케이노 — 에 맞는 지상고와 타이어를 갖춘 사륜구동을 뜻합니다.',
     emptyMatchTitle: '해당하는 차량이 목록에 없습니다',
     emptyNoneTitle: '현재 등록된 렌터카가 없습니다',
-    emptyNoneDesc: '검증된 업체의 차량이 검사를 통과하면 여기에 표시됩니다. 그동안 판매 차량을 둘러보세요.',
+    emptyNoneDesc: '검증된 업체의 차량이 렌트 점검을 통과하면 여기에 표시됩니다. 그동안 판매 차량을 둘러보세요.',
     browseSale: '판매 차량 보기',
     emptyUnreachableTitle: '차량 목록에 잠시 연결할 수 없습니다',
     emptyMatchDesc: '전체 목록을 확인해 보세요 — 차량이 여행에서 돌아오면서 가용 상황이 바뀝니다.',
@@ -648,7 +648,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     howItWorks: {
       title: '렌트 이용 방법',
       steps: {
-        browse: { title: '검사된 차량 둘러보기', body: '모든 차량은 판매 매물과 동일한 150개 항목 검사를 통과했습니다.' },
+        browse: { title: '점검된 차량 둘러보기', body: '등록된 모든 차량은 Sawa의 10개 항목 렌트 점검을 통과했습니다.' },
         inquire: { title: '이용 가능 여부 문의 보내기', body: '날짜를 선택하고 제공자에게 메시지를 보내세요 — 예약이 아닙니다.' },
         confirm: { title: '제공자와 직접 확정하기', body: '가격, 보증금, 보험, 픽업과 반납을 서로 합의하세요.' },
       },
@@ -675,7 +675,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       depositLine: '제공자 제시 보증금 {{amount}}',
       trips: '{{count}}회 이용',
       minDays: '최소 {{count}}일',
-      fromOneDay: '1일부터 이용 가능',
+      fromOneDay: '1일부터',
       providerConfirmsDates: '제공자가 날짜 확정',
       viewDetails: '상세 보기 및 예약 문의',
     },
@@ -767,12 +767,12 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     metaTitle: '卢旺达基加利租车 — 已检测车辆',
     metaDescription:
       '浏览基加利已验证租赁提供方的车队，比较提供方给出的价格，并通过 Sawa Cars 直接发送可用性咨询。',
-    metaOgTitle: '在基加利租一辆认证车辆 · {{name}}',
+    metaOgTitle: '在基加利租一辆已检查的车辆 · {{name}}',
     eyebrow: '租赁',
-    title: '在基加利租一辆认证车辆',
+    title: '在基加利租一辆已检查的车辆',
     introDescription:
-      '与所有在售车辆采用同样的150项标准。日期、押金、取车和还车均与租赁商直接商定。',
-    list: { resultsTitle: '可租车辆' },
+      '每辆车都通过了 Sawa 的10项租车检查：在租赁商处查验证件并检查安全。日期、押金、取车和还车均与租赁商直接商定。',
+    list: { resultsTitle: '租赁车辆' },
     filter: {
       ariaLabel: '筛选车队',
       allCars: '所有车辆',
@@ -782,7 +782,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
       '“适合越野”是指配备适合公园道路——阿卡盖拉、纽恩威及火山国家公园——离地间隙及轮胎的四驱车。',
     emptyMatchTitle: '车队中没有符合条件的车辆',
     emptyNoneTitle: '目前没有上架的租赁车辆',
-    emptyNoneDesc: '认证租赁商的车辆通过检测后将显示在这里。您可以先浏览在售车辆。',
+    emptyNoneDesc: '认证租赁商的车辆通过租车检查后将显示在这里。您可以先浏览在售车辆。',
     browseSale: '浏览在售车辆',
     emptyUnreachableTitle: '车队信息暂时无法访问',
     emptyMatchDesc: '试试浏览整个车队——车辆返回后可用情况会随之变化。',
@@ -800,7 +800,7 @@ export const rentals: Record<Locale, Record<string, unknown>> = {
     howItWorks: {
       title: '租赁流程说明',
       steps: {
-        browse: { title: '浏览已检测车辆', body: '每辆车都通过了与我们出售车辆相同的150项检测。' },
+        browse: { title: '浏览已检查车辆', body: '每辆上架车辆都通过了 Sawa 的10项租车检查。' },
         inquire: { title: '发送可用性咨询', body: '选择您的日期并向提供方发消息——这不是预订。' },
         confirm: { title: '直接与提供方确认', body: '双方自行商定价格、押金、保险、取车与还车事宜。' },
       },

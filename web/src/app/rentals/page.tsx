@@ -15,7 +15,7 @@ import { getServerT } from '@/lib/i18n/server'
 // ─────────────────────────────────────────────────────────────────────────────
 // The rental fleet — the same product wearing the same clothes.
 //
-// Same inspection standard as every car listed for sale; that is the whole pitch. The h1
+// Every car is listed on its 10-point Rental Check (not the sale inspection). The h1
 // renders outside the data boundary so the page has a headline even when the
 // API is down. Filtering happens on the returned fleet because GET /rentals
 // takes no query parameters and the fleet is small enough that a page is all

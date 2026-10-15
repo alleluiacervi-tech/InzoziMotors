@@ -88,7 +88,9 @@ export default async function RentalDetailPage({ params }: PageProps) {
   // A car listed on its Rental Check shows that, never a sale-car certification
   // tier; the tier only remains for cars still listed on a 150-point inspection.
   const check = car.rental_check?.kind === 'rental_check' ? car.rental_check : null
-  const tier = check ? null : getCertTier(car)
+  // Never a "Certified" tier on a rental (CLAUDE.md, Rentals): a car still on
+  // a 150-point inspection shows its score.
+  const tier = check ? null : (car.inspection_score ? getCertTier(car) : null)
   const rating = formatRating(car.rating)
   // The provider's own calendar: informational only, never a gate — the page,
   // gallery and inquiry form below all stay fully usable regardless.
@@ -150,11 +152,8 @@ export default async function RentalDetailPage({ params }: PageProps) {
             <header>
               <div className="flex flex-wrap items-center gap-2">
                 {tier ? (
-                  <Badge
-                    tone={tier.key === 'plus' ? 'certPlus' : tier.key === 'certified' ? 'cert' : 'inspected'}
-                    icon="shield-check"
-                  >
-                    {tier.label}
+                  <Badge tone="inspected" icon="shield-check">
+                    {`150-point inspection · ${car.inspection_score}/150`}
                   </Badge>
                 ) : null}
                 {car.safari_ready ? (

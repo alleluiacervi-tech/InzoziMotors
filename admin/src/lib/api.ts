@@ -1184,12 +1184,18 @@ export const api = {
   recordRentalSubscription: (id: string, data: {
     amount_rwf: number; method?: 'cash' | 'mobile_money' | 'bank_transfer'
     reference?: string; starts_on: string; ends_on: string; note?: string
+    /** Start the day after a subscription that still runs, instead of overlapping it. */
+    extend?: boolean
   }) => request<any>(`/rentals/${id}/subscriptions`, { method: 'POST', body: JSON.stringify(data) }),
   voidRentalSubscription: (subId: string, reason: string) =>
     request<any>(`/rentals/subscriptions/${subId}/void`, { method: 'POST', body: JSON.stringify({ reason }) }),
 
   updateRentalCar: (id: string, data: any) =>
     request<any>(`/rentals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  /** Listing photos for any provider's car (multipart field `photos`, at most 6
+   *  per request). Appended to the car's gallery; returns the updated car. */
+  uploadRentalPhotos: (id: string, data: FormData) =>
+    request<any>(`/rentals/${id}/photos`, { method: 'POST', body: data }),
 
   // The Sawa Rental Check (backend lib/rental-check-policy.js). Recording one
   // never changes the car's status; the latest check decides visibility.

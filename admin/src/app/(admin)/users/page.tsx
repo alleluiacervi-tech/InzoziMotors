@@ -84,15 +84,19 @@ export default function UsersPage() {
   // named, so the tab is part of the destination, not a thing to find again.
   const { focusProps } = useFocusRow()
   const router = useRouter()
-  const requestedTab = useSearchParams().get('tab')
+  const params = useSearchParams()
+  const requestedTab = params.get('tab')
+  // ?q= opens the directory already searched, e.g. from the rental fleet's
+  // "Fix in the user directory" link.
+  const requestedQuery = (params.get('q') || '').slice(0, 120)
   const [tab, setTab] = useState<'directory' | 'verification'>(
     requestedTab === 'verification' ? 'verification' : 'directory'
   )
   const [items, setItems] = useState<UserRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
-  const [query, setQuery] = useState('')
-  const [search, setSearch] = useState('')
+  const [query, setQuery] = useState(requestedQuery)
+  const [search, setSearch] = useState(requestedQuery)
   const [role, setRole] = useState('all')
   const [actionId, setActionId] = useState<string | null>(null)
   const [showroomOpen, setShowroomOpen] = useState(false)
