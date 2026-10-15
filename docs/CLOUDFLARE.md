@@ -7,8 +7,14 @@ on every request. The API itself answers in 10–30 ms; the rest is distance.
 
 Plan: **Free** is enough. Nothing here needs a paid feature.
 
-Status, 14 Oct 2026: the server side is ready in the repo; the steps below are
-for a person (account, DNS, registrar).
+Status: **live since 15 Oct 2026** (zone active, nameservers
+`magdalena`/`paul.ns.cloudflare.com`, registrar Hostinger). The Caddy file is
+installed; SSL Full (strict), Always Use HTTPS off, Bot Fight Mode and AI
+Labyrinth off, Rocket Loader off, Email Obfuscation off, Minimum TLS 1.2.
+The steps below are kept for a rebuild or a rollback.
+
+**Bot Fight Mode must stay off**: it challenges non-browser clients, which
+includes the mobile app's API calls.
 
 ---
 
