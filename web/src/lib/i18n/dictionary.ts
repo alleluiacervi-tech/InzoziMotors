@@ -48,7 +48,11 @@ const en = {
     tagline:
       "Rwanda's verified vehicle marketplace. We improve listing evidence and seller accountability, then let users communicate and agree independently.",
     getApp: 'Get the app',
-    messageWhatsApp: 'Message us on WhatsApp',
+    contactUs: 'Contact us',
+    call: 'Call us',
+    chatWithUs: 'Chat with us',
+    email: 'Email',
+    followUs: 'Follow us',
     visitUs: 'Visit us',
     rights: 'All rights reserved.',
     noCheckout:
@@ -118,7 +122,11 @@ const rw = {
     tagline:
       'Isoko ry’imodoka ryemewe mu Rwanda. Twongera ubwiza bw’ibimenyetso by’amatangazo n’uburyozwe bw’abagurisha, hanyuma abakoresha bakavugana bakumvikana ubwabo.',
     getApp: 'Kura porogaramu',
-    messageWhatsApp: 'Twandikire kuri WhatsApp',
+    contactUs: 'Twandikire',
+    call: 'Duhamagare',
+    chatWithUs: 'Tuganire',
+    email: 'Imeyili',
+    followUs: 'Dukurikire',
     visitUs: 'Dusure',
     rights: 'Uburenganzira bwose burabitswe.',
     noCheckout:
@@ -188,7 +196,11 @@ const fr = {
     tagline:
       "Le marché automobile vérifié du Rwanda. Nous renforçons les preuves des annonces et la responsabilité des vendeurs, puis laissons les utilisateurs communiquer et s'entendre en toute indépendance.",
     getApp: "Obtenir l'application",
-    messageWhatsApp: 'Écrivez-nous sur WhatsApp',
+    contactUs: 'Nous contacter',
+    call: 'Appelez-nous',
+    chatWithUs: 'Écrivez-nous',
+    email: 'E-mail',
+    followUs: 'Suivez-nous',
     visitUs: 'Nous rendre visite',
     rights: 'Tous droits réservés.',
     noCheckout:
@@ -258,7 +270,11 @@ const sw = {
     tagline:
       'Soko la magari lililothibitishwa la Rwanda. Tunaboresha ushahidi wa matangazo na uwajibikaji wa wauzaji, kisha tunawaacha watumiaji wawasiliane na kukubaliana wenyewe.',
     getApp: 'Pata programu',
-    messageWhatsApp: 'Tuandikie kwa WhatsApp',
+    contactUs: 'Wasiliana nasi',
+    call: 'Tupigie simu',
+    chatWithUs: 'Ongea nasi',
+    email: 'Barua pepe',
+    followUs: 'Tufuate',
     visitUs: 'Tutembelee',
     rights: 'Haki zote zimehifadhiwa.',
     noCheckout:
@@ -328,7 +344,11 @@ const ko = {
     tagline:
       '르완다의 인증 차량 마켓플레이스입니다. 매물 근거와 판매자 책임성을 강화한 뒤, 이용자가 직접 소통하고 합의하도록 합니다.',
     getApp: '앱 다운로드',
-    messageWhatsApp: 'WhatsApp으로 문의하기',
+    contactUs: '문의하기',
+    call: '전화하기',
+    chatWithUs: '채팅으로 문의',
+    email: '이메일',
+    followUs: '팔로우',
     visitUs: '방문하기',
     rights: 'All rights reserved.',
     noCheckout:
@@ -398,7 +418,11 @@ const zh = {
     tagline:
       '卢旺达的认证车辆市场。我们强化信息依据和卖家责任，让用户可以直接沟通并自行达成协议。',
     getApp: '下载应用',
-    messageWhatsApp: '通过 WhatsApp 咨询',
+    contactUs: '联系我们',
+    call: '致电我们',
+    chatWithUs: '在线咨询',
+    email: '电子邮箱',
+    followUs: '关注我们',
     visitUs: '前来访问',
     rights: 'All rights reserved.',
     noCheckout:

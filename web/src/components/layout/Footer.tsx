@@ -26,63 +26,72 @@ export async function Footer() {
               <StoreButtons tone="dark" size="sm" />
             </div>
 
-            <div className="-my-2.5 mt-8 space-y-0 text-body">
-              {/* Honesty gate: the line renders only while the real business
-                  number is verified — never a placeholder. The number is shown
-                  once, on the tel: row; WhatsApp gets its own labelled row
-                  rather than repeating the digits, since it is the same handset. */}
-              {CONTACT.whatsappVerified ? (
-                <>
-                  <a
-                    href={`tel:+${CONTACT.phone}`}
-                    className="flex items-center gap-2.5 py-2.5 text-white/60 transition-colors hover:text-white"
-                  >
-                    <Icon name="phone" size={17} />
-                    {CONTACT.phoneDisplay}
-                  </a>
-                  <a
-                    href={`https://wa.me/${CONTACT.whatsapp}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 py-2.5 text-white/60 transition-colors hover:text-white"
-                  >
-                    <Icon name="whatsapp" size={17} />
-                    {t('footer.messageWhatsApp')}
-                  </a>
-                </>
-              ) : null}
-              <a
-                href={`mailto:${CONTACT.email}`}
-                className="flex items-center gap-2.5 py-2.5 text-white/60 transition-colors hover:text-white"
-              >
-                <Icon name="mail" size={17} />
-                {CONTACT.email}
-              </a>
-            </div>
-
-            {/* Social profiles. Rendered only when SOCIAL has entries, so the
-                row is never a set of dead icons. Each is a 44px target with a
-                visible label beside the glyph — an icon-only social row is the
-                single most common accessibility miss in a footer, and it costs
-                nothing to name the network here. */}
-            {SOCIAL.length ? (
-              <ul className="mt-6 flex flex-wrap gap-2">
-                {SOCIAL.map((profile) => (
-                  <li key={profile.id}>
-                    <a
-                      href={profile.href}
-                      target="_blank"
-                      rel="me noopener noreferrer"
-                      className="flex h-11 items-center gap-2.5 rounded-xl border border-white/15 px-3.5 text-caption font-semibold text-white/70 transition-colors hover:border-white/35 hover:bg-white/5 hover:text-white"
-                    >
-                      <Icon name={profile.id} size={17} aria-hidden="true" />
-                      {profile.handle}
-                      <span className="sr-only"> on {profile.label}</span>
-                    </a>
-                  </li>
-                ))}
+            {/* Contact. Each channel is a full-width tile (56px target) with
+                what it is above how to reach it, so a thumb can't miss and the
+                eye can scan the three at once. Honesty gate: the phone and
+                WhatsApp tiles render only while the real business number is
+                verified, never a placeholder. The number is printed once, on
+                the call tile; WhatsApp is the same handset. */}
+            <div className="mt-9">
+              <Eyebrow tone="invert">{t('footer.contactUs')}</Eyebrow>
+              <ul className="grid gap-2 sm:grid-cols-3 lg:max-w-md lg:grid-cols-1">
+                {CONTACT.whatsappVerified ? (
+                  <>
+                    <li>
+                      <ContactTile
+                        href={`tel:+${CONTACT.phone}`}
+                        icon="phone"
+                        label={t('footer.call')}
+                        value={CONTACT.phoneDisplay}
+                      />
+                    </li>
+                    <li>
+                      <ContactTile
+                        href={`https://wa.me/${CONTACT.whatsapp}`}
+                        icon="whatsapp"
+                        label="WhatsApp"
+                        value={t('footer.chatWithUs')}
+                        external
+                      />
+                    </li>
+                  </>
+                ) : null}
+                <li>
+                  <ContactTile
+                    href={`mailto:${CONTACT.email}`}
+                    icon="mail"
+                    label={t('footer.email')}
+                    value={CONTACT.email}
+                  />
+                </li>
               </ul>
-            ) : null}
+
+              {/* Social profiles, icon only: the network's mark is the label
+                  people look for. The accessible name carries the network and
+                  the handle. Rendered only when SOCIAL has entries, so the row
+                  is never a set of dead icons. */}
+              {SOCIAL.length ? (
+                <div className="mt-5 flex items-center gap-3">
+                  <span className="text-micro text-white/50">{t('footer.followUs')}</span>
+                  <ul className="flex flex-wrap gap-2">
+                    {SOCIAL.map((profile) => (
+                      <li key={profile.id}>
+                        <a
+                          href={profile.href}
+                          target="_blank"
+                          rel="me noopener noreferrer"
+                          aria-label={`${profile.label} · ${profile.handle}`}
+                          title={`${profile.label} · ${profile.handle}`}
+                          className="grid h-11 w-11 place-items-center rounded-full border border-white/15 text-white/70 transition-colors hover:border-white/35 hover:bg-white/5 hover:text-white"
+                        >
+                          <Icon name={profile.id} size={19} />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
@@ -137,6 +146,34 @@ export async function Footer() {
         </div>
       </div>
     </footer>
+  )
+}
+
+function ContactTile({
+  href, icon, label, value, external = false,
+}: {
+  href: string
+  icon: 'phone' | 'whatsapp' | 'mail'
+  label: string
+  value: string
+  external?: boolean
+}) {
+  return (
+    <a
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      className="group flex min-h-14 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 transition-colors hover:border-white/25 hover:bg-white/[0.07]"
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-white/75 transition-colors group-hover:text-white">
+        <Icon name={icon} size={17} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-micro text-white/50">{label}</span>
+        <span className="block truncate text-caption font-semibold text-white/85 transition-colors group-hover:text-white">
+          {value}
+        </span>
+      </span>
+    </a>
   )
 }
 

@@ -7,8 +7,14 @@ on every request. The API itself answers in 10–30 ms; the rest is distance.
 
 Plan: **Free** is enough. Nothing here needs a paid feature.
 
-Status, 14 Oct 2026: the server side is ready in the repo; the steps below are
-for a person (account, DNS, registrar).
+Status: **live since 15 Oct 2026** (zone active, nameservers
+`magdalena`/`paul.ns.cloudflare.com`, registrar Hostinger). The Caddy file is
+installed; SSL Full (strict), Always Use HTTPS off, Bot Fight Mode and AI
+Labyrinth off, Rocket Loader off, Email Obfuscation off, Minimum TLS 1.2.
+The steps below are kept for a rebuild or a rollback.
+
+**Bot Fight Mode must stay off**: it challenges non-browser clients, which
+includes the mobile app's API calls.
 
 ---
 
@@ -21,10 +27,16 @@ would share one rate-limit bucket and be locked out together. It is safe to
 install before Cloudflare exists: nothing matches, behaviour is unchanged.
 
 ```bash
+cd /srv/sawa                                          # the checkout the deploy updates
+sudo cp /etc/caddy/sites/sawacars.Caddyfile /root/sawacars.Caddyfile.bak-$(date +%F)
 sudo cp ops/caddy/sawacars.Caddyfile /etc/caddy/sites/sawacars.Caddyfile
 sudo caddy validate --config /etc/caddy/Caddyfile     # must say "Valid configuration"
 sudo systemctl reload caddy                            # only after validate passes
 ```
+
+Keep the backup **outside** `/etc/caddy/sites/`: the main Caddyfile has
+`import sites/*`, so a copy left in that folder is loaded too and validation
+fails with `ambiguous site definition` (and Caddy would not start on reboot).
 
 The other project's blocks on this host are not touched.
 
@@ -98,6 +110,10 @@ server again within a minute or two; nothing on the server needs to change.
 - Cloudflare's IP ranges are pinned in the Caddy file (checked 14 Oct 2026,
   https://www.cloudflare.com/ips). They change rarely; a stale list fails safe
   (that edge is treated as the visitor, the old behaviour).
+- The website loads uploaded photos from the API's `?w=` copies
+  (`web/src/lib/api-photo.ts`), so they are cached like the app's. Answers
+  from `/_next/image` are never cached by Cloudflare (no file extension, and
+  the body varies by `Accept`); only the site's own `/public` images use it.
 - Resized photos (`?w=`) are always WebP. They used to follow the `Accept`
   header with `Vary: Accept`, which Cloudflare's Free plan ignores, so the first
   format cached would have gone to everyone.

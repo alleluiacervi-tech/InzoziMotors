@@ -74,9 +74,18 @@ Project → *APIs & Services*.
    The **upload key** is the EAS production keystore for `com.sawacars.app`,
    created by the first build on 10 Oct 2026 (`eas credentials` → Android →
    production shows its SHA-1 and SHA-256;
-   fingerprints are public, not secrets). The keystore *Build Credentials
+   fingerprints are public, not secrets): SHA-1
+   `A8:A6:A8:EC:E6:E4:99:30:66:5B:3C:9C:4D:6D:A5:46:38:2D:66:74`, SHA-256
+   `0A:82:7C:B7:57:F3:EB:79:20:D9:AB:0A:77:2B:86:43:BC:E4:23:4A:EC:4E:E1:B1:C6:AC:5B:7D:65:1B:0E:56`. The keystore *Build Credentials
    4RrJX5tVp0* (SHA-1 `3D:DC:17:…:22:AB`) belongs to the retired
    `com.sawacars.apps` and is not used.
+
+   Play's app signing key has SHA-256
+   `D2:9F:B0:6F:3A:C3:BD:82:C4:F5:AB:CC:CE:AC:64:66:E8:DE:EC:B4:BA:D2:80:F9:3D:6F:26:D0:39:74:20:EC`
+   and SHA-1 `E9:ED:54:32:04:F1:37:BD:4A:2A:C9:50:55:50:B8:8E:AC:AD:B9:77`
+   (Play Console → App integrity → App signing).
+   Every Android user so far installed from Play, so this is the key Google
+   sees for them.
 
    Play re-signs every build it distributes, internal testing included, with
    its own **app signing key**, which exists only after the first `.aab` is

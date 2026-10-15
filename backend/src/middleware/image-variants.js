@@ -34,7 +34,8 @@ const crypto = require('crypto');
 const { log } = require('../lib/log');
 
 // The widths the clients request: a grid card, a full-width phone card, a
-// retina phone card, and the gallery/zoom size.
+// retina phone card, and the gallery/zoom size. Mirrored by PHOTO in the app's
+// src/utils/photo.js and API_PHOTO_WIDTHS in web/src/lib/api-photo.ts.
 const WIDTHS = new Set([200, 400, 800, 1200]);
 const CACHE_DIR_NAME = '.variants';
 
