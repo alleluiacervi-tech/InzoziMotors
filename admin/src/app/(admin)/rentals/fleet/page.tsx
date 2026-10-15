@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 import { EmptyState, ErrorState, LoadingState, fmtMoney, formatRwfInput, parseRwfInput } from '@/components/ui'
 import { QueueSearch } from '@/components/QueueSearch'
@@ -16,6 +16,24 @@ const EMPTY = {
 }
 
 const input = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand focus:outline-none'
+// The API takes six photos per request (RENTAL_PHOTOS_PER_REQUEST) and forty per car.
+const PHOTOS_PER_UPLOAD = 6
+const MAX_PHOTOS = 40
+const PHOTO_TYPES = 'image/jpeg,image/png,image/webp'
+
+/** Upload picked photos to a saved car, six at a time. Returns how many failed. */
+async function uploadPhotos(carId: string, files: File[]): Promise<{ failed: number; error?: string }> {
+  let failed = 0
+  let error: string | undefined
+  for (let i = 0; i < files.length; i += PHOTOS_PER_UPLOAD) {
+    const batch = files.slice(i, i + PHOTOS_PER_UPLOAD)
+    const data = new FormData()
+    batch.forEach((file) => data.append('photos', file))
+    try { await api.uploadRentalPhotos(carId, data) }
+    catch (e: any) { failed += batch.length; error = e?.message }
+  }
+  return { failed, error }
+}
 const label = 'mb-1 block text-xs font-semibold text-gray-700'
 const number = (value: string) => value === '' ? undefined : Number.parseInt(value, 10)
 
@@ -60,6 +78,12 @@ export default function RentalFleetPage() {
   const [providers, setProviders] = useState<any[]>([])
   const [inspections, setInspections] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
+  // Photos picked in the form, uploaded once the car is saved (a new car has no
+  // id to upload to until then).
+  const [photoFiles, setPhotoFiles] = useState<File[]>([])
+  const photoInput = useRef<HTMLInputElement>(null)
+  const photoPreviews = useMemo(() => photoFiles.map((file) => URL.createObjectURL(file)), [photoFiles])
+  useEffect(() => () => photoPreviews.forEach((url) => URL.revokeObjectURL(url)), [photoPreviews])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkRenewing, setBulkRenewing] = useState(false)
   const [checking, setChecking] = useState<any | null>(null)
@@ -201,6 +225,7 @@ export default function RentalFleetPage() {
 
   function begin(car?: any) {
     setEditing(car || {})
+    setPhotoFiles([])
     setProviders([])
     setProviderQuery(car ? (car.provider_business_name || car.provider_name || '') : '')
     setForm(car ? {
@@ -216,11 +241,17 @@ export default function RentalFleetPage() {
 
   async function save(event: React.FormEvent) {
     event.preventDefault()
-    if (!form.provider_id || !form.title.trim() || !number(form.daily_rate)) {
-      toast('Choose a verified rental provider, a title and a daily rate.', 'error'); return
+    // One message per gap: a single "provider, title and rate" message left the
+    // operator guessing which of the three was wrong. The title is optional and
+    // made from the car itself when left empty.
+    const title = form.title.trim() || [form.year.trim(), form.make.trim(), form.model.trim()].filter(Boolean).join(' ')
+    if (!form.provider_id) {
+      toast('Pick the rental company: type its name in Provider, then tap it in the list.', 'error'); return
     }
+    if (!title) { toast('Add the make and model (or a listing title).', 'error'); return }
+    if (!number(form.daily_rate)) { toast('Enter the provider’s daily rate.', 'error'); return }
     const payload = {
-      provider_id: form.provider_id, title: form.title.trim(), make: form.make.trim() || null,
+      provider_id: form.provider_id, title, make: form.make.trim() || null,
       model: form.model.trim() || null, year: number(form.year), daily_rate: number(form.daily_rate),
       weekly_rate: number(form.weekly_rate), deposit: number(form.deposit) || 0,
       min_days: number(form.min_days) || 1, mileage: number(form.mileage),
@@ -228,14 +259,42 @@ export default function RentalFleetPage() {
       inspection_id: form.inspection_id || undefined,
       images: form.images.split('\n').map((item) => item.trim()).filter(Boolean), status: form.status,
     }
+    // Activating needs a photo, and a new car's photos are only uploaded after
+    // it is saved: save the details first, then activate once photos are in.
+    const activatingWithPhotosPending = editing?.id && form.status === 'active'
+      && payload.images.length === 0 && photoFiles.length > 0
     setSaving(true)
     try {
-      if (editing?.id) await api.updateRentalCar(editing.id, payload)
-      else await api.createRentalCar(payload)
-      setEditing(null); setForm(EMPTY); await load()
-      toast(editing?.id ? 'Rental listing updated.' : 'Rental listing created.', 'success')
+      const saved = editing?.id
+        ? await api.updateRentalCar(editing.id, activatingWithPhotosPending ? { ...payload, status: editing.status === 'active' ? 'maintenance' : editing.status } : payload)
+        : await api.createRentalCar(payload)
+      const carId = editing?.id || saved?.id
+      let photoNote = ''
+      if (carId && photoFiles.length) {
+        const { failed, error } = await uploadPhotos(carId, photoFiles)
+        if (failed) photoNote = ` ${failed} of ${photoFiles.length} photo${photoFiles.length === 1 ? '' : 's'} did not upload${error ? `: ${error}` : ''}. Open the car and add them again.`
+        else if (activatingWithPhotosPending) await api.updateRentalCar(carId, { status: 'active' })
+      }
+      setEditing(null); setForm(EMPTY); setPhotoFiles([]); await load()
+      const done = editing?.id ? 'Rental listing updated.' : 'Rental listing created.'
+      if (photoNote) toast(done + photoNote, 'error')
+      else toast(done, 'success')
     } catch (e: any) { toast(e.message, 'error') }
     finally { setSaving(false) }
+  }
+
+  function addPhotos(list: FileList | null) {
+    if (!list?.length) return
+    const stored = form.images.split('\n').filter((item) => item.trim()).length
+    const room = MAX_PHOTOS - stored - photoFiles.length
+    const picked = Array.from(list).filter((file) => PHOTO_TYPES.split(',').includes(file.type))
+    if (picked.length < list.length) toast('Only JPEG, PNG or WebP photos can be added.', 'error')
+    if (picked.length > room) toast(`A rental listing holds at most ${MAX_PHOTOS} photos.`, 'error')
+    setPhotoFiles((old) => [...old, ...picked.slice(0, Math.max(room, 0))])
+  }
+
+  function removeStoredPhoto(url: string) {
+    setForm({ ...form, images: form.images.split('\n').filter((item) => item.trim() && item.trim() !== url).join('\n') })
   }
 
   // Recording a period is the whole interaction: it is what puts a car in the
@@ -477,6 +536,11 @@ export default function RentalFleetPage() {
         <form onSubmit={save} className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-surface p-5 shadow-xl sm:rounded-2xl sm:p-6">
           <div className="mb-5 flex items-center justify-between"><div><h2 className="text-lg font-bold text-gray-900">{editing.id ? 'Edit rental vehicle' : 'Add rental vehicle'}</h2><p className="mt-1 text-xs text-gray-500">Every vehicle must belong to a verified rental company.</p></div><button type="button" onClick={() => setEditing(null)} className="text-gray-500">Close</button></div>
           <div className="mb-4"><label className={label}>Verified provider</label><input value={providerQuery} onChange={(e) => { setProviderQuery(e.target.value); setForm((old) => ({ ...old, provider_id: '', inspection_id: '' })) }} placeholder="Search showroom or contact" className={input} />
+            {form.provider_id
+              ? <p className="mt-1 text-xs font-semibold text-success-text">✓ Rental company selected</p>
+              : providerQuery.trim().length >= 2
+                ? <p className="mt-1 text-xs text-warning-text">Not selected yet: tap the company in the list below.</p>
+                : null}
             {form.provider_id && <p className="mt-1 text-xs font-semibold text-success">Provider selected</p>}
             {providers.length > 0 && <div className="mt-1 max-h-52 overflow-y-auto rounded-lg border border-gray-200 bg-surface">{providers.map((provider) => provider.blockers.length === 0 ? (
               <button key={provider.id} type="button" onClick={() => { setForm((old) => ({ ...old, provider_id: provider.id, inspection_id: '' })); setProviderQuery(provider.business_name || provider.name); setProviders([]) }} className="block w-full border-b border-gray-100 px-3 py-2 text-left text-sm last:border-0 hover:bg-gray-50">
@@ -495,7 +559,7 @@ export default function RentalFleetPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2"><label className={label}>Passing 150-point inspection (optional)</label><select value={form.inspection_id} onChange={(e) => { const selected = inspections.find((inspection) => inspection.id === e.target.value); setForm({ ...form, inspection_id: e.target.value, make: selected ? String(selected.make || selected.submission_make || '') : form.make, model: selected ? String(selected.model || selected.submission_model || '') : form.model, year: selected ? String(selected.year || selected.submission_year || '') : form.year }) }} className={input} disabled={!form.provider_id}><option value="">None — record a Rental Check instead</option>{inspections.filter((inspection) => inspection.seller_id === form.provider_id && (!cars.some((car) => car.inspection_id === inspection.id) || inspection.id === editing?.inspection_id)).map((inspection) => <option key={inspection.id} value={inspection.id}>{inspection.year || inspection.submission_year} {inspection.make || inspection.submission_make} {inspection.model || inspection.submission_model} · {inspection.score}/150 · {fmtDate(inspection.completed_at)}</option>)}</select><p className="mt-1 text-xs text-gray-500">Rental cars are listed on the 10-point Rental Check, recorded from the fleet card after saving. An existing passing inspection of this car may stand in until the first check.</p></div>
-            <div className="sm:col-span-2"><label className={label}>Listing title</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={input} required /></div>
+            <div className="sm:col-span-2"><label className={label}>Listing title <span className="font-normal text-gray-400">(optional)</span></label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={input} placeholder={[form.year, form.make, form.model].filter(Boolean).join(' ') || 'Made from the year, make and model'} /></div>
             <div><label className={label}>Make</label><input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} className={input} required /></div>
             <div><label className={label}>Model</label><input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} className={input} required /></div>
             <div><label className={label}>Year</label><input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} className={input} required /></div>
@@ -505,7 +569,40 @@ export default function RentalFleetPage() {
             <div><label htmlFor="fleet-deposit" className={label}>Provider-stated deposit</label><MoneyInput id="fleet-deposit" value={String(form.deposit ?? '')} onChange={(digits) => setForm({ ...form, deposit: digits })} className={input} /></div>
             <div><label className={label}>Minimum days</label><input type="number" min="1" value={form.min_days} onChange={(e) => setForm({ ...form, min_days: e.target.value })} className={input} /></div>
             <div className="sm:col-span-2"><label className={label}>Location</label><input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={input} /></div>
-            <div className="sm:col-span-2"><label className={label}>Image URLs, one per line</label><textarea rows={4} value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className={input} required /><p className="mt-1 text-xs text-gray-500">At least one HTTPS image is required while the vehicle is active; up to 40 are supported.</p></div>
+            <div className="sm:col-span-2">
+              <span className={label}>Photos</span>
+              {/* Stored photos (already on the car) and picked ones (uploaded on save). */}
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {form.images.split('\n').map((item) => item.trim()).filter(Boolean).map((url) => (
+                  <div key={url} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => removeStoredPhoto(url)} aria-label="Remove photo"
+                      className="absolute right-1 top-1 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-sm font-bold text-white hover:bg-black/80">×</button>
+                  </div>
+                ))}
+                {photoPreviews.map((src, index) => (
+                  <div key={src} className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                    <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">Uploads on save</span>
+                    <button type="button" onClick={() => setPhotoFiles((old) => old.filter((_, i) => i !== index))} aria-label="Remove photo"
+                      className="absolute right-1 top-1 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-sm font-bold text-white hover:bg-black/80">×</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => photoInput.current?.click()}
+                  className="flex aspect-[4/3] flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-sm font-semibold text-gray-600 hover:border-brand hover:text-brand">
+                  <span className="text-2xl leading-none">+</span>Add photos
+                </button>
+              </div>
+              <input ref={photoInput} type="file" accept={PHOTO_TYPES} multiple className="sr-only"
+                onChange={(e) => { addPhotos(e.target.files); e.target.value = '' }} />
+              <p className="mt-1 text-xs text-gray-500">At least one photo before the car can go live; up to {MAX_PHOTOS}. JPEG, PNG or WebP.</p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-semibold text-gray-500">Paste image links instead</summary>
+                <textarea rows={3} value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} className={`${input} mt-2`} placeholder="https://…, one per line" />
+              </details>
+            </div>
             {editing.id && <div className="sm:col-span-2"><label className={label}>Inventory status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={input}><option value="pending_review">Pending review</option><option value="active">Active</option><option value="maintenance">Maintenance</option><option value="retired">Retired</option></select></div>}
           </div>
           <div className="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-4"><button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600">Cancel</button><button disabled={saving} className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-on disabled:opacity-50">{saving ? 'Saving…' : 'Save vehicle'}</button></div>

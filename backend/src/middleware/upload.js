@@ -13,6 +13,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 //   /rentals/bookings/:bookingId/photos  -> rentals/<bookingId>
 //   /submissions/:id/reference-photos    -> submissions/<id>
 //   /rentals/:id/mine/photos             -> rental-cars/<id> (public listing photos)
+//   /rentals/:id/photos (admin)          -> rental-cars/<id>
 //   /admin/users/:userId/avatar          -> avatars
 //   /imports/admin/catalog/:catalogId/photo -> catalog
 //   /id-verification (no id param)       -> id-docs (publicly 403'd, admin-gated route only)

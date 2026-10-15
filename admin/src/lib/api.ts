@@ -1190,6 +1190,10 @@ export const api = {
 
   updateRentalCar: (id: string, data: any) =>
     request<any>(`/rentals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  /** Listing photos for any provider's car (multipart field `photos`, at most 6
+   *  per request). Appended to the car's gallery; returns the updated car. */
+  uploadRentalPhotos: (id: string, data: FormData) =>
+    request<any>(`/rentals/${id}/photos`, { method: 'POST', body: data }),
 
   // The Sawa Rental Check (backend lib/rental-check-policy.js). Recording one
   // never changes the car's status; the latest check decides visibility.

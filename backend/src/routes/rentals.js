@@ -1016,6 +1016,66 @@ router.post(
   }
 );
 
+// POST /rentals/:id/photos — multipart, field `photos`. The team adds listing
+// photos to any provider's car from the fleet form, through the same pipeline
+// as the provider's own upload: bytes checked, compressed, GPS stripped.
+async function adminRentalPhotoTarget(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      'SELECT status, COALESCE(array_length(images, 1), 0) AS stored FROM rental_cars WHERE id = $1',
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Rental car not found' });
+    if (rows[0].status === 'retired') return res.status(409).json({ error: 'This car is retired' });
+    if (Number(rows[0].stored) >= MAX_RENTAL_PHOTOS) {
+      return res.status(409).json({ error: `A rental listing may contain at most ${MAX_RENTAL_PHOTOS} images` });
+    }
+    next();
+  } catch (err) {
+    log.error('admin rental photo lookup error', { error: err.message });
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+router.post(
+  '/:id/photos',
+  requireAdmin,
+  requireUuid('id'),
+  adminRentalPhotoTarget,
+  uploadPhotos.array('photos', RENTAL_PHOTOS_PER_REQUEST),
+  verifyImageContent,
+  compressUploads,
+  stripUploadMetadata,
+  async (req, res) => {
+    const files = req.files || [];
+    if (!files.length) return res.status(400).json({ error: 'Add at least one photo' });
+    try {
+      const urls = [];
+      for (const file of files) urls.push(await resolveUploadUrl(req, file));
+      const { rows } = await pool.query(
+        `UPDATE rental_cars SET images = COALESCE(images, '{}') || $2::text[]
+          WHERE id = $1 AND status <> 'retired'
+            AND COALESCE(array_length(images, 1), 0) + cardinality($2::text[]) <= $3
+          RETURNING *`,
+        [req.params.id, urls, MAX_RENTAL_PHOTOS]
+      );
+      if (!rows.length) {
+        files.forEach((file) => { if (file.path) fs.unlink(file.path, () => {}); });
+        return res.status(409).json({ error: `A rental listing may contain at most ${MAX_RENTAL_PHOTOS} images` });
+      }
+      await recordAdminAction(pool, {
+        actorId: req.user.id, action: 'rental_car.photos_added', targetType: 'rental_car', targetId: req.params.id,
+        summary: `${urls.length} photo${urls.length === 1 ? '' : 's'} added to ${rows[0].title}`,
+        metadata: { count: urls.length },
+      });
+      res.status(201).json(rows[0]);
+    } catch (err) {
+      log.error('admin rental photo upload error', { error: err.message });
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // The provider's calendar: which days a car is out (lib/rental-calendar.js,
 // migration 0061). Owner-only writes; staff and renters only ever read the
@@ -1646,7 +1706,11 @@ router.post('/', requireAdmin, async (req, res) => {
           inspection_id, location, images } = req.body;
   if (!provider_id || !title || !make || !model || !year || !daily_rate) return res.status(400).json({ error: 'provider_id, title, make, model, year and daily_rate are required' });
   if (!Number.isFinite(Number(daily_rate)) || Number(daily_rate) <= 0) return res.status(400).json({ error: 'daily_rate must be a positive number' });
-  const galleryError = rentalGalleryError(images, true);
+  // Photos may come after saving: the fleet form uploads them to the new car
+  // (POST /:id/photos), so an operator never has to find image links to paste.
+  // A car without one is not created active (below) and cannot be activated.
+  const gallery = images === undefined || images === null ? [] : images;
+  const galleryError = rentalGalleryError(gallery, false);
   if (galleryError) return res.status(400).json({ error: galleryError });
   try {
     const created = await withTransaction(async (client) => {
@@ -1676,7 +1740,7 @@ router.post('/', requireAdmin, async (req, res) => {
       // with no evidence yet.
       const period = req.body.subscription ? readSubscription(req.body.subscription) : null;
       if (period && period.error) { const e = new Error(period.error); e.status = 400; throw e; }
-      const initialStatus = period && evidence ? 'active' : 'maintenance';
+      const initialStatus = period && evidence && gallery.length ? 'active' : 'maintenance';
 
       const { rows } = await client.query(
         `INSERT INTO rental_cars
@@ -1688,7 +1752,7 @@ router.post('/', requireAdmin, async (req, res) => {
          transmission, mileage, daily_rate, weekly_rate || Number(daily_rate) * 6,
          deposit || 0, min_days || 1, evidence ? inspection_id : null, Boolean(evidence),
          evidence ? Number(evidence.score) : null, location,
-         images.map((url) => url.trim()), initialStatus]
+         gallery.map((url) => url.trim()), initialStatus]
       );
       if (period) {
         await insertSubscription(client, { rentalCarId: rows[0].id, period, actorId: req.user.id });
