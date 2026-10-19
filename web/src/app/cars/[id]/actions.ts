@@ -1,6 +1,7 @@
 'use server'
 
 import { ApiError, cars, messages } from '@/lib/api'
+import { getServerT } from '@/lib/i18n/server'
 import { getToken } from '@/lib/session'
 
 export type ContactState =
@@ -24,19 +25,20 @@ export async function contactSellerAction(
   const channel = String(formData.get('channel') || 'in_app') as 'phone' | 'whatsapp' | 'in_app'
   const message = String(formData.get('message') || '').trim().slice(0, 1000)
   const acknowledge = formData.get('acknowledge') === 'yes'
+  const t = await getServerT()
 
   if (!carId || !['phone', 'whatsapp', 'in_app'].includes(channel)) {
-    return { status: 'error', message: 'Choose a valid contact method and try again.' }
+    return { status: 'error', message: t('cars.detail.contactForm.errorChannel') }
   }
   if (!acknowledge) {
-    return { status: 'error', message: 'Please acknowledge the direct-deal notice before contacting the seller.' }
+    return { status: 'error', message: t('cars.detail.contactForm.errorAcknowledge') }
   }
   if (channel === 'in_app' && message.length < 2) {
-    return { status: 'error', message: 'Write a short message for the seller.' }
+    return { status: 'error', message: t('cars.detail.contactForm.errorMessage') }
   }
 
   const token = await getToken()
-  if (!token) return { status: 'error', message: 'Your session expired. Sign in again to contact the seller.' }
+  if (!token) return { status: 'error', message: t('cars.detail.contactForm.errorSession') }
 
   try {
     const disclosure = await cars.contact(token, carId, channel, true)
@@ -48,11 +50,11 @@ export async function contactSellerAction(
     return { status: 'done', channel, contact: disclosure.contact, notice: disclosure.notice, conversationId }
   } catch (error) {
     if (error instanceof ApiError) {
-      if (error.status === 401) return { status: 'error', message: 'Your session expired. Sign in again to continue.' }
+      if (error.status === 401) return { status: 'error', message: t('cars.detail.contactForm.errorSession') }
       if (error.status === 409) return { status: 'error', message: error.message }
-      if (error.isNetworkError) return { status: 'error', message: 'We could not reach Sawa Cars. Please try again.' }
+      if (error.isNetworkError) return { status: 'error', message: t('cars.detail.contactForm.errorNetwork') }
       return { status: 'error', message: error.message }
     }
-    return { status: 'error', message: 'Something went wrong. Please try again.' }
+    return { status: 'error', message: t('cars.detail.contactForm.errorGeneric') }
   }
 }
