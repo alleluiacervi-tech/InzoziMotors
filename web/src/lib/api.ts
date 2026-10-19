@@ -419,7 +419,7 @@ export const auth = {
 export const account = {
   me: (token: string) => request<User>('/auth/me', { token }),
 
-  updateProfile: (token: string, fields: { name?: string; phone?: string; whatsapp_phone?: string; phone_visible?: boolean; whatsapp_visible?: boolean; avatar_url?: string; message_email_notifications?: boolean }) =>
+  updateProfile: (token: string, fields: { name?: string; phone?: string; whatsapp_phone?: string; phone_visible?: boolean; whatsapp_visible?: boolean; avatar_url?: string; message_email_notifications?: boolean; alert_search_matches?: boolean; alert_price_drops?: boolean }) =>
     request<User>('/auth/me', { token, method: 'PATCH', body: JSON.stringify(fields) }),
 
   /** Returns a replacement token: the backend ends every other session on a

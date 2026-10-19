@@ -30,6 +30,7 @@ async function matchSavedSearches(car) {
               $7 || ' matches your saved search "' || ss.label || '".',
               json_build_object('carId', $8::uuid, 'savedSearchId', ss.id)::jsonb
        FROM saved_searches ss
+       JOIN users u ON u.id = ss.user_id AND u.alert_search_matches = TRUE
        WHERE ss.notify_enabled = TRUE
          AND (ss.filters->>'make'  IS NULL OR ss.filters->>'make'  ILIKE $1)
          AND (ss.filters->>'model' IS NULL OR $2 ILIKE '%' || (ss.filters->>'model') || '%')
@@ -73,6 +74,7 @@ async function notifyPriceDrop(carId, oldPrice, newPrice, title = null, currency
        SELECT sc.user_id, 'price_drop', 'Price drop on a saved car', $2,
               json_build_object('carId', $1::uuid, 'oldPrice', $3::numeric, 'newPrice', $4::numeric)::jsonb
        FROM saved_cars sc
+       JOIN users u ON u.id = sc.user_id AND u.alert_price_drops = TRUE
        WHERE sc.car_id = $1
        RETURNING *`,
       [carId, body, oldPrice, newPrice]

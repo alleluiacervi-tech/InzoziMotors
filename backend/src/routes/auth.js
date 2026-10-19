@@ -366,6 +366,7 @@ router.get('/me', requireAuth, async (req, res) => {
               whatsapp_visible, contact_consent_at, role, id_verified, account_status,
               seller_type, business_name, business_verified, trust_score,
               response_rate, completed_sales, avatar_url, message_email_notifications,
+              alert_search_matches, alert_price_drops,
               marketplace_terms_accepted_at, marketplace_terms_version, created_at,
               (password_hash IS NOT NULL) AS has_password,
               ARRAY(SELECT provider FROM user_identities ui WHERE ui.user_id = users.id ORDER BY provider)
@@ -383,8 +384,13 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 // PATCH /auth/me — update own profile
+const PROFILE_BOOLEANS = [
+  'phone_visible', 'whatsapp_visible', 'message_email_notifications',
+  'alert_search_matches', 'alert_price_drops',
+];
+
 router.patch('/me', requireAuth, async (req, res) => {
-  const EDITABLE = ['name', 'phone', 'whatsapp_phone', 'phone_visible', 'whatsapp_visible', 'avatar_url', 'message_email_notifications'];
+  const EDITABLE = ['name', 'phone', 'whatsapp_phone', 'avatar_url', ...PROFILE_BOOLEANS];
   const fields = EDITABLE.filter((field) => req.body[field] !== undefined);
   if (!fields.length) return res.status(400).json({ error: 'No editable profile fields provided' });
   if (req.body.name !== undefined && !String(req.body.name).trim()) {
@@ -396,13 +402,13 @@ router.patch('/me', requireAuth, async (req, res) => {
       return res.status(400).json({ error: `${field} is not a valid phone number` });
     }
   }
-  for (const field of ['phone_visible', 'whatsapp_visible', 'message_email_notifications']) {
+  for (const field of PROFILE_BOOLEANS) {
     if (req.body[field] !== undefined && typeof req.body[field] !== 'boolean') {
       return res.status(400).json({ error: `${field} must be true or false` });
     }
   }
   const values = Object.fromEntries(fields.map((field) => {
-    if (['phone_visible', 'whatsapp_visible', 'message_email_notifications'].includes(field)) return [field, req.body[field]];
+    if (PROFILE_BOOLEANS.includes(field)) return [field, req.body[field]];
     const value = req.body[field];
     return [field, value == null || value === '' ? null : String(value).trim()];
   }));
@@ -448,7 +454,7 @@ router.patch('/me', requireAuth, async (req, res) => {
          RETURNING id, name, email, phone, whatsapp_phone, phone_visible,
                    whatsapp_visible, contact_consent_at, role, id_verified, account_status,
                    seller_type, business_name, business_verified, trust_score, avatar_url,
-                   message_email_notifications`,
+                   message_email_notifications, alert_search_matches, alert_price_drops`,
         params
       );
       return { status: 200, body: rows[0] };

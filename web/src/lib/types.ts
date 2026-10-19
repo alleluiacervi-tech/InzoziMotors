@@ -29,6 +29,10 @@ export interface User {
   /** On by default server-side (D3/O4 in docs/WEB-PARITY-PLAN.md) — the
    *  "while you were away" email nudge, opt-out. */
   message_email_notifications?: boolean
+  /** Migration 0062: saved-search matches and price drops on saved cars.
+   *  On by default; off means the alert is not created at all. */
+  alert_search_matches?: boolean
+  alert_price_drops?: boolean
   seller_type?: string | null
   created_at: string
   /** GET /auth/me only. False for an account made with Google or Apple. */
