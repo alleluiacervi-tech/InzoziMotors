@@ -50,7 +50,7 @@ export function RequestCarForm({ carId, available }: { carId: string; available?
       ) : href ? <Button href={href} target={state.channel === 'whatsapp' ? '_blank' : undefined} size="lg" fullWidth leadingIcon={<Icon name={state.channel === 'whatsapp' ? 'whatsapp' : 'phone'} size={18} />}>
         {state.channel === 'whatsapp' ? `${t('cars.detail.contactForm.openWhatsapp')}${state.contact ? ` · ${state.contact}` : ''}` : t('cars.detail.contactForm.call', { number: state.contact ?? '' })}
       </Button> : null}
-      <p className="text-micro leading-relaxed text-content-muted">{state.notice}</p>
+      <p className="text-micro leading-relaxed text-content-muted">{t('common.directDeal')}</p>
     </div>
   }
 
