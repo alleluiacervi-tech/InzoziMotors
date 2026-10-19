@@ -30,7 +30,12 @@ export default function SellerContactScreen({ navigation, route }) {
     () => channelsConfig.filter((item) => item.id === 'in_app' || availability[item.id]),
     [availability.phone, availability.whatsapp, availability.in_app, t]
   );
-  const [channel, setChannel] = useState(channels[0]?.id || 'in_app');
+  // The detail bar opens this screen on the channel the buyer tapped; fall
+  // back to the first offered one if the seller has since switched it off.
+  const requestedChannel = route.params?.channel;
+  const [channel, setChannel] = useState(
+    channels.some((item) => item.id === requestedChannel) ? requestedChannel : (channels[0]?.id || 'in_app')
+  );
   const [message, setMessage] = useState('');
   const [acknowledged, setAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);

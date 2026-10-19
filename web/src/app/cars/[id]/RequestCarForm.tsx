@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Alert, Button, Icon } from '@/components/ui'
 import { useT } from '@/lib/i18n/context'
@@ -16,6 +16,22 @@ export function RequestCarForm({ carId, available }: { carId: string; available?
     { id: 'whatsapp', label: 'WhatsApp', icon: 'whatsapp' as const, enabled: !!available?.whatsapp },
     { id: 'phone', label: 'Phone', icon: 'phone' as const, enabled: !!available?.phone },
   ].filter((item) => item.enabled)
+  const [channel, setChannel] = useState(channels[0]?.id ?? 'in_app')
+
+  // The phone bar links to #contact-<channel>; select that channel when the
+  // hash arrives, whether on load or from a tap on the same page.
+  useEffect(() => {
+    const ids = channels.map((item) => item.id)
+    const selectFromHash = () => {
+      const wanted = window.location.hash.replace(/^#contact-/, '')
+      if (ids.includes(wanted)) setChannel(wanted)
+    }
+    selectFromHash()
+    window.addEventListener('hashchange', selectFromHash)
+    return () => window.removeEventListener('hashchange', selectFromHash)
+    // channels is rebuilt each render; its ids only change with `available`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [available?.in_app, available?.whatsapp, available?.phone])
 
   if (state.status === 'done') {
     const href = state.channel === 'whatsapp' && state.contact
@@ -43,9 +59,9 @@ export function RequestCarForm({ carId, available }: { carId: string; available?
     <fieldset>
       <legend className="text-caption font-bold text-content">How would you like to contact the seller?</legend>
       <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-        {channels.map((channel, index) => <label key={channel.id} className="flex cursor-pointer items-center gap-3 rounded-xl border border-line-soft px-3 py-3 text-caption font-bold text-content has-[:checked]:border-brand has-[:checked]:bg-brand-tint">
-          <input type="radio" name="channel" value={channel.id} defaultChecked={index === 0} className="accent-brand" />
-          <Icon name={channel.icon} size={17} />{channel.label}
+        {channels.map((item) => <label key={item.id} id={`contact-${item.id}`} className="flex cursor-pointer scroll-mt-[calc(var(--header-h)+24px)] items-center gap-3 rounded-xl border border-line-soft px-3 py-3 text-caption font-bold text-content has-[:checked]:border-brand has-[:checked]:bg-brand-tint">
+          <input type="radio" name="channel" value={item.id} checked={channel === item.id} onChange={() => setChannel(item.id)} className="accent-brand" />
+          <Icon name={item.icon} size={17} />{item.label}
         </label>)}
       </div>
     </fieldset>
