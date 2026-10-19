@@ -5,7 +5,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { useApp } from '../context/AppContext';
-import { formatDay } from '../utils/rentalDates';
+import { formatDay, isIsoDay, kigaliToday } from '../utils/rentalDates';
 import { colors, fonts, radius, shadows } from '../theme';
 
 const tomorrowISO = () => {
@@ -68,9 +68,9 @@ export default function RentalInquiryScreen({ navigation, route }) {
   const submit = async () => {
     if (!isLoggedIn) return navigation.navigate('SignIn');
     const count = Number(days);
-    const requested = new Date(`${startDate}T00:00:00`);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || Number.isNaN(requested.getTime()) || requested <= today) return setError(t('rentalInquiry.errDate'));
+    // Today in Kigali is allowed, as on the server and the website; the
+    // phone's own clock and time zone don't decide which day "today" is.
+    if (!isIsoDay(startDate) || startDate < kigaliToday()) return setError(t('rentalInquiry.errDate'));
     if (!Number.isInteger(count) || count < (car.minDays || 1) || count > 365) return setError(t('rentalInquiry.errDays', { min: car.minDays || 1 }));
     if (!acknowledged) return setError(t('rentalInquiry.errAccept'));
     setLoading(true); setError('');
