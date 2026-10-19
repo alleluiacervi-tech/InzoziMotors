@@ -1,6 +1,7 @@
 'use server'
 
 import { ApiError, rentals } from '@/lib/api'
+import { getServerT } from '@/lib/i18n/server'
 import { getToken } from '@/lib/session'
 
 export type RentalInquiryState =
@@ -11,7 +12,6 @@ export type RentalInquiryState =
       reference: string
       contact: string | null
       channel: 'in_app' | 'phone' | 'whatsapp'
-      notice: string
       /** The thread this request opened, to continue in Messages. */
       conversationId: string | null
       /** A ready WhatsApp message carrying the reference. */
@@ -30,11 +30,12 @@ export async function sendRentalInquiryAction(
   const days = Number(formData.get('days') || 0)
   const pickup = String(formData.get('pickup_location') || '').trim()
   const message = String(formData.get('message') || '').trim()
-  if (!rentalId || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return { status: 'error', message: 'Choose a valid start date.' }
-  if (!Number.isInteger(days) || days < 1 || days > 365) return { status: 'error', message: 'Rental length must be between 1 and 365 days.' }
-  if (formData.get('acknowledge') !== 'yes') return { status: 'error', message: 'Acknowledge the direct-provider notice to continue.' }
+  const t = await getServerT()
+  if (!rentalId || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return { status: 'error', message: t('rentals.inquiry.errorStartDate') }
+  if (!Number.isInteger(days) || days < 1 || days > 365) return { status: 'error', message: t('rentals.inquiry.errorDays') }
+  if (formData.get('acknowledge') !== 'yes') return { status: 'error', message: t('rentals.inquiry.errorAcknowledge') }
   const token = await getToken()
-  if (!token) return { status: 'error', message: 'Your session expired. Sign in again to send the inquiry.' }
+  if (!token) return { status: 'error', message: t('rentals.inquiry.errorSession') }
   try {
     const result = await rentals.inquire(token, rentalId, {
       start_date: startDate, days, pickup_location: pickup || undefined,
@@ -43,13 +44,37 @@ export async function sendRentalInquiryAction(
       acknowledge: true,
     })
     return {
-      status: 'done', reference: result.inquiry_ref, contact: result.contact || null, channel, notice: result.notice,
+      status: 'done', reference: result.inquiry_ref, contact: result.contact || null, channel,
       conversationId: result.conversation_id ?? null,
       whatsappText: result.whatsapp_text ?? null,
       busyOverlap: result.busy_overlap ?? [],
     }
   } catch (error) {
-    if (error instanceof ApiError) return { status: 'error', message: error.message }
-    return { status: 'error', message: 'The inquiry could not be sent. Please try again.' }
+    return { status: 'error', message: t(`rentals.inquiry.${inquiryErrorKey(error)}`) }
   }
+}
+
+// The API's error text is English; its status and code are not. Map those so
+// the renter reads the reason in their own language.
+function inquiryErrorKey(error: unknown): string {
+  if (!(error instanceof ApiError)) return 'errorGeneric'
+  if (error.isNetworkError) return 'errorNetwork'
+  switch (error.code) {
+    case 'INVALID_START_DATE': return 'errorStartDate'
+    case 'INVALID_DAYS': return 'errorDays'
+    case 'MARKETPLACE_TERMS_REQUIRED': return 'errorAcknowledge'
+    case 'CONTACT_NOT_AVAILABLE': return 'channelUnavailable'
+    case 'CONTACT_BLOCKED':
+    case 'BLOCKED': return 'contactBlocked'
+    case 'RENTAL_NOT_FOUND': return 'rentalGone'
+    case 'OWN_RENTAL': return 'ownRental'
+    case 'CONTENT_REJECTED': return 'contentRejected'
+  }
+  if (error.status === 401) return 'errorSession'
+  if (error.status === 404) return 'rentalGone'
+  if (error.status === 403) return 'contactBlocked'
+  if (error.status === 409) return 'channelUnavailable'
+  if (error.status === 428) return 'errorAcknowledge'
+  if (error.status === 429) return 'tooMany'
+  return 'errorGeneric'
 }

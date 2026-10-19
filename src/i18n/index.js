@@ -1733,6 +1733,14 @@ export const TRANSLATIONS = {
       "numberPrivate": "The renter chose Messages and kept their number private."
     },
     "rentalInquiry": {
+      "doneNotice": "Sawa Cars is not a party to this rental and never holds any money. Agree the price, deposit, contract, pickup and return directly with the provider, and check the car and its documents yourself.",
+      "errNetwork": "We could not reach Sawa Cars. Please try again.",
+      "rentalGone": "This rental car is no longer listed.",
+      "ownRental": "This is your own rental car.",
+      "channelUnavailable": "The provider has turned this contact option off. Choose Messages on Sawa instead.",
+      "contactBlocked": "Contact isn’t available between your account and this provider.",
+      "contentRejected": "This message can’t be sent. Contact support if you think this is a mistake.",
+      "tooMany": "Too many attempts. Wait a moment and try again.",
       "accept": "I understand and accept",
       "callContact": "Call {{contact}}",
       "channelInApp": "In-app",
@@ -3741,6 +3749,14 @@ export const TRANSLATIONS = {
       "numberPrivate": "Ukodesha yahisemo Ubutumwa kandi nimero ye iguma ari ibanga."
     },
     "rentalInquiry": {
+      "doneNotice": "Sawa Cars ntigira uruhare muri ubu bukode kandi ntibika amafaranga na rimwe. Mwumvikane ubwanyu n’utanga ubukode ku giciro, ingwate, amasezerano, aho uyifatira n’aho uyisubiza, kandi wisuzumire imodoka n’ibyangombwa byayo.",
+      "errNetwork": "Ntitwabashije kugera kuri Sawa Cars. Ongera ugerageze.",
+      "rentalGone": "Iyi modoka y’ubukode ntikiri ku isoko.",
+      "ownRental": "Iyi ni imodoka yawe y’ubukode.",
+      "channelUnavailable": "Utanga ubukode yafunze ubu buryo bwo kuvugana. Hitamo ubutumwa kuri Sawa.",
+      "contactBlocked": "Ntushobora kuvugana n’uyu utanga ubukode ukoresheje konti yawe.",
+      "contentRejected": "Ubu butumwa ntibushobora koherezwa. Vugana n’ubufasha niba utekereza ko ari ikosa.",
+      "tooMany": "Wagerageje inshuro nyinshi. Tegereza gato wongere ugerageze.",
       "accept": "Ndabyumvise kandi ndabyemeye",
       "callContact": "Hamagara {{contact}}",
       "channelInApp": "Muri porogaramu",
@@ -5749,6 +5765,14 @@ export const TRANSLATIONS = {
       "numberPrivate": "Le locataire a choisi Messages et garde son numéro privé."
     },
     "rentalInquiry": {
+      "doneNotice": "Sawa Cars n’est pas partie à cette location et ne détient jamais d’argent. Convenez directement avec le loueur du prix, de la caution, du contrat, de la prise en charge et du retour, et vérifiez vous-même le véhicule et ses documents.",
+      "errNetwork": "Impossible de joindre Sawa Cars. Veuillez réessayer.",
+      "rentalGone": "Ce véhicule de location n’est plus proposé.",
+      "ownRental": "C’est votre propre véhicule de location.",
+      "channelUnavailable": "Le loueur a désactivé ce moyen de contact. Choisissez plutôt la messagerie Sawa.",
+      "contactBlocked": "Le contact n’est pas possible entre votre compte et ce loueur.",
+      "contentRejected": "Ce message ne peut pas être envoyé. Contactez l’assistance si vous pensez qu’il s’agit d’une erreur.",
+      "tooMany": "Trop de tentatives. Patientez un instant puis réessayez.",
       "accept": "Je comprends et j’accepte",
       "callContact": "Appeler {{contact}}",
       "channelInApp": "Dans l’app",
@@ -7757,6 +7781,14 @@ export const TRANSLATIONS = {
       "numberPrivate": "Mkodishaji alichagua Ujumbe na kuweka namba yake siri."
     },
     "rentalInquiry": {
+      "doneNotice": "Sawa Cars si sehemu ya ukodishaji huu na haishikilii pesa yoyote. Kubaliana moja kwa moja na mtoa huduma kuhusu bei, amana, mkataba, uchukuaji na urejeshaji, na ukague gari na nyaraka zake mwenyewe.",
+      "errNetwork": "Hatukuweza kufikia Sawa Cars. Tafadhali jaribu tena.",
+      "rentalGone": "Gari hili la kukodisha halipo tena.",
+      "ownRental": "Hili ni gari lako la kukodisha.",
+      "channelUnavailable": "Mtoa huduma amezima njia hii ya mawasiliano. Chagua ujumbe wa Sawa badala yake.",
+      "contactBlocked": "Mawasiliano hayapatikani kati ya akaunti yako na mtoa huduma huyu.",
+      "contentRejected": "Ujumbe huu hauwezi kutumwa. Wasiliana na huduma kwa wateja ikiwa unadhani ni kosa.",
+      "tooMany": "Majaribio mengi mno. Subiri kidogo kisha ujaribu tena.",
       "accept": "Nimeelewa na nakubali",
       "callContact": "Piga {{contact}}",
       "channelInApp": "Ndani ya programu",
@@ -9765,6 +9797,14 @@ export const TRANSLATIONS = {
       "numberPrivate": "고객이 메시지를 선택해 번호를 공개하지 않았습니다."
     },
     "rentalInquiry": {
+      "doneNotice": "Sawa Cars는 이 렌탈의 당사자가 아니며 어떤 돈도 보관하지 않습니다. 가격, 보증금, 계약, 인수, 반납은 업체와 직접 합의하고 차량과 서류는 직접 확인하세요.",
+      "errNetwork": "Sawa Cars에 연결할 수 없습니다. 다시 시도해 주세요.",
+      "rentalGone": "더 이상 등록되지 않은 렌터카입니다.",
+      "ownRental": "회원님의 렌터카입니다.",
+      "channelUnavailable": "업체가 이 연락 방법을 껐습니다. 대신 Sawa 메시지를 선택하세요.",
+      "contactBlocked": "회원님의 계정과 이 업체 사이에는 연락할 수 없습니다.",
+      "contentRejected": "이 메시지는 보낼 수 없습니다. 오류라고 생각되면 고객 지원에 문의하세요.",
+      "tooMany": "시도 횟수가 너무 많습니다. 잠시 후 다시 시도하세요.",
       "accept": "이해했으며 동의합니다",
       "callContact": "{{contact}} 전화",
       "channelInApp": "앱 내",
@@ -11773,6 +11813,14 @@ export const TRANSLATIONS = {
       "numberPrivate": "租客选择了消息联系，号码保持私密。"
     },
     "rentalInquiry": {
+      "doneNotice": "Sawa Cars 不是本次租赁的当事方，也从不代管任何款项。请直接与租车方商定价格、押金、合同、取车和还车，并亲自检查车辆及其证件。",
+      "errNetwork": "无法连接 Sawa Cars，请重试。",
+      "rentalGone": "这辆租赁车已下架。",
+      "ownRental": "这是您自己的租赁车辆。",
+      "channelUnavailable": "租车方已关闭此联系方式，请改用 Sawa 站内消息。",
+      "contactBlocked": "您的账户无法联系这位租车方。",
+      "contentRejected": "此留言无法发送。如认为有误，请联系客服。",
+      "tooMany": "尝试次数过多，请稍后再试。",
       "accept": "我已了解并接受",
       "callContact": "拨打 {{contact}}",
       "channelInApp": "应用内",
