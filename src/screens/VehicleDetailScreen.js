@@ -59,7 +59,7 @@ export default function VehicleDetailScreen({ navigation, route }) {
   // id — there is no car object to render from until the fetch lands.
   const carId = route.params?.carId || listCar?.id;
   const insets = useSafeAreaInsets();
-  const { isCarSaved, toggleSaveCar, isLoggedIn, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail, brandLogo, t } = useApp();
+  const { isCarSaved, toggleSaveCar, isLoggedIn, currentUser, loginAsGuest, demoMode, addToComparison, comparisonCars, fetchCarDetail, brandLogo, t } = useApp();
 
   // The browse payload is deliberately lean. The detail endpoint adds price
   // history, the seller's phone and the full market comparison — and counts the
@@ -180,6 +180,15 @@ export default function VehicleDetailScreen({ navigation, route }) {
   ).slice(0, 6);
 
   const isInComparison = comparisonCars.some((c) => c.id === car.id);
+
+  // The bar offers what this viewer can actually do with this car. A demo
+  // fixture carries no status, so only an explicit non-live status hides it.
+  const isOwnListing = Boolean(isLoggedIn && car.sellerId && currentUser?.id === car.sellerId);
+  const isUnavailable = Boolean(car.status) && car.status !== 'live';
+  const offersWhatsApp = car.sellerContactAvailable?.whatsapp === true;
+  // Every channel still goes through SellerContact, which holds the
+  // direct-deal acknowledgement the server requires before any disclosure.
+  const openContact = (channel) => executeWithAuth(() => navigation.navigate('SellerContact', { car, channel }));
 
   const executeWithAuth = (action) => {
     if (isLoggedIn) { action(); }
@@ -629,13 +638,43 @@ export default function VehicleDetailScreen({ navigation, route }) {
               {formatPrice(price)}
             </Text>
           </View>
-          <Button
-            title={t('vehicleDetail.contactVerifiedSeller')}
-            icon="chatbubble-outline"
-            style={styles.requestButton}
-            accessibilityHint={t('sellerContact.directDealNotice')}
-            onPress={() => executeWithAuth(() => navigation.navigate('SellerContact', { car }))}
-          />
+          {isOwnListing ? (
+            <Button
+              title={t('vehicleDetail.manageListing')}
+              icon="create-outline"
+              variant="outline"
+              style={styles.requestButton}
+              accessibilityLabel={`${t('vehicleDetail.ownListingBar')}. ${t('vehicleDetail.manageListing')}`}
+              onPress={() => navigation.navigate('SellerDashboard')}
+            />
+          ) : isUnavailable ? (
+            <View style={styles.ctaUnavailable} accessibilityRole="text">
+              <Ionicons name="pause-circle-outline" size={18} color={colors.textMuted} />
+              <Text style={styles.ctaUnavailableText} numberOfLines={1}>{t('vehicleDetail.notAvailableBar')}</Text>
+            </View>
+          ) : (
+            <>
+              {offersWhatsApp ? (
+                <Pressable
+                  onPress={() => openContact('whatsapp')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('vehicleDetail.whatsappSeller')}
+                  accessibilityHint={t('sellerContact.directDealNotice')}
+                  hitSlop={4}
+                  style={({ pressed }) => [styles.ctaIconButton, pressed && styles.ctaIconButtonPressed]}
+                >
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.textPrimary} />
+                </Pressable>
+              ) : null}
+              <Button
+                title={t('vehicleDetail.messageSeller')}
+                icon="chatbubble-outline"
+                style={styles.requestButton}
+                accessibilityHint={t('sellerContact.directDealNotice')}
+                onPress={() => openContact('in_app')}
+              />
+            </>
+          )}
         </View>
       </View>
 
@@ -870,6 +909,17 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'], fontSize: 19, lineHeight: 24,
     fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: -0.4,
   },
+  ctaIconButton: {
+    width: 48, height: 48, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  ctaIconButtonPressed: { backgroundColor: colors.bg },
+  ctaUnavailable: {
+    flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderRadius: radius.lg, backgroundColor: colors.bg, paddingHorizontal: 12,
+  },
+  ctaUnavailableText: { flexShrink: 1, fontSize: 14, fontFamily: fonts.bold, color: colors.textMuted },
   requestButton: {
     flex: 1, width: 'auto', minWidth: 0, minHeight: 48,
     paddingVertical: 12, borderRadius: radius.lg,

@@ -53,19 +53,25 @@ export async function updateProfileAction(
 }
 
 // O4 in docs/WEB-PARITY-PLAN.md — the "while you were away" message email is
-// on by default; this is its opt-out, one boolean, no confirmation needed.
+// on by default; this is its opt-out. The saved-search and price-drop alerts
+// (migration 0062) share the form: plain booleans, no confirmation needed.
 export async function updateNotificationSettingsAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
   const t = await getServerT()
-  const messageEmails = formData.get('message_email_notifications') === 'on'
+  // An unticked checkbox is absent from the form, so each reads as off.
+  const fields = {
+    message_email_notifications: formData.get('message_email_notifications') === 'on',
+    alert_search_matches: formData.get('alert_search_matches') === 'on',
+    alert_price_drops: formData.get('alert_price_drops') === 'on',
+  }
 
   const token = await getToken()
   if (!token) return { error: t('dashboard.errors.sessionExpired') }
 
   try {
-    await account.updateProfile(token, { message_email_notifications: messageEmails })
+    await account.updateProfile(token, fields)
   } catch (err) {
     return { error: describeError(err, t('dashboard.errors.profileSaveFailed')) }
   }

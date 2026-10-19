@@ -1,6 +1,7 @@
 'use server'
 
 import { ApiError, cars, messages } from '@/lib/api'
+import { getServerT } from '@/lib/i18n/server'
 import { getToken } from '@/lib/session'
 
 export type ContactState =
@@ -10,7 +11,6 @@ export type ContactState =
       status: 'done'
       channel: 'phone' | 'whatsapp' | 'in_app'
       contact: string | null
-      notice: string
       /** Set when channel is 'in_app' — G1 in docs/WEB-PARITY-PLAN.md: the
        *  website now has somewhere to send this to. */
       conversationId?: string
@@ -24,19 +24,20 @@ export async function contactSellerAction(
   const channel = String(formData.get('channel') || 'in_app') as 'phone' | 'whatsapp' | 'in_app'
   const message = String(formData.get('message') || '').trim().slice(0, 1000)
   const acknowledge = formData.get('acknowledge') === 'yes'
+  const t = await getServerT()
 
   if (!carId || !['phone', 'whatsapp', 'in_app'].includes(channel)) {
-    return { status: 'error', message: 'Choose a valid contact method and try again.' }
+    return { status: 'error', message: t('cars.detail.contactForm.errorChannel') }
   }
   if (!acknowledge) {
-    return { status: 'error', message: 'Please acknowledge the direct-deal notice before contacting the seller.' }
+    return { status: 'error', message: t('cars.detail.contactForm.errorAcknowledge') }
   }
   if (channel === 'in_app' && message.length < 2) {
-    return { status: 'error', message: 'Write a short message for the seller.' }
+    return { status: 'error', message: t('cars.detail.contactForm.errorMessage') }
   }
 
   const token = await getToken()
-  if (!token) return { status: 'error', message: 'Your session expired. Sign in again to contact the seller.' }
+  if (!token) return { status: 'error', message: t('cars.detail.contactForm.errorSession') }
 
   try {
     const disclosure = await cars.contact(token, carId, channel, true)
@@ -45,14 +46,30 @@ export async function contactSellerAction(
       const started = await messages.start(token, carId, message)
       conversationId = started.conversation.id
     }
-    return { status: 'done', channel, contact: disclosure.contact, notice: disclosure.notice, conversationId }
+    return { status: 'done', channel, contact: disclosure.contact, conversationId }
   } catch (error) {
-    if (error instanceof ApiError) {
-      if (error.status === 401) return { status: 'error', message: 'Your session expired. Sign in again to continue.' }
-      if (error.status === 409) return { status: 'error', message: error.message }
-      if (error.isNetworkError) return { status: 'error', message: 'We could not reach Sawa Cars. Please try again.' }
-      return { status: 'error', message: error.message }
-    }
-    return { status: 'error', message: 'Something went wrong. Please try again.' }
+    return { status: 'error', message: t(`cars.detail.contactForm.${contactErrorKey(error)}`) }
   }
+}
+
+// The API's error text is English; its status and code are not. Map those so
+// the visitor reads the reason in their own language.
+function contactErrorKey(error: unknown): string {
+  if (!(error instanceof ApiError)) return 'errorGeneric'
+  if (error.isNetworkError) return 'errorNetwork'
+  switch (error.code) {
+    case 'MARKETPLACE_TERMS_REQUIRED': return 'errorAcknowledge'
+    case 'CONTACT_NOT_AVAILABLE': return 'channelUnavailable'
+    case 'CONTACT_BLOCKED':
+    case 'BLOCKED': return 'contactBlocked'
+    case 'LISTING_NOT_FOUND': return 'listingGone'
+    case 'CONTENT_REJECTED': return 'contentRejected'
+  }
+  if (error.status === 401) return 'errorSession'
+  if (error.status === 404) return 'listingGone'
+  if (error.status === 403) return 'contactBlocked'
+  if (error.status === 409) return 'channelUnavailable'
+  if (error.status === 428) return 'errorAcknowledge'
+  if (error.status === 429) return 'tooMany'
+  return 'errorGeneric'
 }

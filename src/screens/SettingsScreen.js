@@ -78,6 +78,13 @@ async function openLink(url, failedMessage) {
 // All user-facing settings labels come through the same translation function as
 // the language picker. This keeps the selector useful even when the user cannot
 // read the default English screen.
+// Settings rows saved on the account (PATCH /auth/me), by toggle id.
+const ACCOUNT_TOGGLE_FIELDS = {
+  messageEmail: 'message_email_notifications',
+  alertSearch: 'alert_search_matches',
+  alertPrice: 'alert_price_drops',
+};
+
 const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearanceLabel, showTestPush, signedIn) => [
   {
     title: t('settings.account'),
@@ -98,6 +105,15 @@ const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearance
       ...(signedIn ? [{ icon: 'mail-outline', label: t('settings.messageEmails'), sub: t('settings.messageEmailsHint'), toggle: 'messageEmail' }] : []),
     ],
   },
+  // The two alerts Sawa sends on its own. Saved per account, so they apply on
+  // every phone and the website; each saved search keeps its own switch too.
+  ...(signedIn ? [{
+    title: t('settings.alerts'),
+    items: [
+      { icon: 'search-outline', label: t('settings.alertSearchMatches'), sub: t('settings.alertSearchMatchesHint'), toggle: 'alertSearch' },
+      { icon: 'trending-down-outline', label: t('settings.alertPriceDrops'), sub: t('settings.alertPriceDropsHint'), toggle: 'alertPrice' },
+    ],
+  }] : []),
   {
     // The Support group used to offer no way to reach support: an intro replay
     // and a coming-soon rating row. Both are gone — replaying a first-run tour
@@ -170,8 +186,15 @@ export default function SettingsScreen({ navigation }) {
   // Persisted, and actually wired: off tells the server to forget this device.
   const [pushOn, setPushOn] = useState(true);
   // Off only when the account says so explicitly; the server default is on.
-  const [messageEmailOn, setMessageEmailOn] = useState(currentUser?.message_email_notifications !== false);
-  React.useEffect(() => { setMessageEmailOn(currentUser?.message_email_notifications !== false); }, [currentUser?.message_email_notifications]);
+  // Account switches: each is on unless the account says false (the server
+  // default is on), and follows the account when it changes.
+  const accountToggles = React.useMemo(() => ({
+    messageEmail: currentUser?.message_email_notifications !== false,
+    alertSearch: currentUser?.alert_search_matches !== false,
+    alertPrice: currentUser?.alert_price_drops !== false,
+  }), [currentUser?.message_email_notifications, currentUser?.alert_search_matches, currentUser?.alert_price_drops]);
+  const [accountOn, setAccountOn] = useState(accountToggles);
+  React.useEffect(() => { setAccountOn(accountToggles); }, [accountToggles]);
   // Whether a downloaded update applies itself on the next return to the app.
   const [autoUpdateOn, setAutoUpdateOn] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
@@ -199,21 +222,27 @@ export default function SettingsScreen({ navigation }) {
     );
   };
 
-  const handleMessageEmailToggle = async () => {
-    const next = !messageEmailOn;
-    setMessageEmailOn(next);
+  const handleAccountToggle = async (which) => {
+    const next = !accountOn[which];
+    setAccountOn((prev) => ({ ...prev, [which]: next }));
     try {
-      await updateCurrentUserProfile({ message_email_notifications: next });
+      await updateCurrentUserProfile({ [ACCOUNT_TOGGLE_FIELDS[which]]: next });
     } catch {
       // Show what the server actually holds, not the tap.
-      setMessageEmailOn(!next);
+      setAccountOn((prev) => ({ ...prev, [which]: !next }));
       showToast(t('settings.genericError'), 'error');
     }
   };
 
+  const toggleValue = (which) => {
+    if (which === 'autoUpdate') return autoUpdateOn;
+    if (which in ACCOUNT_TOGGLE_FIELDS) return accountOn[which];
+    return pushOn;
+  };
+
   const handleToggle = (which) => {
     if (which === 'autoUpdate') return handleAutoUpdateToggle();
-    if (which === 'messageEmail') return handleMessageEmailToggle();
+    if (which in ACCOUNT_TOGGLE_FIELDS) return handleAccountToggle(which);
     return handlePushToggle();
   };
 
@@ -400,6 +429,8 @@ export default function SettingsScreen({ navigation }) {
                     key={item.label}
                     style={[styles.item, i < g.items.length - 1 && styles.itemBorder]}
                     onPress={() => (isToggle ? handleToggle(item.toggle) : handleItemPress(item))}
+                    accessibilityRole={isToggle ? 'switch' : 'button'}
+                    accessibilityState={isToggle ? { checked: toggleValue(item.toggle) } : undefined}
                   >
                     <View style={styles.itemIcon}>
                       <Ionicons name={item.icon} size={20} color={colors.slate700} />
@@ -413,7 +444,7 @@ export default function SettingsScreen({ navigation }) {
                       <Text style={styles.itemLabel}>{item.label}</Text>
                     )}
                     {isToggle ? (
-                      <Toggle on={item.toggle === 'autoUpdate' ? autoUpdateOn : item.toggle === 'messageEmail' ? messageEmailOn : pushOn} />
+                      <Toggle on={toggleValue(item.toggle)} />
                     ) : (
                       <View style={styles.itemRight}>
                         {item.value ? <Text style={styles.itemValue}>{item.value}</Text> : null}

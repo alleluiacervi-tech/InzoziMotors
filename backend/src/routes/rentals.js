@@ -582,14 +582,14 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
   const preferredChannel = String(req.body.preferred_channel || 'in_app');
   const message = String(req.body.message || '').trim().slice(0, 1500) || null;
   const pickupLocation = String(req.body.pickup_location || '').trim().slice(0, 200) || null;
-  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return res.status(400).json({ error: 'start_date is required in YYYY-MM-DD format' });
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return res.status(400).json({ error: 'start_date is required in YYYY-MM-DD format', code: 'INVALID_START_DATE' });
   const parsedStart = new Date(`${startDate}T00:00:00.000Z`);
   // The renter's "today" is Kigali's, the same day the calendar shows.
   const today = kigaliToday();
   if (Number.isNaN(parsedStart.getTime()) || parsedStart.toISOString().slice(0, 10) !== startDate || startDate < today) {
-    return res.status(400).json({ error: 'start_date must be a valid date that is today or later' });
+    return res.status(400).json({ error: 'start_date must be a valid date that is today or later', code: 'INVALID_START_DATE' });
   }
-  if (!Number.isInteger(days) || days < 1 || days > 365) return res.status(400).json({ error: 'days is required and must be between 1 and 365' });
+  if (!Number.isInteger(days) || days < 1 || days > 365) return res.status(400).json({ error: 'days is required and must be between 1 and 365', code: 'INVALID_DAYS' });
   if (!['in_app', 'phone', 'whatsapp'].includes(preferredChannel)) return res.status(400).json({ error: 'Invalid preferred channel' });
   // The message now opens a chat thread, so it passes the same screening as
   // any chat message (lib/moderation.js).
@@ -616,9 +616,9 @@ router.post('/:id/inquire', requireAuth, requireUuid('id'), async (req, res) => 
          FOR UPDATE OF rc`,
         [req.params.id, req.user.id]
       );
-      if (!rows.length) { const e = new Error('Active rental car not found'); e.status = 404; throw e; }
+      if (!rows.length) { const e = new Error('Active rental car not found'); e.status = 404; e.code = 'RENTAL_NOT_FOUND'; throw e; }
       const car = rows[0];
-      if (car.provider_id === req.user.id) { const e = new Error('You cannot inquire about your own rental car'); e.status = 400; throw e; }
+      if (car.provider_id === req.user.id) { const e = new Error('You cannot inquire about your own rental car'); e.status = 400; e.code = 'OWN_RENTAL'; throw e; }
       await ensureMarketplaceAcknowledgement(client, {
         id: req.user.id,
         marketplace_terms_accepted_at: car.marketplace_terms_accepted_at,

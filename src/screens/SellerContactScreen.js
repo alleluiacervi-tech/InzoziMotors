@@ -15,6 +15,29 @@ const CHANNELS = [
   { id: 'phone', label: 'Phone call', icon: 'call-outline' },
 ];
 
+// The API's error text is English; its status and code are not. Map those so
+// the buyer reads the reason in their own language.
+function contactErrorKey(err) {
+  if (err?.isNetworkError) return 'sellerContact.networkError';
+  switch (err?.code) {
+    case 'MARKETPLACE_TERMS_REQUIRED': return 'sellerContact.acknowledgeRequired';
+    case 'CONTACT_NOT_AVAILABLE': return 'sellerContact.channelUnavailable';
+    case 'CONTACT_BLOCKED':
+    case 'BLOCKED': return 'sellerContact.contactBlocked';
+    case 'LISTING_NOT_FOUND': return 'sellerContact.listingGone';
+    case 'CONTENT_REJECTED': return 'sellerContact.contentRejected';
+    default: break;
+  }
+  switch (err?.status) {
+    case 404: return 'sellerContact.listingGone';
+    case 403: return 'sellerContact.contactBlocked';
+    case 409: return 'sellerContact.channelUnavailable';
+    case 428: return 'sellerContact.acknowledgeRequired';
+    case 429: return 'sellerContact.tooMany';
+    default: return 'settings.genericError';
+  }
+}
+
 export default function SellerContactScreen({ navigation, route }) {
   const car = route.params?.car;
   const { isLoggedIn, getOrCreateConversation, sendMessage, t } = useApp();
@@ -30,7 +53,12 @@ export default function SellerContactScreen({ navigation, route }) {
     () => channelsConfig.filter((item) => item.id === 'in_app' || availability[item.id]),
     [availability.phone, availability.whatsapp, availability.in_app, t]
   );
-  const [channel, setChannel] = useState(channels[0]?.id || 'in_app');
+  // The detail bar opens this screen on the channel the buyer tapped; fall
+  // back to the first offered one if the seller has since switched it off.
+  const requestedChannel = route.params?.channel;
+  const [channel, setChannel] = useState(
+    channels.some((item) => item.id === requestedChannel) ? requestedChannel : (channels[0]?.id || 'in_app')
+  );
   const [message, setMessage] = useState('');
   const [acknowledged, setAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,11 +82,11 @@ export default function SellerContactScreen({ navigation, route }) {
       return;
     }
     if (!acknowledged) {
-      setError(t('vehicleDetail.directDealNotice'));
+      setError(t('sellerContact.acknowledgeRequired'));
       return;
     }
     if (channel === 'in_app' && message.trim().length < 2) {
-      setError(t('sellerContact.messagePlaceholder'));
+      setError(t('sellerContact.messageTooShort'));
       return;
     }
     setLoading(true);
@@ -72,14 +100,17 @@ export default function SellerContactScreen({ navigation, route }) {
         return;
       }
       const contact = disclosure?.contact;
-      if (!contact) throw new Error(t('sellerContact.unavailable'));
+      if (!contact) {
+        setError(t('sellerContact.channelUnavailable'));
+        return;
+      }
       const url = channel === 'whatsapp'
         ? `https://wa.me/${String(contact).replace(/\D/g, '')}`
         : `tel:${contact}`;
       await Linking.openURL(url);
       showToast(t('common.success'), 'success');
     } catch (err) {
-      setError(err?.message || t('settings.genericError'));
+      setError(t(contactErrorKey(err)));
     } finally {
       setLoading(false);
     }

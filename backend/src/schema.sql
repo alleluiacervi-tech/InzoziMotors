@@ -859,6 +859,10 @@ CREATE INDEX IF NOT EXISTS idx_rental_busy_periods_car
   ON rental_busy_periods(rental_car_id, ends_on);
 ALTER TABLE rental_cars ADD COLUMN IF NOT EXISTS calendar_updated_at TIMESTAMPTZ;
 
+-- ─── Alert preferences (0062) ───────────────────────────────────────────────
+ALTER TABLE users ADD COLUMN IF NOT EXISTS alert_search_matches BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS alert_price_drops BOOLEAN NOT NULL DEFAULT TRUE;
+
 -- ─── Sawa Rental Checks — 10-point evidence for rental listings (0060) ──────
 CREATE TABLE IF NOT EXISTS rental_checks (
   id                            UUID PRIMARY KEY DEFAULT gen_random_uuid(),

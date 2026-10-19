@@ -5,7 +5,7 @@ import Screen from '../components/Screen';
 import BackHeader from '../components/BackHeader';
 import Button from '../components/Button';
 import { useApp } from '../context/AppContext';
-import { formatDay } from '../utils/rentalDates';
+import { formatDay, isIsoDay, kigaliToday } from '../utils/rentalDates';
 import { colors, fonts, radius, shadows } from '../theme';
 
 const tomorrowISO = () => {
@@ -13,6 +13,33 @@ const tomorrowISO = () => {
   day.setDate(day.getDate() + 1);
   return day.toISOString().slice(0, 10);
 };
+
+
+// The API's error text is English; its status and code are not. Map those so
+// the renter reads the reason in their own language.
+function inquiryErrorKey(err) {
+  if (err?.isNetworkError) return 'rentalInquiry.errNetwork';
+  switch (err?.code) {
+    case 'INVALID_START_DATE': return 'rentalInquiry.errDate';
+    case 'INVALID_DAYS': return 'rentalInquiry.errSend';
+    case 'MARKETPLACE_TERMS_REQUIRED': return 'rentalInquiry.errAccept';
+    case 'CONTACT_NOT_AVAILABLE': return 'rentalInquiry.channelUnavailable';
+    case 'CONTACT_BLOCKED':
+    case 'BLOCKED': return 'rentalInquiry.contactBlocked';
+    case 'RENTAL_NOT_FOUND': return 'rentalInquiry.rentalGone';
+    case 'OWN_RENTAL': return 'rentalInquiry.ownRental';
+    case 'CONTENT_REJECTED': return 'rentalInquiry.contentRejected';
+    default: break;
+  }
+  switch (err?.status) {
+    case 404: return 'rentalInquiry.rentalGone';
+    case 403: return 'rentalInquiry.contactBlocked';
+    case 409: return 'rentalInquiry.channelUnavailable';
+    case 428: return 'rentalInquiry.errAccept';
+    case 429: return 'rentalInquiry.tooMany';
+    default: return 'rentalInquiry.errSend';
+  }
+}
 
 export default function RentalInquiryScreen({ navigation, route }) {
   const car = route.params?.car;
@@ -41,9 +68,9 @@ export default function RentalInquiryScreen({ navigation, route }) {
   const submit = async () => {
     if (!isLoggedIn) return navigation.navigate('SignIn');
     const count = Number(days);
-    const requested = new Date(`${startDate}T00:00:00`);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || Number.isNaN(requested.getTime()) || requested <= today) return setError(t('rentalInquiry.errDate'));
+    // Today in Kigali is allowed, as on the server and the website; the
+    // phone's own clock and time zone don't decide which day "today" is.
+    if (!isIsoDay(startDate) || startDate < kigaliToday()) return setError(t('rentalInquiry.errDate'));
     if (!Number.isInteger(count) || count < (car.minDays || 1) || count > 365) return setError(t('rentalInquiry.errDays', { min: car.minDays || 1 }));
     if (!acknowledged) return setError(t('rentalInquiry.errAccept'));
     setLoading(true); setError('');
@@ -51,13 +78,13 @@ export default function RentalInquiryScreen({ navigation, route }) {
       const created = await sendRentalInquiry({ carId: car.id, carTitle: car.title, startDateISO: startDate, startDate, days: count, pickupLocation: pickupLocation.trim(), message: message.trim(), preferredChannel, shareContact });
       setResult({
         reference: created.inquiry_ref || created.inquiryRef, contact: created.contact || null,
-        notice: created.notice || car.directDealNotice, channel: preferredChannel,
+        channel: preferredChannel,
         conversationId: created.conversation_id || null,
         whatsappText: created.whatsapp_text || null,
         busyOverlap: Array.isArray(created.busy_overlap) ? created.busy_overlap : [],
       });
     } catch (err) {
-      setError(err?.message || t('rentalInquiry.errSend'));
+      setError(t(inquiryErrorKey(err)));
     } finally { setLoading(false); }
   };
 
@@ -72,7 +99,7 @@ export default function RentalInquiryScreen({ navigation, route }) {
     const overlap = result.busyOverlap
       .map((r) => (r.from === r.to ? formatDay(r.from) : `${formatDay(r.from)} – ${formatDay(r.to)}`))
       .join(', ');
-    return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.sentTitle')} onBack={() => navigation.navigate('MyRentals')} /><ScrollView contentContainerStyle={styles.success}><View style={styles.successIcon}><Ionicons name="checkmark" size={34} color="#fff" /></View><Text style={styles.successTitle}>{t('rentalInquiry.sentHeading')}</Text><Text style={styles.successBody}>{t('rentalInquiry.sentBody', { ref: result.reference || '—' })}</Text>{!!overlap && <View style={styles.overlap}><Ionicons name="calendar-outline" size={18} color={colors.amberText} /><Text style={styles.overlapText}>{t('rentalCalendar.overlap', { dates: overlap })}</Text></View>}{result.contact && result.channel !== 'in_app' ? <Button title={result.channel === 'whatsapp' ? t('rentalInquiry.continueWhatsapp') : t('rentalInquiry.callContact', { contact: result.contact })} icon={result.channel === 'whatsapp' ? 'logo-whatsapp' : 'call-outline'} onPress={openContact} style={styles.successButton} /> : null}{result.conversationId ? <Button title={t('rentalInquiry.openChat')} icon="chatbubbles-outline" variant={result.contact && result.channel !== 'in_app' ? 'outline' : 'primary'} onPress={() => navigation.navigate('Chat', { convId: result.conversationId, name: car.providerName })} style={styles.successButton} /> : null}<Button title={t('rentalInquiry.viewInquiries')} variant="outline" onPress={() => navigation.replace('MyRentals')} style={styles.successButton} /><Text style={styles.noticeSmall}>{result.notice}</Text></ScrollView></Screen>;
+    return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.sentTitle')} onBack={() => navigation.navigate('MyRentals')} /><ScrollView contentContainerStyle={styles.success}><View style={styles.successIcon}><Ionicons name="checkmark" size={34} color="#fff" /></View><Text style={styles.successTitle}>{t('rentalInquiry.sentHeading')}</Text><Text style={styles.successBody}>{t('rentalInquiry.sentBody', { ref: result.reference || '—' })}</Text>{!!overlap && <View style={styles.overlap}><Ionicons name="calendar-outline" size={18} color={colors.amberText} /><Text style={styles.overlapText}>{t('rentalCalendar.overlap', { dates: overlap })}</Text></View>}{result.contact && result.channel !== 'in_app' ? <Button title={result.channel === 'whatsapp' ? t('rentalInquiry.continueWhatsapp') : t('rentalInquiry.callContact', { contact: result.contact })} icon={result.channel === 'whatsapp' ? 'logo-whatsapp' : 'call-outline'} onPress={openContact} style={styles.successButton} /> : null}{result.conversationId ? <Button title={t('rentalInquiry.openChat')} icon="chatbubbles-outline" variant={result.contact && result.channel !== 'in_app' ? 'outline' : 'primary'} onPress={() => navigation.navigate('Chat', { convId: result.conversationId, name: car.providerName })} style={styles.successButton} /> : null}<Button title={t('rentalInquiry.viewInquiries')} variant="outline" onPress={() => navigation.replace('MyRentals')} style={styles.successButton} /><Text style={styles.noticeSmall}>{t('rentalInquiry.doneNotice')}</Text></ScrollView></Screen>;
   }
 
   return <Screen background={colors.bg}><BackHeader title={t('rentalInquiry.title')} onBack={() => navigation.goBack()} /><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

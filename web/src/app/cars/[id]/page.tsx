@@ -536,10 +536,22 @@ export default async function CarDetailPage({ params }: PageProps) {
               <p className="truncate text-micro font-semibold text-content-muted">{car.title}</p>
               <p className="text-title-sm font-extrabold text-brand" aria-label={ formatMoneyExact(car.price) }>{ formatMoney(car.price) }</p>
             </div>
+            {/* A shortcut, not a disclosure: it lands on the form with
+                WhatsApp chosen, where the direct-deal acknowledgement still
+                stands between the buyer and the number. */}
+            {user && car.seller_contact_available?.whatsapp ? (
+              <a
+                href="#contact-whatsapp"
+                aria-label={t('cars.detail.whatsappSeller')}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-content transition-colors hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                <Icon name="whatsapp" size={20} />
+              </a>
+            ) : null}
             {/* Same verb as the panel it jumps to — "Contact seller" — so
                 the phone and the desktop never name one action twice. */}
             <Button
-              href={user ? '#purchase-panel' : `/signin?next=${encodeURIComponent(`/cars/${car.id}`)}`}
+              href={user ? (car.seller_contact_available?.in_app === false ? '#purchase-panel' : '#contact-in_app') : `/signin?next=${encodeURIComponent(`/cars/${car.id}`)}`}
               size="compact"
               trailingIcon={<Icon name="arrow-right" size={16} />}
             >

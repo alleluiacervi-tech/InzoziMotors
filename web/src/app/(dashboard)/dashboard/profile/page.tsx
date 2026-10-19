@@ -115,7 +115,11 @@ export default async function ProfilePage() {
                   <WebPushToggle publicKey={push.publicKey} />
                 </div>
               ) : null}
-              <NotificationSettingsForm messageEmails={user.message_email_notifications !== false} />
+              <NotificationSettingsForm
+                messageEmails={user.message_email_notifications !== false}
+                alertSearchMatches={user.alert_search_matches !== false}
+                alertPriceDrops={user.alert_price_drops !== false}
+              />
             </Card>
           </section>
 

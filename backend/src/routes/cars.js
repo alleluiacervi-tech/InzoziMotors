@@ -636,7 +636,7 @@ router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => 
     );
     if (!rows.length || ((!rows[0].has_valid_inspection || rows[0].status !== 'live')
         && req.user.role !== 'admin' && rows[0].seller_id !== req.user.id)) {
-      return res.status(404).json({ error: 'Live listing not found' });
+      return res.status(404).json({ error: 'Live listing not found', code: 'LISTING_NOT_FOUND' });
     }
     const car = rows[0];
     const isInsider = req.user.role === 'admin' || car.seller_id === req.user.id;
@@ -648,7 +648,7 @@ router.post('/:id/contact', requireAuth, requireUuid('id'), async (req, res) => 
          LIMIT 1`,
         [req.user.id, car.seller_id]
       );
-      if (blocked.rowCount) return res.status(403).json({ error: 'Contact is unavailable for these accounts' });
+      if (blocked.rowCount) return res.status(403).json({ error: 'Contact is unavailable for these accounts', code: 'CONTACT_BLOCKED' });
       await ensureMarketplaceAcknowledgement(pool, {
         id: req.user.id,
         marketplace_terms_accepted_at: car.marketplace_terms_accepted_at,
