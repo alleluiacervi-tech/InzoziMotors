@@ -57,7 +57,8 @@ function SavedCarRow({ car, onPress, onRemove, t }) {
   );
 }
 
-function SavedSearchRow({ search, onToggleNotify, onDelete, t }) {
+function SavedSearchRow({ search, onToggleNotify, onSetMode, onDelete, t }) {
+  const daily = search.alertMode === 'daily';
   return (
     <View style={styles.searchRow}>
       <View style={styles.searchIcon}>
@@ -70,6 +71,18 @@ function SavedSearchRow({ search, onToggleNotify, onDelete, t }) {
           <Text style={styles.searchDot}>·</Text>
           <Text style={styles.searchLastText}>{search.lastMatch || t('common.now')}</Text>
         </View>
+        {search.notifyEnabled && (
+          <Pressable
+            onPress={() => onSetMode(search.id, daily ? 'instant' : 'daily')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={daily ? t('saved.alertDaily') : t('saved.alertInstant')}
+          >
+            <Text style={styles.searchModeText}>
+              {daily ? t('saved.alertDaily') : t('saved.alertInstant')}
+            </Text>
+          </Pressable>
+        )}
       </View>
       <Switch
         value={search.notifyEnabled}
@@ -113,9 +126,20 @@ function EmptyState({ icon, title, sub, features, btnLabel, onPress }) {
 export default function SavedScreen({ navigation }) {
   const {
     getSavedCars, toggleSaveCar,
-    savedSearches, toggleSavedSearchNotify, deleteSavedSearch,
+    savedSearches, toggleSavedSearchNotify, setSavedSearchAlertMode, deleteSavedSearch,
     refreshCatalogue, refreshing, t,
   } = useApp();
+
+  // Instant vs the daily summary. Choosing the summary switches it on for the
+  // account if it was off (otherwise the search would never alert), and says so.
+  const handleSetMode = async (id, mode) => {
+    try {
+      const turnedOn = await setSavedSearchAlertMode(id, mode);
+      if (turnedOn) showToast(t('saved.digestOnToast'), 'success');
+    } catch {
+      showToast(t('settings.genericError'), 'error');
+    }
+  };
   const saved = getSavedCars();
   const [tab, setTab] = useState('saved');
 
@@ -204,6 +228,7 @@ export default function SavedScreen({ navigation }) {
               search={item}
               t={t}
               onToggleNotify={toggleSavedSearchNotify}
+              onSetMode={handleSetMode}
               onDelete={handleDeleteSearch}
             />
           )}
@@ -283,6 +308,7 @@ const styles = StyleSheet.create({
   searchMatchText: { fontSize: 11, fontFamily: fonts.semiBold, color: colors.primary },
   searchDot: { fontSize: 11, color: colors.textMuted },
   searchLastText: { fontSize: 11, fontFamily: fonts.regular, color: colors.textMuted },
+  searchModeText: { marginTop: 4, fontSize: 11, fontFamily: fonts.medium || fonts.regular, color: colors.primary },
   deleteBtn: { padding: 4, marginLeft: 4 },
   searchHint: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

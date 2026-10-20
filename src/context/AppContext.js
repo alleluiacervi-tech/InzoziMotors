@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { Alert } from 'react-native';
 import { DEFAULT_CAR_IMAGE, DEFAULT_CAR_IMAGES, STUDIO } from '../data/carImageAssets';
 import { categories, formatPrice, formatMiles, cars as mockCars, conversations as initialConversations, sellerListings as initialSellerListings } from '../data/cars';
 import { INITIAL_NOTIFICATIONS } from '../data/inspectionData';
@@ -14,7 +15,7 @@ import inspectionsApi from '../api/inspections';
 import makesApi from '../api/makes';
 import api, { BASE_URL, getToken } from '../api/client';
 import io from 'socket.io-client';
-import { syncPushToken, unregisterPushToken } from '../utils/push';
+import { syncPushToken, unregisterPushToken, setActiveConversationForPush, setAppBadge } from '../utils/push';
 import { getJSON, setJSON } from '../storage';
 import {
   DEFAULT_LANGUAGE, LANGUAGES, languageFor, localeFor, normalizeLanguage, translate,
@@ -291,6 +292,10 @@ export function AppProvider({ children }) {
   // the same selector as Settings. Translation data is bundled, so changing it
   // never waits for a network request.
   const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
+  // True once the saved choice has been read, so sign-in never reports the
+  // default to the server in place of what the person actually picked.
+  const [languageLoaded, setLanguageLoaded] = useState(false);
+  const languageSyncedRef = useRef(null);
   const setLanguage = useCallback((value) => {
     const next = normalizeLanguage(value);
     setLanguageState(next);
@@ -355,6 +360,7 @@ export function AppProvider({ children }) {
       if (mode) setHomeMode(mode);
       if (viewed) setRecentlyViewedIds(viewed);
       if (languageCached) setLanguageState(normalizeLanguage(languageCached));
+      setLanguageLoaded(true);
       // Last known exchange rate first (offline starts format correctly),
       // then the live one. Both best-effort: a rate is a display aid and must
       // never delay or break boot.
@@ -595,6 +601,7 @@ export function AppProvider({ children }) {
     const params = { limit: PAGE_SIZE, offset };
 
     if (query?.trim()) params.q = query.trim();
+    if (filters?.newToday) params.new = 'today'; // what the daily summary opens onto
     if (filters?.make) params.make = filters.make;
     if (filters?.body) params.body_type = filters.body;
     if (filters?.fuel) params.fuel_type = filters.fuel;
@@ -820,6 +827,7 @@ export function AppProvider({ children }) {
           id: s.id,
           label: s.label,
           notifyEnabled: s.notify_enabled,
+          alertMode: s.alert_mode || 'instant',
           make: s.filters?.make,
           model: s.filters?.model,
           category: s.filters?.category,
@@ -975,6 +983,18 @@ export function AppProvider({ children }) {
     });
     return () => { alive = false; };
   }, [isLoggedIn]);
+
+  // Push notifications are written by the server, so it needs to know the
+  // person's language: told once per sign-in and again whenever it changes.
+  // Best effort — a failed call only means pushes stay in the last language.
+  useEffect(() => {
+    if (!isLoggedIn || !currentUser?.id || !languageLoaded) { languageSyncedRef.current = null; return; }
+    const key = `${currentUser.id}:${language}`;
+    if (languageSyncedRef.current === key) return;
+    languageSyncedRef.current = key;
+    if (currentUser.preferred_language === language) return;
+    authApi.updateProfile({ preferred_language: language }).catch(() => {});
+  }, [isLoggedIn, currentUser?.id, currentUser?.preferred_language, language, languageLoaded]);
 
   // The one-time contextual ask. Called from the first user action that push
   // notifications visibly serve (saving a car — "we'll tell you when the price
@@ -1361,6 +1381,29 @@ export function AppProvider({ children }) {
     return updated;
   }, []);
 
+  // The one-time, plain-words ask for the daily summary. It is OFF until someone
+  // says yes (a summary of every new car is promotional, and the App Store
+  // requires explicit opt-in for that), and it comes at the moment it clearly
+  // pays off: right after they saved a search. Asks once ever; after that the
+  // Settings switch owns the choice. Deliberately not also on saving a car, so
+  // it never stacks on the OS notification-permission dialog that moment can show.
+  const maybeAskForDigest = useCallback(async () => {
+    if (!isLoggedIn || currentUser?.alert_daily_digest === true) return;
+    try {
+      if (await getJSON('digestAsked', false)) return;
+      await setJSON('digestAsked', true);
+      Alert.alert(t('settings.digestAskTitle'), t('settings.digestAskBody'), [
+        { text: t('settings.digestAskNo'), style: 'cancel' },
+        {
+          text: t('settings.digestAskYes'),
+          onPress: () => { updateCurrentUserProfile({ alert_daily_digest: true }).catch(() => {}); },
+        },
+      ]);
+    } catch (err) {
+      console.warn('Daily summary ask skipped:', err?.message);
+    }
+  }, [isLoggedIn, currentUser?.alert_daily_digest, t, updateCurrentUserProfile]);
+
   // --- Car wishlisting / bookmarking ---
 
   const toggleSaveCar = useCallback((id) => {
@@ -1629,6 +1672,8 @@ export function AppProvider({ children }) {
   // thread is active its incoming messages never bump the unread badge.
   const setActiveConversation = useCallback((convId) => {
     activeConvRef.current = convId && !String(convId).startsWith('new_') ? convId : null;
+    // The push layer hides the banner for a message in this very thread.
+    setActiveConversationForPush(activeConvRef.current);
   }, []);
 
   // Resolve one conversation's metadata (the other party's id, above all)
@@ -1794,6 +1839,17 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  // The number on the app icon: unread messages plus unread notifications that
+  // are not messages (each message also writes a notification row — counting
+  // both would show 2 for one message; the server computes it the same way).
+  // Signed out is always 0.
+  useEffect(() => {
+    if (!isLoggedIn) { setAppBadge(0); return; }
+    const fromNotifications = notifications.filter((n) => !n.read && n.type !== 'new_message').length;
+    const fromMessages = conversations.reduce((sum, c) => sum + (c.unread || 0), 0);
+    setAppBadge(fromNotifications + fromMessages);
+  }, [isLoggedIn, notifications, conversations]);
+
   // --- Inspection Checklist Forms ---
 
   const submitInspectionForm = useCallback(async ({ inspection, results, notes, score, odometerKm }) => {
@@ -1823,6 +1879,24 @@ export function AppProvider({ children }) {
     carsApi.toggleSavedSearchNotify(id, nextNotify).catch(() => {});
   }, []);
 
+  // 'instant' alerts as a car goes live; 'daily' holds the search's matches for
+  // the daily summary. Choosing daily with the summary switched off would mean
+  // no alert at all, so it switches the summary on and says so (returns true).
+  const setSavedSearchAlertMode = useCallback(async (id, mode) => {
+    setSavedSearches((prev) => prev.map((s) => (s.id === id ? { ...s, alertMode: mode } : s)));
+    try {
+      await carsApi.setSavedSearchAlertMode(id, mode);
+      if (mode === 'daily' && currentUser?.alert_daily_digest !== true) {
+        await updateCurrentUserProfile({ alert_daily_digest: true });
+        return true;
+      }
+      return false;
+    } catch (err) {
+      setSavedSearches((prev) => prev.map((s) => (s.id === id ? { ...s, alertMode: mode === 'daily' ? 'instant' : 'daily' } : s)));
+      throw err;
+    }
+  }, [currentUser?.alert_daily_digest, updateCurrentUserProfile]);
+
   const deleteSavedSearch = useCallback((id) => {
     setSavedSearches((prev) => prev.filter((s) => s.id !== id));
     carsApi.deleteSavedSearch(id).catch(() => {});
@@ -1836,12 +1910,14 @@ export function AppProvider({ children }) {
         id: s.id,
         label: s.label,
         notifyEnabled: s.notify_enabled,
+        alertMode: s.alert_mode || 'instant',
         make: s.filters?.make,
         model: s.filters?.model,
         category: s.filters?.category,
         maxPrice: s.filters?.maxPrice || s.filters?.max_price,
         maxMileage: s.filters?.maxMileage || s.filters?.max_mileage,
       })));
+      maybeAskForDigest();
       return res.id;
     } catch (err) {
       // The whole point of a saved search is the alert, and alerts are sent by
@@ -1858,7 +1934,7 @@ export function AppProvider({ children }) {
       setSavedSearches((prev) => [localSearch, ...prev]);
       return localSearch.id;
     }
-  }, []);
+  }, [maybeAskForDigest]);
 
   // One brand lookup for the whole app.
   //
@@ -1910,7 +1986,7 @@ export function AppProvider({ children }) {
     recentlyViewedIds, recordCarView,
     currency, toggleCurrency,
     language, languages: LANGUAGES, languageInfo: languageFor(language), locale: localeFor(language), setLanguage, t,
-    savedSearches, toggleSavedSearchNotify, deleteSavedSearch, createSavedSearch,
+    savedSearches, toggleSavedSearchNotify, setSavedSearchAlertMode, deleteSavedSearch, createSavedSearch,
     // Chat messages
     conversations, sendMessage, getMessages, getOrCreateConversation, loadConversationMessages,
     joinConversation, sendTyping, typingConvId, setActiveConversation,
