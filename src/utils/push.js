@@ -94,20 +94,56 @@ export async function setAppBadge(count) {
   }
 }
 
+// Why the last registration attempt ended, in a short code a person can read
+// out in a support conversation (Settings shows it when the test finds this
+// phone unregistered). Before this, every failure path returned null and the
+// reason was a console.warn nobody could see, so "push does not work on this
+// phone" could not be told apart from "iOS permission was never asked" or "the
+// server was unreachable". In memory only; never sent anywhere.
+//   ready                  registered with the server
+//   permission-not-asked   iOS/Android has not been asked yet (and we were told not to ask)
+//   permission-denied      the person said no, or it is off in the phone's settings
+//   simulator              a simulator has no push address
+//   no-native-module       this build cannot do push at all
+//   no-project-id          the build has no EAS project id
+//   token-error: <text>    Expo/Apple refused to give this phone an address
+//   sync-failed: <text>    the address was minted but the server did not take it
+let lastStatus = { stage: 'not-tried', detail: null };
+function note(stage, detail = null) {
+  lastStatus = { stage, detail: detail ? String(detail).slice(0, 120) : null };
+}
+export function getPushStatus() {
+  return { ...lastStatus };
+}
+
+// What the phone's OS currently allows: 'granted', 'denied', 'undetermined', or
+// 'unavailable' (no native module). The Settings switch reads this so it never
+// shows "on" for a phone that was never given permission.
+export async function getPushPermission() {
+  if (!available()) return 'unavailable';
+  try {
+    const current = await callNotifications('getPermissionsAsync');
+    return current?.status || 'unavailable';
+  } catch {
+    return 'unavailable';
+  }
+}
+
 // Resolve (and, if prompt is true, request) OS notification permission, then
 // mint this device's Expo push token. Returns null — never throws — for
 // every case a caller should treat identically as "not registered": a
 // simulator (Expo push tokens are not meaningful there), a declined or
 // undetermined permission when prompt:false says not to ask, a genuine
-// decline, or a missing project id.
+// decline, or a missing project id. getPushStatus() says which.
 export async function registerForPush({ prompt = true } = {}) {
-  if (!Device.isDevice) return null;
+  if (!Device.isDevice) { note('simulator'); return null; }
   // A binary built before the dependency existed cannot do push at all. Saying
   // so here keeps the rest of this function from probing a module that is not
   // there, and is the honest answer rather than a swallowed error.
-  if (!available()) return null;
+  if (!available()) { note('no-native-module'); return null; }
   if (!PROJECT_ID) {
     console.warn('Push token skipped: no EAS project id configured');
+    note('no-project-id');
     return null;
   }
   try {
@@ -115,15 +151,20 @@ export async function registerForPush({ prompt = true } = {}) {
     const current = await callNotifications('getPermissionsAsync');
     let status = current?.status;
     if (status !== 'granted') {
-      if (!prompt) return null;
+      if (!prompt) {
+        note(status === 'denied' ? 'permission-denied' : 'permission-not-asked');
+        return null;
+      }
       const requested = await callNotifications('requestPermissionsAsync');
       status = requested?.status;
     }
-    if (status !== 'granted') return null;
+    if (status !== 'granted') { note('permission-denied'); return null; }
     const minted = await callNotifications('getExpoPushTokenAsync', { projectId: PROJECT_ID });
-    return minted?.data || null;
+    if (!minted?.data) { note('token-error', 'no address returned'); return null; }
+    return minted.data;
   } catch (err) {
     console.warn('Push registration failed:', err?.message);
+    note('token-error', err?.message || 'unknown error');
     return null;
   }
 }
@@ -138,9 +179,11 @@ export async function syncPushToken({ prompt = true } = {}) {
   if (!token) return null;
   try {
     await api.post('/devices/token', { token, platform: Platform.OS });
+    note('ready');
     return token;
   } catch (err) {
     console.warn('Push token sync failed:', err?.message);
+    note('sync-failed', err?.message || 'unknown error');
     return null;
   }
 }

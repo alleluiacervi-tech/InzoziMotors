@@ -18,6 +18,7 @@ import { useTheme } from '../theme/ThemeContext';
 import authApi from '../api/auth';
 import api from '../api/client';
 import { getJSON } from '../storage';
+import { syncPushToken, getPushStatus, getPushPermission } from '../utils/push';
 import {
   SAWA_WHATSAPP, SAWA_PHONE_DISPLAY, SAWA_EMAIL, WHATSAPP_VERIFIED,
 } from '../utils/whatsapp';
@@ -208,7 +209,13 @@ export default function SettingsScreen({ navigation }) {
   const build = runningBuild();
   React.useEffect(() => {
     let alive = true;
-    getJSON('pushEnabled', true).then((v) => { if (alive) setPushOn(v !== false); });
+    // The switch must mean what it says. It used to read only our own saved
+    // preference (default on), so a phone that was never asked for notification
+    // permission (or had refused it) showed "on" and a test button while nothing
+    // was registered. It is on only if we want push AND the phone allows it.
+    Promise.all([getJSON('pushEnabled', true), getPushPermission()]).then(([enabled, permission]) => {
+      if (alive) setPushOn(enabled !== false && permission === 'granted');
+    });
     getUpdateMode().then((m) => { if (alive) setAutoUpdateOn(m === UPDATE_MODE.AUTOMATIC); });
     return () => { alive = false; };
   }, []);
@@ -307,6 +314,16 @@ export default function SettingsScreen({ navigation }) {
   // said for each, so "nothing arrived" can be told apart from "never sent".
   const sendTestPush = async () => {
     try {
+      // First make sure the server has THIS phone's current address (no OS
+      // prompt). A registration that failed at launch for a passing reason heals
+      // here, and if it still fails the reason is fresh. Without an address there
+      // is nothing to test, and the reason is the useful answer.
+      const token = await syncPushToken({ prompt: false });
+      if (!token) {
+        const { stage, detail } = getPushStatus();
+        showToast(`${t('settings.testPushNone')} (${stage}${detail ? `: ${detail}` : ''})`, 'error');
+        return;
+      }
       const { devices } = await api.post('/devices/test', {});
       // Judge by THIS kind of phone only (iPhone rows for an iPhone, Android rows
       // for an Android phone). The account may also have another phone, a browser,
