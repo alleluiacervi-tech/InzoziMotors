@@ -97,6 +97,9 @@ export function FilterPanel({
       {/* The keyword is typed in the search bar at the top of the page
           (BrowseSearch); it rides along here so applying filters keeps it. */}
       <input type="hidden" name="q" value={filters.q ?? ''} />
+      {/* "New today" (from the daily summary) has no field of its own here, so it
+          rides along like the search box and survives applying other filters. */}
+      {filters.new ? <input type="hidden" name="new" value={filters.new} /> : null}
 
       <SelectField
         id={fieldId('make')}

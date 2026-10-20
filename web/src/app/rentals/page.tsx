@@ -11,6 +11,8 @@ import { breadcrumbNode, graph, itemListNode, serviceNode } from '@/lib/seo'
 import { CarCardSkeleton } from '@/components/marketplace/CarCard'
 import { RENTAL_INCLUDES } from '@/components/marketplace/rental-copy'
 import { getServerT } from '@/lib/i18n/server'
+import { getCurrentUser } from '@/lib/session'
+import { RentalSaveSearchPrompt } from '@/components/marketplace/RentalSaveSearchPrompt'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The rental fleet — the same product wearing the same clothes.
@@ -56,6 +58,7 @@ async function FleetResults({
     return [] as Awaited<ReturnType<typeof rentalsApi.list>>
   })
   const t = await getServerT()
+  const user = await getCurrentUser()
 
   const categories = [
     ...new Set(fleet.map((car) => car.category?.trim()).filter((value): value is string => !!value)),
@@ -97,6 +100,16 @@ async function FleetResults({
         ))}
       </ul>
       </div>
+
+      {/* Only when the fleet answered; an alert for a page that failed to load
+          would be a promise made blind. */}
+      {reachable ? (
+        <RentalSaveSearchPrompt
+          category={category}
+          signedIn={Boolean(user)}
+          returnTo={category ? `/rentals?category=${encodeURIComponent(category)}` : '/rentals'}
+        />
+      ) : null}
 
       {safariOnly ? (
         <p className="mt-4 max-w-prose text-caption leading-relaxed text-content-secondary">

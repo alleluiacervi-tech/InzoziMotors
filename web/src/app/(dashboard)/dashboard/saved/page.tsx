@@ -1,4 +1,7 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
+import { DigestAskCard } from '@/components/dashboard/DigestAskCard'
+import { DIGEST_ASKED_COOKIE } from '@/components/dashboard/digest-ask'
 import { PageHeader, PanelHeading } from '@/components/dashboard/PageHeader'
 import { SavedSearchRow } from '@/components/dashboard/SavedSearchRow'
 import { UnsaveButton } from '@/components/dashboard/UnsaveButton'
@@ -6,7 +9,7 @@ import { settled } from '@/components/dashboard/data'
 import { CarCard } from '@/components/marketplace/CarCard'
 import { Alert, Button, Card, EmptyState } from '@/components/ui'
 import { saved } from '@/lib/api'
-import { getToken } from '@/lib/session'
+import { getCurrentUser, getToken } from '@/lib/session'
 import { getServerT } from '@/lib/i18n/server'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,6 +36,12 @@ export default async function SavedPage() {
   const cars = settled(carsResult, [])
   const searches = settled(searchesResult, [])
   const failed = carsResult.status === 'rejected' || searchesResult.status === 'rejected'
+
+  // Asked once, right after someone has a saved search, and never again whichever
+  // way they answer. Not asked at all if the summary is already on.
+  const user = await getCurrentUser()
+  const asked = (await cookies()).get(DIGEST_ASKED_COOKIE)?.value === '1'
+  const askForDigest = searches.length > 0 && user?.alert_daily_digest !== true && !asked
 
   return (
     <>
@@ -100,6 +109,8 @@ export default async function SavedPage() {
             />
           </Card>
         ) : (
+          <>
+          {askForDigest ? <DigestAskCard /> : null}
           <Card>
             <ul>
               {searches.map((search) => (
@@ -107,6 +118,7 @@ export default async function SavedPage() {
               ))}
             </ul>
           </Card>
+          </>
         )}
       </section>
     </>

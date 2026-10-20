@@ -65,6 +65,7 @@ export async function updateNotificationSettingsAction(
     message_email_notifications: formData.get('message_email_notifications') === 'on',
     alert_search_matches: formData.get('alert_search_matches') === 'on',
     alert_price_drops: formData.get('alert_price_drops') === 'on',
+    alert_daily_digest: formData.get('alert_daily_digest') === 'on',
   }
 
   const token = await getToken()

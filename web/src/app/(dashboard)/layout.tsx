@@ -4,8 +4,9 @@ import type { Metadata } from 'next'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
 import { VerificationNotice } from '@/components/dashboard/VerificationNotice'
 import { getUnreadCount, getUnreadMessageCount } from '@/components/dashboard/data'
-import { getCurrentUser } from '@/lib/session'
-import { getServerT } from '@/lib/i18n/server'
+import { getCurrentUser, getToken } from '@/lib/session'
+import { account } from '@/lib/api'
+import { getChosenLocale, getServerT } from '@/lib/i18n/server'
 import type { UserRole } from '@/lib/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,6 +47,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // them back to /dashboard and loop forever. That route clears the cookie
   // first. See web/src/app/session/expired/route.ts.
   if (!user) redirect('/session/expired?next=/dashboard')
+
+  // Pushes are written by the server, so it needs the language the person chose
+  // here (same as the app does on sign-in). Only a real choice, and only when it
+  // differs, so this is a no-op on almost every page view.
+  const chosen = await getChosenLocale()
+  if (chosen && chosen !== user.preferred_language) {
+    const token = await getToken()
+    if (token) await account.updateProfile(token, { preferred_language: chosen }).catch(() => {})
+  }
 
   const [unread, messagesUnread] = await Promise.all([getUnreadCount(), getUnreadMessageCount()])
   const initial = user.name.trim().charAt(0).toUpperCase() || '?'

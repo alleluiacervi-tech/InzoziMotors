@@ -6,9 +6,9 @@ import { SubmitButton } from '@/components/dashboard/SubmitButton'
 import { Alert, LiveRegion } from '@/components/ui'
 import { useT } from '@/lib/i18n/context'
 
-type Props = { messageEmails: boolean; alertSearchMatches: boolean; alertPriceDrops: boolean }
+type Props = { messageEmails: boolean; alertSearchMatches: boolean; alertPriceDrops: boolean; alertDailyDigest: boolean }
 
-export function NotificationSettingsForm({ messageEmails, alertSearchMatches, alertPriceDrops }: Props) {
+export function NotificationSettingsForm({ messageEmails, alertSearchMatches, alertPriceDrops, alertDailyDigest }: Props) {
   const t = useT()
   const [state, action] = useActionState(updateNotificationSettingsAction, null)
 
@@ -38,6 +38,14 @@ export function NotificationSettingsForm({ messageEmails, alertSearchMatches, al
           defaultChecked={alertPriceDrops}
           label={t('dashboard.profile.form.alertPriceDrops')}
           hint={t('dashboard.profile.form.alertPriceDropsHint')}
+        />
+        {/* Starts OFF, unlike the two above: a summary of every new car is
+            promotional, which needs the person's own yes. */}
+        <SettingCheckbox
+          name="alert_daily_digest"
+          defaultChecked={alertDailyDigest}
+          label={t('dashboard.profile.form.alertDailyDigest')}
+          hint={t('dashboard.profile.form.alertDailyDigestHint')}
         />
       </fieldset>
 
