@@ -20,7 +20,11 @@ import api from '../api/client';
 // the native module initialised, which no try/catch around the call can catch.
 // The import is now a guarded require — see ./nativeNotifications.
 callNotifications('setNotificationHandler', {
+  // shouldShowBanner/shouldShowList replace shouldShowAlert (deprecated in
+  // expo-notifications 0.32); the old key stays for any older binary.
   handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,

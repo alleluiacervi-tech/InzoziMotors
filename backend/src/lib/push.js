@@ -19,7 +19,7 @@ const RECEIPT_DELAY_MS = 15 * 60 * 1000;
 // able to fail the business write that triggered the notification.
 //
 // Returns { delivered, results } where results is one row per token:
-//   { token, ok, error?, message? }
+//   { token, ok, error?, message?, receiptId? }
 // `delivered` keeps its old meaning (tickets accepted) for existing callers.
 async function sendExpoPushDetailed(tokens, { title, body, data } = {}) {
   const valid = [...new Set(
@@ -64,7 +64,7 @@ async function sendExpoPushDetailed(tokens, { title, body, data } = {}) {
           else log.warn('expo push ticket error', { error, message: ticket.message });
         } else {
           delivered += 1;
-          results.push({ token, ok: true });
+          results.push({ token, ok: true, receiptId: ticket?.id || null });
           if (ticket?.id) receiptIds.push({ id: ticket.id, token });
         }
       });
@@ -89,9 +89,11 @@ function scheduleReceiptCheck(entries) {
   if (typeof timer.unref === 'function') timer.unref();
 }
 
-async function checkReceipts(entries) {
-  const byId = new Map(entries.map((e) => [e.id, e.token]));
-  const ids = [...byId.keys()];
+// Asks Expo what Apple or Google said about each ticket. Never throws; an id
+// missing from the answer means its receipt is not ready yet.
+// Returns Map<id, { ok, error?, message? }>.
+async function fetchReceipts(ids) {
+  const out = new Map();
   for (let i = 0; i < ids.length; i += 300) {
     const slice = ids.slice(i, i + 300);
     try {
@@ -104,18 +106,30 @@ async function checkReceipts(entries) {
       const receipts = json?.data;
       if (!receipts || typeof receipts !== 'object') continue;
       for (const [id, receipt] of Object.entries(receipts)) {
-        if (receipt?.status !== 'error') continue;
-        const error = receipt.details?.error || 'Error';
-        if (error === 'DeviceNotRegistered') {
-          await pruneToken(byId.get(id));
-        } else {
-          // InvalidCredentials / MismatchSenderId mean the APNs key or the FCM
-          // config uploaded to EAS is wrong or missing: no device will receive.
-          log.error('expo push receipt error', { error, message: receipt.message });
+        if (receipt?.status === 'error') {
+          out.set(id, { ok: false, error: receipt.details?.error || 'Error', message: receipt.message });
+        } else if (receipt?.status === 'ok') {
+          out.set(id, { ok: true });
         }
       }
     } catch (err) {
       log.error('expo receipts error', { error: err.message });
+    }
+  }
+  return out;
+}
+
+async function checkReceipts(entries) {
+  const byId = new Map(entries.map((e) => [e.id, e.token]));
+  const receipts = await fetchReceipts([...byId.keys()]);
+  for (const [id, receipt] of receipts) {
+    if (receipt.ok) continue;
+    if (receipt.error === 'DeviceNotRegistered') {
+      await pruneToken(byId.get(id));
+    } else {
+      // InvalidCredentials / MismatchSenderId mean the APNs key or the FCM
+      // config uploaded to EAS is wrong or missing: no device will receive.
+      log.error('expo push receipt error', { error: receipt.error, message: receipt.message });
     }
   }
 }
@@ -129,4 +143,4 @@ async function pruneToken(token) {
   }
 }
 
-module.exports = { sendExpoPush, sendExpoPushDetailed, pruneToken, checkReceipts };
+module.exports = { sendExpoPush, sendExpoPushDetailed, pruneToken, checkReceipts, fetchReceipts };

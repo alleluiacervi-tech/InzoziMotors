@@ -303,7 +303,14 @@ export default function SettingsScreen({ navigation }) {
   const sendTestPush = async () => {
     try {
       const { sent, devices } = await api.post('/devices/test', {});
+      // This phone's row is the one that matters here; the account may also
+      // have other phones or browsers. The Expo/Apple/Google error code is
+      // appended as-is (it reads the same in every language) so a credentials
+      // problem can be told from a phone problem without the server logs.
+      const mine = devices.filter((d) => d.platform === Platform.OS);
+      const failed = mine.find((d) => !d.ok);
       if (!devices.length) showToast(t('settings.testPushNone'), 'error');
+      else if (failed) showToast(`${t('settings.testPushFailed')} (${failed.error || 'Error'})`, 'error');
       else if (sent > 0) showToast(t('settings.testPushSent'), 'success');
       else showToast(t('settings.testPushFailed'), 'error');
     } catch (err) {

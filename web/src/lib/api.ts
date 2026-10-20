@@ -771,7 +771,8 @@ export type WebPushSubscriptionJSON = {
 
 export type PushTestResult = {
   sent: number
-  devices: { platform: string; ok: boolean; error: string | null }[]
+  /** receipt: Apple/Google's answer for a phone (null for a browser or a refused ticket). */
+  devices: { platform: string; ok: boolean; error: string | null; receipt?: 'ok' | 'error' | 'pending' | null }[]
 }
 
 export const devices = {

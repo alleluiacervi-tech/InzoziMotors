@@ -2,7 +2,7 @@ const express = require('express');
 const { log } = require('../lib/log');
 const pool = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { sendExpoPushDetailed } = require('../lib/push');
+const { sendExpoPushDetailed, fetchReceipts, pruneToken } = require('../lib/push');
 const {
   webPushConfigured, webPushPublicKey, parseSubscription, sendWebPushDetailed,
 } = require('../lib/web-push');
@@ -78,6 +78,8 @@ router.get('/tokens', requireAuth, async (req, res) => {
 // Android phone with no FCM config shows up here as an error, not as silence.
 // Limited to one per 20 seconds per account, and only ever to your own tokens.
 const lastTest = new Map();
+const RECEIPT_WAIT_MS = process.env.NODE_ENV === 'test' ? 10 : 1500;
+const RECEIPT_ATTEMPTS = 3;
 router.post('/test', requireAuth, async (req, res) => {
   const now = Date.now();
   if (now - (lastTest.get(req.user.id) || 0) < 20000) {
@@ -99,8 +101,28 @@ router.post('/test', requireAuth, async (req, res) => {
       rows.length ? sendExpoPushDetailed(rows.map((r) => r.token), message) : { results: [] },
       sendWebPushDetailed(web.rows, message),
     ]);
+    // A ticket only means Expo accepted the message. Apple or Google's answer
+    // (a wrong APNs key, a missing FCM key) is in the receipt, usually ready in
+    // a second or two, so the test waits briefly for it rather than reporting
+    // success that never reaches the phone. Still pending after that = 'pending'.
+    const receipts = new Map();
+    let waiting = results.filter((r) => r.ok && r.receiptId).map((r) => r.receiptId);
+    for (let attempt = 0; waiting.length && attempt < RECEIPT_ATTEMPTS; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, RECEIPT_WAIT_MS));
+      for (const [id, receipt] of await fetchReceipts(waiting)) receipts.set(id, receipt);
+      waiting = waiting.filter((id) => !receipts.has(id));
+    }
     const devices = [
-      ...results.map((r) => ({ platform: platformOf.get(r.token), ok: r.ok, error: r.error || null })),
+      ...results.map((r) => {
+        const receipt = r.receiptId ? receipts.get(r.receiptId) : null;
+        if (!r.ok) return { platform: platformOf.get(r.token), ok: false, error: r.error || null, receipt: null };
+        if (receipt && !receipt.ok) {
+          if (receipt.error === 'DeviceNotRegistered') pruneToken(r.token);
+          else log.error('expo push receipt error', { error: receipt.error, message: receipt.message });
+          return { platform: platformOf.get(r.token), ok: false, error: receipt.error, receipt: 'error' };
+        }
+        return { platform: platformOf.get(r.token), ok: true, error: null, receipt: receipt ? 'ok' : 'pending' };
+      }),
       ...webResults.map((r) => ({ platform: 'browser', ok: r.ok, error: r.error || null })),
     ];
     res.json({ sent: devices.filter((d) => d.ok).length, devices });
