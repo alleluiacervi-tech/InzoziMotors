@@ -23,4 +23,20 @@ function validInspectionExists(carAlias = 'c') {
   )`;
 }
 
-module.exports = { validInspectionExists };
+// The whole rule for "anyone can see this live car in the public catalogue":
+// a seller who is allowed to sell (CLAUDE.md §3.4) AND valid inspection
+// evidence. `seller` is the alias of a users row joined on the car's seller_id.
+// The catalogue list and the daily summary both read this, so "12 new cars
+// today" can never promise a car the list will not show.
+function publiclyVisibleSql(carAlias = 'c', sellerAlias = 'eligible_seller') {
+  return `(
+    ${sellerAlias}.role = 'seller'
+    AND ${sellerAlias}.id_verified = 'approved'
+    AND ${sellerAlias}.account_status = 'active'
+    AND ${sellerAlias}.deleted_at IS NULL
+    AND (COALESCE(${sellerAlias}.seller_type, 'individual') <> 'showroom' OR ${sellerAlias}.business_verified = TRUE)
+    AND ${validInspectionExists(carAlias)}
+  )`;
+}
+
+module.exports = { validInspectionExists, publiclyVisibleSql };

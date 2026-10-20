@@ -5,6 +5,7 @@ import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import {
   deleteSearchAction,
+  setSearchModeAction,
   toggleSearchNotifyAction,
 } from '@/app/(dashboard)/dashboard/saved/actions'
 import { Button, Icon } from '@/components/ui'
@@ -20,6 +21,10 @@ import type { SavedSearch } from '@/lib/types'
 /** Rebuilds the browse URL the search stands for, using the same query keys
  *  GET /cars parses. Filters are stored as free-form JSON, so read defensively. */
 function searchHref(filters: SavedSearch['filters']): string {
+  // A search for cars for hire lives on the rentals page, which filters by category.
+  if (filters.listingType === 'rental') {
+    return filters.category ? `/rentals?category=${encodeURIComponent(filters.category)}` : '/rentals'
+  }
   const params = new URLSearchParams()
   if (filters.query) params.set('q', filters.query)
   if (filters.make) params.set('make', filters.make)
@@ -95,10 +100,12 @@ export function SavedSearchRow({ search }: { search: SavedSearch }) {
   const t = useT()
   const [toggleState, toggle] = useActionState(toggleSearchNotifyAction, null)
   const [deleteState, remove] = useActionState(deleteSearchAction, null)
+  const [modeState, setMode] = useActionState(setSearchModeAction, null)
   const [confirming, setConfirming] = useState(false)
+  const daily = search.alert_mode === 'daily'
 
   const parts = summarise(search.filters, t)
-  const error = toggleState?.error ?? deleteState?.error
+  const error = toggleState?.error ?? deleteState?.error ?? modeState?.error
 
   return (
     <li className="hairline">
@@ -121,6 +128,16 @@ export function SavedSearchRow({ search }: { search: SavedSearch }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-1">
+          {search.notify_enabled ? (
+            // Instant vs the daily summary; the form submits the state it wants.
+            <form action={setMode}>
+              <input type="hidden" name="id" value={search.id} />
+              <input type="hidden" name="mode" value={daily ? 'instant' : 'daily'} />
+              <Button type="submit" variant="ghost" size="compact">
+                {daily ? t('dashboard.saved.alertDaily') : t('dashboard.saved.alertInstant')}
+              </Button>
+            </form>
+          ) : null}
           <form action={toggle}>
             <input type="hidden" name="id" value={search.id} />
             <input type="hidden" name="notify" value={search.notify_enabled ? 'off' : 'on'} />

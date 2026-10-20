@@ -83,6 +83,7 @@ const ACCOUNT_TOGGLE_FIELDS = {
   messageEmail: 'message_email_notifications',
   alertSearch: 'alert_search_matches',
   alertPrice: 'alert_price_drops',
+  alertDigest: 'alert_daily_digest',
 };
 
 const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearanceLabel, showTestPush, signedIn) => [
@@ -112,6 +113,9 @@ const buildGroups = (t, verificationValue, buildLabel, languageLabel, appearance
     items: [
       { icon: 'search-outline', label: t('settings.alertSearchMatches'), sub: t('settings.alertSearchMatchesHint'), toggle: 'alertSearch' },
       { icon: 'trending-down-outline', label: t('settings.alertPriceDrops'), sub: t('settings.alertPriceDropsHint'), toggle: 'alertPrice' },
+      // Off until the person turns it on: a summary of every new car is
+      // promotional, which the App Store only allows with explicit opt-in.
+      { icon: 'newspaper-outline', label: t('settings.alertDailyDigest'), sub: t('settings.alertDailyDigestHint'), toggle: 'alertDigest' },
     ],
   }] : []),
   {
@@ -192,7 +196,8 @@ export default function SettingsScreen({ navigation }) {
     messageEmail: currentUser?.message_email_notifications !== false,
     alertSearch: currentUser?.alert_search_matches !== false,
     alertPrice: currentUser?.alert_price_drops !== false,
-  }), [currentUser?.message_email_notifications, currentUser?.alert_search_matches, currentUser?.alert_price_drops]);
+    alertDigest: currentUser?.alert_daily_digest === true, // the one switch that starts OFF
+  }), [currentUser?.message_email_notifications, currentUser?.alert_search_matches, currentUser?.alert_price_drops, currentUser?.alert_daily_digest]);
   const [accountOn, setAccountOn] = useState(accountToggles);
   React.useEffect(() => { setAccountOn(accountToggles); }, [accountToggles]);
   // Whether a downloaded update applies itself on the next return to the app.

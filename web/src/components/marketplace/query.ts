@@ -57,6 +57,8 @@ export const FILTER_FIELDS = [
   'max_price',
   'min_year',
   'max_year',
+  // 'today' = went live in the last 24 hours: what the daily summary opens onto.
+  'new',
 ] as const
 
 export type FilterField = (typeof FILTER_FIELDS)[number]
@@ -95,7 +97,8 @@ export function readFilters(searchParams: SearchParams): Filters {
   const filters: Filters = {}
   for (const field of FILTER_FIELDS) {
     const raw = first(searchParams[field]).trim().slice(0, 60)
-    const value = NUMERIC_FIELDS.has(field) ? cleanNumber(raw) : raw
+    // 'new' has exactly one meaning; anything else is ignored, not passed on.
+    const value = field === 'new' ? (raw === 'today' ? raw : '') : NUMERIC_FIELDS.has(field) ? cleanNumber(raw) : raw
     if (value) filters[field] = value
   }
   return filters
@@ -141,6 +144,7 @@ export function toCarQuery(filters: Filters, sort: SortValue, offset: number): C
   if (filters.max_price) query.max_price = Number(filters.max_price)
   if (filters.min_year) query.min_year = Number(filters.min_year)
   if (filters.max_year) query.max_year = Number(filters.max_year)
+  if (filters.new === 'today') query.new = 'today'
 
   return query
 }
@@ -185,6 +189,7 @@ export const FILTER_LABELS: Record<FilterField, string> = {
   max_price: 'Maximum price',
   min_year: 'Earliest year',
   max_year: 'Latest year',
+  new: 'New today',
 }
 
 export function chipLabel(t: TFunction, field: FilterField, value: string): string {
@@ -205,6 +210,8 @@ export function chipLabel(t: TFunction, field: FilterField, value: string): stri
       return t('cars.chip.orNewer', { year: value })
     case 'max_year':
       return t('cars.chip.orOlder', { year: value })
+    case 'new':
+      return t('cars.chip.newToday')
     case 'make':
       return displayMake(value)
     default:

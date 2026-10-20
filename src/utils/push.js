@@ -19,16 +19,35 @@ import api from '../api/client';
 // wrapped only the CALL; the static `import` above it could still throw while
 // the native module initialised, which no try/catch around the call can catch.
 // The import is now a guarded require — see ./nativeNotifications.
+// The server always sends the push; this decides what to show while the app is
+// open. The one thing worth hiding is a message for the conversation already on
+// screen — the bubble just appeared there. Anything else (a message in another
+// thread, a price drop, a search match) gets a banner, so a person with the app
+// open is not left to notice a small bell badge.
+let activeConversationId = null;
+export function setActiveConversationForPush(id) {
+  activeConversationId = id || null;
+}
+
+export function isForCurrentThread(data) {
+  return !!activeConversationId
+    && data?.type === 'new_message'
+    && String(data?.conversationId || '') === String(activeConversationId);
+}
+
 callNotifications('setNotificationHandler', {
   // shouldShowBanner/shouldShowList replace shouldShowAlert (deprecated in
   // expo-notifications 0.32); the old key stays for any older binary.
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const quiet = isForCurrentThread(notification?.request?.content?.data);
+    return {
+      shouldShowBanner: !quiet,
+      shouldShowList: !quiet,
+      shouldShowAlert: !quiet,
+      shouldPlaySound: !quiet,
+      shouldSetBadge: true,
+    };
+  },
 });
 
 // Same identity app.config.js publishes at extra.eas.projectId — the push
@@ -36,19 +55,43 @@ callNotifications('setNotificationHandler', {
 // credentials to relay through).
 const PROJECT_ID = Constants.expoConfig?.extra?.eas?.projectId || Constants.easConfig?.projectId || null;
 
+// Android lets a person silence a channel without silencing the app. Messages
+// need to interrupt (HIGH); deal alerts should be seen but not buzz (DEFAULT).
+// 'default' stays for account and listing notices and for pushes from a server
+// that predates the other two. Channels are created from JavaScript, so a change
+// here can ship over the air.
+const ANDROID_CHANNELS = [
+  { id: 'default', name: 'Sawa Cars', importance: 'HIGH', fallback: 4, vibrate: true },
+  { id: 'messages', name: 'Messages', importance: 'HIGH', fallback: 4, vibrate: true },
+  { id: 'alerts', name: 'Deals & alerts', importance: 'DEFAULT', fallback: 3, vibrate: false },
+];
+
 let androidChannelReady = false;
 async function ensureAndroidChannel() {
   if (Platform.OS !== 'android' || androidChannelReady) return;
-  await callNotifications('setNotificationChannelAsync', 'default', {
-    name: 'Sawa Cars',
-    importance: notificationsConstant('AndroidImportance.HIGH', 4),
-    vibrationPattern: [0, 200, 200, 200],
-    lightColor: '#CC050F',
-    sound: 'default',
-    enableVibrate: true,
-    showBadge: true,
-  });
+  for (const channel of ANDROID_CHANNELS) {
+    await callNotifications('setNotificationChannelAsync', channel.id, {
+      name: channel.name,
+      importance: notificationsConstant(`AndroidImportance.${channel.importance}`, channel.fallback),
+      ...(channel.vibrate ? { vibrationPattern: [0, 200, 200, 200], enableVibrate: true } : {}),
+      lightColor: '#CC050F',
+      sound: 'default',
+      showBadge: true,
+    });
+  }
   androidChannelReady = true;
+}
+
+// The number on the app icon. The server sets it with each push; this keeps it
+// true while the app is in use (everything read = 0) and clears it at sign-out.
+// Never throws: a binary without the native module simply has no badge.
+export async function setAppBadge(count) {
+  const n = Math.max(0, Math.floor(Number(count) || 0));
+  try {
+    await callNotifications('setBadgeCountAsync', n);
+  } catch {
+    // best effort
+  }
 }
 
 // Resolve (and, if prompt is true, request) OS notification permission, then

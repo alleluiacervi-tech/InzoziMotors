@@ -21,7 +21,11 @@ const RECEIPT_DELAY_MS = 15 * 60 * 1000;
 // Returns { delivered, results } where results is one row per token:
 //   { token, ok, error?, message?, receiptId? }
 // `delivered` keeps its old meaning (tickets accepted) for existing callers.
-async function sendExpoPushDetailed(tokens, { title, body, data } = {}) {
+//
+// channelId picks the Android notification channel (the app creates them, see
+// src/utils/push.js); badges is an optional Map<token, number> for the iOS
+// app-icon count, which differs per person so it is set per message.
+async function sendExpoPushDetailed(tokens, { title, body, data, channelId, badges } = {}) {
   const valid = [...new Set(
     (Array.isArray(tokens) ? tokens : []).filter((t) => typeof t === 'string' && TOKEN_RE.test(t))
   )];
@@ -38,8 +42,9 @@ async function sendExpoPushDetailed(tokens, { title, body, data } = {}) {
       body: body || '',
       data: data || {},
       sound: 'default',
-      channelId: 'default',
+      channelId: channelId || 'default',
       priority: 'high',
+      ...(badges && badges.has(to) ? { badge: badges.get(to) } : {}),
     }));
     try {
       const resp = await fetch(EXPO_PUSH_URL, {

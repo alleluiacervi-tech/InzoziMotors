@@ -419,7 +419,7 @@ export const auth = {
 export const account = {
   me: (token: string) => request<User>('/auth/me', { token }),
 
-  updateProfile: (token: string, fields: { name?: string; phone?: string; whatsapp_phone?: string; phone_visible?: boolean; whatsapp_visible?: boolean; avatar_url?: string; message_email_notifications?: boolean; alert_search_matches?: boolean; alert_price_drops?: boolean }) =>
+  updateProfile: (token: string, fields: { name?: string; phone?: string; whatsapp_phone?: string; phone_visible?: boolean; whatsapp_visible?: boolean; avatar_url?: string; message_email_notifications?: boolean; alert_search_matches?: boolean; alert_price_drops?: boolean; alert_daily_digest?: boolean; preferred_language?: string | null }) =>
     request<User>('/auth/me', { token, method: 'PATCH', body: JSON.stringify(fields) }),
 
   /** Returns a replacement token: the backend ends every other session on a
@@ -697,9 +697,9 @@ export const saved = {
     request<SavedSearch>('/saved-searches', {
       token, method: 'POST', body: JSON.stringify({ label, filters }),
     }),
-  updateSearch: (token: string, id: string, notify_enabled: boolean) =>
+  updateSearch: (token: string, id: string, fields: { notify_enabled?: boolean; alert_mode?: 'instant' | 'daily' }) =>
     request<SavedSearch>(`/saved-searches/${id}`, {
-      token, method: 'PATCH', body: JSON.stringify({ notify_enabled }),
+      token, method: 'PATCH', body: JSON.stringify(fields),
     }),
   deleteSearch: (token: string, id: string) =>
     request<{ success: true }>(`/saved-searches/${id}`, { token, method: 'DELETE' }),

@@ -119,6 +119,7 @@ export default async function ProfilePage() {
                 messageEmails={user.message_email_notifications !== false}
                 alertSearchMatches={user.alert_search_matches !== false}
                 alertPriceDrops={user.alert_price_drops !== false}
+                alertDailyDigest={user.alert_daily_digest === true}
               />
             </Card>
           </section>

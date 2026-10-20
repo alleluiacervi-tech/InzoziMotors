@@ -230,19 +230,32 @@ export default function SearchResultsScreen({ navigation, route }) {
                   : `${(showLocal ? filteredCars.length : 0) + (showImport ? filteredImportCars.length : 0)} vehicles found`}
               </Text>
               <View style={styles.resultActions}>
-                {(searchQuery.trim() || activeFilters) && !isRentMode && (
+                {/* Cars for sale save any filter; cars for hire save the search words
+                    (the server tells you when a matching one is listed for hire). */}
+                {(isRentMode ? !!searchQuery.trim() : (searchQuery.trim() || activeFilters)) && (
                   <Pressable
                     style={styles.layoutBtn}
                     hitSlop={6}
                     onPress={async () => {
+                      // "New today" is a view, not something to be alerted about forever.
+                      const { newToday, ...savable } = activeFilters || {};
                       const parts = [
-                        activeFilters?.make, activeFilters?.body, activeFilters?.fuel,
-                        activeFilters?.maxPrice ? `< RWF ${(activeFilters.maxPrice / 1000000)}M` : null,
+                        savable.make, savable.body, savable.fuel,
+                        savable.maxPrice ? `< RWF ${(savable.maxPrice / 1000000)}M` : null,
                         searchQuery.trim() || null,
                       ].filter(Boolean);
                       const label = parts.join(' · ') || t('searchResults.allCars');
-                      await createSavedSearch(label, { ...activeFilters, query: searchQuery.trim() });
-                      showToast(t('searchResults.savedToast'), 'success');
+                      try {
+                        await createSavedSearch(
+                          label,
+                          isRentMode
+                            ? { listingType: 'rental', query: searchQuery.trim() }
+                            : { ...savable, query: searchQuery.trim() },
+                        );
+                        showToast(t('searchResults.savedToast'), 'success');
+                      } catch {
+                        showToast(t('settings.genericError'), 'error');
+                      }
                     }} accessibilityRole="button" accessibilityLabel={t('searchResults.saveSearch')}
                   >
                     <Ionicons name="bookmark-outline" size={16} color={colors.textSecondary} />
@@ -263,6 +276,12 @@ export default function SearchResultsScreen({ navigation, route }) {
             {/* Active Filters Summary Chips */}
             {activeFilters && (
               <View style={styles.activeFiltersRow}>
+                {activeFilters.newToday && (
+                  <Pressable style={styles.filterChip} onPress={() => removeFilter('newToday')}>
+                    <Text style={styles.filterChipText}>{t('searchResults.newToday')}</Text>
+                    <Ionicons name="close" size={12} color={colors.primary} />
+                  </Pressable>
+                )}
                 {activeFilters.make && (
                   <Pressable style={styles.filterChip} onPress={() => removeFilter('make')}>
                     <Text style={styles.filterChipText}>{activeFilters.make}</Text>

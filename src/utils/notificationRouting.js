@@ -21,8 +21,19 @@ export function resolveNotificationRoute(input) {
   const inquiryId = meta.inquiryId || input?.inquiryId;
   const rentalCarId = meta.rentalCarId || input?.rentalCarId;
 
+  // A saved search for cars for hire matched: open that car's page. (rentalCarId
+  // alone means a provider's own fleet car, handled below.)
+  if (type === 'search_match' && rentalCarId) {
+    return { screen: 'RentalDetail', params: { rentalId: rentalCarId } };
+  }
+
   // A message push always carries conversationId — go straight to the thread,
   // not the inbox list, so a tap lands where the actual new text is.
+  // The daily summary opens onto what it counted: cars that went live today.
+  if (type === 'daily_digest') {
+    return { screen: 'SearchResults', params: { filters: { newToday: true } } };
+  }
+
   if (type === 'message' || type === 'new_message' || conversationId) {
     return conversationId
       ? { screen: 'Chat', params: { convId: conversationId } }

@@ -117,7 +117,8 @@ keep every screen agreeing:
 - **CSV exports never carry** phone numbers, emails, ID documents or messages,
   and every export or PDF download writes `admin_audit_log`.
 - PDFs (monthly revenue statement, business report) render **on demand**; there
-  is no scheduler, digest or emailed report.
+  is no scheduled or emailed report. (The in-process runner in section 5 sends
+  only push notifications and the unread-message email.)
 - Charts never use Signal Red: data series are `--data-1…5` (validated palette
   in `admin/src/app/globals.css`); red means action or an SLA breach.
 
@@ -301,15 +302,47 @@ adds delivery while the app isn't open. Permissions: `CAMERA` and
 `app.config.js` `android.permissions`); `RECORD_AUDIO` and `READ_MEDIA_IMAGES`
 stay blocked; `supportsTablet: false`.
 
-**Push status (Oct 2026).** iOS delivers with the app closed (APNs key on EAS).
-Android does not yet: it needs a Firebase project, `google-services.json` supplied
-to the build (`GOOGLE_SERVICES_JSON` as an EAS file env var, read by
-`app.config.js` — never committed), and the FCM V1 service-account key uploaded
-with `eas credentials`; then a new store build. To tell "phone", "credentials"
-and "server" apart, Settings → *Send a test notification* calls
-`POST /devices/test`, which reports per device what Expo said. The backend also
-reads Expo's receipts 15 minutes after a send and logs credential errors
+**Push status (Oct 2026).** iOS delivers with the app closed (APNs key on EAS,
+re-confirmed 20 Oct 2026). Android needs a Firebase project, `google-services.json`
+supplied to the build (`GOOGLE_SERVICES_JSON` as an EAS file env var, read by
+`app.config.js`, never committed) **and** the FCM V1 service-account key on EAS
+(`eas credentials -p android`; uploaded 20 Oct 2026, delivery to a real phone not yet
+confirmed). To tell "phone", "credentials" and "server" apart, Settings → *Send a
+test notification* calls `POST /devices/test`, which waits for Apple's/Google's
+**receipt** (not just Expo's ticket) and reports per device, e.g. `InvalidCredentials`.
+The backend also reads receipts 15 minutes after any send and logs credential errors
 (`expo push receipt error`).
+
+**What gets pushed, and how (Oct 2026; plan and status in `docs/PUSH-NOTIFICATIONS-TODO.md`).**
+Everything goes through `lib/notify.js`; wording per language is
+`lib/notification-copy.js` (rw/sw are first drafts needing native review).
+- **Open or closed.** The server always sends; the clients decide what to show. The app's
+  handler (`src/utils/push.js`) and the web service worker (`web/public/sw.js`) hide only a
+  message for the conversation on screen. A message is never push-suppressed because a socket
+  is connected.
+- **Android channels** `messages` (high), `alerts` (default), `default` (JS-created, so OTA).
+  **iOS badge** = unread messages + unread non-message notifications, set per device by the server
+  and kept true by the app.
+- **Language.** `users.preferred_language` (migration 0063) is sent by both clients; pushes for
+  messages, search matches, price drops, rental matches and the daily summary are rendered per
+  recipient. Notification Center rows keep their stored English text.
+- **Calm alerts** (migration 0064). A saved search is told about a car once
+  (`search_alert_log`); a price drop needs ≥ 1 % and is sent at most once per car per 24 h;
+  search matches and price drops wait out **quiet hours 21:00–07:00 Kigali** (the row and bell are
+  immediate, the push is held in `notifications.push_after`); each saved search is `instant` or
+  `daily` (in the summary).
+- **Daily summary** (`lib/daily-digest.js`). **Opt-in, off by default** (`users.alert_daily_digest`;
+  App Store 4.5.4), 18:00–21:00 Kigali, once per Kigali day (`last_digest_on`, claimed before
+  sending), never on a day with nothing new, counts only cars the public list would show
+  (`publiclyVisibleSql`), opens onto `/cars?new=today`. `cars.first_live_at` is stamped by a trigger.
+- **Cars for hire** (migration 0065, `lib/rental-alerts.js`). A rental car is public by
+  predicate, so the runner finds newly public cars and stamps `rental_cars.first_listed_at` once;
+  saved searches with `listingType: 'rental'` match on that. Wording says "listed for hire",
+  never "available" or "booked".
+- **The runner** (`lib/scheduler.js`) is in-process (off in tests), one Postgres advisory lock per
+  job, every 5 minutes: held pushes, new rentals, the daily summary, the unread-message email.
+  Jobs claim their rows in the statement that selects them, so a restart or a second server
+  cannot double-send. It never deletes data; account purge stays manual.
 
 **Web Push (sawacars.com).** `backend/src/lib/web-push.js` sends to browser
 subscriptions (`web_push_subscriptions`, migration 0059) alongside every Expo
@@ -345,7 +378,7 @@ password never signs you out). Demo fixtures are `__DEV__`-only.
 - **`uptime.yml`** polls production on a schedule; **`ops.yml`** holds manual levers.
 - Postgres has **no published ports** — reachable only on the container network.
 - Migrations are forward-only files in `backend/migrations/`, applied by
-  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0061`.
+  `node src/db-init.js` (delegates to `src/migrate.js`). Currently through `0065`.
   **`src/schema.sql` is never executed** — db-init runs migrations only, so that
   file is documentation. `test/schema-drift.test.js` fails if it ever describes a
   column no migration creates, and reports how far behind it is otherwise.
@@ -433,7 +466,8 @@ label above, full width in the mobile menu), the same redirect flow as `/signin`
 **Account closure** (`src/lib/account-closure.js`) is immediate and needs no
 approval — Apple 5.1.1(v) requires deletion to *complete* in-app, so an operator
 queue that could block one would fail review. The row survives 30 days
-(reopenable), then an operator purges it; there is no scheduler, deliberately.
+(reopenable), then an operator purges it. The purge stays manual on purpose: the
+in-process runner (section 5) never deletes anything.
 
 **Brands** live in `vehicle_makes`, served by `GET /makes` — not bundled in the
 app. `aliases` collapses "Mercedes"/"benz"/"VW" onto one row. No logo files are

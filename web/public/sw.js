@@ -20,16 +20,39 @@ self.addEventListener('push', (event) => {
   }
   const data = payload.data && typeof payload.data === 'object' ? payload.data : {}
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Sawa Cars', {
-      body: payload.body || '',
-      icon: '/brand/app-icon.png',
-      badge: '/icon',
-      tag: payload.tag || undefined,
-      renotify: Boolean(payload.tag),
-      data,
-    })
+    (async () => {
+      // The server always sends the push. The one case worth skipping is a
+      // message for the conversation the person is looking at right now: the
+      // bubble just appeared on the page. Every other push, with the site open
+      // or closed, shows. (Browsers allow skipping only when a window is
+      // visible, which is exactly this case.)
+      if (await isReadingThread(data)) return
+      await self.registration.showNotification(payload.title || 'Sawa Cars', {
+        body: payload.body || '',
+        icon: '/brand/app-icon.png',
+        badge: '/icon',
+        tag: payload.tag || undefined,
+        renotify: Boolean(payload.tag),
+        data,
+      })
+    })()
   )
 })
+
+async function isReadingThread(data) {
+  if (data.type !== 'new_message' || typeof data.conversationId !== 'string' || !data.conversationId) return false
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+  const path = `/dashboard/messages/${data.conversationId}`
+  return windows.some((client) => {
+    if (client.visibilityState !== 'visible' || !client.focused) return false
+    try {
+      const url = new URL(client.url)
+      return url.origin === self.location.origin && url.pathname.replace(/\/$/, '') === path
+    } catch {
+      return false
+    }
+  })
+}
 
 function targetUrl(data) {
   const params = new URLSearchParams()

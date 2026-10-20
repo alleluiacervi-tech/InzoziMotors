@@ -30,7 +30,7 @@ const router = express.Router();
 // this predicate prevents a stale or obviously inconsistent row from leaking
 // through catalogue, contact, save, history or messaging reads. It lives in
 // lib/inspection-evidence.js so the admin queues read the same rule.
-const { validInspectionExists } = require('../lib/inspection-evidence');
+const { validInspectionExists, publiclyVisibleSql } = require('../lib/inspection-evidence');
 const { odometerReadings, assessReadings } = require('../lib/odometer');
 const { modelSafety } = require('../lib/model-safety');
 
@@ -77,6 +77,9 @@ const PUBLIC_CAR_DETAIL_COLUMNS = [...PUBLIC_CAR_COLUMNS, 'description', 'vin'];
 const INTERNAL_CAR_COLUMNS = [
   'review_notes', 'archive_reason', 'archived_at', 'approved_at', 'approved_by',
   'registration_plate', 'vin_key', 'vehicle_id',
+  // When the car first went live (a trigger stamps it). Feeds the daily summary's
+  // "new today" count and the ?new=today filter; not shown to anyone.
+  'first_live_at',
 ];
 
 // Whether the car's latest complete inspection passed (score at the threshold
@@ -172,6 +175,10 @@ router.get('/', async (req, res) => {
     conditions.push(`c.seller_id = $${params.length}`);
   }
 
+  // ?new=today — what the daily summary opens onto: cars that went live in the
+  // last 24 hours, the same window the summary counts (lib/daily-digest.js).
+  if (req.query.new === 'today') conditions.push(`c.first_live_at > NOW() - INTERVAL '24 hours'`);
+
   if (make)          { params.push(make);          conditions.push(`make ILIKE $${params.length}`); }
   if (model)         { params.push(`%${model}%`);  conditions.push(`model ILIKE $${params.length}`); }
   if (min_price)     { params.push(min_price);     conditions.push(`price >= $${params.length}`); }
@@ -218,12 +225,7 @@ router.get('/', async (req, res) => {
          FROM cars c
          JOIN users eligible_seller ON eligible_seller.id = c.seller_id
          WHERE ${conditions.join(' AND ')}
-           AND eligible_seller.role = 'seller'
-           AND eligible_seller.id_verified = 'approved'
-           AND eligible_seller.account_status = 'active'
-           AND eligible_seller.deleted_at IS NULL
-           AND (COALESCE(eligible_seller.seller_type, 'individual') <> 'showroom' OR eligible_seller.business_verified = TRUE)
-           AND ${validInspectionExists('c')}
+           AND ${publiclyVisibleSql('c', 'eligible_seller')}
          ORDER BY (c.featured_until IS NOT NULL AND c.featured_until > NOW()) DESC,
                   c.${safeSort} ${safeOrder}
          LIMIT $${params.length - 1} OFFSET $${params.length}

@@ -33,6 +33,11 @@ export interface User {
    *  On by default; off means the alert is not created at all. */
   alert_search_matches?: boolean
   alert_price_drops?: boolean
+  /** Migration 0064: the once-a-day "new on Sawa" summary. Off until the person
+   *  turns it on (promotional push needs explicit opt-in). */
+  alert_daily_digest?: boolean
+  /** Migration 0063: the language pushes are written in. Null = never told. */
+  preferred_language?: string | null
   seller_type?: string | null
   created_at: string
   /** GET /auth/me only. False for an account made with Google or Apple. */
@@ -434,6 +439,7 @@ export type NotificationType =
   | 'listing_update'
   | 'handover'
   | 'search_match'
+  | 'daily_digest'
 
 export interface AppNotification {
   id: string
@@ -475,8 +481,14 @@ export interface SavedSearch {
     maxPrice?: number
     maxMileage?: number
     query?: string
+    /** 'rental' = a search for cars for hire (migration 0065); absent = for sale. */
+    listingType?: 'sale' | 'rental'
+    location?: string
+    maxDailyRate?: number
   }
   notify_enabled: boolean
+  /** Migration 0064: alert as the car goes live, or hold it for the daily summary. */
+  alert_mode?: 'instant' | 'daily'
   created_at: string
 }
 
@@ -596,6 +608,8 @@ export interface CarQuery {
   transmission?: string
   body_type?: string
   drive_side?: string
+  /** 'today' = went live in the last 24 hours (what the daily summary opens onto). */
+  new?: 'today'
   sort?: 'listed_at' | 'price' | 'mileage' | 'year' | 'views'
   order?: 'asc' | 'desc'
   limit?: number

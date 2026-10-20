@@ -111,6 +111,11 @@ export const cars = {
   toggleSavedSearchNotify: async (id, notifyEnabled) => {
     return await api.patch(`/saved-searches/${id}`, { notify_enabled: notifyEnabled });
   },
+
+  // 'instant' (alert as a car goes live) or 'daily' (held for the daily summary).
+  setSavedSearchAlertMode: async (id, mode) => {
+    return await api.patch(`/saved-searches/${id}`, { alert_mode: mode });
+  },
 };
 
 export default cars;

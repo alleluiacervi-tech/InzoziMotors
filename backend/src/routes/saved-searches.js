@@ -5,6 +5,9 @@ const { requireUuid } = require('../middleware/validate');
 
 const router = express.Router();
 
+// 'instant' alerts as the car goes live; 'daily' holds matches for the summary.
+const ALERT_MODES = ['instant', 'daily'];
+
 // GET /saved-searches
 router.get('/', requireAuth, async (req, res) => {
   try {
@@ -20,15 +23,18 @@ router.get('/', requireAuth, async (req, res) => {
 
 // POST /saved-searches
 router.post('/', requireAuth, async (req, res) => {
-  const { label, filters, notify_enabled = true } = req.body;
+  const { label, filters, notify_enabled = true, alert_mode = 'instant' } = req.body;
   if (!label || !filters) {
     return res.status(400).json({ error: 'label and filters are required' });
   }
+  if (!ALERT_MODES.includes(alert_mode)) {
+    return res.status(400).json({ error: `alert_mode must be one of: ${ALERT_MODES.join(', ')}` });
+  }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO saved_searches (user_id, label, filters, notify_enabled)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [req.user.id, label, JSON.stringify(filters), notify_enabled]
+      `INSERT INTO saved_searches (user_id, label, filters, notify_enabled, alert_mode)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.user.id, label, JSON.stringify(filters), notify_enabled, alert_mode]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -36,14 +42,26 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
-// PATCH /saved-searches/:id — toggle notifications
+// PATCH /saved-searches/:id — notifications on/off, and instant vs daily summary.
+// A field that is not sent keeps its value.
 router.patch('/:id', requireAuth, requireUuid('id'), async (req, res) => {
-  const { notify_enabled } = req.body;
+  const { notify_enabled, alert_mode } = req.body;
+  if (notify_enabled === undefined && alert_mode === undefined) {
+    return res.status(400).json({ error: 'notify_enabled or alert_mode is required' });
+  }
+  if (notify_enabled !== undefined && typeof notify_enabled !== 'boolean') {
+    return res.status(400).json({ error: 'notify_enabled must be true or false' });
+  }
+  if (alert_mode !== undefined && !ALERT_MODES.includes(alert_mode)) {
+    return res.status(400).json({ error: `alert_mode must be one of: ${ALERT_MODES.join(', ')}` });
+  }
   try {
     const { rows } = await pool.query(
-      `UPDATE saved_searches SET notify_enabled = $1
-       WHERE id = $2 AND user_id = $3 RETURNING *`,
-      [notify_enabled, req.params.id, req.user.id]
+      `UPDATE saved_searches
+          SET notify_enabled = COALESCE($1, notify_enabled),
+              alert_mode = COALESCE($2, alert_mode)
+       WHERE id = $3 AND user_id = $4 RETURNING *`,
+      [notify_enabled ?? null, alert_mode ?? null, req.params.id, req.user.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);
